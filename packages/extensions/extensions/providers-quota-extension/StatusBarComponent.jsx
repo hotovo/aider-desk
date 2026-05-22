@@ -11,30 +11,76 @@
     });
   };
 
-  return agentProfile?.provider === 'synthetic' && data?.synthetic ? (
-    data.synthetic.error ? (
+  if (agentProfile?.provider === 'synthetic' && data?.synthetic) {
+    return data.synthetic.error ? (
       <span className="pt-1">Quota unavailable</span>
     ) : (
       <div className="flex items-center gap-2 pt-1 justify-between w-full">
-        <span>Synthetic:</span>
+        <span>Usage:</span>
         <div className="flex items-center gap-2">
           <span>{data.synthetic.used}/{data.synthetic.limit}</span>
           <span>({data.synthetic.percentage}%)</span>
         </div>
       </div>
-    )
-  ) : agentProfile?.provider === 'zai-plan' && data?.zai ? (
-    <div className="flex items-center gap-2 pt-1 justify-between w-full">
-      <span>Z.ai:</span>
-      <div className="flex items-center gap-2">
-        <ui.Tooltip content={data.zai.hourlyNextResetTime ? `Resets at ${formatResetTime(data.zai.hourlyNextResetTime)}` : ''}>
-          <span>5 Hours: {data.zai.hourlyPercentage}%</span>
-        </ui.Tooltip>
-        <span>|</span>
-        <ui.Tooltip content={data.zai.weeklyNextResetTime ? `Resets at ${formatResetTime(data.zai.weeklyNextResetTime)}` : ''}>
-          <span>Weekly: {data.zai.weeklyPercentage}%</span>
-        </ui.Tooltip>
+    );
+  }
+
+  if (agentProfile?.provider === 'zai-plan' && data?.zai) {
+    return (
+      <div className="flex items-center gap-2 pt-1 justify-between w-full">
+        <span>Usage:</span>
+        <div className="flex items-center gap-2">
+          <ui.Tooltip content={data.zai.hourlyNextResetTime ? `Resets at ${formatResetTime(data.zai.hourlyNextResetTime)}` : ''}>
+            <span>5 Hours: {data.zai.hourlyPercentage}%</span>
+          </ui.Tooltip>
+          <span>|</span>
+          <ui.Tooltip content={data.zai.weeklyNextResetTime ? `Resets at ${formatResetTime(data.zai.weeklyNextResetTime)}` : ''}>
+            <span>Weekly: {data.zai.weeklyPercentage}%</span>
+          </ui.Tooltip>
+        </div>
       </div>
-    </div>
-  ) : null;
+    );
+  }
+
+  if (agentProfile?.provider === 'neuralwatt' && data?.neuralwatt) {
+    const nw = data.neuralwatt;
+
+    if (nw.isSubscription) {
+      const kwhUsed = nw.kwhUsed?.toFixed(2) ?? '0.00';
+      const kwhIncluded = nw.kwhIncluded?.toFixed(1) ?? '0.0';
+      const periodEnd = nw.currentPeriodEnd ? formatResetTime(nw.currentPeriodEnd) : null;
+
+      return (
+        <div className="flex items-center gap-2 pt-1 justify-between w-full">
+          <span>Usage:</span>
+          <div className="flex items-center gap-2">
+            <ui.Tooltip content={periodEnd ? `Renews at ${periodEnd}` : ''}>
+              <span>{kwhUsed}/{kwhIncluded} kWh</span>
+            </ui.Tooltip>
+            <span>({nw.kwhPercentage}%)</span>
+            {nw.inOverage && (
+              <span className="text-red-400 text-xs">overage</span>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    const creditsRemaining = nw.creditsRemaining?.toFixed(2) ?? '0.00';
+    const creditsTotal = nw.creditsTotal?.toFixed(2) ?? '0.00';
+
+    return (
+      <div className="flex items-center gap-2 pt-1 justify-between w-full">
+        <span>Neuralwatt:</span>
+        <div className="flex items-center gap-2">
+          <ui.Tooltip content={`Accounting: ${nw.accountingMethod || 'energy'}`}>
+            <span>${creditsRemaining}/${creditsTotal}</span>
+          </ui.Tooltip>
+          <span>({nw.creditsPercentage}%)</span>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }

@@ -1,14 +1,18 @@
 /**
  * Providers Quota Extension
  *
- * Displays API quota information for Synthetic and Z.AI providers in the task status bar.
+ * Displays API quota information for Synthetic, Z.AI, and Neuralwatt providers in the task status bar.
  * Shows quota based on the active agent profile's provider.
+ *
+ * API keys are automatically loaded from AiderDesk provider settings.
+ * To override, set environment variables in a .env file in the extension directory.
  *
  * Setup:
  * 1. Copy this extension folder to ~/.aider-desk/extensions/providers-quota-extension/
- * 2. Create a .env file in the extension folder with:
+ * 2. (Optional) Create a .env file in the extension folder to override API keys:
  *    SYNTHETIC_API_KEY=your_api_key_here
  *    ZAI_API_KEY=your_zai_api_key_here
+ *    NEURALWATT_API_KEY=your_neuralwatt_api_key_here
  * 3. Restart AiderDesk
  *
  * The extension will display quota usage based on the active provider.
@@ -33,7 +37,7 @@ for (const file of envFiles) {
   }
 }
 
-import type { Extension, ExtensionContext, UIComponentDefinition, PromptFinishedEvent } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, UIComponentDefinition, PromptFinishedEvent, ProviderProfile } from '@aiderdesk/extensions';
 
 // Cache management
 const CACHE_DURATION = 60000; // 1 minute
@@ -45,6 +49,7 @@ interface CachedData<T> {
 
 const syntheticCache: CachedData<SyntheticQuotaData> = { data: null, lastFetchTime: 0 };
 const zaiCache: CachedData<ZaiQuotaData> = { data: null, lastFetchTime: 0 };
+const neuralwattCache: CachedData<NeuralwattQuotaData> = { data: null, lastFetchTime: 0 };
 
 // Synthetic API types
 interface SyntheticQuotaData {
@@ -88,8 +93,91 @@ interface ZaiApiResponse {
   success: boolean;
 }
 
-const fetchSyntheticQuota = async (): Promise<SyntheticQuotaData | null> => {
-  const apiKey = process.env.SYNTHETIC_API_KEY;
+// Neuralwatt API types
+interface NeuralwattQuotaData {
+  isSubscription: boolean;
+  // Subscription fields
+  kwhUsed?: number;
+  kwhIncluded?: number;
+  kwhPercentage?: number;
+  currentPeriodEnd?: string;
+  plan?: string;
+  inOverage?: boolean;
+  // Pay-as-you-go fields
+  creditsRemaining?: number;
+  creditsTotal?: number;
+  creditsPercentage?: number;
+  accountingMethod?: string;
+}
+
+interface NeuralwattApiResponse {
+  snapshot_at: string;
+  balance: {
+    credits_remaining_usd: number;
+    total_credits_usd: number;
+    credits_used_usd: number;
+    accounting_method: string;
+  };
+  usage: {
+    lifetime: { cost_usd: number; requests: number; tokens: number; energy_kwh: number };
+    current_month: { cost_usd: number; requests: number; tokens: number; energy_kwh: number };
+  };
+  limits: {
+    overage_limit_usd: number | null;
+    rate_limit_tier: string;
+  };
+  subscription: {
+    plan: string;
+    status: string;
+    billing_interval: string | null;
+    current_period_start: string | null;
+    current_period_end: string | null;
+    auto_renew: boolean | null;
+    kwh_included: number | null;
+    kwh_used: number | null;
+    kwh_remaining: number | null;
+    in_overage: boolean | null;
+  } | null;
+  key: {
+    name: string | null;
+    allowance: {
+      limit_usd: number;
+      period: string;
+      spent_usd: number;
+      remaining_usd: number;
+      blocked: boolean;
+    } | null;
+  };
+}
+
+// API key resolution: env var override → AiderDesk provider settings
+const getApiKey = (envVarName: string, providerName: string, context?: ExtensionContext): string | undefined => {
+  const envKey = process.env[envVarName];
+  if (envKey) {
+    return envKey;
+  }
+
+  if (context) {
+    try {
+      const providers = context.getProviders();
+      const profile = providers.find((p: ProviderProfile) => {
+        const provider = p.provider as Record<string, unknown>;
+        return provider && provider.name === providerName;
+      });
+      if (profile) {
+        const provider = profile.provider as Record<string, unknown>;
+        return (provider.apiKey as string) || undefined;
+      }
+    } catch {
+      // Provider not found or not accessible
+    }
+  }
+
+  return undefined;
+};
+
+const fetchSyntheticQuota = async (context?: ExtensionContext): Promise<SyntheticQuotaData | null> => {
+  const apiKey = getApiKey('SYNTHETIC_API_KEY', 'synthetic', context);
 
   if (!apiKey) {
     return null;
@@ -131,8 +219,8 @@ const fetchSyntheticQuota = async (): Promise<SyntheticQuotaData | null> => {
   }
 };
 
-const fetchZaiQuota = async (): Promise<ZaiQuotaData | null> => {
-  const apiKey = process.env.ZAI_API_KEY;
+const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData | null> => {
+  const apiKey = getApiKey('ZAI_API_KEY', 'zai-plan', context);
 
   if (!apiKey) {
     return null;
@@ -183,28 +271,94 @@ const fetchZaiQuota = async (): Promise<ZaiQuotaData | null> => {
   }
 };
 
-const getSyntheticQuota = async function (): Promise<SyntheticQuotaData | null> {
+const fetchNeuralwattQuota = async (context?: ExtensionContext): Promise<NeuralwattQuotaData | null> => {
+  const apiKey = getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
+
+  if (!apiKey) {
+    return null;
+  }
+
+  try {
+    const response = await fetch("https://api.neuralwatt.com/v1/quota", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      console.error(
+        `[Providers Quota] Neuralwatt API request failed: ${response.status} ${response.statusText}`,
+      );
+      return null;
+    }
+
+    const data: NeuralwattApiResponse = await response.json();
+
+    if (data.subscription && data.subscription.status === 'active') {
+      const kwhUsed = data.subscription.kwh_used ?? 0;
+      const kwhIncluded = data.subscription.kwh_included ?? 0;
+      return {
+        isSubscription: true,
+        kwhUsed,
+        kwhIncluded,
+        kwhPercentage: kwhIncluded > 0 ? Math.round((kwhUsed / kwhIncluded) * 100) : 0,
+        currentPeriodEnd: data.subscription.current_period_end ?? undefined,
+        plan: data.subscription.plan,
+        inOverage: data.subscription.in_overage ?? false,
+      };
+    }
+
+    return {
+      isSubscription: false,
+      creditsRemaining: data.balance.credits_remaining_usd,
+      creditsTotal: data.balance.total_credits_usd,
+      creditsPercentage: data.balance.total_credits_usd > 0
+        ? Math.round((data.balance.credits_remaining_usd / data.balance.total_credits_usd) * 100)
+        : 0,
+      accountingMethod: data.balance.accounting_method,
+    };
+  } catch (error) {
+    console.error("[Providers Quota] Failed to fetch Neuralwatt quota:", error);
+    return null;
+  }
+};
+
+const getSyntheticQuota = async (context?: ExtensionContext): Promise<SyntheticQuotaData | null> => {
   const now = Date.now();
 
   if (syntheticCache.data && now - syntheticCache.lastFetchTime < CACHE_DURATION) {
     return syntheticCache.data;
   }
 
-  syntheticCache.data = await fetchSyntheticQuota();
+  syntheticCache.data = await fetchSyntheticQuota(context);
   syntheticCache.lastFetchTime = now;
   return syntheticCache.data;
 };
 
-const getZaiQuota = async function (): Promise<ZaiQuotaData | null> {
+const getZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData | null> => {
   const now = Date.now();
 
   if (zaiCache.data && now - zaiCache.lastFetchTime < CACHE_DURATION) {
     return zaiCache.data;
   }
 
-  zaiCache.data = await fetchZaiQuota();
+  zaiCache.data = await fetchZaiQuota(context);
   zaiCache.lastFetchTime = now;
   return zaiCache.data;
+};
+
+const getNeuralwattQuota = async (context?: ExtensionContext): Promise<NeuralwattQuotaData | null> => {
+  const now = Date.now();
+
+  if (neuralwattCache.data && now - neuralwattCache.lastFetchTime < CACHE_DURATION) {
+    return neuralwattCache.data;
+  }
+
+  neuralwattCache.data = await fetchNeuralwattQuota(context);
+  neuralwattCache.lastFetchTime = now;
+  return neuralwattCache.data;
 };
 
 const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
@@ -212,16 +366,17 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.3.0',
-    description: 'Displays API quota information for Synthetic and Z.AI providers in the task status bar',
+    version: '1.4.0',
+    description: 'Displays API quota information for Synthetic, Z.AI, and Neuralwatt providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
     capabilities: ['ui'],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {
-    const syntheticKey = process.env.SYNTHETIC_API_KEY;
-    const zaiKey = process.env.ZAI_API_KEY;
+    const syntheticKey = getApiKey('SYNTHETIC_API_KEY', 'synthetic', context);
+    const zaiKey = getApiKey('ZAI_API_KEY', 'zai-plan', context);
+    const neuralwattKey = getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
 
     const keys: string[] = [];
     if (syntheticKey) {
@@ -229,6 +384,9 @@ export default class ProvidersQuotaExtension implements Extension {
     }
     if (zaiKey) {
       keys.push('Z.AI');
+    }
+    if (neuralwattKey) {
+      keys.push('Neuralwatt');
     }
 
     if (keys.length > 0) {
@@ -239,10 +397,13 @@ export default class ProvidersQuotaExtension implements Extension {
 
     // Pre-fetch quota data
     if (syntheticKey) {
-      await getSyntheticQuota();
+      await getSyntheticQuota(context);
     }
     if (zaiKey) {
-      await getZaiQuota();
+      await getZaiQuota(context);
+    }
+    if (neuralwattKey) {
+      await getNeuralwattQuota(context);
     }
   }
 
@@ -252,6 +413,8 @@ export default class ProvidersQuotaExtension implements Extension {
     syntheticCache.lastFetchTime = 0;
     zaiCache.data = null;
     zaiCache.lastFetchTime = 0;
+    neuralwattCache.data = null;
+    neuralwattCache.lastFetchTime = 0;
 
     // Trigger UI refresh
     context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
@@ -270,22 +433,29 @@ export default class ProvidersQuotaExtension implements Extension {
     return [STATUS_BAR_COMPONENT];
   }
 
-  async getUIExtensionData(componentId: string): Promise<unknown> {
+  async getUIExtensionData(componentId: string, context: ExtensionContext): Promise<unknown> {
     if (componentId !== STATUS_BAR_COMPONENT_ID) {
       return undefined;
     }
 
-    const hasSynthetic = !!process.env.SYNTHETIC_API_KEY;
-    const hasZai = !!process.env.ZAI_API_KEY;
+    const hasSynthetic = !!getApiKey('SYNTHETIC_API_KEY', 'synthetic', context);
+    const hasZai = !!getApiKey('ZAI_API_KEY', 'zai-plan', context);
+    const hasNeuralwatt = !!getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
 
     // Fetch all available quotas in parallel
-    const [syntheticQuota, zaiQuota] = await Promise.all([hasSynthetic ? getSyntheticQuota() : null, hasZai ? getZaiQuota() : null]);
+    const [syntheticQuota, zaiQuota, neuralwattQuota] = await Promise.all([
+      hasSynthetic ? getSyntheticQuota(context) : null,
+      hasZai ? getZaiQuota(context) : null,
+      hasNeuralwatt ? getNeuralwattQuota(context) : null,
+    ]);
 
     return {
       synthetic: syntheticQuota,
       zai: zaiQuota,
+      neuralwatt: neuralwattQuota,
       hasSynthetic,
       hasZai,
+      hasNeuralwatt,
     };
   }
 }
