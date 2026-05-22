@@ -225,6 +225,7 @@ src/
       environment.ts
       errors.ts
       file-system.ts
+      file-watch.ts
       index.ts
       mutex.ts
       open-url.ts
@@ -1920,7 +1921,8 @@ import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { fileExists } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
-import type { AgentProfile } from '@common/types';
+import type { AgentProfile, SettingsData } from '@common/types';
+import type { Store } from '@/store';
 ⋮----
 import { Project } from '@/project';
 import { ExtensionManager, ExtensionsChangeListener } from '@/extensions/extension-manager';
@@ -1928,6 +1930,7 @@ import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
 import logger from '@/logger';
 import { EventManager } from '@/events';
 import { deriveDirName } from '@/utils';
+import { shouldUsePolling } from '@/utils/file-watch';
 ⋮----
 // Helper methods for directory management
 const getGlobalAgentsDir = (): string
@@ -1965,6 +1968,7 @@ private directoryWatchers: Map<string, FSWatcher> = new Map(); // agentsDir → 
 constructor(
     private readonly eventManager: EventManager,
     private readonly extensionManager: ExtensionManager,
+    private readonly store: Store,
 )
 ⋮----
 public async init(): Promise<void>
@@ -2167,6 +2171,8 @@ async dispose(): Promise<void>
 // Clean up all directory watchers
 ⋮----
 // Clear profiles
+⋮----
+async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void>
 ⋮----
 getDefaultAgentProfileId()
 
@@ -3112,13 +3118,15 @@ import { watch, FSWatcher } from 'chokidar';
 import { loadFront } from 'yaml-front-matter';
 import debounce from 'lodash/debounce';
 ⋮----
-import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand } from '@common/types';
+import type { AutonomyMode, Command, CommandArgument, CommandsData, CustomCommand, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
+import type { Store } from '@/store';
 ⋮----
 import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Project } from '@/project';
+import { shouldUsePolling } from '@/utils/file-watch';
 ⋮----
 // Constants for shell command formatting
 ⋮----
@@ -3208,6 +3216,8 @@ private isExecError(error: unknown): error is ExecError
 private formatShellOutput(command: string, output: string): string[]
 ⋮----
 dispose(): void
+⋮----
+async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void>
 
 ================
 File: src/main/custom-commands/index.ts
@@ -3735,6 +3745,7 @@ import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolCallOptions, ToolSet } from 'ai';
 ⋮----
+import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { Project } from '@/project';
@@ -3852,6 +3863,8 @@ settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
 ⋮----
 // Check for repository changes
 ⋮----
+// Re-create watchers if fileWatchMode changed
+⋮----
 addListener(listener: ExtensionsChangeListener): void
 ⋮----
 removeListener(listener: ExtensionsChangeListener): void
@@ -3924,6 +3937,8 @@ private async stopGlobalWatcher(): Promise<void>
 async reloadProjectExtensions(project: Project): Promise<void>
 ⋮----
 async stopProjectWatcher(projectDir: string): Promise<void>
+⋮----
+private async restartWatchers(): Promise<void>
 ⋮----
 validateToolDefinition(tool: ToolDefinition):
 ⋮----
@@ -6945,15 +6960,18 @@ import {
 } from './types';
 ⋮----
 import type { ExtensionManager } from '@/extensions/extension-manager';
+import type { Store } from '@/store';
 ⋮----
 import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
+import { shouldUsePolling } from '@/utils/file-watch';
 ⋮----
 export class PromptsManager
 ⋮----
 constructor(
     private readonly extensionManager: ExtensionManager,
+    private readonly store: Store,
     private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
 )
@@ -6983,6 +7001,8 @@ public async watchProject(projectDir: string): Promise<void>
 public async unwatchProject(projectDir: string): Promise<void>
 ⋮----
 public async dispose(): Promise<void>
+⋮----
+async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void>
 ⋮----
 private async render(name: PromptTemplateName, data: unknown, projectDir: string, task?: Task): Promise<string>
 ⋮----
@@ -8125,6 +8145,7 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   ContextCompactionType,
   DiffViewMode,
+  FileWatchMode,
   MemoryEmbeddingProvider,
   MessageViewMode,
   ProjectData,
@@ -8980,8 +9001,6 @@ private notifyIfEnabled(title: string, text: string)
 private getQuestionKey(question: QuestionData): string
 ⋮----
 public async answerQuestion(answer: string, userInput?: string): Promise<boolean>
-⋮----
-// If user input 'd' (don't ask again) or 'a' (always), store the determined answer.
 ⋮----
 // Send question-answered event
 ⋮----
@@ -9874,6 +9893,23 @@ export const isValidProjectFile = (filePath: string, taskDir: string): boolean =
 // Convert to absolute path for validation
 ⋮----
 // Check if resolved path is still within task directory
+
+================
+File: src/main/utils/file-watch.ts
+================
+import { execSync } from 'child_process';
+⋮----
+import { FileWatchMode } from '@common/types';
+⋮----
+import logger from '@/logger';
+⋮----
+const isDocker = (): boolean =>
+⋮----
+const isNetworkDrive = (drivePath: string): boolean =>
+⋮----
+export const shouldUsePolling = (watchPath: string, mode: FileWatchMode = FileWatchMode.Auto): boolean =>
+⋮----
+// FileWatchMode.Auto
 
 ================
 File: src/main/utils/index.ts
@@ -11142,6 +11178,7 @@ import { VersionsManager } from '@/versions';
 import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
+import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
@@ -14093,6 +14130,7 @@ type Props = {
   className?: string;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  placement?: 'bottom' | 'top';
 };
 ⋮----
 // Pass both refs to useClickOutside
@@ -19644,6 +19682,7 @@ type Props = {
   scrollToBottom?: () => void;
   onToggleTaskInfoPanel?: () => void;
   handoffConversation?: (focus?: string) => Promise<void>;
+  createSubtask?: (args?: string) => void;
 };
 ⋮----
 // we need to set the text when the component mounts and the text is not empty (e.g. Activity use case)
@@ -20586,7 +20625,7 @@ setSelectedCapabilities((prev) =>
 File: src/renderer/src/components/settings/GeneralSettings.tsx
 ================
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode } from '@common/types';
+import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
 import { ChangeEvent } from 'react';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
@@ -20632,6 +20671,8 @@ const handleSuggestionModeChange = (mode: SuggestionMode) =>
 const handleSuggestionModeClick = (value: string) =>
 ⋮----
 const handleWindowTitleTemplateChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleFileWatchModeChange = (value: string) =>
 ⋮----
 const handleSuggestionDelayChange = (delay: number) =>
 ⋮----
