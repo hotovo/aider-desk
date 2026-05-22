@@ -349,6 +349,9 @@
   "cerebras": {
     "apiKey": "API Key"
   },
+  "neuralwatt": {
+    "apiKey": "API Key"
+  },
   "openRouter": {
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
@@ -427,6 +430,7 @@
     "litellm": "LiteLLM",
     "minimax": "MiniMax",
     "mistral": "Mistral",
+    "neuralwatt": "Neuralwatt",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "opencode": "OpenCode ZEN",

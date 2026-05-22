@@ -24,6 +24,7 @@ import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
 import { mistralProviderStrategy } from './providers/mistral';
+import { neuralwattProviderStrategy } from './providers/neuralwatt';
 import { ollamaProviderStrategy } from './providers/ollama';
 import { openaiProviderStrategy } from './providers/openai';
 import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
@@ -107,6 +108,7 @@ export class ModelManager {
     lmstudio: lmStudioProviderStrategy,
     minimax: minimaxProviderStrategy,
     mistral: mistralProviderStrategy,
+    neuralwatt: neuralwattProviderStrategy,
     ollama: ollamaProviderStrategy,
     openai: openaiProviderStrategy,
     'openai-compatible': openaiCompatibleProviderStrategy,

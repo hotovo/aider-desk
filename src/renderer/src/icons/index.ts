@@ -16,6 +16,7 @@ export { LitellmIcon } from './LitellmIcon';
 export { LmStudioIcon } from './LmStudioIcon';
 export { MinimaxIcon } from './MinimaxIcon';
 export { MistralIcon } from './MistralIcon';
+export { NeuralwattIcon } from './NeuralwattIcon';
 export { OllamaIcon } from './OllamaIcon';
 export { OpenAiIcon } from './OpenAiIcon';
 export { OpenAiCompatibleIcon } from './OpenAiCompatibleIcon';

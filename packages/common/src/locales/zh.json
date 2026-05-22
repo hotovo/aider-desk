@@ -388,6 +388,9 @@
   "cerebras": {
     "apiKey": "API 密钥"
   },
+  "neuralwatt": {
+    "apiKey": "API 密钥"
+  },
   "openRouter": {
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
@@ -423,6 +426,7 @@
     "litellm": "LiteLLM",
     "minimax": "Minimax",
     "mistral": "Mistral",
+    "neuralwatt": "Neuralwatt",
     "ollama": "Ollama",
     "openai": "OpenAI",
     "opencode": "OpenCode ZEN",

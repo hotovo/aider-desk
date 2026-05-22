@@ -52,6 +52,7 @@ export type LlmProviderName =
   | 'lmstudio'
   | 'minimax'
   | 'mistral'
+  | 'neuralwatt'
   | 'ollama'
   | 'openai'
   | 'openai-compatible'
@@ -100,6 +101,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'lmstudio',
   'minimax',
   'mistral',
+  'neuralwatt',
   'ollama',
   'openai',
   'openai-compatible',
@@ -328,6 +330,12 @@ export interface MistralProvider extends LlmProviderBase {
 }
 export const isMistralProvider = (provider: LlmProviderBase): provider is MistralProvider => provider.name === 'mistral';
 
+export interface NeuralwattProvider extends LlmProviderBase {
+  name: 'neuralwatt';
+  apiKey: string;
+}
+export const isNeuralwattProvider = (provider: LlmProviderBase): provider is NeuralwattProvider => provider.name === 'neuralwatt';
+
 export interface SyntheticProvider extends LlmProviderBase {
   name: 'synthetic';
   apiKey: string;
@@ -366,6 +374,7 @@ export type LlmProvider =
   | ZaiPlanProvider
   | MinimaxProvider
   | MistralProvider
+  | NeuralwattProvider
   | ExtensionLlmProvider;
 
 
@@ -389,6 +398,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   'zai-plan': 'glm-5.1',
   minimax: 'MiniMax-M2.7',
   mistral: 'mistral-large-latest',
+  neuralwatt: 'claude-sonnet-4-6',
 };
 
 export const DEFAULT_AIDER_MAIN_MODEL = `anthropic/${DEFAULT_PROVIDER_MODELS.anthropic}`;
@@ -821,6 +831,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'mistral',
         apiKey: '',
       } satisfies MistralProvider;
+      break;
+    case 'neuralwatt':
+      provider = {
+        name: 'neuralwatt',
+        apiKey: '',
+      } satisfies NeuralwattProvider;
       break;
     case 'gemini-cli':
       provider = {
