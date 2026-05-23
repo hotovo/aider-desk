@@ -128,6 +128,7 @@ src/
         lm-studio.ts
         minimax.ts
         mistral.ts
+        neuralwatt.ts
         ollama.ts
         openai-compatible.ts
         openai.ts
@@ -412,6 +413,7 @@ src/
             LmStudioParameters.tsx
             MinimaxParameters.tsx
             MistralParameters.tsx
+            NeuralwattParameters.tsx
             OllamaParameters.tsx
             OpenAiAdvancedSettings.tsx
             OpenAiCompatibleAdvancedSettings.tsx
@@ -650,6 +652,7 @@ src/
         LmStudioIcon.tsx
         MinimaxIcon.tsx
         MistralIcon.tsx
+        NeuralwattIcon.tsx
         OllamaIcon.tsx
         OpenAiCompatibleIcon.tsx
         OpenAiIcon.tsx
@@ -3500,7 +3503,7 @@ import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 ⋮----
 import type { ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
-import type { Model, SettingsData } from '@common/types';
+import type { Model, ProviderProfile, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
 import type { ModelManager } from '@/models';
@@ -3533,6 +3536,8 @@ getTaskContext(): TaskContext | null
 getProjectContext(): ProjectContext
 ⋮----
 async getModelConfigs(): Promise<Model[]>
+⋮----
+getProviders(): ProviderProfile[]
 ⋮----
 async getSetting(key: string): Promise<unknown>
 ⋮----
@@ -5611,6 +5616,38 @@ export const createMistralLlm = (profile: ProviderProfile, model: Model, setting
 // Model discovery functions
 
 ================
+File: src/main/models/providers/neuralwatt.ts
+================
+import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isNeuralwattProvider, NeuralwattProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+⋮----
+import type { LanguageModelUsage } from 'ai';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultModelInfo, calculateCost } from '@/models/providers/default';
+import { Task } from '@/task/task';
+⋮----
+const loadNeuralwattModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+const hasNeuralwattEnvVars = (settings: SettingsData): boolean =>
+⋮----
+const getNeuralwattAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
+⋮----
+const createNeuralwattLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+⋮----
+const getNeuralwattUsageReport = (
+  task: Task,
+  provider: ProviderProfile,
+  model: Model,
+  usage: LanguageModelUsage,
+  providerMetadata?: unknown,
+): UsageReportData =>
+
+================
 File: src/main/models/providers/ollama.ts
 ================
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
@@ -6190,6 +6227,7 @@ import { litellmProviderStrategy } from './providers/litellm';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
 import { mistralProviderStrategy } from './providers/mistral';
+import { neuralwattProviderStrategy } from './providers/neuralwatt';
 import { ollamaProviderStrategy } from './providers/ollama';
 import { openaiProviderStrategy } from './providers/openai';
 import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
@@ -16981,6 +17019,27 @@ const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 label=
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/NeuralwattParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { NeuralwattProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: NeuralwattProvider;
+  onChange: (updated: NeuralwattProvider) => void;
+};
+⋮----
+export const NeuralwattParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/OllamaParameters.tsx
 ================
 import { ChangeEvent } from 'react';
@@ -17895,6 +17954,7 @@ import {
   LmStudioIcon,
   MinimaxIcon,
   MistralIcon,
+  NeuralwattIcon,
   OllamaIcon,
   OpenAiCompatibleIcon,
   OpenAiIcon,
@@ -18001,6 +18061,7 @@ import {
   LmStudioParameters,
   MinimaxParameters,
   MistralParameters,
+  NeuralwattParameters,
   OllamaParameters,
   OpenAiCompatibleParameters,
   OpenAiParameters,
@@ -18093,6 +18154,7 @@ import {
   LmStudioIcon,
   MinimaxIcon,
   MistralIcon,
+  NeuralwattIcon,
   OllamaIcon,
   OpenAiCompatibleIcon,
   OpenAiIcon,
@@ -23983,6 +24045,50 @@ export const MistralIcon = ({ width = 64, height = 64, className }: Props) => (
       <path
         d="M3.428 3.4h3.429v3.428h3.429v3.429h-.002 3.431V6.828h3.427V3.4h3.43v13.714H24v3.429H13.714v-3.428h-3.428v-3.429h-3.43v3.428h3.43v3.429H0v-3.429h3.428V3.4zm10.286 13.715h3.428v-3.429h-3.427v3.429z"
         clipRule="evenodd"
+      />
+    </svg>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/NeuralwattIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const NeuralwattIcon = ({ width = 48, height = 48, className }: Props) => (
+  <div
+    aria-label="Neuralwatt"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: '#d55934',
+      color: 'white',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" width={width * 0.6} height={height * 0.6} fill="none" viewBox="0 0 32 32">
+      <path
+        fill="currentColor"
+        d="M29.006 32a2.963 2.963 0 1 0 0-5.926 2.963 2.963 0 0 0 0 5.926M2.963 5.926a2.963 2.963 0 1 0 0-5.926 2.963 2.963 0 0 0 0 5.926M16.018 18.952a2.961 2.961 0 1 0 0-5.922 2.961 2.961 0 0 0 0 5.922M2.962 12.116a2.667 2.667 0 1 0 0-5.333 2.667 2.667 0 0 0 0 5.333M9.5 12.116a2.667 2.667 0 1 0-.001-5.334 2.667 2.667 0 0 0 0 5.334M29.006 25.199a2.666 2.666 0 1 0 0-5.333 2.666 2.666 0 0 0 0 5.333M22.535 25.199a2.666 2.666 0 1 0 0-5.333 2.666 2.666 0 0 0 0 5.333M29.006 18.357a2.369 2.369 0 1 0 0-4.738 2.369 2.369 0 0 0 0 4.738M29.006 12.11a2.369 2.369 0 1 0 0-4.738 2.369 2.369 0 0 0 0 4.738M29.006 5.331a2.369 2.369 0 1 0 0-4.737 2.369 2.369 0 0 0 0 4.737M2.963 18.298a2.369 2.369 0 1 0 0-4.737 2.369 2.369 0 0 0 0 4.737M2.963 24.901a2.369 2.369 0 1 0 0-4.737 2.369 2.369 0 0 0 0 4.737M2.963 31.348a2.369 2.369 0 1 0 0-4.737 2.369 2.369 0 0 0 0 4.737"
+      />
+      <path
+        fill="currentColor"
+        d="M9.499 17.883a1.952 1.952 0 1 0 0-3.905 1.952 1.952 0 0 0 0 3.905M22.535 17.942a1.95 1.95 0 1 0 0-3.902 1.95 1.95 0 0 0 0 3.902M16.018 11.403a1.895 1.895 0 1 0 0-3.79 1.895 1.895 0 0 0 0 3.79M16.018 24.426a1.893 1.893 0 1 0 0-3.787 1.893 1.893 0 0 0 0 3.787M9.499 4.678a1.714 1.714 0 1 0 0-3.428 1.714 1.714 0 0 0 0 3.428M22.535 30.75a1.712 1.712 0 1 0 0-3.425 1.712 1.712 0 0 0 0 3.425"
+        opacity=".5"
+      />
+      <path
+        fill="currentColor"
+        d="M22.535 10.985a1.477 1.477 0 1 0 0-2.954 1.477 1.477 0 0 0 0 2.954M9.499 23.95a1.475 1.475 0 1 0 0-2.95 1.475 1.475 0 0 0 0 2.95M16.018 30.038a1.001 1.001 0 1 0 0-2.002 1.001 1.001 0 0 0 0 2.002M16.018 4.023a.998.998 0 1 0 0-1.997.998.998 0 0 0 0 1.997"
+        opacity=".3"
+      />
+      <path
+        fill="currentColor"
+        d="M9.499 29.565a.585.585 0 1 0 0-1.17.585.585 0 0 0 0 1.17M22.535 3.599a.58.58 0 1 0 0-1.161.58.58 0 0 0 0 1.16"
+        opacity=".1"
       />
     </svg>
   </div>
