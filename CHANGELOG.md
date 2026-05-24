@@ -15,6 +15,7 @@
 - added getProviders to extension context to allow fetching the configured providers
 - added truncateToolResult to extension context to allow extensions to use it to truncate the tool results
 - added truncation of non-power tool results on smart compaction
+- replaced sharp native dependency with empty stub to prevent SIGILL on older CPUs
 
 ## [0.66.0]
 

@@ -213,7 +213,7 @@ export class MemoryManager {
               done: this.embeddingProgress.done,
               total: this.embeddingProgress.total,
               finished: true,
-              error: 'Failed to load @huggingface/transformers. This is usually a packaging issue with native dependencies (e.g. sharp/libvips).',
+              error: 'Failed to load @huggingface/transformers. This is usually a packaging issue with native dependencies.',
             };
             logger.error('Failed to load transformers module. Memory embedding will be unavailable.', error);
             return;
@@ -414,7 +414,7 @@ export class MemoryManager {
           done: this.embeddingProgress.done,
           total: this.embeddingProgress.total,
           finished: true,
-          error: 'Failed to load @huggingface/transformers. This is usually a packaging issue with native dependencies (e.g. sharp/libvips).',
+          error: 'Failed to load @huggingface/transformers. This is usually a packaging issue with native dependencies.',
         };
         logger.error('Failed to load transformers module. Memory embedding will be unavailable.', error);
         return;

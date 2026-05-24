@@ -31,9 +31,6 @@ extraResources:
     to: skills
     filter:
       - '**/*'
-asarUnpack:
-  - '**/node_modules/sharp/**/*'
-  - '**/node_modules/@img/**/*'
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
