@@ -98,7 +98,14 @@ export const readFileContent = async (
   return resultLines.join('\n');
 };
 
-export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> => {
+export const truncateToolResult = async (
+  content: string,
+  maxLines = 1000,
+  maxSizeKB = 50,
+  maxTokens = 50000,
+  saveToFile = true,
+  truncationSuffix?: string,
+): Promise<string> => {
   const lines = content.split('\n');
   const sizeBytes = Buffer.byteLength(content, 'utf8');
   const sizeKB = sizeBytes / 1024;
@@ -108,11 +115,14 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
     return content;
   }
 
-  const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
-  const tmpFileName = `aider-desk-tool-result-${id}.txt`;
-  const tmpFilePath = path.join(tmpdir(), tmpFileName);
+  let tmpFilePath: string | undefined;
 
-  await fs.writeFile(tmpFilePath, content, 'utf8');
+  if (saveToFile) {
+    const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+    const tmpFileName = `aider-desk-tool-result-${id}.txt`;
+    tmpFilePath = path.join(tmpdir(), tmpFileName);
+    await fs.writeFile(tmpFilePath, content, 'utf8');
+  }
 
   const reasons: string[] = [];
   if (lines.length > maxLines) {
@@ -124,6 +134,14 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
   if (tokenCount > maxTokens) {
     reasons.push(`${tokenCount} tokens exceeded limit of ${maxTokens}`);
   }
+
+  const getSuffix = () => {
+    if (truncationSuffix) {
+      return truncationSuffix;
+    }
+    const fileNote = tmpFilePath ? ` Full content saved to ${tmpFilePath}.` : '';
+    return `Content truncated (${reasons.join(', ')}).${fileNote}`;
+  };
 
   if (tokenCount > maxTokens) {
     const headBudget = Math.floor(maxTokens / 2);
@@ -157,6 +175,11 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
     const omittedLines = lines.length - headLines.length - tailLines.length;
     const truncationNotice = `\n\n... ${omittedLines} lines omitted (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.\n\n`;
 
+    if (truncationSuffix) {
+      const suffixNotice = `\n\n... ${omittedLines} lines omitted. ${truncationSuffix}\n\n`;
+      return headLines.join('\n') + suffixNotice + tailLines.join('\n');
+    }
+
     return headLines.join('\n') + truncationNotice + tailLines.join('\n');
   }
 
@@ -170,7 +193,7 @@ export const truncateToolResult = async (content: string, maxLines = 1000, maxSi
     preview = lines.slice(0, maxLines).join('\n');
   }
 
-  return preview + `\n... Content truncated (${reasons.join(', ')}). Full content saved to ${tmpFilePath}.`;
+  return preview + `\n... ${getSuffix()}`;
 };
 
 const NETWORK_ERROR_CODES = ['ECONNRESET', 'EPIPE', 'ETIMEDOUT', 'ECONNREFUSED', 'ENOTFOUND', 'ENETUNREACH', 'EAI_AGAIN'] as const;

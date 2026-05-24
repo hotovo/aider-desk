@@ -14,6 +14,7 @@
 - added direct support for Neuralwatt provider
 - added getProviders to extension context to allow fetching the configured providers
 - added truncateToolResult to extension context to allow extensions to use it to truncate the tool results
+- added truncation of non-power tool results on smart compaction
 
 ## [0.66.0]
 

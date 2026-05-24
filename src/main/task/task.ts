@@ -2844,7 +2844,7 @@ export class Task {
     // backing up the current context before compacting for debugging purposes
     await this.contextManager.backupContext();
 
-    const compactedMessages = smartCompactMessages(contextMessages);
+    const compactedMessages = await smartCompactMessages(contextMessages);
 
     this.contextManager.setContextMessages(compactedMessages);
     await this.contextManager.loadMessages(compactedMessages, false);

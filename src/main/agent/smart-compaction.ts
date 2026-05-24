@@ -13,6 +13,8 @@ import {
 import { extractServerNameToolName } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
+import { truncateToolResult } from '@/agent/utils';
+
 type ToolInfo = {
   messageIndex: number;
   toolCallId: string;
@@ -177,11 +179,9 @@ const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCoun
 };
 
 const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextMessage[] => {
-  const result = cloneMessages(messages);
-
-  for (let i = result.length - 2; i >= 0; i--) {
-    const current = result[i];
-    const next = result[i + 1];
+  for (let i = messages.length - 2; i >= 0; i--) {
+    const current = messages[i];
+    const next = messages[i + 1];
 
     if (current.role !== 'assistant' || next.role !== 'assistant') {
       continue;
@@ -204,10 +204,10 @@ const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextM
 
     (current as ContextAssistantMessage).content = mergedText ? [{ type: 'text', text: mergedText } satisfies TextPart] : [];
 
-    result.splice(i + 1, 1);
+    messages.splice(i + 1, 1);
   }
 
-  return result.filter((msg) => {
+  return messages.filter((msg) => {
     if (msg.role === 'assistant' && Array.isArray(msg.content) && msg.content.length === 0) {
       return false;
     }
@@ -215,7 +215,55 @@ const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextM
   });
 };
 
-export const smartCompactMessages = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+export const truncateNonPowerToolResults = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> => {
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
+
+  for (let i = 0; i < protectedStart; i++) {
+    const msg = messages[i];
+    if (msg.role !== 'tool') {
+      continue;
+    }
+
+    for (let j = 0; j < msg.content.length; j++) {
+      const part = msg.content[j] as ToolResultPart;
+      if (part.type !== 'tool-result') {
+        continue;
+      }
+      const [serverName] = extractServerNameToolName(part.toolName);
+      if (isPowerTool(serverName)) {
+        continue;
+      }
+
+      if (part.output.type !== 'text' && part.output.type !== 'error-text') {
+        continue;
+      }
+
+      const outputText = part.output.value;
+      if (!outputText) {
+        continue;
+      }
+
+      const truncated = await truncateToolResult(
+        outputText,
+        20,
+        2,
+        2000,
+        false,
+        'Output truncated due to compaction, re-execute the tool if full output is needed.',
+      );
+      if (truncated !== outputText) {
+        part.output = {
+          type: part.output.type,
+          value: truncated,
+        };
+      }
+    }
+  }
+
+  return messages;
+};
+
+export const smartCompactMessages = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> => {
   let result = cloneMessages(messages);
 
   result = removeErroredTools(result, protectedMessageCount);
@@ -225,20 +273,20 @@ export const smartCompactMessages = (messages: ContextMessage[], protectedMessag
   result = compactSemanticSearches(result, protectedMessageCount);
   result = deduplicateBash(result, protectedMessageCount);
   result = redactFetchOutputs(result, protectedMessageCount);
+  result = await truncateNonPowerToolResults(result, protectedMessageCount);
   result = mergeConsecutiveAssistantMessages(result);
 
   return result;
 };
 
 export const removeErroredTools = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   for (let i = protectedStart - 1; i >= 0; i--) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       continue;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -249,26 +297,25 @@ export const removeErroredTools = (messages: ContextMessage[], protectedMessageC
         continue;
       }
       if (isErrorResult(info.output) || isNoOpResult(info.output)) {
-        removeToolCallFromAssistant(result, info.toolCallId);
-        removeToolResult(result, info.toolCallId);
+        removeToolCallFromAssistant(messages, info.toolCallId);
+        removeToolResult(messages, info.toolCallId);
       }
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const fileEditGroups = new Map<string, { assistantMessageId: string; toolCallId: string }[]>();
 
   for (let i = 0; i < protectedStart; i++) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       break;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -285,7 +332,7 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
         continue;
       }
 
-      const callInfo = findAssistantToolCall(result, part.toolCallId);
+      const callInfo = findAssistantToolCall(messages, part.toolCallId);
       if (!callInfo) {
         continue;
       }
@@ -323,27 +370,26 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
       ],
     };
 
-    const assistantIndex = result.findIndex((m) => m.id === lastEdit.assistantMessageId);
+    const assistantIndex = messages.findIndex((m) => m.id === lastEdit.assistantMessageId);
     const insertIndex = assistantIndex !== -1 ? assistantIndex + 1 : 0;
-    result.splice(insertIndex, 0, syntheticMessage);
+    messages.splice(insertIndex, 0, syntheticMessage);
 
     for (const edit of edits) {
-      removeToolCallFromAssistant(result, edit.toolCallId);
-      removeToolResult(result, edit.toolCallId);
+      removeToolCallFromAssistant(messages, edit.toolCallId);
+      removeToolResult(messages, edit.toolCallId);
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const removeStaleFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const editedFilePaths = new Set<string>();
 
-  for (let i = 0; i < result.length; i++) {
-    const msg = result[i];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
 
     // Check for synthetic <file-edited> messages from collapseFileEdits
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
@@ -374,7 +420,7 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
         continue;
       }
 
-      const callInfo = findAssistantToolCall(result, part.toolCallId);
+      const callInfo = findAssistantToolCall(messages, part.toolCallId);
       if (callInfo) {
         const filePath = extractFilePath(callInfo.input);
         if (filePath) {
@@ -385,8 +431,8 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
   }
 
   const protectedReadFilePaths = new Set<string>();
-  for (let i = protectedStart; i < result.length; i++) {
-    const msg = result[i];
+  for (let i = protectedStart; i < messages.length; i++) {
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -400,7 +446,7 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
         continue;
       }
 
-      const callInfo = findAssistantToolCall(result, part.toolCallId);
+      const callInfo = findAssistantToolCall(messages, part.toolCallId);
       if (callInfo) {
         const filePath = extractFilePath(callInfo.input);
         if (filePath) {
@@ -413,10 +459,10 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
   const readFileGroups = new Map<string, { messageIndex: number; toolCallId: string }[]>();
 
   for (let i = protectedStart - 1; i >= 0; i--) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       continue;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -430,7 +476,7 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
         continue;
       }
 
-      const callInfo = findAssistantToolCall(result, part.toolCallId);
+      const callInfo = findAssistantToolCall(messages, part.toolCallId);
       if (!callInfo) {
         continue;
       }
@@ -441,8 +487,8 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
       }
 
       if (editedFilePaths.has(filePath) || protectedReadFilePaths.has(filePath)) {
-        removeToolCallFromAssistant(result, part.toolCallId);
-        removeToolResult(result, part.toolCallId);
+        removeToolCallFromAssistant(messages, part.toolCallId);
+        removeToolResult(messages, part.toolCallId);
         continue;
       }
 
@@ -463,22 +509,21 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
 
     const toRemove = reads.slice(0, -1);
     for (const read of toRemove) {
-      removeToolCallFromAssistant(result, read.toolCallId);
-      removeToolResult(result, read.toolCallId);
+      removeToolCallFromAssistant(messages, read.toolCallId);
+      removeToolResult(messages, read.toolCallId);
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const fileModificationPositions: number[] = [];
 
-  for (let i = 0; i < result.length; i++) {
-    const msg = result[i];
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
 
     // Check for synthetic <file-edited> messages from collapseFileEdits
     if (msg.role === 'assistant' && Array.isArray(msg.content)) {
@@ -512,14 +557,14 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
   const hasFileModifications = fileModificationPositions.length > 0;
 
   if (!hasFileModifications) {
-    return result;
+    return messages;
   }
 
   for (let i = protectedStart - 1; i >= 0; i--) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       continue;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -538,26 +583,25 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
 
       const hasLaterModification = fileModificationPositions.some((pos) => pos > i);
       if (hasLaterModification) {
-        removeToolCallFromAssistant(result, part.toolCallId);
-        removeToolResult(result, part.toolCallId);
+        removeToolCallFromAssistant(messages, part.toolCallId);
+        removeToolResult(messages, part.toolCallId);
       }
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const searchIndices: { messageIndex: number; partIndex: number; toolCallId: string }[] = [];
 
   for (let i = 0; i < protectedStart; i++) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       break;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -577,20 +621,20 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
   }
 
   if (searchIndices.length <= 1) {
-    return result;
+    return messages;
   }
 
   const toRemove = searchIndices.slice(0, -1);
   const toKeep = searchIndices[searchIndices.length - 1];
 
   for (const search of toRemove) {
-    removeToolCallFromAssistant(result, search.toolCallId);
-    removeToolResult(result, search.toolCallId);
+    removeToolCallFromAssistant(messages, search.toolCallId);
+    removeToolResult(messages, search.toolCallId);
   }
 
-  const keptToolIdx = result.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId));
+  const keptToolIdx = messages.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId));
   if (keptToolIdx !== -1) {
-    const keptMsg = result[keptToolIdx] as ContextToolMessage;
+    const keptMsg = messages[keptToolIdx] as ContextToolMessage;
     const keptPartIdx = keptMsg.content.findIndex((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId);
     const keptPart = keptMsg.content[keptPartIdx] as ToolResultPart;
     if (keptPart && keptPart.output.type === 'text') {
@@ -604,17 +648,16 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const bashCommands = new Map<string, { messageIndex: number; toolCallId: string }[]>();
 
   for (let i = 0; i < protectedStart; i++) {
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -628,7 +671,7 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
         continue;
       }
 
-      const callInfo = findAssistantToolCall(result, part.toolCallId);
+      const callInfo = findAssistantToolCall(messages, part.toolCallId);
       if (!callInfo) {
         continue;
       }
@@ -659,16 +702,16 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
 
     const toRemove = occurrences.slice(0, -1);
     for (const occ of toRemove) {
-      removeToolCallFromAssistant(result, occ.toolCallId);
-      removeToolResult(result, occ.toolCallId);
+      removeToolCallFromAssistant(messages, occ.toolCallId);
+      removeToolResult(messages, occ.toolCallId);
     }
   }
 
   for (let i = 0; i < protectedStart; i++) {
-    if (i >= result.length) {
+    if (i >= messages.length) {
       break;
     }
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -717,15 +760,14 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
     }
   }
 
-  return result;
+  return messages;
 };
 
 export const redactFetchOutputs = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
-  const result = cloneMessages(messages);
-  const protectedStart = getProtectedStartIndex(result, protectedMessageCount);
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   for (let i = 0; i < protectedStart; i++) {
-    const msg = result[i];
+    const msg = messages[i];
     if (msg.role !== 'tool') {
       continue;
     }
@@ -750,5 +792,5 @@ export const redactFetchOutputs = (messages: ContextMessage[], protectedMessageC
     }
   }
 
-  return result;
+  return messages;
 };

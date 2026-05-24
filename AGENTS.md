@@ -120,6 +120,8 @@ AiderDesk uses **Vitest** with a multi-configuration approach. For all testing g
 - `npm run test:coverage` - Generate reports
 - `npm run test:ui` - Open Vitest UI
 
+**Note**: `packages/extensions/extensions.d.ts` is auto-generated from `packages/common/src/extensions.ts`. Never edit it manually — always update the source in `packages/common/src/extensions.ts` instead.
+
 Refer to the **Writing Tests** skill for:
 - Detailed test patterns and examples
 - Component and unit testing strategies

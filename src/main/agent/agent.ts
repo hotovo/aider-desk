@@ -1104,39 +1104,6 @@ export class Agent {
 
         const optimizedMessages = await getOptimizedMessages();
 
-        logger.info('Optimized messages for LLM:', {
-          count: optimizedMessages.length,
-          lastUserMessage: (() => {
-            for (let i = optimizedMessages.length - 1; i >= 0; i--) {
-              if (optimizedMessages[i].role === 'user') {
-                const msg = optimizedMessages[i];
-                return {
-                  index: i,
-                  contentType: typeof msg.content,
-                  contentIsArray: Array.isArray(msg.content),
-                  contentPreview:
-                    typeof msg.content === 'string'
-                      ? msg.content.substring(0, 200)
-                      : Array.isArray(msg.content)
-                        ? (msg.content as Array<{ type: string; text?: string; image?: string; mediaType?: string }>).map((p) => ({
-                            type: p.type,
-                            ...(p.type === 'text' ? { textPreview: p.text?.substring(0, 100) } : {}),
-                            ...(p.type === 'image'
-                              ? {
-                                  mediaType: p.mediaType,
-                                  imageType: typeof p.image,
-                                  imagePreview: typeof p.image === 'string' ? p.image.substring(0, 80) : undefined,
-                                }
-                              : {}),
-                          }))
-                        : String(msg.content).substring(0, 200),
-                };
-              }
-            }
-            return null;
-          })(),
-        });
-
         return {
           providerOptions,
           model: wrapLanguageModel({
@@ -1163,7 +1130,7 @@ export class Agent {
       let retryCount = 0;
 
       while (true) {
-        logger.info(`Starting iteration ${iterationCount}`);
+        logger.info(`Starting iteration ${iterationCount}`, { task: task.taskId });
         iterationCount++;
 
         if (profile.maxIterations > 0 && iterationCount > profile.maxIterations) {

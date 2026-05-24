@@ -9,6 +9,7 @@ import {
   compactSemanticSearches,
   deduplicateBash,
   redactFetchOutputs,
+  truncateNonPowerToolResults,
 } from '../smart-compaction';
 
 import type { ContextMessage, ContextAssistantMessage, ContextToolMessage, ToolResultPart } from '@common/types/context';
@@ -209,23 +210,23 @@ const NO_PROTECTION = 0;
 // --- Tests ---
 
 describe('smartCompactMessages', () => {
-  it('returns empty array unchanged', () => {
-    expect(smartCompactMessages([])).toEqual([]);
+  it('returns empty array unchanged', async () => {
+    expect(await smartCompactMessages([])).toEqual([]);
   });
 
-  it('returns messages unchanged when no tools are present', () => {
+  it('returns messages unchanged when no tools are present', async () => {
     resetCounters();
     const msgs = [userMsg('hello'), assistantTextMsg('hi'), userMsg('bye'), assistantTextMsg('bye!')];
-    const result = smartCompactMessages(msgs);
+    const result = await smartCompactMessages(msgs);
     expect(result).toHaveLength(4);
     expectInvariants(result);
   });
 
-  it('preserves protected zone messages', () => {
+  it('preserves protected zone messages', async () => {
     resetCounters();
     const read = fileReadTool('src/foo.ts');
     const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('protected')];
-    const result = smartCompactMessages(msgs, 4);
+    const result = await smartCompactMessages(msgs, 4);
     expect(result).toHaveLength(4);
     expectInvariants(result);
   });
@@ -706,8 +707,108 @@ describe('redactFetchOutputs', () => {
   });
 });
 
+describe('truncateNonPowerToolResults', () => {
+  it('truncates large non-power-tool text output', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const longOutput = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join('\n');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'text', value: longOutput } }]),
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'mcp---my_tool');
+    const outputValue = getTextOutput(part);
+    expect(outputValue).toContain('truncated due to compaction');
+    expect(outputValue).not.toContain('Full content saved to');
+    expect(outputValue.split('\n').length).toBeLessThan(200);
+    expectInvariants(result);
+  });
+
+  it('does not truncate small non-power-tool output', async () => {
+    resetCounters();
+    const tool = nonPowerTool('my_tool', 'small output');
+    const msgs: ContextMessage[] = [userMsg('go'), tool.assistant, tool.result, userMsg('next')];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'other-server---my_tool');
+    expect(getTextOutput(part)).toBe('small output');
+    expectInvariants(result);
+  });
+
+  it('does not truncate power tool output', async () => {
+    resetCounters();
+    const read = fileReadTool('src/foo.ts');
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'power---file_read');
+    expect(getTextOutput(part)).toBe('content of src/foo.ts');
+    expectInvariants(result);
+  });
+
+  it('does not truncate non-power-tool output in protected zone', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const longOutput = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join('\n');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'text', value: longOutput } }]),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, 3);
+    const part = getToolResultPart(result, 'mcp---my_tool');
+    expect(getTextOutput(part)).toBe(longOutput);
+    expectInvariants(result);
+  });
+
+  it('handles error-text output type', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const longError = Array.from({ length: 200 }, (_, i) => `error line ${i + 1}`).join('\n');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'error-text', value: longError } }]),
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'mcp---my_tool');
+    const outputValue = getTextOutput(part);
+    expect(outputValue).toContain('truncated');
+    expectInvariants(result);
+  });
+
+  it('skips json output type', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      {
+        id: nextId(),
+        role: 'tool',
+        content: [
+          {
+            type: 'tool-result' as const,
+            toolCallId: tcId,
+            toolName: 'mcp---my_tool',
+            output: { type: 'json' as const, value: { big: 'data' } },
+          },
+        ],
+      },
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION);
+    const toolMsg = result.find((m): m is ContextToolMessage => m.role === 'tool')!;
+    const part = toolMsg.content[0] as ToolResultPart;
+    expect(part.output.type).toBe('json');
+    expectInvariants(result);
+  });
+});
+
 describe('full pipeline invariants', () => {
-  it('maintains invariants on complex mixed scenario', () => {
+  it('maintains invariants on complex mixed scenario', async () => {
     resetCounters();
     const read1 = fileReadTool('src/a.ts');
     const edit1 = fileEditTool('src/a.ts');
@@ -751,7 +852,7 @@ describe('full pipeline invariants', () => {
       userMsg('done'),
     ];
 
-    const result = smartCompactMessages(msgs, 10);
+    const result = await smartCompactMessages(msgs, 10);
     expectInvariants(result);
 
     // No duplicate bash commands
