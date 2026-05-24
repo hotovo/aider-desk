@@ -11,6 +11,7 @@ import type { Store } from '@/store';
 import type { Task } from '@/task';
 
 import logger from '@/logger';
+import { truncateToolResult } from '@/agent/utils';
 import { openUrl as openUrlUtil } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
@@ -173,5 +174,16 @@ export class ExtensionContextImpl implements ExtensionContext {
       throw new Error('MemoryManager not available');
     }
     return this.memoryManager;
+  }
+
+  async truncateToolResult(
+    content: string,
+    maxLines?: number,
+    maxSizeKB?: number,
+    maxTokens?: number,
+    saveToFile?: boolean,
+    truncationSuffix?: string,
+  ): Promise<string> {
+    return truncateToolResult(content, maxLines, maxSizeKB, maxTokens, saveToFile, truncationSuffix);
   }
 }
