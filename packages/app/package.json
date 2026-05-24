@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.66.0",
+  "version": "0.67.0",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -44,8 +44,8 @@
     "@ai-sdk/groq": "^2.0.38",
     "@ai-sdk/mistral": "2.0.30",
     "@ai-sdk/openai": "^2.0.103",
-    "@ai-sdk/openai-compatible": "^1.0.36",
-    "@aiderdesk/extensions": "0.15.0",
+    "@ai-sdk/openai-compatible": "1.0.36",
+    "@aiderdesk/extensions": "0.16.0",
     "@augmentcode/auggie-sdk": "0.1.15",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-providers": "^3.782.0",
@@ -108,6 +108,19 @@
   "overrides": {
     "ai-sdk-provider-gemini-cli": {
       "diff": "^8.0.4"
+    },
+    "@anthropic-ai/claude-agent-sdk": {
+      "@img/sharp-darwin-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-darwin-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-arm": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linuxmusl-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linuxmusl-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-win32-x64": "npm:empty-npm-package@1.0.0"
+    },
+    "@huggingface/transformers": {
+      "sharp": "npm:empty-npm-package@1.0.0"
     },
     "@tootallnate/once": "^3.0.1",
     "jsondiffpatch": "^0.7.3"

@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.67.0]
 
 - correctly rendering the context around the match line in grep power tool output
 - deduplicated skills prioritizing extension then project then global skills
