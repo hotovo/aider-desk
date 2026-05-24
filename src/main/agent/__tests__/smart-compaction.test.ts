@@ -7,6 +7,7 @@ import {
   removeStaleFileReads,
   removeObsoleteSearches,
   compactSemanticSearches,
+  compactFileReads,
   deduplicateBash,
   redactFetchOutputs,
   truncateNonPowerToolResults,
@@ -54,12 +55,12 @@ const toolResultMsg = (parts: { toolCallId: string; toolName: string; output: { 
   content: parts.map((p) => ({ type: 'tool-result', toolCallId: p.toolCallId, toolName: p.toolName, output: p.output as any })),
 });
 
-const fileReadTool = (filePath: string) => {
+const fileReadTool = (filePath: string, content?: string) => {
   const tcId = nextTcId();
   return {
     tcId,
     assistant: assistantToolCallMsg(tcId, 'power---file_read', { filePath }),
-    result: toolResultMsg([{ toolCallId: tcId, toolName: 'power---file_read', output: { type: 'text', value: `content of ${filePath}` } }]),
+    result: toolResultMsg([{ toolCallId: tcId, toolName: 'power---file_read', output: { type: 'text', value: content ?? `content of ${filePath}` } }]),
   };
 };
 
@@ -595,6 +596,114 @@ describe('compactSemanticSearches', () => {
     const msgs: ContextMessage[] = [userMsg('search 1'), search1.assistant, search1.result, userMsg('search 2'), search2.assistant, search2.result];
     const result = compactSemanticSearches(msgs, 6);
     expect(result).toHaveLength(6);
+    expectInvariants(result);
+  });
+});
+
+describe('compactFileReads', () => {
+  it('truncates file read output longer than 50 lines', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'power---file_read');
+    const outputValue = getTextOutput(part);
+    expect(outputValue).toContain('<truncated due to compaction, read the file again if full content is needed>');
+    const outputLines = outputValue.split('\n');
+    expect(outputLines.length).toBe(51);
+    expect(outputLines[0]).toBe('line 1');
+    expect(outputLines[49]).toBe('line 50');
+    expectInvariants(result);
+  });
+
+  it('does not truncate file read output of exactly 50 lines', () => {
+    resetCounters();
+    const content = Array.from({ length: 50 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', content);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'power---file_read');
+    expect(getTextOutput(part)).not.toContain('<truncated');
+    expect(getTextOutput(part).split('\n').length).toBe(50);
+    expectInvariants(result);
+  });
+
+  it('does not truncate file read output shorter than 50 lines', () => {
+    resetCounters();
+    const content = Array.from({ length: 10 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', content);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'power---file_read');
+    expect(getTextOutput(part)).toBe(content);
+    expectInvariants(result);
+  });
+
+  it('does not truncate file reads in protected zone', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result];
+    const result = compactFileReads(msgs, 3);
+    const part = getToolResultPart(result, 'power---file_read');
+    expect(getTextOutput(part)).toBe(longContent);
+    expectInvariants(result);
+  });
+
+  it('skips non-text output types', () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('read'),
+      assistantToolCallMsg(tcId, 'power---file_read', { filePath: 'src/foo.ts' }),
+      {
+        id: nextId(),
+        role: 'tool',
+        content: [
+          {
+            type: 'tool-result' as const,
+            toolCallId: tcId,
+            toolName: 'power---file_read',
+            output: { type: 'json' as const, value: { lines: Array.from({ length: 100 }, (_, i) => `line ${i + 1}`) } },
+          },
+        ],
+      },
+      userMsg('next'),
+    ];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const toolMsg = result.find((m): m is ContextToolMessage => m.role === 'tool')!;
+    const part = toolMsg.content[0] as ToolResultPart;
+    expect(part.output.type).toBe('json');
+    expectInvariants(result);
+  });
+
+  it('truncates multiple file reads independently', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 80 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read1 = fileReadTool('src/a.ts', longContent);
+    const shortContent = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read2 = fileReadTool('src/b.ts', shortContent);
+    const msgs: ContextMessage[] = [userMsg('read a'), read1.assistant, read1.result, userMsg('read b'), read2.assistant, read2.result];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const readAPart = getToolResultPart(result, 'power---file_read');
+    expect(getTextOutput(readAPart)).toContain('<truncated');
+    // read2 is short, should not be truncated
+    const toolMsgs = result.filter(
+      (m): m is ContextToolMessage => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---file_read'),
+    );
+    const readBPart = toolMsgs[1].content[0] as ToolResultPart;
+    expect(getTextOutput(readBPart)).not.toContain('<truncated');
+    expectInvariants(result);
+  });
+
+  it('does not modify non-file-read tools', () => {
+    resetCounters();
+    const edit = fileEditTool('src/foo.ts');
+    const msgs: ContextMessage[] = [userMsg('edit'), edit.assistant, edit.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION);
+    const part = getToolResultPart(result, 'power---file_edit');
+    expect(getTextOutput(part)).toBe('File edited successfully');
     expectInvariants(result);
   });
 });

@@ -269,6 +269,7 @@ export const smartCompactMessages = async (messages: ContextMessage[], protected
   result = removeErroredTools(result, protectedMessageCount);
   result = collapseFileEdits(result, protectedMessageCount);
   result = removeStaleFileReads(result, protectedMessageCount);
+  result = compactFileReads(result, protectedMessageCount);
   result = removeObsoleteSearches(result, protectedMessageCount);
   result = compactSemanticSearches(result, protectedMessageCount);
   result = deduplicateBash(result, protectedMessageCount);
@@ -511,6 +512,45 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
     for (const read of toRemove) {
       removeToolCallFromAssistant(messages, read.toolCallId);
       removeToolResult(messages, read.toolCallId);
+    }
+  }
+
+  return messages;
+};
+
+export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
+
+  for (let i = 0; i < protectedStart; i++) {
+    if (i >= messages.length) {
+      break;
+    }
+    const msg = messages[i];
+    if (msg.role !== 'tool') {
+      continue;
+    }
+
+    for (let j = 0; j < msg.content.length; j++) {
+      const part = msg.content[j] as ToolResultPart;
+      if (part.type !== 'tool-result') {
+        continue;
+      }
+      const [serverName, toolName] = extractServerNameToolName(part.toolName);
+      if (!isPowerTool(serverName) || toolName !== POWER_TOOL_FILE_READ) {
+        continue;
+      }
+
+      if (part.output.type !== 'text') {
+        continue;
+      }
+
+      const lines = part.output.value.split('\n');
+      if (lines.length > 50) {
+        part.output = {
+          type: 'text',
+          value: lines.slice(0, 50).join('\n') + '\n<truncated due to compaction, read the file again if full content is needed>',
+        };
+      }
     }
   }
 
