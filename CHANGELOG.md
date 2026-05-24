@@ -17,6 +17,7 @@
 - added truncation of non-power tool results on smart compaction
 - replaced sharp native dependency with empty stub to prevent SIGILL on older CPUs
 - added truncation of read file tool results on smart compaction
+- hide redundant task directory path in semantic search tool message
 
 ## [0.66.0]
 

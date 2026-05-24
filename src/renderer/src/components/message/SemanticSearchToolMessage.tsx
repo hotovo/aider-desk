@@ -10,6 +10,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   message: ToolMessage;
+  taskDir: string;
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
@@ -17,7 +18,7 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
-export const SemanticSearchToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
+export const SemanticSearchToolMessage = ({ message, taskDir, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const searchQuery = (message.args.searchQuery as string) || (message.args.query as string);
@@ -25,6 +26,8 @@ export const SemanticSearchToolMessage = ({ message, onRemove, compact = false, 
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Search execution denied by user.');
+
+  const showPath = path !== taskDir;
 
   const title = (
     <div className="flex items-center gap-2 w-full">
@@ -36,10 +39,14 @@ export const SemanticSearchToolMessage = ({ message, onRemove, compact = false, 
         <span>
           <CodeInline className="bg-bg-primary-light">{searchQuery}</CodeInline>
         </span>
-        <span>{t('toolMessage.power.semanticSearch.in')}</span>
-        <span>
-          <CodeInline className="bg-bg-primary-light">{path}</CodeInline>
-        </span>
+        {showPath && (
+          <>
+            <span>{t('toolMessage.power.semanticSearch.in')}</span>
+            <span>
+              <CodeInline className="bg-bg-primary-light">{path}</CodeInline>
+            </span>
+          </>
+        )}
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&

@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   HELPERS_TOOL_GROUP_NAME,
@@ -78,6 +78,8 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 
+import { useProjectTasks } from '@/stores/projectStore';
+
 type Props = {
   baseDir: string;
   taskId: string;
@@ -110,6 +112,11 @@ const MessageBlockComponent = ({
   onRemoveUpTo,
 }: Props) => {
   const { t } = useTranslation();
+  const projectTasks = useProjectTasks(baseDir);
+  const taskDir = useMemo(() => {
+    const task = projectTasks.find((t) => t.id === taskId);
+    return task?.worktree?.path ?? baseDir;
+  }, [projectTasks, taskId, baseDir]);
 
   if (isLoadingMessage(message)) {
     return <LoadingMessageBlock key={message.content} message={message} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />;
@@ -246,6 +253,7 @@ const MessageBlockComponent = ({
             return (
               <SemanticSearchToolMessage
                 message={toolMessage}
+                taskDir={taskDir}
                 onRemove={remove}
                 compact={compact}
                 hideMessageBar={hideMessageBar}
