@@ -5,7 +5,7 @@ import type { Extension, ExtensionContext, ToolDefinition, Tool } from '../../ex
 
 const metadata = {
   name: 'Programmatic Tool Calls',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'Execute JavaScript code in a sandbox with access to all tools as async functions',
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
@@ -160,6 +160,8 @@ class ProgrammaticToolCallsExtension implements Extension {
                 resultText = String(result);
               }
             }
+
+            resultText = await context.truncateToolResult(resultText, 1000, 50, 10000);
 
             return {
               content: [{ type: 'text' as const, text: resultText }],
