@@ -1,7 +1,7 @@
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData, isUserMessage, Message } from '@common/types';
+import { MessageViewMode, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 
@@ -23,7 +23,7 @@ export type VirtualizedMessagesRef = {
 type Props = {
   baseDir: string;
   taskId: string;
-  task: TaskData;
+  inProgress: boolean;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -40,7 +40,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
     {
       baseDir,
       taskId,
-      task,
+      inProgress,
       messages,
       allFiles = [],
       renderMarkdown,
@@ -64,7 +64,6 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       return isCompactMode ? groupAssistantMessages(grouped) : grouped;
     }, [messages, isCompactMode]);
     const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
-    const inProgress = task.state === DefaultTaskState.InProgress;
 
     // Get all user message IDs
     const userMessageIds = useMemo(() => {
@@ -126,7 +125,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
           align: 'end',
         });
       }
-    }, [processedMessages, scrollingPaused, virtualizer, task.state]);
+    }, [processedMessages, scrollingPaused, virtualizer, inProgress]);
 
     const exportToImage = async () => {
       // Show notification that export is not available with virtualized rendering

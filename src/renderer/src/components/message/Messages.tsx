@@ -2,7 +2,7 @@ import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } fro
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
+import { isUserMessage, Message, MessageViewMode } from '@common/types';
 
 import { MessageBlockWrapper } from './MessageBlockWrapper';
 
@@ -21,7 +21,7 @@ export type MessagesRef = {
 type Props = {
   baseDir: string;
   taskId: string;
-  task: TaskData;
+  inProgress: boolean;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -38,7 +38,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
     {
       baseDir,
       taskId,
-      task,
+      inProgress,
       messages,
       allFiles = [],
       renderMarkdown,
@@ -63,7 +63,6 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       return isCompactMode ? groupAssistantMessages(grouped) : grouped;
     }, [messages, isCompactMode]);
     const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
-    const inProgress = task.state === DefaultTaskState.InProgress;
 
     const { scrollingPaused, setScrollingPaused, scrollToBottom, eventHandlers } = useScrollingPaused({
       onAutoScroll: () => messagesEndRef.current?.scrollIntoView(),
