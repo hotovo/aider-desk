@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added progressive levels of smart compaction for better context management
+
 ## [0.67.0]
 
 - correctly rendering the context around the match line in grep power tool output

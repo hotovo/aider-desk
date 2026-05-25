@@ -86,7 +86,7 @@ const loadNeuralwattModels = async (profile: ProviderProfile, settings: Settings
     }
 
     const data = await response.json();
-    logger.info(`Received response from Neuralwatt models API for profile ${profile.id}`, { data });
+    logger.debug(`Received response from Neuralwatt models API for profile ${profile.id}`, { data });
     const models =
       data.data?.map((model: NeuralwattModelEntry) => {
         const metadata = model.metadata;

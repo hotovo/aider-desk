@@ -9,12 +9,12 @@ import {
   AIDER_MODES,
   AiderRunOptions,
   AutonomyMode,
-  DEFAULT_AUTONOMY_MODE,
   ChangeRequestItem,
   ConnectorMessage,
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
+  DEFAULT_AUTONOMY_MODE,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -88,7 +88,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
-import { smartCompactMessages } from '@/agent/smart-compaction';
+import { CompactionLevel, smartCompactMessages } from '@/agent/smart-compaction';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -139,6 +139,8 @@ export class Task {
   private tokensInfo: TokensInfoData;
   private queuedPrompts: QueuedPromptData[] = [];
   private isCompacting = false;
+  private lastSmartCompactionMessageCount = 0;
+  private smartCompactionLevel = CompactionLevel.One;
 
   private readonly taskDataPath: string;
   private readonly contextManager: ContextManager;
@@ -2334,6 +2336,7 @@ export class Task {
       });
     }
 
+    this.smartCompactionLevel = CompactionLevel.One;
     this.contextManager.clearMessages(true, createSnapshot);
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -2687,7 +2690,9 @@ export class Task {
     const removedMessages = this.contextManager.removeMessagesUpToUserMessage(messageId);
     const originalUserMessage = removedMessages[0];
     if (!originalUserMessage || originalUserMessage.role !== MessageRole.User) {
-      logger.warn('Could not find the specified user message to redo.', { messageId });
+      logger.warn('Could not find the specified user message to redo.', {
+        messageId,
+      });
       return;
     }
 
@@ -2768,8 +2773,15 @@ export class Task {
   private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextMessage[] {
     // Collect all skill activations with their skill names
     // We'll deduplicate by keeping only the most recent activation per skill
-    const skillActivations: Map<string, { toolCall: ToolCallPart; assistantMsg: ContextMessage; toolMsg: ContextMessage; toolResultPart: ToolResultPart }> =
-      new Map();
+    const skillActivations: Map<
+      string,
+      {
+        toolCall: ToolCallPart;
+        assistantMsg: ContextMessage;
+        toolMsg: ContextMessage;
+        toolResultPart: ToolResultPart;
+      }
+    > = new Map();
 
     for (const message of contextMessages) {
       if (message.role === 'assistant' && Array.isArray(message.content)) {
@@ -2844,7 +2856,18 @@ export class Task {
     // backing up the current context before compacting for debugging purposes
     await this.contextManager.backupContext();
 
-    const compactedMessages = await smartCompactMessages(contextMessages);
+    // Determine compaction level based on messages since last compaction
+    const messagesSinceLastCompaction = contextMessages.length - this.lastSmartCompactionMessageCount;
+    if (messagesSinceLastCompaction <= 3) {
+      this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Three) as CompactionLevel;
+    } else if (messagesSinceLastCompaction > 5) {
+      this.smartCompactionLevel = CompactionLevel.One;
+    }
+    // else: 4-5 messages since last compaction → keep current level
+
+    const compactedMessages = await smartCompactMessages(contextMessages, 10, this.smartCompactionLevel);
+
+    this.lastSmartCompactionMessageCount = compactedMessages.length;
 
     this.contextManager.setContextMessages(compactedMessages);
     await this.contextManager.loadMessages(compactedMessages, false);
@@ -4083,7 +4106,13 @@ ${error.stderr}`,
         // This ensures subsequent rebases only replay commits made after this point
         const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
         if (newHead) {
-          await this.saveTask({ worktree: { ...this.task.worktree, baseCommit: newHead, baseBranch: effectiveFromBranch } });
+          await this.saveTask({
+            worktree: {
+              ...this.task.worktree,
+              baseCommit: newHead,
+              baseBranch: effectiveFromBranch,
+            },
+          });
         }
 
         this.addLogMessage('info', 'Worktree rebased successfully', true);

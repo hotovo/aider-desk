@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 
 import {
   smartCompactMessages,
+  CompactionLevel,
   removeErroredTools,
   collapseFileEdits,
   removeStaleFileReads,
@@ -975,5 +976,358 @@ describe('full pipeline invariants', () => {
       bashOutputs.push(parsed.stdout);
     }
     expect(new Set(bashOutputs).size).toBe(bashOutputs.length);
+  });
+});
+
+describe('CompactionLevel - compactFileReads', () => {
+  it('level 1 truncates to 50 lines', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION, CompactionLevel.One);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---file_read')).split('\n');
+    expect(outputLines.length).toBe(51);
+    expect(outputLines[50]).toContain('truncated due to compaction');
+    expectInvariants(result);
+  });
+
+  it('level 2 truncates to 20 lines', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---file_read')).split('\n');
+    expect(outputLines.length).toBe(21);
+    expect(outputLines[20]).toContain('truncated due to compaction');
+    expectInvariants(result);
+  });
+
+  it('level 2 does not truncate 20-line file reads', () => {
+    resetCounters();
+    const content = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', content);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION, CompactionLevel.Two);
+    expect(getTextOutput(getToolResultPart(result, 'power---file_read'))).not.toContain('truncated');
+    expectInvariants(result);
+  });
+
+  it('level 3 fully redacts file reads', () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const output = getTextOutput(getToolResultPart(result, 'power---file_read'));
+    expect(output).toContain('result redacted due to compaction');
+    expect(output).not.toContain('line 1');
+    expectInvariants(result);
+  });
+
+  it('level 3 redacts even short file reads', () => {
+    resetCounters();
+    const read = fileReadTool('src/foo.ts', 'short content');
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = compactFileReads(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const output = getTextOutput(getToolResultPart(result, 'power---file_read'));
+    expect(output).toContain('result redacted due to compaction');
+    expect(output).not.toContain('short content');
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel - removeObsoleteSearches', () => {
+  it('level 1 only removes searches before file modifications', () => {
+    resetCounters();
+    const search = globTool('**/*.ts');
+    const edit = fileEditTool('src/a.ts');
+    const search2 = grepTool('TODO');
+    const msgs: ContextMessage[] = [userMsg('go'), search.assistant, search.result, edit.assistant, edit.result, search2.assistant, search2.result];
+    const result = removeObsoleteSearches(msgs, NO_PROTECTION, CompactionLevel.One);
+    // search before edit is removed, search2 after edit is kept
+    const remaining = result.filter(
+      (m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && (p.toolName === 'power---glob' || p.toolName === 'power---grep')),
+    );
+    expect(remaining).toHaveLength(1);
+    expectInvariants(result);
+  });
+
+  it('level 1 keeps searches when no file modifications exist', () => {
+    resetCounters();
+    const search = globTool('**/*.ts');
+    const msgs: ContextMessage[] = [userMsg('go'), search.assistant, search.result];
+    const result = removeObsoleteSearches(msgs, NO_PROTECTION, CompactionLevel.One);
+    expect(result).toHaveLength(3);
+    expectInvariants(result);
+  });
+
+  it('level 3 removes all searches even without file modifications', () => {
+    resetCounters();
+    const search = globTool('**/*.ts');
+    const msgs: ContextMessage[] = [userMsg('go'), search.assistant, search.result];
+    const result = removeObsoleteSearches(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const remaining = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---glob'));
+    expect(remaining).toHaveLength(0);
+    expectInvariants(result);
+  });
+
+  it('level 3 removes all glob and grep results', () => {
+    resetCounters();
+    const search1 = globTool('**/*.ts');
+    const search2 = grepTool('TODO');
+    const edit = fileEditTool('src/a.ts');
+    const search3 = globTool('**/*.test.ts');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      search1.assistant,
+      search1.result,
+      search2.assistant,
+      search2.result,
+      edit.assistant,
+      edit.result,
+      search3.assistant,
+      search3.result,
+    ];
+    const result = removeObsoleteSearches(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const remaining = result.filter(
+      (m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && (p.toolName === 'power---glob' || p.toolName === 'power---grep')),
+    );
+    expect(remaining).toHaveLength(0);
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel - compactSemanticSearches', () => {
+  it('level 1 truncates kept search to 50 lines', () => {
+    resetCounters();
+    const search1 = semanticSearchTool('query1', 60);
+    const search2 = semanticSearchTool('query2', 60);
+    const msgs: ContextMessage[] = [userMsg('go'), search1.assistant, search1.result, userMsg('go2'), search2.assistant, search2.result];
+    const result = compactSemanticSearches(msgs, NO_PROTECTION, CompactionLevel.One);
+    // Only last search kept, truncated to 50 lines
+    const kept = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---semantic_search'));
+    expect(kept).toHaveLength(1);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---semantic_search')).split('\n');
+    expect(outputLines.length).toBe(51);
+    expect(outputLines[50]).toContain('truncated due to compaction');
+    expectInvariants(result);
+  });
+
+  it('level 2 truncates kept search to 20 lines', () => {
+    resetCounters();
+    const search1 = semanticSearchTool('query1', 60);
+    const search2 = semanticSearchTool('query2', 60);
+    const msgs: ContextMessage[] = [userMsg('go'), search1.assistant, search1.result, userMsg('go2'), search2.assistant, search2.result];
+    const result = compactSemanticSearches(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const kept = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---semantic_search'));
+    expect(kept).toHaveLength(1);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---semantic_search')).split('\n');
+    expect(outputLines.length).toBe(21);
+    expect(outputLines[20]).toContain('truncated due to compaction');
+    expectInvariants(result);
+  });
+
+  it('level 3 removes all semantic searches', () => {
+    resetCounters();
+    const search1 = semanticSearchTool('query1', 5);
+    const search2 = semanticSearchTool('query2', 5);
+    const msgs: ContextMessage[] = [userMsg('go'), search1.assistant, search1.result, userMsg('go2'), search2.assistant, search2.result];
+    const result = compactSemanticSearches(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const remaining = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---semantic_search'));
+    expect(remaining).toHaveLength(0);
+    expectInvariants(result);
+  });
+
+  it('level 3 removes even a single semantic search', () => {
+    resetCounters();
+    const search = semanticSearchTool('query1', 5);
+    const msgs: ContextMessage[] = [userMsg('go'), search.assistant, search.result];
+    const result = compactSemanticSearches(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const remaining = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---semantic_search'));
+    expect(remaining).toHaveLength(0);
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel - deduplicateBash', () => {
+  it('level 1 redacts output longer than 30 chars', () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'a'.repeat(100));
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.One);
+    const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
+    expect(parsed.stdout).toContain('redacted');
+    expectInvariants(result);
+  });
+
+  it('level 1 keeps short bash output intact', () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'ok');
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.One);
+    const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
+    expect(parsed.stdout).toBe('ok');
+    expectInvariants(result);
+  });
+
+  it('level 2 redacts all bash output', () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'ok');
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
+    expect(parsed.stdout).toContain('redacted');
+    expectInvariants(result);
+  });
+
+  it('level 3 fully redacts bash results', () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'a'.repeat(100));
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const output = getTextOutput(getToolResultPart(result, 'power---bash'));
+    expect(output).toBe('<result redacted due to compaction, run again if needed>');
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel - truncateNonPowerToolResults', () => {
+  it('level 1 truncates with 20 lines limit', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const longOutput = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join('\n');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'text', value: longOutput } }]),
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION, CompactionLevel.One);
+    const outputValue = getTextOutput(getToolResultPart(result, 'mcp---my_tool'));
+    expect(outputValue).toContain('truncated due to compaction');
+    expectInvariants(result);
+  });
+
+  it('level 2 truncates with stricter limits', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const longOutput = Array.from({ length: 200 }, (_, i) => `line ${i + 1}`).join('\n');
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'text', value: longOutput } }]),
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const outputValue = getTextOutput(getToolResultPart(result, 'mcp---my_tool'));
+    expect(outputValue).toContain('truncated due to compaction');
+    expect(outputValue.split('\n').length).toBeLessThan(200);
+    expectInvariants(result);
+  });
+
+  it('level 3 fully redacts non-power-tool output', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'mcp---my_tool', output: { type: 'text', value: 'some output here' } }]),
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const outputValue = getTextOutput(getToolResultPart(result, 'mcp---my_tool'));
+    expect(outputValue).toContain('Result redacted due to compaction');
+    expect(outputValue).not.toContain('some output');
+    expectInvariants(result);
+  });
+
+  it('level 3 redacts json non-power-tool output to text type', async () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'mcp---my_tool', {}),
+      {
+        id: nextId(),
+        role: 'tool',
+        content: [
+          {
+            type: 'tool-result' as const,
+            toolCallId: tcId,
+            toolName: 'mcp---my_tool',
+            output: { type: 'json' as const, value: { big: 'data', nested: { deep: true } } },
+          },
+        ],
+      },
+      userMsg('next'),
+    ];
+    const result = await truncateNonPowerToolResults(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const toolMsg = result.find((m): m is ContextToolMessage => m.role === 'tool')!;
+    const part = toolMsg.content[0] as ToolResultPart;
+    expect(part.output.type).toBe('text');
+    expect((part.output as { type: 'text'; value: string }).value).toContain('Result redacted due to compaction');
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel - smartCompactMessages pipeline', () => {
+  it('level 1 is the default', async () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---file_read')).split('\n');
+    expect(outputLines.length).toBe(51);
+    expectInvariants(result);
+  });
+
+  it('level 2 applies more aggressive truncation', async () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const outputLines = getTextOutput(getToolResultPart(result, 'power---file_read')).split('\n');
+    expect(outputLines.length).toBe(21);
+    expectInvariants(result);
+  });
+
+  it('level 3 fully redacts file reads in pipeline', async () => {
+    resetCounters();
+    const longContent = Array.from({ length: 100 }, (_, i) => `line ${i + 1}`).join('\n');
+    const read = fileReadTool('src/foo.ts', longContent);
+    const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('next')];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const output = getTextOutput(getToolResultPart(result, 'power---file_read'));
+    expect(output).toContain('result redacted due to compaction');
+    expect(output).not.toContain('line 1');
+    expectInvariants(result);
+  });
+
+  it('level 3 removes all searches in pipeline', async () => {
+    resetCounters();
+    const search = globTool('**/*.ts');
+    const edit = fileEditTool('src/a.ts');
+    const msgs: ContextMessage[] = [userMsg('go'), search.assistant, search.result, edit.assistant, edit.result];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const searches = result.filter(
+      (m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && (p.toolName === 'power---glob' || p.toolName === 'power---grep')),
+    );
+    expect(searches).toHaveLength(0);
+    expectInvariants(result);
+  });
+
+  it('level 3 redacts bash output in pipeline', async () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'a'.repeat(100));
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const bashPart = getToolResultPart(result, 'power---bash');
+    const output = getTextOutput(bashPart);
+    expect(output).toContain('redacted');
+    expectInvariants(result);
   });
 });

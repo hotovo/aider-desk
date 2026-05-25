@@ -15,6 +15,12 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { truncateToolResult } from '@/agent/utils';
 
+export enum CompactionLevel {
+  One = 1,
+  Two = 2,
+  Three = 3,
+}
+
 type ToolInfo = {
   messageIndex: number;
   toolCallId: string;
@@ -215,8 +221,14 @@ const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextM
   });
 };
 
-export const truncateNonPowerToolResults = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> => {
+export const truncateNonPowerToolResults = async (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): Promise<ContextMessage[]> => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
+
+  const redactionMessage = 'Result redacted due to compaction, run again if needed.';
 
   for (let i = 0; i < protectedStart; i++) {
     const msg = messages[i];
@@ -234,6 +246,21 @@ export const truncateNonPowerToolResults = async (messages: ContextMessage[], pr
         continue;
       }
 
+      if (compactionLevel >= CompactionLevel.Three) {
+        if (part.output.type === 'text' || part.output.type === 'error-text') {
+          part.output = {
+            type: part.output.type,
+            value: redactionMessage,
+          };
+        } else {
+          part.output = {
+            type: 'text',
+            value: redactionMessage,
+          };
+        }
+        continue;
+      }
+
       if (part.output.type !== 'text' && part.output.type !== 'error-text') {
         continue;
       }
@@ -243,11 +270,15 @@ export const truncateNonPowerToolResults = async (messages: ContextMessage[], pr
         continue;
       }
 
+      const maxLines = compactionLevel >= CompactionLevel.Two ? 10 : 20;
+      const maxSizeKB = compactionLevel >= CompactionLevel.Two ? 1 : 2;
+      const maxTokens = compactionLevel >= CompactionLevel.Two ? 1000 : 2000;
+
       const truncated = await truncateToolResult(
         outputText,
-        20,
-        2,
-        2000,
+        maxLines,
+        maxSizeKB,
+        maxTokens,
         false,
         'Output truncated due to compaction, re-execute the tool if full output is needed.',
       );
@@ -263,18 +294,22 @@ export const truncateNonPowerToolResults = async (messages: ContextMessage[], pr
   return messages;
 };
 
-export const smartCompactMessages = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> => {
+export const smartCompactMessages = async (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): Promise<ContextMessage[]> => {
   let result = cloneMessages(messages);
 
   result = removeErroredTools(result, protectedMessageCount);
   result = collapseFileEdits(result, protectedMessageCount);
   result = removeStaleFileReads(result, protectedMessageCount);
-  result = compactFileReads(result, protectedMessageCount);
-  result = removeObsoleteSearches(result, protectedMessageCount);
-  result = compactSemanticSearches(result, protectedMessageCount);
-  result = deduplicateBash(result, protectedMessageCount);
+  result = compactFileReads(result, protectedMessageCount, compactionLevel);
+  result = removeObsoleteSearches(result, protectedMessageCount, compactionLevel);
+  result = compactSemanticSearches(result, protectedMessageCount, compactionLevel);
+  result = deduplicateBash(result, protectedMessageCount, compactionLevel);
   result = redactFetchOutputs(result, protectedMessageCount);
-  result = await truncateNonPowerToolResults(result, protectedMessageCount);
+  result = await truncateNonPowerToolResults(result, protectedMessageCount, compactionLevel);
   result = mergeConsecutiveAssistantMessages(result);
 
   return result;
@@ -518,8 +553,9 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
   return messages;
 };
 
-export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
+  const maxLines = compactionLevel === CompactionLevel.Three ? 0 : compactionLevel === CompactionLevel.Two ? 20 : 50;
 
   for (let i = 0; i < protectedStart; i++) {
     if (i >= messages.length) {
@@ -544,11 +580,19 @@ export const compactFileReads = (messages: ContextMessage[], protectedMessageCou
         continue;
       }
 
-      const lines = part.output.value.split('\n');
-      if (lines.length > 50) {
+      if (compactionLevel === CompactionLevel.Three) {
         part.output = {
           type: 'text',
-          value: lines.slice(0, 50).join('\n') + '\n<truncated due to compaction, read the file again if full content is needed>',
+          value: '<result redacted due to compaction, read the file again if content is needed>',
+        };
+        continue;
+      }
+
+      const lines = part.output.value.split('\n');
+      if (lines.length > maxLines) {
+        part.output = {
+          type: 'text',
+          value: lines.slice(0, maxLines).join('\n') + '\n<truncated due to compaction, read the file again if full content is needed>',
         };
       }
     }
@@ -557,7 +601,7 @@ export const compactFileReads = (messages: ContextMessage[], protectedMessageCou
   return messages;
 };
 
-export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const fileModificationPositions: number[] = [];
@@ -596,7 +640,7 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
 
   const hasFileModifications = fileModificationPositions.length > 0;
 
-  if (!hasFileModifications) {
+  if (!hasFileModifications && compactionLevel < CompactionLevel.Three) {
     return messages;
   }
 
@@ -621,8 +665,8 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
         continue;
       }
 
-      const hasLaterModification = fileModificationPositions.some((pos) => pos > i);
-      if (hasLaterModification) {
+      const shouldRemove = compactionLevel >= CompactionLevel.Three || fileModificationPositions.some((pos) => pos > i);
+      if (shouldRemove) {
         removeToolCallFromAssistant(messages, part.toolCallId);
         removeToolResult(messages, part.toolCallId);
       }
@@ -632,7 +676,7 @@ export const removeObsoleteSearches = (messages: ContextMessage[], protectedMess
   return messages;
 };
 
-export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const searchIndices: { messageIndex: number; partIndex: number; toolCallId: string }[] = [];
@@ -660,7 +704,15 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
     }
   }
 
-  if (searchIndices.length <= 1) {
+  if (searchIndices.length <= 1 && compactionLevel < CompactionLevel.Three) {
+    return messages;
+  }
+
+  if (compactionLevel >= CompactionLevel.Three) {
+    for (const search of searchIndices) {
+      removeToolCallFromAssistant(messages, search.toolCallId);
+      removeToolResult(messages, search.toolCallId);
+    }
     return messages;
   }
 
@@ -672,6 +724,7 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
     removeToolResult(messages, search.toolCallId);
   }
 
+  const maxLines = compactionLevel === CompactionLevel.Two ? 20 : 50;
   const keptToolIdx = messages.findIndex((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolCallId === toKeep.toolCallId));
   if (keptToolIdx !== -1) {
     const keptMsg = messages[keptToolIdx] as ContextToolMessage;
@@ -679,10 +732,10 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
     const keptPart = keptMsg.content[keptPartIdx] as ToolResultPart;
     if (keptPart && keptPart.output.type === 'text') {
       const lines = keptPart.output.value.split('\n');
-      if (lines.length > 50) {
+      if (lines.length > maxLines) {
         keptPart.output = {
           type: 'text',
-          value: lines.slice(0, 50).join('\n') + '\n<truncated due to compaction, run again if full output is needed>',
+          value: lines.slice(0, maxLines).join('\n') + '\n<truncated due to compaction, run again if full output is needed>',
         };
       }
     }
@@ -691,7 +744,7 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
   return messages;
 };
 
-export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] => {
+export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   const bashCommands = new Map<string, { messageIndex: number; toolCallId: string }[]>();
@@ -765,6 +818,15 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
       if (!isPowerTool(serverName) || toolName !== POWER_TOOL_BASH) {
         continue;
       }
+
+      if (compactionLevel >= CompactionLevel.Three) {
+        part.output = {
+          type: 'text',
+          value: '<result redacted due to compaction, run again if needed>',
+        };
+        continue;
+      }
+
       if (part.output.type !== 'text') {
         continue;
       }
@@ -778,11 +840,12 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
           const redactionMessage = '<output redacted due to compaction, run again if output is needed>';
           let modified = false;
 
-          if (stdout.length > 30) {
+          const redactionThreshold = compactionLevel >= CompactionLevel.Two ? 0 : 30;
+          if (stdout.length > redactionThreshold) {
             parsed.stdout = redactionMessage;
             modified = true;
           }
-          if (stderr.length > 30) {
+          if (stderr.length > redactionThreshold) {
             parsed.stderr = redactionMessage;
             modified = true;
           }
