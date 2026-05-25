@@ -2866,6 +2866,8 @@ import {
 import { extractServerNameToolName } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
+import { truncateToolResult } from '@/agent/utils';
+⋮----
 type ToolInfo = {
   messageIndex: number;
   toolCallId: string;
@@ -2908,7 +2910,9 @@ const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCoun
 ⋮----
 const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextMessage[] =>
 ⋮----
-export const smartCompactMessages = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+export const truncateNonPowerToolResults = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> =>
+⋮----
+export const smartCompactMessages = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> =>
 ⋮----
 export const removeErroredTools = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -2917,6 +2921,8 @@ export const collapseFileEdits = (messages: ContextMessage[], protectedMessageCo
 export const removeStaleFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
 // Check for synthetic <file-edited> messages from collapseFileEdits
+⋮----
+export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
 export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -2976,7 +2982,16 @@ export const readFileContent = async (
   sizeLimit = Math.max(50, 0.05 * lineLimit),
 ): Promise<string> =>
 ⋮----
-export const truncateToolResult = async (content: string, maxLines = 1000, maxSizeKB = 50, maxTokens = 50000): Promise<string> =>
+export const truncateToolResult = async (
+  content: string,
+  maxLines = 1000,
+  maxSizeKB = 50,
+  maxTokens = 50000,
+  saveToFile = true,
+  truncationSuffix?: string,
+): Promise<string> =>
+⋮----
+const getSuffix = () =>
 ⋮----
 export const isNetworkError = (error: unknown): boolean =>
 ⋮----
@@ -3512,6 +3527,7 @@ import type { Store } from '@/store';
 import type { Task } from '@/task';
 ⋮----
 import logger from '@/logger';
+import { truncateToolResult } from '@/agent/utils';
 import { openUrl as openUrlUtil } from '@/utils/open-url';
 ⋮----
 export class ExtensionContextImpl implements ExtensionContext
@@ -3552,6 +3568,15 @@ async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'wi
 async openPath(path: string): Promise<boolean>
 ⋮----
 getMemoryContext(): MemoryContext
+⋮----
+async truncateToolResult(
+    content: string,
+    maxLines?: number,
+    maxSizeKB?: number,
+    maxTokens?: number,
+    saveToFile?: boolean,
+    truncationSuffix?: string,
+): Promise<string>
 
 ================
 File: src/main/extensions/extension-fetcher.ts
@@ -5630,6 +5655,52 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultModelInfo, calculateCost } from '@/models/providers/default';
 import { Task } from '@/task/task';
+⋮----
+interface NeuralwattModelPricing {
+  input_per_million: number;
+  output_per_million: number;
+  cached_input_per_million?: number | null;
+  cached_output_per_million?: number | null;
+  currency: string;
+  pricing_tbd: boolean;
+}
+⋮----
+interface NeuralwattModelCapabilities {
+  tools: boolean;
+  json_mode: boolean;
+  vision: boolean;
+  reasoning: boolean;
+  reasoning_effort: boolean;
+  streaming: boolean;
+  system_role: boolean;
+  developer_role: boolean;
+}
+⋮----
+interface NeuralwattModelLimits {
+  max_context_length?: number | null;
+  max_output_tokens?: number | null;
+  max_images?: number | null;
+}
+⋮----
+interface NeuralwattModelMetadata {
+  display_name: string;
+  description?: string | null;
+  provider?: string;
+  pricing: NeuralwattModelPricing;
+  capabilities: NeuralwattModelCapabilities;
+  limits: NeuralwattModelLimits;
+  deprecated?: boolean;
+  deprecated_message?: string | null;
+}
+⋮----
+interface NeuralwattModelEntry {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+  max_model_len?: number;
+  metadata?: NeuralwattModelMetadata;
+}
 ⋮----
 const loadNeuralwattModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -15463,7 +15534,7 @@ const handleRemoveUpToClick = () =>
 ================
 File: src/renderer/src/components/message/MessageBlock.tsx
 ================
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   HELPERS_TOOL_GROUP_NAME,
@@ -15543,6 +15614,8 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 ⋮----
+import { useProjectTasks } from '@/stores/projectStore';
+⋮----
 type Props = {
   baseDir: string;
   taskId: string;
@@ -15616,7 +15689,7 @@ import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } fro
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { DefaultTaskState, isUserMessage, Message, MessageViewMode, TaskData } from '@common/types';
+import { isUserMessage, Message, MessageViewMode } from '@common/types';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
 ⋮----
@@ -15635,7 +15708,7 @@ export type MessagesRef = {
 type Props = {
   baseDir: string;
   taskId: string;
-  task: TaskData;
+  inProgress: boolean;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -15872,6 +15945,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
   message: ToolMessage;
+  taskDir: string;
   onRemove?: () => void;
   compact?: boolean;
   onFork?: () => void;
@@ -16373,7 +16447,7 @@ File: src/renderer/src/components/message/VirtualizedMessages.tsx
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { DefaultTaskState, MessageViewMode, TaskData, isUserMessage, Message } from '@common/types';
+import { MessageViewMode, isUserMessage, Message } from '@common/types';
 import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
 import { clsx } from 'clsx';
 ⋮----
@@ -16395,7 +16469,7 @@ export type VirtualizedMessagesRef = {
 type Props = {
   baseDir: string;
   taskId: string;
-  task: TaskData;
+  inProgress: boolean;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -27589,9 +27663,6 @@ extraResources:
     to: skills
     filter:
       - '**/*'
-asarUnpack:
-  - '**/node_modules/sharp/**/*'
-  - '**/node_modules/@img/**/*'
 beforePack: scripts/before-pack.js
 win:
   executableName: aider-desk
@@ -27720,7 +27791,7 @@ File: package.json
     "@ai-sdk/groq": "^2.0.38",
     "@ai-sdk/mistral": "2.0.30",
     "@ai-sdk/openai": "^2.0.103",
-    "@ai-sdk/openai-compatible": "^1.0.36",
+    "@ai-sdk/openai-compatible": "1.0.36",
     "@ai-sdk/provider": "2.0.1",
     "@aiderdesk/extensions": "workspace:*",
     "@augmentcode/auggie-sdk": "0.1.15",
@@ -27833,7 +27904,6 @@ File: package.json
     "rehype-autolink-headings": "^7.1.0",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "sharp": "0.34.5",
     "simple-git": "^3.27.0",
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
@@ -27922,6 +27992,19 @@ File: package.json
   "overrides": {
     "ai-sdk-provider-gemini-cli": {
       "diff": "^8.0.4"
+    },
+    "@anthropic-ai/claude-agent-sdk": {
+      "@img/sharp-darwin-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-darwin-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-arm": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linux-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linuxmusl-arm64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-linuxmusl-x64": "npm:empty-npm-package@1.0.0",
+      "@img/sharp-win32-x64": "npm:empty-npm-package@1.0.0"
+    },
+    "@huggingface/transformers": {
+      "sharp": "npm:empty-npm-package@1.0.0"
     },
     "@tootallnate/once": "^3.0.1",
     "jsondiffpatch": "^0.7.3"
