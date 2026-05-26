@@ -448,6 +448,7 @@ export interface ToolApprovalEvent {
 
 /** Event payload for tool called events */
 export interface ToolCalledEvent {
+  readonly toolCallId: string;
   readonly toolName: string;
   readonly agentProfile: AgentProfile;
   readonly abortSignal?: AbortSignal;
@@ -457,6 +458,7 @@ export interface ToolCalledEvent {
 
 /** Event payload for tool finished events */
 export interface ToolFinishedEvent {
+  readonly toolCallId: string;
   readonly toolName: string;
   readonly agentProfile: AgentProfile;
   readonly input: Record<string, unknown> | undefined;

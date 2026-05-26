@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added progressive levels of smart compaction for better context management
+- added toolCallId to onToolCalled and onToolFinished extension hook events
 
 ## [0.67.0]
 

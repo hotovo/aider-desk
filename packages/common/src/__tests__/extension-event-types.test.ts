@@ -164,8 +164,9 @@ describe('Event Payload Interfaces', () => {
       expect(event.allowed).toBe(false);
     });
 
-    it('ToolCalledEvent should have toolName, agentProfile, and input fields', () => {
+    it('ToolCalledEvent should have toolCallId, toolName, agentProfile, and input fields', () => {
       const event: ToolCalledEvent = {
+        toolCallId: 'test-call-id',
         toolName: 'test-tool',
         agentProfile: {} as AgentProfile,
         input: undefined,
@@ -177,6 +178,7 @@ describe('Event Payload Interfaces', () => {
 
     it('ToolCalledEvent should support optional output field', () => {
       const event: ToolCalledEvent = {
+        toolCallId: 'test-call-id',
         toolName: 'test-tool',
         agentProfile: {} as AgentProfile,
         input: {},
@@ -185,8 +187,9 @@ describe('Event Payload Interfaces', () => {
       expect(event.output).toBe('result');
     });
 
-    it('ToolFinishedEvent should have toolName, agentProfile, input, and output fields', () => {
+    it('ToolFinishedEvent should have toolCallId, toolName, agentProfile, input, and output fields', () => {
       const event: ToolFinishedEvent = {
+        toolCallId: 'test-call-id',
         toolName: 'test-tool',
         agentProfile: {} as AgentProfile,
         input: {},
@@ -611,7 +614,7 @@ describe('Event Modification Pattern', () => {
         return { output: 'modified result' };
       },
     };
-    const result = await extension.onToolFinished!({ toolName: 'test', agentProfile: {} as AgentProfile, input: {}, output: 'original' }, mockContext);
+    const result = await extension.onToolFinished!({ toolCallId: 'test-call-id', toolName: 'test', agentProfile: {} as AgentProfile, input: {}, output: 'original' }, mockContext);
     expect(result?.output).toBe('modified result');
   });
 });
