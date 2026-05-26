@@ -2868,6 +2868,12 @@ import { v4 as uuidv4 } from 'uuid';
 ⋮----
 import { truncateToolResult } from '@/agent/utils';
 ⋮----
+export enum CompactionLevel {
+  One = 1,
+  Two = 2,
+  Three = 3,
+}
+⋮----
 type ToolInfo = {
   messageIndex: number;
   toolCallId: string;
@@ -2910,9 +2916,17 @@ const getProtectedStartIndex = (messages: ContextMessage[], protectedMessageCoun
 ⋮----
 const mergeConsecutiveAssistantMessages = (messages: ContextMessage[]): ContextMessage[] =>
 ⋮----
-export const truncateNonPowerToolResults = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> =>
+export const truncateNonPowerToolResults = async (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): Promise<ContextMessage[]> =>
 ⋮----
-export const smartCompactMessages = async (messages: ContextMessage[], protectedMessageCount = 10): Promise<ContextMessage[]> =>
+export const smartCompactMessages = async (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): Promise<ContextMessage[]> =>
 ⋮----
 export const removeErroredTools = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -2922,15 +2936,15 @@ export const removeStaleFileReads = (messages: ContextMessage[], protectedMessag
 ⋮----
 // Check for synthetic <file-edited> messages from collapseFileEdits
 ⋮----
-export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+export const compactFileReads = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
 ⋮----
-export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+export const removeObsoleteSearches = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
 ⋮----
 // Check for synthetic <file-edited> messages from collapseFileEdits
 ⋮----
-export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+export const compactSemanticSearches = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
 ⋮----
-export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
 ⋮----
 // Not JSON, leave as-is
 ⋮----
@@ -8775,12 +8789,12 @@ import {
   AIDER_MODES,
   AiderRunOptions,
   AutonomyMode,
-  DEFAULT_AUTONOMY_MODE,
   ChangeRequestItem,
   ConnectorMessage,
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
+  DEFAULT_AUTONOMY_MODE,
   DefaultTaskState,
   EditFormat,
   FileEdit,
@@ -8854,7 +8868,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
-import { smartCompactMessages } from '@/agent/smart-compaction';
+import { CompactionLevel, smartCompactMessages } from '@/agent/smart-compaction';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
 ⋮----
@@ -9388,6 +9402,10 @@ private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextM
 public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.')
 ⋮----
 // backing up the current context before compacting for debugging purposes
+⋮----
+// Determine compaction level based on messages since last compaction
+⋮----
+// else: 4-5 messages since last compaction → keep current level
 ⋮----
 public async compactConversation(
     mode: Mode,
@@ -27734,7 +27752,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.67.0-dev",
+  "version": "0.68.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
