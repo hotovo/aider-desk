@@ -77,6 +77,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
                 promptContext: message.promptContext,
                 usageReport: message.usageReport,
                 timestamp: message.timestamp,
+                finished: message.finished,
               } as ToolMessage,
             ];
           }

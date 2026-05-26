@@ -14,12 +14,14 @@ type Props = {
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
-  index: number;
-  lastUserMessageIndex: number;
-  inProgress: boolean;
-  removeMessage: (message: Message) => void;
-  redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  compact?: boolean;
+  hideMessageBar?: boolean;
+  index?: number;
+  lastUserMessageIndex?: number;
+  inProgress?: boolean;
+  removeMessage?: (message: Message) => void;
+  redoUserPrompt?: (messageId: string) => void;
+  editLastUserMessage?: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -32,9 +34,11 @@ export const MessageBlockWrapper = memo(
     message,
     allFiles,
     renderMarkdown,
-    index,
-    lastUserMessageIndex,
-    inProgress,
+    compact = false,
+    hideMessageBar = false,
+    index = -1,
+    lastUserMessageIndex = -1,
+    inProgress = false,
     removeMessage,
     redoUserPrompt,
     editLastUserMessage,
@@ -59,7 +63,7 @@ export const MessageBlockWrapper = memo(
           allFiles={allFiles}
           renderMarkdown={renderMarkdown}
           remove={inProgress ? undefined : removeMessage}
-          redo={inProgress ? undefined : () => redoUserPrompt(message.id)}
+          redo={inProgress ? undefined : redoUserPrompt ? () => redoUserPrompt(message.id) : undefined}
           edit={editLastUserMessage}
           onInterrupt={onInterrupt}
         />
@@ -85,8 +89,10 @@ export const MessageBlockWrapper = memo(
           message={message}
           allFiles={allFiles}
           renderMarkdown={renderMarkdown}
-          remove={inProgress ? undefined : () => removeMessage(message)}
-          redo={!inProgress && isUserMessage(message) ? () => redoUserPrompt(message.id) : undefined}
+          compact={compact}
+          hideMessageBar={hideMessageBar}
+          remove={inProgress ? undefined : removeMessage ? () => removeMessage(message) : undefined}
+          redo={!inProgress && isUserMessage(message) && redoUserPrompt ? () => redoUserPrompt(message.id) : undefined}
           edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
           onInterrupt={onInterrupt}
           onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}

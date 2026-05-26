@@ -888,6 +888,7 @@ export class ContextManager {
           toolMessage.response = JSON.stringify(part.output.value);
           toolMessage.usageReport = message.usageReport || toolMessage.usageReport;
           toolMessage.promptContext = promptContext;
+          toolMessage.finished = true;
         }
 
         // Handle aider tool responses - create ResponseCompletedData for each response
@@ -1011,6 +1012,7 @@ export class ContextManager {
                     const toolMessage = messagesData.find((message) => message.type === 'tool' && message.id === subPart.toolCallId) as ToolData | undefined;
                     if (toolMessage) {
                       toolMessage.response = JSON.stringify(subPart.output.value);
+                      toolMessage.finished = true;
                     }
                   }
                 }
@@ -1102,6 +1104,7 @@ export class ContextManager {
             if (toolMessage) {
               toolMessage.response = JSON.stringify(toolResultData.output);
               toolMessage.usageReport = message.usageReport || toolMessage.usageReport;
+              toolMessage.finished = true;
               const promptContext = extractPromptContextFromToolResult(toolResultData.output);
               if (promptContext) {
                 toolMessage.promptContext = promptContext;

@@ -1,10 +1,9 @@
 import { memo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
-import { RiRobot2Line } from 'react-icons/ri';
 import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
-import { MessageBlock } from './MessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 import { areMessagesEqual } from './utils';
 
 import { useParsedContent } from '@/hooks/useParsedContent';
@@ -90,19 +89,22 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
     >
       {/* Response content */}
       {hasContent && (
-        <div className="flex items-start gap-2">
-          <div className="mt-[1px] relative">
-            <RiRobot2Line className="text-text-muted w-4 h-4" />
-          </div>
-          <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
-        </div>
+        <MessageBlockWrapper
+          baseDir={baseDir}
+          taskId={taskId}
+          message={responseMessage}
+          allFiles={allFiles}
+          renderMarkdown={renderMarkdown}
+          compact={true}
+          hideMessageBar={true}
+        />
       )}
 
-      {/* Tool messages - using MessageBlock with hideMessageBar to avoid duplicate MessageBars */}
+      {/* Tool messages */}
       {toolMessages.length > 0 && (
         <div className={clsx(hasContent && 'mt-1 ml-6 space-y-1')}>
           {toolMessages.map((toolMessage) => (
-            <MessageBlock
+            <MessageBlockWrapper
               key={toolMessage.id}
               baseDir={baseDir}
               taskId={taskId}
