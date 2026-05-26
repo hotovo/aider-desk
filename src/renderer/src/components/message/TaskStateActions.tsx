@@ -1,6 +1,7 @@
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
-import { MdOutlineDifference } from 'react-icons/md';
+import { BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { MdDeleteForever, MdOutlineDifference } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
@@ -245,9 +246,11 @@ export const TaskStateActions = ({
     ) : (
       <>
         <Button key="archive" variant="outline" color="primary" size="xs" onClick={isArchived ? handleUnarchiveClick : handleArchiveClick}>
+          {isArchived ? <BiArchiveIn className="mr-1 w-3 h-3" /> : <BiArchive className="mr-1 w-3 h-3" />}
           {isArchived ? t('messages.unarchive') : t('messages.archive')}
         </Button>
         <Button key="delete" variant="outline" color="danger" size="xs" onClick={handleDeleteClick}>
+          <MdDeleteForever className="mr-1 w-3 h-3" />
           {t('common.delete')}
         </Button>
       </>
