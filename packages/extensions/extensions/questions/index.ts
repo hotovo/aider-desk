@@ -14,12 +14,18 @@
  * - Records answers and auto-switches to next question
  */
 
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 import type { Extension, ExtensionContext, CommandDefinition, UIComponentDefinition } from '@aiderdesk/extensions';
 
-const CUSTOM_MODEL_ID = ''; // set this to your custom provider/model for extracting questions (e.g., 'openai/gpt-4o-mini')
+interface QuestionsConfig {
+  customModelId: string;
+}
+
+const DEFAULT_CONFIG: QuestionsConfig = {
+  customModelId: '',
+};
 
 interface Question {
   id: string;
@@ -32,10 +38,12 @@ interface QuestionsState {
   isActive: boolean;
 }
 
+const configComponentJsx = readFileSync(join(__dirname, 'ConfigComponent.jsx'), 'utf-8');
+
 export default class QuestionsExtension implements Extension {
   static metadata = {
     name: 'Questions',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Extract questions from messages and display as interactive questionnaire',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/questions/icon.png',
@@ -43,6 +51,23 @@ export default class QuestionsExtension implements Extension {
   };
 
   private taskStates: Map<string, QuestionsState> = new Map();
+  private configPath: string;
+
+  constructor() {
+    this.configPath = join(__dirname, 'config.json');
+  }
+
+  private loadConfig(): QuestionsConfig {
+    try {
+      if (existsSync(this.configPath)) {
+        const data = readFileSync(this.configPath, 'utf-8');
+        return { ...DEFAULT_CONFIG, ...JSON.parse(data) };
+      }
+    } catch {
+      // Ignore errors, return defaults
+    }
+    return { ...DEFAULT_CONFIG };
+  }
 
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Questions Extension loaded', 'info');
@@ -50,6 +75,21 @@ export default class QuestionsExtension implements Extension {
 
   async onUnload(): Promise<void> {
     this.taskStates.clear();
+  }
+
+  getConfigComponent(): string {
+    return configComponentJsx;
+  }
+
+  async getConfigData(): Promise<QuestionsConfig> {
+    return this.loadConfig();
+  }
+
+  async saveConfigData(configData: unknown): Promise<unknown> {
+    const config = configData as Partial<QuestionsConfig>;
+    const merged = { ...DEFAULT_CONFIG, ...config };
+    writeFileSync(this.configPath, JSON.stringify(merged, null, 2), 'utf-8');
+    return merged;
   }
 
   getCommands(_context: ExtensionContext): CommandDefinition[] {
@@ -88,9 +128,12 @@ export default class QuestionsExtension implements Extension {
 
           taskContext.addLoadingMessage('Extracting questions from the last message...');
 
-          let modelId = CUSTOM_MODEL_ID;
+          const extensionConfig = this.loadConfig();
 
-          if (!modelId) {
+          let modelId: string;
+          if (extensionConfig.customModelId) {
+            modelId = extensionConfig.customModelId;
+          } else {
             const agentProfile = await taskContext.getTaskAgentProfile();
             if (!agentProfile) {
               taskContext.addLogMessage('error', 'No agent profile available');
