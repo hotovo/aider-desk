@@ -136,6 +136,7 @@ export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir
       disabled={isSaving}
       width={600}
       contentClass="p-0"
+      enableFocusTrap={false}
     >
       <div className="min-h-[240px] max-h-[70vh] overflow-y-auto p-6">
         <StringToReactComponent data={componentProps}>{componentDef.jsx}</StringToReactComponent>

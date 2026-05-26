@@ -26,6 +26,7 @@ type Props = {
   closeOnEscape?: boolean;
   footerAdditionalComponents?: ReactNode;
   additionalAction?: AdditionalAction;
+  enableFocusTrap?: boolean;
 };
 
 export const ConfirmDialog = ({
@@ -43,6 +44,7 @@ export const ConfirmDialog = ({
   closeOnEscape = false,
   footerAdditionalComponents,
   additionalAction,
+  enableFocusTrap,
 }: Props) => {
   const { t } = useTranslation();
   const resolvedConfirmText = confirmButtonText ?? t('common.confirm');
@@ -53,6 +55,7 @@ export const ConfirmDialog = ({
       onClose={onCancel}
       width={width}
       contentClass={contentClass}
+      enableFocusTrap={enableFocusTrap}
       footer={
         <>
           {footerAdditionalComponents}

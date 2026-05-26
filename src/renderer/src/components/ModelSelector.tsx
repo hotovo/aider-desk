@@ -1,4 +1,5 @@
-import { forwardRef, useImperativeHandle, useRef, KeyboardEvent, MouseEvent, useOptimistic, startTransition } from 'react';
+import { forwardRef, useImperativeHandle, useRef, KeyboardEvent, MouseEvent, useOptimistic, startTransition, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from '@reactuses/core';
@@ -25,14 +26,31 @@ type Props = {
   providers: ProviderProfile[];
   popupPlacement?: 'top' | 'bottom';
   labelOnNull?: string;
+  usePortal?: boolean;
 };
 
 export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
-  ({ className, models, selectedModelId, onChange, preferredModelIds, removePreferredModel, providers, popupPlacement = 'bottom', labelOnNull }, ref) => {
+  (
+    {
+      className,
+      models,
+      selectedModelId,
+      onChange,
+      preferredModelIds,
+      removePreferredModel,
+      providers,
+      popupPlacement = 'bottom',
+      labelOnNull,
+      usePortal = false,
+    },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const modelSelectorRef = useRef<HTMLDivElement>(null);
+    const popupRef = useRef<HTMLDivElement>(null);
     const highlightedModelRef = useRef<HTMLDivElement>(null);
     const [optimisticSelectedModelId, setOptimisticSelectedModel] = useOptimistic(selectedModelId);
+    const [popupStyle, setPopupStyle] = useState<React.CSSProperties>({});
 
     const getProviderName = (providerId: string) => {
       const provider = providers.find((p) => p.id === providerId);
@@ -85,7 +103,18 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
 
     const showCustomModelHint = filteredModels.length === 0 && state.modelSearchTerm.trim() !== '';
 
-    useClickOutside(modelSelectorRef, close);
+    useClickOutside(usePortal ? popupRef : modelSelectorRef, close);
+
+    useEffect(() => {
+      if (usePortal && isOpen && modelSelectorRef.current) {
+        const rect = modelSelectorRef.current.getBoundingClientRect();
+        setPopupStyle(
+          popupPlacement === 'bottom'
+            ? { position: 'fixed', top: rect.bottom + 4, left: rect.left }
+            : { position: 'fixed', bottom: window.innerHeight - rect.top + 4, left: rect.left },
+        );
+      }
+    }, [usePortal, isOpen, popupPlacement]);
 
     useImperativeHandle(ref, () => ({
       open: (model) => {
@@ -227,63 +256,122 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
             <span className="text-2xs text-text-muted">{t('common.loading')}</span>
           )}
         </button>
-        {isOpen && (
-          <div
-            className={twMerge(
-              'absolute left-0 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
-              popupPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1',
-            )}
-          >
-            <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
-              <input
-                type="text"
-                autoFocus={true}
-                placeholder={t('modelSelector.searchPlaceholder')}
-                className="flex-grow px-2 py-1 text-xs bg-bg-secondary-light text-text-primary rounded border border-border-default focus:outline-none focus:border-border-accent"
-                value={state.modelSearchTerm}
-                onChange={(e) => updateState({ modelSearchTerm: e.target.value })}
-                onKeyDown={onModelSelectorSearchInputKeyDown}
-              />
-              {showCustomModelHint && (
-                <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">
-                  <MdKeyboardReturn className="w-4 h-4" />
+        {isOpen &&
+          (usePortal ? (
+            createPortal(
+              <div
+                ref={popupRef}
+                style={popupStyle}
+                className="bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-[9999] flex flex-col w-[500px] max-w-[calc(100vw-20px)]"
+              >
+                <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
+                  <input
+                    type="text"
+                    autoFocus={true}
+                    placeholder={t('modelSelector.searchPlaceholder')}
+                    className="flex-grow px-2 py-1 text-xs bg-bg-secondary-light text-text-primary rounded border border-border-default focus:outline-none focus:border-border-accent"
+                    value={state.modelSearchTerm}
+                    onChange={(e) => updateState({ modelSearchTerm: e.target.value })}
+                    onKeyDown={onModelSelectorSearchInputKeyDown}
+                  />
+                  {showCustomModelHint && (
+                    <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">
+                      <MdKeyboardReturn className="w-4 h-4" />
+                    </div>
+                  )}
                 </div>
+                <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+                  {labelOnNull && !debouncedSearchTerm && (
+                    <>
+                      <div
+                        ref={state.highlightedModelIndex === 0 ? highlightedModelRef : undefined}
+                        className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${state.highlightedModelIndex === 0 ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
+                      >
+                        <button
+                          onClick={() => onModelSelected(null)}
+                          className={`flex-grow px-3 py-1 text-left ${optimisticSelectedModelId === null ? 'text-text-secondary' : ''}`}
+                        >
+                          <div className="text-xs">{labelOnNull}</div>
+                        </button>
+                      </div>
+                      <div key="inherit-divider" className="border-t border-border-default-dark" />
+                    </>
+                  )}
+                  {preferredModels.length > 0 && (
+                    <>
+                      {preferredModels.map((model, index) => renderModelItem(model, index, true))}
+                      <div key="divider" className="border-t border-border-default-dark my-1" />
+                    </>
+                  )}
+                  {groupedFilteredModels.map((group) => (
+                    <div key={group.providerId}>
+                      <div className="sticky top-0 bg-bg-secondary border-b border-border-default-dark px-3 py-1 text-xs font-semibold text-text-primary z-10">
+                        {getProviderName(group.providerId)}
+                      </div>
+                      {group.models.map((model, index) => renderModelItem(model, index, false))}
+                    </div>
+                  ))}
+                </div>
+              </div>,
+              document.body,
+            )
+          ) : (
+            <div
+              className={twMerge(
+                'absolute left-0 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
+                popupPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1',
               )}
-            </div>
-            <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
-              {labelOnNull && !debouncedSearchTerm && (
-                <>
-                  <div
-                    ref={state.highlightedModelIndex === 0 ? highlightedModelRef : undefined}
-                    className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${state.highlightedModelIndex === 0 ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
-                  >
-                    <button
-                      onClick={() => onModelSelected(null)}
-                      className={`flex-grow px-3 py-1 text-left ${optimisticSelectedModelId === null ? 'text-text-secondary' : ''}`}
+            >
+              <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
+                <input
+                  type="text"
+                  autoFocus={true}
+                  placeholder={t('modelSelector.searchPlaceholder')}
+                  className="flex-grow px-2 py-1 text-xs bg-bg-secondary-light text-text-primary rounded border border-border-default focus:outline-none focus:border-border-accent"
+                  value={state.modelSearchTerm}
+                  onChange={(e) => updateState({ modelSearchTerm: e.target.value })}
+                  onKeyDown={onModelSelectorSearchInputKeyDown}
+                />
+                {showCustomModelHint && (
+                  <div className="flex items-center text-text-muted-light" title="Press Enter to use this custom model name">
+                    <MdKeyboardReturn className="w-4 h-4" />
+                  </div>
+                )}
+              </div>
+              <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+                {labelOnNull && !debouncedSearchTerm && (
+                  <>
+                    <div
+                      ref={state.highlightedModelIndex === 0 ? highlightedModelRef : undefined}
+                      className={`flex items-center w-full hover:bg-bg-tertiary transition-colors duration-200 ${state.highlightedModelIndex === 0 ? 'bg-bg-tertiary' : 'text-text-tertiary'}`}
                     >
-                      <div className="text-xs">{labelOnNull}</div>
-                    </button>
+                      <button
+                        onClick={() => onModelSelected(null)}
+                        className={`flex-grow px-3 py-1 text-left ${optimisticSelectedModelId === null ? 'text-text-secondary' : ''}`}
+                      >
+                        <div className="text-xs">{labelOnNull}</div>
+                      </button>
+                    </div>
+                    <div key="inherit-divider" className="border-t border-border-default-dark" />
+                  </>
+                )}
+                {preferredModels.length > 0 && (
+                  <>
+                    {preferredModels.map((model, index) => renderModelItem(model, index, true))}
+                    <div key="divider" className="border-t border-border-default-dark my-1" />
+                  </>
+                )}
+                {groupedFilteredModels.map((group) => (
+                  <div key={group.providerId}>
+                    <div className="sticky top-0 bg-bg-secondary border-b border-border-default-dark px-3 py-1 text-xs font-semibold text-text-primary z-10">
+                      {getProviderName(group.providerId)}
+                    </div>
+                    {group.models.map((model, index) => renderModelItem(model, index, false))}
                   </div>
-                  <div key="inherit-divider" className="border-t border-border-default-dark" />
-                </>
-              )}
-              {preferredModels.length > 0 && (
-                <>
-                  {preferredModels.map((model, index) => renderModelItem(model, index, true))}
-                  <div key="divider" className="border-t border-border-default-dark my-1" />
-                </>
-              )}
-              {groupedFilteredModels.map((group) => (
-                <div key={group.providerId}>
-                  <div className="sticky top-0 bg-bg-secondary border-b border-border-default-dark px-3 py-1 text-xs font-semibold text-text-primary z-10">
-                    {getProviderName(group.providerId)}
-                  </div>
-                  {group.models.map((model, index) => renderModelItem(model, index, false))}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          ))}
       </div>
     );
   },
