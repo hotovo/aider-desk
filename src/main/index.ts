@@ -159,22 +159,11 @@ const initStore = async (): Promise<Store> => {
 const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projectToActivate?: string): Promise<BrowserWindow> => {
   const lastWindowState = storeInstance.getWindowState();
 
-  // Calculate position - offset from focused window if exists
-  const focusedWindow = BrowserWindow.getFocusedWindow();
-  let x = lastWindowState.x;
-  let y = lastWindowState.y;
-
-  if (focusedWindow && !focusedWindow.isDestroyed()) {
-    const [focusedX, focusedY] = focusedWindow.getPosition();
-    x = focusedX + 30;
-    y = focusedY + 30;
-  }
-
   const newWindow = new BrowserWindow({
     width: lastWindowState.width,
     height: lastWindowState.height,
-    x,
-    y,
+    x: lastWindowState.x,
+    y: lastWindowState.y,
     show: false,
     autoHideMenuBar: true,
     icon,
@@ -403,7 +392,6 @@ app.whenReady().then(async () => {
     setupIpcHandlers(managers.eventsHandler, managers.serverController, managers.pythonInstaller);
 
     if (!HEADLESS_MODE) {
-      // Create the first window
       // Create the first window
       await createNewWindow();
 
