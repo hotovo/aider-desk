@@ -87,6 +87,7 @@ type Props = {
   allFiles: string[];
   renderMarkdown: boolean;
   compact?: boolean;
+  showThinking?: boolean;
   hideMessageBar?: boolean;
   remove?: () => void;
   redo?: () => void;
@@ -104,6 +105,7 @@ const MessageBlockComponent = ({
   renderMarkdown,
   compact = false,
   hideMessageBar = false,
+  showThinking = true,
   remove,
   redo,
   edit,
@@ -162,6 +164,8 @@ const MessageBlockComponent = ({
         onFork={onFork}
         onRemoveUpTo={onRemoveUpTo}
         compact={compact}
+        showThinking={showThinking}
+        hideMessageBar={hideMessageBar}
       />
     );
   }

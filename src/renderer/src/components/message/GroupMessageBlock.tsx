@@ -166,7 +166,16 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
               transition={{ duration: 0.5 }}
               className="absolute top-0.5 left-6 right-6"
             >
-              <MessageBlock baseDir={baseDir} taskId={taskId} message={previewMessage} allFiles={allFiles} renderMarkdown={renderMarkdown} compact={true} />
+              <MessageBlock
+                baseDir={baseDir}
+                taskId={taskId}
+                message={previewMessage}
+                allFiles={allFiles}
+                renderMarkdown={renderMarkdown}
+                compact={true}
+                hideMessageBar={true}
+                showThinking={false}
+              />
             </motion.div>
             <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-bg-secondary via-bg-secondary to-transparent pointer-events-none" />
           </motion.div>

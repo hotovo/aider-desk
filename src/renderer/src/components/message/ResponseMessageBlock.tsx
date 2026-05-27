@@ -12,15 +12,28 @@ type Props = {
   allFiles: string[];
   renderMarkdown: boolean;
   compact?: boolean;
+  hideMessageBar?: boolean;
+  showThinking?: boolean;
   onRemove?: () => void;
   onFork?: () => void;
   onRemoveUpTo?: () => void;
 };
 
-export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdown, compact = false, onRemove, onFork, onRemoveUpTo }: Props) => {
+export const ResponseMessageBlock = ({
+  baseDir,
+  message,
+  allFiles,
+  renderMarkdown,
+  compact = false,
+  hideMessageBar = false,
+  showThinking = true,
+  onRemove,
+  onFork,
+  onRemoveUpTo,
+}: Props) => {
   const baseClasses = 'rounded-md max-w-full text-xs bg-bg-secondary text-text-primary';
 
-  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown, !compact);
+  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown, showThinking);
 
   if (!parsedContent || (Array.isArray(parsedContent) && parsedContent.length === 0)) {
     return null;
@@ -41,7 +54,7 @@ export const ResponseMessageBlock = ({ baseDir, message, allFiles, renderMarkdow
         </div>
         <div className="flex-grow-1 w-full overflow-hidden">{parsedContent}</div>
       </div>
-      {!compact && (
+      {!hideMessageBar && (
         <MessageBar
           message={message}
           content={message.content}
