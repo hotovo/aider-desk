@@ -11674,8 +11674,6 @@ const initStore = async (): Promise<Store> =>
 ⋮----
 const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projectToActivate?: string): Promise<BrowserWindow> =>
 ⋮----
-// Calculate position - offset from focused window if exists
-⋮----
 // Register window with window manager
 ⋮----
 const saveWindowState = (): void =>
@@ -11730,7 +11728,6 @@ const globalCleanup = async () =>
 ⋮----
 // Initialize IPC handlers
 ⋮----
-// Create the first window
 // Create the first window
 ⋮----
 // Show ready state before closing
@@ -13570,6 +13567,7 @@ type Props = {
   width?: number;
   closeOnEscape?: boolean;
   closeButtonText?: string;
+  enableFocusTrap?: boolean;
 };
 ⋮----
 className=
@@ -13808,6 +13806,7 @@ type Props = {
   closeOnEscape?: boolean;
   footerAdditionalComponents?: ReactNode;
   additionalAction?: AdditionalAction;
+  enableFocusTrap?: boolean;
 };
 ⋮----
 export const ConfirmDialog = ({
@@ -13825,6 +13824,7 @@ export const ConfirmDialog = ({
   closeOnEscape = false,
   footerAdditionalComponents,
   additionalAction,
+  enableFocusTrap,
 }: Props) =>
 
 ================
@@ -14154,6 +14154,7 @@ type Props = {
   popupPlacement?: 'top' | 'bottom';
   labelOnNull?: string;
   skipPreferredModelsUpdate?: boolean;
+  usePortal?: boolean;
 };
 
 ================
@@ -14786,11 +14787,10 @@ File: src/renderer/src/components/message/AssistantMessageBlock.tsx
 ================
 import { memo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
-import { RiRobot2Line } from 'react-icons/ri';
 import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
-import { MessageBlock } from './MessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 import { areMessagesEqual } from './utils';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
@@ -14809,8 +14809,6 @@ type Props = {
 const aggregateUsage = (): UsageReportData | undefined =>
 ⋮----
 {/* Response content */}
-⋮----
-{/* Tool messages - using MessageBlock with hideMessageBar to avoid duplicate MessageBars */}
 ⋮----
 <div className=
 ⋮----
@@ -15687,12 +15685,14 @@ type Props = {
   message: Message;
   allFiles: string[];
   renderMarkdown: boolean;
-  index: number;
-  lastUserMessageIndex: number;
-  inProgress: boolean;
-  removeMessage: (message: Message) => void;
-  redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  compact?: boolean;
+  hideMessageBar?: boolean;
+  index?: number;
+  lastUserMessageIndex?: number;
+  inProgress?: boolean;
+  removeMessage?: (message: Message) => void;
+  redoUserPrompt?: (messageId: string) => void;
+  editLastUserMessage?: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -16049,7 +16049,8 @@ File: src/renderer/src/components/message/TaskStateActions.tsx
 ================
 import { IoPlayOutline } from 'react-icons/io5';
 import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
-import { MdOutlineDifference } from 'react-icons/md';
+import { BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { MdDeleteForever, MdOutlineDifference } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
@@ -22676,7 +22677,8 @@ onClick=
 ================
 File: src/renderer/src/components/ModelSelector.tsx
 ================
-import { forwardRef, useImperativeHandle, useRef, KeyboardEvent, MouseEvent, useOptimistic, startTransition } from 'react';
+import { forwardRef, useImperativeHandle, useRef, KeyboardEvent, MouseEvent, useOptimistic, startTransition, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { MdClose, MdKeyboardArrowUp, MdKeyboardReturn } from 'react-icons/md';
 import { useDebounce } from '@reactuses/core';
@@ -22703,6 +22705,7 @@ type Props = {
   providers: ProviderProfile[];
   popupPlacement?: 'top' | 'bottom';
   labelOnNull?: string;
+  usePortal?: boolean;
 };
 ⋮----
 const getProviderName = (providerId: string) =>
@@ -22717,12 +22720,13 @@ const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) =
 ⋮----
 const handleRemovePreferredModel = (e: MouseEvent) =>
 ⋮----
-className=
-⋮----
 placeholder=
 ⋮----
 onChange=
 ⋮----
+
+⋮----
+className=
 
 ================
 File: src/renderer/src/components/TelemetryInfoDialog.tsx
