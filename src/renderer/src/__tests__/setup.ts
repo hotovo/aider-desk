@@ -54,6 +54,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock Electron APIs for renderer process
+// Mock scrollIntoView (not available in jsdom)
+Element.prototype.scrollIntoView = vi.fn();
+
 Object.defineProperty(window, 'electron', {
   value: {
     showSaveDialog: vi.fn(() => Promise.resolve({ canceled: false, filePath: '/mock/path' })),
