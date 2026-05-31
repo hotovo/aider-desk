@@ -21,6 +21,7 @@ interface Extension {
 
   // UI Components
   getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+  getUIComponentsLibraries?(): Record<string, string>;
   getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
   executeUIExtensionAction?(componentId: string, action: string, args: unknown[], context: ExtensionContext): Promise<unknown>;
 
@@ -422,6 +423,9 @@ interface UIComponentProps {
   
   // Icons library (organized by icon set)
   icons: Record<string, Record<string, IconComponent>>;
+  
+  // External libraries (loaded via getUIComponentsLibraries)
+  libraries: Record<string, Record<string, unknown>>;
   
   // Extension integration
   executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;

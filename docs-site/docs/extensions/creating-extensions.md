@@ -425,6 +425,7 @@ The `jsx` function receives a `props` object with:
 | `providers` | `ProviderProfile[]` | Available provider profiles |
 | `ui` | `UIComponents` | UI component library |
 | `icons` | `Record<string, Record<string, IconComponent>>` | React Icons organized by set (Fi, Hi, Cg, etc.) |
+| `libraries` | `Record<string, Record<string, unknown>>` | External npm packages loaded via `getUIComponentsLibraries()` |
 | `data` | `unknown` | Data from `getUIExtensionData` (if `loadData: true`) |
 | `executeExtensionAction` | `function` | Call extension action handler |
 | `message` | `MessageData` | Current message (for message-specific placements) |
@@ -472,6 +473,43 @@ The `icons` prop provides access to all react-icons libraries organized by icon 
 ```
 
 Available icon sets: `Ai`, `Bi`, `Bs`, `Cg`, `Ci`, `Di`, `Fa`, `Fc`, `Fi`, `Gi`, `Go`, `Gr`, `Hi`, `Im`, `Io`, `Io5`, `Lu`, `Md`, `Pi`, `Ri`, `Rx`, `Si`, `Sl`, `Tb`, `Tfi`, `Ti`, `Vsc`, `Wi`
+
+#### Using External Libraries
+
+Extensions can load third-party npm packages and use them in UI components. Declare libraries via `getUIComponentsLibraries()`, then access them through `props.libraries.<key>`.
+
+Libraries are resolved via [esm.sh](https://esm.sh) and cached to disk for offline reuse. React and React-DOM are automatically externalized to prevent duplicate instances.
+
+**Declaring libraries:**
+
+```typescript
+getUIComponentsLibraries(): Record<string, string> {
+  return {
+    chart: 'recharts@^2.12.0',
+    lodash: 'lodash@^4.17.0',
+  };
+}
+```
+
+**Using in JSX (always handle the loading state):**
+
+```jsx
+(props) => {
+  var chartLib = props.libraries.chart;
+
+  if (!chartLib) {
+    return <span className="text-text-secondary text-sm">Loading chart…</span>;
+  }
+
+  var LineChart = chartLib.LineChart;
+  return <LineChart data={props.data} />;
+}
+```
+
+**Points:**
+- Key naming — Use camelCase keys (e.g., `chart` becomes `props.libraries.chart`)
+- Multiple libraries — Each is loaded independently; declare as many as needed
+- Internet — Required on first load; subsequent loads use disk cache
 
 ### Event Handler Extension
 

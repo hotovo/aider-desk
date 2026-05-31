@@ -16,6 +16,7 @@ interface Extension {
   getAgents?(context: ExtensionContext): AgentProfile[];
   getModes?(context: ExtensionContext): ModeDefinition[];
   getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+  getUIComponentsLibraries?(): Record<string, string>;
   
   // UI Component support
   getUIExtensionData?(componentId: string, context: ExtensionContext): Promise<unknown>;
@@ -249,6 +250,9 @@ interface UIComponentProps {
   
   // Extension actions
   executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
+  
+  // External libraries (loaded via getUIComponentsLibraries)
+  libraries: Record<string, Record<string, unknown>>;
   
   // Data from getUIExtensionData() (if loadData: true)
   data?: unknown;

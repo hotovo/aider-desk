@@ -208,6 +208,9 @@ All UI components receive these props via the `data` prop passed by `string-to-r
   // Extension action executor
   executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>,
   
+  // External libraries loaded via getUIComponentsLibraries()
+  libraries: Record<string, Record<string, unknown>>,
+  
   // Data returned from getUIExtensionData() (if loadData: true)
   data?: unknown,
 }
@@ -426,6 +429,27 @@ The `icons` prop provides access to all react-icons libraries:
   );
 }
 ```
+
+## Using External Libraries
+
+The `libraries` prop provides access to third-party npm packages declared via `getUIComponentsLibraries()`. Each key in the returned Record becomes a property on `props.libraries`.
+
+Libraries are loaded asynchronously — on first render, `props.libraries.<key>` will be `undefined`. Always check availability before use:
+
+```jsx
+(props) => {
+  var chartLib = props.libraries.chart;
+
+  if (!chartLib) {
+    return <span className="text-text-secondary text-sm">Loading chart…</span>;
+  }
+
+  var LineChart = chartLib.LineChart;
+  return <LineChart data={props.data} />;
+}
+```
+
+For full documentation on declaring and using external libraries, see [external-libraries.md](external-libraries.md).
 
 ## Providing Data to Components
 

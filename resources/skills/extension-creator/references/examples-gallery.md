@@ -581,3 +581,14 @@ export default class ExternalRulesExtension implements Extension {
 | Tools | chunkhound-search | Custom AI tools |
 | UI Display | tps-counter | Show information in UI |
 | UI Interactive | multi-model-run | User input in UI |
+| **External Libraries** | **kanban-demo.ts** | **Third-party npm packages in UI components** |
+
+### External Libraries (kanban-demo.ts)
+
+Uses `getUIComponentsLibraries()` to load a npm package and render it in a UI component. See [external-libraries.md](external-libraries.md) for full documentation and a minimal example.
+
+Key patterns:
+- `getUIComponentsLibraries()` returns `{ kanban: 'react-kanban-kit@^0.0.2-beta.7' }`
+- JSX accesses library via `props.libraries.kanban`
+- Loading state handled with `undefined` check + timeout-based error fallback
+- Uses `ui.Button` and `ui.ModalOverlayLayout` alongside the external library

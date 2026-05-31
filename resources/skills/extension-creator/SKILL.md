@@ -112,6 +112,20 @@ Do not use when:
 
 **If:** Component triggers actions, implement `executeUIExtensionAction()`
 
+### Rule: Use external libraries when UI components need npm packages
+
+**When:** Extension UI components need third-party npm packages (charts, calendars, kanban boards, etc.)
+
+**Then:** Implement `getUIComponentsLibraries()` returning a Record<string, string> mapping camelCase keys to npm package specs
+
+**Must:** Access loaded libraries in JSX via `props.libraries.<key>`
+
+**Must:** Handle the loading state — libraries are async and `props.libraries.<key>` will be `undefined` on first render
+
+**Never:** Bundle or import React in library specs — AiderDesk's React instance is externalized automatically
+
+**Reference:** [external-libraries.md](references/external-libraries.md) for full details, loading patterns, and examples
+
 ### Rule: Add config component for extension settings
 
 **When:** Extension needs user-configurable settings (shown in gear icon dialog)
@@ -295,6 +309,15 @@ After completing this skill, verify:
   }
   ```
 
+**Situation:** Extension UI components need third-party npm packages
+
+**Pattern:**
+- When: Extension needs a library like a chart, calendar, kanban board, etc. that isn't in the built-in `ui` prop
+- Then: Implement `getUIComponentsLibraries()` returning `{ key: 'package@^version' }`
+- Access: Use `props.libraries.<key>` in JSX — check for `undefined` (async loading)
+- Example: `getUIComponentsLibraries() { return { chart: 'recharts@^2.12.0' } }`
+- Reference: [external-libraries.md](references/external-libraries.md)
+
 **Situation:** Extension needs config storage
 
 **Pattern:**
@@ -331,6 +354,7 @@ After completing this skill, verify:
 - [event-types.md](references/event-types.md) - All event types and payloads
 - [command-definition.md](references/command-definition.md) - Command structure
 - [ui-components.md](references/ui-components.md) - UI component system, placements, and available components
+- [external-libraries.md](references/external-libraries.md) - Loading third-party npm libraries in UI components (getUIComponentsLibraries)
 - [config-components.md](references/config-components.md) - Config component API (settings UI), methods, JSX format, and patterns
 - [examples-gallery.md](references/examples-gallery.md) - Real extension examples
 
