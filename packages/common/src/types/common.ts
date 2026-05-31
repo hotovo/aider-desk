@@ -1072,6 +1072,7 @@ export interface ExtensionUIComponent {
   jsx: string;
   loadData?: boolean;
   noDataCache?: boolean;
+  libraries?: Record<string, string>;
 }
 
 /**

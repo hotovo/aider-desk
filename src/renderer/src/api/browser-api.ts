@@ -1312,6 +1312,10 @@ export class BrowserApi implements ApplicationAPI {
     return this.addListener('modal-overlay-url', callback);
   }
 
+  loadExtensionLibrary(librarySpec: string): Promise<string> {
+    return this.post('/extensions/load-library', { librarySpec });
+  }
+
   isWebViewSupported(): boolean {
     return false;
   }

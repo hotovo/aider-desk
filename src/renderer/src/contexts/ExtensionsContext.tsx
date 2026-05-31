@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useMemo } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 import * as FiIcons from 'react-icons/fi';
@@ -40,6 +40,8 @@ import { Select } from '@/components/common/Select';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
+import { initExtensionLibraryLoader } from '@/utils/extension-library-loader';
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 
 type ExtensionsContextValue = {
   projectDir?: string;
@@ -49,6 +51,8 @@ type ExtensionsContextValue = {
   message?: Message;
 };
 
+const EMPTY_LIBRARIES: Record<string, Record<string, unknown>> = {};
+
 const ExtensionsContext = createContext<ExtensionsContextValue | undefined>(undefined);
 
 type Props = ExtensionsContextValue & {
@@ -56,6 +60,13 @@ type Props = ExtensionsContextValue & {
 };
 
 export const ExtensionsProvider = ({ projectDir, task, agentProfile, messages, message, children }: Props) => {
+  useEffect(() => {
+    initExtensionLibraryLoader().catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('Error initializing extension library loader:', error);
+    });
+  }, []);
+
   const value = useMemo(
     () => ({
       projectDir,
@@ -94,6 +105,7 @@ const uiComponents: UIComponents = {
   ModelSelector: ModelSelectorWrapper,
   LoadingOverlay,
   ConfirmDialog,
+  ModalOverlayLayout,
 };
 
 const reactIcons = {
@@ -137,6 +149,7 @@ export const useExtensions = (): ExtensionsHookResult => {
       providers,
       ui: uiComponents,
       icons: reactIcons,
+      libraries: EMPTY_LIBRARIES,
     }),
     [projectDir, task, agentProfile, models, providers],
   );

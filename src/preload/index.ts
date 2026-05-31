@@ -154,6 +154,7 @@ const api: ApplicationAPI = {
       ipcRenderer.removeListener('modal-overlay-url', listener);
     };
   },
+  loadExtensionLibrary: (librarySpec: string) => ipcRenderer.invoke('load-extension-library', librarySpec),
   // Extension config operations (per-extension settings)
   getExtensionConfigComponent: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('get-extension-config-component', extensionId, projectDir),
   getExtensionConfig: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('get-extension-config', extensionId, projectDir),

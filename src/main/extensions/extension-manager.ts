@@ -11,6 +11,7 @@ import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
+import { ExtensionLibraryLoader } from './extension-library-loader';
 
 import type {
   AfterCommitEvent,
@@ -159,6 +160,8 @@ export class ExtensionManager {
   private initialized = false;
   private listeners: ExtensionsChangeListener[] = [];
 
+  private libraryLoader: ExtensionLibraryLoader;
+
   constructor(
     private readonly store: Store,
     private readonly modelManager: ModelManager,
@@ -169,6 +172,7 @@ export class ExtensionManager {
   ) {
     this.loader = new ExtensionLoader();
     this.fetcher = new ExtensionFetcher();
+    this.libraryLoader = new ExtensionLibraryLoader();
   }
 
   private debouncedNotifyListeners = debounce(() => {
@@ -1233,6 +1237,48 @@ export class ExtensionManager {
     }
 
     return collectedComponents;
+  }
+
+  getUIComponentsLibraries(project?: Project): Map<string, Record<string, string>> {
+    const librariesByExtension = new Map<string, Record<string, string>>();
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
+    const extensions = this.filterEnabledExtensions(allExtensions);
+
+    for (const loaded of extensions) {
+      const { instance, initialized, metadata } = loaded;
+
+      if (!initialized || !instance.getUIComponentsLibraries) {
+        continue;
+      }
+
+      try {
+        const libraries = instance.getUIComponentsLibraries();
+
+        if (typeof libraries !== 'object' || libraries === null || Array.isArray(libraries)) {
+          logger.error(`[Extensions] Extension '${metadata.name}' getUIComponentsLibraries() did not return a Record<string, string>`);
+          continue;
+        }
+
+        const validLibs: Record<string, string> = {};
+        for (const [key, spec] of Object.entries(libraries)) {
+          if (typeof key === 'string' && typeof spec === 'string') {
+            validLibs[key] = spec;
+          }
+        }
+
+        if (Object.keys(validLibs).length > 0) {
+          librariesByExtension.set(loaded.id, validLibs);
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get UI component libraries from extension '${metadata.name}':`, error);
+      }
+    }
+
+    return librariesByExtension;
+  }
+
+  async loadExtensionLibrary(librarySpec: string): Promise<string> {
+    return await this.libraryLoader.loadLibrary(librarySpec);
   }
 
   /**

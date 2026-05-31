@@ -1,4 +1,5 @@
 export * from './environment';
+export * from './http';
 export * from './file-system';
 export * from './mutex';
 export * from './open-url';

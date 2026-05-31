@@ -1190,6 +1190,8 @@ export class EventsHandler {
     const task = taskId && project ? (project.getTask(taskId) ?? undefined) : undefined;
     const components = this.extensionManager.getUIComponents(project, task);
     const filtered = placement ? components.filter((c) => c.component.placement === placement) : components;
+    const librariesByExtension = this.extensionManager.getUIComponentsLibraries(project);
+
     return filtered.map((c) => ({
       extensionId: c.extensionId,
       componentId: c.component.id,
@@ -1197,7 +1199,12 @@ export class EventsHandler {
       jsx: c.component.jsx,
       loadData: c.component.loadData,
       noDataCache: c.component.noDataCache,
+      libraries: librariesByExtension.get(c.extensionId),
     }));
+  }
+
+  async loadExtensionLibrary(librarySpec: string): Promise<string> {
+    return await this.extensionManager.loadExtensionLibrary(librarySpec);
   }
 
   async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown> {

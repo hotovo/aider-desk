@@ -270,6 +270,7 @@ export interface UIComponents {
   Tooltip: UIComponent;
   LoadingOverlay: UIComponent;
   ConfirmDialog: UIComponent;
+  ModalOverlayLayout: UIComponent;
 }
 
 export interface UIComponentProps {
@@ -280,6 +281,7 @@ export interface UIComponentProps {
   providers: ProviderProfile[];
   ui: UIComponents;
   icons: Record<string, unknown>;
+  libraries: Record<string, Record<string, unknown>>;
 }
 
 /**
@@ -1506,6 +1508,23 @@ export interface Extension {
    * Called when extension is loaded and when components need to be refreshed
    */
   getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
+
+  /**
+   * Return list of npm packages that this extension's UI components need.
+   * Libraries are resolved via esm.sh and cached to disk for offline reuse.
+   * Resolved libraries are passed to UI components as `props.libraries.<key>`.
+   *
+   * @example
+   * ```typescript
+   * getUIComponentsLibraries(): Record<string, string> {
+   *   return {
+   *     kanban: 'react-kanban-kit@^1.0.0',
+   *     lodash: 'lodash@^4.17.0',
+   *   };
+   * }
+   * ```
+   */
+  getUIComponentsLibraries?(): Record<string, string>;
 
   /**
    * Return data for a specific UI component

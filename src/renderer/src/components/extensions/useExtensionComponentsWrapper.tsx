@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 
@@ -6,6 +6,7 @@ import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErr
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionUIStore';
+import { loadAllLibraries } from '@/utils/extension-library-loader';
 
 type UseExtensionComponentsWrapperProps = {
   placement: string;
@@ -36,6 +37,41 @@ export const useExtensionComponentsWrapper = ({
 
   // Track which components have been loaded in this mount to prevent infinite loops with noDataCache
   const loadedComponentsRef = useRef<Set<string>>(new Set());
+
+  // Load libraries for all components that declare them
+  const [libraries, setLibraries] = useState<Record<string, Record<string, unknown>>>({});
+
+  useEffect(() => {
+    if (!components) {
+      return;
+    }
+
+    const mergedLibraries: Record<string, string> = {};
+    for (const comp of components) {
+      if (comp.libraries) {
+        Object.assign(mergedLibraries, comp.libraries);
+      }
+    }
+    if (Object.keys(mergedLibraries).length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+    void loadAllLibraries(api, mergedLibraries)
+      .then((loaded) => {
+        if (!cancelled) {
+          setLibraries(loaded);
+        }
+      })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('[ExtensionLibLoader] Failed to load libraries:', err);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [api, components]);
 
   // Load components list if not yet loaded
   useEffect(() => {
@@ -121,6 +157,8 @@ export const useExtensionComponentsWrapper = ({
     });
   }, [api, currentProjectDir, currentTaskId, components, placement, store]);
 
+  const componentLibraries = useMemo(() => ({ ...componentProps.libraries, ...libraries }), [componentProps.libraries, libraries]);
+
   const getComponentData = useCallback(
     (comp: ExtensionUIComponent) => {
       const executeExtensionAction = async (action: string, ...args: unknown[]) => {
@@ -131,10 +169,11 @@ export const useExtensionComponentsWrapper = ({
         ...componentProps,
         ...additionalProps,
         executeExtensionAction,
+        libraries: componentLibraries,
         data: store.getComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
       };
     },
-    [componentProps, additionalProps, store, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
+    [componentProps, additionalProps, componentLibraries, store, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
   );
 
   const renderComponents = useCallback(() => {

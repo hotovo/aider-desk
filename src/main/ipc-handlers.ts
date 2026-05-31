@@ -331,6 +331,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     },
   );
 
+  ipcMain.handle('load-extension-library', async (_, librarySpec: string) => {
+    return await eventsHandler.loadExtensionLibrary(librarySpec);
+  });
+
   // Extension config handlers (per-extension settings)
   ipcMain.handle('get-extension-config-component', (_, extensionId: string, projectDir?: string) => {
     return eventsHandler.getExtensionConfigComponent(extensionId, projectDir);

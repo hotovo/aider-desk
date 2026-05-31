@@ -182,6 +182,22 @@ export class ExtensionsApi extends BaseApi {
       }),
     );
 
+    // Load extension library (resolve from esm.sh with disk cache)
+    router.post(
+      '/extensions/load-library',
+      this.handleRequest(async (req, res) => {
+        const { librarySpec } = req.body as { librarySpec?: string };
+
+        if (!librarySpec) {
+          res.status(400).json({ message: 'librarySpec is required' });
+          return;
+        }
+
+        const source = await this.eventsHandler.loadExtensionLibrary(librarySpec);
+        res.status(200).type('application/javascript').send(source);
+      }),
+    );
+
     // Get extension config component (per-extension settings)
     router.get(
       '/extensions/config-component',

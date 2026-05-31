@@ -108,6 +108,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
     useEffect(() => {
       if (usePortal && isOpen && modelSelectorRef.current) {
         const rect = modelSelectorRef.current.getBoundingClientRect();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setPopupStyle(
           popupPlacement === 'bottom'
             ? { position: 'fixed', top: rect.bottom + 4, left: rect.left }
