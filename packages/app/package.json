@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.68.0-dev",
+  "version": "0.68.0",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -45,7 +45,7 @@
     "@ai-sdk/mistral": "2.0.30",
     "@ai-sdk/openai": "^2.0.103",
     "@ai-sdk/openai-compatible": "1.0.36",
-    "@aiderdesk/extensions": "0.16.0",
+    "@aiderdesk/extensions": "0.18.0",
     "@augmentcode/auggie-sdk": "0.1.15",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-providers": "^3.782.0",
