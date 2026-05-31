@@ -10,6 +10,8 @@ import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useOS } from '@/hooks/useOS';
 import { ExtensionSettingsDialog } from '@/components/settings/ExtensionSettingsDialog';
 
 // Helper to normalize extension data
@@ -24,6 +26,7 @@ const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
     projectDir: isLoadedExtension ? extension.projectDir : undefined,
     readmeContent: extension.readmeContent,
     iconUrl: isLoadedExtension ? extension.metadata.iconUrl : extension.iconUrl,
+    supportedOS: isLoadedExtension ? extension.metadata.supportedOS : extension.supportedOS,
   };
 };
 
@@ -59,12 +62,14 @@ export const ExtensionCard = ({
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const currentOS = useOS();
 
   const data = getExtensionData(extension);
   const hasReadme = data.readmeContent && data.readmeContent.trim().length > 0;
   const isInstalled = isInstalledProp || 'metadata' in extension;
   const hasConfig = isInstalled && 'metadata' in extension ? ((extension as InstalledExtension).metadata.hasConfig ?? false) : false;
   const filePath = installedFilePath ?? data.filePath;
+  const isOSNotSupported = data.supportedOS && currentOS ? !data.supportedOS.includes(currentOS) : false;
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -137,6 +142,13 @@ export const ExtensionCard = ({
                 )}
                 {data.projectDir && (
                   <span className="text-3xs px-2 py-0.5 rounded bg-info-subtle text-info font-semibold">{t('settings.extensions.projectSpecific')}</span>
+                )}
+                {isOSNotSupported && (
+                  <Tooltip content={t('settings.extensions.osNotSupportedTooltip')}>
+                    <span className="text-3xs px-2 py-0.5 rounded bg-warning-subtle text-warning font-semibold cursor-help">
+                      {t('settings.extensions.osNotSupported')}
+                    </span>
+                  </Tooltip>
                 )}
               </div>
               {data.description && (

@@ -17,6 +17,7 @@ import {
   Mode,
   ModeDefinition,
   Model,
+  OS,
   ProjectSettings,
   PromptContext,
   SkillDefinition,
@@ -34,7 +35,7 @@ import {
   VoiceSession,
 } from "@common/types";
 
-export { AutonomyMode, ContextMemoryMode, InvocationMode, ToolApprovalState };
+export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -67,6 +68,8 @@ export interface ExtensionMetadata {
   capabilities?: string[];
   /** Optional URL to an icon image for the extension */
   iconUrl?: string;
+  /** Optional list of supported operating systems. If undefined, all OSes are supported. */
+  supportedOS?: OS[];
 }
 
 /**

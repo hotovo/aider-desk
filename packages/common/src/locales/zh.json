@@ -493,6 +493,8 @@
       "disabled": "已禁用",
       "projectSpecific": "项目",
       "hasDependencies": "有依赖",
+      "osNotSupported": "不支持",
+      "osNotSupportedTooltip": "此扩展可能无法在您的操作系统上运行。请查看扩展详情获取更多信息。",
       "install": "安装",
       "installing": "安装中...",
       "update": "更新",

@@ -48,8 +48,7 @@ Commands already using `rtk`, heredocs (`<<`), and unrecognized commands pass th
 ### Platform support
 
 - **macOS / Linux**: supported
-- **Windows**: supported if `bash`, `rtk`, and `jq` are available in `PATH`
-- On Windows, the extension invokes `rtk-rewrite.sh` through `bash` automatically
+- **Windows**: not officially supported; may work if `bash`, `rtk`, and `jq` are available in `PATH`
 
 ### 1. Install RTK
 

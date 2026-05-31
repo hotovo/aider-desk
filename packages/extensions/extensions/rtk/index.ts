@@ -20,6 +20,7 @@ import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { OS } from '@aiderdesk/extensions';
 import type { CommandDefinition, Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/extensions';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -173,6 +174,7 @@ export default class RTKExtension implements Extension {
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/rtk/icon.png',
     capabilities: ['optimization', 'commands'],
+    supportedOS: [OS.Linux, OS.MacOS],
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

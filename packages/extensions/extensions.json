@@ -106,7 +106,8 @@
       "folder": "sandbox",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["security"]
+      "capabilities": ["security"],
+      "supportedOS": ["linux", "macos"]
     },
     {
       "id": "rtk",
@@ -115,7 +116,8 @@
       "folder": "rtk",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["optimization", "commands"]
+      "capabilities": ["optimization", "commands"],
+      "supportedOS": ["linux", "macos"]
     },
     {
       "id": "redact-secrets",
@@ -222,7 +224,8 @@
       "folder": "fff",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"]
+      "capabilities": ["tools", "search"],
+      "supportedOS": ["linux", "macos"]
     },
     {
       "id": "seek",
@@ -231,7 +234,8 @@
       "folder": "seek",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"]
+      "capabilities": ["tools", "search"],
+      "supportedOS": ["linux", "macos"]
     },
     {
       "id": "tps-counter",

@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process';
 
 import { z } from 'zod';
 
+import { OS } from '@aiderdesk/extensions';
 import type { Extension, ExtensionContext, ProjectStartedEvent, ToolDefinition } from '@aiderdesk/extensions';
 
 export const metadata = {
@@ -11,6 +12,7 @@ export const metadata = {
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
   capabilities: ['tools', 'search'],
+  supportedOS: [OS.Linux, OS.MacOS],
 };
 
 const SEEK_INSTALL_URL = 'https://raw.githubusercontent.com/dualeai/seek/main/install.sh';

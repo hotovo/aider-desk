@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import { FileFinder, type GrepResult } from '@ff-labs/fff-node';
 
+import { OS } from '@aiderdesk/extensions';
 import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
 
 export const metadata = {
@@ -11,6 +12,7 @@ export const metadata = {
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
   capabilities: ['tools', 'search'],
+  supportedOS: [OS.Linux, OS.MacOS],
 };
 
 const inputSchema = z.object({

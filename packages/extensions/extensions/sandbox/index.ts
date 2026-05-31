@@ -37,6 +37,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+import { OS } from '@aiderdesk/extensions';
 import type { Extension, ExtensionContext, ToolCalledEvent } from '@aiderdesk/extensions';
 
 interface SandboxConfig {
@@ -300,6 +301,7 @@ export default class SandboxExtension implements Extension {
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sandbox/icon.png',
     capabilities: ['security'],
+    supportedOS: [OS.Linux, OS.MacOS],
   };
 
   async onLoad(context: ExtensionContext) {

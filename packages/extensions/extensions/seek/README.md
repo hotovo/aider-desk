@@ -2,6 +2,8 @@
 
 Fast ranked code search using [seek](https://github.com/dualeai/seek) (powered by zoekt) — replaces the internal `power---grep` tool with faster, relevance-ranked searches.
 
+> **Platform support**: macOS, Linux only. This extension is not supported on Windows.
+
 ## How It Works
 
 This extension wraps the `seek` CLI binary and overrides the built-in `power---grep` tool. When the agent uses grep, the search is routed through seek instead, providing:

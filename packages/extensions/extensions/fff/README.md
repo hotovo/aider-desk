@@ -2,6 +2,8 @@
 
 Fast file content search using [FFF (Freakin Fast File Finder)](https://github.com/dmtrKovalenko/fff.nvim) — replaces the internal `power---grep` tool with FFI-based Rust-powered searches.
 
+> **Platform support**: macOS, Linux only. This extension has not been tested on Windows.
+
 ## How It Works
 
 This extension uses the `@ff-labs/fff-node` Node.js SDK to call the FFF Rust library directly via FFI (no subprocess per query). It overrides the built-in `power---grep` tool, providing:

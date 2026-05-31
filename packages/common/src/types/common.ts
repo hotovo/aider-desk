@@ -1040,6 +1040,7 @@ export interface InstalledExtension {
     capabilities?: string[];
     iconUrl?: string;
     hasConfig?: boolean;
+    supportedOS?: OS[];
   };
   filePath: string;
   initialized: boolean;
@@ -1055,6 +1056,7 @@ export interface AvailableExtension {
   author?: string;
   capabilities?: string[];
   iconUrl?: string;
+  supportedOS?: OS[];
   type: 'single' | 'folder';
   file?: string;
   folder?: string;

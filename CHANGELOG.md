@@ -7,6 +7,7 @@
 - rendering the task-message-above and task-message-below UI extension placements in compact display mode
 - added icons to archive/unarchive and delete buttons in task actions panel
 - correctly placing unmaximized app window on startup
+- added support for defining supported OS in the extension and showing an info if the extension is not supported on the current OS
 
 ## [0.67.0]
 
