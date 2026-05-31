@@ -284,6 +284,7 @@ export interface UIComponentProps {
   ui: UIComponents;
   icons: Record<string, unknown>;
   libraries: Record<string, Record<string, unknown>>;
+  activateTask?: (taskId: string) => void;
 }
 
 /**

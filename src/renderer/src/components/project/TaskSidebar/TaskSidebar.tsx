@@ -165,6 +165,16 @@ const TaskSidebarComponent = ({
     }
   }, [activeTaskId, tasks, expandedIdsSet, setExpandedIds]);
 
+  useEffect(() => {
+    if (!optimisticActiveTaskId || !listContainerRef.current) {
+      return;
+    }
+    const activeElement = listContainerRef.current.querySelector(`[data-task-id="${optimisticActiveTaskId}"]`);
+    if (activeElement) {
+      activeElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [optimisticActiveTaskId]);
+
   const sortedTasks = useMemo(() => {
     const taskItems = virtualItems.filter((item): item is { type: 'task'; id: string; task: TaskData; level: number } => item.type === 'task');
     return taskItems.map((item) => item.task);

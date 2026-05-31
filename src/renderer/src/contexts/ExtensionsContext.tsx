@@ -49,6 +49,7 @@ type ExtensionsContextValue = {
   agentProfile?: AgentProfile;
   messages?: Message[];
   message?: Message;
+  activateTask?: (taskId: string) => void;
 };
 
 const EMPTY_LIBRARIES: Record<string, Record<string, unknown>> = {};
@@ -57,9 +58,10 @@ const ExtensionsContext = createContext<ExtensionsContextValue | undefined>(unde
 
 type Props = ExtensionsContextValue & {
   children: ReactNode;
+  activateTask?: (taskId: string) => void;
 };
 
-export const ExtensionsProvider = ({ projectDir, task, agentProfile, messages, message, children }: Props) => {
+export const ExtensionsProvider = ({ projectDir, task, agentProfile, messages, message, activateTask, children }: Props) => {
   useEffect(() => {
     initExtensionLibraryLoader().catch((error) => {
       // eslint-disable-next-line no-console
@@ -74,8 +76,9 @@ export const ExtensionsProvider = ({ projectDir, task, agentProfile, messages, m
       agentProfile,
       messages,
       message,
+      activateTask,
     }),
-    [agentProfile, message, messages, projectDir, task],
+    [agentProfile, message, messages, projectDir, task, activateTask],
   );
 
   return <ExtensionsContext.Provider value={value}>{children}</ExtensionsContext.Provider>;
@@ -138,7 +141,7 @@ type ExtensionsHookResult = {
 };
 
 export const useExtensions = (): ExtensionsHookResult => {
-  const { projectDir, task, agentProfile } = useExtensionsContext();
+  const { projectDir, task, agentProfile, activateTask } = useExtensionsContext();
   const { models, providers } = useModelProviders();
   const componentProps = useMemo<UIComponentProps>(
     () => ({
@@ -150,8 +153,9 @@ export const useExtensions = (): ExtensionsHookResult => {
       ui: uiComponents,
       icons: reactIcons,
       libraries: EMPTY_LIBRARIES,
+      activateTask,
     }),
-    [projectDir, task, agentProfile, models, providers],
+    [projectDir, task, agentProfile, models, providers, activateTask],
   );
 
   return { componentProps };
