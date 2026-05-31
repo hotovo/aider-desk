@@ -34,11 +34,16 @@ const ALL_PLACEMENTS: UIComponentPlacement[] = [
   // Sidebar
   'tasks-sidebar-header',
   'tasks-sidebar-bottom',
+  'tasks-sidebar-actions-left',
+  'tasks-sidebar-actions-right',
   // Header
   'header-left',
   'header-right',
   // Task State
   'task-state-actions',
+  'task-state-actions-all',
+  // Welcome
+  'welcome-page',
 ];
 
 // Shared styles for all placement chips
@@ -50,6 +55,12 @@ const CHIP_STYLES = `
   whitespace-nowrap
 `;
 
+// Placements that should render as a compact icon with tooltip instead of a chip
+const COMPACT_PLACEMENTS: Set<UIComponentPlacement> = new Set([
+  'tasks-sidebar-actions-left',
+  'tasks-sidebar-actions-right',
+]);
+
 // JSX template for each placement chip
 const createChipJsx = (placement: string): string => `
   (props) => (
@@ -60,10 +71,21 @@ const createChipJsx = (placement: string): string => `
   )
 `;
 
+// JSX template for compact icon placement with tooltip
+const createCompactIconJsx = (placement: string): string => `
+  (props) => (
+    <props.ui.Tooltip content="${placement}">
+      <div className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors cursor-default">
+        <span className="opacity-60 text-sm">📍</span>
+      </div>
+    </props.ui.Tooltip>
+  )
+`;
+
 export default class UIPlacementDemoExtension implements Extension {
   static metadata = {
     name: 'UI Placement Demo',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
@@ -78,7 +100,7 @@ export default class UIPlacementDemoExtension implements Extension {
     return ALL_PLACEMENTS.map((placement) => ({
       id: `placement-demo-${placement}`,
       placement,
-      jsx: createChipJsx(placement),
+      jsx: COMPACT_PLACEMENTS.has(placement) ? createCompactIconJsx(placement) : createChipJsx(placement),
     }));
   }
 }

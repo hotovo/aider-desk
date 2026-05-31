@@ -487,6 +487,7 @@ const TaskSidebarComponent = ({
                     <>
                       <h3 className="text-sm font-semibold uppercase h-5">{t('taskSidebar.title')}</h3>
                       <div className="flex items-center gap-1">
+                        <ExtensionComponentWrapper placement="tasks-sidebar-actions-left" />
                         <Tooltip content={t('taskSidebar.filterStates')}>
                           <button
                             className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors"
@@ -517,6 +518,7 @@ const TaskSidebarComponent = ({
                             </button>
                           </Tooltip>
                         )}
+                        <ExtensionComponentWrapper placement="tasks-sidebar-actions-right" />
                       </div>
                     </>
                   )}

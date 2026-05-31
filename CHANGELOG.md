@@ -9,6 +9,7 @@
 - correctly placing unmaximized app window on startup
 - added support for defining supported OS in the extension and showing an info if the extension is not supported on the current OS
 - added support for using external libraries for extension UI components
+- added support for new UI extension placements ('tasks-sidebar-actions-left', 'tasks-sidebar-actions-right') to be used in Tasks header
 
 ## [0.67.0]
 

@@ -199,6 +199,8 @@ export type UIComponentPlacement =
   | 'task-input-toolbar-right'
   | 'tasks-sidebar-header'
   | 'tasks-sidebar-bottom'
+  | 'tasks-sidebar-actions-left'
+  | 'tasks-sidebar-actions-right'
   | 'task-message-above'
   | 'task-message-below'
   | 'task-message-bar'
