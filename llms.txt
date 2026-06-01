@@ -96,6 +96,7 @@ src/
         valid-extension.ts
       extension-context.ts
       extension-fetcher.ts
+      extension-library-loader.ts
       extension-loader.ts
       extension-manager.ts
       extension-registry.ts
@@ -227,6 +228,7 @@ src/
       errors.ts
       file-system.ts
       file-watch.ts
+      http.ts
       index.ts
       mutex.ts
       open-url.ts
@@ -696,6 +698,7 @@ src/
         agents.ts
         browser-notifications.ts
         date-utils.ts
+        extension-library-loader.ts
         highlighter.tsx
         hotkeys.ts
         indexedDB.ts
@@ -3669,6 +3672,30 @@ private convertToGitHubRawUrl(webUrl: string): string | null
 getRawUrl(webUrl: string): string | null
 
 ================
+File: src/main/extensions/extension-library-loader.ts
+================
+import path from 'path';
+import fs from 'fs/promises';
+⋮----
+import { AIDER_DESK_CACHE_DIR } from '@/constants';
+import logger from '@/logger';
+import { fetchWithTimeout } from '@/utils';
+⋮----
+const sanitizeLibraryName = (name: string): string =>
+⋮----
+export class ExtensionLibraryLoader
+⋮----
+constructor()
+⋮----
+private getCachePath(librarySpec: string): string
+⋮----
+private getMetaPath(librarySpec: string): string
+⋮----
+async loadLibrary(librarySpec: string): Promise<string>
+⋮----
+// cache miss - fetch below
+
+================
 File: src/main/extensions/extension-loader.ts
 ================
 import path from 'path';
@@ -3737,6 +3764,7 @@ import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
 import { ExtensionFetcher } from './extension-fetcher';
+import { ExtensionLibraryLoader } from './extension-library-loader';
 ⋮----
 import type {
   AfterCommitEvent,
@@ -4024,6 +4052,10 @@ getSkills(project: Project, task: Task): SkillDefinition[]
 getUIComponents(project?: Project, task?: Task): RegisteredUIComponent[]
 ⋮----
 // Skip uninitialized extensions
+⋮----
+getUIComponentsLibraries(project?: Project): Map<string, Record<string, string>>
+⋮----
+async loadExtensionLibrary(librarySpec: string): Promise<string>
 ⋮----
 /**
    * Check if an extension provides a settings config component.
@@ -7407,6 +7439,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Execute extension UI action
 ⋮----
+// Load extension library (resolve from esm.sh with disk cache)
+⋮----
 // Get extension config component (per-extension settings)
 ⋮----
 // Get extension config data
@@ -10039,6 +10073,11 @@ export const shouldUsePolling = (watchPath: string, mode: FileWatchMode = FileWa
 // FileWatchMode.Auto
 
 ================
+File: src/main/utils/http.ts
+================
+export const fetchWithTimeout = async (url: string, timeoutMs: number = DEFAULT_FETCH_TIMEOUT_MS): Promise<Response> =>
+
+================
 File: src/main/utils/index.ts
 ================
 
@@ -11617,6 +11656,8 @@ async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: s
 ⋮----
 getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[]
 ⋮----
+async loadExtensionLibrary(librarySpec: string): Promise<string>
+⋮----
 async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown>
 ⋮----
 async executeUIExtensionAction(
@@ -13064,6 +13105,8 @@ saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: strin
 onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void
 ⋮----
 onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void
+⋮----
+loadExtensionLibrary(librarySpec: string): Promise<string>
 ⋮----
 isWebViewSupported(): boolean
 ⋮----
@@ -14595,7 +14638,7 @@ render(): ReactNode
 ================
 File: src/renderer/src/components/extensions/useExtensionComponentsWrapper.tsx
 ================
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
 ⋮----
@@ -14603,6 +14646,7 @@ import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErr
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionUIStore';
+import { loadAllLibraries } from '@/utils/extension-library-loader';
 ⋮----
 type UseExtensionComponentsWrapperProps = {
   placement: string;
@@ -14623,6 +14667,10 @@ export const useExtensionComponentsWrapper = ({
 }: UseExtensionComponentsWrapperProps) =>
 ⋮----
 // Track which components have been loaded in this mount to prevent infinite loops with noDataCache
+⋮----
+// Load libraries for all components that declare them
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 // Load components list if not yet loaded
 ⋮----
@@ -20572,6 +20620,8 @@ import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Toggle } from '@/components/common/Toggle';
 import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { useOS } from '@/hooks/useOS';
 import { ExtensionSettingsDialog } from '@/components/settings/ExtensionSettingsDialog';
 ⋮----
 // Helper to normalize extension data
@@ -22727,6 +22777,8 @@ const getProviderName = (providerId: string) =>
 ⋮----
 // Group filtered models by providerId
 ⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
 const onModelSelected = (model: Model | null) =>
 ⋮----
 const onModelSelectorSearchInputKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
@@ -22910,7 +22962,7 @@ const DiffsThemeSync = () =>
 ================
 File: src/renderer/src/contexts/ExtensionsContext.tsx
 ================
-import { createContext, ReactNode, useContext, useMemo } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 ⋮----
@@ -22930,6 +22982,8 @@ import { Select } from '@/components/common/Select';
 import { Input } from '@/components/common/Input';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
+import { initExtensionLibraryLoader } from '@/utils/extension-library-loader';
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 ⋮----
 type ExtensionsContextValue = {
   projectDir?: string;
@@ -22937,11 +22991,15 @@ type ExtensionsContextValue = {
   agentProfile?: AgentProfile;
   messages?: Message[];
   message?: Message;
+  activateTask?: (taskId: string) => void;
 };
 ⋮----
 type Props = ExtensionsContextValue & {
   children: ReactNode;
+  activateTask?: (taskId: string) => void;
 };
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 const useExtensionsContext = (): ExtensionsContextValue =>
 ⋮----
@@ -26922,6 +26980,27 @@ export const formatDateShort = (dateString: string): string =>
 export const getTaskDateGroup = (task: TaskData): string =>
 ⋮----
 export const groupTasksByDate = (tasks: TaskData[]): Map<string, TaskData[]> =>
+
+================
+File: src/renderer/src/utils/extension-library-loader.ts
+================
+import { ApplicationAPI } from '@common/api';
+⋮----
+const convertAsAliases = (exports: string): string =>
+⋮----
+type Replacer = (...args: string[]) => string;
+⋮----
+const rewriteImports = (source: string): string =>
+⋮----
+export const initExtensionLibraryLoader = async (): Promise<void> =>
+⋮----
+export const loadExtensionLibrary = async (api: ApplicationAPI, librarySpec: string): Promise<Record<string, unknown>> =>
+⋮----
+const module = await import(/* @vite-ignore */ url);
+⋮----
+export const loadAllLibraries = async (api: ApplicationAPI, libraries: Record<string, string>): Promise<Record<string, Record<string, unknown>>> =>
+⋮----
+// eslint-disable-next-line no-console
 
 ================
 File: src/renderer/src/utils/highlighter.tsx
