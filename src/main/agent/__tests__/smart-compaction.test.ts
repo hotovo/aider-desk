@@ -9,7 +9,7 @@ import {
   removeObsoleteSearches,
   compactSemanticSearches,
   compactFileReads,
-  deduplicateBash,
+  compactBashOutputs,
   redactFetchOutputs,
   truncateNonPowerToolResults,
 } from '../smart-compaction';
@@ -50,7 +50,7 @@ const assistantTextAndToolCallMsg = (text: string, toolCallId: string, toolName:
   ],
 });
 
-const toolResultMsg = (parts: { toolCallId: string; toolName: string; output: { type: string; value: string } }[]): ContextMessage => ({
+const toolResultMsg = (parts: { toolCallId: string; toolName: string; output: { type: string; value: unknown } }[]): ContextMessage => ({
   id: nextId(),
   role: 'tool',
   content: parts.map((p) => ({ type: 'tool-result', toolCallId: p.toolCallId, toolName: p.toolName, output: p.output as any })),
@@ -107,7 +107,22 @@ const semanticSearchTool = (query: string, lines: number) => {
   };
 };
 
-const bashTool = (command: string, stdout: string, stderr = '') => {
+const bashTool = (command: string, stdout: string, stderr = '', exitCode = 0) => {
+  const tcId = nextTcId();
+  return {
+    tcId,
+    assistant: assistantToolCallMsg(tcId, 'power---bash', { command }),
+    result: toolResultMsg([
+      {
+        toolCallId: tcId,
+        toolName: 'power---bash',
+        output: { type: 'json', value: { stdout, stderr, exitCode } },
+      },
+    ]),
+  };
+};
+
+const bashToolTextOutput = (command: string, stdout: string, stderr = '') => {
   const tcId = nextTcId();
   return {
     tcId,
@@ -198,7 +213,10 @@ const getToolResultPart = (msgs: ContextMessage[], toolName: string): ToolResult
 };
 
 const getTextOutput = (part: ToolResultPart): string => {
-  return (part.output as { type: 'text'; value: string }).value;
+  if (part.output.type === 'text' || part.output.type === 'error-text') {
+    return part.output.value;
+  }
+  return JSON.stringify(part.output.value);
 };
 
 const resetCounters = () => {
@@ -709,13 +727,13 @@ describe('compactFileReads', () => {
   });
 });
 
-describe('deduplicateBash', () => {
+describe('compactBashOutputs', () => {
   it('keeps only the latest occurrence of duplicate commands', () => {
     resetCounters();
     const bash1 = bashTool('npm test', 'all passed');
     const bash2 = bashTool('npm test', 'all passed again');
     const msgs: ContextMessage[] = [userMsg('run'), bash1.assistant, bash1.result, userMsg('run again'), bash2.assistant, bash2.result];
-    const result = deduplicateBash(msgs, NO_PROTECTION);
+    const result = compactBashOutputs(msgs, NO_PROTECTION);
     const bashResults = result.filter((m) => m.role === 'tool' && m.content.some((p) => p.type === 'tool-result' && p.toolName === 'power---bash'));
     expect(bashResults).toHaveLength(1);
     expectInvariants(result);
@@ -726,7 +744,7 @@ describe('deduplicateBash', () => {
     const bash1 = bashTool('npm test', 'all passed');
     const bash2 = bashTool('npm build', 'built');
     const msgs: ContextMessage[] = [userMsg('test'), bash1.assistant, bash1.result, userMsg('build'), bash2.assistant, bash2.result];
-    const result = deduplicateBash(msgs, NO_PROTECTION);
+    const result = compactBashOutputs(msgs, NO_PROTECTION);
     expect(result).toHaveLength(6);
     expectInvariants(result);
   });
@@ -735,7 +753,7 @@ describe('deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'a'.repeat(100));
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION);
+    const result = compactBashOutputs(msgs, NO_PROTECTION);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stdout).toContain('redacted');
     expectInvariants(result);
@@ -745,7 +763,7 @@ describe('deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'ok', 'e'.repeat(100));
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION);
+    const result = compactBashOutputs(msgs, NO_PROTECTION);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stderr).toContain('redacted');
     expectInvariants(result);
@@ -755,7 +773,7 @@ describe('deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'ok', 'warn');
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION);
+    const result = compactBashOutputs(msgs, NO_PROTECTION);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stdout).toBe('ok');
     expect(parsed.stderr).toBe('warn');
@@ -767,7 +785,7 @@ describe('deduplicateBash', () => {
     const bash1 = bashTool('npm test', 'all passed');
     const bash2 = bashTool('npm test', 'all passed again');
     const msgs: ContextMessage[] = [userMsg('run'), bash1.assistant, bash1.result, userMsg('run again'), bash2.assistant, bash2.result];
-    const result = deduplicateBash(msgs, 6);
+    const result = compactBashOutputs(msgs, 6);
     expect(result).toHaveLength(6);
     expectInvariants(result);
   });
@@ -1151,12 +1169,12 @@ describe('CompactionLevel - compactSemanticSearches', () => {
   });
 });
 
-describe('CompactionLevel - deduplicateBash', () => {
+describe('CompactionLevel - compactBashOutputs', () => {
   it('level 1 redacts output longer than 30 chars', () => {
     resetCounters();
     const bash = bashTool('npm test', 'a'.repeat(100));
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.One);
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.One);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stdout).toContain('redacted');
     expectInvariants(result);
@@ -1166,7 +1184,7 @@ describe('CompactionLevel - deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'ok');
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.One);
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.One);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stdout).toBe('ok');
     expectInvariants(result);
@@ -1176,7 +1194,7 @@ describe('CompactionLevel - deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'ok');
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.Two);
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.Two);
     const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
     expect(parsed.stdout).toContain('redacted');
     expectInvariants(result);
@@ -1186,9 +1204,31 @@ describe('CompactionLevel - deduplicateBash', () => {
     resetCounters();
     const bash = bashTool('npm test', 'a'.repeat(100));
     const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
-    const result = deduplicateBash(msgs, NO_PROTECTION, CompactionLevel.Three);
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.Three);
     const output = getTextOutput(getToolResultPart(result, 'power---bash'));
     expect(output).toBe('<result redacted due to compaction, run again if needed>');
+    expectInvariants(result);
+  });
+
+  it('preserves exitCode when redacting json bash output', () => {
+    resetCounters();
+    const bash = bashTool('npm test', 'a'.repeat(100), '', 1);
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.One);
+    const part = getToolResultPart(result, 'power---bash');
+    const value = (part.output as { type: 'json'; value: Record<string, unknown> }).value;
+    expect(value.exitCode).toBe(1);
+    expect(value.stdout).toContain('redacted');
+    expectInvariants(result);
+  });
+
+  it('handles text type bash output for backwards compatibility', () => {
+    resetCounters();
+    const bash = bashToolTextOutput('npm test', 'a'.repeat(100));
+    const msgs: ContextMessage[] = [userMsg('run'), bash.assistant, bash.result, userMsg('next')];
+    const result = compactBashOutputs(msgs, NO_PROTECTION, CompactionLevel.One);
+    const parsed = JSON.parse(getTextOutput(getToolResultPart(result, 'power---bash')));
+    expect(parsed.stdout).toContain('redacted');
     expectInvariants(result);
   });
 });

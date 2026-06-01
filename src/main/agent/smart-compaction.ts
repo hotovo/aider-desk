@@ -14,6 +14,7 @@ import { extractServerNameToolName } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 import { truncateToolResult } from '@/agent/utils';
+import logger from '@/logger';
 
 export enum CompactionLevel {
   One = 1,
@@ -307,7 +308,7 @@ export const smartCompactMessages = async (
   result = compactFileReads(result, protectedMessageCount, compactionLevel);
   result = removeObsoleteSearches(result, protectedMessageCount, compactionLevel);
   result = compactSemanticSearches(result, protectedMessageCount, compactionLevel);
-  result = deduplicateBash(result, protectedMessageCount, compactionLevel);
+  result = compactBashOutputs(result, protectedMessageCount, compactionLevel);
   result = redactFetchOutputs(result, protectedMessageCount);
   result = await truncateNonPowerToolResults(result, protectedMessageCount, compactionLevel);
   result = mergeConsecutiveAssistantMessages(result);
@@ -744,8 +745,9 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
   return messages;
 };
 
-export const deduplicateBash = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
+export const compactBashOutputs = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
   const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
+  logger.info(`Compacting bash outputs at level ${compactionLevel}`);
 
   const bashCommands = new Map<string, { messageIndex: number; toolCallId: string }[]>();
 
@@ -824,6 +826,26 @@ export const deduplicateBash = (messages: ContextMessage[], protectedMessageCoun
           type: 'text',
           value: '<result redacted due to compaction, run again if needed>',
         };
+        continue;
+      }
+
+      if (part.output.type === 'json' || part.output.type === 'error-json') {
+        const value = part.output.value;
+        if (typeof value === 'object' && value !== null) {
+          const obj = value as Record<string, unknown>;
+          const stdout = typeof obj.stdout === 'string' ? obj.stdout : '';
+          const stderr = typeof obj.stderr === 'string' ? obj.stderr : '';
+
+          const redactionMessage = '<output redacted due to compaction, run again if output is needed>';
+          const redactionThreshold = compactionLevel >= CompactionLevel.Two ? 0 : 30;
+
+          if (stdout.length > redactionThreshold) {
+            obj.stdout = redactionMessage;
+          }
+          if (stderr.length > redactionThreshold) {
+            obj.stderr = redactionMessage;
+          }
+        }
         continue;
       }
 
