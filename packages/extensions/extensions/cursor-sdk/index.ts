@@ -234,6 +234,15 @@ function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, 
         },
       };
     }
+    case 'mcp': {
+      const args = cursorArgs as { providerIdentifier: string; toolName: string; args?: Record<string, unknown> };
+      return {
+        serverName: args.providerIdentifier,
+        toolName: args.toolName,
+        fullToolName: `${args.providerIdentifier}${TOOL_SEPARATOR}${args.toolName}`,
+        input: args.args ?? {},
+      };
+    }
     default:
       return {
         serverName: CURSOR_SERVER_NAME,
@@ -401,6 +410,16 @@ function transformCursorResult(
       const str = lines.join('\n');
       return { resultStr: JSON.stringify(str), output: { type: 'text', value: str } };
     }
+    case 'mcp': {
+      const rawValue = extractResultValue(cursorResult);
+      const str = rawValue !== undefined
+        ? typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue)
+        : undefined;
+      return {
+        resultStr: str,
+        output: str ? { type: 'text', value: str } : { type: 'text', value: '' },
+      };
+    }
     default: {
       const str = cursorResult !== undefined
         ? typeof cursorResult === 'string' ? cursorResult : JSON.stringify(cursorResult)
@@ -418,7 +437,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.5.0',
+    version: '1.6.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
