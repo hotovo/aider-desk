@@ -96,16 +96,23 @@ jobs:
             
             # Update if different
             if [ "$current_clean" != "$latest_clean" ]; then
-              echo "Updating $package from $current_version to $latest_same_major"
-              npm install $package@$latest_same_major
+              echo "Updating $package from $current_version to $latest_clean"
+              # Write pinned version directly to package.json (no ~ or ^ prefix)
+              tmp=$(mktemp)
+              jq --arg pkg "$package" --arg ver "$latest_clean" '.dependencies[$pkg] = $ver' package.json > "$tmp" && mv "$tmp" package.json
               
               # Add to changelog
-              changelog="$changelog\n| $package | $current_version | $latest_same_major |"
+              changelog="$changelog\n| $package | $current_version | $latest_clean |"
               has_updates=true
             else
               echo "$package is already up to date within major version $current_major"
             fi
           done
+
+          # Sync lockfile with pinned versions in package.json
+          if [ "$has_updates" = true ]; then
+            npm install
+          fi
 
           # Save changelog to environment variable for PR (only if there are updates)
           if [ "$has_updates" = true ]; then
