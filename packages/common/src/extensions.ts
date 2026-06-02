@@ -155,6 +155,9 @@ export interface ExtensionProviderStrategy {
     model: Model,
     settings: SettingsData,
     projectDir: string,
+    toolSet?: unknown,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
   ) => unknown | Promise<unknown>;
   loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
 

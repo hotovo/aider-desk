@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - improved smart compaction for bash tools
+- added additional parameters to createLlm extension function for better custom LLM provider support
 
 ## [0.68.0]
 

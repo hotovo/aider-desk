@@ -948,8 +948,10 @@ export class ModelManager {
 
       this.providerRegistry[provider.provider.name] = {
         ...provider.strategy,
-        createLlm: (profile, model, settings, projectDir) =>
-          provider.strategy.createLlm(profile, model, settings, projectDir) as LanguageModelV2 | Promise<LanguageModelV2>,
+        createLlm: (profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata) =>
+          provider.strategy.createLlm(profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata) as
+            | LanguageModelV2
+            | Promise<LanguageModelV2>,
         getUsageReport: provider.strategy.getUsageReport || getDefaultUsageReport,
         getProviderOptions: provider.strategy.getProviderOptions ? (_provider, model) => provider.strategy.getProviderOptions!(model) : undefined,
         getProviderTools: provider.strategy.getProviderTools
@@ -1025,7 +1027,11 @@ export class ModelManager {
   }
 
   getProviders(): ProviderProfile[] {
-    return [...this.store.getProviders(), ...this.getExtensionProviderProfiles()];
+    const providersById = new Map<string, ProviderProfile>(this.store.getProviders().map((p) => [p.id, p]));
+    for (const extensionProfile of this.getExtensionProviderProfiles()) {
+      providersById.set(extensionProfile.id, extensionProfile);
+    }
+    return [...providersById.values()];
   }
 
   getExtensionProviderProfiles(): ProviderProfile[] {
