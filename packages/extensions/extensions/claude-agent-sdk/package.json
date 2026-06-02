@@ -1,0 +1,14 @@
+{
+  "name": "claude-agent-sdk",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "Integrates the Claude Agent SDK as a provider, using Claude Code CLI for agent mode",
+  "scripts": {
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "ai-sdk-provider-claude-code": "2.3.0",
+    "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
+    "patch-package": "^8.0.0"
+  }
+}

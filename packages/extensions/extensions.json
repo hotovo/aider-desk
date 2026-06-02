@@ -265,6 +265,15 @@
       "capabilities": ["modes", "ui"]
     },
     {
+      "id": "claude-agent-sdk",
+      "name": "Claude Agent SDK",
+      "description": "Integrates the Claude Agent SDK as a provider, using Claude Code CLI for agent mode",
+      "folder": "claude-agent-sdk",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["providers", "agent-loop"]
+    },
+    {
       "id": "cursor-sdk",
       "name": "Cursor SDK",
       "description": "Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop to run Cursor agents",
@@ -281,15 +290,6 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["events", "ui"]
-    },
-    {
-      "id": "agent-observability",
-      "name": "Agent Observability",
-      "description": "Records agent events and sends them to a pi-agent-observability server for real-time monitoring",
-      "folder": "agent-observability",
-      "type": "folder",
-      "hasDependencies": false,
-      "capabilities": ["tracking", "observability"]
     }
   ]
 }
