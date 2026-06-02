@@ -49,7 +49,6 @@
     "@augmentcode/auggie-sdk": "0.1.15",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-providers": "^3.782.0",
-    "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
     "@dotenvx/dotenvx": "^1.24.5",
     "@google-cloud/aiplatform": "^5.7.0",
     "@google/genai": "^1.30.0",
@@ -63,7 +62,6 @@
     "@requesty/ai-sdk": "^2.3.0",
     "adm-zip": "^0.5.16",
     "ai": "5.0.179",
-    "ai-sdk-provider-claude-code": "2.3.0",
     "ai-sdk-provider-gemini-cli": "1.5.1",
     "chalk": "^5.6.2",
     "cheerio": "^1.0.0",
@@ -109,16 +107,7 @@
     "ai-sdk-provider-gemini-cli": {
       "diff": "^8.0.4"
     },
-    "@anthropic-ai/claude-agent-sdk": {
-      "@img/sharp-darwin-arm64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-darwin-x64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-linux-arm": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-linux-arm64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-linux-x64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-linuxmusl-arm64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-linuxmusl-x64": "npm:empty-npm-package@1.0.0",
-      "@img/sharp-win32-x64": "npm:empty-npm-package@1.0.0"
-    },
+
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },

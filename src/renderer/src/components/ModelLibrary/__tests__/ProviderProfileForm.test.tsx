@@ -37,7 +37,6 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   AuggieParameters: () => <div>Auggie Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
-  ClaudeAgentSdkParameters: () => <div>Claude Agent SDK Parameters</div>,
   DeepseekParameters: () => <div>Deepseek Parameters</div>,
   GeminiParameters: () => <div>Gemini Parameters</div>,
   GeminiCliParameters: () => <div>Gemini CLI Parameters</div>,

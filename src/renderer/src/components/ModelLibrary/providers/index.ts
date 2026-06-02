@@ -5,7 +5,6 @@ export * from './AzureParameters';
 export * from './BedrockParameters';
 export * from './CerebrasParameters';
 export * from './GeminiCliParameters';
-export * from './ClaudeAgentSdkParameters';
 export * from './DeepseekParameters';
 export * from './GeminiParameters';
 export * from './GpustackParameters';

@@ -257,8 +257,6 @@
       "invalidTemperature": "Temperature must be between 0 and 2",
       "duplicateId": "Provider ID already exists"
     },
-    "claudeAgentSdkAuthRequired": "This provider requires Claude Code CLI installation and authentication. Install from https://claude.com/product/claude-code and run `claude login` to authenticate.",
-    "claudeAgentSdkAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
     "auggieAuthRequired": "This provider requires Auggie CLI installation and authentication. Install from https://www.npmjs.com/package/@augmentcode/auggie-sdk and run `auggie login` to authenticate.",
     "auggieAgentOnly": "This provider only works in Agent mode and is not supported in Code/Ask/Architect/Context modes.",
     "geminiCliAuthRequired": "This provider requires Gemini CLI installation and authentication. Install from https://geminicli.com and run `gemini` to authenticate.",
@@ -419,7 +417,6 @@
     "alibaba-plan": "Alibaba Coding Plan",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
-    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "gemini-cli": "Gemini CLI",

@@ -4,6 +4,7 @@
 
 - improved smart compaction for bash tools
 - added additional parameters to createLlm extension function for better custom LLM provider support
+- moved Claude Agent SDK provider from internal implementation to an extension
 
 ## [0.68.0]
 
