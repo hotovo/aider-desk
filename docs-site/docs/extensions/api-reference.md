@@ -19,6 +19,9 @@ interface Extension {
   getModes?(context: ExtensionContext): ModeDefinition[];
   getAgents?(context: ExtensionContext): AgentProfile[];
 
+  // Providers
+  getProviders?(context: ExtensionContext): ProviderDefinition[];
+
   // UI Components
   getUIComponents?(context: ExtensionContext): UIComponentDefinition[];
   getUIComponentsLibraries?(): Record<string, string>;
@@ -509,6 +512,152 @@ interface ExtensionMetadata {
   description?: string;      // Brief description
   author?: string;           // Author name or organization
   capabilities?: string[];   // Optional capabilities list
+}
+```
+
+## ProviderDefinition
+
+Defines a custom LLM provider that an extension can register. Provider configuration is fully owned by the extension and is not UI-editable.
+
+```typescript
+interface ProviderDefinition {
+  id: string;
+  name: string;
+  provider: { name: string; [key: string]: unknown };
+  strategy: ExtensionProviderStrategy;
+  headers?: Record<string, string>;
+}
+```
+
+### Properties
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `id` | `string` | Yes | Unique provider identifier (e.g., `'my-provider'`) |
+| `name` | `string` | Yes | Provider name — can be a new name or a built-in provider name to override it |
+| `provider` | `object` | Yes | Provider configuration. Must contain `name`, extension can add any other fields |
+| `strategy` | `ExtensionProviderStrategy` | Yes | Provider strategy implementation (see below) |
+| `headers` | `Record<string, string>` | No | Optional HTTP headers for API requests |
+
+## ExtensionProviderStrategy
+
+The strategy implementation for a custom LLM provider. Only `createLlm` and `loadModels` are required — all other methods are optional and will use built-in defaults when omitted.
+
+```typescript
+interface ExtensionProviderStrategy {
+  createLlm: (
+    profile: ProviderProfile,
+    model: Model,
+    settings: SettingsData,
+    projectDir: string,
+    toolSet?: unknown,
+    systemPrompt?: string,
+    providerMetadata?: unknown,
+  ) => unknown | Promise<unknown>;
+  loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
+
+  getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
+  getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
+  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue>> | undefined;
+  getCacheControl?: (model: Model) => CacheControl | undefined;
+  getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
+  getProviderParameters?: (model: Model) => Record<string, unknown>;
+  createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
+  isRetryable?: (error: unknown) => boolean;
+}
+```
+
+### Methods
+
+| Method | Required | Description |
+|--------|----------|-------------|
+| `createLlm(profile, model, settings, projectDir, toolSet?, systemPrompt?, providerMetadata?)` | Yes | Create and return an LLM instance for the given model. The returned type depends on the AI SDK provider being used. `toolSet` contains available tools, `systemPrompt` is the agent's system prompt, and `providerMetadata` carries state from previous provider calls. |
+| `loadModels(profile, settings)` | Yes | Load available models for this provider. Returns a `LoadModelsResponse`. |
+| `getAiderMapping(provider, modelId, settings, projectDir)` | No | Return Aider environment variable mappings for the given model (e.g., API keys, base URLs). |
+| `getUsageReport(task, provider, model, usage, providerMetadata?)` | No | Compute and return a usage report with token counts and cost information. |
+| `getProviderOptions(model)` | No | Return provider-specific options for AI SDK calls (e.g., reasoning effort, search grounding). |
+| `getCacheControl(model)` | No | Return cache control configuration for the provider. |
+| `getProviderTools(model)` | No | Return additional provider-specific tools (e.g., Google search grounding). |
+| `getProviderParameters(model)` | No | Return additional parameters to pass to the AI SDK provider. |
+| `createVoiceSession(profile, settings)` | No | Create a voice session for real-time audio conversation. |
+| `isRetryable(error)` | No | Determine if a given error is retryable. |
+
+### Example
+
+```typescript
+import type {
+  Extension,
+  ExtensionContext,
+  ProviderDefinition,
+  ProviderProfile,
+  Model,
+  SettingsData,
+  LoadModelsResponse,
+} from '@aiderdesk/extensions';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const MY_PROVIDER_NAME = 'my-custom-provider';
+
+export default class MyProviderExtension implements Extension {
+  getProviders(_context: ExtensionContext): ProviderDefinition[] {
+    return [
+      {
+        id: MY_PROVIDER_NAME,
+        name: MY_PROVIDER_NAME,
+        provider: { name: MY_PROVIDER_NAME, apiKey: '' },
+        strategy: {
+          createLlm: (
+            profile: ProviderProfile,
+            model: Model,
+            _settings: SettingsData,
+            _projectDir: string,
+            toolSet?: unknown,
+            systemPrompt?: string,
+            _providerMetadata?: unknown,
+          ) => {
+            const providerConfig = profile.provider as { apiKey?: string; baseUrl?: string };
+            const customProvider = createOpenAICompatible({
+              name: MY_PROVIDER_NAME,
+              apiKey: providerConfig.apiKey,
+              baseURL: providerConfig.baseUrl,
+            });
+            return customProvider.languageModel(model.id, {
+              system: systemPrompt,
+              tools: toolSet,
+            });
+          },
+
+          loadModels: async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> => {
+            return {
+              success: true,
+              models: [
+                {
+                  id: 'my-model-v1',
+                  providerId: profile.id,
+                  maxInputTokens: 128000,
+                  maxOutputTokens: 4096,
+                  inputCostPerToken: 0.5,
+                  outputCostPerToken: 1.5,
+                },
+              ],
+            };
+          },
+        },
+      },
+    ];
+  }
+}
+```
+
+## LoadModelsResponse
+
+Response from loading models for a provider.
+
+```typescript
+interface LoadModelsResponse {
+  models: Model[];
+  success: boolean;
+  error?: string;
 }
 ```
 
