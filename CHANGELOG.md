@@ -7,6 +7,7 @@
 - moved Claude Agent SDK provider from internal implementation to an extension
 - moved Auggie SDK provider from internal implementation to an extension
 - added read-only file indicators and instructions for agent
+- added MiniMax-M3 model to MiniMax provider
 
 ## [0.68.0]
 

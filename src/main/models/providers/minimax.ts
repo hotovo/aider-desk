@@ -21,6 +21,16 @@ export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadM
   // Hardcoded MiniMax models - no API call needed
   const hardcodedModels: Model[] = [
     {
+      id: 'MiniMax-M3',
+      providerId: profile.id,
+      maxInputTokens: 1000000,
+      maxOutputTokensLimit: 131072,
+      inputCostPerToken: 0.0000003, // 0.3 per 1M tokens
+      outputCostPerToken: 0.0000012, // 1.2 per 1M tokens
+      cacheReadInputTokenCost: 0.00000006, // 0.06 per 1M tokens
+      cacheWriteInputTokenCost: 0.000000375, // 0.375 per 1M tokens
+    },
+    {
       id: 'MiniMax-M2.7',
       providerId: profile.id,
       maxInputTokens: 204800,
