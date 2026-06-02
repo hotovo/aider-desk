@@ -40,7 +40,6 @@ export type LlmProviderName =
   | 'azure'
   | 'bedrock'
   | 'cerebras'
-  | 'claude-agent-sdk'
   | 'deepseek'
   | 'gemini'
   | 'gemini-cli'
@@ -90,7 +89,6 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'azure',
   'bedrock',
   'cerebras',
-  'claude-agent-sdk',
   'deepseek',
   'gemini',
   'gemini-cli',
@@ -235,13 +233,6 @@ export interface CerebrasProvider extends LlmProviderBase {
 }
 export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider => provider.name === 'cerebras';
 
-export interface ClaudeAgentSdkProvider extends LlmProviderBase {
-  name: 'claude-agent-sdk';
-  systemPrompt?: string;
-  mcpServers?: Record<string, unknown>;
-}
-export const isClaudeAgentSdkProvider = (provider: LlmProviderBase): provider is ClaudeAgentSdkProvider => provider.name === 'claude-agent-sdk';
-
 export interface GeminiCliProvider extends LlmProviderBase {
   name: 'gemini-cli';
   projectId?: string;
@@ -357,7 +348,6 @@ export type LlmProvider =
   | VertexAiProvider
   | LmStudioProvider
   | BedrockProvider
-  | ClaudeAgentSdkProvider
   | DeepseekProvider
   | GroqProvider
   | GpustackProvider
@@ -384,7 +374,6 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   auggie: 'gpt-5-4',
   bedrock: 'global.anthropic.claude-sonnet-4-6',
   cerebras: 'qwen-3-235b-a22b-instruct-2507',
-  'claude-agent-sdk': 'sonnet',
   deepseek: 'deepseek-v4-pro',
   gemini: 'gemini-pro-latest',
   'gemini-cli': 'gemini-2.5-pro',

@@ -257,8 +257,6 @@
       "invalidTemperature": "Температура должна быть от 0 до 2",
       "duplicateId": "Идентификатор провайдера уже существует"
     },
-    "claudeAgentSdkAuthRequired": "Для этого провайдера требуется установка и аутентификация Claude Code CLI. Установите его на https://claude.com/product/claude-code и выполните `claude login` для аутентификации.",
-    "claudeAgentSdkAgentOnly": "Этот провайдер работает только в режиме Agent и не поддерживается в режимах Code/Ask/Architect/Context.",
     "auggieAuthRequired": "Для этого провайдера требуется установка и аутентификация Auggie CLI. Установите его через https://www.npmjs.com/package/@augmentcode/auggie-sdk и выполните `auggie login` для аутентификации.",
     "auggieAgentOnly": "Этот провайдер работает только в режиме Agent и не поддерживается в режимах Code/Ask/Architect/Context.",
     "geminiCliAuthRequired": "Для этого провайдера требуется установка и аутентификация Gemini CLI. Установите его на https://geminicli.com и выполните `gemini` для аутентификации.",
@@ -414,7 +412,6 @@
     "alibaba-plan": "Alibaba Coding Plan",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",
-    "claude-agent-sdk": "Claude Agent SDK",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
     "gemini-cli": "Gemini CLI",

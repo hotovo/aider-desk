@@ -4,7 +4,6 @@ export { AuggieIcon } from './AuggieIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';
-export { ClaudeAgentSdkIcon } from './ClaudeAgentSdkIcon';
 export { DeepseekIcon } from './DeepseekIcon';
 export { GeminiCliIcon } from './GeminiCliIcon';
 export { GeminiIcon } from './GeminiIcon';
