@@ -6,6 +6,7 @@
 - added additional parameters to createLlm extension function for better custom LLM provider support
 - moved Claude Agent SDK provider from internal implementation to an extension
 - moved Auggie SDK provider from internal implementation to an extension
+- added read-only file indicators and instructions for agent
 
 ## [0.68.0]
 
