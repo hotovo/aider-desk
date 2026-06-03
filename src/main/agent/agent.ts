@@ -1927,7 +1927,7 @@ export class Agent {
       const toolPromptContext = extractPromptContextFromToolResult(toolResult.output) ?? promptContext;
 
       // Update the existing tool message with the result
-      task.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.input, JSON.stringify(toolResult.output), undefined, toolPromptContext);
+      task.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.input, JSON.stringify(toolResult.output), usageReport, toolPromptContext);
     };
 
     for (let i = 0; i < content.length; i++) {

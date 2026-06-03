@@ -257,8 +257,6 @@
       "invalidTemperature": "Температура должна быть от 0 до 2",
       "duplicateId": "Идентификатор провайдера уже существует"
     },
-    "auggieAuthRequired": "Для этого провайдера требуется установка и аутентификация Auggie CLI. Установите его через https://www.npmjs.com/package/@augmentcode/auggie-sdk и выполните `auggie login` для аутентификации.",
-    "auggieAgentOnly": "Этот провайдер работает только в режиме Agent и не поддерживается в режимах Code/Ask/Architect/Context.",
     "geminiCliAuthRequired": "Для этого провайдера требуется установка и аутентификация Gemini CLI. Установите его на https://geminicli.com и выполните `gemini` для аутентификации.",
     "geminiCliAgentOnly": "Этот провайдер работает только в режиме Agent и не поддерживается в режимах Code/Ask/Architect/Context.",
     "projectId": "Идентификатор проекта",
@@ -290,12 +288,6 @@
     "apiKey": "API-ключ",
     "baseUrl": "Базовый URL",
     "baseUrlPlaceholder": "например, https://api.anthropic.com"
-  },
-  "auggie": {
-    "apiKey": "API-токен",
-    "apiKeyPlaceholder": "your-api-key (необязательно)",
-    "apiUrl": "API URL",
-    "apiUrlPlaceholder": "https://your-tenant.api.augmentcode.com (необязательно)"
   },
   "minimax": {
     "apiKey": "API-ключ"
@@ -408,7 +400,6 @@
   "providers": {
     "anthropic": "Anthropic",
     "anthropic-compatible": "Совместимый с Anthropic",
-    "auggie": "Auggie SDK",
     "alibaba-plan": "Alibaba Coding Plan",
     "bedrock": "Bedrock",
     "cerebras": "Cerebras",

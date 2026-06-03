@@ -36,7 +36,6 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   'openai-compatible': OpenAiCompatibleModelOverrides,
   // Providers without specific overrides use DefaultModelOverrides
   anthropic: DefaultModelOverrides,
-  auggie: DefaultModelOverrides,
   bedrock: DefaultModelOverrides,
   cerebras: DefaultModelOverrides,
   deepseek: DeepseekModelOverrides,

@@ -46,7 +46,6 @@
     "@ai-sdk/openai": "^2.0.103",
     "@ai-sdk/openai-compatible": "1.0.36",
     "@aiderdesk/extensions": "0.18.0",
-    "@augmentcode/auggie-sdk": "0.1.15",
     "@aws-sdk/client-bedrock": "^3.887.0",
     "@aws-sdk/credential-providers": "^3.782.0",
     "@dotenvx/dotenvx": "^1.24.5",

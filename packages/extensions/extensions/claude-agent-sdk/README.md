@@ -47,39 +47,6 @@ Integrates the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk
 - **Authentication**: Run `claude login` before using the provider
 - **Claude Subscription**: Active Claude Code Pro, Max, Team, or Enterprise subscription (or a Claude Platform API key)
 
-## Installation
-
-1. Copy the extension to your AiderDesk extensions folder:
-   ```bash
-   cp -r claude-agent-sdk ~/.aider-desk/extensions/
-   cd ~/.aider-desk/extensions/claude-agent-sdk
-   npm install
-   ```
-2. Restart AiderDesk to load the extension
-
-The extension is available in the [AiderDesk extensions repository](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/claude-agent-sdk).
-
-## Patching
-
-This extension includes a patch for `ai-sdk-provider-claude-code` that adds critical functionality:
-
-- **Tool forwarding**: Patches `aiSdkTools` support to convert AI SDK tools into MCP servers that Claude Code can use
-- **Session resume**: Fixes conversation resume so only the latest user message is sent when resuming a session
-- **Tool name normalization**: Strips `mcp__ai-sdk__` prefix from tool names for correct matching
-
-The patch is applied automatically during `npm install` via `patch-package`:
-
-```bash
-cd ~/.aider-desk/extensions/claude-agent-sdk
-npm install   # patch-package runs as a postinstall hook
-```
-
-If you need to apply the patch manually:
-
-```bash
-npx patch-package
-```
-
 ## Available Models
 
 | Model | Input Tokens | Output Tokens |
@@ -125,9 +92,8 @@ No additional configuration is needed. Once the extension is loaded and Claude C
 ## Troubleshooting
 
 **Provider Not Available**:
-1. Verify the extension is installed in `~/.aider-desk/extensions/claude-agent-sdk/`
-2. Verify `npm install` was run in the extension directory
-3. Restart AiderDesk after installation
+1. Verify the extension is installed and enabled in AiderDesk
+2. Check that the Claude Code CLI is installed and authenticated
 
 **Authentication Fails**:
 1. Run `claude login` again to re-authenticate

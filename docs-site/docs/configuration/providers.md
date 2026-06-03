@@ -12,7 +12,7 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [Alibaba Plan](#alibaba-plan)
 - [Anthropic](#anthropic)
 - [Anthropic Compatible](#anthropic-compatible)
-- [Auggie](#auggie)
+- [Auggie (Extension)](#auggie)
 - [Azure](#azure)
 - [Bedrock](#bedrock)
 - [Cerebras](#cerebras)
@@ -106,7 +106,13 @@ Use any Anthropic-compatible API endpoint (e.g., third-party proxies, self-hoste
 
 ## Auggie
 
+> ⚠️ **Extension Required** — Auggie SDK is now available as a community extension. It must be installed separately before use.
+
 Auggie provides access to models through the Augment platform, supporting Claude and GPT models via the Auggie SDK.
+
+### Installation
+
+Go to **Settings → Extensions → Available**, find the Auggie SDK extension, and click **Install**.
 
 ### Configuration Parameters
 
@@ -423,15 +429,7 @@ Claude Agent SDK is an extension that integrates the [Claude Agent SDK](https://
 
 ### Installation
 
-1. Copy the extension to your AiderDesk extensions folder:
-   ```bash
-   cp -r claude-agent-sdk ~/.aider-desk/extensions/
-   cd ~/.aider-desk/extensions/claude-agent-sdk
-   npm install
-   ```
-2. Restart AiderDesk to load the extension
-
-The extension is available in the [AiderDesk extensions repository](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/claude-agent-sdk).
+Go to **Settings → Extensions → Available**, find the Claude Agent SDK extension, and click **Install**.
 
 ### Prerequisites
 
@@ -474,9 +472,8 @@ This provider **only works in Agent mode**:
 ### Troubleshooting
 
 **Provider Not Available**:
-1. Verify the extension is installed in `~/.aider-desk/extensions/claude-agent-sdk/`
-2. Verify `npm install` was run in the extension directory
-3. Restart AiderDesk after installation
+1. Verify the extension is installed in **Settings → Extensions → Installed**
+2. Reinstall the extension from the Available tab if needed
 
 **Authentication Fails**:
 1. Run `claude login` again to re-authenticate
@@ -780,7 +777,7 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 | Alibaba Plan | `openai/` |
 | Anthropic | `anthropic/` |
 | Anthropic Compatible | `anthropic/` |
-| Auggie | `auggie/` |
+| Auggie (Extension) | `auggie/` |
 | OpenAI | `openai/` |
 | Azure | `azure/` |
 | Bedrock | `bedrock/` |

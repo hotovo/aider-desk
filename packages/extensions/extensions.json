@@ -274,6 +274,15 @@
       "capabilities": ["providers", "agent-loop"]
     },
     {
+      "id": "auggie-sdk",
+      "name": "Auggie SDK",
+      "description": "Integrates the Auggie SDK as a provider using the Augment platform",
+      "folder": "auggie-sdk",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["providers"]
+    },
+    {
       "id": "cursor-sdk",
       "name": "Cursor SDK",
       "description": "Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop to run Cursor agents",

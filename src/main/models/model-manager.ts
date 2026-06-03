@@ -8,7 +8,6 @@ import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
-import { auggieProviderStrategy } from './providers/auggie';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
@@ -49,7 +48,7 @@ import { AiderModelMapping, CacheControl, LoadModelsResponse, LlmProviderRegistr
 const MODELS_META_URL = 'https://models.dev/api.json';
 const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
 const PROVIDER_MODELS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'provider-models.json');
-const PROVIDER_MODELS_CACHE_VERSION = 1;
+const PROVIDER_MODELS_CACHE_VERSION = 2;
 
 type ProviderModelsCache = {
   version: number;
@@ -91,7 +90,6 @@ export class ModelManager {
   private providerRegistry: LlmProviderRegistry = {
     anthropic: anthropicProviderStrategy,
     'anthropic-compatible': anthropicCompatibleProviderStrategy,
-    auggie: auggieProviderStrategy,
     azure: azureProviderStrategy,
     bedrock: bedrockProviderStrategy,
     cerebras: cerebrasProviderStrategy,

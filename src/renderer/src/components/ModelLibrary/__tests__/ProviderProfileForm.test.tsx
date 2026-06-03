@@ -34,7 +34,6 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   AlibabaPlanParameters: () => <div>Alibaba Plan Parameters</div>,
   AnthropicParameters: () => <div>Anthropic Parameters</div>,
   AnthropicCompatibleParameters: () => <div>Anthropic Compatible Parameters</div>,
-  AuggieParameters: () => <div>Auggie Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
   DeepseekParameters: () => <div>Deepseek Parameters</div>,

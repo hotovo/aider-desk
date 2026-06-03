@@ -1,6 +1,5 @@
 export * from './AnthropicParameters';
 export * from './AnthropicCompatibleParameters';
-export * from './AuggieParameters';
 export * from './AzureParameters';
 export * from './BedrockParameters';
 export * from './CerebrasParameters';
