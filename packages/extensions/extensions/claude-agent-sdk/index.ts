@@ -112,7 +112,7 @@ const normalizeAiSdkToolSet = (toolSet: Record<string, unknown>): Record<string,
 export default class ClaudeAgentSdkExtension implements Extension {
   static metadata = {
     name: 'Claude Agent SDK',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Integrates the Claude Agent SDK as a provider using Claude Code CLI',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/claude-agent-sdk/icon.png',
@@ -127,7 +127,7 @@ export default class ClaudeAgentSdkExtension implements Extension {
     return [
       {
         id: CLAUDE_AGENT_SDK_PROVIDER_NAME,
-        name: CLAUDE_AGENT_SDK_PROVIDER_NAME,
+        name: 'Claude Agent SDK',
         provider: { name: CLAUDE_AGENT_SDK_PROVIDER_NAME },
         strategy: {
           createLlm: (
