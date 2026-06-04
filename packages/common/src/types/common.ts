@@ -1080,7 +1080,7 @@ export interface ExtensionUIComponent {
  * Returned by getConfigComponent() for a specific extension.
  */
 export interface ExtensionConfigComponent {
-  /** JSX/TSX component as string to be parsed by string-to-react-component */
+  /** JSX/TSX component as string to be parsed to component */
   jsx: string;
 }
 

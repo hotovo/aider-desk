@@ -8,6 +8,7 @@
 - moved Auggie SDK provider from internal implementation to an extension
 - added read-only file indicators and instructions for agent
 - added MiniMax-M3 model to MiniMax provider
+- improved performance of extension UI component rendering
 
 ## [0.68.0]
 

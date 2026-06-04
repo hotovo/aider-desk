@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import StringToReactComponent from 'string-to-react-component';
 import { useTranslation } from 'react-i18next';
 
 import type { ExtensionConfigComponent } from '@common/types';
 
+import StringToReactComponent from '@/components/extensions/StringToReactComponent';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';

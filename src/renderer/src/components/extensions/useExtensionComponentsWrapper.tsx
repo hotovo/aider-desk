@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
+
+import StringToReactComponent from './StringToReactComponent';
 
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
