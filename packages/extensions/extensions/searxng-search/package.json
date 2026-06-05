@@ -1,0 +1,10 @@
+{
+  "name": "searxng-search",
+  "version": "1.0.0",
+  "main": "index.js",
+  "description": "Web search tool using SearXNG with auto-starting Docker container support",
+  "dependencies": {
+    "searchxng": "^1.0.0",
+    "testcontainers": "^12.0.0"
+  }
+}

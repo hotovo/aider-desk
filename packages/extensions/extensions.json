@@ -228,6 +228,15 @@
       "supportedOS": ["linux", "macos"]
     },
     {
+      "id": "searxng-search",
+      "name": "SearXNG Search",
+      "description": "Web search tool using SearXNG with auto-starting Docker container support",
+      "folder": "searxng-search",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools", "search"]
+    },
+    {
       "id": "seek",
       "name": "Seek",
       "description": "Fast ranked code search using seek (zoekt) — replaces the internal grep tool",
