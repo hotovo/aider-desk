@@ -952,6 +952,9 @@ export class Task {
       model: this.task.model || profile.model,
     });
 
+    // reset smart compaction level on agent start
+    this.smartCompactionLevel = 1;
+
     const agentMessages = await this.agent.runAgent(
       this,
       profile,
@@ -2336,7 +2339,6 @@ export class Task {
       });
     }
 
-    this.smartCompactionLevel = CompactionLevel.One;
     this.contextManager.clearMessages(true, createSnapshot);
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -2859,12 +2861,22 @@ export class Task {
     // Determine compaction level based on messages since last compaction
     const messagesSinceLastCompaction = contextMessages.length - this.lastSmartCompactionMessageCount;
     if (messagesSinceLastCompaction <= 3) {
+      logger.info('Increasing compaction level to aggressive due to low message count since last compaction.', {
+        messagesSinceLastCompaction,
+        smartCompactionLevel: this.smartCompactionLevel,
+      });
       this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Three) as CompactionLevel;
-    } else if (messagesSinceLastCompaction > 5) {
-      this.smartCompactionLevel = CompactionLevel.One;
+    } else if (messagesSinceLastCompaction > 5 && this.smartCompactionLevel > CompactionLevel.One) {
+      logger.info('Decreasing compaction level to mild due to high message count since last compaction.', {
+        messagesSinceLastCompaction,
+      });
+      this.smartCompactionLevel = Math.max(this.smartCompactionLevel - 1, CompactionLevel.One) as CompactionLevel;
     }
     // else: 4-5 messages since last compaction → keep current level
 
+    logger.debug('Current compaction level:', {
+      smartCompactionLevel: this.smartCompactionLevel,
+    });
     const compactedMessages = await smartCompactMessages(contextMessages, 10, this.smartCompactionLevel);
 
     this.lastSmartCompactionMessageCount = compactedMessages.length;

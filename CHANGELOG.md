@@ -9,6 +9,7 @@
 - added read-only file indicators and instructions for agent
 - added MiniMax-M3 model to MiniMax provider
 - improved performance of extension UI component rendering
+- correctly increasing smart compaction progressive levels
 
 ## [0.68.0]
 
