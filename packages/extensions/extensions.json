@@ -308,6 +308,15 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["events", "ui"]
+    },
+    {
+      "id": "codegraph",
+      "name": "CodeGraph",
+      "description": "Code intelligence using CodeGraph — symbol search, call graph tracing, impact analysis, and context building",
+      "folder": "codegraph",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools", "search"]
     }
   ]
 }

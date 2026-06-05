@@ -1,0 +1,12 @@
+{
+  "name": "codegraph-extension",
+  "version": "1.0.0",
+  "description": "CodeGraph code intelligence extension for AiderDesk",
+  "main": "index.ts",
+  "keywords": ["aiderdesk", "extension", "codegraph", "code-intelligence", "call-graph"],
+  "author": "wladimiiir",
+  "license": "MIT",
+  "dependencies": {
+    "@colbymchenry/codegraph": "^0.9.9"
+  }
+}
