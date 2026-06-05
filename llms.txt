@@ -330,6 +330,7 @@ src/
         extensions/
           ExtensionComponentWrapper.tsx
           ExtensionUIErrorBoundary.tsx
+          StringToReactComponent.tsx
           useExtensionComponentsWrapper.tsx
         logs/
           LogsPage.tsx
@@ -14502,11 +14503,38 @@ componentDidCatch(error: Error, errorInfo: ErrorInfo): void
 render(): ReactNode
 
 ================
+File: src/renderer/src/components/extensions/StringToReactComponent.tsx
+================
+import React, { useRef, useState, useEffect, type FC } from 'react';
+import { transpileJsxString } from '@common/jsx-transpiler';
+⋮----
+type SucraseOptions = {
+  transforms?: Array<'jsx' | 'typescript' | 'imports' | 'flow' | 'react-hot-loader' | 'jest'>;
+  production?: boolean;
+  [key: string]: unknown;
+};
+⋮----
+export type StringToReactComponentProps = {
+  data?: object;
+  babelOptions?: SucraseOptions;
+  children?: string;
+};
+⋮----
+const createBlobUrl = (code: string): string =>
+⋮----
+const loadModule = async (blobUrl: string, react: typeof React): Promise<FC> =>
+⋮----
+const module = await import(/* @vite-ignore */ blobUrl);
+⋮----
+const StringToReactComponent: FC<StringToReactComponentProps> = (
+
+================
 File: src/renderer/src/components/extensions/useExtensionComponentsWrapper.tsx
 ================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import StringToReactComponent from 'string-to-react-component';
 import { ExtensionUIComponent } from '@common/types';
+⋮----
+import StringToReactComponent from './StringToReactComponent';
 ⋮----
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
@@ -20508,11 +20536,11 @@ className=
 File: src/renderer/src/components/settings/ExtensionSettingsDialog.tsx
 ================
 import { useCallback, useEffect, useState } from 'react';
-import StringToReactComponent from 'string-to-react-component';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import type { ExtensionConfigComponent } from '@common/types';
 ⋮----
+import StringToReactComponent from '@/components/extensions/StringToReactComponent';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -27813,7 +27841,7 @@ File: package.json
     "slugify": "^1.6.6",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
-    "string-to-react-component": "^4.0.1",
+    "sucrase": "^3.35.1",
     "tailwind-merge": "^3.3.1",
     "textarea-caret": "^3.1.0",
     "tmp": "^0.2.3",
