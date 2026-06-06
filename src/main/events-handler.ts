@@ -1195,6 +1195,7 @@ export class EventsHandler {
     return filtered.map((c) => ({
       extensionId: c.extensionId,
       componentId: c.component.id,
+      name: c.component.name,
       placement: c.component.placement,
       jsx: c.component.jsx,
       loadData: c.component.loadData,

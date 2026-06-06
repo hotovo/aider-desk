@@ -211,7 +211,8 @@ export type UIComponentPlacement =
   | 'task-top-bar-right'
   | 'task-state-actions'
   | 'task-state-actions-all'
-  | 'welcome-page';
+  | 'welcome-page'
+  | 'floating';
 
 /**
  * Definition of a React UI component that can be registered by an extension.
@@ -242,6 +243,8 @@ export interface UIComponentDefinition {
   id: string;
   /** Where in UI to render this component */
   placement: UIComponentPlacement;
+  /** Display name for the component (used as floating panel title, tooltip, etc.) */
+  name?: string;
   /** JSX/TSX component as string to be parsed by string-to-react-component */
   jsx: string;
   /** Optional flag to indicate if the component should load data from the extension to be passed as a prop (default: false) */

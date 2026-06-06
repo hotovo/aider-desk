@@ -21,6 +21,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useActiveAgentProfile } from '@/utils/agents';
 
 type Props = {
@@ -545,6 +546,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
                     onDeleteTask={handleDeleteActiveTask}
                     onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
                   />
+                  <FloatingExtensionPanels />
                 </ExtensionsProvider>
               </Activity>
             )}

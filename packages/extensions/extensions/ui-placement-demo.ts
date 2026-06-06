@@ -44,6 +44,8 @@ const ALL_PLACEMENTS: UIComponentPlacement[] = [
   'task-state-actions-all',
   // Welcome
   'welcome-page',
+  // Floating
+  'floating',
 ];
 
 // Shared styles for all placement chips
@@ -82,10 +84,42 @@ const createCompactIconJsx = (placement: string): string => `
   )
 `;
 
+// JSX template for the floating placement — content only, panel chrome is automatic
+const FLOATING_PANEL_JSX = `
+  (props) => {
+    const { useState, useCallback } = React;
+    const [items, setItems] = useState([
+      { id: 1, text: 'Drag me by the title bar', done: false },
+      { id: 2, text: 'Resize from any edge or corner', done: false },
+      { id: 3, text: 'Minimize with the minus button', done: true },
+    ]);
+
+    const toggleItem = useCallback((id) => {
+      setItems((prev) => prev.map((item) => item.id === id ? { ...item, done: !item.done } : item));
+    }, []);
+
+    return (
+      <div className="p-3 space-y-2">
+        <p className="text-xs text-text-secondary">
+          Task: <span className="text-text-primary font-medium">{props.task?.name ?? 'none'}</span>
+        </p>
+        <div className="space-y-1">
+          {items.map((item) => (
+            <label key={item.id} className="flex items-center gap-2 text-xs cursor-pointer">
+              <props.ui.Checkbox checked={item.done} onChange={() => toggleItem(item.id)} />
+              <span className={item.done ? 'line-through text-text-secondary' : 'text-text-primary'}>{item.text}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    );
+  }
+`;
+
 export default class UIPlacementDemoExtension implements Extension {
   static metadata = {
     name: 'UI Placement Demo',
-    version: '1.2.0',
+    version: '1.3.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
@@ -100,7 +134,8 @@ export default class UIPlacementDemoExtension implements Extension {
     return ALL_PLACEMENTS.map((placement) => ({
       id: `placement-demo-${placement}`,
       placement,
-      jsx: COMPACT_PLACEMENTS.has(placement) ? createCompactIconJsx(placement) : createChipJsx(placement),
+      ...(placement === 'floating' ? { name: 'Floating Demo' } : {}),
+      jsx: placement === 'floating' ? FLOATING_PANEL_JSX : COMPACT_PLACEMENTS.has(placement) ? createCompactIconJsx(placement) : createChipJsx(placement),
     }));
   }
 }

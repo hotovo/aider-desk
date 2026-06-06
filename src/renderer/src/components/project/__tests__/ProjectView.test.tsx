@@ -64,6 +64,10 @@ vi.mock('../TaskView', () => ({
   TaskView: ({ task }: { task: TaskData }) => <div data-testid="task-view">{task.name}</div>,
 }));
 
+vi.mock('@/components/extensions/FloatingExtensionPanels', () => ({
+  FloatingExtensionPanels: () => null,
+}));
+
 describe('ProjectView', () => {
   const projectDir = '/mock/project';
   const mockApi = createMockApi({

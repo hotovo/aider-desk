@@ -1068,6 +1068,7 @@ export interface AvailableExtension {
 export interface ExtensionUIComponent {
   extensionId: string;
   componentId: string;
+  name?: string;
   placement: string;
   jsx: string;
   loadData?: boolean;

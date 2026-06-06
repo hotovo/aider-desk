@@ -10,6 +10,7 @@
 - added MiniMax-M3 model to MiniMax provider
 - improved performance of extension UI component rendering
 - correctly increasing smart compaction progressive levels
+- added floating placement support for UI extensions
 
 ## [0.68.0]
 

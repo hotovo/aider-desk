@@ -28,6 +28,7 @@ getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
 
 - **id** (string, required): Unique identifier for the component
 - **placement** (UIComponentPlacement, required): Where to render the component
+- **name** (string, optional): Display name for the component (used as floating panel title)
 - **jsx** (string, required): JSX/TSX component code as a string
 - **loadData** (boolean, optional): Whether to load data via `getUIExtensionData()` (default: false)
 - **noDataCache** (boolean, optional): Always fetch fresh data on render (default: false)
@@ -139,6 +140,16 @@ UI components can be placed in various locations throughout the AiderDesk interf
   - *Use for*: Onboarding, workflow selection, project setup
   - *Layout*: Full page layout
   - *Note*: Replaces default welcome screen entirely
+
+### Floating Panels
+
+- **floating**: Draggable, resizable floating panel rendered as a React portal
+  - *Use for*: Side-by-side tools that need to coexist with the chat (inspectors, previews, dashboards, scratchpads)
+  - *Layout*: Free-form floating panel — extension JSX is the panel content, panel chrome (title bar, resize handles) is automatic
+  - *Portal*: Rendered inside the project area via a portal host — has access to current task context
+  - *Title*: Set via the `name` property on `UIComponentDefinition` — used as the floating panel title
+  - *Behavior*: Draggable by title bar, resizable from edges, minimizable. Position and size are persisted in local storage
+  - *Note*: Extension JSX should only contain the inner content — never wrap in a panel component
 
 ## Component Props
 

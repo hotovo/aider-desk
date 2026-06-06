@@ -36,6 +36,8 @@ const StringToReactComponent: FC<StringToReactComponentProps> = ({ data, babelOp
   const componentRef = useRef<FC | null>(null);
   const loadIdRef = useRef(0);
   const resolvedOptions = babelOptions ?? DEFAULT_SUCRASE_OPTIONS;
+  // eslint-disable-next-line react-hooks/refs
+  const Component = componentRef.current;
 
   useEffect(() => {
     if (!children) {
@@ -70,7 +72,7 @@ const StringToReactComponent: FC<StringToReactComponentProps> = ({ data, babelOp
     }
   }, [children, resolvedOptions]);
 
-  const Component = componentRef.current;
+  // eslint-disable-next-line react-hooks/refs
   if (!Component) {
     return null;
   }

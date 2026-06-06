@@ -633,6 +633,7 @@ export const Home = () => {
                 )}
               </AnimatePresence>
               {renderProjectPanels()}
+              <div id="floating-panels-root" className="absolute inset-0 pointer-events-none z-40 overflow-visible" />
             </div>
           ) : (
             <NoProjectsOpen onOpenProject={handleOpenAddProjectDialog} />
