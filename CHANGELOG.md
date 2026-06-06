@@ -11,6 +11,7 @@
 - improved performance of extension UI component rendering
 - correctly increasing smart compaction progressive levels
 - added floating placement support for UI extensions
+- added option to carry over uncommitted changes when switching working modes
 
 ## [0.68.0]
 

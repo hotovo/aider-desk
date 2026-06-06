@@ -44,7 +44,10 @@ import {
   UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   WorkingMode,
+  WorktreeUncommittedFiles,
 } from '@common/types';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -3813,70 +3816,128 @@ ${error.stderr}`,
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
-  public async mergeAndSwitchToLocal(targetBranch?: string): Promise<void> {
-    if (!this.task.worktree) {
+  public async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void> {
+    if (options?.mergeBeforeSwitch && !this.task.worktree) {
       throw new Error('No worktree exists for this task');
     }
 
-    logger.info('Merging worktree and switching to local mode', {
+    logger.info('Switching to local working mode', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
+      mergeBeforeSwitch: options?.mergeBeforeSwitch ?? false,
     });
 
     await this.waitForCurrentPromptToFinish();
 
-    try {
-      const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+    if (options?.mergeBeforeSwitch && this.task.worktree) {
+      try {
+        const effectiveTargetBranch = options.targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
 
-      this.addLogMessage('loading', `Merging worktree to ${effectiveTargetBranch} branch and switching to local mode...`);
+        this.addLogMessage('loading', `Merging worktree to ${effectiveTargetBranch} branch and switching to local mode...`);
 
-      const settings = this.store.getSettings();
-      const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+        const settings = this.store.getSettings();
+        const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-      // Perform the merge (will throw on failure, preventing the switch)
-      const mergeState = await this.worktreeManager.mergeWorktreeToMainWithUncommitted(
-        this.project.baseDir,
-        this.task.id,
-        this.task.worktree.path,
-        false,
-        this.task.name || `Task ${this.taskId} changes`,
-        targetBranch,
-        symlinkFolders,
-      );
+        const mergeState = await this.worktreeManager.mergeWorktreeToMainWithUncommitted(
+          this.project.baseDir,
+          this.task.id,
+          this.task.worktree.path,
+          false,
+          this.task.name || `Task ${this.taskId} changes`,
+          options.targetBranch,
+          symlinkFolders,
+        );
 
-      // Store merge state for potential revert
-      await this.saveTask({ lastMergeState: mergeState });
+        await this.saveTask({ lastMergeState: mergeState });
 
-      this.addLogMessage('info', `Successfully merged worktree to ${effectiveTargetBranch} branch`, true);
+        this.addLogMessage('info', `Successfully merged worktree to ${effectiveTargetBranch} branch`, true);
+      } catch (error) {
+        logger.error('Failed to merge worktree and switch to local:', { error });
 
-      // Now switch to local mode (same path as UI, handles save + events)
-      await this.updateTask({ workingMode: 'local' });
-    } catch (error) {
-      logger.error('Failed to merge worktree and switch to local:', { error });
+        const isConflict =
+          error instanceof GitError &&
+          (error.gitOutput?.toLowerCase().includes('resolve all conflicts') ||
+            error.message?.toLowerCase().includes('conflicts must be resolved first') ||
+            error.gitOutput?.toLowerCase().includes('conflicts must be resolved first'));
 
-      const isConflict =
-        error instanceof GitError &&
-        (error.gitOutput?.toLowerCase().includes('resolve all conflicts') ||
-          error.message?.toLowerCase().includes('conflicts must be resolved first') ||
-          error.gitOutput?.toLowerCase().includes('conflicts must be resolved first'));
+        this.addLogMessage(
+          'error',
+          isConflict
+            ? 'worktree.mergeConflicts'
+            : error instanceof GitError
+              ? error.getErrorDetails()
+              : `Failed to merge worktree: ${error instanceof Error ? error.message : String(error)}`,
+          true,
+          undefined,
+          isConflict ? ['rebase-worktree'] : undefined,
+        );
 
-      this.addLogMessage(
-        'error',
-        isConflict
-          ? 'worktree.mergeConflicts'
-          : error instanceof GitError
-            ? error.getErrorDetails()
-            : `Failed to merge worktree: ${error instanceof Error ? error.message : String(error)}`,
-        true,
-        undefined,
-        isConflict ? ['rebase-worktree'] : undefined,
-      );
+        await this.sendUpdatedFilesUpdated();
+        await this.sendWorktreeIntegrationStatusUpdated();
 
-      await this.sendUpdatedFilesUpdated();
-      await this.sendWorktreeIntegrationStatusUpdated();
-
-      throw error;
+        throw error;
+      }
     }
+
+    await this.updateTask({ workingMode: 'local' });
+  }
+
+  public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void> {
+    logger.info('Switching to worktree working mode', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      carryOverUncommittedChanges: options?.carryOverUncommittedChanges ?? false,
+      dropSourceChanges: options?.dropSourceChanges ?? true,
+    });
+
+    await this.waitForCurrentPromptToFinish();
+
+    let stashId: string | null = null;
+    const settings = this.store.getSettings();
+    const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+
+    if (options?.carryOverUncommittedChanges) {
+      const timestamp = Date.now();
+      const shortId = this.taskId.length > 24 ? this.taskId.substring(24) : this.taskId;
+      stashId = `local-${shortId}-to-worktree-${timestamp}`;
+
+      try {
+        const stashResult = await this.worktreeManager.stashUncommittedChanges(
+          stashId,
+          this.project.baseDir,
+          'Uncommitted changes to carry over to worktree',
+          symlinkFolders,
+        );
+        if (!stashResult) {
+          stashId = null;
+        }
+      } catch (error) {
+        logger.error('Failed to stash uncommitted changes before worktree switch:', { error });
+        stashId = null;
+      }
+    }
+
+    await this.updateTask({ workingMode: 'worktree' });
+
+    if (stashId && this.task.worktree) {
+      try {
+        await this.worktreeManager.applyStash(this.task.worktree.path, stashId);
+
+        if (!options?.dropSourceChanges) {
+          await this.worktreeManager.applyStash(this.project.baseDir, stashId);
+        }
+
+        await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+      } catch (error) {
+        logger.error('Failed to apply stashed changes to worktree:', { error });
+      }
+    }
+
+    void this.sendUpdatedFilesUpdated();
+  }
+
+  public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles> {
+    return await this.worktreeManager.getUncommittedFiles(this.project.baseDir);
   }
 
   public async applyUncommittedChanges(targetBranch?: string): Promise<void> {

@@ -299,10 +299,23 @@ const MergeWorktreeToMainSchema = z.object({
   commitMessage: z.string().optional(),
 });
 
-const MergeAndSwitchToLocalSchema = z.object({
+const SwitchToLocalWorkingModeSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  mergeBeforeSwitch: z.boolean().optional(),
   targetBranch: z.string().optional(),
+});
+
+const SwitchToWorktreeWorkingModeSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  carryOverUncommittedChanges: z.boolean().optional(),
+  dropSourceChanges: z.boolean().optional(),
+});
+
+const LocalUncommittedFilesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
 });
 
 const ApplyUncommittedChangesSchema = z.object({
@@ -865,18 +878,48 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
-    // Merge and switch to local
+    // Switch to local working mode
     router.post(
-      '/project/worktree/merge-and-switch-to-local',
+      '/project/switch-to-local-working-mode',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(MergeAndSwitchToLocalSchema, req.body, res);
+        const parsed = this.validateRequest(SwitchToLocalWorkingModeSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
-        const { projectDir, taskId, targetBranch } = parsed;
-        await this.eventsHandler.mergeAndSwitchToLocal(projectDir, taskId, targetBranch);
-        res.status(200).json({ message: 'Worktree merged and switched to local' });
+        const { projectDir, taskId, mergeBeforeSwitch, targetBranch } = parsed;
+        await this.eventsHandler.switchToLocalWorkingMode(projectDir, taskId, { mergeBeforeSwitch, targetBranch });
+        res.status(200).json({ message: 'Switched to local working mode' });
+      }),
+    );
+
+    // Switch to worktree working mode
+    router.post(
+      '/project/switch-to-worktree-working-mode',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SwitchToWorktreeWorkingModeSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, carryOverUncommittedChanges, dropSourceChanges } = parsed;
+        await this.eventsHandler.switchToWorktreeWorkingMode(projectDir, taskId, { carryOverUncommittedChanges, dropSourceChanges });
+        res.status(200).json({ message: 'Switched to worktree working mode' });
+      }),
+    );
+
+    // Get local uncommitted files
+    router.get(
+      '/project/local-uncommitted-files',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(LocalUncommittedFilesSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        const result = await this.eventsHandler.getLocalUncommittedFiles(projectDir, taskId);
+        res.status(200).json(result);
       }),
     );
 

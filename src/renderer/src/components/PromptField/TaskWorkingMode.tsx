@@ -1,4 +1,4 @@
-import { TaskData, WorkingMode } from '@common/types';
+import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
 import { useState } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
@@ -9,6 +9,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/common/Checkbox';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
@@ -60,6 +61,9 @@ export const TaskWorkingMode = ({
   const api = useApi();
   const [isSwitching, setIsSwitching] = useState(false);
   const [showConfirmLocal, setShowConfirmLocal] = useState(false);
+  const [showConfirmWorktree, setShowConfirmWorktree] = useState(false);
+  const [keepChangesInSource, setKeepChangesInSource] = useState(false);
+  const [localUncommittedFiles, setLocalUncommittedFiles] = useState<WorktreeUncommittedFiles | null>(null);
   const isWorktree = task.workingMode === 'worktree';
   const { worktreeStatus, refreshStatus: handleRefresh } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
 
@@ -74,32 +78,69 @@ export const TaskWorkingMode = ({
       }
     }
 
+    if (mode === 'worktree' && task.workingMode === 'local') {
+      try {
+        const uncommittedFiles = await api.getLocalUncommittedFiles(task.baseDir, task.id);
+        if (uncommittedFiles.count > 0) {
+          setLocalUncommittedFiles(uncommittedFiles);
+          setShowConfirmWorktree(true);
+          return;
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to check local uncommitted files:', error);
+      }
+    }
+
     await performSwitch(mode);
   };
 
   const performSwitch = async (mode: WorkingMode) => {
     setIsSwitching(true);
     try {
-      await api.updateTask(task.baseDir, task.id, { workingMode: mode });
+      if (mode === 'local') {
+        await api.switchToLocalWorkingMode(task.baseDir, task.id);
+      } else {
+        await api.switchToWorktreeWorkingMode(task.baseDir, task.id);
+      }
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to update task:', error);
     } finally {
       setIsSwitching(false);
       setShowConfirmLocal(false);
+      setShowConfirmWorktree(false);
     }
   };
 
   const performMergeAndSwitch = async () => {
     setIsSwitching(true);
     try {
-      await api.mergeAndSwitchToLocal(task.baseDir, task.id, worktreeStatus?.targetBranch);
+      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: worktreeStatus?.targetBranch };
+      await api.switchToLocalWorkingMode(task.baseDir, task.id, options);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to merge and switch:', error);
     } finally {
       setIsSwitching(false);
       setShowConfirmLocal(false);
+    }
+  };
+
+  const performSwitchToWorktreeWithChanges = async () => {
+    setIsSwitching(true);
+    try {
+      const options: SwitchToWorktreeOptions = {
+        carryOverUncommittedChanges: true,
+        dropSourceChanges: !keepChangesInSource,
+      };
+      await api.switchToWorktreeWorkingMode(task.baseDir, task.id, options);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to switch to worktree with changes:', error);
+    } finally {
+      setIsSwitching(false);
+      setShowConfirmWorktree(false);
     }
   };
 
@@ -177,6 +218,29 @@ export const TaskWorkingMode = ({
           }}
         >
           <div className="whitespace-pre-wrap text-xs">{t('workingMode.confirmLocalMessage', { warnings: getWarningMessage() })}</div>
+        </ConfirmDialog>
+      )}
+      {showConfirmWorktree && (
+        <ConfirmDialog
+          title={t('workingMode.confirmWorktreeTitle')}
+          onConfirm={() => performSwitch('worktree')}
+          onCancel={() => {
+            setShowConfirmWorktree(false);
+            setKeepChangesInSource(false);
+          }}
+          confirmButtonText={t('workingMode.confirmWorktreeAction')}
+          confirmButtonColor="primary"
+          width={600}
+          additionalAction={{
+            label: t('workingMode.takeChangesAndSwitchAction'),
+            onClick: performSwitchToWorktreeWithChanges,
+            color: 'primary',
+          }}
+        >
+          <div className="space-y-3">
+            <div className="whitespace-pre-wrap text-xs">{t('workingMode.confirmWorktreeMessage', { count: localUncommittedFiles?.count ?? 0 })}</div>
+            <Checkbox label={t('workingMode.keepChangesInProject')} checked={keepChangesInSource} onChange={setKeepChangesInSource} size="sm" />
+          </div>
         </ConfirmDialog>
       )}
     </div>

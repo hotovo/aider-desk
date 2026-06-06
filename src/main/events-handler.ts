@@ -555,13 +555,35 @@ export class EventsHandler {
     await task.mergeWorktreeToMain(squash, targetBranch, commitMessage);
   }
 
-  async mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
+  async switchToLocalWorkingMode(baseDir: string, taskId: string, options?: { mergeBeforeSwitch?: boolean; targetBranch?: string }): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.mergeAndSwitchToLocal(targetBranch);
+    await task.switchToLocalWorkingMode(options);
+  }
+
+  async switchToWorktreeWorkingMode(
+    baseDir: string,
+    taskId: string,
+    options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean },
+  ): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.switchToWorktreeWorkingMode(options);
+  }
+
+  async getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<{ count: number; files: string[] }> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    return await task.getLocalUncommittedFiles();
   }
 
   async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {

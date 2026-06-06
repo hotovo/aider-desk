@@ -1523,7 +1523,12 @@
     "confirmLocalTitle": "Switch to Local Mode",
     "confirmLocalMessage": "This worktree has unsaved work:\n{{warnings}}\n\nYou can merge the changes to the main branch before switching, or remove the worktree and lose this work.",
     "confirmLocalAction": "Remove and switch",
-    "mergeAndSwitchAction": "Merge and switch"
+    "mergeAndSwitchAction": "Merge and switch",
+    "confirmWorktreeTitle": "Switch to Worktree Mode",
+    "confirmWorktreeMessage": "You have {{count}} uncommitted file(s) in the project directory.\n\nYou can switch without taking changes, or carry them over to the worktree.",
+    "confirmWorktreeAction": "Just switch",
+    "takeChangesAndSwitchAction": "Carry over & switch",
+    "keepChangesInProject": "Keep changes in project directory"
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",

@@ -236,7 +236,9 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Worktree merge operations
     mergeWorktreeToMain: vi.fn((): Promise<void> => Promise.resolve()),
-    mergeAndSwitchToLocal: vi.fn((): Promise<void> => Promise.resolve()),
+    switchToLocalWorkingMode: vi.fn((): Promise<void> => Promise.resolve()),
+    switchToWorktreeWorkingMode: vi.fn((): Promise<void> => Promise.resolve()),
+    getLocalUncommittedFiles: vi.fn((): Promise<{ count: number; files: string[] }> => Promise.resolve({ count: 0, files: [] })),
     applyUncommittedChanges: vi.fn((): Promise<void> => Promise.resolve()),
     revertLastMerge: vi.fn((): Promise<void> => Promise.resolve()),
     listBranches: vi.fn((): Promise<BranchInfo[]> => Promise.resolve([])),

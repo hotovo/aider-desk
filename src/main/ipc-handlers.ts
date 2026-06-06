@@ -474,8 +474,22 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.mergeWorktreeToMain(baseDir, taskId, squash, targetBranch, commitMessage);
   });
 
-  ipcMain.handle('merge-and-switch-to-local', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
-    await eventsHandler.mergeAndSwitchToLocal(baseDir, taskId, targetBranch);
+  ipcMain.handle(
+    'switch-to-local-working-mode',
+    async (_, baseDir: string, taskId: string, options?: { mergeBeforeSwitch?: boolean; targetBranch?: string }) => {
+      await eventsHandler.switchToLocalWorkingMode(baseDir, taskId, options);
+    },
+  );
+
+  ipcMain.handle(
+    'switch-to-worktree-working-mode',
+    async (_, baseDir: string, taskId: string, options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean }) => {
+      await eventsHandler.switchToWorktreeWorkingMode(baseDir, taskId, options);
+    },
+  );
+
+  ipcMain.handle('get-local-uncommitted-files', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.getLocalUncommittedFiles(baseDir, taskId);
   });
 
   ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string, targetBranch?: string) => {

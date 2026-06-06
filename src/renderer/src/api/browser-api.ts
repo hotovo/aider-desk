@@ -55,8 +55,11 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  WorktreeUncommittedFiles,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
@@ -1030,11 +1033,28 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
-    return this.post('/project/worktree/merge-and-switch-to-local', {
+  switchToLocalWorkingMode(baseDir: string, taskId: string, options?: SwitchToLocalOptions): Promise<void> {
+    return this.post('/project/switch-to-local-working-mode', {
       projectDir: baseDir,
       taskId,
-      targetBranch,
+      mergeBeforeSwitch: options?.mergeBeforeSwitch,
+      targetBranch: options?.targetBranch,
+    });
+  }
+
+  switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToWorktreeOptions): Promise<void> {
+    return this.post('/project/switch-to-worktree-working-mode', {
+      projectDir: baseDir,
+      taskId,
+      carryOverUncommittedChanges: options?.carryOverUncommittedChanges,
+      dropSourceChanges: options?.dropSourceChanges,
+    });
+  }
+
+  getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<WorktreeUncommittedFiles> {
+    return this.get('/project/local-uncommitted-files', {
+      projectDir: baseDir,
+      taskId,
     });
   }
 

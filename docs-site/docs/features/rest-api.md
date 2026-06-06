@@ -725,7 +725,9 @@ Renames the current worktree branch.
 
 #### Additional Worktree Endpoints
 
-- `POST /api/project/worktree/merge-and-switch-to-local` — Merge worktree and switch task to local mode
+- `POST /api/project/switch-to-local-working-mode` — Switch task to local working mode (optionally merge first)
+- `POST /api/project/switch-to-worktree-working-mode` — Switch task to worktree working mode (optionally carry over uncommitted changes)
+- `GET /api/project/local-uncommitted-files` — Get uncommitted files in the local project directory
 - `POST /api/project/worktree/apply-uncommitted` — Apply uncommitted changes to a target branch
 - `POST /api/project/worktree/revert-last-merge` — Revert the most recent merge
 - `POST /api/project/worktree/restore-file` — Restore a file from the target branch

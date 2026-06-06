@@ -1481,7 +1481,12 @@
     "confirmLocalTitle": "切换到本地模式",
     "confirmLocalMessage": "此工作树有未保存的工作：\n{{warnings}}\n\n您可以在切换前将更改合并到主分支，或删除工作树并丢失这些工作。",
     "confirmLocalAction": "删除并切换",
-    "mergeAndSwitchAction": "合并并切换"
+    "mergeAndSwitchAction": "合并并切换",
+    "confirmWorktreeTitle": "切换到工作树模式",
+    "confirmWorktreeMessage": "项目目录中有 {{count}} 个未提交的文件。\n\n您可以直接切换，或将更改带至工作树。",
+    "confirmWorktreeAction": "直接切换",
+    "takeChangesAndSwitchAction": "携带更改切换",
+    "keepChangesInProject": "在项目目录中保留更改"
   },
   "workingModeTooltip": {
     "local": "在此任务中直接在本地项目目录中进行更改",

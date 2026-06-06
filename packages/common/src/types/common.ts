@@ -845,6 +845,16 @@ export const WorkingModeSchema = z.enum(['local', 'worktree']);
 
 export type WorkingMode = z.infer<typeof WorkingModeSchema>;
 
+export interface SwitchToLocalOptions {
+  mergeBeforeSwitch?: boolean;
+  targetBranch?: string;
+}
+
+export interface SwitchToWorktreeOptions {
+  carryOverUncommittedChanges?: boolean;
+  dropSourceChanges?: boolean;
+}
+
 export const TaskDataSchema = z.object({
   id: z.string(),
   baseDir: z.string(),
