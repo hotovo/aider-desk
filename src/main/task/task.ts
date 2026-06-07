@@ -2910,7 +2910,7 @@ export class Task {
       contextMessages = await this.contextManager.getContextMessages();
     }
 
-    const userMessage = contextMessages[0];
+    const userMessage = contextMessages.find((msg) => msg.role === MessageRole.User);
 
     if (!userMessage) {
       this.addLogMessage('warning', 'No conversation to compact.');

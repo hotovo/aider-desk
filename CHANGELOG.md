@@ -12,6 +12,7 @@
 - correctly increasing smart compaction progressive levels
 - added floating placement support for UI extensions
 - added option to carry over uncommitted changes when switching working modes
+- correctly handling compaction when the first message is skill activation message
 
 ## [0.68.0]
 
