@@ -447,6 +447,7 @@ export interface AgentProfile {
   useMemoryTools: boolean;
   useSkillsTools: boolean;
   useExtensionTools: boolean;
+  disabledExtensionTools: string[]; // Array of extension IDs whose tools are disabled
   customInstructions: string;
   subagent: SubagentConfig;
   isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
@@ -1056,6 +1057,12 @@ export interface InstalledExtension {
   initialized: boolean;
   projectDir?: string;
   readmeContent?: string;
+}
+
+export interface ExtensionToolInfo {
+  extensionId: string;
+  extensionName: string;
+  tools: { name: string; description: string }[];
 }
 
 export interface AvailableExtension {

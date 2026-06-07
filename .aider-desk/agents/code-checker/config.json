@@ -43,5 +43,6 @@
     "contextMemory": "off"
   },
   "autoApprove": false,
-  "projectDir": "/home/wladimiiir/Projects/aider-desk"
+  "projectDir": "/home/wladimiiir/Projects/aider-desk",
+  "disabledExtensionTools": []
 }

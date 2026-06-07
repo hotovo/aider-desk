@@ -123,6 +123,7 @@ const api: ApplicationAPI = {
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => ipcRenderer.invoke('get-installed-extensions', projectDir),
+  getExtensionToolsInfo: (projectDir?: string) => ipcRenderer.invoke('get-extension-tools-info', projectDir),
   getAvailableExtensions: (repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) =>
     ipcRenderer.invoke('get-available-extensions', repositories, forceRefresh, fetchOnly),
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) =>

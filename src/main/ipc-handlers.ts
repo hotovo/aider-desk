@@ -300,6 +300,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getInstalledExtensions(projectDir);
   });
 
+  ipcMain.handle('get-extension-tools-info', (_, projectDir?: string) => {
+    return eventsHandler.getExtensionToolsInfo(projectDir);
+  });
+
   ipcMain.handle('get-available-extensions', async (_, repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => {
     return await eventsHandler.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
   });

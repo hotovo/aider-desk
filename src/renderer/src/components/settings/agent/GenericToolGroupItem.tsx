@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 
 type Props = {
   name: string;
+  displayName?: string;
   tools: GenericTool[];
   profile: AgentProfile;
   onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
@@ -18,7 +19,7 @@ type Props = {
   onEnabledChange?: (enabled: boolean) => void;
 };
 
-export const GenericToolGroupItem = ({ name, tools, profile, onApprovalChange, onProfileChange, enabled, onEnabledChange }: Props) => {
+export const GenericToolGroupItem = ({ name, displayName, tools, profile, onApprovalChange, onProfileChange, enabled, onEnabledChange }: Props) => {
   const { t } = useTranslation();
 
   const renderTitle = () => {
@@ -29,7 +30,7 @@ export const GenericToolGroupItem = ({ name, tools, profile, onApprovalChange, o
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center">
           {onEnabledChange && <Checkbox id={`enable-group-${name}`} checked={enabled || false} onChange={onEnabledChange} className="mr-2" />}
-          <span className="text-sm">{name}</span>
+          <span className="text-sm">{displayName || name}</span>
         </div>
         <div className="flex items-center">
           {tools.length > 0 && (

@@ -9,6 +9,10 @@ const GetInstalledExtensionsSchema = z.object({
   projectDir: z.string().optional(),
 });
 
+const GetExtensionToolsInfoSchema = z.object({
+  projectDir: z.string().optional(),
+});
+
 const GetAvailableExtensionsSchema = z.object({
   repositories: z.string().optional(), // Comma-separated URLs
   forceRefresh: z.coerce.boolean().optional(),
@@ -50,6 +54,21 @@ export class ExtensionsApi extends BaseApi {
         const { projectDir } = parsed;
         const extensions = this.eventsHandler.getInstalledExtensions(projectDir);
         res.status(200).json(extensions);
+      }),
+    );
+
+    // Get extension tools info
+    router.get(
+      '/extensions/tools-info',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetExtensionToolsInfoSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir } = parsed;
+        const toolsInfo = this.eventsHandler.getExtensionToolsInfo(projectDir);
+        res.status(200).json(toolsInfo);
       }),
     );
 

@@ -438,6 +438,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   useMemoryTools: true,
   useSkillsTools: true,
   useExtensionTools: true,
+  disabledExtensionTools: [],
   customInstructions: '',
   enabledServers: [],
   subagent: {

@@ -10,6 +10,7 @@ import {
   EnvironmentVariable,
   FileEdit,
   InstalledExtension,
+  ExtensionToolInfo,
   McpServerConfig,
   McpTool,
   MemoryEntry,
@@ -1173,6 +1174,10 @@ export class EventsHandler {
       projectDir: ext.projectDir,
       readmeContent: ext.readmeContent,
     }));
+  }
+
+  getExtensionToolsInfo(projectDir?: string): ExtensionToolInfo[] {
+    return this.extensionManager.getToolsInfo(projectDir);
   }
 
   async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) {

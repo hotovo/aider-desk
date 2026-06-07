@@ -15,6 +15,8 @@ import type { TaskData, AgentProfile, ContextMemoryMode, InvocationMode } from '
 import type { Task } from '@/task';
 import type { Project } from '@/project';
 
+import { ApprovalManager } from '@/agent/tools/approval-manager';
+
 vi.mock('@/logger', () => ({
   default: {
     info: vi.fn(),
@@ -39,6 +41,10 @@ vi.mock('../extension-validator', () => ({
 vi.mock('../extension-watcher', () => ({
   ExtensionWatcher: vi.fn(),
 }));
+
+const createMockApprovalManager = () => ({
+  handleToolApproval: vi.fn().mockResolvedValue([true, undefined]),
+});
 
 const createMockExtension = (overrides: Partial<Extension> = {}): Extension => ({
   onLoad: vi.fn(),
@@ -124,6 +130,7 @@ const createMockProfile = (): AgentProfile => ({
   useMemoryTools: true,
   useSkillsTools: true,
   useExtensionTools: true,
+  disabledExtensionTools: [],
   customInstructions: '',
   maxIterations: 10,
   maxTokens: 4096,
@@ -164,7 +171,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(toolset).toBeDefined();
       expect(Object.keys(toolset)).toHaveLength(0);
@@ -184,7 +191,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(toolset).toBeDefined();
       expect(Object.keys(toolset)).toContain('my-custom-tool');
@@ -205,7 +212,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       // Execute the tool
       const toolKey = 'test-tool';
@@ -235,7 +242,7 @@ describe('Extension Tool Integration with Agent', () => {
       const abortController = new AbortController();
       const abortSignal = abortController.signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -264,7 +271,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -295,7 +302,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -323,7 +330,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
@@ -352,7 +359,7 @@ describe('Extension Tool Integration with Agent', () => {
       const abortSignal = new AbortController().signal;
 
       const startTime = Date.now();
-      manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
       const creationTime = Date.now() - startTime;
 
       // Toolset creation should be fast (< 100ms)
@@ -375,7 +382,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(Object.keys(toolset)).toContain('my-tool');
     });
@@ -395,7 +402,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(Object.keys(toolset)).toContain('tool-one');
       expect(Object.keys(toolset)).toContain('tool-two');
@@ -420,9 +427,73 @@ describe('Extension Tool Integration with Agent', () => {
       };
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(Object.keys(toolset)).not.toContain('never-approved-tool');
+    });
+
+    it('should ask for approval when tool is set to Ask', async () => {
+      const testTool = createValidTool({ name: 'ask-approved-tool' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'Test Extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      // Use a filename that derives to 'test-extension' as the extension ID
+      registry.register(extension, metadata, '/ext/test-extension.ts');
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      profile.toolApprovals = {
+        'test-extension---ask-approved-tool': 'ask' as any,
+      };
+      const abortSignal = new AbortController().signal;
+      const mockApprovalManager = createMockApprovalManager();
+
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, mockApprovalManager as unknown as ApprovalManager, abortSignal);
+
+      // Tool should be in the toolset (Ask tools are included, unlike Never tools)
+      expect(Object.keys(toolset)).toContain('ask-approved-tool');
+
+      // Execute the tool to trigger approval
+      await toolset['ask-approved-tool'].execute?.({ test: 'input' }, { toolCallId: 'call-1' } as ToolCallOptions);
+
+      // ApprovalManager should have been called
+      expect(mockApprovalManager.handleToolApproval).toHaveBeenCalledWith(
+        'test-extension---ask-approved-tool',
+        { test: 'input' },
+        'test-extension---ask-approved-tool',
+        'Approve tool ask-approved-tool from Test Extension extension?',
+        '{"test":"input"}',
+      );
+    });
+
+    it('should deny tool execution when approval is denied for Ask tools', async () => {
+      const testTool = createValidTool({ name: 'ask-denied-tool' });
+      const extension = createMockExtension({
+        getTools: () => [testTool],
+      });
+      const metadata = createMockMetadata({ name: 'Test Extension' });
+
+      const registry = (manager as any).registry as ExtensionRegistry;
+      registry.register(extension, metadata, '/ext/test-extension.ts');
+
+      const task = createMockTask();
+      const profile = createMockProfile();
+      profile.toolApprovals = {
+        'test-extension---ask-denied-tool': 'ask' as any,
+      };
+      const abortSignal = new AbortController().signal;
+      const mockApprovalManager = createMockApprovalManager();
+      mockApprovalManager.handleToolApproval.mockResolvedValue([false, 'user reason']);
+
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, mockApprovalManager as unknown as ApprovalManager, abortSignal);
+
+      const result = await toolset['ask-denied-tool'].execute?.({}, { toolCallId: 'call-1' } as ToolCallOptions);
+
+      expect(result).toContain('Tool execution denied by user');
+      expect(result).toContain('user reason');
     });
   });
 
@@ -441,7 +512,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(toolset['test-tool']!.description).toBe('A custom tool description');
     });
@@ -464,7 +535,7 @@ describe('Extension Tool Integration with Agent', () => {
       const profile = createMockProfile();
       const abortSignal = new AbortController().signal;
 
-      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, abortSignal);
+      const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, createMockApprovalManager() as unknown as ApprovalManager, abortSignal);
 
       expect(toolset['test-tool']!.inputSchema).toBe(schema);
     });

@@ -407,6 +407,7 @@ export class AgentProfileManager {
       maxIterations: loadedProfile.maxIterations ?? DEFAULT_AGENT_PROFILE.maxIterations,
       minTimeBetweenToolCalls: loadedProfile.minTimeBetweenToolCalls ?? DEFAULT_AGENT_PROFILE.minTimeBetweenToolCalls,
       enabledServers: loadedProfile.enabledServers ?? [],
+      disabledExtensionTools: loadedProfile.disabledExtensionTools ?? [],
       customInstructions: loadedProfile.customInstructions ?? '',
       toolApprovals: {
         ...loadedProfile.toolApprovals,

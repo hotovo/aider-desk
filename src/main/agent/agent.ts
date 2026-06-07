@@ -489,7 +489,7 @@ export class Agent {
 
     // Add extension tools
     if (this.extensionManager.isInitialized() && profile.useExtensionTools !== false) {
-      const extensionTools = this.extensionManager.createExtensionToolset(task, mode, profile, toolSet, abortSignal);
+      const extensionTools = this.extensionManager.createExtensionToolset(task, mode, profile, toolSet, approvalManager, abortSignal);
       Object.assign(toolSet, extensionTools);
     }
 

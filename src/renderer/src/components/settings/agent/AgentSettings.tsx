@@ -2,6 +2,7 @@ import {
   AgentProfile,
   ContextCompactionType,
   ContextMemoryMode,
+  ExtensionToolInfo,
   GenericTool,
   InvocationMode,
   McpServerConfig,
@@ -13,7 +14,17 @@ import {
 import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
-import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
+import {
+  MdExtension,
+  MdFlashOn,
+  MdOutlineChecklist,
+  MdOutlineFileCopy,
+  MdOutlineHdrAuto,
+  MdOutlineMap,
+  MdRepeat,
+  MdThermostat,
+  MdPsychology,
+} from 'react-icons/md';
 import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
@@ -347,6 +358,9 @@ const getGenericToolsSummary = (profile: AgentProfile) => {
   if (profile.useSkillsTools) {
     enabled.push(<MdPsychology key="skills" className="w-3.5 h-3.5 text-text-secondary" />);
   }
+  if (!profile.disabledExtensionTools || profile.disabledExtensionTools.length === 0) {
+    enabled.push(<MdExtension key="ext" className="w-3.5 h-3.5 text-text-secondary" />);
+  }
   return enabled.length > 0 ? (
     <div className="flex items-center gap-2">
       {enabled.map((icon, index) => (
@@ -397,6 +411,14 @@ export const AgentSettings = ({
 
   const api = useApi();
   const { models, providers } = useModelProviders();
+  const [extensionToolsInfo, setExtensionToolsInfo] = useState<ExtensionToolInfo[]>([]);
+
+  useEffect(() => {
+    api
+      .getExtensionToolsInfo(profileContext === 'global' ? undefined : profileContext)
+      .then(setExtensionToolsInfo)
+      .catch(() => setExtensionToolsInfo([]));
+  }, [api, profileContext]);
 
   // Sync internal profileContext with selectedProfileContext prop
   useEffect(() => {
@@ -1329,8 +1351,35 @@ export const AgentSettings = ({
                           </div>
                         );
                       })}
+                      {extensionToolsInfo.map((extInfo) => {
+                        const extTools: GenericTool[] = extInfo.tools.map((tool) => ({
+                          groupName: extInfo.extensionId,
+                          name: tool.name,
+                          description: tool.description,
+                        }));
+                        const isExtEnabled = !(selectedProfile.disabledExtensionTools ?? []).includes(extInfo.extensionId);
+                        const handleExtEnabledChange = (enabled: boolean) => {
+                          const disabled = selectedProfile.disabledExtensionTools ?? [];
+                          const updated = enabled ? disabled.filter((id) => id !== extInfo.extensionId) : [...disabled, extInfo.extensionId];
+                          handleProfileSettingChange('disabledExtensionTools', updated);
+                        };
+                        return (
+                          <div key={extInfo.extensionId}>
+                            <GenericToolGroupItem
+                              name={extInfo.extensionId}
+                              displayName={extInfo.extensionName}
+                              tools={extTools}
+                              profile={selectedProfile}
+                              onApprovalChange={handleToolApprovalChange}
+                              onProfileChange={handleProfileSettingChange}
+                              enabled={isExtEnabled}
+                              onEnabledChange={handleExtEnabledChange}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
-                    {Object.keys(tools).length === 0 && (
+                    {Object.keys(tools).length === 0 && extensionToolsInfo.length === 0 && (
                       <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
                     )}
                   </div>,

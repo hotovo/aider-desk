@@ -56,5 +56,6 @@
     "description": "Use this subagent immediately after a code change (new feature, functionality update, or bug fix) has been fully implemented and committed.\n\nThe subagent's task is solely to create new unit test files or update existing ones to cover the implemented changes. It must be run before final code review or merge.",
     "contextMemory": "off"
   },
-  "projectDir": "/home/wladimiiir/Projects/aider-desk"
+  "projectDir": "/home/wladimiiir/Projects/aider-desk",
+  "disabledExtensionTools": []
 }

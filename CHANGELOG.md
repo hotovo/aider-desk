@@ -14,6 +14,7 @@
 - added option to carry over uncommitted changes when switching working modes
 - correctly handling compaction when the first message is skill activation message
 - added coercion for boolean and number inputs in agent tools
+- added support for enabling, disabling, and approving extension tools
 
 ## [0.68.0]
 

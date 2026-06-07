@@ -4,8 +4,10 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, ExtensionToolInfo, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
+import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -67,6 +69,7 @@ import type { ToolCallOptions, ToolSet } from 'ai';
 import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
+import { ApprovalManager } from '@/agent/tools/approval-manager';
 import { Project } from '@/project';
 import { Task } from '@/task';
 
@@ -775,15 +778,57 @@ export class ExtensionManager {
     };
   }
 
-  getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[] {
-    const collectedTools: RegisteredTool[] = [];
-    const allExtensions = this.registry.getExtensions(task.getProjectDir());
+  getToolsInfo(projectDir?: string): ExtensionToolInfo[] {
+    const allExtensions = this.registry.getExtensions(projectDir);
     const extensions = this.filterEnabledExtensions(allExtensions);
+    const result: ExtensionToolInfo[] = [];
 
     for (const loaded of extensions) {
       const { instance, metadata } = loaded;
 
       if (!instance.getTools) {
+        continue;
+      }
+
+      try {
+        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager);
+        const tools = instance.getTools(context, 'agent', DEFAULT_AGENT_PROFILE);
+
+        if (!Array.isArray(tools)) {
+          continue;
+        }
+
+        const toolInfos = tools.filter((tool) => tool.name && tool.description).map((tool) => ({ name: tool.name, description: tool.description }));
+
+        if (toolInfos.length > 0) {
+          result.push({
+            extensionId: loaded.id,
+            extensionName: metadata.name,
+            tools: toolInfos,
+          });
+        }
+      } catch (error) {
+        logger.error(`[Extensions] Failed to get tools info from extension '${metadata.name}':`, error);
+      }
+    }
+
+    return result;
+  }
+
+  getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[] {
+    const collectedTools: RegisteredTool[] = [];
+    const allExtensions = this.registry.getExtensions(task.getProjectDir());
+    const extensions = this.filterEnabledExtensions(allExtensions);
+    const disabledExtensionTools = profile.disabledExtensionTools ?? [];
+
+    for (const loaded of extensions) {
+      const { instance, metadata } = loaded;
+
+      if (!instance.getTools) {
+        continue;
+      }
+
+      if (disabledExtensionTools.includes(loaded.id)) {
         continue;
       }
 
@@ -813,6 +858,11 @@ export class ExtensionManager {
             continue;
           }
 
+          const fullToolId = `${loaded.id}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
+          if (profile.toolApprovals?.[fullToolId] === ToolApprovalState.Never || profile.toolApprovals?.[tool.name] === ToolApprovalState.Never) {
+            continue;
+          }
+
           collectedTools.push({
             extensionId: loaded.id,
             extensionName: metadata.name,
@@ -838,12 +888,20 @@ export class ExtensionManager {
    * @param abortSignal - Optional AbortSignal for cancellation support
    * @returns A ToolSet containing all approved extension tools
    */
-  createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools: ToolSet, abortSignal?: AbortSignal): ToolSet {
+  createExtensionToolset(
+    task: Task,
+    mode: string,
+    profile: AgentProfile,
+    allTools: ToolSet,
+    approvalManager: ApprovalManager,
+    abortSignal?: AbortSignal,
+  ): ToolSet {
     const toolSet: ToolSet = {};
     const registeredTools = this.getTools(task, mode, profile);
 
     for (const { extensionId, extensionName, tool } of registeredTools) {
       const toolId = tool.name;
+      const fullToolId = `${extensionId}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
       const context = new ExtensionContextImpl(
         extensionId,
         extensionName,
@@ -855,16 +913,32 @@ export class ExtensionManager {
         task,
       );
 
-      // Skip if tool is marked as Never approved
-      if (profile.toolApprovals?.[toolId] === ToolApprovalState.Never) {
-        logger.debug(`[Extensions] Skipping tool '${tool.name}' (marked as Never approved)`);
-        continue;
-      }
+      // Tool approval filtering is handled in getTools()
 
       toolSet[toolId] = {
         description: tool.description,
         inputSchema: tool.inputSchema,
         execute: async (input: Record<string, unknown>, options: ToolCallOptions) => {
+          // --- Tool Approval Logic ---
+          const toolApproval = profile.toolApprovals?.[fullToolId];
+          logger.debug(
+            `[Extensions] Tool '${tool.name}' approval check: fullToolId='${fullToolId}', approval=${toolApproval}, allApprovals=${JSON.stringify(profile.toolApprovals)}`,
+          );
+          if (toolApproval === ToolApprovalState.Ask) {
+            const questionKey = fullToolId;
+            const questionText = `Approve tool ${tool.name} from ${extensionName} extension?`;
+            const questionSubject = input ? JSON.stringify(input) : undefined;
+
+            const [isApproved, userInput] = await approvalManager.handleToolApproval(fullToolId, input, questionKey, questionText, questionSubject);
+
+            if (!isApproved) {
+              logger.warn(`Tool execution denied by user: ${fullToolId}`);
+              return `Tool execution denied by user.${userInput ? ` User input: ${userInput}` : ''}`;
+            }
+            logger.debug(`Tool execution approved: ${fullToolId}`);
+          }
+          // --- End Tool Approval Logic ---
+
           const allToolsInternal = Object.entries(allTools).reduce(
             (acc, [toolId, tool]) => {
               acc[toolId] = {

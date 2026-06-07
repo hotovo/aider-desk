@@ -26,6 +26,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionConfigComponent,
+  ExtensionToolInfo,
   ExtensionUIComponent,
   OpenDialogResult,
   SystemLogsResponse,
@@ -258,6 +259,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Extension operations
     getInstalledExtensions: vi.fn((): Promise<InstalledExtension[]> => Promise.resolve([])),
+    getExtensionToolsInfo: vi.fn((): Promise<ExtensionToolInfo[]> => Promise.resolve([])),
     getAvailableExtensions: vi.fn((): Promise<AvailableExtension[]> => Promise.resolve([])),
     installExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     uninstallExtension: vi.fn((): Promise<boolean> => Promise.resolve(true)),

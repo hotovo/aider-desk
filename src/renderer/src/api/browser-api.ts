@@ -66,6 +66,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionConfigComponent,
+  ExtensionToolInfo,
   ExtensionUIComponent,
   ModalOverlayUrlData,
   AiderConnectorStatus,
@@ -1250,6 +1251,10 @@ export class BrowserApi implements ApplicationAPI {
 
   getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]> {
     return this.get('/extensions', { projectDir });
+  }
+
+  getExtensionToolsInfo(projectDir?: string): Promise<ExtensionToolInfo[]> {
+    return this.get('/extensions/tools-info', { projectDir });
   }
 
   getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]> {

@@ -67,6 +67,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionConfigComponent,
+  ExtensionToolInfo,
   ExtensionUIComponent,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
@@ -166,6 +167,7 @@ export interface ApplicationAPI {
     projectDir?: string,
     taskId?: string,
   ) => Promise<unknown>;
+  getExtensionToolsInfo: (projectDir?: string) => Promise<ExtensionToolInfo[]>;
   // Extension config operations (per-extension settings UI)
   getExtensionConfigComponent: (extensionId: string, projectDir?: string) => Promise<ExtensionConfigComponent | null>;
   getExtensionConfig: (extensionId: string, projectDir?: string) => Promise<unknown>;
