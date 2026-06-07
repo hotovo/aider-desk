@@ -13,6 +13,7 @@ import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 
 import { ApprovalManager } from './approval-manager';
 
+import { coerceBoolean } from '@/agent/utils';
 import { Task } from '@/task';
 
 export const createTodoToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
@@ -25,7 +26,7 @@ export const createTodoToolset = (task: Task, profile: AgentProfile, promptConte
         .array(
           z.object({
             name: z.string().describe('The name of the todo item.'),
-            completed: z.boolean().optional().default(false).describe('Whether the todo item is completed.'),
+            completed: coerceBoolean.optional().default(false).describe('Whether the todo item is completed.'),
           }),
         )
         .describe('An array of todo items.'),
@@ -90,7 +91,7 @@ Items: ${JSON.stringify(items)}`;
     description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_UPDATE_ITEM_COMPLETION],
     inputSchema: z.object({
       name: z.string().describe('The name of the todo item to update.'),
-      completed: z.boolean().describe('The new completion status for the todo item.'),
+      completed: coerceBoolean.describe('The new completion status for the todo item.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { name, completed } = input;

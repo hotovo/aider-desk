@@ -20,6 +20,7 @@ import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
 
+import { coerceBoolean } from '@/agent/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
@@ -33,8 +34,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
   const listTasksTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_LIST_TASKS],
     inputSchema: z.object({
-      offset: z.number().optional().describe('The number of tasks to skip (for pagination)'),
-      limit: z.number().optional().describe('The maximum number of tasks to return'),
+      offset: z.coerce.number().optional().describe('The number of tasks to skip (for pagination)'),
+      limit: z.coerce.number().optional().describe('The maximum number of tasks to return'),
       state: z.string().optional().describe('Filter tasks by state (e.g., TODO, IN_PROGRESS, DONE)'),
     }),
     execute: async (input, { toolCallId }) => {
@@ -269,7 +270,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         .optional()
         .default(false)
         .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
-      executeInBackground: z.boolean().optional().default(false).describe('If true, the task will be created and executed in the background.'),
+      executeInBackground: coerceBoolean.optional().default(false).describe('If true, the task will be created and executed in the background.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autonomyMode, worktree, executeAndWait, executeInBackground } = input;
@@ -480,7 +481,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     inputSchema: z.object({
       taskId: z.string().describe('The ID of the task to search within'),
       query: z.string().describe('Search query with Elasticsearch syntax. Use + for important terms.'),
-      maxTokens: z.number().optional().default(10000).describe('Maximum number of tokens to return in the search results. Default: 10000'),
+      maxTokens: z.coerce.number().optional().default(10000).describe('Maximum number of tokens to return in the search results. Default: 10000'),
     }),
     execute: async (input, { toolCallId }) => {
       const { taskId, query, maxTokens } = input;
@@ -573,7 +574,7 @@ export const createSearchParentTaskTool = (task: Task, promptContext?: PromptCon
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_SEARCH_PARENT_TASK],
     inputSchema: z.object({
       query: z.string().describe('Search query with Elasticsearch syntax. Use + for important terms.'),
-      maxTokens: z.number().optional().default(10000).describe('Maximum number of tokens to return in the search results. Default: 10000'),
+      maxTokens: z.coerce.number().optional().default(10000).describe('Maximum number of tokens to return in the search results. Default: 10000'),
     }),
     execute: async ({ query, maxTokens }, { toolCallId }) => {
       // Always use parent task ID

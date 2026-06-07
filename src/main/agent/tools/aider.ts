@@ -19,6 +19,7 @@ import { ApprovalManager } from './approval-manager';
 
 import type { ToolSet } from 'ai';
 
+import { coerceBoolean } from '@/agent/utils';
 import { Task } from '@/task';
 
 export const createAiderToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
@@ -64,7 +65,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
       paths: z
         .array(z.string())
         .describe('One or more file paths to add to context. Relative to task directory (e.g. "src/file.ts") or absolute (e.g. "/tmp/log.txt" for read-only).'),
-      readOnly: z.boolean().optional().describe('Whether the file(s) are read-only. Applies to all paths if true.'),
+      readOnly: coerceBoolean.optional().describe('Whether the file(s) are read-only. Applies to all paths if true.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { paths, readOnly = false } = input;

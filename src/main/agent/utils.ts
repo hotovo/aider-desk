@@ -5,7 +5,27 @@ import path from 'path';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
+import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
+
+/**
+ * Zod schema that coerces string values to booleans before validation.
+ * Handles the case where LLMs send boolean parameters as strings ("true"/"false").
+ */
+export const coerceBoolean = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  if (typeof val === 'string') {
+    if (val.toLowerCase() === 'true') {
+      return true;
+    }
+    if (val.toLowerCase() === 'false') {
+      return false;
+    }
+  }
+  return val;
+}, z.boolean());
 
 export const THINKING_RESPONSE_STAR_TAG = '---\n► **THINKING**\n';
 export const ANSWER_RESPONSE_START_TAG = '---\n► **ANSWER**\n';

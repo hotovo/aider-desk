@@ -35,7 +35,7 @@ import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
-import { expandTilde, readFileContent, truncateToolResult } from '@/agent/utils';
+import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 
 /**
@@ -79,12 +79,11 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       replacementText: z
         .string()
         .describe('The string to replace the searchTerm with. Do not use escape characters \\ in the string like \\n or \\" and others'),
-      isRegex: z
-        .boolean()
+      isRegex: coerceBoolean
         .optional()
         .default(false)
         .describe('Whether the searchTerm should be treated as a regular expression. Use regex only when it is really needed. Default: false.'),
-      replaceAll: z.boolean().optional().default(false).describe('Whether to replace all occurrences or just the first one. Default: false.'),
+      replaceAll: coerceBoolean.optional().default(false).describe('Whether to replace all occurrences or just the first one. Default: false.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { filePath, searchTerm, replacementText, isRegex, replaceAll } = input;
@@ -201,13 +200,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_READ],
     inputSchema: z.object({
       filePath: z.string().describe('The path to the file to be read (relative to the <WorkingDirectory> or absolute if outside of the directory).'),
-      withLines: z
-        .boolean()
+      withLines: coerceBoolean
         .optional()
         .default(false)
         .describe('Whether to return the file content with line numbers in format "lineNumber|content". Default: false.'),
-      lineOffset: z.number().int().min(0).optional().default(0).describe('The starting line number (0-based) to begin reading from. Default: 0.'),
-      lineLimit: z.number().int().min(1).optional().default(1000).describe('The maximum number of lines to read. Default: 1000.'),
+      lineOffset: z.coerce.number().int().min(0).optional().default(0).describe('The starting line number (0-based) to begin reading from. Default: 0.'),
+      lineLimit: z.coerce.number().int().min(1).optional().default(1000).describe('The maximum number of lines to read. Default: 1000.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { filePath, withLines, lineOffset, lineLimit } = input;
@@ -411,8 +409,8 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         .optional()
         .default(0)
         .describe('The number of lines of context to show before and after each matching line. Default: 0.'),
-      caseSensitive: z.boolean().optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
-      maxResults: z.number().int().min(1).optional().default(50).describe('Maximum number of results to return. Default: 50.'),
+      caseSensitive: coerceBoolean.optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
+      maxResults: z.coerce.number().int().min(1).optional().default(50).describe('Maximum number of results to return. Default: 50.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { filePattern, searchTerm, contextLines, caseSensitive, maxResults } = input;
@@ -629,7 +627,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     inputSchema: z.object({
       command: z.string().min(1).describe('The shell command to execute (e.g., ls -la, npm install).'),
       cwd: z.string().optional().describe('The working directory for the command (relative to <WorkingDirectory>). Default: <WorkingDirectory>.'),
-      timeout: z.number().int().min(0).optional().default(120000).describe('Timeout for the command execution in milliseconds. Default: 120000 ms.'),
+      timeout: z.coerce.number().int().min(0).optional().default(120000).describe('Timeout for the command execution in milliseconds. Default: 120000 ms.'),
     }),
     execute: async (input, { toolCallId }) => {
       const { command, cwd, timeout } = input;
@@ -849,7 +847,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FETCH],
     inputSchema: z.object({
       url: z.string().describe('The URL to fetch.'),
-      timeout: z.number().int().min(0).optional().default(60000).describe('Timeout for the fetch operation in milliseconds. Default: 60000 ms.'),
+      timeout: z.coerce.number().int().min(0).optional().default(60000).describe('Timeout for the fetch operation in milliseconds. Default: 60000 ms.'),
       format: z
         .enum(['markdown', 'html', 'raw'])
         .optional()
@@ -911,10 +909,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         .optional()
         .default(task.getTaskDir())
         .describe('Absolute path to search in. For dependencies use "go:github.com/owner/repo", "js:package_name", or "rust:cargo_name" etc.'),
-      allowTests: z.boolean().optional().default(false).describe('Allow test files in search results'),
-      exact: z.boolean().optional().default(false).describe('Perform exact search without tokenization (case-insensitive)'),
-      maxResults: z.number().optional().describe('Maximum number of results to return'),
-      maxTokens: z.number().optional().default(5000).describe('Maximum number of tokens to return'),
+      allowTests: coerceBoolean.optional().default(false).describe('Allow test files in search results'),
+      exact: coerceBoolean.optional().default(false).describe('Perform exact search without tokenization (case-insensitive)'),
+      maxResults: z.coerce.number().optional().describe('Maximum number of results to return'),
+      maxTokens: z.coerce.number().optional().default(5000).describe('Maximum number of tokens to return'),
       language: z.string().optional().describe('Limit search to files of a specific programming language'),
     }),
     execute: async (input, { toolCallId }) => {

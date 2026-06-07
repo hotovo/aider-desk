@@ -67,7 +67,7 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
     description: MEMORY_TOOL_DESCRIPTIONS[TOOL_RETRIEVE],
     inputSchema: z.object({
       query: z.string().describe('The search query to find relevant memories'),
-      limit: z.number().optional().default(3).describe('Maximum number of memories to retrieve (default: 3)'),
+      limit: z.coerce.number().optional().default(3).describe('Maximum number of memories to retrieve (default: 3)'),
     }),
     execute: async (input, { toolCallId }) => {
       const { query, limit } = input;
@@ -148,7 +148,7 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
     description: MEMORY_TOOL_DESCRIPTIONS[TOOL_LIST],
     inputSchema: z.object({
       type: z.enum(['task', 'user-preference', 'code-pattern']).optional().describe('Filter by memory type'),
-      limit: z.number().optional().default(20).describe('Maximum number of memories to list (default: 20)'),
+      limit: z.coerce.number().optional().default(20).describe('Maximum number of memories to list (default: 20)'),
     }),
     execute: async (input, { toolCallId }) => {
       const { type, limit } = input;

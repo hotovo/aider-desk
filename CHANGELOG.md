@@ -13,6 +13,7 @@
 - added floating placement support for UI extensions
 - added option to carry over uncommitted changes when switching working modes
 - correctly handling compaction when the first message is skill activation message
+- added coercion for boolean and number inputs in agent tools
 
 ## [0.68.0]
 
