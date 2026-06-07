@@ -300,6 +300,7 @@ src/
           DatePicker.css
           DatePicker.tsx
           FileChip.tsx
+          FloatingPanel.tsx
           HtmlInfoDialog.tsx
           IconButton.tsx
           InfoIcon.tsx
@@ -330,6 +331,7 @@ src/
         extensions/
           ExtensionComponentWrapper.tsx
           ExtensionUIErrorBoundary.tsx
+          FloatingExtensionPanels.tsx
           StringToReactComponent.tsx
           useExtensionComponentsWrapper.tsx
         logs/
@@ -7428,7 +7430,11 @@ registerRoutes(router: Router): void
 ⋮----
 // Merge worktree to main
 ⋮----
-// Merge and switch to local
+// Switch to local working mode
+⋮----
+// Switch to worktree working mode
+⋮----
+// Get local uncommitted files
 ⋮----
 // Apply uncommitted changes
 ⋮----
@@ -8725,7 +8731,10 @@ import {
   UpdatedFilesGroupMode,
   UsageReportData,
   UserMessageData,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   WorkingMode,
+  WorktreeUncommittedFiles,
 } from '@common/types';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
@@ -8954,6 +8963,8 @@ public async runPromptInAgent(
     sendNotification = true,
     images?: string[],
 ): Promise<ResponseCompletedData[]>
+⋮----
+// reset smart compaction level on agent start
 ⋮----
 // send messages to connectors
 ⋮----
@@ -9490,13 +9501,11 @@ public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitM
 ⋮----
 // Store merge state for potential revert
 ⋮----
-public async mergeAndSwitchToLocal(targetBranch?: string): Promise<void>
+public async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>
 ⋮----
-// Perform the merge (will throw on failure, preventing the switch)
+public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
-// Store merge state for potential revert
-⋮----
-// Now switch to local mode (same path as UI, handles save + events)
+public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
 ⋮----
 public async applyUncommittedChanges(targetBranch?: string): Promise<void>
 ⋮----
@@ -11353,7 +11362,15 @@ getTerminalsForTask(taskId: string):
 ⋮----
 async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
-async mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+async switchToLocalWorkingMode(baseDir: string, taskId: string, options?:
+⋮----
+async switchToWorktreeWorkingMode(
+    baseDir: string,
+    taskId: string,
+    options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean },
+): Promise<void>
+⋮----
+async getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<
 ⋮----
 async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
@@ -12572,8 +12589,11 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
+  WorktreeUncommittedFiles,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
@@ -12883,7 +12903,11 @@ getCloudflareTunnelStatus(): Promise<CloudflareTunnelStatus>
 // Worktree merge operations
 mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
-mergeAndSwitchToLocal(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+switchToLocalWorkingMode(baseDir: string, taskId: string, options?: SwitchToLocalOptions): Promise<void>
+⋮----
+switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToWorktreeOptions): Promise<void>
+⋮----
+getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<WorktreeUncommittedFiles>
 ⋮----
 applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
@@ -13800,6 +13824,36 @@ export const FileChip = (
 return <Chip key=
 
 ================
+File: src/renderer/src/components/common/FloatingPanel.tsx
+================
+import { ReactNode, useCallback, useState } from 'react';
+import { clsx } from 'clsx';
+import { Rnd } from 'react-rnd';
+import { IoMdClose } from 'react-icons/io';
+import { VscChevronRight } from 'react-icons/vsc';
+import { useLocalStorage } from '@reactuses/core';
+⋮----
+import { IconButton } from '@/components/common/IconButton';
+⋮----
+type Props = {
+  title: string;
+  children: ReactNode;
+  onClose?: () => void;
+  storageKey?: string;
+  defaultPosition?: { x: number; y: number };
+  defaultSize?: { width: number; height: number };
+  minWidth?: number;
+  minHeight?: number;
+  className?: string;
+};
+⋮----
+onDragStop=
+⋮----
+icon=
+⋮----
+className=
+
+================
 File: src/renderer/src/components/common/HtmlInfoDialog.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -14503,6 +14557,17 @@ componentDidCatch(error: Error, errorInfo: ErrorInfo): void
 render(): ReactNode
 
 ================
+File: src/renderer/src/components/extensions/FloatingExtensionPanels.tsx
+================
+import { createPortal } from 'react-dom';
+import { useEffect, useState } from 'react';
+⋮----
+import { FloatingPanel } from '@/components/common/FloatingPanel';
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect -- portal target is external DOM, not available on first render
+
+================
 File: src/renderer/src/components/extensions/StringToReactComponent.tsx
 ================
 import React, { useRef, useState, useEffect, type FC } from 'react';
@@ -14527,6 +14592,10 @@ const loadModule = async (blobUrl: string, react: typeof React): Promise<FC> =>
 const module = await import(/* @vite-ignore */ blobUrl);
 ⋮----
 const StringToReactComponent: FC<StringToReactComponentProps> = (
+⋮----
+// eslint-disable-next-line react-hooks/refs
+⋮----
+// eslint-disable-next-line react-hooks/refs
 
 ================
 File: src/renderer/src/components/extensions/useExtensionComponentsWrapper.tsx
@@ -18895,6 +18964,7 @@ import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useActiveAgentProfile } from '@/utils/agents';
 ⋮----
 type Props = {
@@ -19853,7 +19923,7 @@ const handleDragEnd = (event: DragEndEvent) =>
 ================
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
-import { TaskData, WorkingMode } from '@common/types';
+import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
 import { useState } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
@@ -19864,6 +19934,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/common/Checkbox';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
@@ -19884,6 +19955,8 @@ type Props = {
 ⋮----
 const handleWorkingModeChanged = async (mode: WorkingMode) =>
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
 const performSwitch = async (mode: WorkingMode) =>
 ⋮----
 // eslint-disable-next-line no-console
@@ -19892,11 +19965,20 @@ const performMergeAndSwitch = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+const performSwitchToWorktreeWithChanges = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 const getWarningMessage = () =>
 ⋮----
 title=
 ⋮----
 onCancel=
+⋮----
+setShowConfirmWorktree(false);
+setKeepChangesInSource(false);
+⋮----
+confirmButtonText=
 
 ================
 File: src/renderer/src/components/PromptField/usePromptFieldText.ts
@@ -27829,6 +27911,7 @@ File: package.json
     "react-icons": "^5.5.0",
     "react-markdown": "^10.1.0",
     "react-resizable": "^3.0.5",
+    "react-rnd": "^10.5.3",
     "react-router-dom": "^7.0.1",
     "react-textarea-autosize": "^8.5.6",
     "react-toastify": "^10.0.6",
