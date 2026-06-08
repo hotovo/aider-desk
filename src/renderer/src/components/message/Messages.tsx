@@ -70,7 +70,13 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
 
     useEffect(() => {
       if (!scrollingPaused) {
-        messagesEndRef.current?.scrollIntoView();
+        requestAnimationFrame(() => {
+          messagesEndRef.current?.scrollIntoView({
+            block: 'end',
+            inline: 'end',
+            behavior: 'instant',
+          });
+        });
       }
     }, [processedMessages, scrollingPaused]);
 
