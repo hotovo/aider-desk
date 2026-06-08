@@ -934,6 +934,18 @@ export interface TaskContext {
    */
   generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>;
 
+  /**
+   * Generate a structured object using a specific model without running the full agent loop.
+   * Delegates to the Agent's generateObject method using the project directory.
+   * Useful for extracting structured data (e.g., classification, parsing) within extensions.
+   * @param modelId - The model identifier to use (format: "provider/model")
+   * @param systemPrompt - System prompt for the generation request
+   * @param prompt - User prompt for the generation request
+   * @param schema - Zod schema defining the expected output structure
+   * @returns The generated object matching the schema, or undefined if generation failed
+   */
+  generateObject<T = unknown>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>;
+
   // User Interaction
 
   /**

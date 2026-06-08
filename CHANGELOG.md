@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- added generateObject function to extension task context for generating structured objects from LLM responses
+
 ## [0.69.0]
 
 - improved smart compaction for bash tools

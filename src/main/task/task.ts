@@ -56,6 +56,7 @@ import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
+import type { z } from 'zod';
 import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
@@ -4533,6 +4534,10 @@ ${error.stderr}`,
 
   public async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined> {
     return this.agent.generateText(modelId, systemPrompt, prompt, this.getProjectDir());
+  }
+
+  public async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined> {
+    return this.agent.generateObject(modelId, systemPrompt, prompt, schema, this.getProjectDir());
   }
 
   async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void> {

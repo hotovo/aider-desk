@@ -20,6 +20,7 @@ import {
 import {
   APICallError,
   type FinishReason,
+  generateObject,
   generateText,
   type ImagePart,
   InvalidToolInputError,
@@ -72,6 +73,7 @@ import {
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 
+import type { z } from 'zod';
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 
 import { MemoryManager } from '@/memory/memory-manager';
@@ -1810,6 +1812,77 @@ export class Agent {
         return undefined;
       }
       logger.error('Error generating text:', error);
+      throw error;
+    } finally {
+      if (newController) {
+        logger.debug('Cleaned up abort controller', { controllerId });
+        this.abortControllers.delete(controllerId);
+      }
+    }
+  }
+
+  async generateObject<T>(
+    modelId: string,
+    systemPrompt: string,
+    prompt: string,
+    schema: z.ZodType<T>,
+    projectDir: string,
+    messages: ContextMessage[] = [],
+    abortable = true,
+    abortSignal?: AbortSignal,
+  ): Promise<T | undefined> {
+    const [providerId, modelName] = extractProviderModel(modelId);
+    const providers = this.modelManager.getProviders();
+    const provider = providers.find((p) => p.id === providerId);
+    if (!provider) {
+      throw new Error(`Provider ${providerId} not found`);
+    }
+
+    const settings = this.store.getSettings();
+    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined);
+    const cacheControl = this.modelManager.getCacheControl(provider, modelName);
+    const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
+    const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
+
+    const controllerId = uuidv4();
+    const newController = abortable ? new AbortController() : null;
+    if (newController) {
+      this.abortControllers.set(controllerId, newController);
+    }
+    const effectiveAbortSignal = abortSignal || newController?.signal;
+
+    logger.info('Generating object:', {
+      providerId: provider.id,
+      providerName: provider.provider.name,
+      modelName,
+      systemPrompt: systemPrompt.substring(0, 100),
+      prompt: prompt.substring(0, 100),
+    });
+
+    messages.push({
+      id: uuidv4(),
+      role: 'user',
+      content: prompt,
+    });
+
+    try {
+      const result = await generateObject({
+        model,
+        schema,
+        system: systemPrompt,
+        messages: await optimizeMessages(messages, cacheControl),
+        abortSignal: effectiveAbortSignal,
+        providerOptions,
+        ...providerParameters,
+      });
+
+      return result.object as T;
+    } catch (error) {
+      if (effectiveAbortSignal?.aborted) {
+        logger.info('Generating object aborted by user');
+        return undefined;
+      }
+      logger.error('Error generating object:', error);
       throw error;
     } finally {
       if (newController) {

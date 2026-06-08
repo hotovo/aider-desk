@@ -13,6 +13,7 @@ import {
 } from '@common/types';
 
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
+import type { z } from 'zod';
 import type { Task } from '@/task';
 
 export class TaskContextImpl implements TaskContext {
@@ -207,6 +208,10 @@ export class TaskContextImpl implements TaskContext {
 
   async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined> {
     return this.task.generateText(modelId, systemPrompt, prompt);
+  }
+
+  async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined> {
+    return this.task.generateObject(modelId, systemPrompt, prompt, schema);
   }
 
   // User Interaction
