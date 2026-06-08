@@ -1489,6 +1489,7 @@ import { ApprovalManager } from './approval-manager';
 ⋮----
 import type { ToolSet } from 'ai';
 ⋮----
+import { coerceBoolean } from '@/agent/utils';
 import { Task } from '@/task';
 ⋮----
 export const createAiderToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
@@ -1628,7 +1629,7 @@ import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellPath } from '@/utils/shell';
-import { expandTilde, readFileContent, truncateToolResult } from '@/agent/utils';
+import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 ⋮----
 /**
@@ -1849,6 +1850,7 @@ import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
+import { coerceBoolean } from '@/agent/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
@@ -1910,6 +1912,7 @@ import { AgentProfile, PromptContext, ToolApprovalState } from '@common/types';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
+import { coerceBoolean } from '@/agent/utils';
 import { Task } from '@/task';
 ⋮----
 export const createTodoToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
@@ -2962,7 +2965,13 @@ import path from 'path';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
+import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
+⋮----
+/**
+ * Zod schema that coerces string values to booleans before validation.
+ * Handles the case where LLMs send boolean parameters as strings ("true"/"false").
+ */
 ⋮----
 /**
  * Extracts PromptContext from a tool result if available.
@@ -3756,8 +3765,10 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import { AvailableExtension, ExtensionConfigComponent, ExtensionToolInfo, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
+import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 ⋮----
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
@@ -3819,6 +3830,7 @@ import type { ToolCallOptions, ToolSet } from 'ai';
 import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
+import { ApprovalManager } from '@/agent/tools/approval-manager';
 import { Project } from '@/project';
 import { Task } from '@/task';
 ⋮----
@@ -4013,6 +4025,8 @@ private async restartWatchers(): Promise<void>
 ⋮----
 validateToolDefinition(tool: ToolDefinition):
 ⋮----
+getToolsInfo(projectDir?: string): ExtensionToolInfo[]
+⋮----
 getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[]
 ⋮----
 /**
@@ -4026,9 +4040,20 @@ getTools(task: Task, mode: string, profile: AgentProfile): RegisteredTool[]
    * @param abortSignal - Optional AbortSignal for cancellation support
    * @returns A ToolSet containing all approved extension tools
    */
-createExtensionToolset(task: Task, mode: string, profile: AgentProfile, allTools: ToolSet, abortSignal?: AbortSignal): ToolSet
+createExtensionToolset(
+    task: Task,
+    mode: string,
+    profile: AgentProfile,
+    allTools: ToolSet,
+    approvalManager: ApprovalManager,
+    abortSignal?: AbortSignal,
+): ToolSet
 ⋮----
-// Skip if tool is marked as Never approved
+// Tool approval filtering is handled in getTools()
+⋮----
+// --- Tool Approval Logic ---
+⋮----
+// --- End Tool Approval Logic ---
 ⋮----
 // Error isolation - log and return error message
 ⋮----
@@ -7285,6 +7310,8 @@ constructor(private readonly eventsHandler: EventsHandler)
 registerRoutes(router: Router): void
 ⋮----
 // Get installed extensions
+⋮----
+// Get extension tools info
 ⋮----
 // Get available extensions from repositories
 ⋮----
@@ -11176,6 +11203,7 @@ import {
   EnvironmentVariable,
   FileEdit,
   InstalledExtension,
+  ExtensionToolInfo,
   McpServerConfig,
   McpTool,
   MemoryEntry,
@@ -11529,6 +11557,8 @@ async deleteProjectMemories(projectId: string): Promise<number>
 getMemoryEmbeddingProgress()
 ⋮----
 getInstalledExtensions(projectDir?: string): InstalledExtension[]
+⋮----
+getExtensionToolsInfo(projectDir?: string): ExtensionToolInfo[]
 ⋮----
 async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean)
 ⋮----
@@ -12600,6 +12630,7 @@ import {
   InstalledExtension,
   AvailableExtension,
   ExtensionConfigComponent,
+  ExtensionToolInfo,
   ExtensionUIComponent,
   ModalOverlayUrlData,
   AiderConnectorStatus,
@@ -12971,6 +13002,8 @@ clearSystemLogs(): Promise<void>
 addSystemLogListener(callback: (data: SystemLogData) => void): () => void
 ⋮----
 getInstalledExtensions(projectDir?: string): Promise<InstalledExtension[]>
+⋮----
+getExtensionToolsInfo(projectDir?: string): Promise<ExtensionToolInfo[]>
 ⋮----
 getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]>
 ⋮----
@@ -20035,6 +20068,7 @@ import {
   AgentProfile,
   ContextCompactionType,
   ContextMemoryMode,
+  ExtensionToolInfo,
   GenericTool,
   InvocationMode,
   McpServerConfig,
@@ -20046,7 +20080,17 @@ import {
 import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
-import { MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdRepeat, MdThermostat, MdPsychology } from 'react-icons/md';
+import {
+  MdExtension,
+  MdFlashOn,
+  MdOutlineChecklist,
+  MdOutlineFileCopy,
+  MdOutlineHdrAuto,
+  MdOutlineMap,
+  MdRepeat,
+  MdThermostat,
+  MdPsychology,
+} from 'react-icons/md';
 import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
 import { BiTrash } from 'react-icons/bi';
 import { clsx } from 'clsx';
@@ -20272,6 +20316,8 @@ onChange=
 ⋮----
 {/* Compaction Type */}
 ⋮----
+const handleExtEnabledChange = (enabled: boolean) =>
+⋮----
 onRemove=
 onEdit=
 ⋮----
@@ -20313,6 +20359,7 @@ import { Checkbox } from '@/components/common/Checkbox';
 ⋮----
 type Props = {
   name: string;
+  displayName?: string;
   tools: GenericTool[];
   profile: AgentProfile;
   onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
