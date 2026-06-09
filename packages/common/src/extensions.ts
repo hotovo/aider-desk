@@ -204,6 +204,7 @@ export type UIComponentPlacement =
   | 'tasks-sidebar-bottom'
   | 'tasks-sidebar-actions-left'
   | 'tasks-sidebar-actions-right'
+  | 'task-message'
   | 'task-message-above'
   | 'task-message-below'
   | 'task-message-bar'
@@ -251,6 +252,18 @@ export interface UIComponentDefinition {
   loadData?: boolean;
   /** Optional flag to disable data caching - when true, data is always fetched fresh on render (default: false) */
   noDataCache?: boolean;
+  /** Optional filter for which messages this component should handle (for task-message placement) */
+  messageFilter?: MessageFilter;
+}
+
+/** Filter for which messages a task-message extension component should handle */
+export interface MessageFilter {
+  /** Message types this component handles (e.g. 'user', 'tool', 'response', 'log') */
+  types?: string[];
+  /** For tool messages: filter by server name */
+  serverName?: string;
+  /** For tool messages: filter by tool name */
+  toolName?: string;
 }
 
 /**

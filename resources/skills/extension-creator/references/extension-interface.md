@@ -204,6 +204,18 @@ interface UIComponentDefinition {
   
   /** Optional flag to disable data caching (default: false) */
   noDataCache?: boolean;
+  
+  /** Optional filter for which messages this component handles (required for task-message placement) */
+  messageFilter?: MessageFilter;
+}
+
+interface MessageFilter {
+  /** Message types this component handles (e.g. 'user', 'tool', 'response', 'log') */
+  types?: string[];
+  /** For tool messages: filter by server name */
+  serverName?: string;
+  /** For tool messages: filter by tool name */
+  toolName?: string;
 }
 
 type UIComponentPlacement =
@@ -217,6 +229,7 @@ type UIComponentPlacement =
   | 'task-input-toolbar-right'
   | 'tasks-sidebar-header'
   | 'tasks-sidebar-bottom'
+  | 'task-message'
   | 'task-message-above'
   | 'task-message-below'
   | 'task-message-bar'

@@ -1228,6 +1228,7 @@ export class EventsHandler {
       loadData: c.component.loadData,
       noDataCache: c.component.noDataCache,
       libraries: librariesByExtension.get(c.extensionId),
+      messageFilter: c.component.messageFilter,
     }));
   }
 

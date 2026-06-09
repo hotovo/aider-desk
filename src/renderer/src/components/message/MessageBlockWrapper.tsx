@@ -6,6 +6,7 @@ import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensionMessageComponent } from '@/components/extensions/useExtensionMessageComponent';
 import { includeMessageProperty } from '@/components/message/utils';
 
 type Props = {
@@ -53,8 +54,16 @@ export const MessageBlockWrapper = memo(
       [message],
     );
 
+    const { hasMatch, renderMatchingComponent } = useExtensionMessageComponent({
+      message,
+      projectDir: baseDir,
+      taskId,
+    });
+
     let messageBlock: ReactNode;
-    if (isGroupMessage(message)) {
+    if (hasMatch) {
+      messageBlock = renderMatchingComponent();
+    } else if (isGroupMessage(message)) {
       messageBlock = (
         <GroupMessageBlock
           baseDir={baseDir}

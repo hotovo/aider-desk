@@ -4,6 +4,7 @@
 
 - added generateObject function to extension task context for generating structured objects from LLM responses
 - improved auto-scrolling while the messages are being processed
+- added task-message UI extension placement for rendering custom messages
 
 ## [0.69.0]
 

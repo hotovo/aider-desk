@@ -55,6 +55,7 @@ export type {
   ToolDefinition,
   ToolFinishedEvent,
   ToolResult,
+  MessageFilter,
   UIComponent,
   UIComponentDefinition,
   UIComponentPlacement,

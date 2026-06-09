@@ -318,6 +318,26 @@ After completing this skill, verify:
 - Example: `getUIComponentsLibraries() { return { chart: 'recharts@^2.12.0' } }`
 - Reference: [external-libraries.md](references/external-libraries.md)
 
+**Situation:** Extension needs to customize message rendering
+
+**Pattern:**
+- When: Extension wants to replace how messages (user, assistant, tool, log, etc.) are displayed
+- Then: Use the `task-message` placement with a `messageFilter` to specify which messages to handle
+- Must: Set `messageFilter.types` to the message types to match (e.g. `'user'`, `'response'`, `'assistant-group'`, `'tool'`, `'log'`, `'loading'`)
+- Must: For tool-specific filters, set `messageFilter.serverName` and/or `messageFilter.toolName`
+- Props: Component receives `message` prop — for `assistant-group` type, access `message.responseMessage` and `message.toolMessages`
+- Reference: [ui-components.md](references/ui-components.md) for full details, `MessageFilter` type, and JSX examples
+
+**Situation:** Extension needs a floating panel
+
+**Pattern:**
+- When: Extension needs a draggable, resizable panel (dashboard, inspector, toggle panel)
+- Then: Use the `floating` placement and set `name` for the panel title
+- Must: Set `name` on `UIComponentDefinition` — used as the floating panel title bar text
+- Must: Use `loadData: true` + `getUIExtensionData()` for panel data; implement `executeUIExtensionAction()` for actions
+- Must: Use `context.triggerUIDataRefresh(componentId)` to refresh panel data, `context.triggerUIComponentsReload()` to re-register components after state changes
+- Reference: [ui-components.md](references/ui-components.md) for full details, including toggle panel pattern
+
 **Situation:** Extension needs config storage
 
 **Pattern:**

@@ -1091,6 +1091,11 @@ export interface ExtensionUIComponent {
   loadData?: boolean;
   noDataCache?: boolean;
   libraries?: Record<string, string>;
+  messageFilter?: {
+    types?: string[];
+    serverName?: string;
+    toolName?: string;
+  };
 }
 
 /**

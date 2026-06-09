@@ -1574,6 +1574,26 @@ export class ExtensionManager {
       errors.push('UI component must have valid jsx content');
     }
 
+    if (component.placement === 'task-message' && !component.messageFilter) {
+      errors.push('UI component with task-message placement must have a messageFilter');
+    }
+
+    if (component.messageFilter) {
+      if (typeof component.messageFilter !== 'object') {
+        errors.push('messageFilter must be an object');
+      } else {
+        if (component.messageFilter.types !== undefined && !Array.isArray(component.messageFilter.types)) {
+          errors.push('messageFilter.types must be an array');
+        }
+        if (component.messageFilter.serverName !== undefined && typeof component.messageFilter.serverName !== 'string') {
+          errors.push('messageFilter.serverName must be a string');
+        }
+        if (component.messageFilter.toolName !== undefined && typeof component.messageFilter.toolName !== 'string') {
+          errors.push('messageFilter.toolName must be a string');
+        }
+      }
+    }
+
     return {
       isValid: errors.length === 0,
       errors,

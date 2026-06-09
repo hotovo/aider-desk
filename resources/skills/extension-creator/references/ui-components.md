@@ -32,6 +32,10 @@ getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
 - **jsx** (string, required): JSX/TSX component code as a string
 - **loadData** (boolean, optional): Whether to load data via `getUIExtensionData()` (default: false)
 - **noDataCache** (boolean, optional): Always fetch fresh data on render (default: false)
+- **messageFilter** (object, optional): Filter for which messages this component handles (required for `task-message` placement)
+  - **types** (string[], optional): Message types to handle (e.g. `'user'`, `'tool'`, `'response'`, `'log'`, `'loading'`, `'reflected-message'`, `'command-output'`, `'group'`, `'assistant-group'`). If omitted, matches all types.
+  - **serverName** (string, optional): For tool messages — filter by server name (e.g. your extension ID)
+  - **toolName** (string, optional): For tool messages — filter by tool name
 
 ## Available Placements
 
@@ -66,6 +70,13 @@ UI components can be placed in various locations throughout the AiderDesk interf
   - *Use for*: Summary information, pagination
   - *Layout*: Full width, vertical stack
   - *Note*: Appears once per task
+
+- **task-message**: Replaces the entire default message rendering for matched messages
+  - *Use for*: Custom rendering of user, assistant, tool, log, or any other message types
+  - *Layout*: Full message width, replaces the default message block entirely
+  - *Props*: Includes `message` prop with current message data
+  - *Requires*: `messageFilter` property to specify which messages this component handles
+  - *Note*: First matching component wins. The `task-message-above` and `task-message-below` wrappers still render around the custom component.
 
 - **task-message-above**: Above each individual message
   - *Use for*: Message metadata, timestamps, labels
@@ -659,6 +670,262 @@ getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
       {messageData.tokensPerSecond} TPS
     </span>
   );
+}
+```
+
+### Custom Message Renderer (task-message placement)
+
+Replace the default message rendering entirely for specific message types:
+
+```typescript
+// In your extension's getUIComponents():
+getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+  return [{
+    id: 'my-custom-tool-message',
+    placement: 'task-message',
+    jsx: readFileSync(join(__dirname, './CustomToolMessage.jsx'), 'utf-8'),
+    loadData: true,
+    messageFilter: {
+      types: ['tool'],
+      serverName: 'my-extension',  // Only render for tools from this extension
+    },
+  }];
+}
+```
+
+```jsx
+// CustomToolMessage.jsx
+(props) => {
+  const { message, data, executeExtensionAction, ui } = props;
+  const { useState } = React;
+  const [expanded, setExpanded] = useState(false);
+
+  if (!message || message.type !== 'tool') return null;
+
+  const isExecuting = message.content === '';
+
+  return (
+    <div className="rounded-md border border-border-dark-light bg-bg-secondary p-3 text-xs">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="font-semibold text-text-primary">{message.toolName}</span>
+        {isExecuting && <span className="text-text-muted animate-pulse">Running...</span>}
+      </div>
+      <ui.Button size="xs" variant="outline" onClick={() => setExpanded(!expanded)}>
+        {expanded ? 'Collapse' : 'Expand'}
+      </ui.Button>
+      {expanded && !isExecuting && (
+        <pre className="mt-2 p-2 bg-bg-primary-light rounded text-2xs overflow-auto max-h-[300px]">
+          {message.content}
+        </pre>
+      )}
+    </div>
+  );
+}
+```
+
+You can also replace rendering for non-tool message types:
+
+```typescript
+// Replace user message rendering
+{
+  id: 'custom-user-message',
+  placement: 'task-message',
+  jsx: `...`,
+  messageFilter: {
+    types: ['user'],
+  },
+}
+
+// Replace assistant response rendering
+{
+  id: 'custom-response-message',
+  placement: 'task-message',
+  jsx: `...`,
+  messageFilter: {
+    types: ['response'],
+  },
+}
+
+// Replace all tool messages from a specific server
+{
+  id: 'custom-mcp-tool-message',
+  placement: 'task-message',
+  jsx: `...`,
+  messageFilter: {
+    types: ['tool'],
+    serverName: 'my-mcp-server',
+    toolName: 'specific-tool',  // Optional: narrow to a specific tool
+  },
+}
+
+// Replace grouped assistant messages (compact mode)
+{
+  id: 'custom-assistant-group',
+  placement: 'task-message',
+  jsx: readFileSync(join(__dirname, './AssistantGroupMessage.jsx'), 'utf-8'),
+  messageFilter: {
+    types: ['assistant-group'],
+  },
+}
+```
+
+When handling `assistant-group` messages, access `message.responseMessage` and `message.toolMessages` to render the grouped content:
+
+```jsx
+// AssistantGroupMessage.jsx
+(props) => {
+  const message = props.message;
+  if (!message || message.type !== 'assistant-group') return null;
+
+  return (
+    <div className="rounded-md border border-border-dark-light bg-bg-secondary">
+      {message.responseMessage && (
+        <div className="p-3 prose text-sm">
+          {message.responseMessage.content}
+        </div>
+      )}
+      {message.toolMessages?.length > 0 && (
+        <div className="border-t border-border-dark-light">
+          {message.toolMessages.map((tm) => (
+            <div key={tm.id} className="px-3 py-1 text-xs border-b border-border-dark-light last:border-b-0">
+              <span className="font-medium">{tm.toolName}</span>
+              <pre className="mt-1 text-2xs opacity-80 max-h-24 overflow-auto">{tm.content}</pre>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### Floating Panel (floating placement)
+
+A draggable, resizable floating panel for side-by-side tools:
+
+```typescript
+// In your extension's getUIComponents():
+getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+  return [{
+    id: 'my-panel',
+    placement: 'floating',
+    name: 'My Panel',  // Becomes the floating panel title
+    loadData: true,
+    noDataCache: true,
+    jsx: readFileSync(join(__dirname, './MyPanel.jsx'), 'utf-8'),
+  }];
+}
+
+async getUIExtensionData(componentId: string, context: ExtensionContext): Promise<unknown> {
+  if (componentId !== 'my-panel') return null;
+  const taskDir = context.getTaskContext()?.getTaskDir();
+  return { taskDir, status: 'active' };
+}
+
+async executeUIExtensionAction(
+  componentId: string, action: string, args: unknown[], context: ExtensionContext,
+): Promise<unknown> {
+  if (componentId !== 'my-panel') return null;
+  if (action === 'refresh') {
+    context.triggerUIDataRefresh(componentId);
+  }
+  return null;
+}
+```
+
+```jsx
+// MyPanel.jsx
+(props) => {
+  const data = props.data || {};
+  const { useCallback } = React;
+
+  const handleRefresh = useCallback(() => {
+    props.executeExtensionAction('refresh');
+  }, []);
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="text-sm font-medium">Status: {data.status || 'unknown'}</div>
+      <props.ui.Button size="sm" onClick={handleRefresh}>Refresh</props.ui.Button>
+    </div>
+  );
+}
+```
+
+#### Floating Panel with Toggles
+
+A floating panel with checkboxes that conditionally register other UI components:
+
+```typescript
+class MyExtension implements Extension {
+  private enabledFeatures = new Set<string>();
+
+  getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+    const components: UIComponentDefinition[] = [{
+      id: 'feature-toggle-panel',
+      placement: 'floating',
+      name: 'Feature Toggles',
+      loadData: true,
+      noDataCache: true,
+      jsx: `
+        (props) => {
+          const data = props.data || {};
+          const features = data.enabledFeatures || {};
+          return (
+            <div className="p-3 space-y-2">
+              {Object.entries(features).map(([key, enabled]) => (
+                <props.ui.Checkbox
+                  key={key}
+                  label={key}
+                  checked={!!enabled}
+                  onChange={() => props.executeExtensionAction('toggle', key)}
+                />
+              ))}
+            </div>
+          );
+        }
+      `,
+    }];
+
+    // Only register these components when their feature is enabled
+    if (this.enabledFeatures.has('dashboard')) {
+      components.push({
+        id: 'dashboard',
+        placement: 'task-status-bar-right',
+        jsx: `...`,
+      });
+    }
+
+    return components;
+  }
+
+  async getUIExtensionData(componentId: string, context: ExtensionContext): Promise<unknown> {
+    if (componentId !== 'feature-toggle-panel') return null;
+    return {
+      enabledFeatures: {
+        dashboard: this.enabledFeatures.has('dashboard'),
+        inspector: this.enabledFeatures.has('inspector'),
+      },
+    };
+  }
+
+  async executeUIExtensionAction(
+    componentId: string, action: string, args: unknown[], context: ExtensionContext,
+  ): Promise<unknown> {
+    if (action === 'toggle' && args[0]) {
+      const feature = args[0] as string;
+      if (this.enabledFeatures.has(feature)) {
+        this.enabledFeatures.delete(feature);
+      } else {
+        this.enabledFeatures.add(feature);
+      }
+      // Reload components so getUIComponents() returns the updated list
+      context.triggerUIComponentsReload();
+      // Refresh the toggle panel's data
+      context.triggerUIDataRefresh('feature-toggle-panel');
+    }
+    return null;
+  }
 }
 ```
 
