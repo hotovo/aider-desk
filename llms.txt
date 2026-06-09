@@ -2208,6 +2208,7 @@ import {
 import {
   APICallError,
   type FinishReason,
+  generateObject,
   generateText,
   type ImagePart,
   InvalidToolInputError,
@@ -2260,6 +2261,7 @@ import {
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 ⋮----
+import type { z } from 'zod';
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
 ⋮----
 import { MemoryManager } from '@/memory/memory-manager';
@@ -2534,6 +2536,17 @@ async generateText(
     abortable = true,
     abortSignal?: AbortSignal,
 ): Promise<string | undefined>
+⋮----
+async generateObject<T>(
+    modelId: string,
+    systemPrompt: string,
+    prompt: string,
+    schema: z.ZodType<T>,
+    projectDir: string,
+    messages: ContextMessage[] = [],
+    abortable = true,
+    abortSignal?: AbortSignal,
+): Promise<T | undefined>
 ⋮----
 async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
 ⋮----
@@ -4326,6 +4339,7 @@ import {
 } from '@common/types';
 ⋮----
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
+import type { z } from 'zod';
 import type { Task } from '@/task';
 ⋮----
 export class TaskContextImpl implements TaskContext
@@ -4431,6 +4445,8 @@ async runCommand(command: string): Promise<void>
 async interruptResponse(): Promise<void>
 ⋮----
 async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>
+⋮----
+async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>
 ⋮----
 // User Interaction
 ⋮----
@@ -8770,6 +8786,7 @@ import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 ⋮----
+import type { z } from 'zod';
 import type { ToolContent } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
@@ -9620,6 +9637,8 @@ public getProject(): Project
 public isInitialized()
 ⋮----
 public async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>
+⋮----
+public async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>
 ⋮----
 async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void>
 
@@ -27799,7 +27818,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.69.0-dev",
+  "version": "0.70.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
