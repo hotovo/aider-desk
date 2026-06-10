@@ -1807,7 +1807,8 @@
     "selectMode": "Select"
   },
   "aiderConnector": {
-    "starting": "Aider connector is starting up..."
+    "starting": "Aider connector is starting up...",
+    "restart": "Restart Aider Connector"
   },
   "showModelSelector": "Change model",
   "hideModelSelector": "Hide model selector",

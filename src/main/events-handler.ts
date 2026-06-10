@@ -157,6 +157,13 @@ export class EventsHandler {
     }
   }
 
+  async restartAiderConnector(baseDir: string, taskId: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (task) {
+      await task.restartAiderConnector();
+    }
+  }
+
   getOpenProjects(): ProjectData[] {
     return this.store.getOpenProjects();
   }

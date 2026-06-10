@@ -107,7 +107,18 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const { isMobile } = useResponsive();
     const api = useApi();
     const { models } = useModelProviders();
-    const { loadTask, clearSession, resetTask, setMessages, setTodoItems, setAiderModelsData, answerQuestion, interruptResponse, refreshAllFiles } = useTask();
+    const {
+      loadTask,
+      clearSession,
+      resetTask,
+      restartAiderConnector,
+      setMessages,
+      setTodoItems,
+      setAiderModelsData,
+      answerQuestion,
+      interruptResponse,
+      refreshAllFiles,
+    } = useTask();
 
     const taskState = useTaskState(task.id);
     const {
@@ -412,6 +423,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       setAiderModelsData(task.id, null);
     }, [resetTask, task.id, setAiderModelsData]);
 
+    const handleRestartAiderConnector = useCallback(() => {
+      restartAiderConnector(task.id);
+    }, [restartAiderConnector, task.id]);
+
     const handleRedoUserPrompt = useCallback(
       (messageId: string) => {
         const userMessageIndex = displayedMessages.findIndex((msg) => msg.id === messageId);
@@ -712,6 +727,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             onToggleSidebar={() => setShowSidebar(!showSidebar)}
             onToggleTaskSidebar={onToggleTaskSidebar}
             updateTask={updateTask}
+            onRestartAiderConnector={handleRestartAiderConnector}
           />
           <div className="flex-grow overflow-y-hidden relative flex flex-col">
             {renderSearchInput()}

@@ -685,6 +685,20 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    router.post(
+      '/project/tasks/restart-aider-connector',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ResetTaskSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.restartAiderConnector(projectDir, taskId);
+        res.status(200).json({ message: 'Aider connector restarted' });
+      }),
+    );
+
     // Load task data
     router.post(
       '/project/tasks/load',

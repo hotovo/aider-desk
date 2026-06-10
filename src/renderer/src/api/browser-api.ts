@@ -357,6 +357,9 @@ export class BrowserApi implements ApplicationAPI {
   resetTask(baseDir: string, taskId: string): void {
     this.post('/project/tasks/reset', { projectDir: baseDir, taskId });
   }
+  restartAiderConnector(baseDir: string, taskId: string): void {
+    this.post('/project/tasks/restart-aider-connector', { projectDir: baseDir, taskId });
+  }
   runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void {
     this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode, images });
   }

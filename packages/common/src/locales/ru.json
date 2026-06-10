@@ -1798,7 +1798,8 @@
     "selectMode": "Выбрать"
   },
   "aiderConnector": {
-    "starting": "Коннектор Aider запускается..."
+    "starting": "Коннектор Aider запускается...",
+    "restart": "Перезапустить коннектор Aider"
   },
   "showModelSelector": "Сменить модель",
   "hideModelSelector": "Скрыть выбор модели",

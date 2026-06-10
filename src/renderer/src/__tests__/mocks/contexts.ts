@@ -14,6 +14,7 @@ export const createMockTaskContext = (overrides: Partial<TaskContextType> = {}) 
     loadTask: vi.fn(),
     clearSession: vi.fn(),
     resetTask: vi.fn(),
+    restartAiderConnector: vi.fn(),
     setMessages: vi.fn(),
     setTodoItems: vi.fn(),
     setAiderModelsData: vi.fn(),

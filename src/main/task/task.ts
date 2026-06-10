@@ -3605,6 +3605,10 @@ ${error.stderr}`,
     await this.updateContextInfo();
   }
 
+  async restartAiderConnector() {
+    await this.aiderManager.start(true);
+  }
+
   public async updateTask(updates: Partial<TaskData>): Promise<TaskData> {
     const previousTaskString = JSON.stringify(this.task);
 

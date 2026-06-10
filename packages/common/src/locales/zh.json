@@ -1815,7 +1815,8 @@
     "selectMode": "选择"
   },
   "aiderConnector": {
-    "starting": "Aider 连接器正在启动..."
+    "starting": "Aider 连接器正在启动...",
+    "restart": "重启 Aider 连接器"
   },
   "showModelSelector": "更换模型",
   "hideModelSelector": "隐藏模型选择器",

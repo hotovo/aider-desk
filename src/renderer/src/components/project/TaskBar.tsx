@@ -4,6 +4,7 @@ import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
+import { MdOutlineRefresh } from 'react-icons/md';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
 import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
@@ -40,10 +41,26 @@ type Props = {
   onToggleSidebar: () => void;
   onToggleTaskSidebar?: () => void;
   updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  onRestartAiderConnector: () => void;
 };
 
 export const TaskBar = React.forwardRef<TaskBarRef, Props>(
-  ({ baseDir, task, modelsData, mode, activeAgentProfile, onModelsChange, runCommand, onToggleSidebar, onToggleTaskSidebar, updateTask }, ref) => {
+  (
+    {
+      baseDir,
+      task,
+      modelsData,
+      mode,
+      activeAgentProfile,
+      onModelsChange,
+      runCommand,
+      onToggleSidebar,
+      onToggleTaskSidebar,
+      updateTask,
+      onRestartAiderConnector,
+    },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const { settings, saveSettings } = useSettings();
     const { models, providers } = useModelProviders();
@@ -446,11 +463,21 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <div className="flex items-center space-x-2 flex-shrink-0 text-2xs text-text-secondary animate-pulse">
               <CgTerminal className="w-3.5 h-3.5" />
               <span>{aiderConnectorMessage}</span>
+              <Tooltip content={t('aiderConnector.restart')}>
+                <button onClick={onRestartAiderConnector} className="p-0.5 hover:bg-bg-tertiary rounded-md">
+                  <MdOutlineRefresh className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
             </div>
           ) : aiderConnectorStatus.state === 'failed' ? (
             <div className="flex items-center space-x-2 flex-shrink-0 text-xs text-text-error">
               <CgTerminal className="w-3.5 h-3.5" />
               <span>{aiderConnectorMessage}</span>
+              <Tooltip content={t('aiderConnector.restart')}>
+                <button onClick={onRestartAiderConnector} className="p-0.5 hover:bg-bg-tertiary rounded-md">
+                  <MdOutlineRefresh className="w-3.5 h-3.5" />
+                </button>
+              </Tooltip>
             </div>
           ) : (
             <>

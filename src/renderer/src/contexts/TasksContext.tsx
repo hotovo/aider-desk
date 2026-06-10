@@ -47,6 +47,7 @@ export interface TaskContextType {
   loadTask: (taskId: string) => void;
   clearSession: (taskId: string, messagesOnly: boolean) => void;
   resetTask: (taskId: string) => void;
+  restartAiderConnector: (taskId: string) => void;
   setMessages: (taskId: string, updateMessages: (prevState: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;

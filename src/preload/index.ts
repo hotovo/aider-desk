@@ -63,6 +63,7 @@ const api: ApplicationAPI = {
   stopProject: (baseDir) => ipcRenderer.send('stop-project', baseDir),
   restartProject: (baseDir) => ipcRenderer.send('restart-project', baseDir),
   resetTask: (baseDir, taskId) => ipcRenderer.send('reset-task', baseDir, taskId),
+  restartAiderConnector: (baseDir, taskId) => ipcRenderer.send('restart-aider-connector', baseDir, taskId),
   runPrompt: (baseDir, taskId, prompt, mode, images) => ipcRenderer.send('run-prompt', baseDir, taskId, prompt, mode, images),
   savePrompt: (baseDir, taskId, prompt) => ipcRenderer.invoke('save-prompt', baseDir, taskId, prompt),
   redoUserPrompt: (baseDir, taskId, messageId, mode, updatedPrompt?, updatedImages?) =>

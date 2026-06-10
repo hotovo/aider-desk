@@ -89,6 +89,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resetTask(baseDir, taskId);
   });
 
+  ipcMain.on('restart-aider-connector', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.restartAiderConnector(baseDir, taskId);
+  });
+
   ipcMain.handle('show-open-dialog', async (_, options: OpenDialogOptions) => {
     return await eventsHandler.showOpenDialog(options);
   });
