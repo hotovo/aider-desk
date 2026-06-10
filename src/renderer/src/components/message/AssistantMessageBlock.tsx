@@ -23,7 +23,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
   const { responseMessage, toolMessages } = message;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const parsedContent = useParsedContent(baseDir, responseMessage.content, allFiles, renderMarkdown, true);
+  const parsedContent = useParsedContent(baseDir, responseMessage.content, allFiles, renderMarkdown, true, responseMessage.reasoning);
 
   const hasContent = parsedContent && (!Array.isArray(parsedContent) || parsedContent.length > 0);
 
@@ -52,7 +52,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
 
   const aggregatedUsage = aggregateUsage();
 
-  const allContent = [responseMessage.content, ...toolMessages.map((t) => t.content)].filter(Boolean).join('\n\n');
+  const allContent = [responseMessage.reasoning, responseMessage.content, ...toolMessages.map((t) => t.content)].filter(Boolean).join('\n\n');
 
   const handleRemove = useCallback(() => {
     if (!remove) {

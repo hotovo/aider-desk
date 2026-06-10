@@ -151,6 +151,7 @@ export interface ResponseChunkData {
   baseDir: string;
   taskId: string;
   chunk: string;
+  reasoning?: string;
   reflectedMessage?: string;
   promptContext?: PromptContext;
 }
@@ -161,6 +162,7 @@ export interface ResponseCompletedData {
   baseDir: string;
   taskId: string;
   content: string;
+  reasoning?: string;
   reflectedMessage?: string;
   editedFiles?: string[];
   commitHash?: string;

@@ -76,8 +76,24 @@ export const MARKDOWN_COMPONENTS: Components = {
   td: (props) => <td className="px-4 py-2 text-xs text-text-primary whitespace-nowrap" {...props} />,
 };
 
-export const parseMessageContent = (baseDir: string, content: string, allFiles: string[], renderMarkdown = false, renderThinking = true) => {
-  // First check if the content matches the thinking/answer format
+export const parseMessageContent = (
+  baseDir: string,
+  content: string,
+  allFiles: string[],
+  renderMarkdown = false,
+  renderThinking = true,
+  reasoning?: string | null,
+) => {
+  // Use the reasoning property directly if available
+  if (reasoning) {
+    if (renderThinking) {
+      return <ThinkingAnswerBlock thinking={reasoning} answer={content} baseDir={baseDir} allFiles={allFiles} renderMarkdown={renderMarkdown} />;
+    } else {
+      return parseMessageContent(baseDir, content || reasoning, allFiles, renderMarkdown);
+    }
+  }
+
+  // Fallback: check if the content matches the thinking/answer format (for legacy messages)
   const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
   if (thinkingAnswerContent) {
     return thinkingAnswerContent;
@@ -539,6 +555,11 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
 export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): boolean => {
   // Check basic message properties
   if (prevMessage.id !== nextMessage.id || prevMessage.content !== nextMessage.content) {
+    return false;
+  }
+
+  // Check reasoning for ResponseMessage
+  if (isResponseMessage(prevMessage) && isResponseMessage(nextMessage) && prevMessage.reasoning !== nextMessage.reasoning) {
     return false;
   }
 

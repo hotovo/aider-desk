@@ -33,7 +33,7 @@ export const ResponseMessageBlock = ({
 }: Props) => {
   const baseClasses = 'rounded-md max-w-full text-xs bg-bg-secondary text-text-primary';
 
-  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown, showThinking);
+  const parsedContent = useParsedContent(baseDir, message.content, allFiles, renderMarkdown, showThinking, message.reasoning);
 
   if (!parsedContent || (Array.isArray(parsedContent) && parsedContent.length === 0)) {
     return null;
@@ -57,7 +57,7 @@ export const ResponseMessageBlock = ({
       {!hideMessageBar && (
         <MessageBar
           message={message}
-          content={message.content}
+          content={message.content || message.reasoning}
           usageReport={message.usageReport}
           remove={onRemove}
           onFork={onFork}

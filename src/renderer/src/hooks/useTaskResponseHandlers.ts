@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { isResponseMessage } from '@common/types';
 
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 
@@ -15,26 +16,29 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
   const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleResponseChunk = useCallback(
-    ({ messageId, chunk, reflectedMessage, promptContext }: ResponseChunkData) => {
+    ({ messageId, chunk, reasoning, reflectedMessage, promptContext }: ResponseChunkData) => {
       const timestamp = Date.now();
       let processingMessage = processingResponseMessageMap.get(taskId);
       if (processingMessage?.id === messageId) {
         processingMessage = {
           ...processingMessage,
           content: processingMessage.content + chunk,
+          reasoning: reasoning ? (processingMessage.reasoning || '') + reasoning : processingMessage.reasoning,
           promptContext,
         };
         processingResponseMessageMap.set(taskId, processingMessage);
         setMessages(taskId, (prevMessages) =>
-          prevMessages.map((message) =>
-            message.id === messageId
-              ? {
-                  ...message,
-                  content: message.content + chunk,
-                  promptContext,
-                }
-              : message,
-          ),
+          prevMessages.map((message) => {
+            if (message.id === messageId && isResponseMessage(message)) {
+              return {
+                ...message,
+                content: message.content + chunk,
+                reasoning: reasoning ? (message.reasoning || '') + reasoning : message.reasoning,
+                promptContext,
+              };
+            }
+            return message;
+          }),
         );
       } else {
         setMessages(taskId, (prevMessages) => {
@@ -58,6 +62,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               id: messageId,
               type: 'response',
               content: chunk,
+              reasoning: reasoning || undefined,
               promptContext,
               timestamp,
             };
@@ -67,10 +72,11 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
             return prevMessages.filter((message) => message.type !== 'loading').concat(...newMessages);
           } else {
             return prevMessages.map((message) => {
-              if (message.id === messageId) {
+              if (message.id === messageId && isResponseMessage(message)) {
                 return {
                   ...message,
                   content: message.content + chunk,
+                  reasoning: reasoning ? (message.reasoning || '') + reasoning : message.reasoning,
                   promptContext,
                 };
               }
@@ -84,7 +90,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
   );
 
   const handleResponseCompleted = useCallback(
-    ({ messageId, usageReport, content, reflectedMessage, promptContext, timestamp }: ResponseCompletedData) => {
+    ({ messageId, usageReport, content, reasoning, reflectedMessage, promptContext, timestamp }: ResponseCompletedData) => {
       const processingMessage = processingResponseMessageMap.get(taskId);
 
       if (content) {
@@ -96,6 +102,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
                 ? {
                     ...responseMessage,
                     content,
+                    reasoning,
                     finished: true,
                     usageReport,
                     promptContext,
@@ -120,6 +127,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
               id: messageId,
               type: 'response',
               content,
+              reasoning,
               usageReport,
               promptContext,
               finished: true,
@@ -134,6 +142,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
         processingMessage.usageReport = usageReport;
         processingMessage.promptContext = promptContext;
         processingMessage.content = content || processingMessage.content;
+        processingMessage.reasoning = reasoning || processingMessage.reasoning;
         setMessages(taskId, (prevMessages) => prevMessages.map((message) => (message.id === messageId ? processingMessage : message)));
       } else {
         setMessages(taskId, (prevMessages) => prevMessages.filter((message) => message.type !== 'loading'));

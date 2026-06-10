@@ -61,16 +61,7 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import {
-  ANSWER_RESPONSE_START_TAG,
-  estimateMessageTokens,
-  extractPromptContextFromToolResult,
-  findLastUserMessage,
-  isNetworkError,
-  readFileContent,
-  THINKING_RESPONSE_STAR_TAG,
-  truncateToolResult,
-} from './utils';
+import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, truncateToolResult } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 
 import type { z } from 'zod';
@@ -1150,7 +1141,6 @@ export class Agent {
         }
 
         let iterationError: unknown | null = null;
-        let hasReasoning: boolean = false;
         let finishReason: null | FinishReason = null;
         let currentStepMessages: ContextMessage[] = [];
         let responseMessageIndex: number = 0;
@@ -1187,7 +1177,6 @@ export class Agent {
 
           currentResponseId = uuidv4();
           responseMessageIndex = 0;
-          hasReasoning = false;
           streamingMessageIds.clear();
 
           if (currentStepMessages.length > 0) {
@@ -1277,17 +1266,7 @@ export class Agent {
 
               const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
               if (chunk.type === 'text-start') {
-                if (hasReasoning) {
-                  streamingMessageIds.add(responseMessageId);
-                  await task.processResponseMessage({
-                    id: responseMessageId,
-                    action: 'response',
-                    content: ANSWER_RESPONSE_START_TAG,
-                    finished: false,
-                    promptContext,
-                  });
-                  hasReasoning = false;
-                }
+                // no-op
               } else if (chunk.type === 'text-end') {
                 responseMessageIndex++;
               } else if (chunk.type === 'text-delta') {
@@ -1303,20 +1282,13 @@ export class Agent {
                 }
               } else if (chunk.type === 'reasoning-start') {
                 streamingMessageIds.add(responseMessageId);
-                await task.processResponseMessage({
-                  id: responseMessageId,
-                  action: 'response',
-                  content: THINKING_RESPONSE_STAR_TAG,
-                  finished: false,
-                  promptContext,
-                });
-                hasReasoning = true;
               } else if (chunk.type === 'reasoning-delta') {
                 streamingMessageIds.add(responseMessageId);
                 await task.processResponseMessage({
                   id: responseMessageId,
                   action: 'response',
-                  content: chunk.text,
+                  content: '',
+                  reasoning: chunk.text,
                   finished: false,
                   promptContext,
                 });
@@ -2021,7 +1993,8 @@ export class Agent {
         const message: ResponseMessage = {
           id: responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId,
           action: 'response',
-          content: reasoningText?.trim() ? `${THINKING_RESPONSE_STAR_TAG}${reasoningText.trim()}${ANSWER_RESPONSE_START_TAG}${text.trim()}` : text,
+          content: text,
+          reasoning: reasoningText?.trim() || undefined,
           finished: true,
           usageReport,
           promptContext,

@@ -27,9 +27,6 @@ export const coerceBoolean = z.preprocess((val) => {
   return val;
 }, z.boolean());
 
-export const THINKING_RESPONSE_STAR_TAG = '---\n► **THINKING**\n';
-export const ANSWER_RESPONSE_START_TAG = '---\n► **ANSWER**\n';
-
 /**
  * Extracts PromptContext from a tool result if available.
  * @param toolResult - The tool result object to extract PromptContext from

@@ -25,6 +25,10 @@ import nest_asyncio
 import litellm
 import types
 import portalocker
+import re
+
+THINKING_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n', re.IGNORECASE)
+ANSWER_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*\s*\n', re.IGNORECASE)
 
 class PromptContext:
   def __init__(self, id: str, group=None, auto_approve=False, deny_commands=False):
@@ -156,7 +160,13 @@ class PromptExecutor:
       extra_response_data = {}
 
     whole_content = ""
+    whole_reasoning = ""
     response_id = str(uuid.uuid4())
+
+    # Track parsing state across chunks
+    reasoning_started = False
+    answer_started = False
+    buffer = ""
 
     queue = asyncio.Queue()
     executor = self.get_executor()
@@ -181,12 +191,75 @@ class PromptExecutor:
       if chunk is None:
         break
       whole_content += chunk
+      buffer += chunk
+
+      # Parse reasoning/content from buffer
+      reasoning_chunk = ""
+      content_chunk = ""
+      should_send = True
+
+      # Check for THINKING marker
+      thinking_match = THINKING_MARKER.search(buffer)
+      if thinking_match and not reasoning_started and not answer_started:
+        before = buffer[:thinking_match.start()]
+        reasoning_started = True
+        buffer = buffer[thinking_match.end():]
+        if before.strip():
+          content_chunk = before
+        elif buffer:
+          reasoning_chunk = buffer
+          buffer = ""
+        else:
+          should_send = False
+      else:
+        # Check for ANSWER marker
+        answer_match = ANSWER_MARKER.search(buffer)
+        if answer_match and reasoning_started and not answer_started:
+          # Send reasoning before the marker as a separate chunk
+          reasoning_before_marker = buffer[:answer_match.start()]
+          if reasoning_before_marker.strip():
+            reasoning_payload = {
+              "id": response_id,
+              "action": "response",
+              "finished": False,
+              "content": "",
+              "reasoning": reasoning_before_marker,
+              "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
+            }
+            if extra_response_data:
+              reasoning_payload.update(extra_response_data)
+            await self.connector.send_action(reasoning_payload, False)
+          whole_reasoning += reasoning_before_marker
+          answer_started = True
+          buffer = buffer[answer_match.end():]
+          if buffer:
+            content_chunk = buffer
+            buffer = ""
+          else:
+            should_send = False
+        else:
+          # No marker found, stream the appropriate field
+          if answer_started:
+            content_chunk = buffer
+            buffer = ""
+          elif reasoning_started:
+            reasoning_chunk = buffer
+            buffer = ""
+          else:
+            content_chunk = buffer
+            buffer = ""
+
+      if not should_send:
+        continue
+
+      whole_reasoning += reasoning_chunk
 
       response_payload = {
         "id": response_id,
         "action": "response",
         "finished": False,
-        "content": chunk,
+        "content": content_chunk,
+        "reasoning": reasoning_chunk,
         "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
       }
       if extra_response_data:
@@ -194,7 +267,35 @@ class PromptExecutor:
 
       await self.connector.send_action(response_payload, False)
 
-    return whole_content, response_id
+    # Handle any remaining buffered content (e.g., reasoning without an answer marker)
+    if buffer.strip():
+      if reasoning_started and not answer_started:
+        whole_reasoning += buffer
+        response_payload = {
+          "id": response_id,
+          "action": "response",
+          "finished": False,
+          "content": "",
+          "reasoning": buffer,
+          "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
+        }
+        if extra_response_data:
+          response_payload.update(extra_response_data)
+        await self.connector.send_action(response_payload, False)
+      elif not answer_started:
+        response_payload = {
+          "id": response_id,
+          "action": "response",
+          "finished": False,
+          "content": buffer,
+          "reasoning": "",
+          "promptContext": {"id": prompt_context.id, "group": prompt_context.group if hasattr(prompt_context, 'group') else None},
+        }
+        if extra_response_data:
+          response_payload.update(extra_response_data)
+        await self.connector.send_action(response_payload, False)
+
+    return whole_content, response_id, whole_reasoning
 
   async def _run_prompt_async(self, prompt: str, prompt_context: PromptContext, mode=None, architect_model=None, messages=None, files=None, coder=None):
     coder_provided = coder is not None
@@ -234,11 +335,25 @@ class PromptExecutor:
     # setting usage report to None to avoid no attribute error
     coder.usage_report = None
 
-    whole_content, response_id = await self._stream_and_send_responses(coder, prompt_context, prompt, prompt_context.id)
+    whole_content, response_id, whole_reasoning = await self._stream_and_send_responses(coder, prompt_context, prompt, prompt_context.id)
 
     if not whole_content and not self.is_prompt_interrupted(prompt_context.id):
       # if there was no content, use the partial_response_content value (case for non streaming models)
       whole_content = coder.partial_response_content
+
+    # Parse reasoning/answer from raw content (handles both streaming and non-streaming)
+    whole_reasoning = whole_reasoning or ""
+    whole_answer = whole_content
+    if whole_content:
+      thinking_match = THINKING_MARKER.search(whole_content)
+      if thinking_match:
+        answer_match = ANSWER_MARKER.search(whole_content)
+        if answer_match:
+          whole_reasoning = whole_reasoning or whole_content[thinking_match.end():answer_match.start()].strip()
+          whole_answer = whole_content[answer_match.end():].strip()
+        else:
+          whole_reasoning = whole_reasoning or whole_content[thinking_match.end():].strip()
+          whole_answer = ""
 
     def get_usage_report():
       return (coder.usage_report + f" Total cost: ${coder.total_cost:.10f} session") if coder.usage_report else None
@@ -247,7 +362,8 @@ class PromptExecutor:
     response_data = {
       "id": response_id,
       "action": "response",
-      "content": whole_content,
+      "content": whole_answer,
+      "reasoning": whole_reasoning or None,
       "finished": True,
       "editedFiles": list(coder.aider_edited_files),
       "usageReport": get_usage_report(),
@@ -288,7 +404,7 @@ class PromptExecutor:
         reflection_prompt = coder.reflected_message
         await self.connector.send_log_message("loading", "Reflecting message...", False, prompt_context)
 
-        whole_content, response_id = await self._stream_and_send_responses(
+        whole_content, response_id, whole_reasoning = await self._stream_and_send_responses(
           coder, prompt_context, reflection_prompt,
           f"reflection in {prompt_context.id}",
           {"reflectedMessage": reflection_prompt}
@@ -299,6 +415,7 @@ class PromptExecutor:
           "id": response_id,
           "action": "response",
           "content": whole_content,
+          "reasoning": whole_reasoning or None,
           "reflectedMessage": reflection_prompt,
           "finished": True,
           "editedFiles": list(coder.aider_edited_files),

@@ -136,7 +136,7 @@ export class Task {
   private autocompletionAllFiles: string[] | null = null;
   private agentRunResolves: (() => void)[] = [];
   private git: SimpleGit | null = null;
-  private responseChunkMap: Map<string, { buffer: string; interval: NodeJS.Timeout }> = new Map();
+  private responseChunkMap: Map<string, { contentBuffer: string; reasoningBuffer: string; interval: NodeJS.Timeout }> = new Map();
   private isDeterminingTaskState = false;
   private resolutionAbortControllers: Record<string, AbortController> = {};
   private subagentAbortControllers: Record<string, AbortController> = {};
@@ -900,7 +900,12 @@ export class Task {
         const assistantMessage: ContextAssistantMessage = {
           id: response.messageId,
           role: MessageRole.Assistant,
-          content: response.content,
+          content: response.reasoning
+            ? [
+                { type: 'reasoning' as const, text: response.reasoning },
+                { type: 'text' as const, text: response.content },
+              ]
+            : response.content,
           usageReport: response.usageReport,
           reflectedMessage: response.reflectedMessage,
           editedFiles: response.editedFiles,
@@ -1266,12 +1271,13 @@ export class Task {
 
   public async processResponseMessage(message: ResponseMessage, saveToDb = true) {
     if (!message.finished) {
-      const sendResponseChunk = async (chunk: string) => {
+      const sendResponseChunk = async (content?: string, reasoning?: string) => {
         let data: ResponseChunkData = {
           messageId: message.id,
           baseDir: this.project.baseDir,
           taskId: this.taskId,
-          chunk,
+          chunk: content || '',
+          reasoning,
           reflectedMessage: message.reflectedMessage,
           promptContext: message.promptContext,
         };
@@ -1296,25 +1302,25 @@ export class Task {
           taskId: this.taskId,
           messageId: message.id,
         });
-        await sendResponseChunk(message.content);
+        await sendResponseChunk(message.content, message.reasoning);
 
         const messageId = message.id;
         const interval = setInterval(async () => {
           const entry = this.responseChunkMap.get(messageId);
-          if (entry && entry.buffer.length > 0) {
-            await sendResponseChunk(entry.buffer);
+          if (entry && (entry.contentBuffer.length > 0 || entry.reasoningBuffer.length > 0)) {
+            await sendResponseChunk(entry.contentBuffer || undefined, entry.reasoningBuffer || undefined);
             logger.debug('Sending buffered chunk', {
               baseDir: this.project.baseDir,
               taskId: this.taskId,
-              messageId: message.id,
-              chunk: entry.buffer,
+              messageId,
             });
-            entry.buffer = '';
+            entry.contentBuffer = '';
+            entry.reasoningBuffer = '';
           } else {
             logger.debug('No buffered chunk, stopping interval', {
               baseDir: this.project.baseDir,
               taskId: this.taskId,
-              messageId: message.id,
+              messageId,
             });
             // No buffered chunk, stop interval
             clearInterval(interval);
@@ -1326,7 +1332,7 @@ export class Task {
           taskId: this.taskId,
           messageId: message.id,
         });
-        this.responseChunkMap.set(messageId, { buffer: '', interval });
+        this.responseChunkMap.set(messageId, { contentBuffer: '', reasoningBuffer: '', interval });
       } else {
         logger.debug('Appending to buffer', {
           baseDir: this.project.baseDir,
@@ -1335,7 +1341,12 @@ export class Task {
         });
         // Subsequent chunks: append to buffer
         const entry = this.responseChunkMap.get(message.id)!;
-        entry.buffer += message.content;
+        if (message.content) {
+          entry.contentBuffer += message.content;
+        }
+        if (message.reasoning) {
+          entry.reasoningBuffer += message.reasoning;
+        }
       }
     } else {
       const entry = this.responseChunkMap.get(message.id);
@@ -1351,7 +1362,10 @@ export class Task {
         : undefined;
 
       if (usageReport && saveToDb) {
-        this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, usageReport.model, usageReport, message.content);
+        this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, usageReport.model, usageReport, {
+          content: message.content,
+          reasoning: message.reasoning,
+        });
       }
 
       if (usageReport) {
@@ -1362,6 +1376,7 @@ export class Task {
         type: 'response-completed',
         messageId: message.id,
         content: message.content,
+        reasoning: message.reasoning,
         reflectedMessage: message.reflectedMessage,
         baseDir: this.project.baseDir,
         taskId: this.taskId,

@@ -9,8 +9,6 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME
 
 import type { ContextMessage, PromptContext, UsageReportData } from '@common/types';
 
-import { ANSWER_RESPONSE_START_TAG, THINKING_RESPONSE_STAR_TAG } from '@/agent/utils';
-
 describe('ContextManager - getContextMessagesData', () => {
   let ContextManager: any;
   let mockTask: any;
@@ -117,7 +115,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistantMsg = result[1];
       expect(assistantMsg.type).toBe('response-completed');
-      expect(assistantMsg.content).toBe(`${THINKING_RESPONSE_STAR_TAG}I need to add 2 and 2${ANSWER_RESPONSE_START_TAG}`);
+      expect(assistantMsg.reasoning).toBe('I need to add 2 and 2');
+      expect(assistantMsg.content).toBe('');
     });
 
     it('should convert assistant message with only text', () => {
@@ -160,7 +159,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistantMsg = result[1];
       expect(assistantMsg.type).toBe('response-completed');
-      expect(assistantMsg.content).toBe(`${THINKING_RESPONSE_STAR_TAG}I need to calculate 2 + 2${ANSWER_RESPONSE_START_TAG}The answer is 4`);
+      expect(assistantMsg.reasoning).toBe('I need to calculate 2 + 2');
+      expect(assistantMsg.content).toBe('The answer is 4');
     });
 
     it('should convert assistant message with text + reasoning (reversed order)', () => {
@@ -183,7 +183,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistantMsg = result[1];
       expect(assistantMsg.type).toBe('response-completed');
-      expect(assistantMsg.content).toBe(`${THINKING_RESPONSE_STAR_TAG}Thinking process${ANSWER_RESPONSE_START_TAG}Answer`);
+      expect(assistantMsg.reasoning).toBe('Thinking process');
+      expect(assistantMsg.content).toBe('Answer');
     });
 
     it('should convert assistant message with plain text content', () => {
@@ -431,7 +432,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistantMsg = result[1];
       expect(assistantMsg.type).toBe('response-completed');
-      expect(assistantMsg.content).toBe(`${THINKING_RESPONSE_STAR_TAG}I need to think${ANSWER_RESPONSE_START_TAG}I will call a tool`);
+      expect(assistantMsg.reasoning).toBe('I need to think');
+      expect(assistantMsg.content).toBe('I will call a tool');
 
       const toolMsg = result[2];
       expect(toolMsg.type).toBe('tool');
@@ -478,7 +480,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistant1 = result[1];
       expect(assistant1.type).toBe('response-completed');
-      expect(assistant1.content).toBe(`${THINKING_RESPONSE_STAR_TAG}First reasoning${ANSWER_RESPONSE_START_TAG}First text before tool`);
+      expect(assistant1.reasoning).toBe('First reasoning');
+      expect(assistant1.content).toBe('First text before tool');
       expect(assistant1.messageId).toBe('assistant-1');
 
       const toolMsg1 = result[2];
@@ -496,7 +499,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistant3 = result[5];
       expect(assistant3.type).toBe('response-completed');
-      expect(assistant3.content).toBe(`${THINKING_RESPONSE_STAR_TAG}Second reasoning${ANSWER_RESPONSE_START_TAG}Third text after second tool`);
+      expect(assistant3.reasoning).toBe('Second reasoning');
+      expect(assistant3.content).toBe('Third text after second tool');
       expect(assistant3.messageId).toBe('assistant-1-2');
 
       const toolMsg3 = result[6];
@@ -612,7 +616,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const assistantMsg = result[1];
       expect(assistantMsg.type).toBe('response-completed');
-      expect(assistantMsg.content).toBe(`${THINKING_RESPONSE_STAR_TAG}Need to fix bug${ANSWER_RESPONSE_START_TAG}`);
+      expect(assistantMsg.reasoning).toBe('Need to fix bug');
+      expect(assistantMsg.content).toBe('');
 
       const toolMsg = result[2];
       expect(toolMsg.type).toBe('tool');
@@ -864,7 +869,8 @@ describe('ContextManager - getContextMessagesData', () => {
 
       const sub1 = result.find((msg: any) => msg.messageId === 'sub-1');
       expect(sub1.type).toBe('response-completed');
-      expect(sub1.content).toBe(`${THINKING_RESPONSE_STAR_TAG}Subagent thinking${ANSWER_RESPONSE_START_TAG}Subagent says hello`);
+      expect(sub1.reasoning).toBe('Subagent thinking');
+      expect(sub1.content).toBe('Subagent says hello');
 
       const subTool = result.find((msg: any) => msg.id === subagentToolCallId);
       expect(subTool.type).toBe('tool');
@@ -1099,11 +1105,13 @@ describe('ContextManager - getContextMessagesData', () => {
       expect(result).toHaveLength(3);
       const assistantMsg1 = result[1];
       expect(assistantMsg1.messageId).toBe('assistant');
-      expect(assistantMsg1.content).toBe(`${THINKING_RESPONSE_STAR_TAG}First thought${ANSWER_RESPONSE_START_TAG}First part`);
+      expect(assistantMsg1.reasoning).toBe('First thought');
+      expect(assistantMsg1.content).toBe('First part');
 
       const assistantMsg2 = result[2];
       expect(assistantMsg2.messageId).toBe('assistant-1');
-      expect(assistantMsg2.content).toBe(`${THINKING_RESPONSE_STAR_TAG}Second thought${ANSWER_RESPONSE_START_TAG}Second part`);
+      expect(assistantMsg2.reasoning).toBe('Second thought');
+      expect(assistantMsg2.content).toBe('Second part');
     });
 
     it('should handle tool result with text output for aider', () => {

@@ -80,6 +80,7 @@ export interface ResponseMessage extends Message {
   id: string;
   action: 'response';
   content: string;
+  reasoning?: string;
   reflectedMessage?: string;
   finished: boolean;
   usageReport?: string | UsageReportData;

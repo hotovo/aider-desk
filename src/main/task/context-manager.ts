@@ -23,7 +23,7 @@ import type { ToolResultPart } from 'ai';
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored } from '@/utils';
-import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG } from '@/agent/utils';
+import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 
@@ -951,19 +951,12 @@ export class ContextManager {
                     }
                   }
 
-                  // Process combined reasoning and text content
                   if (subHasReasoning || subHasText) {
-                    let subFinalContent = '';
-                    if (subHasReasoning && subHasText) {
-                      subFinalContent = `${THINKING_RESPONSE_STAR_TAG}${subReasoningContent}${ANSWER_RESPONSE_START_TAG}${subTextContent}`;
-                    } else {
-                      subFinalContent = subReasoningContent || subTextContent;
-                    }
-
                     const responseCompletedData: ResponseCompletedData = {
                       type: 'response-completed',
                       messageId: subMessage.id,
-                      content: subFinalContent,
+                      content: subTextContent,
+                      reasoning: subHasReasoning ? subReasoningContent : undefined,
                       baseDir: this.task.getProjectDir(),
                       taskId: this.taskId,
                       usageReport: subMessage.usageReport,
@@ -1029,18 +1022,12 @@ export class ContextManager {
           let responseMessageIndex = 0;
 
           const pushResponseCompletedData = (content = '') => {
-            let finalContent = '';
-            if (reasoning) {
-              finalContent = `${THINKING_RESPONSE_STAR_TAG}${reasoning.trim()}${ANSWER_RESPONSE_START_TAG}${content.trim()}`;
-            } else {
-              finalContent = content.trim();
-            }
-
             const messageId = responseMessageIndex === 0 ? message.id : `${message.id}-${responseMessageIndex}`;
             const responseCompletedData: ResponseCompletedData = {
               type: 'response-completed',
               messageId,
-              content: finalContent,
+              content: content.trim(),
+              reasoning: reasoning ? reasoning.trim() : undefined,
               baseDir: this.task.getProjectDir(),
               taskId: this.taskId,
               reflectedMessage: message.reflectedMessage,

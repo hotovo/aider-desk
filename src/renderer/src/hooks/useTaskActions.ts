@@ -43,6 +43,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
               id: message.messageId,
               type: 'response',
               content: message.content,
+              reasoning: message.reasoning,
               usageReport: message.usageReport,
               promptContext: message.promptContext,
               finished: true,
