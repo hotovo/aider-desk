@@ -334,6 +334,7 @@ src/
           FloatingExtensionPanels.tsx
           StringToReactComponent.tsx
           useExtensionComponentsWrapper.tsx
+          useExtensionMessageComponent.tsx
         logs/
           LogsPage.tsx
         message/
@@ -14705,6 +14706,24 @@ const executeExtensionAction = async (action: string, ...args: unknown[]) =>
 <StringToReactComponent data=
 
 ================
+File: src/renderer/src/components/extensions/useExtensionMessageComponent.tsx
+================
+import { useCallback, useMemo } from 'react';
+import { ExtensionUIComponent, Message, isToolMessage } from '@common/types';
+⋮----
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
+⋮----
+const matchesMessage = (message: Message, messageFilter: ExtensionUIComponent['messageFilter']): boolean =>
+⋮----
+type UseExtensionMessageComponentProps = {
+  message: Message;
+  projectDir?: string;
+  taskId?: string;
+};
+⋮----
+export const useExtensionMessageComponent = (
+
+================
 File: src/renderer/src/components/logs/LogsPage.tsx
 ================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -15742,6 +15761,7 @@ import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
 ⋮----
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensionMessageComponent } from '@/components/extensions/useExtensionMessageComponent';
 import { includeMessageProperty } from '@/components/message/utils';
 ⋮----
 type Props = {
