@@ -20,6 +20,7 @@ import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
+import { parseCommandArgs } from '@common/utils';
 
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
@@ -311,7 +312,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
         // Check if we're at a command argument position with options (before early return)
         if (text.startsWith('/') && text.includes(' ')) {
-          const [command, ...args] = text.split(' ');
+          const [command, ...args] = parseCommandArgs(text);
           const allCommands = [...customCommands, ...extensionCommands];
           const cmd = allCommands.find((c) => `/${c.name}` === command);
           const argIndex = args.length - 1;
@@ -351,7 +352,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         // Handle command suggestions
         if (text.startsWith('/')) {
           if (text.includes(' ')) {
-            const [command, ...args] = text.split(' ');
+            const [command, ...args] = parseCommandArgs(text);
             const currentArg = args[args.length - 1];
             if (command === '/add' || command === '/read-only') {
               const files = await api.getAddableFiles(baseDir, taskId);
@@ -707,7 +708,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       if (text) {
         if (text.startsWith('/') && !isPathLike(text)) {
           // Check if it's a custom or extension command
-          const [cmd, ...args] = text.slice(1).split(' ');
+          const [cmd, ...args] = parseCommandArgs(text.slice(1));
           const allCommands = [...customCommands, ...extensionCommands];
           const command = allCommands.find((command) => command.name === cmd);
 

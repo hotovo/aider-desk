@@ -325,3 +325,33 @@ export const extractProviderModel = (modelId: string): [string, string] => {
 };
 
 export const isUuid = (id: string): boolean => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+export const parseCommandArgs = (input: string): string[] => {
+  const args: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  let wasQuoted = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+
+    if (char === '"') {
+      wasQuoted = true;
+      inQuotes = !inQuotes;
+    } else if (char === ' ' && !inQuotes) {
+      if (current || wasQuoted) {
+        args.push(current);
+        current = '';
+        wasQuoted = false;
+      }
+    } else {
+      current += char;
+    }
+  }
+
+  if (current || wasQuoted) {
+    args.push(current);
+  }
+
+  return args;
+};
