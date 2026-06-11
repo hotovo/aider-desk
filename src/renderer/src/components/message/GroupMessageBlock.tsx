@@ -29,11 +29,11 @@ type Props = {
   renderMarkdown: boolean;
   remove?: (message: Message) => void;
   redo?: () => void;
-  edit?: (content: string) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: (interruptId?: string) => void;
 };
 
-const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, edit, onInterrupt }: Props) => {
+const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, editUserMessage, onInterrupt }: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -143,7 +143,7 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
               renderMarkdown={renderMarkdown}
               remove={remove ? () => remove(child) : undefined}
               redo={redo}
-              edit={edit}
+              edit={editUserMessage && isUserMessage(child) ? (content: string, images?: string[]) => editUserMessage(child.id, content, images) : undefined}
               onInterrupt={onInterrupt}
             />
           ))}
@@ -195,7 +195,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.renderMarkdown !== nextProps.renderMarkdown ||
     (prevProps.remove !== nextProps.remove && (prevProps.remove === undefined) !== (nextProps.remove === undefined)) ||
     (prevProps.redo !== nextProps.redo && (prevProps.redo === undefined) !== (nextProps.redo === undefined)) ||
-    (prevProps.edit !== nextProps.edit && (prevProps.edit === undefined) !== (nextProps.edit === undefined)) ||
+    (prevProps.editUserMessage !== nextProps.editUserMessage && (prevProps.editUserMessage === undefined) !== (nextProps.editUserMessage === undefined)) ||
     (prevProps.onInterrupt !== nextProps.onInterrupt && (prevProps.onInterrupt === undefined) !== (nextProps.onInterrupt === undefined))
   ) {
     return false;

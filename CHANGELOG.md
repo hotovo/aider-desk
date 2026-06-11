@@ -9,6 +9,7 @@
 - added support for quoted command arguments in custom commands
 - added option to switch all tasks in a worktree to local mode and enhanced mode switch dialogs
 - deduplicated loaded Mistral models
+- added support for editing any user message not only the last one
 
 ## [0.69.0]
 

@@ -370,11 +370,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [api, projectDir, task.id],
     );
 
-    const handleEditLastUserMessage = useCallback(
-      (content?: string, images?: string[]) => {
+    const handleEditUserMessage = useCallback(
+      (messageId: string, content?: string, images?: string[]) => {
         let contentToEdit = content;
         let imagesToEdit = images;
-        const messageIndex = displayedMessages.findLastIndex(isUserMessage);
+        const messageIndex = displayedMessages.findIndex((msg) => msg.id === messageId);
 
         if (messageIndex === -1) {
           // eslint-disable-next-line no-console
@@ -382,12 +382,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           return;
         }
 
-        const lastUserMessage = displayedMessages[messageIndex] as UserMessage | undefined;
+        const userMessage = displayedMessages[messageIndex] as UserMessage | undefined;
         if (contentToEdit === undefined) {
-          contentToEdit = lastUserMessage?.content;
+          contentToEdit = userMessage?.content;
         }
         if (imagesToEdit === undefined) {
-          imagesToEdit = lastUserMessage?.images;
+          imagesToEdit = userMessage?.images;
         }
         if (contentToEdit === undefined) {
           // eslint-disable-next-line no-console
@@ -409,9 +409,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     useEffect(() => {
       if (task.handoff && displayedMessages.length > 0) {
-        setTimeout(() => {
-          handleEditLastUserMessage();
-        }, 0);
+        const lastUserMessageId = displayedMessages.findLast(isUserMessage)?.id;
+        if (lastUserMessageId) {
+          setTimeout(() => {
+            handleEditUserMessage(lastUserMessageId);
+          }, 0);
+        }
 
         updateTask(task.id, { handoff: false });
       }
@@ -448,6 +451,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
         handleRedoUserPrompt(lastUserMessage.id);
       }
     }, [displayedMessages, handleRedoUserPrompt]);
+
+    const handleEditLastUserMessage = useCallback(() => {
+      const lastUserMessage = displayedMessages.findLast(isUserMessage);
+      if (lastUserMessage) {
+        handleEditUserMessage(lastUserMessage.id);
+      }
+    }, [displayedMessages, handleEditUserMessage]);
 
     const handleResumeTask = useCallback(() => {
       api.resumeTask(projectDir, task.id);
@@ -759,7 +769,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
                       redoUserPrompt={handleRedoUserPrompt}
-                      editLastUserMessage={handleEditLastUserMessage}
+                      editUserMessage={handleEditUserMessage}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}
                       onRemoveUpToMessage={handleRemoveUpToMessage}
@@ -775,7 +785,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       renderMarkdown={settings.renderMarkdown}
                       removeMessage={handleRemoveMessage}
                       redoUserPrompt={handleRedoUserPrompt}
-                      editLastUserMessage={handleEditLastUserMessage}
+                      editUserMessage={handleEditUserMessage}
                       onInterrupt={handleInterruptResponse}
                       onForkFromMessage={handleForkFromMessage}
                       onRemoveUpToMessage={handleRemoveUpToMessage}
@@ -853,7 +863,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   onModeChanged={handleModeChange}
                   runPrompt={runPrompt}
                   savePrompt={handleSavePrompt}
-                  editLastUserMessage={handleEditLastUserMessage}
+                  editUserMessage={handleEditLastUserMessage}
                   isEditingLastMessage={editingMessageIndex !== null}
                   isActive={isActive}
                   allFiles={allFiles}

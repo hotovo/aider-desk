@@ -27,7 +27,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -44,7 +44,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       renderMarkdown,
       removeMessage,
       redoUserPrompt,
-      editLastUserMessage,
+      editUserMessage,
       onInterrupt,
       onForkFromMessage,
       onRemoveUpToMessage,
@@ -62,7 +62,6 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       const grouped = groupMessagesByPromptContext(messages);
       return isCompactMode ? groupAssistantMessages(grouped) : grouped;
     }, [messages, isCompactMode]);
-    const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
 
     const { scrollingPaused, setScrollingPaused, scrollToBottom, eventHandlers } = useScrollingPaused({
       onAutoScroll: () => messagesEndRef.current?.scrollIntoView(),
@@ -130,7 +129,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
           className="flex flex-col flex-grow overflow-y-auto max-h-full p-4 pb-2 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth space-y-2"
           {...eventHandlers}
         >
-          {processedMessages.map((message, index) => (
+          {processedMessages.map((message) => (
             <MessageBlockWrapper
               key={message.id}
               baseDir={baseDir}
@@ -138,12 +137,10 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
               message={message}
               allFiles={allFiles}
               renderMarkdown={renderMarkdown}
-              index={index}
-              lastUserMessageIndex={lastUserMessageIndex}
               inProgress={inProgress}
               removeMessage={removeMessage}
               redoUserPrompt={redoUserPrompt}
-              editLastUserMessage={editLastUserMessage}
+              editUserMessage={editUserMessage}
               onInterrupt={onInterrupt}
               onForkFromMessage={onForkFromMessage}
               onRemoveUpToMessage={onRemoveUpToMessage}

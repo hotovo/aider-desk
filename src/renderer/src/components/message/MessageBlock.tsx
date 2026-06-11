@@ -91,7 +91,7 @@ type Props = {
   hideMessageBar?: boolean;
   remove?: () => void;
   redo?: () => void;
-  edit?: (content: string) => void;
+  edit?: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onFork?: () => void;
   onRemoveUpTo?: () => void;

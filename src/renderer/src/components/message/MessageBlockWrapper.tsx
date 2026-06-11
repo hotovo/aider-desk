@@ -17,12 +17,10 @@ type Props = {
   renderMarkdown: boolean;
   compact?: boolean;
   hideMessageBar?: boolean;
-  index?: number;
-  lastUserMessageIndex?: number;
   inProgress?: boolean;
   removeMessage?: (message: Message) => void;
   redoUserPrompt?: (messageId: string) => void;
-  editLastUserMessage?: (content: string, images?: string[]) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -37,12 +35,10 @@ export const MessageBlockWrapper = memo(
     renderMarkdown,
     compact = false,
     hideMessageBar = false,
-    index = -1,
-    lastUserMessageIndex = -1,
     inProgress = false,
     removeMessage,
     redoUserPrompt,
-    editLastUserMessage,
+    editUserMessage,
     onInterrupt,
     onForkFromMessage,
     onRemoveUpToMessage,
@@ -73,7 +69,7 @@ export const MessageBlockWrapper = memo(
           renderMarkdown={renderMarkdown}
           remove={inProgress ? undefined : removeMessage}
           redo={inProgress ? undefined : redoUserPrompt ? () => redoUserPrompt(message.id) : undefined}
-          edit={editLastUserMessage}
+          editUserMessage={editUserMessage}
           onInterrupt={onInterrupt}
         />
       );
@@ -102,7 +98,11 @@ export const MessageBlockWrapper = memo(
           hideMessageBar={hideMessageBar}
           remove={inProgress ? undefined : removeMessage ? () => removeMessage(message) : undefined}
           redo={!inProgress && isUserMessage(message) && redoUserPrompt ? () => redoUserPrompt(message.id) : undefined}
-          edit={index === lastUserMessageIndex ? editLastUserMessage : undefined}
+          edit={
+            !inProgress && isUserMessage(message) && editUserMessage
+              ? (content: string, images?: string[]) => editUserMessage(message.id, content, images)
+              : undefined
+          }
           onInterrupt={onInterrupt}
           onFork={onForkFromMessage ? () => onForkFromMessage(message) : undefined}
           onRemoveUpTo={onRemoveUpToMessage ? () => onRemoveUpToMessage(message) : undefined}

@@ -151,7 +151,7 @@ type Props = {
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
-  editLastUserMessage: () => void;
+  editUserMessage: () => void;
   isEditingLastMessage?: boolean;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
@@ -191,7 +191,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       runCommand,
       runTests,
       redoLastUserPrompt,
-      editLastUserMessage,
+      editUserMessage,
       isEditingLastMessage = false,
       openModelSelector,
       openAgentModelSelector,
@@ -517,7 +517,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             break;
           case '/edit-last':
             prepareForNextPrompt();
-            editLastUserMessage();
+            editUserMessage();
             break;
           case '/compact':
             prepareForNextPrompt();
@@ -576,7 +576,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         mode,
         clearMessages,
         redoLastUserPrompt,
-        editLastUserMessage,
+        editUserMessage,
         api,
         baseDir,
         taskId,

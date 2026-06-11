@@ -29,7 +29,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -46,7 +46,7 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       renderMarkdown,
       removeMessage,
       redoUserPrompt,
-      editLastUserMessage,
+      editUserMessage,
       onInterrupt,
       onForkFromMessage,
       onRemoveUpToMessage,
@@ -63,7 +63,6 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
       const grouped = groupMessagesByPromptContext(messages);
       return isCompactMode ? groupAssistantMessages(grouped) : grouped;
     }, [messages, isCompactMode]);
-    const lastUserMessageIndex = processedMessages.findLastIndex(isUserMessage);
 
     // Get all user message IDs
     const userMessageIds = useMemo(() => {
@@ -178,12 +177,10 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
                     message={message}
                     allFiles={allFiles}
                     renderMarkdown={renderMarkdown}
-                    index={virtualRow.index}
-                    lastUserMessageIndex={lastUserMessageIndex}
                     inProgress={inProgress}
                     removeMessage={removeMessage}
                     redoUserPrompt={redoUserPrompt}
-                    editLastUserMessage={editLastUserMessage}
+                    editUserMessage={editUserMessage}
                     onInterrupt={onInterrupt}
                     onForkFromMessage={onForkFromMessage}
                     onRemoveUpToMessage={onRemoveUpToMessage}
