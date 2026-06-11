@@ -49,13 +49,15 @@ export const loadMistralModels = async (profile: ProviderProfile, settings: Sett
 
     const data: MistralApiResponse = await response.json();
     const models =
-      data.data?.map((model: MistralModel) => {
-        return {
-          id: model.id,
-          providerId: profile.id,
-          temperature: 0.7,
-        } satisfies Model;
-      }) || [];
+      data.data
+        ?.map((model: MistralModel) => {
+          return {
+            id: model.id,
+            providerId: profile.id,
+            temperature: 0.7,
+          } satisfies Model;
+        })
+        ?.filter((model, index, arr) => arr.findIndex((m) => m.id === model.id) === index) || [];
 
     logger.info(`Loaded ${models.length} Mistral models for profile ${profile.id}`);
     return { models, success: true };
