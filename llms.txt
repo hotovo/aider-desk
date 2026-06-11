@@ -733,6 +733,9 @@ File: resources/connector/connector.py
 ================
 #!/usr/bin/env python
 ⋮----
+THINKING_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n', re.IGNORECASE)
+ANSWER_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*\s*\n', re.IGNORECASE)
+⋮----
 class PromptContext
 ⋮----
 def __init__(self, id: str, group=None, auto_approve=False, deny_commands=False)
@@ -803,7 +806,13 @@ async def _stream_and_send_responses(self, coder, prompt_context, prompt_to_run,
 extra_response_data = {}
 ⋮----
 whole_content = ""
+whole_reasoning = ""
 response_id = str(uuid.uuid4())
+⋮----
+# Track parsing state across chunks
+reasoning_started = False
+answer_started = False
+buffer = ""
 ⋮----
 queue = asyncio.Queue()
 executor = self.get_executor()
@@ -819,7 +828,42 @@ future = self.connector.loop.run_in_executor(executor, _sync_worker)
 ⋮----
 chunk = await queue.get()
 ⋮----
+# Parse reasoning/content from buffer
+reasoning_chunk = ""
+content_chunk = ""
+should_send = True
+⋮----
+# Check for THINKING marker
+thinking_match = THINKING_MARKER.search(buffer)
+⋮----
+before = buffer[:thinking_match.start()]
+reasoning_started = True
+buffer = buffer[thinking_match.end():]
+⋮----
+content_chunk = before
+⋮----
+reasoning_chunk = buffer
+⋮----
+should_send = False
+⋮----
+# Check for ANSWER marker
+answer_match = ANSWER_MARKER.search(buffer)
+⋮----
+# Send reasoning before the marker as a separate chunk
+reasoning_before_marker = buffer[:answer_match.start()]
+⋮----
+reasoning_payload = {
+⋮----
+answer_started = True
+buffer = buffer[answer_match.end():]
+⋮----
+content_chunk = buffer
+⋮----
+# No marker found, stream the appropriate field
+⋮----
 response_payload = {
+⋮----
+# Handle any remaining buffered content (e.g., reasoning without an answer marker)
 ⋮----
 async def _run_prompt_async(self, prompt: str, prompt_context: PromptContext, mode=None, architect_model=None, messages=None, files=None, coder=None)
 ⋮----
@@ -845,6 +889,20 @@ coder = clone_coder(
 ⋮----
 # if there was no content, use the partial_response_content value (case for non streaming models)
 whole_content = coder.partial_response_content
+⋮----
+# Parse reasoning/answer from raw content (handles both streaming and non-streaming)
+whole_reasoning = whole_reasoning or ""
+whole_answer = whole_content
+⋮----
+thinking_match = THINKING_MARKER.search(whole_content)
+⋮----
+answer_match = ANSWER_MARKER.search(whole_content)
+⋮----
+whole_reasoning = whole_reasoning or whole_content[thinking_match.end():answer_match.start()].strip()
+whole_answer = whole_content[answer_match.end():].strip()
+⋮----
+whole_reasoning = whole_reasoning or whole_content[thinking_match.end():].strip()
+whole_answer = ""
 ⋮----
 def get_usage_report()
 ⋮----
@@ -2250,16 +2308,7 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import {
-  ANSWER_RESPONSE_START_TAG,
-  estimateMessageTokens,
-  extractPromptContextFromToolResult,
-  findLastUserMessage,
-  isNetworkError,
-  readFileContent,
-  THINKING_RESPONSE_STAR_TAG,
-  truncateToolResult,
-} from './utils';
+import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, truncateToolResult } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 ⋮----
 import type { z } from 'zod';
@@ -2466,6 +2515,8 @@ const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
 // Reset retry count when we get a response
 ⋮----
 // @ts-expect-error checking keys in error
+⋮----
+// no-op
 ⋮----
 // try again
 ⋮----
@@ -8496,7 +8547,7 @@ import type { ToolResultPart } from 'ai';
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored } from '@/utils';
-import { ANSWER_RESPONSE_START_TAG, extractPromptContextFromToolResult, THINKING_RESPONSE_STAR_TAG } from '@/agent/utils';
+import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 ⋮----
@@ -8647,8 +8698,6 @@ const processToolResult = (part: ToolResultPart) =>
 // Handle agent tool results - process all messages from subagent
 ⋮----
 // Collect reasoning and text parts to combine them if both exist
-⋮----
-// Process combined reasoning and text content
 ⋮----
 // Process tool-call parts
 ⋮----
@@ -9060,7 +9109,7 @@ public promptFinished(promptId?: string)
 ⋮----
 public async processResponseMessage(message: ResponseMessage, saveToDb = true)
 ⋮----
-const sendResponseChunk = async (chunk: string) =>
+const sendResponseChunk = async (content?: string, reasoning?: string) =>
 ⋮----
 // First chunk: send immediately and create interval
 ⋮----
@@ -9511,6 +9560,8 @@ public async runCustomCommand(commandName: string, args: string[], mode: Mode = 
 // Clear loading message after execution completes (success or failure)
 ⋮----
 async reset()
+⋮----
+async restartAiderConnector()
 ⋮----
 public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
@@ -11300,6 +11351,8 @@ async createVoiceSession(providerProfile: ProviderProfile): Promise<VoiceSession
 ⋮----
 async resetTask(baseDir: string, taskId: string): Promise<void>
 ⋮----
+async restartAiderConnector(baseDir: string, taskId: string): Promise<void>
+⋮----
 getOpenProjects(): ProjectData[]
 ⋮----
 async addOpenProject(baseDir: string): Promise<ProjectData[]>
@@ -11952,6 +12005,7 @@ export interface ResponseMessage extends Message {
   id: string;
   action: 'response';
   content: string;
+  reasoning?: string;
   reflectedMessage?: string;
   finished: boolean;
   usageReport?: string | UsageReportData;
@@ -12761,6 +12815,7 @@ stopProject(baseDir: string): void
 ⋮----
 restartProject(baseDir: string): void
 resetTask(baseDir: string, taskId: string): void
+restartAiderConnector(baseDir: string, taskId: string): void
 runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void
 savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]): void
@@ -16413,13 +16468,12 @@ import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 // Table styling - wrapped in scrollable container for wide tables
 ⋮----
-// First check if the content matches the thinking/answer format
-const thinkingAnswerContent = parseThinkingAnswerFormat(content, baseDir, allFiles, renderMarkdown, renderThinking);
-if (thinkingAnswerContent)
+// Use the reasoning property directly if available
+if (reasoning)
 ⋮----
-if (currentText.trimEnd())
+// Fallback: check if the content matches the thinking/answer format (for legacy messages)
 ⋮----
-if (renderMarkdown)
+const processTextBlock = () =>
 ⋮----
 if (codeContent.length > 0)
 ⋮----
@@ -16427,17 +16481,18 @@ if (codeContent.length > 0)
 ⋮----
 // Check if line ends with a filepath
 ⋮----
+if (currentLine >= lines.length - 1)
+⋮----
 // Check if the next line is just a filepath
 ⋮----
 // Check if the next line starts with a filepath
 ⋮----
 // Check for custom-command-bash blocks
+if (line.trim() === '<custom-command-bash>')
 ⋮----
 // Process any accumulated text first
 ⋮----
 // Find the end of the custom-command-bash block
-⋮----
-if (lines[j].trim() === '</custom-command-bash>')
 ⋮----
 // Extract the content between the tags
 ⋮----
@@ -16457,19 +16512,13 @@ if (lines[j].trim() === '</custom-command-bash>')
 ⋮----
 // Handle inline code ticks
 ⋮----
+if (!isInSingleTick)
+⋮----
+if (isInSingleTick)
+⋮----
 // Check if line ends the code block
 ⋮----
 // Handle any remaining content
-⋮----
-processCodeBlock();
-⋮----
-export const parseThinkingAnswerFormat = (
-  content: string,
-  baseDir: string = '',
-  allFiles: string[] = [],
-  renderMarkdown = false,
-  renderThinking = true,
-): React.ReactNode | null =>
 ⋮----
 // Check for the thinking section first
 ⋮----
@@ -16545,6 +16594,8 @@ const flushCurrentGroup = () =>
 // Flush any remaining group
 ⋮----
 // Check basic message properties
+⋮----
+// Check reasoning for ResponseMessage
 ⋮----
 // Check usageReport for ResponseMessage and ToolMessage
 ⋮----
@@ -19110,6 +19161,7 @@ import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
 import { IoMdClose } from 'react-icons/io';
+import { MdOutlineRefresh } from 'react-icons/md';
 import { VscLock, VscUnlock } from 'react-icons/vsc';
 import { RiMenuUnfold4Line, RiRobot2Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
@@ -19146,6 +19198,7 @@ type Props = {
   onToggleSidebar: () => void;
   onToggleTaskSidebar?: () => void;
   updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  onRestartAiderConnector: () => void;
 };
 ⋮----
 // Use task provider/model first, fallback to active agent profile
@@ -23153,6 +23206,7 @@ export interface TaskContextType {
   loadTask: (taskId: string) => void;
   clearSession: (taskId: string, messagesOnly: boolean) => void;
   resetTask: (taskId: string) => void;
+  restartAiderConnector: (taskId: string) => void;
   setMessages: (taskId: string, updateMessages: (prevState: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
@@ -23428,6 +23482,7 @@ export const useParsedContent = (
   allFiles: string[],
   renderMarkdown?: boolean,
   renderThinking?: boolean,
+  reasoning?: string | null,
 ) =>
 ⋮----
 // we use allFiles.length to re-evaluate if the array content might have changed
@@ -23649,6 +23704,7 @@ import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useStoreWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { isResponseMessage } from '@common/types';
 ⋮----
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 ⋮----
