@@ -3899,6 +3899,17 @@ ${error.stderr}`,
       }
     }
 
+    if (options?.switchAllInWorktree && this.task.worktree) {
+      const allTasks = await this.project.getTasks();
+      const sharedTasks = allTasks.filter((t) => t.workingMode === 'worktree' && t.worktree?.path === this.task.worktree!.path && t.id !== this.taskId);
+      for (const sharedTaskData of sharedTasks) {
+        const sharedTask = this.project.getTask(sharedTaskData.id);
+        if (sharedTask) {
+          await sharedTask.updateTask({ workingMode: 'local' });
+        }
+      }
+    }
+
     await this.updateTask({ workingMode: 'local' });
   }
 

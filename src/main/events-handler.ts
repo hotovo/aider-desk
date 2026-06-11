@@ -563,7 +563,11 @@ export class EventsHandler {
     await task.mergeWorktreeToMain(squash, targetBranch, commitMessage);
   }
 
-  async switchToLocalWorkingMode(baseDir: string, taskId: string, options?: { mergeBeforeSwitch?: boolean; targetBranch?: string }): Promise<void> {
+  async switchToLocalWorkingMode(
+    baseDir: string,
+    taskId: string,
+    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean },
+  ): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);

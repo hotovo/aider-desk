@@ -851,6 +851,7 @@ export type WorkingMode = z.infer<typeof WorkingModeSchema>;
 export interface SwitchToLocalOptions {
   mergeBeforeSwitch?: boolean;
   targetBranch?: string;
+  switchAllInWorktree?: boolean;
 }
 
 export interface SwitchToWorktreeOptions {

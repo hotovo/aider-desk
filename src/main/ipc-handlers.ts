@@ -484,7 +484,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle(
     'switch-to-local-working-mode',
-    async (_, baseDir: string, taskId: string, options?: { mergeBeforeSwitch?: boolean; targetBranch?: string }) => {
+    async (_, baseDir: string, taskId: string, options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean }) => {
       await eventsHandler.switchToLocalWorkingMode(baseDir, taskId, options);
     },
   );

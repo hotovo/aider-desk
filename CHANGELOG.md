@@ -7,6 +7,7 @@
 - added task-message UI extension placement for rendering custom messages
 - added Restart Aider Connector action next to the starting indicator
 - added support for quoted command arguments in custom commands
+- added option to switch all tasks in a worktree to local mode and enhanced mode switch dialogs
 
 ## [0.69.0]
 

@@ -1043,6 +1043,7 @@ export class BrowserApi implements ApplicationAPI {
       taskId,
       mergeBeforeSwitch: options?.mergeBeforeSwitch,
       targetBranch: options?.targetBranch,
+      switchAllInWorktree: options?.switchAllInWorktree,
     });
   }
 
