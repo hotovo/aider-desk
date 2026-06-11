@@ -11,6 +11,20 @@
     });
   };
 
+  const currencySymbols = {
+    USD: '$',
+    CNY: '¥',
+    EUR: '€',
+    GBP: '£',
+    JPY: '¥',
+    KRW: '₩',
+  };
+
+  const formatCurrency = (amount, currency) => {
+    const symbol = currencySymbols[currency] || currency;
+    return `${symbol}${amount}`;
+  };
+
   if (agentProfile?.provider === 'synthetic' && data?.synthetic) {
     return data.synthetic.error ? (
       <span className="pt-1">Quota unavailable</span>
@@ -42,6 +56,29 @@
     );
   }
 
+  if (agentProfile?.provider === 'deepseek' && data?.deepseek) {
+    const ds = data.deepseek;
+    const balance = ds.balance;
+
+    if (!balance) {
+      return (
+        <div className="flex items-center gap-2 pt-1 justify-between w-full">
+          <span>DeepSeek:</span>
+          <span>Balance unavailable</span>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center gap-2 pt-1 justify-between w-full">
+        <span>DeepSeek:</span>
+        <div className="flex items-center gap-2">
+          <span>{formatCurrency(balance.total_balance, balance.currency)}</span>
+        </div>
+      </div>
+    );
+  }
+
   if (agentProfile?.provider === 'neuralwatt' && data?.neuralwatt) {
     const nw = data.neuralwatt;
 
@@ -67,14 +104,13 @@
     }
 
     const creditsRemaining = nw.creditsRemaining?.toFixed(2) ?? '0.00';
-    const creditsTotal = nw.creditsTotal?.toFixed(2) ?? '0.00';
 
     return (
       <div className="flex items-center gap-2 pt-1 justify-between w-full">
         <span>Neuralwatt:</span>
         <div className="flex items-center gap-2">
           <ui.Tooltip content={`Accounting: ${nw.accountingMethod || 'energy'}`}>
-            <span>${creditsRemaining}/${creditsTotal}</span>
+            <span>${creditsRemaining}</span>
           </ui.Tooltip>
           <span>({nw.creditsPercentage}%)</span>
         </div>

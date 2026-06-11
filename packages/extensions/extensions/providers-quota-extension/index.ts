@@ -1,7 +1,7 @@
 /**
  * Providers Quota Extension
  *
- * Displays API quota information for Synthetic, Z.AI, and Neuralwatt providers in the task status bar.
+ * Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar.
  * Shows quota based on the active agent profile's provider.
  *
  * API keys are automatically loaded from AiderDesk provider settings.
@@ -50,6 +50,7 @@ interface CachedData<T> {
 const syntheticCache: CachedData<SyntheticQuotaData> = { data: null, lastFetchTime: 0 };
 const zaiCache: CachedData<ZaiQuotaData> = { data: null, lastFetchTime: 0 };
 const neuralwattCache: CachedData<NeuralwattQuotaData> = { data: null, lastFetchTime: 0 };
+const deepseekCache: CachedData<DeepseekQuotaData> = { data: null, lastFetchTime: 0 };
 
 // Synthetic API types
 interface SyntheticQuotaData {
@@ -150,6 +151,24 @@ interface NeuralwattApiResponse {
   };
 }
 
+// DeepSeek API types
+interface DeepseekBalanceInfo {
+  currency: string;
+  total_balance: string;
+  granted_balance: string;
+  topped_up_balance: string;
+}
+
+interface DeepseekApiResponse {
+  is_available: boolean;
+  balance_infos: DeepseekBalanceInfo[];
+}
+
+interface DeepseekQuotaData {
+  isAvailable: boolean;
+  balance?: DeepseekBalanceInfo;
+}
+
 // API key resolution: env var override → AiderDesk provider settings
 const getApiKey = (envVarName: string, providerName: string, context?: ExtensionContext): string | undefined => {
   const envKey = process.env[envVarName];
@@ -184,18 +203,16 @@ const fetchSyntheticQuota = async (context?: ExtensionContext): Promise<Syntheti
   }
 
   try {
-    const response = await fetch("https://api.synthetic.new/v2/quotas", {
-      method: "GET",
+    const response = await fetch('https://api.synthetic.new/v2/quotas', {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      console.error(
-        `[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`,
-      );
+      console.error(`[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -214,7 +231,7 @@ const fetchSyntheticQuota = async (context?: ExtensionContext): Promise<Syntheti
 
     return null;
   } catch (error) {
-    console.error("[Providers Quota] Failed to fetch Synthetic quota:", error);
+    console.error('[Providers Quota] Failed to fetch Synthetic quota:', error);
     return null;
   }
 };
@@ -227,34 +244,25 @@ const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData |
   }
 
   try {
-    const response = await fetch(
-      "https://api.z.ai/api/monitor/usage/quota/limit",
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
+    const response = await fetch('https://api.z.ai/api/monitor/usage/quota/limit', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
       },
-    );
+    });
 
     if (!response.ok) {
-      console.error(
-        `[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`,
-      );
+      console.error(`[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
-    const data = await response.json() as ZaiApiResponse;
+    const data = (await response.json()) as ZaiApiResponse;
 
     if (data.success && data.data?.limits) {
       // unit 3 = hourly, unit 6 = weekly (based on API response)
-      const hourlyLimit = data.data.limits.find(
-        (l) => l.type === "TOKENS_LIMIT" && l.unit === 3,
-      );
-      const weeklyLimit = data.data.limits.find(
-        (l) => l.type === "TOKENS_LIMIT" && l.unit === 6,
-      );
+      const hourlyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 3);
+      const weeklyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 6);
 
       return {
         hourlyPercentage: hourlyLimit?.percentage ?? 0,
@@ -266,7 +274,7 @@ const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData |
 
     return null;
   } catch (error) {
-    console.error("[Providers Quota] Failed to fetch Z.AI quota:", error);
+    console.error('[Providers Quota] Failed to fetch Z.AI quota:', error);
     return null;
   }
 };
@@ -279,18 +287,16 @@ const fetchNeuralwattQuota = async (context?: ExtensionContext): Promise<Neuralw
   }
 
   try {
-    const response = await fetch("https://api.neuralwatt.com/v1/quota", {
-      method: "GET",
+    const response = await fetch('https://api.neuralwatt.com/v1/quota', {
+      method: 'GET',
       headers: {
         Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      console.error(
-        `[Providers Quota] Neuralwatt API request failed: ${response.status} ${response.statusText}`,
-      );
+      console.error(`[Providers Quota] Neuralwatt API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -314,13 +320,11 @@ const fetchNeuralwattQuota = async (context?: ExtensionContext): Promise<Neuralw
       isSubscription: false,
       creditsRemaining: data.balance.credits_remaining_usd,
       creditsTotal: data.balance.total_credits_usd,
-      creditsPercentage: data.balance.total_credits_usd > 0
-        ? Math.round((data.balance.credits_remaining_usd / data.balance.total_credits_usd) * 100)
-        : 0,
+      creditsPercentage: data.balance.total_credits_usd > 0 ? Math.round((data.balance.credits_remaining_usd / data.balance.total_credits_usd) * 100) : 0,
       accountingMethod: data.balance.accounting_method,
     };
   } catch (error) {
-    console.error("[Providers Quota] Failed to fetch Neuralwatt quota:", error);
+    console.error('[Providers Quota] Failed to fetch Neuralwatt quota:', error);
     return null;
   }
 };
@@ -349,6 +353,51 @@ const getZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData | n
   return zaiCache.data;
 };
 
+const fetchDeepseekBalance = async (context?: ExtensionContext): Promise<DeepseekQuotaData | null> => {
+  const apiKey = getApiKey('DEEPSEEK_API_KEY', 'deepseek', context);
+
+  if (!apiKey) {
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://api.deepseek.com/user/balance', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`[Providers Quota] DeepSeek API request failed: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = (await response.json()) as DeepseekApiResponse;
+
+    return {
+      isAvailable: data.is_available,
+      balance: data.balance_infos?.[0],
+    };
+  } catch (error) {
+    console.error('[Providers Quota] Failed to fetch DeepSeek balance:', error);
+    return null;
+  }
+};
+
+const getDeepseekBalance = async (context?: ExtensionContext): Promise<DeepseekQuotaData | null> => {
+  const now = Date.now();
+
+  if (deepseekCache.data && now - deepseekCache.lastFetchTime < CACHE_DURATION) {
+    return deepseekCache.data;
+  }
+
+  deepseekCache.data = await fetchDeepseekBalance(context);
+  deepseekCache.lastFetchTime = now;
+  return deepseekCache.data;
+};
+
 const getNeuralwattQuota = async (context?: ExtensionContext): Promise<NeuralwattQuotaData | null> => {
   const now = Date.now();
 
@@ -366,8 +415,8 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.4.0',
-    description: 'Displays API quota information for Synthetic, Z.AI, and Neuralwatt providers in the task status bar',
+    version: '1.5.0',
+    description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
     capabilities: ['ui'],
@@ -377,6 +426,7 @@ export default class ProvidersQuotaExtension implements Extension {
     const syntheticKey = getApiKey('SYNTHETIC_API_KEY', 'synthetic', context);
     const zaiKey = getApiKey('ZAI_API_KEY', 'zai-plan', context);
     const neuralwattKey = getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
+    const deepseekKey = getApiKey('DEEPSEEK_API_KEY', 'deepseek', context);
 
     const keys: string[] = [];
     if (syntheticKey) {
@@ -387,6 +437,9 @@ export default class ProvidersQuotaExtension implements Extension {
     }
     if (neuralwattKey) {
       keys.push('Neuralwatt');
+    }
+    if (deepseekKey) {
+      keys.push('DeepSeek');
     }
 
     if (keys.length > 0) {
@@ -405,6 +458,9 @@ export default class ProvidersQuotaExtension implements Extension {
     if (neuralwattKey) {
       await getNeuralwattQuota(context);
     }
+    if (deepseekKey) {
+      await getDeepseekBalance(context);
+    }
   }
 
   async onPromptFinished(_event: PromptFinishedEvent, context: ExtensionContext): Promise<void> {
@@ -415,6 +471,8 @@ export default class ProvidersQuotaExtension implements Extension {
     zaiCache.lastFetchTime = 0;
     neuralwattCache.data = null;
     neuralwattCache.lastFetchTime = 0;
+    deepseekCache.data = null;
+    deepseekCache.lastFetchTime = 0;
 
     // Trigger UI refresh
     context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
@@ -441,21 +499,25 @@ export default class ProvidersQuotaExtension implements Extension {
     const hasSynthetic = !!getApiKey('SYNTHETIC_API_KEY', 'synthetic', context);
     const hasZai = !!getApiKey('ZAI_API_KEY', 'zai-plan', context);
     const hasNeuralwatt = !!getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
+    const hasDeepseek = !!getApiKey('DEEPSEEK_API_KEY', 'deepseek', context);
 
     // Fetch all available quotas in parallel
-    const [syntheticQuota, zaiQuota, neuralwattQuota] = await Promise.all([
+    const [syntheticQuota, zaiQuota, neuralwattQuota, deepseekQuota] = await Promise.all([
       hasSynthetic ? getSyntheticQuota(context) : null,
       hasZai ? getZaiQuota(context) : null,
       hasNeuralwatt ? getNeuralwattQuota(context) : null,
+      hasDeepseek ? getDeepseekBalance(context) : null,
     ]);
 
     return {
       synthetic: syntheticQuota,
       zai: zaiQuota,
       neuralwatt: neuralwattQuota,
+      deepseek: deepseekQuota,
       hasSynthetic,
       hasZai,
       hasNeuralwatt,
+      hasDeepseek,
     };
   }
 }
