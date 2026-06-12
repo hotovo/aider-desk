@@ -11463,7 +11463,11 @@ getTerminalsForTask(taskId: string):
 ⋮----
 async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string): Promise<void>
 ⋮----
-async switchToLocalWorkingMode(baseDir: string, taskId: string, options?:
+async switchToLocalWorkingMode(
+    baseDir: string,
+    taskId: string,
+    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean },
+): Promise<void>
 ⋮----
 async switchToWorktreeWorkingMode(
     baseDir: string,
@@ -15453,7 +15457,7 @@ type Props = {
   renderMarkdown: boolean;
   remove?: (message: Message) => void;
   redo?: () => void;
-  edit?: (content: string) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: (interruptId?: string) => void;
 };
 ⋮----
@@ -15780,7 +15784,7 @@ type Props = {
   hideMessageBar?: boolean;
   remove?: () => void;
   redo?: () => void;
-  edit?: (content: string) => void;
+  edit?: (content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onFork?: () => void;
   onRemoveUpTo?: () => void;
@@ -15827,12 +15831,10 @@ type Props = {
   renderMarkdown: boolean;
   compact?: boolean;
   hideMessageBar?: boolean;
-  index?: number;
-  lastUserMessageIndex?: number;
   inProgress?: boolean;
   removeMessage?: (message: Message) => void;
   redoUserPrompt?: (messageId: string) => void;
-  editLastUserMessage?: (content: string, images?: string[]) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -15872,7 +15874,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -16643,7 +16645,7 @@ type Props = {
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
   redoUserPrompt: (messageId: string) => void;
-  editLastUserMessage: (content: string, images?: string[]) => void;
+  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -19890,6 +19892,7 @@ import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
+import { parseCommandArgs } from '@common/utils';
 ⋮----
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
@@ -19943,7 +19946,7 @@ type Props = {
   runCommand: (command: string) => void;
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
-  editLastUserMessage: () => void;
+  editUserMessage: () => void;
   isEditingLastMessage?: boolean;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
@@ -20049,7 +20052,7 @@ const handleDragEnd = (event: DragEndEvent) =>
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
@@ -20058,11 +20061,25 @@ import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
-import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { Checkbox } from '@/components/common/Checkbox';
+import { BaseDialog } from '@/components/common/BaseDialog';
+import { RadioButton } from '@/components/common/RadioButton';
+import { Button } from '@/components/common/Button';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useProjectTasks } from '@/stores/projectStore';
+⋮----
+enum LocalSwitchOption {
+  Merge = 'merge',
+  MergeAll = 'mergeAll',
+  Remove = 'remove',
+}
+⋮----
+enum WorktreeSwitchOption {
+  JustSwitch = 'justSwitch',
+  CarryOverRemove = 'carryOverRemove',
+  CarryOverKeep = 'carryOverKeep',
+}
 ⋮----
 type Props = {
   task: TaskData;
@@ -20090,7 +20107,15 @@ const performMergeAndSwitch = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const performSwitchToWorktreeWithChanges = async () =>
+const performMergeAndSwitchAll = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleLocalConfirm = async () =>
+⋮----
+const handleWorktreeConfirm = async () =>
+⋮----
+const performSwitchToWorktreeWithChanges = async (dropSourceChanges: boolean) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -20098,12 +20123,12 @@ const getWarningMessage = () =>
 ⋮----
 title=
 ⋮----
-onCancel=
+<Button onClick=
+
 ⋮----
-setShowConfirmWorktree(false);
-setKeepChangesInSource(false);
+onChange=
 ⋮----
-confirmButtonText=
+<div className="font-medium">
 
 ================
 File: src/renderer/src/components/PromptField/usePromptFieldText.ts
