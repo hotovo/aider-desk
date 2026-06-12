@@ -12,6 +12,7 @@
 - added support for editing any user message not only the last one
 - breaking words for long bash commands to avoid horizontal scrolling
 - added lazy loading for heavy dependencies and optimized rendering performance
+- added error boundary and crash fallback screen
 
 ## [0.69.0]
 

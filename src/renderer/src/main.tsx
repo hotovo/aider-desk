@@ -4,4 +4,10 @@ import ReactDOM from 'react-dom/client';
 
 import App from './App';
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(<App />);
+import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <AppErrorBoundary>
+    <App />
+  </AppErrorBoundary>,
+);

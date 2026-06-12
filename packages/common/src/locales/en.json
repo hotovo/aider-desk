@@ -997,7 +997,16 @@
     "frozenMessage": "Aider process seems to be frozen. Would you like to restart the task?",
     "removeMessageFailed": "Failed to remove message - please try again",
     "forkTaskFailed": "Failed to fork task - please try again",
-    "removeMessagesUpToFailed": "Failed to remove messages - please try again"
+    "removeMessagesUpToFailed": "Failed to remove messages - please try again",
+    "appCrash": {
+      "title": "Something went wrong",
+      "message": "An unexpected error occurred and the application could not continue.",
+      "reportIssue": "Please, consider reporting an issue at <a>https://github.com/hotovo/aider-desk/issues</a>. Thank you.",
+      "reload": "Reload",
+      "details": "Error details",
+      "copy": "Copy",
+      "copied": "Copied!"
+    }
   },
   "dialogs": {
     "confirm": "Confirm",
