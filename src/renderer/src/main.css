@@ -36,6 +36,10 @@
     font-variation-settings: "MONO" 1;
     height: 100%;
   }
+
+  .break-words {
+    word-break: break-word;
+  }
 }
 
 :root {
