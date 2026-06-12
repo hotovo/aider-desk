@@ -54,6 +54,7 @@ Integrates the [Claude Agent SDK](https://github.com/anthropics/claude-agent-sdk
 | haiku | 200K | 64K |
 | sonnet | 200K | 64K (default) |
 | opus | 200K | 64K |
+| fable | 1M | 128K |
 
 ## Mode Support
 
