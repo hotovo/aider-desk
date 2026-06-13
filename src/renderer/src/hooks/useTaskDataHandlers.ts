@@ -1,6 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 
 import type {
   AutocompletionData,
@@ -13,17 +11,10 @@ import type {
 } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { updateTaskState, setQuestion, setAllFiles, setAutocompletionWords, setTokensInfo, setAiderModelsData, setQueuedPrompts } from '@/stores/taskStore';
 
 export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
-  const updateTaskState = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.updateTaskState, shallow);
-  const setQuestion = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setQuestion, shallow);
-  const setAllFiles = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAllFiles, shallow);
-  const setAutocompletionWords = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAutocompletionWords, shallow);
-  const setTokensInfo = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setTokensInfo, shallow);
-  const setAiderModelsData = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAiderModelsData, shallow);
-  const setQueuedPrompts = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setQueuedPrompts, shallow);
 
   const handleUpdateAutocompletion = useCallback(
     ({ allFiles, words }: AutocompletionData) => {
@@ -34,53 +25,53 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
         setAutocompletionWords(taskId, words);
       }
     },
-    [taskId, setAllFiles, setAutocompletionWords],
+    [taskId],
   );
 
   const handleTokensInfo = useCallback(
     (data: TokensInfoData) => {
       setTokensInfo(taskId, data);
     },
-    [taskId, setTokensInfo],
+    [taskId],
   );
 
   const handleQuestion = useCallback(
     (data: QuestionData) => {
       setQuestion(taskId, data);
     },
-    [taskId, setQuestion],
+    [taskId],
   );
 
   const handleQuestionAnswered = useCallback(() => {
     setQuestion(taskId, null);
-  }, [taskId, setQuestion]);
+  }, [taskId]);
 
   const handleContextFilesUpdated = useCallback(
     ({ files }: ContextFilesUpdatedData) => {
       updateTaskState(taskId, { contextFiles: files });
     },
-    [taskId, updateTaskState],
+    [taskId],
   );
 
   const handleUpdateAiderModels = useCallback(
     (data: ModelsData) => {
       setAiderModelsData(taskId, data);
     },
-    [taskId, setAiderModelsData],
+    [taskId],
   );
 
   const handleQueuedPromptsUpdated = useCallback(
     ({ queuedPrompts }: QueuedPromptsUpdatedData) => {
       setQueuedPrompts(taskId, queuedPrompts);
     },
-    [taskId, setQueuedPrompts],
+    [taskId],
   );
 
   const handleContextInfoUpdated = useCallback(
     ({ canUndoContextChange }: ContextInfoData) => {
       updateTaskState(taskId, { canUndoContextChange });
     },
-    [taskId, updateTaskState],
+    [taskId],
   );
 
   useEffect(() => {

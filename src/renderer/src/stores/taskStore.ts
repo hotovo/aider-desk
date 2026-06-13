@@ -163,6 +163,29 @@ export const useTaskStore = createWithEqualityFn<TaskStore>(
   shallow,
 );
 
+// Module-level action functions (no hook subscription required)
+export const updateTaskState = (taskId: string, updates: Partial<TaskState>) => useTaskStore.getState().updateTaskState(taskId, updates);
+
+export const setMessages = (taskId: string, updateMessages: (prev: Message[]) => Message[]) => useTaskStore.getState().setMessages(taskId, updateMessages);
+
+export const setTodoItems = (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) =>
+  useTaskStore.getState().setTodoItems(taskId, updateTodoItems);
+
+export const setAllFiles = (taskId: string, allFiles: string[]) => useTaskStore.getState().setAllFiles(taskId, allFiles);
+
+export const setAutocompletionWords = (taskId: string, autocompletionWords: string[]) =>
+  useTaskStore.getState().setAutocompletionWords(taskId, autocompletionWords);
+
+export const setTokensInfo = (taskId: string, tokensInfo: TokensInfoData | null) => useTaskStore.getState().setTokensInfo(taskId, tokensInfo);
+
+export const setQuestion = (taskId: string, question: QuestionData | null) => useTaskStore.getState().setQuestion(taskId, question);
+
+export const setAiderModelsData = (taskId: string, modelsData: ModelsData | null) => useTaskStore.getState().setAiderModelsData(taskId, modelsData);
+
+export const setQueuedPrompts = (taskId: string, queuedPrompts: QueuedPromptData[]) => useTaskStore.getState().setQueuedPrompts(taskId, queuedPrompts);
+
+export const clearSession = (taskId: string) => useTaskStore.getState().clearSession(taskId);
+
 export const useOptimizedTaskState = (taskId: string) =>
   useTaskStore(
     useShallow((state) => {

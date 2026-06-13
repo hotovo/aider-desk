@@ -28,19 +28,6 @@ import './Workspace.css';
 
 const ALL_SECTIONS: SectionType[] = ['context', 'updated', 'project', 'rules', 'skills'];
 
-type Props = {
-  baseDir: string;
-  taskId: string;
-  allFiles: string[];
-  contextFiles: ContextFile[];
-  showFileDialog: () => void;
-  tokensInfo?: TokensInfoData | null;
-  refreshAllFiles: (useGit?: boolean) => Promise<void>;
-  mode: Mode;
-  onToggleFilesSidebarCollapse?: () => void;
-  taskName?: string;
-};
-
 type SortableSectionWrapperProps = {
   id: SectionType;
   editMode: boolean;
@@ -73,6 +60,19 @@ const SortableSectionWrapper = ({ id, editMode, isHidden, children }: SortableSe
       {children}
     </div>
   );
+};
+
+type Props = {
+  baseDir: string;
+  taskId: string;
+  allFiles: string[];
+  contextFiles: ContextFile[];
+  showFileDialog: () => void;
+  tokensInfo?: TokensInfoData | null;
+  refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  mode: Mode;
+  onToggleFilesSidebarCollapse?: () => void;
+  taskName?: string;
 };
 
 export const Workspace = ({

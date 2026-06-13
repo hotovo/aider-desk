@@ -1,19 +1,16 @@
 import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { isResponseMessage } from '@common/types';
 
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 
 const processingResponseMessageMap = new Map<string, ResponseMessage>();
 
 export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleResponseChunk = useCallback(
     ({ messageId, chunk, reasoning, reflectedMessage, promptContext }: ResponseChunkData) => {
@@ -86,7 +83,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
         });
       }
     },
-    [taskId, setMessages],
+    [taskId],
   );
 
   const handleResponseCompleted = useCallback(
@@ -150,7 +147,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
 
       processingResponseMessageMap.delete(taskId);
     },
-    [taskId, setMessages],
+    [taskId],
   );
 
   useEffect(() => {

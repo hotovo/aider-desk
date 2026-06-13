@@ -31,22 +31,6 @@ interface CommitGroup {
   deletions: number;
 }
 
-type Props = {
-  baseDir: string;
-  taskId: string;
-  isOpen: boolean;
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<string>;
-  onToggle: () => void;
-  taskName?: string;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-  showBorderTop?: boolean;
-};
-
 const UpdatedSectionHeader = ({
   isOpen,
   title,
@@ -108,6 +92,22 @@ const UpdatedSectionHeader = ({
       </div>
     </div>
   );
+};
+
+type Props = {
+  baseDir: string;
+  taskId: string;
+  isOpen: boolean;
+  tokensInfo?: TokensInfoData | null;
+  os: OS | null;
+  contextFilesMap: Map<string, ContextFile>;
+  visitedSections: Set<string>;
+  onToggle: () => void;
+  taskName?: string;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+  showBorderTop?: boolean;
 };
 
 export const UpdatedFilesSection = ({

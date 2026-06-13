@@ -7,7 +7,7 @@ import { clsx } from 'clsx';
 
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 
-import { useProjectTasks, useProjectStore } from '@/stores/projectStore';
+import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -39,7 +39,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const { TASK_HOTKEYS } = useConfiguredHotkeys();
   const { isMobile } = useResponsive();
 
-  const { setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } = useProjectStore();
   const tasks = useProjectTasks(projectDir);
   const [optimisticTasks, setOptimisticTasks] = useOptimistic(tasks);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
@@ -263,18 +262,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       removeInputHistoryListener();
       clearProjectTasks(projectDir);
     };
-  }, [
-    activateTask,
-    api,
-    projectDir,
-    settings?.startupMode,
-    clearProjectTasks,
-    setProjectTasks,
-    updateProjectTask,
-    addProjectTask,
-    removeProjectTask,
-    initialTaskId,
-  ]);
+  }, [activateTask, api, projectDir, settings?.startupMode, initialTaskId]);
 
   const handleTaskSelect = useCallback(
     (taskId: string) => {

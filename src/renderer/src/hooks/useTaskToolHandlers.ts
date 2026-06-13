@@ -1,23 +1,13 @@
 import { useCallback, useEffect } from 'react';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 
 import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages, setTodoItems } from '@/stores/taskStore';
 
 export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
-  const { setMessages, setTodoItems } = useStoreWithEqualityFn(
-    useTaskStore,
-    (storeState) => ({
-      setMessages: storeState.setMessages,
-      setTodoItems: storeState.setTodoItems,
-    }),
-    shallow,
-  );
 
   const handleTodoTool = useCallback(
     (toolName: string, args: Record<string, unknown> | undefined, response: string | undefined) => {
@@ -60,7 +50,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
         console.error('Error handling TODO tool:', error);
       }
     },
-    [taskId, setTodoItems],
+    [taskId],
   );
 
   const handleTool = useCallback(
@@ -108,7 +98,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
         }
       });
     },
-    [taskId, setMessages, handleTodoTool],
+    [taskId, handleTodoTool],
   );
 
   useEffect(() => {

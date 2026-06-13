@@ -1,15 +1,12 @@
 import { useCallback, useEffect } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 
 import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 
 export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleUserMessage = useCallback(
     (data: UserMessageData) => {
@@ -30,14 +27,14 @@ export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
         return [...nonLoadingMessages, userMessage, ...loadingMessages];
       });
     },
-    [taskId, setMessages],
+    [taskId],
   );
 
   const handleMessageRemoved = useCallback(
     (data: MessageRemovedData) => {
       setMessages(taskId, (prevMessages) => prevMessages.filter((message) => !data.messageIds.includes(message.id)));
     },
-    [taskId, setMessages],
+    [taskId],
   );
 
   useEffect(() => {

@@ -1,12 +1,10 @@
 import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 
 import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 
 const isCommandOutputMessage = (message: Message): message is CommandOutputMessage => {
   return message.type === 'command-output';
@@ -14,7 +12,6 @@ const isCommandOutputMessage = (message: Message): message is CommandOutputMessa
 
 export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   const handleCommandOutput = useCallback(
     ({ command, output, timestamp }: CommandOutputData) => {
@@ -39,7 +36,7 @@ export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
         }
       });
     },
-    [taskId, setMessages],
+    [taskId],
   );
 
   useEffect(() => {

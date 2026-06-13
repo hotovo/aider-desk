@@ -66,6 +66,17 @@ export const useProjectStore = createWithEqualityFn<ProjectStore>(
   shallow,
 );
 
+// Module-level action functions (no hook subscription required)
+export const setProjectTasks = (projectBaseDir: string, tasks: TaskData[]) => useProjectStore.getState().setProjectTasks(projectBaseDir, tasks);
+
+export const updateProjectTask = (projectBaseDir: string, taskData: TaskData) => useProjectStore.getState().updateProjectTask(projectBaseDir, taskData);
+
+export const addProjectTask = (projectBaseDir: string, taskData: TaskData) => useProjectStore.getState().addProjectTask(projectBaseDir, taskData);
+
+export const removeProjectTask = (projectBaseDir: string, taskId: string) => useProjectStore.getState().removeProjectTask(projectBaseDir, taskId);
+
+export const clearProjectTasks = (projectBaseDir: string) => useProjectStore.getState().clearProjectTasks(projectBaseDir);
+
 export const useProjectTasks = (projectBaseDir: string) => useProjectStore(useShallow((state) => state.projectTasksMap.get(projectBaseDir) || EMPTY_TASKS));
 
 export const useProjectProcessingState = (projectBaseDir: string) =>

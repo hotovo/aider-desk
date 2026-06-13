@@ -1,10 +1,8 @@
-import React, { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages, setTodoItems, setAiderModelsData } from '@/stores/taskStore';
 import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
 import { useTaskLogHandlers } from '@/hooks/useTaskLogHandlers';
@@ -22,13 +20,12 @@ interface TaskEventSubscriberProps {
 
 const TaskEventSubscriber = memo(function TaskEventSubscriber({ baseDir, taskId, state }: TaskEventSubscriberProps) {
   const previousState = usePrevious(state);
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
 
   useEffect(() => {
     if (previousState === DefaultTaskState.InProgress && state !== DefaultTaskState.InProgress) {
       setMessages(taskId, (prevMessages) => prevMessages.filter((message) => !isLoadingMessage(message)));
     }
-  }, [previousState, setMessages, state, taskId]);
+  }, [previousState, state, taskId]);
 
   useTaskResponseHandlers(baseDir, taskId);
   useTaskToolHandlers(baseDir, taskId);
@@ -59,11 +56,7 @@ export interface TaskContextType {
 
 const TasksContext = createContext<TaskContextType | null>(null);
 
-export const TasksProvider: React.FC<{ baseDir: string; tasks: TaskData[]; children: ReactNode }> = ({ baseDir, tasks, children }) => {
-  const setTodoItems = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setTodoItems, shallow);
-  const setAiderModelsData = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAiderModelsData, shallow);
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
-
+export const TasksProvider = ({ baseDir, tasks, children }: { baseDir: string; tasks: TaskData[]; children: ReactNode }) => {
   const taskActions = useTaskActions({ baseDir });
 
   const contextValue = useMemo(
@@ -73,7 +66,7 @@ export const TasksProvider: React.FC<{ baseDir: string; tasks: TaskData[]; child
       setMessages,
       setAiderModelsData,
     }),
-    [taskActions, setTodoItems, setMessages, setAiderModelsData],
+    [taskActions],
   );
 
   return (

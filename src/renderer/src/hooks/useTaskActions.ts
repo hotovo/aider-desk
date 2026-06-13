@@ -1,11 +1,9 @@
-import { useCallback } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
+import { useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
 import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 
-import { useTaskStore } from '@/stores/taskStore';
+import { updateTaskState, clearSession, setMessages, setAllFiles } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 
 type UseTaskActionsParams = {
@@ -14,10 +12,6 @@ type UseTaskActionsParams = {
 
 export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
   const api = useApi();
-  const updateTaskState = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.updateTaskState, shallow);
-  const clearSession = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.clearSession, shallow);
-  const setMessages = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setMessages, shallow);
-  const setAllFiles = useStoreWithEqualityFn(useTaskStore, (storeState) => storeState.setAllFiles, shallow);
 
   const loadTask = useCallback(
     async (taskId: string) => {
@@ -102,7 +96,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
         console.error('Failed to load task:', error);
       }
     },
-    [api, baseDir, updateTaskState, setMessages],
+    [api, baseDir],
   );
 
   const resetTask = useCallback(
@@ -111,7 +105,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       clearSession(taskId);
       setMessages(taskId, () => []);
     },
-    [api, baseDir, clearSession, setMessages],
+    [api, baseDir],
   );
 
   const restartAiderConnector = useCallback(
@@ -126,7 +120,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       api.answerQuestion(baseDir, taskId, answer);
       updateTaskState(taskId, { question: null });
     },
-    [api, baseDir, updateTaskState],
+    [api, baseDir],
   );
 
   const interruptResponse = useCallback(
@@ -136,7 +130,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
         question: null,
       });
     },
-    [api, baseDir, updateTaskState],
+    [api, baseDir],
   );
 
   const updateTaskAgentProfile = useCallback(
@@ -155,17 +149,20 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       const refreshedFiles = await api.getAllFiles(baseDir, taskId, useGit);
       setAllFiles(taskId, refreshedFiles);
     },
-    [api, baseDir, setAllFiles],
+    [api, baseDir],
   );
 
-  return {
-    loadTask,
-    clearSession,
-    resetTask,
-    restartAiderConnector,
-    answerQuestion,
-    interruptResponse,
-    updateTaskAgentProfile,
-    refreshAllFiles,
-  };
+  return useMemo(
+    () => ({
+      loadTask,
+      clearSession,
+      resetTask,
+      restartAiderConnector,
+      answerQuestion,
+      interruptResponse,
+      updateTaskAgentProfile,
+      refreshAllFiles,
+    }),
+    [loadTask, resetTask, restartAiderConnector, answerQuestion, interruptResponse, updateTaskAgentProfile, refreshAllFiles],
+  );
 };
