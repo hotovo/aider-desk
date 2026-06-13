@@ -123,7 +123,7 @@ export class SettingsApi extends BaseApi {
 
     // Get versions
     router.get(
-      '/versions',
+      '/settings/versions',
       this.handleRequest(async (req, res) => {
         const parsed = this.validateRequest(GetVersionsSchema, req.query, res);
         if (!parsed) {
