@@ -1,4 +1,4 @@
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import React, { useCallback } from 'react';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { motion } from 'framer-motion';
@@ -15,7 +15,7 @@ type Props = {
   setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
@@ -35,7 +35,7 @@ export const SectionContent = ({
   setExpandedItems,
   contextFilesMap,
   updatedFiles,
-  tokensInfo,
+  fileTokensInfo,
   os,
   searchField,
   emptyContent,
@@ -61,7 +61,7 @@ export const SectionContent = ({
         setExpandedItems={setExpandedItems}
         contextFilesMap={contextFilesMap}
         updatedFiles={updatedFiles}
-        tokensInfo={tokensInfo}
+        fileTokensInfo={fileTokensInfo}
         os={os}
         disabledRuleFiles={disabledRuleFiles}
         onToggleRuleFile={onToggleRuleFile}
@@ -81,7 +81,7 @@ export const SectionContent = ({
       setExpandedItems,
       contextFilesMap,
       updatedFiles,
-      tokensInfo,
+      fileTokensInfo,
       os,
       disabledRuleFiles,
       onToggleRuleFile,

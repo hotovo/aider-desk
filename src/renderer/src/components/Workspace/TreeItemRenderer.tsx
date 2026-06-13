@@ -1,4 +1,4 @@
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import { useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
@@ -45,7 +45,7 @@ type Props = {
   setExpandedItems: (items: string[]) => void;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   disabledRuleFiles?: string[];
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
@@ -66,7 +66,7 @@ export const TreeItemRenderer = ({
   setExpandedItems,
   contextFilesMap,
   updatedFiles,
-  tokensInfo,
+  fileTokensInfo,
   disabledRuleFiles,
   onToggleRuleFile,
   onFileDiffClick,
@@ -128,7 +128,7 @@ export const TreeItemRenderer = ({
   const showRevert = type === 'updated' && updatedFile && !item.isFolder && !updatedFile.commitHash;
   const showConflictWarning = type === 'updated' && updatedFile?.hasConflicts && !item.isFolder;
 
-  const fileTokenInfo = tokensInfo?.files?.[item.index];
+  const fileTokenInfo = fileTokensInfo?.[item.index];
   const fileTokenTooltip = fileTokenInfo ? `${fileTokenInfo.tokens || 0} ${t('usageDashboard.charts.tokens')}, $${(fileTokenInfo.cost || 0).toFixed(5)}` : '';
 
   const toggleFolder = useCallback(() => {

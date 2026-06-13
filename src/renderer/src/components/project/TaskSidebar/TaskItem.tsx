@@ -48,6 +48,81 @@ type Props = {
   hasChildren: boolean;
 };
 
+const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
+  const { task: prevTask } = prevProps;
+  const { task: nextTask } = nextProps;
+
+  // Compare task object - only properties used in rendering
+  if (
+    prevTask.name !== nextTask.name ||
+    prevTask.id !== nextTask.id ||
+    prevTask.parentId !== nextTask.parentId ||
+    prevTask.archived !== nextTask.archived ||
+    prevTask.state !== nextTask.state ||
+    prevTask.pinned !== nextTask.pinned ||
+    prevTask.workingMode !== nextTask.workingMode ||
+    prevTask.createdAt !== nextTask.createdAt
+  ) {
+    return false;
+  }
+
+  // Compare tasks array reference (used for subtasks computation)
+  if (prevProps.tasks !== nextProps.tasks) {
+    return false;
+  }
+
+  // Compare primitive props
+  if (
+    prevProps.level !== nextProps.level ||
+    prevProps.isMultiselectMode !== nextProps.isMultiselectMode ||
+    prevProps.activeTaskId !== nextProps.activeTaskId ||
+    prevProps.isExpanded !== nextProps.isExpanded ||
+    prevProps.hasChildren !== nextProps.hasChildren
+  ) {
+    return false;
+  }
+
+  // Compare task-id-specific props - only re-render if our task is affected
+  if ((prevProps.deleteConfirmTaskId === prevTask.id) !== (nextProps.deleteConfirmTaskId === nextTask.id)) {
+    return false;
+  }
+
+  if ((prevProps.editingTaskId === prevTask.id) !== (nextProps.editingTaskId === nextTask.id)) {
+    return false;
+  }
+
+  // Compare selectedTasks - only care about our task's membership
+  if (prevProps.selectedTasks.has(prevTask.id) !== nextProps.selectedTasks.has(nextTask.id)) {
+    return false;
+  }
+
+  // Compare function props by reference
+  if (
+    prevProps.setIsMultiselectMode !== nextProps.setIsMultiselectMode ||
+    prevProps.onTaskClick !== nextProps.onTaskClick ||
+    prevProps.createNewTask !== nextProps.createNewTask ||
+    prevProps.onEditClick !== nextProps.onEditClick ||
+    prevProps.onEditConfirm !== nextProps.onEditConfirm ||
+    prevProps.onEditCancel !== nextProps.onEditCancel ||
+    prevProps.onDeleteClick !== nextProps.onDeleteClick ||
+    prevProps.onArchiveTask !== nextProps.onArchiveTask ||
+    prevProps.onUnarchiveTask !== nextProps.onUnarchiveTask ||
+    prevProps.onTogglePin !== nextProps.onTogglePin ||
+    prevProps.onChangeState !== nextProps.onChangeState ||
+    prevProps.onCopyAsMarkdown !== nextProps.onCopyAsMarkdown ||
+    prevProps.onExportToMarkdown !== nextProps.onExportToMarkdown ||
+    prevProps.onExportToImage !== nextProps.onExportToImage ||
+    prevProps.onDuplicateTask !== nextProps.onDuplicateTask ||
+    prevProps.handleConfirmDelete !== nextProps.handleConfirmDelete ||
+    prevProps.handleCancelDelete !== nextProps.handleCancelDelete ||
+    prevProps.onToggleExpand !== nextProps.onToggleExpand
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
 export const TaskItem = memo(
   ({
     task,
@@ -265,6 +340,7 @@ export const TaskItem = memo(
       </div>
     );
   },
+  arePropsEqual,
 );
 
 TaskItem.displayName = 'TaskItem';

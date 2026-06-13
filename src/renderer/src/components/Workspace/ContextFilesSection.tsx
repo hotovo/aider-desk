@@ -1,4 +1,4 @@
-import { ContextFile, Mode, OS, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, OS, TokensCost } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +16,7 @@ type Props = {
   userContextFiles: ContextFile[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
   showFileDialog: () => void;
@@ -35,7 +35,7 @@ export const ContextFilesSection = ({
   userContextFiles,
   isOpen,
   totalStats,
-  tokensInfo,
+  fileTokensInfo,
   os,
   contextFilesMap,
   showFileDialog,
@@ -124,7 +124,7 @@ export const ContextFilesSection = ({
       setExpandedItems={setContextExpandedItems}
       contextFilesMap={contextFilesMap}
       updatedFiles={[]}
-      tokensInfo={tokensInfo}
+      fileTokensInfo={fileTokensInfo}
       os={os}
       actions={contextActions}
       emptyContent={<EmptyContextInfo mode={mode} />}

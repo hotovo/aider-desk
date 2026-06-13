@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
+import reactCompiler from 'eslint-plugin-react-compiler';
 import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
@@ -34,6 +35,7 @@ export default tseslint.config({ ignores: ['build', 'dist', 'node_modules', 'out
   plugins: {
     'react': reactPlugin,
     'react-hooks': reactHooks,
+    'react-compiler': reactCompiler,
   },
   rules: {
     ...reactHooks.configs.recommended.rules,
@@ -134,6 +136,7 @@ export default tseslint.config({ ignores: ['build', 'dist', 'node_modules', 'out
     'react-hooks/purity': 'warn',
     'react-hooks/set-state-in-effect': 'warn',
     'react-hooks/refs': 'warn',
+    'react-compiler/react-compiler': 'warn',
   }
 }, {
   files: ['**/__tests__/**/*.test.ts'],

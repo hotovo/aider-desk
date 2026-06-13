@@ -196,6 +196,8 @@ export const useOptimizedTaskState = (taskId: string) =>
 
 export const useTaskTokensInfo = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.tokensInfo ?? null);
 
+export const useTaskFileTokensInfo = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.tokensInfo?.files ?? null);
+
 export const useTaskQuestion = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.question ?? null);
 
 export const useTaskTodoItems = (taskId: string) =>

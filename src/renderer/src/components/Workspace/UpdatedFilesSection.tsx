@@ -1,4 +1,4 @@
-import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
@@ -98,7 +98,7 @@ type Props = {
   baseDir: string;
   taskId: string;
   isOpen: boolean;
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
   visitedSections: Set<string>;
@@ -114,7 +114,7 @@ export const UpdatedFilesSection = ({
   baseDir,
   taskId,
   isOpen,
-  tokensInfo,
+  fileTokensInfo,
   os,
   contextFilesMap,
   visitedSections,
@@ -452,7 +452,7 @@ export const UpdatedFilesSection = ({
                               }
                               contextFilesMap={contextFilesMap}
                               updatedFiles={group.files}
-                              tokensInfo={tokensInfo}
+                              fileTokensInfo={fileTokensInfo}
                               os={os}
                               onFileDiffClick={handleFileDiffClick}
                               onRevertFile={(filePath) => {
@@ -475,7 +475,7 @@ export const UpdatedFilesSection = ({
                         setExpandedItems={(items) => setFlatExpandedItems(typeof items === 'function' ? items(flatExpandedItems) : items)}
                         contextFilesMap={contextFilesMap}
                         updatedFiles={updatedFiles}
-                        tokensInfo={tokensInfo}
+                        fileTokensInfo={fileTokensInfo}
                         os={os}
                         onFileDiffClick={handleFileDiffClick}
                         onRevertFile={handleRevertFile}

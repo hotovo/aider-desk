@@ -818,4 +818,6 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
   return true;
 };
 
+TaskSidebarComponent.displayName = 'TaskSidebar';
+
 export const TaskSidebar = memo(TaskSidebarComponent, arePropsEqual);

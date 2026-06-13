@@ -1,4 +1,4 @@
-import { ContextFile, OS, TokensInfoData } from '@common/types';
+import { ContextFile, OS, TokensCost } from '@common/types';
 import React, { useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
@@ -24,7 +24,7 @@ type Props = {
   allFiles: string[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
   visitedSections: Set<string>;
@@ -44,7 +44,7 @@ export const ProjectFilesSection = ({
   allFiles,
   isOpen,
   totalStats,
-  tokensInfo,
+  fileTokensInfo,
   os,
   contextFilesMap,
   visitedSections,
@@ -218,7 +218,7 @@ export const ProjectFilesSection = ({
         setExpandedItems={setProjectExpandedItems}
         contextFilesMap={contextFilesMap}
         updatedFiles={[]}
-        tokensInfo={tokensInfo}
+        fileTokensInfo={fileTokensInfo}
         os={os}
         actions={projectActions}
         searchField={searchField}

@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, TaskData } from '@common/types';
 import { FiChevronDown } from 'react-icons/fi';
 
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
@@ -17,7 +17,6 @@ type Props = {
   taskId: string;
   allFiles: string[];
   contextFiles: ContextFile[];
-  tokensInfo?: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;
@@ -37,7 +36,6 @@ export const MobileSidebar = ({
   taskId,
   allFiles,
   contextFiles,
-  tokensInfo,
   aiderTotalCost,
   maxInputTokens,
   clearMessages,
@@ -64,7 +62,6 @@ export const MobileSidebar = ({
           taskId={taskId}
           allFiles={allFiles}
           contextFiles={contextFiles}
-          tokensInfo={tokensInfo}
           aiderTotalCost={aiderTotalCost}
           maxInputTokens={maxInputTokens}
           clearMessages={clearMessages}

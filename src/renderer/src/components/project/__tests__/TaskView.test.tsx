@@ -67,6 +67,7 @@ vi.mock('@/stores/taskStore', () => ({
   useTaskMessages: vi.fn(),
   useTaskStore: mockUseTaskStore,
   useTaskTokensInfo: vi.fn().mockReturnValue(null),
+  useTaskFileTokensInfo: vi.fn().mockReturnValue(null),
   useTaskQuestion: vi.fn(),
   useTaskTodoItems: vi.fn(),
   useTaskQueuedPrompts: vi.fn(),

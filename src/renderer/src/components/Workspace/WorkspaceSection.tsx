@@ -1,4 +1,4 @@
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import React, { Activity } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -19,7 +19,7 @@ type Props = {
   setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   actions?: React.ReactNode;
   searchField?: React.ReactNode;
@@ -50,7 +50,7 @@ export const WorkspaceSection = ({
   setExpandedItems,
   contextFilesMap,
   updatedFiles,
-  tokensInfo,
+  fileTokensInfo,
   os,
   actions,
   searchField,
@@ -97,7 +97,7 @@ export const WorkspaceSection = ({
           setExpandedItems={setExpandedItems}
           contextFilesMap={contextFilesMap}
           updatedFiles={updatedFiles}
-          tokensInfo={tokensInfo}
+          fileTokensInfo={fileTokensInfo}
           os={os}
           searchField={searchField}
           emptyContent={emptyContent}
