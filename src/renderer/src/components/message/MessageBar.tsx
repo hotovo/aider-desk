@@ -44,10 +44,14 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
     message: message && includeMessageProperty(message) ? message : null,
   };
 
-  useClickOutside([menuRef, buttonRef], () => {
-    setIsMenuOpen(false);
-    setMenuPosition(null);
-  });
+  useClickOutside(
+    [menuRef, buttonRef],
+    () => {
+      setIsMenuOpen(false);
+      setMenuPosition(null);
+    },
+    isMenuOpen,
+  );
 
   const handleToggleMenu = useCallback(() => {
     if (!isMenuOpen && buttonRef.current) {

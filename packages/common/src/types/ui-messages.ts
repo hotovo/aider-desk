@@ -7,7 +7,6 @@ export interface Message {
   content: string;
   promptContext?: PromptContext;
   timestamp?: number;
-  children?: Message[];
 }
 
 export interface UserMessage extends Message {

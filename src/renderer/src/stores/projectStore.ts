@@ -75,3 +75,13 @@ export const useProjectProcessingState = (projectBaseDir: string) =>
       return tasks.some((task) => task.state === DefaultTaskState.InProgress);
     }),
   );
+
+export const useProjectTaskWorktreePath = (projectBaseDir: string, taskId: string) =>
+  useProjectStore((state) => {
+    const tasks = state.projectTasksMap.get(projectBaseDir);
+    if (!tasks) {
+      return undefined;
+    }
+    const task = tasks.find((t) => t.id === taskId);
+    return task?.worktree?.path;
+  });

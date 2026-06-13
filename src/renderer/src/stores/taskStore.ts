@@ -163,6 +163,22 @@ export const useTaskStore = createWithEqualityFn<TaskStore>(
   shallow,
 );
 
-export const useTaskState = (taskId: string) => useTaskStore(useShallow((state) => state.taskStateMap.get(taskId) || EMPTY_TASK_STATE));
+export const useOptimizedTaskState = (taskId: string) =>
+  useTaskStore(
+    useShallow((state) => {
+      const { tokensInfo: _, todoItems: _ti, queuedPrompts: _qp, ...optimizedTaskState } = state.taskStateMap.get(taskId) || EMPTY_TASK_STATE;
+      return optimizedTaskState;
+    }),
+  );
+
+export const useTaskTokensInfo = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.tokensInfo ?? null);
+
+export const useTaskQuestion = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.question ?? null);
+
+export const useTaskTodoItems = (taskId: string) =>
+  useTaskStore(useShallow((state) => state.taskStateMap.get(taskId)?.todoItems ?? EMPTY_TASK_STATE.todoItems));
+
+export const useTaskQueuedPrompts = (taskId: string) =>
+  useTaskStore(useShallow((state) => state.taskStateMap.get(taskId)?.queuedPrompts ?? EMPTY_TASK_STATE.queuedPrompts));
 
 export const useTaskMessages = (taskId: string) => useTaskStore(useShallow((state) => state.taskMessagesMap.get(taskId) || EMPTY_MESSAGES));

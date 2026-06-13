@@ -36,8 +36,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
     onCloseReset: { highlightedIndex: -1 },
   });
 
-  // Pass both refs to useClickOutside
-  useClickOutside([containerRef, dropdownRef], close);
+  useClickOutside([containerRef, dropdownRef], close, isOpen);
 
   const handleToggleDropdown = useCallback(() => {
     if (!isOpen && containerRef.current) {

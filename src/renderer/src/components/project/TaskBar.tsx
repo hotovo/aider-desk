@@ -282,16 +282,19 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       [api, baseDir, task.id, modelsData, onModelsChange, updatePreferredModels],
     );
 
-    const handleRemovePreferredModel = (model: string) => {
-      if (!settings) {
-        return;
-      }
-      const updatedSettings = {
-        ...settings,
-        preferredModels: settings.preferredModels.filter((preferred) => preferred !== model),
-      };
-      void saveSettings(updatedSettings);
-    };
+    const handleRemovePreferredModel = useCallback(
+      (model: string) => {
+        if (!settings) {
+          return;
+        }
+        const updatedSettings = {
+          ...settings,
+          preferredModels: settings.preferredModels.filter((preferred) => preferred !== model),
+        };
+        void saveSettings(updatedSettings);
+      },
+      [settings, saveSettings],
+    );
 
     const handleMerge = useCallback(
       async (squash: boolean, targetBranch?: string, commitMessage?: string) => {
@@ -416,6 +419,10 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
       },
       [api, baseDir, task.id],
     );
+
+    const handleMergeNormal = useCallback((targetBranch?: string) => handleMerge(false, targetBranch), [handleMerge]);
+
+    const handleMergeSquash = useCallback((targetBranch?: string, commitMessage?: string) => handleMerge(true, targetBranch, commitMessage), [handleMerge]);
 
     const isTwoRowLayout = !AIDER_MODES.includes(mode) && showAiderInfo;
 
@@ -647,8 +654,8 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
             <ExtensionComponentWrapper placement="task-top-bar-right" />
             <TaskWorkingMode
               task={task}
-              onMerge={(branch) => handleMerge(false, branch)}
-              onSquash={(branch, commitMessage) => handleMerge(true, branch, commitMessage)}
+              onMerge={handleMergeNormal}
+              onSquash={handleMergeSquash}
               onOnlyUncommitted={handleOnlyUncommitted}
               onRebaseFromBranch={handleRebaseFromBranch}
               onAbortRebase={handleAbortRebase}
@@ -673,4 +680,4 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
   },
 );
 
-TaskBar.displayName = 'ProjectTopBar';
+TaskBar.displayName = 'TaskBar';

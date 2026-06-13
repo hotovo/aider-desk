@@ -7,6 +7,7 @@ import { HiOutlineSelector } from 'react-icons/hi';
 import { parseDiff, File, Hunk as HunkType, SkipBlock, Line as LineType } from './utils';
 
 import { highlightWithRefractor } from '@/utils/highlighter';
+import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
 
 interface DiffContextValue {
   language: string;
@@ -130,13 +131,15 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
   newValue,
   udiff,
   fileName,
-  language,
+  language: languageProp,
   hunks: providedHunks,
   type: providedType,
   className,
   showFilename = true,
   ...props
 }) => {
+  const resolvedLanguage = languageProp || getLanguageFromPath(fileName);
+  useRefractorLanguage(resolvedLanguage);
   const files = useMemo(() => {
     if (providedHunks) {
       return [{ hunks: providedHunks, type: providedType, newPath: fileName } as File];
@@ -166,7 +169,7 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
       <Diff
         {...props}
         fileName={file.newPath || fileName}
-        language={language || getLanguageFromPath(file.newPath || fileName)}
+        language={resolvedLanguage || getLanguageFromPath(file.newPath || fileName)}
         hunks={file.hunks}
         type={file.type}
         className={clsx('words-diff-viewer', className)}
@@ -192,7 +195,7 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
           <Diff
             {...props}
             fileName={file.newPath || fileName}
-            language={language || getLanguageFromPath(file.newPath || fileName)}
+            language={resolvedLanguage || getLanguageFromPath(file.newPath || fileName)}
             hunks={file.hunks}
             type={file.type}
             className={clsx('words-diff-viewer', className)}

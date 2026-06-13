@@ -201,37 +201,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     return false;
   }
 
-  const prevMessage = prevProps.message;
-  const nextMessage = nextProps.message;
-
-  // Check basic message properties
-  if (prevMessage.id !== nextMessage.id || prevMessage.content !== nextMessage.content) {
-    return false;
-  }
-
-  // Check group properties
-  if (
-    prevMessage.group.id !== nextMessage.group.id ||
-    prevMessage.group.name !== nextMessage.group.name ||
-    prevMessage.group.finished !== nextMessage.group.finished ||
-    prevMessage.group.color !== nextMessage.group.color ||
-    prevMessage.group.interruptId !== nextMessage.group.interruptId
-  ) {
-    return false;
-  }
-
-  // Check children arrays
-  if (prevMessage.children.length !== nextMessage.children.length) {
-    return false;
-  }
-
-  for (let i = 0; i < prevMessage.children.length; i++) {
-    if (!areMessagesEqual(prevMessage.children[i], nextMessage.children[i])) {
-      return false;
-    }
-  }
-
-  return true;
+  return areMessagesEqual(prevProps.message, nextProps.message);
 };
 
 export const GroupMessageBlock = memo(GroupMessageBlockComponent, arePropsEqual);

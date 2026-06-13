@@ -17,7 +17,7 @@ type Props = {
   taskId: string;
   allFiles: string[];
   contextFiles: ContextFile[];
-  tokensInfo: TokensInfoData | null;
+  tokensInfo?: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;

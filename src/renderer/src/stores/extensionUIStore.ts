@@ -150,14 +150,19 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
         const data = await api.getUIExtensionData(extensionId, componentId, projectDir, taskId);
 
         set((state) => {
-          const newDataMap = new Map(state.dataMap);
-          newDataMap.set(cacheKey, data);
+          const existingData = state.dataMap.get(cacheKey);
+          const dataChanged = existingData === undefined || JSON.stringify(data) !== JSON.stringify(existingData);
+
+          const newDataMap = dataChanged ? new Map(state.dataMap) : state.dataMap;
+          if (dataChanged) {
+            newDataMap.set(cacheKey, data);
+          }
           const newDataLoadedMap = new Map(state.dataLoadedMap);
           newDataLoadedMap.set(cacheKey, true);
           const newLoadingData = new Set(state.loadingData);
           newLoadingData.delete(cacheKey);
           return {
-            dataMap: newDataMap,
+            ...(dataChanged ? { dataMap: newDataMap } : {}),
             dataLoadedMap: newDataLoadedMap,
             loadingData: newLoadingData,
           };
@@ -285,6 +290,28 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>(
   }),
   shallow,
 );
+
+// Module-level action functions (no hook subscription required)
+export const loadExtensionUIComponents = (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string) =>
+  useExtensionUIStore.getState().loadComponents(api, placement, projectDir, taskId);
+
+export const loadExtensionComponentData = (
+  api: ApplicationAPI,
+  extensionId: string,
+  componentId: string,
+  projectDir?: string,
+  taskId?: string,
+  forceRefresh?: boolean,
+) => useExtensionUIStore.getState().loadComponentData(api, extensionId, componentId, projectDir, taskId, forceRefresh);
+
+export const handleExtensionUIRefreshEvent = (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) =>
+  useExtensionUIStore.getState().handleRefreshEvent(api, data, projectDir, taskId);
+
+export const isExtensionUIDataLoaded = (extensionId: string, componentId: string, projectDir?: string, taskId?: string) =>
+  useExtensionUIStore.getState().isDataLoaded(extensionId, componentId, projectDir, taskId);
+
+export const getExtensionComponentData = (extensionId: string, componentId: string, projectDir?: string, taskId?: string) =>
+  useExtensionUIStore.getState().getComponentData(extensionId, componentId, projectDir, taskId);
 
 // Selector hooks for optimized re-renders
 export const useExtensionComponents = (placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] | undefined => {

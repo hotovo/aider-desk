@@ -8,10 +8,9 @@ import {
   startCompletion,
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
-import { vim } from '@replit/codemirror-vim';
 import { AIDER_MODES, Mode, PromptBehavior, QueuedPromptData, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import CodeMirror, { Annotation, Prec, type Extension, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -25,6 +24,7 @@ import { parseCommandArgs } from '@common/utils';
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
 
+import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
@@ -142,7 +142,6 @@ type Props = {
   scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
-  queuedPrompts?: QueuedPromptData[];
   removeQueuedPrompt?: (id: string) => void;
   sendQueuedPromptNow?: (id: string) => void;
   reorderQueuedPrompts?: (prompts: QueuedPromptData[]) => void;
@@ -182,7 +181,6 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       scrapeWeb,
       question,
       answerQuestion,
-      queuedPrompts = [],
       removeQueuedPrompt,
       sendQueuedPromptNow,
       reorderQueuedPrompts,
@@ -207,6 +205,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
   ) => {
     const { t } = useTranslation();
     const { isMobile } = useResponsive();
+    const queuedPrompts = useTaskQueuedPrompts(taskId);
     const [text, setText] = useState('');
     const [pastedImages, setPastedImages] = useState<string[]>([]);
     const debouncedText = useDebounce(text, 100);
@@ -1054,10 +1053,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       [api, baseDir, taskId, mode],
     );
 
+    const [vimExtension, setVimExtension] = useState<Extension | null>(null);
+
+    useEffect(() => {
+      if (promptBehavior.useVimBindings && !vimExtension) {
+        void import('@replit/codemirror-vim').then((module) => {
+          setVimExtension(module.vim());
+        });
+      }
+    }, [promptBehavior.useVimBindings, vimExtension]);
+
     const extensions = useMemo(
       () => [
         EDITOR_THEME_EXTENSION,
-        promptBehavior.useVimBindings ? vim() : keymap.of([]),
+        promptBehavior.useVimBindings && vimExtension ? vimExtension : keymap.of([]),
         EditorView.lineWrapping,
         EditorView.domEventHandlers({
           paste: handlePaste,
@@ -1095,6 +1104,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         promptBehavior.useVimBindings,
         promptBehavior.suggestionMode,
         promptBehavior.suggestionDelay,
+        vimExtension,
         question,
         historyMenuVisible,
         completionSource,

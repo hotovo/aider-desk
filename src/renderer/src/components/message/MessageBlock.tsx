@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   HELPERS_TOOL_GROUP_NAME,
@@ -78,7 +78,7 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 
-import { useProjectTasks } from '@/stores/projectStore';
+import { useProjectTaskWorktreePath } from '@/stores/projectStore';
 
 type Props = {
   baseDir: string;
@@ -114,11 +114,8 @@ const MessageBlockComponent = ({
   onRemoveUpTo,
 }: Props) => {
   const { t } = useTranslation();
-  const projectTasks = useProjectTasks(baseDir);
-  const taskDir = useMemo(() => {
-    const task = projectTasks.find((t) => t.id === taskId);
-    return task?.worktree?.path ?? baseDir;
-  }, [projectTasks, taskId, baseDir]);
+  const worktreePath = useProjectTaskWorktreePath(baseDir, taskId);
+  const taskDir = worktreePath ?? baseDir;
 
   if (isLoadingMessage(message)) {
     return <LoadingMessageBlock key={message.content} message={message} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />;

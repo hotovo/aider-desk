@@ -10,7 +10,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useTask } from '@/contexts/TasksContext';
-import { useTaskState, useTaskMessages } from '@/stores/taskStore';
+import { useOptimizedTaskState, useTaskMessages } from '@/stores/taskStore';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -42,9 +42,34 @@ vi.mock('@/contexts/TasksContext', () => ({
   useTask: vi.fn(),
 }));
 
+const { mockStoreGetState, mockUseTaskStore } = vi.hoisted(() => {
+  const getState = vi.fn().mockReturnValue({
+    taskStateMap: new Map(),
+    taskMessagesMap: new Map(),
+  });
+
+  const fn = Object.assign(
+    vi.fn((selector?: (state: Record<string, unknown>) => unknown) => {
+      if (selector) {
+        return selector(getState());
+      }
+      return getState();
+    }),
+    { getState },
+  );
+
+  return { mockStoreGetState: getState, mockUseTaskStore: fn };
+});
+
 vi.mock('@/stores/taskStore', () => ({
+  useOptimizedTaskState: vi.fn(),
   useTaskState: vi.fn(),
   useTaskMessages: vi.fn(),
+  useTaskStore: mockUseTaskStore,
+  useTaskTokensInfo: vi.fn().mockReturnValue(null),
+  useTaskQuestion: vi.fn(),
+  useTaskTodoItems: vi.fn(),
+  useTaskQueuedPrompts: vi.fn(),
 }));
 
 vi.mock('@/contexts/ModelProviderContext', () => ({
@@ -136,24 +161,25 @@ describe('TaskView', () => {
   const mockApi = createMockApi();
 
   const mockTaskContext = createMockTaskContext();
-  const mockTaskState: ReturnType<typeof useTaskState> = {
+  const mockTaskState: ReturnType<typeof useOptimizedTaskState> = {
     loaded: true,
     loading: false,
     allFiles: [],
     contextFiles: [],
     autocompletionWords: [],
-    tokensInfo: null,
     question: null,
-    todoItems: [],
     aiderModelsData: null,
     lastActiveAt: null,
-    queuedPrompts: [],
     canUndoContextChange: false,
   };
   const mockMessages: Message[] = [];
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockStoreGetState.mockReturnValue({
+      taskStateMap: new Map([['task-1', mockTaskState]]),
+      taskMessagesMap: new Map([['task-1', mockMessages]]),
+    });
     vi.mocked(useApi).mockReturnValue(mockApi);
     vi.mocked(useSettings).mockReturnValue({
       settings: {
@@ -164,7 +190,7 @@ describe('TaskView', () => {
     } as ReturnType<typeof useSettings>);
     vi.mocked(useProjectSettings).mockReturnValue({ projectSettings: { agentProfileId: 'default' } } as ReturnType<typeof useProjectSettings>);
     vi.mocked(useTask).mockReturnValue(mockTaskContext as ReturnType<typeof useTask>);
-    vi.mocked(useTaskState).mockReturnValue(mockTaskState);
+    vi.mocked(useOptimizedTaskState).mockReturnValue(mockTaskState);
     vi.mocked(useTaskMessages).mockReturnValue(mockMessages);
     vi.mocked(useModelProviders).mockReturnValue(createMockModelProviderContext());
     vi.mocked(useAgents).mockReturnValue(createMockAgentsContext());

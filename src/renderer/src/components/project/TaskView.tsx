@@ -50,7 +50,7 @@ import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
-import { useTaskMessages, useTaskState } from '@/stores/taskStore';
+import { useTaskMessages, useOptimizedTaskState, useTaskStore } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
@@ -120,20 +120,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       refreshAllFiles,
     } = useTask();
 
-    const taskState = useTaskState(task.id);
-    const {
-      loading,
-      loaded,
-      allFiles,
-      contextFiles,
-      autocompletionWords,
-      tokensInfo,
-      question,
-      todoItems,
-      aiderModelsData,
-      queuedPrompts,
-      canUndoContextChange,
-    } = taskState;
+    const taskState = useOptimizedTaskState(task.id);
+    const { loading, loaded, allFiles, contextFiles, autocompletionWords, question, aiderModelsData, canUndoContextChange } = taskState;
 
     const messages = useTaskMessages(task.id);
     const deferredMessages = useDeferredValue(messages);
@@ -162,10 +150,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const activeAgentProfile = useActiveAgentProfile(task, projectDir);
 
     useEffect(() => {
-      if (isActive && !taskState.loaded && !taskState.loading) {
+      if (isActive && !loaded && !loading) {
         loadTask(task.id);
       }
-    }, [isActive, loadTask, task.id, taskState.loaded, taskState.loading]);
+    }, [isActive, loadTask, task.id, loaded, loading]);
 
     useImperativeHandle(ref, () => ({
       exportMessagesToImage: () => {
@@ -272,6 +260,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [api, projectDir, task.id],
     );
 
+    const toggleSidebar = useCallback(() => {
+      setShowSidebar((prev) => !prev);
+    }, []);
+
     const runTests = useCallback(
       (testCmd?: string) => {
         runCommand(`test ${testCmd || ''}`);
@@ -372,9 +364,10 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleEditUserMessage = useCallback(
       (messageId: string, content?: string, images?: string[]) => {
+        const messages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
         let contentToEdit = content;
         let imagesToEdit = images;
-        const messageIndex = displayedMessages.findIndex((msg) => msg.id === messageId);
+        const messageIndex = messages.findIndex((msg) => msg.id === messageId);
 
         if (messageIndex === -1) {
           // eslint-disable-next-line no-console
@@ -382,7 +375,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           return;
         }
 
-        const userMessage = displayedMessages[messageIndex] as UserMessage | undefined;
+        const userMessage = messages[messageIndex] as UserMessage | undefined;
         if (contentToEdit === undefined) {
           contentToEdit = userMessage?.content;
         }
@@ -404,12 +397,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           promptFieldRef.current?.focus();
         }, 0);
       },
-      [displayedMessages],
+      [task.id],
     );
 
     useEffect(() => {
-      if (task.handoff && displayedMessages.length > 0) {
-        const lastUserMessageId = displayedMessages.findLast(isUserMessage)?.id;
+      if (task.handoff) {
+        const messages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
+        const lastUserMessageId = messages.findLast(isUserMessage)?.id;
         if (lastUserMessageId) {
           setTimeout(() => {
             handleEditUserMessage(lastUserMessageId);
@@ -419,7 +413,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
         updateTask(task.id, { handoff: false });
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [task.handoff, task.id, displayedMessages]);
+    }, [task.handoff, task.id]);
 
     const handleResetTask = useCallback(() => {
       resetTask(task.id);
@@ -432,7 +426,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleRedoUserPrompt = useCallback(
       (messageId: string) => {
-        const userMessageIndex = displayedMessages.findIndex((msg) => msg.id === messageId);
+        const messages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
+        const userMessageIndex = messages.findIndex((msg) => msg.id === messageId);
         if (userMessageIndex === -1) {
           return;
         }
@@ -442,22 +437,24 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
         updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
         api.redoUserPrompt(projectDir, task.id, messageId, currentMode);
       },
-      [displayedMessages, setMessages, task.id, updateOptimisticTaskState, api, projectDir, currentMode],
+      [setMessages, task.id, updateOptimisticTaskState, api, projectDir, currentMode],
     );
 
     const handleRedoLastUserPrompt = useCallback(() => {
-      const lastUserMessage = displayedMessages.findLast(isUserMessage);
+      const messages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
+      const lastUserMessage = messages.findLast(isUserMessage);
       if (lastUserMessage) {
         handleRedoUserPrompt(lastUserMessage.id);
       }
-    }, [displayedMessages, handleRedoUserPrompt]);
+    }, [task.id, handleRedoUserPrompt]);
 
     const handleEditLastUserMessage = useCallback(() => {
-      const lastUserMessage = displayedMessages.findLast(isUserMessage);
+      const messages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
+      const lastUserMessage = messages.findLast(isUserMessage);
       if (lastUserMessage) {
         handleEditUserMessage(lastUserMessage.id);
       }
-    }, [displayedMessages, handleEditUserMessage]);
+    }, [task.id, handleEditUserMessage]);
 
     const handleResumeTask = useCallback(() => {
       api.resumeTask(projectDir, task.id);
@@ -485,7 +482,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleRemoveMessage = useCallback(
       async (messageToRemove: Message) => {
-        const originalMessages = displayedMessages;
+        const originalMessages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
 
         setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => msg.id !== messageToRemove.id));
 
@@ -502,12 +499,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           showErrorNotification(t('errors.removeMessageFailed'));
         }
       },
-      [displayedMessages, setMessages, task.id, api, projectDir, t],
+      [setMessages, task.id, api, projectDir, t],
     );
 
     const handleRemoveUpToMessage = useCallback(
       async (messageToRemove: Message) => {
-        const originalMessages = displayedMessages;
+        const originalMessages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
 
         // Optimistically remove the messages after it
         setMessages(task.id, (prevMessages) => {
@@ -527,7 +524,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           showErrorNotification(t('errors.removeMessagesUpToFailed'));
         }
       },
-      [displayedMessages, setMessages, task.id, api, projectDir, t],
+      [setMessages, task.id, api, projectDir, t],
     );
 
     const handleAddTodo = useCallback(
@@ -734,16 +731,16 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             activeAgentProfile={activeAgentProfile}
             onModelsChange={handleModelChange}
             runCommand={runCommand}
-            onToggleSidebar={() => setShowSidebar(!showSidebar)}
+            onToggleSidebar={toggleSidebar}
             onToggleTaskSidebar={onToggleTaskSidebar}
             updateTask={updateTask}
             onRestartAiderConnector={handleRestartAiderConnector}
           />
           <div className="flex-grow overflow-y-hidden relative flex flex-col">
             {renderSearchInput()}
-            {!loading && todoItems.length > 0 && todoListVisible && (
+            {!loading && todoListVisible && (
               <TodoWindow
-                todos={todoItems}
+                taskId={task.id}
                 onToggleTodo={handleToggleTodo}
                 onAddTodo={handleAddTodo}
                 onUpdateTodo={handleUpdateTodo}
@@ -874,7 +871,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   addFiles={handleAddFiles}
                   question={question}
                   answerQuestion={handleAnswerQuestion}
-                  queuedPrompts={queuedPrompts}
                   removeQueuedPrompt={handleRemoveQueuedPrompt}
                   sendQueuedPromptNow={handleSendQueuedPromptNow}
                   reorderQueuedPrompts={handleReorderQueuedPrompts}
@@ -950,7 +946,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                     taskId={task.id}
                     allFiles={allFiles}
                     contextFiles={contextFiles}
-                    tokensInfo={tokensInfo}
                     aiderTotalCost={task.aiderTotalCost}
                     maxInputTokens={currentModel?.maxInputTokens || 0}
                     clearMessages={clearMessages}
@@ -989,7 +984,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             taskId={task.id}
             allFiles={allFiles}
             contextFiles={contextFiles}
-            tokensInfo={tokensInfo}
             aiderTotalCost={task.aiderTotalCost}
             maxInputTokens={maxInputTokens}
             clearMessages={clearMessages}

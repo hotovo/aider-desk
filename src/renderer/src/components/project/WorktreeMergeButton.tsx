@@ -65,7 +65,7 @@ export const WorktreeMergeButton = ({
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(dropdownRef, () => setIsOpen(false));
+  useClickOutside(dropdownRef, () => setIsOpen(false), isOpen);
 
   const handleToggle = () => {
     if (!disabled) {

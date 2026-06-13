@@ -1,8 +1,11 @@
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RiFolderLine, RiFileTextLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { LuFolderSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+
+import { areMessagesEqual } from './utils';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -17,15 +20,30 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
-export const GlobToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
+const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const pattern = message.args.pattern as string;
-  const content = message.content && JSON.parse(message.content);
+  const content = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
   const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Glob search with pattern');
 
   const fileCount = Array.isArray(content) ? content.length : 0;
+
+  const groupedFiles: Record<string, string[]> = useMemo(
+    () =>
+      (Array.isArray(content) ? content : []).reduce((acc: Record<string, string[]>, filePath: string) => {
+        const parts = filePath.split('/');
+        const dir = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
+        const file = parts[parts.length - 1];
+        if (!acc[dir]) {
+          acc[dir] = [];
+        }
+        acc[dir].push(file);
+        return acc;
+      }, {}),
+    [content],
+  );
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">
@@ -103,17 +121,6 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork, on
       );
     }
 
-    const groupedFiles: Record<string, string[]> = content.reduce((acc: Record<string, string[]>, filePath: string) => {
-      const parts = filePath.split('/');
-      const dir = parts.length > 1 ? parts.slice(0, -1).join('/') : '';
-      const file = parts[parts.length - 1];
-      if (!acc[dir]) {
-        acc[dir] = [];
-      }
-      acc[dir].push(file);
-      return acc;
-    }, {});
-
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="flex items-center gap-2 mb-2">
@@ -167,3 +174,19 @@ export const GlobToolMessage = ({ message, onRemove, compact = false, onFork, on
     />
   );
 };
+
+const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
+  if (
+    prevProps.compact !== nextProps.compact ||
+    prevProps.hideMessageBar !== nextProps.hideMessageBar ||
+    (prevProps.onRemove === undefined) !== (nextProps.onRemove === undefined) ||
+    (prevProps.onFork === undefined) !== (nextProps.onFork === undefined) ||
+    (prevProps.onRemoveUpTo === undefined) !== (nextProps.onRemoveUpTo === undefined)
+  ) {
+    return false;
+  }
+
+  return areMessagesEqual(prevProps.message, nextProps.message);
+};
+
+export const GlobToolMessage = memo(GlobToolMessageComponent, arePropsEqual);

@@ -1,5 +1,5 @@
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
@@ -90,53 +90,59 @@ export const TaskWorkingMode = ({
     return allTasks.some((t) => t.id !== task.id && t.workingMode === 'worktree' && t.worktree?.path === task.worktree!.path);
   }, [allTasks, task.id, task.worktree]);
 
-  const handleWorkingModeChanged = async (mode: WorkingMode) => {
-    if (mode === 'local' && task.workingMode === 'worktree' && worktreeStatus) {
-      const hasUncommitted = worktreeStatus.uncommittedFiles.count > 0;
-      const hasUnmerged = worktreeStatus.aheadCommits.count > 0;
-
-      if (hasUncommitted || hasUnmerged) {
-        setLocalOption(LocalSwitchOption.Merge);
-        setShowConfirmLocal(true);
-        return;
-      }
-    }
-
-    if (mode === 'worktree' && task.workingMode === 'local') {
+  const performSwitch = useCallback(
+    async (mode: WorkingMode) => {
+      setIsSwitching(true);
       try {
-        const uncommittedFiles = await api.getLocalUncommittedFiles(task.baseDir, task.id);
-        if (uncommittedFiles.count > 0) {
-          setLocalUncommittedFiles(uncommittedFiles);
-          setWorktreeOption(WorktreeSwitchOption.JustSwitch);
-          setShowConfirmWorktree(true);
-          return;
+        if (mode === 'local') {
+          await api.switchToLocalWorkingMode(task.baseDir, task.id);
+        } else {
+          await api.switchToWorktreeWorkingMode(task.baseDir, task.id);
         }
       } catch (error) {
         // eslint-disable-next-line no-console
-        console.error('Failed to check local uncommitted files:', error);
+        console.error('Failed to update task:', error);
+      } finally {
+        setIsSwitching(false);
+        setShowConfirmLocal(false);
+        setShowConfirmWorktree(false);
       }
-    }
+    },
+    [api, task.baseDir, task.id],
+  );
 
-    await performSwitch(mode);
-  };
+  const handleWorkingModeChanged = useCallback(
+    async (mode: WorkingMode) => {
+      if (mode === 'local' && task.workingMode === 'worktree' && worktreeStatus) {
+        const hasUncommitted = worktreeStatus.uncommittedFiles.count > 0;
+        const hasUnmerged = worktreeStatus.aheadCommits.count > 0;
 
-  const performSwitch = async (mode: WorkingMode) => {
-    setIsSwitching(true);
-    try {
-      if (mode === 'local') {
-        await api.switchToLocalWorkingMode(task.baseDir, task.id);
-      } else {
-        await api.switchToWorktreeWorkingMode(task.baseDir, task.id);
+        if (hasUncommitted || hasUnmerged) {
+          setLocalOption(LocalSwitchOption.Merge);
+          setShowConfirmLocal(true);
+          return;
+        }
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to update task:', error);
-    } finally {
-      setIsSwitching(false);
-      setShowConfirmLocal(false);
-      setShowConfirmWorktree(false);
-    }
-  };
+
+      if (mode === 'worktree' && task.workingMode === 'local') {
+        try {
+          const uncommittedFiles = await api.getLocalUncommittedFiles(task.baseDir, task.id);
+          if (uncommittedFiles.count > 0) {
+            setLocalUncommittedFiles(uncommittedFiles);
+            setWorktreeOption(WorktreeSwitchOption.JustSwitch);
+            setShowConfirmWorktree(true);
+            return;
+          }
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to check local uncommitted files:', error);
+        }
+      }
+
+      await performSwitch(mode);
+    },
+    [task.workingMode, task.baseDir, task.id, worktreeStatus, api, performSwitch],
+  );
 
   const performMergeAndSwitch = async () => {
     setIsSwitching(true);

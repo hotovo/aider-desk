@@ -59,7 +59,7 @@ export const AgentSelector = memo(
       [activeGlobalProfile, updateProfile],
     );
 
-    useClickOutside(selectorRef, () => setSelectorVisible(false));
+    useClickOutside(selectorRef, () => setSelectorVisible(false), selectorVisible);
 
     useHotkeys(
       'alt+t',

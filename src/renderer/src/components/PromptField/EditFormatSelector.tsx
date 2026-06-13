@@ -28,7 +28,7 @@ export const EditFormatSelector = forwardRef<EditFormatSelectorRef, Props>(({ cu
     onCloseReset: { highlightedIndex: -1 },
   });
 
-  useClickOutside(selectorRef, close);
+  useClickOutside(selectorRef, close, isOpen);
 
   useImperativeHandle(ref, () => ({
     open: () => open(),

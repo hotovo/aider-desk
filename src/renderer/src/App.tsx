@@ -1,13 +1,12 @@
 import '@/themes/themes.scss';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 import { IconContext } from 'react-icons';
 
-import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { Logs } from '@/pages/Logs';
 import { ContextMenuProvider, useContextMenu } from '@/contexts/ContextMenuContext';
@@ -23,6 +22,8 @@ import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
+
+const Onboarding = lazy(() => import('@/pages/Onboarding').then((module) => ({ default: module.Onboarding })));
 
 const ICON_CONTEXT_DEFAULT_VALUE: IconContext = {};
 
@@ -94,7 +95,14 @@ const AnimatedRoutes = () => {
         >
           {settings && (
             <Routes location={location}>
-              <Route path={ROUTES.Onboarding} element={<Onboarding />} />
+              <Route
+                path={ROUTES.Onboarding}
+                element={
+                  <Suspense fallback={null}>
+                    <Onboarding />
+                  </Suspense>
+                }
+              />
               <Route path={ROUTES.Home} element={<Home />} />
               <Route path={ROUTES.Logs} element={<Logs />} />
               <Route path={ROUTES.Diff} element={<UpdatedFilesDiff />} />

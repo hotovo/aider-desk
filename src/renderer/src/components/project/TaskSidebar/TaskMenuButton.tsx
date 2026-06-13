@@ -78,10 +78,14 @@ export const TaskMenuButton = memo(
       }
     }, [isStateSubmenuOpen]);
 
-    useClickOutside([menuRef, buttonRef, stateSubmenuRef], () => {
-      setIsMenuOpen(false);
-      setIsStateSubmenuOpen(false);
-    });
+    useClickOutside(
+      [menuRef, buttonRef, stateSubmenuRef],
+      () => {
+        setIsMenuOpen(false);
+        setIsStateSubmenuOpen(false);
+      },
+      isMenuOpen,
+    );
 
     const handleMenuClick = () => {
       setIsMenuOpen(!isMenuOpen);

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { AiFillFolderOpen } from 'react-icons/ai';
@@ -163,15 +164,18 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
-  const handleDefaultWorkingModeChange = (mode: WorkingMode) => {
-    setSettings({
-      ...settings,
-      taskSettings: {
-        ...settings.taskSettings,
-        defaultWorkingMode: mode,
-      },
-    });
-  };
+  const handleDefaultWorkingModeChange = useCallback(
+    (mode: WorkingMode) => {
+      setSettings({
+        ...settings,
+        taskSettings: {
+          ...settings.taskSettings,
+          defaultWorkingMode: mode,
+        },
+      });
+    },
+    [settings, setSettings],
+  );
 
   const handleWorktreeBranchPrefixChange = (value: string) => {
     setSettings({

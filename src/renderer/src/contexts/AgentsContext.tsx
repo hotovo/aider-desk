@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useOptimistic, startTransition, ReactNode, useCallback, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useOptimistic, startTransition, ReactNode, useCallback, useState } from 'react';
 import { AgentProfile } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
@@ -48,57 +48,69 @@ export const AgentsProvider = ({ children }: AgentsProviderProps) => {
     [optimisticProfiles],
   );
 
-  const createProfile = async (profile: AgentProfile, projectDir?: string) => {
-    try {
-      startTransition(async () => {
-        setOptimisticProfiles((current) => [...current, profile]);
-        await api.createAgentProfile(profile, projectDir);
-        await refreshProfiles();
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create agent profile');
-      throw err;
-    }
-  };
+  const createProfile = useCallback(
+    async (profile: AgentProfile, projectDir?: string) => {
+      try {
+        startTransition(async () => {
+          setOptimisticProfiles((current) => [...current, profile]);
+          await api.createAgentProfile(profile, projectDir);
+          await refreshProfiles();
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to create agent profile');
+        throw err;
+      }
+    },
+    [api, refreshProfiles, setOptimisticProfiles],
+  );
 
-  const updateProfile = async (profile: AgentProfile, projectDir?: string) => {
-    try {
-      startTransition(async () => {
-        setOptimisticProfiles((current) => current.map((p) => (p.id === profile.id ? profile : p)));
-        await api.updateAgentProfile(profile, projectDir);
-        await refreshProfiles();
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update agent profile');
-      throw err;
-    }
-  };
+  const updateProfile = useCallback(
+    async (profile: AgentProfile, projectDir?: string) => {
+      try {
+        startTransition(async () => {
+          setOptimisticProfiles((current) => current.map((p) => (p.id === profile.id ? profile : p)));
+          await api.updateAgentProfile(profile, projectDir);
+          await refreshProfiles();
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update agent profile');
+        throw err;
+      }
+    },
+    [api, refreshProfiles, setOptimisticProfiles],
+  );
 
-  const deleteProfile = async (profileId: string, projectDir?: string) => {
-    try {
-      startTransition(async () => {
-        setOptimisticProfiles((current) => current.filter((p) => p.id !== profileId));
-        await api.deleteAgentProfile(profileId, projectDir);
-        await refreshProfiles();
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete agent profile');
-      throw err;
-    }
-  };
+  const deleteProfile = useCallback(
+    async (profileId: string, projectDir?: string) => {
+      try {
+        startTransition(async () => {
+          setOptimisticProfiles((current) => current.filter((p) => p.id !== profileId));
+          await api.deleteAgentProfile(profileId, projectDir);
+          await refreshProfiles();
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete agent profile');
+        throw err;
+      }
+    },
+    [api, refreshProfiles, setOptimisticProfiles],
+  );
 
-  const updateProfilesOrder = async (agentProfiles: AgentProfile[]): Promise<void> => {
-    try {
-      startTransition(async () => {
-        setOptimisticProfiles(agentProfiles);
-        await api.updateAgentProfilesOrder(agentProfiles);
-        await refreshProfiles();
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update agent profiles order');
-      throw err;
-    }
-  };
+  const updateProfilesOrder = useCallback(
+    async (agentProfiles: AgentProfile[]): Promise<void> => {
+      try {
+        startTransition(async () => {
+          setOptimisticProfiles(agentProfiles);
+          await api.updateAgentProfilesOrder(agentProfiles);
+          await refreshProfiles();
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update agent profiles order');
+        throw err;
+      }
+    },
+    [api, refreshProfiles, setOptimisticProfiles],
+  );
 
   useEffect(() => {
     void refreshProfiles();
@@ -113,17 +125,20 @@ export const AgentsProvider = ({ children }: AgentsProviderProps) => {
     };
   }, [api, refreshProfiles]);
 
-  const value: AgentsContextType = {
-    profiles: optimisticProfiles,
-    loading,
-    error,
-    createProfile,
-    updateProfile,
-    deleteProfile,
-    refreshProfiles,
-    getProfiles,
-    updateProfilesOrder,
-  };
+  const value = useMemo<AgentsContextType>(
+    () => ({
+      profiles: optimisticProfiles,
+      loading,
+      error,
+      createProfile,
+      updateProfile,
+      deleteProfile,
+      refreshProfiles,
+      getProfiles,
+      updateProfilesOrder,
+    }),
+    [optimisticProfiles, loading, error, createProfile, updateProfile, deleteProfile, refreshProfiles, getProfiles, updateProfilesOrder],
+  );
 
   return <AgentsContext.Provider value={value}>{children}</AgentsContext.Provider>;
 };

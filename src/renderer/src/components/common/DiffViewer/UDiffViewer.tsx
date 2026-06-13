@@ -5,13 +5,14 @@ import { clsx } from 'clsx';
 
 import { createTokens } from './utils';
 
-import type { ChangeData, HunkData } from 'react-diff-view';
 import type { NormalChange } from 'gitdiff-parser';
+import type { ChangeData, HunkData } from 'react-diff-view';
+
+import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
+import { useResponsive } from '@/hooks/useResponsive';
 
 import 'react-diff-view/style/index.css';
 import './DiffViewer.scss';
-
-import { useResponsive } from '@/hooks/useResponsive';
 
 export type LineClickInfo = {
   lineKey: string;
@@ -36,7 +37,7 @@ export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySid
       return parseDiff(udiff, { nearbySequences: 'zip' });
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Error parsing udiff:', error);
+      console.warn('Error parsing udiff:', error);
       return [];
     }
   }, [udiff]);
@@ -60,6 +61,8 @@ export const UDiffViewer = ({ udiff, language, viewMode = DiffViewMode.SideBySid
     }),
     [handleCodeClick],
   );
+
+  useRefractorLanguage(language);
 
   if (parsedFiles.length === 0) {
     return <span>{udiff}</span>;

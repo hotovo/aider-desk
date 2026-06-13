@@ -1,4 +1,4 @@
-import { ElementType, useRef, useState } from 'react';
+import { ElementType, memo, useRef, useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
@@ -38,7 +38,7 @@ type Props<T extends string = string> = {
   iconOnly?: boolean;
 };
 
-export const ItemSelector = <T extends string = string>({
+const ItemSelectorInner = <T extends string = string>({
   items,
   selectedValue,
   onChange,
@@ -52,7 +52,7 @@ export const ItemSelector = <T extends string = string>({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside(containerRef, () => setIsOpen(false));
+  useClickOutside(containerRef, () => setIsOpen(false), isOpen);
 
   const toggleOpen = () => {
     if (!disabled) {
@@ -121,3 +121,5 @@ export const ItemSelector = <T extends string = string>({
     </div>
   );
 };
+
+export const ItemSelector = memo(ItemSelectorInner) as typeof ItemSelectorInner;

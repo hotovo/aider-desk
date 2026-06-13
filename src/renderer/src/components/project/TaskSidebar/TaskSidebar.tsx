@@ -114,9 +114,13 @@ const TaskSidebarComponent = ({
   }, [isMultiselectMode]);
 
   // Handle click outside for multiselect menu
-  useClickOutside([multiselectMenuRef, multiselectButtonRef], () => {
-    setIsMultiselectMenuOpen(false);
-  });
+  useClickOutside(
+    [multiselectMenuRef, multiselectButtonRef],
+    () => {
+      setIsMultiselectMenuOpen(false);
+    },
+    isMultiselectMenuOpen,
+  );
 
   const expandedIdsSet = useMemo(() => new Set(expandedIds ?? []), [expandedIds]);
 

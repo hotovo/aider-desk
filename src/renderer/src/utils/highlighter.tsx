@@ -1,5 +1,5 @@
 import { common, createLowlight } from 'lowlight';
-import { refractor } from 'refractor/all';
+import { refractor } from 'refractor';
 import { ReactNode, Fragment } from 'react';
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { jsx, jsxs } from 'react/jsx-runtime';
@@ -126,7 +126,9 @@ export const highlightWithLowlight = (code: string, language?: string): ReactNod
  */
 export const highlightWithRefractor = (code: string, language: string): ReactNode => {
   try {
-    // refractor.highlight returns a Root node
+    if (!refractor.registered(language)) {
+      return code;
+    }
     const root = refractor.highlight(code, language);
     return renderHast(root, true);
   } catch (error) {

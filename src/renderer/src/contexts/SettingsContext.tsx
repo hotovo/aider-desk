@@ -1,5 +1,5 @@
 import { Font, SettingsData, Theme } from '@common/types';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 
 import { useApi } from '@/contexts/ApiContext';
 
@@ -43,23 +43,29 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [api]);
 
-  const saveSettings = async (updated: SettingsData) => {
-    try {
-      setSettings(updated);
-      const updatedSettings = await api.saveSettings(updated);
-      setSettings(updatedSettings);
-      setTheme(updatedSettings.theme || null);
-      setFont(updatedSettings.font || null);
-      setFontSize(updatedSettings.fontSize || null);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save settings:', error);
-    }
-  };
-
-  return (
-    <SettingsContext.Provider value={{ settings, saveSettings, theme, setTheme, font, setFont, fontSize, setFontSize }}>{children}</SettingsContext.Provider>
+  const saveSettings = useCallback(
+    async (updated: SettingsData) => {
+      try {
+        setSettings(updated);
+        const updatedSettings = await api.saveSettings(updated);
+        setSettings(updatedSettings);
+        setTheme(updatedSettings.theme || null);
+        setFont(updatedSettings.font || null);
+        setFontSize(updatedSettings.fontSize || null);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save settings:', error);
+      }
+    },
+    [api],
   );
+
+  const value = useMemo(
+    () => ({ settings, saveSettings, theme, setTheme, font, setFont, fontSize, setFontSize }),
+    [settings, saveSettings, theme, font, fontSize],
+  );
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
 export const useSettings = () => {

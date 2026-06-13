@@ -6,7 +6,15 @@ import StringToReactComponent from './StringToReactComponent';
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
-import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionUIStore';
+import {
+  getExtensionComponentData,
+  handleExtensionUIRefreshEvent,
+  isExtensionUIDataLoaded,
+  loadExtensionComponentData,
+  loadExtensionUIComponents,
+  useExtensionComponents,
+} from '@/stores/extensionUIStore';
+import { useReactIcons } from '@/utils/extension-icons';
 import { loadAllLibraries } from '@/utils/extension-library-loader';
 
 type UseExtensionComponentsWrapperProps = {
@@ -28,7 +36,7 @@ export const useExtensionComponentsWrapper = ({
 }: UseExtensionComponentsWrapperProps) => {
   const { componentProps } = useExtensions();
   const api = useApi();
-  const store = useExtensionUIStore();
+  const icons = useReactIcons();
   const currentProjectDir = projectDir ?? componentProps.projectDir;
   const currentTaskId = taskId ?? componentProps.task?.id;
   const currentActionProjectDir = actionProjectDir ?? currentProjectDir;
@@ -77,9 +85,9 @@ export const useExtensionComponentsWrapper = ({
   // Load components list if not yet loaded
   useEffect(() => {
     if (components === undefined) {
-      void store.loadComponents(api, placement, currentProjectDir, currentTaskId);
+      void loadExtensionUIComponents(api, placement, currentProjectDir, currentTaskId);
     }
-  }, [api, currentProjectDir, placement, components, store, currentTaskId]);
+  }, [api, currentProjectDir, placement, components, currentTaskId]);
 
   // Reset loaded components tracking when components list changes
   useEffect(() => {
@@ -96,7 +104,7 @@ export const useExtensionComponentsWrapper = ({
 
     componentsWithData.forEach((comp) => {
       const componentKey = `${comp.extensionId}:${comp.componentId}:${currentProjectDir}:${currentTaskId}`;
-      const isLoaded = store.isDataLoaded(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId);
+      const isLoaded = isExtensionUIDataLoaded(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId);
       const hasBeenLoadedThisMount = loadedComponentsRef.current.has(componentKey);
 
       // For noDataCache components, only load once per mount (unless explicitly refreshed)
@@ -105,10 +113,10 @@ export const useExtensionComponentsWrapper = ({
 
       if (shouldLoad) {
         loadedComponentsRef.current.add(componentKey);
-        void store.loadComponentData(api, comp.extensionId, comp.componentId, currentProjectDir, currentTaskId, comp.noDataCache);
+        void loadExtensionComponentData(api, comp.extensionId, comp.componentId, currentProjectDir, currentTaskId, comp.noDataCache);
       }
     });
-  }, [api, currentProjectDir, currentTaskId, components, store]);
+  }, [api, currentProjectDir, currentTaskId, components]);
 
   useEffect(() => {
     return api.onExtensionUIRefresh((data) => {
@@ -117,8 +125,8 @@ export const useExtensionComponentsWrapper = ({
       }
 
       if (data.reloadComponents) {
-        store.handleRefreshEvent(api, data, currentProjectDir, currentTaskId);
-        void store.loadComponents(api, placement, currentProjectDir);
+        handleExtensionUIRefreshEvent(api, data, currentProjectDir, currentTaskId);
+        void loadExtensionUIComponents(api, placement, currentProjectDir);
       } else {
         if (data.taskId !== undefined && data.taskId !== currentTaskId) {
           return;
@@ -144,7 +152,7 @@ export const useExtensionComponentsWrapper = ({
             // Remove from tracking so it can be loaded again
             loadedComponentsRef.current.delete(componentKey);
 
-            void store.loadComponentData(
+            void loadExtensionComponentData(
               api,
               comp.extensionId,
               comp.componentId,
@@ -156,7 +164,7 @@ export const useExtensionComponentsWrapper = ({
         }
       }
     });
-  }, [api, currentProjectDir, currentTaskId, components, placement, store]);
+  }, [api, currentProjectDir, currentTaskId, components, placement]);
 
   const componentLibraries = useMemo(() => ({ ...componentProps.libraries, ...libraries }), [componentProps.libraries, libraries]);
 
@@ -171,14 +179,18 @@ export const useExtensionComponentsWrapper = ({
         ...additionalProps,
         executeExtensionAction,
         libraries: componentLibraries,
-        data: store.getComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
+        data: getExtensionComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
       };
     },
-    [componentProps, additionalProps, componentLibraries, store, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
+    [componentProps, additionalProps, componentLibraries, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
   );
 
   const renderComponents = useCallback(() => {
     if (!components) {
+      return [];
+    }
+
+    if (!icons) {
       return [];
     }
 
@@ -187,7 +199,7 @@ export const useExtensionComponentsWrapper = ({
         <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
       </ExtensionUIErrorBoundary>
     ));
-  }, [components, getComponentData]);
+  }, [components, getComponentData, icons]);
 
   return {
     components,

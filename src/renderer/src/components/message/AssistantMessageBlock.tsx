@@ -1,6 +1,6 @@
 import { memo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
-import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
+import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage } from '@common/types';
 
 import { MessageBar } from './MessageBar';
 import { MessageBlockWrapper } from './MessageBlockWrapper';
@@ -90,6 +90,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
       {/* Response content */}
       {hasContent && (
         <MessageBlockWrapper
+          key={responseMessage.id}
           baseDir={baseDir}
           taskId={taskId}
           message={responseMessage}
@@ -143,28 +144,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     return false;
   }
 
-  const prevMessage = prevProps.message;
-  const nextMessage = nextProps.message;
-
-  if (prevMessage.id !== nextMessage.id) {
-    return false;
-  }
-
-  if (!areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage)) {
-    return false;
-  }
-
-  if (prevMessage.toolMessages.length !== nextMessage.toolMessages.length) {
-    return false;
-  }
-
-  for (let i = 0; i < prevMessage.toolMessages.length; i++) {
-    if (!areMessagesEqual(prevMessage.toolMessages[i] as ToolMessage, nextMessage.toolMessages[i] as ToolMessage)) {
-      return false;
-    }
-  }
-
-  return true;
+  return areMessagesEqual(prevProps.message, nextProps.message);
 };
 
 export const AssistantMessageBlock = memo(AssistantMessageBlockComponent, arePropsEqual);

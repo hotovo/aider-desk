@@ -7,8 +7,12 @@ type RefType =
   | RefObject<HTMLAnchorElement | null>
   | RefObject<HTMLInputElement | null>;
 
-export const useClickOutside = (refs: RefType | RefType[], handler: (event: MouseEvent) => void) => {
+export const useClickOutside = (refs: RefType | RefType[], handler: (event: MouseEvent) => void, enabled = true) => {
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     const listener = (event: MouseEvent) => {
       const target = event.target as Node;
       const refsArray = Array.isArray(refs) ? refs : [refs];
@@ -28,5 +32,5 @@ export const useClickOutside = (refs: RefType | RefType[], handler: (event: Mous
     return () => {
       document.removeEventListener('mousedown', listener);
     };
-  }, [refs, handler]);
+  }, [refs, handler, enabled]);
 };

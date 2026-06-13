@@ -21,9 +21,13 @@ export const VerticalDotsMenu = ({ options, className }: Props) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLDivElement>(null);
 
-  useClickOutside([menuRef, buttonRef], () => {
-    setIsMenuOpen(false);
-  });
+  useClickOutside(
+    [menuRef, buttonRef],
+    () => {
+      setIsMenuOpen(false);
+    },
+    isMenuOpen,
+  );
 
   const handleMenuClick = () => {
     setIsMenuOpen(!isMenuOpen);

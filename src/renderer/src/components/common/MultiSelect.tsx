@@ -31,10 +31,14 @@ export const MultiSelect = ({ options, selected, onChange, label, className, siz
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
 
-  useClickOutside([containerRef, dropdownRef], () => {
-    setIsOpen(false);
-    setFilterTerm('');
-  });
+  useClickOutside(
+    [containerRef, dropdownRef],
+    () => {
+      setIsOpen(false);
+      setFilterTerm('');
+    },
+    isOpen,
+  );
 
   const handleToggle = () => {
     if (!isOpen && containerRef.current) {

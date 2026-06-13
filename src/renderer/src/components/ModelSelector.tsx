@@ -103,7 +103,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
 
     const showCustomModelHint = filteredModels.length === 0 && state.modelSearchTerm.trim() !== '';
 
-    useClickOutside(usePortal ? popupRef : modelSelectorRef, close);
+    useClickOutside(usePortal ? popupRef : modelSelectorRef, close, isOpen);
 
     useEffect(() => {
       if (usePortal && isOpen && modelSelectorRef.current) {

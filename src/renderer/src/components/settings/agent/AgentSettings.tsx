@@ -11,7 +11,7 @@ import {
   SettingsData,
   ToolApprovalState,
 } from '@common/types';
-import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import {
@@ -664,13 +664,16 @@ export const AgentSettings = ({
     setAgentProfiles(agentProfiles.map((p) => (p.id === profile.id ? profile : p)));
   };
 
-  const handleRemovePreferredModel = (modelId: string) => {
-    const updatedSettings = {
-      ...settings,
-      preferredModels: settings.preferredModels.filter((preferred) => preferred !== modelId),
-    };
-    setSettings(updatedSettings);
-  };
+  const handleRemovePreferredModel = useCallback(
+    (modelId: string) => {
+      const updatedSettings = {
+        ...settings,
+        preferredModels: settings.preferredModels.filter((preferred) => preferred !== modelId),
+      };
+      setSettings(updatedSettings);
+    },
+    [settings, setSettings],
+  );
 
   const handleAddPreferredModel = (modelId: string) => {
     const updatedSettings = {

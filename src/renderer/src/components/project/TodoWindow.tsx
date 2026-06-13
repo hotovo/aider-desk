@@ -9,10 +9,11 @@ import { Button } from '../common/Button';
 
 import { TodoListItem } from './TodoListItem';
 
+import { useTaskTodoItems } from '@/stores/taskStore';
 import { Input } from '@/components/common/Input';
 
 type Props = {
-  todos: TodoItem[];
+  taskId: string;
   onToggleTodo?: (name: string, completed: boolean) => void;
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
@@ -21,8 +22,9 @@ type Props = {
   onClearAllTodos: () => void;
 };
 
-export const TodoWindow = ({ todos, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onHandoffTodo, onClearAllTodos }: Props) => {
+export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDeleteTodo, onHandoffTodo, onClearAllTodos }: Props) => {
   const { t } = useTranslation();
+  const todos = useTaskTodoItems(taskId);
   const [isExpanded, setIsExpanded] = useState(true);
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const [newTodoName, setNewTodoName] = useState('');

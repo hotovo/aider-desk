@@ -6,7 +6,7 @@ import { TaskSidebar } from '../TaskSidebar';
 
 import { render } from '@/__tests__/render';
 import { useTask } from '@/contexts/TasksContext';
-import { useTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
+import { useOptimizedTaskState, EMPTY_TASK_STATE } from '@/stores/taskStore';
 import { createMockTaskContext } from '@/__tests__/mocks/contexts';
 
 // Mock @tanstack/react-virtual
@@ -57,7 +57,9 @@ vi.mock('@/components/extensions/ExtensionComponentWrapper', () => ({
 
 // Mock useTaskState from taskStore
 vi.mock('@/stores/taskStore', () => ({
+  useOptimizedTaskState: vi.fn(() => EMPTY_TASK_STATE),
   useTaskState: vi.fn(),
+  useTaskQuestion: vi.fn(() => null),
   EMPTY_TASK_STATE: {
     loading: false,
     loaded: false,
@@ -77,7 +79,7 @@ describe('TaskSidebar Subtasks', () => {
 
   beforeEach(() => {
     vi.mocked(useTask).mockReturnValue(createMockTaskContext());
-    vi.mocked(useTaskState).mockReturnValue(EMPTY_TASK_STATE);
+    vi.mocked(useOptimizedTaskState).mockReturnValue(EMPTY_TASK_STATE);
     localStorage.clear();
   });
 

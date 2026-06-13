@@ -111,20 +111,37 @@ export const LogsPage = ({ openInWindowUrl, onClose }: Props) => {
     void loadLogs();
   }, [api, selectedLevels]);
 
-  // Listen for new logs
+  // Listen for new logs, batching high-frequency arrivals into a single update per animation frame
   useEffect(() => {
-    const unsubscribe = api.addSystemLogListener((data) => {
+    const pendingEntries: SystemLogEntry[] = [];
+    let flushScheduled = false;
+    let unmounted = false;
+
+    const flushPendingEntries = () => {
+      flushScheduled = false;
+      if (unmounted || pendingEntries.length === 0) {
+        return;
+      }
+      const entries = pendingEntries.splice(0, pendingEntries.length);
       setLogs((prev) => {
-        // Check if this log already exists (by ID)
-        if (data.entry.id !== undefined && prev.some((log) => log.id === data.entry.id)) {
-          return prev; // Skip duplicate
-        }
-        return [...prev, data.entry];
+        const newEntries = entries.filter((entry) => entry.id === undefined || !prev.some((log) => log.id === entry.id));
+        return newEntries.length > 0 ? [...prev, ...newEntries] : prev;
       });
       shouldAutoScrollRef.current = true; // Enable auto-scroll for new real-time logs
+    };
+
+    const unsubscribe = api.addSystemLogListener((data) => {
+      pendingEntries.push(data.entry);
+      if (!flushScheduled) {
+        flushScheduled = true;
+        requestAnimationFrame(flushPendingEntries);
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      unmounted = true;
+      unsubscribe();
+    };
   }, [api]);
 
   // Auto-scroll to bottom when new logs arrive

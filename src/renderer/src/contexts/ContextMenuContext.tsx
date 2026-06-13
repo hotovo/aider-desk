@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ContextMenuParams } from '@common/types';
 
@@ -47,10 +47,12 @@ export const ContextMenuProvider = ({ children }: Props) => {
     setMenuState((prev) => ({ ...prev, isVisible: false, targetElement: undefined }));
   }, []);
 
-  useClickOutside(menuRef, hideMenu);
+  useClickOutside(menuRef, hideMenu, menuState.isVisible);
+
+  const value = useMemo(() => ({ showMenu, hideMenu }), [showMenu, hideMenu]);
 
   return (
-    <ContextMenuContext.Provider value={{ showMenu, hideMenu }}>
+    <ContextMenuContext.Provider value={value}>
       {children}
       {menuState.isVisible && (
         <div

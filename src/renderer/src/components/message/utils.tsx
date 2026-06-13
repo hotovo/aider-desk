@@ -554,7 +554,13 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
 
 export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): boolean => {
   // Check basic message properties
-  if (prevMessage.id !== nextMessage.id || prevMessage.content !== nextMessage.content) {
+  if (prevMessage.id !== nextMessage.id) {
+    return false;
+  }
+  if (prevMessage.content !== nextMessage.content) {
+    return false;
+  }
+  if (prevMessage.type !== nextMessage.type) {
     return false;
   }
 
@@ -565,9 +571,7 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
 
   // Check usageReport for ResponseMessage and ToolMessage
   if ((isResponseMessage(prevMessage) || isToolMessage(prevMessage)) && (isResponseMessage(nextMessage) || isToolMessage(nextMessage))) {
-    const prevHasUsageReport = !!prevMessage.usageReport;
-    const nextHasUsageReport = !!nextMessage.usageReport;
-    if (prevHasUsageReport !== nextHasUsageReport) {
+    if (JSON.stringify(prevMessage.usageReport) !== JSON.stringify(nextMessage.usageReport)) {
       return false;
     }
   }
@@ -576,9 +580,54 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
   if (isToolMessage(prevMessage) && isToolMessage(nextMessage)) {
     const prevToolMessage = prevMessage as ToolMessage;
     const nextToolMessage = nextMessage as ToolMessage;
-    if (JSON.stringify(prevToolMessage.args) !== JSON.stringify(nextToolMessage.args)) {
+    if (prevToolMessage.args !== nextToolMessage.args) {
       return false;
     }
+    if (prevToolMessage.finished !== nextToolMessage.finished) {
+      return false;
+    }
+  }
+
+  if (isGroupMessage(prevMessage) && isGroupMessage(nextMessage)) {
+    if (prevMessage.group.id !== nextMessage.group.id) {
+      return false;
+    }
+    if (prevMessage.group.finished !== nextMessage.group.finished) {
+      return false;
+    }
+    if (prevMessage.group.name !== nextMessage.group.name) {
+      return false;
+    }
+    if (prevMessage.group.color !== nextMessage.group.color) {
+      return false;
+    }
+    if (prevMessage.group.interruptId !== nextMessage.group.interruptId) {
+      return false;
+    }
+    if (prevMessage.children.length !== nextMessage.children.length) {
+      return false;
+    }
+    for (let i = 0; i < prevMessage.children.length; i++) {
+      if (!areMessagesEqual(prevMessage.children[i], nextMessage.children[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (isAssistantGroupMessage(prevMessage) && isAssistantGroupMessage(nextMessage)) {
+    if (!areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage)) {
+      return false;
+    }
+    if (prevMessage.toolMessages.length !== nextMessage.toolMessages.length) {
+      return false;
+    }
+    for (let i = 0; i < prevMessage.toolMessages.length; i++) {
+      if (!areMessagesEqual(prevMessage.toolMessages[i], nextMessage.toolMessages[i])) {
+        return false;
+      }
+    }
+    return true;
   }
 
   return true;
