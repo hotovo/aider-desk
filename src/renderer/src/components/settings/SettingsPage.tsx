@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 import { Settings } from '@/pages/Settings';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, setFont, setFontSize, setTheme, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useApi } from '@/contexts/ApiContext';
@@ -23,7 +23,8 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
   const { t, i18n } = useTranslation();
   const api = useApi();
 
-  const { settings: originalSettings, saveSettings, setTheme, setFont, setFontSize } = useSettings();
+  const originalSettings = useSettingsStore((state) => state.settings);
+  const saveSettings = useSaveSettings();
   const { profiles: originalAgentProfiles, createProfile, updateProfile, deleteProfile, updateProfilesOrder } = useAgents();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
   const [agentProfiles, setAgentProfiles] = useState(originalAgentProfiles);
@@ -90,7 +91,7 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
     setAgentProfiles(originalAgentProfiles);
     setProviders(originalProviders);
     onClose();
-  }, [originalSettings, localSettings, i18n, api, setTheme, setFont, setFontSize, originalAgentProfiles, originalProviders, onClose]);
+  }, [originalSettings, localSettings, i18n, api, originalAgentProfiles, originalProviders, onClose]);
 
   const handleSave = async () => {
     if (localSettings) {

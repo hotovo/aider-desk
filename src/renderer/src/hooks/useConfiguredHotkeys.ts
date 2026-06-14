@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { getHotkeys } from '@/utils/hotkeys';
 
 export const useConfiguredHotkeys = () => {
-  const { settings } = useSettings();
+  const hotkeyConfig = useSettingsStore((state) => state.settings?.hotkeyConfig);
 
   return useMemo(() => {
-    return getHotkeys(settings?.hotkeyConfig);
-  }, [settings?.hotkeyConfig]);
+    return getHotkeys(hotkeyConfig);
+  }, [hotkeyConfig]);
 };

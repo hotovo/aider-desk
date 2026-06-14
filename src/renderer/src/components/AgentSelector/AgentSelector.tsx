@@ -15,7 +15,7 @@ import { McpServerSelectorItem } from './McpServerSelectorItem';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
 import { Accordion } from '@/components/common/Accordion';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
@@ -32,7 +32,7 @@ type Props = {
 export const AgentSelector = memo(
   ({ projectDir, task, isActive, showSettingsPage }: Props) => {
     const { t } = useTranslation();
-    const { settings } = useSettings();
+    const mcpServers = useSettingsStore((state) => state.settings?.mcpServers);
     const { projectSettings, saveProjectSettings } = useProjectSettings();
     const { getProfiles, updateProfile } = useAgents();
     const [selectorVisible, setSelectorVisible] = useState(false);
@@ -47,7 +47,6 @@ export const AgentSelector = memo(
     const activeGlobalProfile = useMemo(() => {
       return profiles.find((p) => p.id === (task.agentProfileId || projectSettings?.agentProfileId));
     }, [profiles, projectSettings?.agentProfileId, task.agentProfileId]);
-    const { mcpServers = {} } = settings || {};
     const { enabledServers = [], toolApprovals = {} } = activeTaskProfile || {};
     const handleToggleProfileSetting = useCallback(
       (setting: keyof AgentProfile, value: boolean) => {
@@ -111,7 +110,7 @@ export const AgentSelector = memo(
 
     useEffect(() => {
       const calculateEnabledTools = async () => {
-        const activeServers = enabledServers.filter((serverName) => mcpServers[serverName]);
+        const activeServers = enabledServers.filter((serverName) => mcpServers?.[serverName]);
 
         if (activeServers.length === 0) {
           setEnabledToolsCount(0);
@@ -123,11 +122,11 @@ export const AgentSelector = memo(
         try {
           const toolCounts = await Promise.all(
             activeServers.map(async (serverName) => {
-              if (!mcpServers[serverName]) {
+              if (!mcpServers?.[serverName]) {
                 return 0;
               }
               try {
-                const tools = await api.loadMcpServerTools(serverName, mcpServers[serverName]);
+                const tools = await api.loadMcpServerTools(serverName, mcpServers![serverName]);
                 const serverTotalTools = tools?.length ?? 0;
                 const serverDisabledTools =
                   tools?.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length ?? 0;
@@ -300,17 +299,17 @@ export const AgentSelector = memo(
                     <div className="flex items-center w-full">
                       <span className="text-xs flex-1 font-medium text-text-secondary text-left px-1 uppercase">{t('mcp.servers')}</span>
                       <span className="text-2xs text-text-tertiary bg-secondary-light px-1.5 py-0.5 rounded">
-                        {enabledServers.filter((serverName) => mcpServers[serverName]).length}/{Object.keys(mcpServers).length}
+                        {enabledServers.filter((serverName) => mcpServers?.[serverName]).length}/{Object.keys(mcpServers || {}).length}
                       </span>
                     </div>
                   }
                   chevronPosition="right"
                 >
                   <div className="max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-bg-secondary-light scrollbar-track-bg-primary-light pb-2">
-                    {Object.keys(mcpServers).length === 0 ? (
+                    {Object.keys(mcpServers || {}).length === 0 ? (
                       <div className="py-2 text-xs text-text-muted italic">{t('settings.agent.noServersConfiguredGlobal')}</div>
                     ) : (
-                      Object.keys(mcpServers).map((serverName) => (
+                      Object.keys(mcpServers || {}).map((serverName) => (
                         <McpServerSelectorItem
                           key={serverName}
                           serverName={serverName}

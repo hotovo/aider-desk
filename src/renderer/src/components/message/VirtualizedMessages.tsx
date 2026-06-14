@@ -12,7 +12,7 @@ import { groupAssistantMessages, groupMessagesByPromptContext } from '@/componen
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -54,9 +54,9 @@ export const VirtualizedMessages = forwardRef<VirtualizedMessagesRef, Props>(
     ref,
   ) => {
     const { t } = useTranslation();
-    const { settings } = useSettings();
+    const messageViewMode = useSettingsStore((state) => state.settings?.messageViewMode);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
+    const isCompactMode = messageViewMode === MessageViewMode.Compact;
 
     // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
     const processedMessages = useMemo(() => {

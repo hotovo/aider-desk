@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { formatHumanReadable } from '@/utils/string-utils';
 
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig: { percentage: number; tokens: number }, maxInputTokens: number) => {
@@ -28,15 +28,16 @@ type Props = {
 
 export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, updateTask }: Props) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const thresholdConfig = useSettingsStore((state) => state.settings?.taskSettings.contextCompactingThreshold) ?? {
+    percentage: 0,
+    tokens: 0,
+  };
   const [localThreshold, setLocalThreshold] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHoveringThreshold, setIsHoveringThreshold] = useState(false);
   const tokenBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const thresholdConfig = settings?.taskSettings.contextCompactingThreshold ?? { percentage: 0, tokens: 0 };
 
   const effectiveThresholdTokens = getDefaultThresholdTokens(task, thresholdConfig, maxInputTokens);
 

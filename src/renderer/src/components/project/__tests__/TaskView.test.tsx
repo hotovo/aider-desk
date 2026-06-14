@@ -7,7 +7,7 @@ import { TaskView } from '../TaskView';
 
 import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useTask } from '@/contexts/TasksContext';
 import { useOptimizedTaskState, useTaskMessages } from '@/stores/taskStore';
@@ -30,8 +30,8 @@ vi.mock('@/contexts/ApiContext', () => ({
   useApi: vi.fn(),
 }));
 
-vi.mock('@/contexts/SettingsContext', () => ({
-  useSettings: vi.fn(),
+vi.mock('@/stores/settingsStore', () => ({
+  useSettingsStore: vi.fn(),
 }));
 
 vi.mock('@/contexts/ProjectSettingsContext', () => ({
@@ -182,13 +182,21 @@ describe('TaskView', () => {
       taskMessagesMap: new Map([['task-1', mockMessages]]),
     });
     vi.mocked(useApi).mockReturnValue(mockApi);
-    vi.mocked(useSettings).mockReturnValue({
-      settings: {
-        virtualizedRendering: false,
-        renderMarkdown: true,
-        taskSettings: { contextCompactingThreshold: { percentage: 90, tokens: 100000 } },
-      },
-    } as ReturnType<typeof useSettings>);
+    vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
+      selector({
+        settings: {
+          virtualizedRendering: false,
+          renderMarkdown: true,
+          taskSettings: { contextCompactingThreshold: { percentage: 90, tokens: 100000 } },
+        },
+        theme: 'dark',
+        font: 'Sono',
+        fontSize: 14,
+        setSettingsState: vi.fn(),
+        setThemeValue: vi.fn(),
+        setFontValue: vi.fn(),
+        setFontSizeValue: vi.fn(),
+      })) as never);
     vi.mocked(useProjectSettings).mockReturnValue({ projectSettings: { agentProfileId: 'default' } } as ReturnType<typeof useProjectSettings>);
     vi.mocked(useTask).mockReturnValue(mockTaskContext as ReturnType<typeof useTask>);
     vi.mocked(useOptimizedTaskState).mockReturnValue(mockTaskState);

@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 
 import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { TaskView, TaskViewRef } from '@/components/project/TaskView';
@@ -33,7 +33,9 @@ type Props = {
 
 export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage, initialTaskId }: Props) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const startupMode = useSettingsStore((state) => state.settings?.startupMode);
+  const windowTitleTemplate = useSettingsStore((state) => state.settings?.windowTitleTemplate);
+  const settingsLoaded = useSettingsStore((state) => !!state.settings);
   const { projectSettings } = useProjectSettings();
   const api = useApi();
   const { TASK_HOTKEYS } = useConfiguredHotkeys();
@@ -128,7 +130,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
         }
       }
 
-      const mode = settings?.startupMode ?? ProjectStartMode.Empty;
+      const mode = startupMode ?? ProjectStartMode.Empty;
       const existingNewTask = tasks.find((task) => !task.createdAt);
       let startupTask: TaskData | null = null;
 
@@ -262,7 +264,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       removeInputHistoryListener();
       clearProjectTasks(projectDir);
     };
-  }, [activateTask, api, projectDir, settings?.startupMode, initialTaskId]);
+  }, [activateTask, api, projectDir, startupMode, initialTaskId]);
 
   const handleTaskSelect = useCallback(
     (taskId: string) => {
@@ -468,7 +470,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     [setOptimisticTasks],
   );
 
-  if (!projectSettings || !settings) {
+  if (!projectSettings || !settingsLoaded) {
     return <LoadingOverlay message={t('common.loadingProjectSettings')} />;
   }
 
@@ -481,7 +483,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               {(() => {
                 const projectName = projectDir.split(/[\\/]/).pop() || '';
                 const taskName = activeTask?.name || '';
-                const template = settings?.windowTitleTemplate ?? 'AiderDesk - {project}';
+                const template = windowTitleTemplate ?? 'AiderDesk - {project}';
                 return template.replace('{project}', projectName).replace('{task}', taskName);
               })()}
             </title>

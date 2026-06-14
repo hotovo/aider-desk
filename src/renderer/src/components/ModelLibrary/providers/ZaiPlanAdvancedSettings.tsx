@@ -6,7 +6,7 @@ import { FaCheck, FaPlus, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa
 
 import { ZaiPlanThinkingSetting } from './ZaiPlanThinkingSetting';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { Button } from '@/components/common/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -25,15 +25,16 @@ type McpServerInfo = {
 
 export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
-  const { settings, saveSettings } = useSettings();
+  const storedMcpServers = useSettingsStore((state) => state.settings?.mcpServers);
+  const saveSettings = useSaveSettings();
   const [existingMcpServers, setExistingMcpServers] = useState<Record<string, McpServerConfig>>({});
   const [addingServers, setAddingServers] = useState<Record<string, boolean>>({});
 
   const { apiKey } = provider;
 
   useEffect(() => {
-    setExistingMcpServers(settings?.mcpServers || {});
-  }, [settings]);
+    setExistingMcpServers(storedMcpServers ?? {});
+  }, [storedMcpServers]);
 
   const mcpServers: McpServerInfo[] = [
     {
@@ -100,12 +101,13 @@ export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
     setAddingServers((prev) => ({ ...prev, [serverInfo.key]: true }));
 
     try {
+      const currentSettings = useSettingsStore.getState().settings;
       const updatedMcpServers = {
-        ...(settings?.mcpServers || {}),
+        ...(currentSettings?.mcpServers || {}),
         [serverInfo.key]: serverInfo.config,
       };
 
-      const updatedSettings = { ...settings, mcpServers: updatedMcpServers } as SettingsData;
+      const updatedSettings = { ...currentSettings, mcpServers: updatedMcpServers } as SettingsData;
       await saveSettings(updatedSettings);
       setExistingMcpServers(updatedMcpServers);
     } catch (error) {

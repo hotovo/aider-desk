@@ -6,7 +6,7 @@ import { ApplicationAPI } from '@common/api';
 
 import { SettingsPage } from '../SettingsPage';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore, useSaveSettings } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -19,8 +19,12 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock contexts
-vi.mock('@/contexts/SettingsContext', () => ({
-  useSettings: vi.fn(),
+vi.mock('@/stores/settingsStore', () => ({
+  useSettingsStore: vi.fn(),
+  useSaveSettings: vi.fn(),
+  setTheme: vi.fn(),
+  setFont: vi.fn(),
+  setFontSize: vi.fn(),
 }));
 
 vi.mock('@/contexts/AgentsContext', () => ({
@@ -60,16 +64,19 @@ describe('SettingsPage', () => {
   };
 
   beforeEach(() => {
-    vi.mocked(useSettings).mockReturnValue({
-      settings: mockSettings,
-      saveSettings: mockSaveSettings,
-      theme: 'dark',
-      setTheme: vi.fn(),
-      font: 'Sono',
-      setFont: vi.fn(),
-      fontSize: 14,
-      setFontSize: vi.fn(),
-    });
+    mockSaveSettings.mockClear();
+    vi.mocked(useSaveSettings).mockReturnValue(mockSaveSettings);
+    vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
+      selector({
+        settings: mockSettings,
+        theme: 'dark',
+        font: 'Sono',
+        fontSize: 14,
+        setSettingsState: vi.fn(),
+        setThemeValue: vi.fn(),
+        setFontValue: vi.fn(),
+        setFontSizeValue: vi.fn(),
+      })) as never);
 
     vi.mocked(useAgents).mockReturnValue({
       profiles: [],

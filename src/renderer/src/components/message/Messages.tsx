@@ -10,7 +10,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 export type MessagesRef = {
   exportToImage: () => void;
@@ -51,11 +51,11 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
     },
     ref,
   ) => {
-    const { settings } = useSettings();
     const { t } = useTranslation();
+    const messageViewMode = useSettingsStore((state) => state.settings?.messageViewMode);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const isCompactMode = settings?.messageViewMode === MessageViewMode.Compact;
+    const isCompactMode = messageViewMode === MessageViewMode.Compact;
 
     // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
     const processedMessages = useMemo(() => {

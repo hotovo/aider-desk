@@ -4,7 +4,7 @@ import { getProviderModelId } from '@common/agent';
 
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 
 type Props = {
   className?: string;
@@ -19,12 +19,12 @@ type Props = {
 export const ModelSelectorWrapper = forwardRef<ModelSelectorRef, Props>(
   ({ className, selectedModelId, onChange, popupPlacement, labelOnNull, skipPreferredModelsUpdate, usePortal }, ref) => {
     const { models, providers } = useModelProviders();
-    const { settings, saveSettings } = useSettings();
-
-    const preferredModelIds = useMemo(() => settings?.preferredModels ?? [], [settings?.preferredModels]);
+    const preferredModelIds = useSettingsStore((state) => state.settings?.preferredModels) ?? [];
+    const saveSettings = useSaveSettings();
 
     const updatePreferredModels = useCallback(
       (model: string) => {
+        const settings = useSettingsStore.getState().settings;
         if (!settings) {
           return;
         }
@@ -34,11 +34,12 @@ export const ModelSelectorWrapper = forwardRef<ModelSelectorRef, Props>(
         };
         void saveSettings(updatedSettings);
       },
-      [saveSettings, settings],
+      [saveSettings],
     );
 
     const removePreferredModel = useCallback(
       (modelId: string) => {
+        const settings = useSettingsStore.getState().settings;
         if (!settings) {
           return;
         }
@@ -48,7 +49,7 @@ export const ModelSelectorWrapper = forwardRef<ModelSelectorRef, Props>(
         };
         void saveSettings(updatedSettings);
       },
-      [saveSettings, settings],
+      [saveSettings],
     );
 
     const handleChange = useCallback(

@@ -4,11 +4,12 @@ import { Trans, useTranslation } from 'react-i18next';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 
 export const TelemetryInfoDialog = () => {
   const { t } = useTranslation();
-  const { settings, saveSettings } = useSettings();
+  const settings = useSettingsStore((state) => state.settings);
+  const saveSettings = useSaveSettings();
   const [telemetryEnabled, setTelemetryEnabled] = useState(true);
 
   const handleOk = async () => {

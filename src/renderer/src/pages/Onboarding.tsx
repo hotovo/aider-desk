@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { isEqual } from 'lodash';
 import { SettingsData } from '@common/types';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
@@ -19,7 +19,8 @@ import { showErrorNotification, showInfoNotification } from '@/utils/notificatio
 export const Onboarding = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { settings: originalSettings, saveSettings } = useSettings();
+  const originalSettings = useSettingsStore((state) => state.settings);
+  const saveSettings = useSaveSettings();
   const { profiles: originalAgentProfiles, createProfile, updateProfile, deleteProfile, updateProfilesOrder } = useAgents();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
   const [agentProfiles, setAgentProfiles] = useState(originalAgentProfiles);
@@ -158,7 +159,7 @@ export const Onboarding = () => {
       setLocalSettings(newSettings);
       await saveSettings(newSettings);
     },
-    [saveSettings, localSettings],
+    [localSettings, saveSettings],
   );
 
   const renderStep = () => {

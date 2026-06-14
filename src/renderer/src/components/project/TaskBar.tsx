@@ -18,7 +18,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
 import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
@@ -62,15 +62,17 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
     ref,
   ) => {
     const { t } = useTranslation();
-    const { settings, saveSettings } = useSettings();
+    const preferredModels = useSettingsStore((state) => state.settings?.preferredModels) ?? [];
     const { models, providers } = useModelProviders();
     const api = useApi();
+    const saveSettings = useSaveSettings();
     const { isMobile } = useResponsive();
     const [isMerging, setIsMerging] = useState(false);
     const aiderConnectorStatus = useAiderConnectorStatus(baseDir, task.id);
 
     const updatePreferredModels = useCallback(
       (model: string) => {
+        const settings = useSettingsStore.getState().settings;
         if (!settings) {
           return;
         }
@@ -80,7 +82,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         };
         void saveSettings(updatedSettings);
       },
-      [saveSettings, settings],
+      [saveSettings],
     );
 
     const aiderModels = useMemo(() => {
@@ -284,6 +286,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
 
     const handleRemovePreferredModel = useCallback(
       (model: string) => {
+        const settings = useSettingsStore.getState().settings;
         if (!settings) {
           return;
         }
@@ -293,7 +296,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
         };
         void saveSettings(updatedSettings);
       },
-      [settings, saveSettings],
+      [saveSettings],
     );
 
     const handleMerge = useCallback(
@@ -497,7 +500,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   models={aiderModels}
                   selectedModelId={modelsData?.mainModel}
                   onChange={updateMainModel}
-                  preferredModelIds={settings?.preferredModels || []}
+                  preferredModelIds={preferredModels}
                   removePreferredModel={handleRemovePreferredModel}
                   providers={providers}
                 />
@@ -511,7 +514,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   models={aiderModels}
                   selectedModelId={modelsData?.weakModel || modelsData?.mainModel}
                   onChange={updateWeakModel}
-                  preferredModelIds={settings?.preferredModels || []}
+                  preferredModelIds={preferredModels}
                   removePreferredModel={handleRemovePreferredModel}
                   providers={providers}
                 />
@@ -585,7 +588,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                         models={taskModels}
                         selectedModelId={currentTaskModelId}
                         onChange={handleTaskModelChange}
-                        preferredModelIds={settings?.preferredModels || []}
+                        preferredModelIds={preferredModels}
                         removePreferredModel={handleRemovePreferredModel}
                         providers={providers}
                       />
@@ -614,7 +617,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                           models={taskModels}
                           selectedModelId={currentTaskModelId}
                           onChange={handleTaskModelChange}
-                          preferredModelIds={settings?.preferredModels || []}
+                          preferredModelIds={preferredModels}
                           removePreferredModel={handleRemovePreferredModel}
                           providers={providers}
                         />
@@ -635,7 +638,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                             models={aiderModels}
                             selectedModelId={modelsData?.architectModel || modelsData?.mainModel}
                             onChange={updateArchitectModel}
-                            preferredModelIds={settings?.preferredModels || []}
+                            preferredModelIds={preferredModels}
                             removePreferredModel={handleRemovePreferredModel}
                             providers={providers}
                           />

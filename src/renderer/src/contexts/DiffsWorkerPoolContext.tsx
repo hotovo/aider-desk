@@ -5,14 +5,14 @@ import Worker from '@pierre/diffs/worker/worker.js?worker';
 
 import type { Theme } from '@common/types';
 
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 const workerFactory = () => new Worker();
 
 const getDiffsTheme = (theme: Theme | null) => (!theme || isCodeEditorDarkTheme(theme) ? 'github-dark-default' : 'github-light-default');
 
 const DiffsThemeSync = () => {
-  const { theme } = useSettings();
+  const theme = useSettingsStore((state) => state.theme);
   const pool = useWorkerPool();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ const DiffsThemeSync = () => {
 };
 
 export const DiffsWorkerPoolProvider = ({ children }: { children: ReactNode }) => {
-  const { theme } = useSettings();
+  const theme = useSettingsStore((state) => state.theme);
 
   const highlighterOptions = useMemo(
     () => ({

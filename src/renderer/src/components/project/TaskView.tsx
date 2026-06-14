@@ -29,7 +29,7 @@ import { useSidebarWidth } from './useSidebarWidth';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
@@ -101,7 +101,11 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     ref,
   ) => {
     const { t } = useTranslation();
-    const { settings } = useSettings();
+    const virtualizedRendering = useSettingsStore((state) => state.settings?.virtualizedRendering);
+    const renderMarkdown = useSettingsStore((state) => state.settings?.renderMarkdown);
+    const showTaskStateActions = useSettingsStore((state) => state.settings?.taskSettings?.showTaskStateActions);
+    const promptBehavior = useSettingsStore((state) => state.settings?.promptBehavior);
+    const settingsLoaded = useSettingsStore((state) => !!state.settings);
     const { TASK_HOTKEYS } = useConfiguredHotkeys();
     const { projectSettings } = useProjectSettings();
     const { isMobile } = useResponsive();
@@ -713,7 +717,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleRefreshAllFiles = useCallback((useGit?: boolean) => refreshAllFiles(task.id, useGit), [refreshAllFiles, task.id]);
 
-    if (!projectSettings || !settings) {
+    if (!projectSettings || !settingsLoaded) {
       return <LoadingOverlay message={t('common.loadingProjectSettings')} />;
     }
 
@@ -755,7 +759,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
               ) : (
                 <>
-                  {settings.virtualizedRendering ? (
+                  {virtualizedRendering ? (
                     <VirtualizedMessages
                       ref={setMessagesRef}
                       baseDir={projectDir}
@@ -763,7 +767,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       inProgress={inProgress}
                       messages={displayedMessages}
                       allFiles={allFiles}
-                      renderMarkdown={settings.renderMarkdown}
+                      renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
                       redoUserPrompt={handleRedoUserPrompt}
                       editUserMessage={handleEditUserMessage}
@@ -779,7 +783,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       inProgress={inProgress}
                       messages={displayedMessages}
                       allFiles={allFiles}
-                      renderMarkdown={settings.renderMarkdown}
+                      renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
                       redoUserPrompt={handleRedoUserPrompt}
                       editUserMessage={handleEditUserMessage}
@@ -793,7 +797,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             </div>
             <ExtensionComponentWrapper placement="task-messages-bottom" />
             {showTaskInfoPanel && <TaskInfoPanel task={task} messageCount={displayedMessages.length || 0} onClose={() => setShowTaskInfoPanel(false)} />}
-            {settings?.taskSettings?.showTaskStateActions && !inProgress && !isLastLoadingMessage && (
+            {showTaskStateActions && !inProgress && !isLastLoadingMessage && (
               <TaskStateActions
                 state={task.state}
                 mode={task.currentMode}
@@ -881,7 +885,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   redoLastUserPrompt={handleRedoLastUserPrompt}
                   openModelSelector={handleOpenModelSelector}
                   openAgentModelSelector={handleOpenAgentModelSelector}
-                  promptBehavior={settings.promptBehavior}
+                  promptBehavior={promptBehavior!}
                   clearLogMessages={clearLogMessages}
                   scrollToBottom={handleScrollToBottom}
                   onToggleTaskInfoPanel={handleToggleTaskInfoPanel}

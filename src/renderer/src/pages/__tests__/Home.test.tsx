@@ -21,10 +21,9 @@ vi.mock('@/hooks/useVersions', () => ({
   }),
 }));
 
-vi.mock('@/contexts/SettingsContext', () => ({
-  useSettings: () => ({
-    settings: {},
-  }),
+vi.mock('@/stores/settingsStore', () => ({
+  useSettingsStore: () => ({}),
+  useSaveSettings: () => vi.fn(),
 }));
 
 vi.mock('@/hooks/useConfiguredHotkeys', async () => {
