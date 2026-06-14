@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 
 import { v4 as uuidv4 } from 'uuid';
 import { loadFront } from 'yaml-front-matter';
@@ -10,7 +9,7 @@ import { ContextAssistantMessage, ContextMessage, ContextToolMessage, SkillDefin
 import type { Project } from '@/project';
 import type { Task } from '@/task';
 
-import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR, AIDER_DESK_HOME_DIR } from '@/constants';
 import { ExtensionManager } from '@/extensions/extension-manager';
 
 const SKILLS_DIR_NAME = 'skills';
@@ -96,7 +95,7 @@ export class SkillManager {
   }
 
   async loadAllSkills(): Promise<Skill[]> {
-    const globalSkillsDir = path.join(homedir(), AIDER_DESK_DIR, SKILLS_DIR_NAME);
+    const globalSkillsDir = path.join(AIDER_DESK_HOME_DIR, SKILLS_DIR_NAME);
     const projectSkillsDir = path.join(this.projectDir, AIDER_DESK_DIR, SKILLS_DIR_NAME);
 
     const extensionSkills: Skill[] = this.extensionManager

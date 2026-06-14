@@ -56,7 +56,7 @@ import {
 import type { ExtensionManager } from '@/extensions/extension-manager';
 import type { Store } from '@/store';
 
-import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
 import { shouldUsePolling } from '@/utils/file-watch';
@@ -69,7 +69,7 @@ export class PromptsManager {
   constructor(
     private readonly extensionManager: ExtensionManager,
     private readonly store: Store,
-    private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
+    private readonly builtinTemplatesDir = AIDER_DESK_BUILTIN_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
   ) {
     registerAllHelpers();
@@ -148,8 +148,8 @@ export class PromptsManager {
 
     // Fall back to default templates from resources
     try {
-      const defaultPath = path.join(this.defaultTemplatesDir, fileName);
-      return await fs.readFile(defaultPath, 'utf8');
+      const builtinPath = path.join(this.builtinTemplatesDir, fileName);
+      return await fs.readFile(builtinPath, 'utf8');
     } catch (error) {
       logger.error(`Failed to load default template ${name}: ${error}`);
       return null;

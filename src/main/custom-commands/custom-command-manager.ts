@@ -1,6 +1,5 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -13,7 +12,7 @@ import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
 import type { Store } from '@/store';
 
-import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
+import { AIDER_DESK_COMMANDS_DIR, AIDER_DESK_HOME_DIR } from '@/constants';
 import logger from '@/logger';
 import { Project } from '@/project';
 import { shouldUsePolling } from '@/utils/file-watch';
@@ -72,7 +71,7 @@ export class CustomCommandManager {
   private async initializeCommands(): Promise<void> {
     this.commands.clear();
 
-    const globalCommandsDir = path.join(homedir(), AIDER_DESK_COMMANDS_DIR);
+    const globalCommandsDir = path.join(AIDER_DESK_HOME_DIR, 'commands');
     await this.loadCommandsFromDir(globalCommandsDir, this.commands);
 
     // Load project-specific commands (these will overwrite global ones with same name)
@@ -88,7 +87,7 @@ export class CustomCommandManager {
     this.watchers = [];
 
     // Watch global commands directory
-    const globalCommandsDir = path.join(homedir(), AIDER_DESK_COMMANDS_DIR);
+    const globalCommandsDir = path.join(AIDER_DESK_HOME_DIR, 'commands');
     await this.setupWatcherForDirectory(globalCommandsDir);
 
     // Watch project-specific commands directory

@@ -16,7 +16,6 @@ vi.mock('fs/promises');
 
 import * as fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentProfile } from '@common/types';
@@ -25,7 +24,7 @@ import { AgentProfileManager } from '../agent-profile-manager';
 
 import type { ExtensionManager } from '@/extensions/extension-manager';
 
-import { AIDER_DESK_AGENTS_DIR } from '@/constants';
+import { AIDER_DESK_HOME_DIR } from '@/constants';
 import { createMockAgentProfile } from '@/__tests__/mocks';
 
 describe('AgentProfileManager', () => {
@@ -33,7 +32,7 @@ describe('AgentProfileManager', () => {
   let mockEventManager: any;
   let mockExtensionManager: ExtensionManager;
 
-  const globalAgentsDir = path.join(homedir(), AIDER_DESK_AGENTS_DIR);
+  const globalAgentsDir = path.join(AIDER_DESK_HOME_DIR, 'agents');
 
   beforeEach(async () => {
     vi.clearAllMocks();

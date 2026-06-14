@@ -49,7 +49,7 @@ vi.mock('@/constants', () => ({
   AIDER_DESK_GLOBAL_RULES_DIR: '/home/.aider-desk/rules',
   AIDER_DESK_COMMANDS_DIR: '.aider-desk/commands',
   AIDER_DESK_PROMPTS_DIR: '.aider-desk/prompts',
-  AIDER_DESK_DEFAULT_PROMPTS_DIR: '/resources/prompts',
+  AIDER_DESK_BUILTIN_PROMPTS_DIR: '/resources/prompts',
   AIDER_DESK_GLOBAL_PROMPTS_DIR: '/home/.aider-desk/prompts',
   AIDER_DESK_AGENTS_DIR: '.aider-desk/agents',
   AIDER_DESK_TMP_DIR: '.aider-desk/tmp',

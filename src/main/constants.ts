@@ -21,19 +21,20 @@ export const RIPGREP_BINARY_PATH = process.platform === 'win32' ? path.join(AIDE
 export const SERVER_PORT = process.env.AIDER_DESK_PORT ? parseInt(process.env.AIDER_DESK_PORT) : 24337;
 export const PID_FILES_DIR = path.join(AIDER_DESK_DATA_DIR, 'aider-processes');
 // constants for project directory files
-export const AIDER_DESK_DIR = '.aider-desk';
+export const AIDER_DESK_DIR = process.env.AIDER_DESK_DIR || '.aider-desk';
+export const AIDER_DESK_HOME_DIR = process.env.AIDER_DESK_HOME_DIR || path.join(homedir(), AIDER_DESK_DIR);
 export const AIDER_DESK_TASKS_DIR = path.join(AIDER_DESK_DIR, 'tasks');
 export const AIDER_DESK_TODOS_FILE = 'todos.json';
 export const AIDER_DESK_RULES_DIR = 'rules';
 export const AIDER_DESK_PROJECT_RULES_DIR = path.join(AIDER_DESK_DIR, AIDER_DESK_RULES_DIR);
-export const AIDER_DESK_GLOBAL_RULES_DIR = path.join(homedir(), AIDER_DESK_DIR, AIDER_DESK_RULES_DIR);
+export const AIDER_DESK_GLOBAL_RULES_DIR = path.join(AIDER_DESK_HOME_DIR, AIDER_DESK_RULES_DIR);
 export const AIDER_DESK_COMMANDS_DIR = path.join(AIDER_DESK_DIR, 'commands');
 export const AIDER_DESK_EXTENSIONS_DIR = path.join(AIDER_DESK_DIR, 'extensions');
-export const AIDER_DESK_GLOBAL_EXTENSIONS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'extensions');
+export const AIDER_DESK_GLOBAL_EXTENSIONS_DIR = path.join(AIDER_DESK_HOME_DIR, 'extensions');
 export const AIDER_DESK_PROMPTS_DIR = path.join(AIDER_DESK_DIR, 'prompts');
-export const AIDER_DESK_DEFAULT_PROMPTS_DIR = path.join(RESOURCES_DIR, 'prompts');
+export const AIDER_DESK_BUILTIN_PROMPTS_DIR = path.join(RESOURCES_DIR, 'prompts');
 export const AIDER_DESK_BUILTIN_SKILLS_DIR = path.join(RESOURCES_DIR, 'skills');
-export const AIDER_DESK_GLOBAL_PROMPTS_DIR = path.join(homedir(), AIDER_DESK_DIR, 'prompts');
+export const AIDER_DESK_GLOBAL_PROMPTS_DIR = path.join(AIDER_DESK_HOME_DIR, 'prompts');
 export const AIDER_DESK_AGENTS_DIR = path.join(AIDER_DESK_DIR, 'agents');
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const AIDER_DESK_WATCH_FILES_LOCK = path.join(AIDER_DESK_DIR, 'watch-files.lock');
