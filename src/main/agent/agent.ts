@@ -1968,14 +1968,25 @@ export class Agent {
       await task.updateTask({ lastAgentProviderMetadata: providerMetadata });
     }
 
+    const hasAssistantMessage = content.some((part) => (part.type === 'text' || part.type === 'reasoning') && part.text?.trim());
+
     let responseMessageIndex: number = 0;
 
-    const processToolResult = (toolResult: TypedToolResult<TOOLS>) => {
+    const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast: boolean) => {
       const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
       const toolPromptContext = extractPromptContextFromToolResult(toolResult.output) ?? promptContext;
 
       // Update the existing tool message with the result
-      task.addToolMessage(toolResult.toolCallId, serverName, toolName, toolResult.input, JSON.stringify(toolResult.output), usageReport, toolPromptContext);
+      // Only attach usage report to the last tool message when there is no assistant message
+      task.addToolMessage(
+        toolResult.toolCallId,
+        serverName,
+        toolName,
+        toolResult.input,
+        JSON.stringify(toolResult.output),
+        !hasAssistantMessage && isLast ? usageReport : undefined,
+        toolPromptContext,
+      );
     };
 
     for (let i = 0; i < content.length; i++) {
@@ -1996,7 +2007,7 @@ export class Agent {
           content: text,
           reasoning: reasoningText?.trim() || undefined,
           finished: true,
-          usageReport,
+          usageReport: hasAssistantMessage ? usageReport : undefined,
           promptContext,
         };
         await task.processResponseMessage(message);
@@ -2010,7 +2021,7 @@ export class Agent {
         const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
         if (toolResult) {
           toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
-          processToolResult(toolResult);
+          processToolResult(toolResult, i === content.length - 1 && toolResults.length === 0);
         }
       }
     }
@@ -2018,7 +2029,7 @@ export class Agent {
     // Process successful tool results *after* sending text/reasoning and handling errors
     for (let i = 0; i < toolResults.length; i++) {
       const toolResult = toolResults[i];
-      processToolResult(toolResult);
+      processToolResult(toolResult, i === toolResults.length - 1);
     }
 
     if (!abortSignal?.aborted) {
@@ -2030,7 +2041,7 @@ export class Agent {
         messages.push({
           ...message,
           id: currentResponseId,
-          usageReport,
+          usageReport: hasAssistantMessage ? usageReport : undefined,
           promptContext,
           timestamp: Date.now(),
         });
