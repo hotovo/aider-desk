@@ -288,6 +288,8 @@ src/
             UDiffViewer.tsx
             utils.ts
           Accordion.tsx
+          AppCrashFallback.tsx
+          AppErrorBoundary.tsx
           BaseDialog.tsx
           Button.tsx
           Checkbox.tsx
@@ -615,6 +617,7 @@ src/
         useOS.ts
         useParsedContent.ts
         usePythonInstallStatus.ts
+        useRefractorLanguage.ts
         useRequestyModels.ts
         useResponsive.ts
         useScrollingPaused.ts
@@ -697,12 +700,14 @@ src/
         agents.ts
         browser-notifications.ts
         date-utils.ts
+        extension-icons.ts
         extension-library-loader.ts
         highlighter.tsx
         hotkeys.ts
         indexedDB.ts
         notifications.ts
         path-utils.ts
+        refractor-languages.ts
         routes.ts
         string-utils.ts
         task-utils.ts
@@ -13226,6 +13231,7 @@ import { HiOutlineSelector } from 'react-icons/hi';
 import { parseDiff, File, Hunk as HunkType, SkipBlock, Line as LineType } from './utils';
 ⋮----
 import { highlightWithRefractor } from '@/utils/highlighter';
+import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
 ⋮----
 interface DiffContextValue {
   language: string;
@@ -13345,6 +13351,7 @@ import { DiffViewMode } from '@common/types';
 ⋮----
 import { createTokens } from './utils';
 ⋮----
+import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
 import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 type Props = {
@@ -13358,6 +13365,9 @@ type Props = {
 export const DiffViewer = (
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+// isLanguageRegistered triggers token recomputation once the lazily loaded grammar registers
+// eslint-disable-next-line react-hooks/exhaustive-deps
 ⋮----
 Please report an issue in https://github.com/hotovo/aider-desk/issues.
 ⋮----
@@ -13435,9 +13445,10 @@ import { clsx } from 'clsx';
 ⋮----
 import { createTokens } from './utils';
 ⋮----
-import type { ChangeData, HunkData } from 'react-diff-view';
 import type { NormalChange } from 'gitdiff-parser';
+import type { ChangeData, HunkData } from 'react-diff-view';
 ⋮----
+import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
 import { useResponsive } from '@/hooks/useResponsive';
 ⋮----
 export type LineClickInfo = {
@@ -13596,6 +13607,53 @@ const handleOpenChange = () =>
 className=
 
 ================
+File: src/renderer/src/components/common/AppCrashFallback.tsx
+================
+import { MouseEvent, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import { BiCheck, BiCopy, BiErrorCircle } from 'react-icons/bi';
+⋮----
+import { Button } from '@/components/common/Button';
+⋮----
+type Props = {
+  error: Error | null;
+};
+⋮----
+const handleReload = () =>
+⋮----
+const handleCopy = async (e: MouseEvent<HTMLButtonElement>) =>
+⋮----
+// eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/components/common/AppErrorBoundary.tsx
+================
+import { Component, ErrorInfo, ReactNode } from 'react';
+⋮----
+import { AppCrashFallback } from '@/components/common/AppCrashFallback';
+⋮----
+type Props = {
+  children: ReactNode;
+};
+⋮----
+type State = {
+  hasError: boolean;
+  error: Error | null;
+};
+⋮----
+export class AppErrorBoundary extends Component<Props, State>
+⋮----
+constructor(props: Props)
+⋮----
+static getDerivedStateFromError(error: Error): State
+⋮----
+componentDidCatch(error: Error, errorInfo: ErrorInfo): void
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+render(): ReactNode
+
+================
 File: src/renderer/src/components/common/BaseDialog.tsx
 ================
 import { FocusTrap } from 'focus-trap-react';
@@ -13746,7 +13804,7 @@ import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/
 import { useApi } from '@/contexts/ApiContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useResponsive } from '@/hooks/useResponsive';
-import { highlightWithLowlight } from '@/utils/highlighter';
+import { highlightWithLowlight, lowlight } from '@/utils/highlighter';
 ⋮----
 const isCustomDiffContent = (content: string): boolean =>
 ⋮----
@@ -14058,7 +14116,7 @@ export type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
 ================
 File: src/renderer/src/components/common/ItemSelector.tsx
 ================
-import { ElementType, useRef, useState } from 'react';
+import { ElementType, memo, useRef, useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -14087,7 +14145,7 @@ type Props<T extends string = string> = {
   iconOnly?: boolean;
 };
 ⋮----
-export const ItemSelector = <T extends string = string>({
+const ItemSelectorInner = <T extends string = string>({
   items,
   selectedValue,
   onChange,
@@ -14336,8 +14394,6 @@ type Props = {
   disabled?: boolean;
   placement?: 'bottom' | 'top';
 };
-⋮----
-// Pass both refs to useClickOutside
 ⋮----
 const handleKeyDown = (e: React.KeyboardEvent) =>
 ⋮----
@@ -14720,7 +14776,15 @@ import StringToReactComponent from './StringToReactComponent';
 import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
-import { useExtensionComponents, useExtensionUIStore } from '@/stores/extensionUIStore';
+import {
+  getExtensionComponentData,
+  handleExtensionUIRefreshEvent,
+  isExtensionUIDataLoaded,
+  loadExtensionComponentData,
+  loadExtensionUIComponents,
+  useExtensionComponents,
+} from '@/stores/extensionUIStore';
+import { useReactIcons } from '@/utils/extension-icons';
 import { loadAllLibraries } from '@/utils/extension-library-loader';
 ⋮----
 type UseExtensionComponentsWrapperProps = {
@@ -14825,11 +14889,9 @@ shouldAutoScrollRef.current = true; // Enable auto-scroll for initial load
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Listen for new logs
+// Listen for new logs, batching high-frequency arrivals into a single update per animation frame
 ⋮----
-// Check if this log already exists (by ID)
-⋮----
-return prev; // Skip duplicate
+const flushPendingEntries = () =>
 ⋮----
 shouldAutoScrollRef.current = true; // Enable auto-scroll for new real-time logs
 ⋮----
@@ -14928,7 +14990,7 @@ File: src/renderer/src/components/message/AssistantMessageBlock.tsx
 ================
 import { memo, useCallback, useRef } from 'react';
 import { clsx } from 'clsx';
-import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage, ToolMessage } from '@common/types';
+import { Message, UsageReportData, AssistantGroupMessage, isResponseMessage, isToolMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
 import { MessageBlockWrapper } from './MessageBlockWrapper';
@@ -15373,11 +15435,14 @@ const renderStatusIcon = () =>
 ================
 File: src/renderer/src/components/message/GlobToolMessage.tsx
 ================
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RiFolderLine, RiFileTextLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'react-icons/ri';
 import { LuFolderSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+⋮----
+import { areMessagesEqual } from './utils';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -15395,11 +15460,14 @@ type Props = {
 ================
 File: src/renderer/src/components/message/GrepToolMessage.tsx
 ================
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { LuFileSearch } from 'react-icons/lu';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+⋮----
+import { areMessagesEqual } from './utils';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -15422,6 +15490,14 @@ type Props = {
 };
 ⋮----
 const parseMarkdownResults = (md: string): Array<Match> | null =>
+⋮----
+if (
+    prevProps.compact !== nextProps.compact ||
+    prevProps.hideMessageBar !== nextProps.hideMessageBar ||
+    (prevProps.onRemove === undefined) !== (nextProps.onRemove === undefined) ||
+    (prevProps.onFork === undefined) !== (nextProps.onFork === undefined) ||
+    (prevProps.onRemoveUpTo === undefined) !== (nextProps.onRemoveUpTo === undefined)
+)
 
 ================
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
@@ -15482,12 +15558,6 @@ const handleInterrupt = (e: MouseEvent<HTMLButtonElement>) =>
 {/* Content */}
 ⋮----
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
-⋮----
-// Check basic message properties
-⋮----
-// Check group properties
-⋮----
-// Check children arrays
 
 ================
 File: src/renderer/src/components/message/index.ts
@@ -15691,7 +15761,7 @@ const handleRemoveUpToClick = () =>
 ================
 File: src/renderer/src/components/message/MessageBlock.tsx
 ================
-import { memo, useMemo } from 'react';
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   HELPERS_TOOL_GROUP_NAME,
@@ -15771,7 +15841,7 @@ import { UpdateMemoryToolMessage } from './UpdateMemoryToolMessage';
 import { ActivateSkillToolMessage } from './ActivateSkillToolMessage';
 import { areMessagesEqual } from './utils';
 ⋮----
-import { useProjectTasks } from '@/stores/projectStore';
+import { useProjectTaskWorktreePath } from '@/stores/projectStore';
 ⋮----
 type Props = {
   baseDir: string;
@@ -15818,6 +15888,7 @@ import { isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
 import { AssistantMessageBlock } from './AssistantMessageBlock';
+import { areMessagesEqual } from './utils';
 ⋮----
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { useExtensionMessageComponent } from '@/components/extensions/useExtensionMessageComponent';
@@ -15841,6 +15912,8 @@ type Props = {
 };
 ⋮----
 onFork=
+⋮----
+const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 
 ================
 File: src/renderer/src/components/message/Messages.tsx
@@ -18486,6 +18559,20 @@ type Props = {
   hasChildren: boolean;
 };
 ⋮----
+const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
+⋮----
+// Compare task object - only properties used in rendering
+⋮----
+// Compare tasks array reference (used for subtasks computation)
+⋮----
+// Compare primitive props
+⋮----
+// Compare task-id-specific props - only re-render if our task is affected
+⋮----
+// Compare selectedTasks - only care about our task's membership
+⋮----
+// Compare function props by reference
+⋮----
 const toggleExpand = (e: MouseEvent) =>
 ⋮----
 const handleCreateSubtask = (e: MouseEvent) =>
@@ -18736,7 +18823,7 @@ import { DefaultTaskState } from '@common/types';
 import { CgSpinner } from 'react-icons/cg';
 import { clsx } from 'clsx';
 ⋮----
-import { useTaskState } from '@/stores/taskStore';
+import { useTaskQuestion } from '@/stores/taskStore';
 ⋮----
 type Props = {
   taskId: string;
@@ -18853,17 +18940,17 @@ tooltip=
 ================
 File: src/renderer/src/components/project/FilesContextInfoContent.tsx
 ================
-import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, TaskData } from '@common/types';
 ⋮----
 import { Workspace } from '@/components/Workspace';
 import { CostInfo } from '@/components/CostInfo';
+import { useTaskFileTokensInfo, useTaskTokensInfo } from '@/stores/taskStore';
 ⋮----
 type Props = {
   baseDir: string;
   taskId: string;
   allFiles: string[];
   contextFiles: ContextFile[];
-  tokensInfo: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;
@@ -18882,7 +18969,6 @@ export const FilesContextInfoContent = ({
   taskId,
   allFiles,
   contextFiles,
-  tokensInfo,
   aiderTotalCost,
   maxInputTokens,
   clearMessages,
@@ -18902,7 +18988,7 @@ File: src/renderer/src/components/project/MobileSidebar.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { ContextFile, Mode, TaskData, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, TaskData } from '@common/types';
 import { FiChevronDown } from 'react-icons/fi';
 ⋮----
 import { FilesContextInfoContent } from '@/components/project/FilesContextInfoContent';
@@ -18918,7 +19004,6 @@ type Props = {
   taskId: string;
   allFiles: string[];
   contextFiles: ContextFile[];
-  tokensInfo: TokensInfoData | null;
   aiderTotalCost: number;
   maxInputTokens: number;
   clearMessages: (clearContext?: boolean) => void;
@@ -18938,7 +19023,6 @@ export const MobileSidebar = ({
   taskId,
   allFiles,
   contextFiles,
-  tokensInfo,
   aiderTotalCost,
   maxInputTokens,
   clearMessages,
@@ -19075,7 +19159,7 @@ import { clsx } from 'clsx';
 ⋮----
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 ⋮----
-import { useProjectTasks, useProjectStore } from '@/stores/projectStore';
+import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -19213,8 +19297,6 @@ taskModels.unshift(customModel); // Add to the beginning for visibility
 ⋮----
 // optimistic update
 ⋮----
-if (!settings)
-⋮----
 // eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
@@ -19246,8 +19328,6 @@ return t('pythonSetup.failed',
 {/* Row 2: AIDER */}
 ⋮----
 // Original horizontal layout for other modes
-⋮----
-onSquash=
 
 ================
 File: src/renderer/src/components/project/TaskControlBar.tsx
@@ -19340,7 +19420,7 @@ import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
-import { useTaskMessages, useTaskState } from '@/stores/taskStore';
+import { useTaskMessages, useOptimizedTaskState, useTaskStore } from '@/stores/taskStore';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
@@ -19462,10 +19542,11 @@ import { Button } from '../common/Button';
 ⋮----
 import { TodoListItem } from './TodoListItem';
 ⋮----
+import { useTaskTodoItems } from '@/stores/taskStore';
 import { Input } from '@/components/common/Input';
 ⋮----
 type Props = {
-  todos: TodoItem[];
+  taskId: string;
   onToggleTodo?: (name: string, completed: boolean) => void;
   onAddTodo?: (name: string) => void;
   onUpdateTodo?: (name: string, updates: Partial<TodoItem>) => void;
@@ -19880,10 +19961,9 @@ import {
   startCompletion,
 } from '@codemirror/autocomplete';
 import { EditorView, keymap } from '@codemirror/view';
-import { vim } from '@replit/codemirror-vim';
 import { AIDER_MODES, Mode, PromptBehavior, QueuedPromptData, QuestionData, SuggestionMode } from '@common/types';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
-import CodeMirror, { Annotation, Prec, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import CodeMirror, { Annotation, Prec, type Extension, type ReactCodeMirrorRef } from '@uiw/react-codemirror';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -19897,6 +19977,7 @@ import { parseCommandArgs } from '@common/utils';
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
 ⋮----
+import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
@@ -19937,7 +20018,6 @@ type Props = {
   scrapeWeb: (url: string, filePath?: string) => void;
   question?: QuestionData | null;
   answerQuestion: (answer: string) => void;
-  queuedPrompts?: QueuedPromptData[];
   removeQueuedPrompt?: (id: string) => void;
   sendQueuedPromptNow?: (id: string) => void;
   reorderQueuedPrompts?: (prompts: QueuedPromptData[]) => void;
@@ -20052,7 +20132,7 @@ const handleDragEnd = (event: DragEndEvent) =>
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useState, useMemo } from 'react';
+import { useCallback, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
@@ -20095,11 +20175,7 @@ type Props = {
   isMerging: boolean;
 };
 ⋮----
-const handleWorkingModeChanged = async (mode: WorkingMode) =>
-⋮----
 // eslint-disable-next-line no-console
-⋮----
-const performSwitch = async (mode: WorkingMode) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -20194,7 +20270,7 @@ import {
   SettingsData,
   ToolApprovalState,
 } from '@common/types';
-import React, { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
 import {
@@ -20368,8 +20444,6 @@ const handlePasteProfile = () =>
 const handleProfileSettingChange = <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) =>
 ⋮----
 const handleProfileChange = (profile: AgentProfile) =>
-⋮----
-const handleRemovePreferredModel = (modelId: string) =>
 ⋮----
 const handleAddPreferredModel = (modelId: string) =>
 ⋮----
@@ -20789,6 +20863,7 @@ import type { ExtensionConfigComponent } from '@common/types';
 import StringToReactComponent from '@/components/extensions/StringToReactComponent';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
+import { useReactIcons } from '@/utils/extension-icons';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
@@ -21307,6 +21382,7 @@ const handleZoomChange = (zoomLevel: number) =>
 ================
 File: src/renderer/src/components/settings/TaskSettings.tsx
 ================
+import { useCallback } from 'react';
 import { SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { AiFillFolderOpen } from 'react-icons/ai';
@@ -21350,8 +21426,6 @@ const handleTaskNameModelChange = (model: Model | null) =>
 const handleTaskStateModelChange = (model: Model | null) =>
 ⋮----
 const handleCommitMessageModelChange = (model: Model | null) =>
-⋮----
-const handleDefaultWorkingModeChange = (mode: WorkingMode) =>
 ⋮----
 const handleWorktreeBranchPrefixChange = (value: string) =>
 ⋮----
@@ -21986,7 +22060,7 @@ onStartEdit=
 ================
 File: src/renderer/src/components/Workspace/ContextFilesSection.tsx
 ================
-import { ContextFile, Mode, OS, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, OS, TokensCost } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
@@ -22004,7 +22078,7 @@ type Props = {
   userContextFiles: ContextFile[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
   showFileDialog: () => void;
@@ -22191,7 +22265,7 @@ File: src/renderer/src/components/Workspace/index.ts
 ================
 File: src/renderer/src/components/Workspace/ProjectFilesSection.tsx
 ================
-import { ContextFile, OS, TokensInfoData } from '@common/types';
+import { ContextFile, OS, TokensCost } from '@common/types';
 import React, { useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
@@ -22217,7 +22291,7 @@ type Props = {
   allFiles: string[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   contextFilesMap: Map<string, ContextFile>;
   visitedSections: Set<string>;
@@ -22262,7 +22336,7 @@ className=
 ================
 File: src/renderer/src/components/Workspace/SectionContent.tsx
 ================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import React, { useCallback } from 'react';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { motion } from 'framer-motion';
@@ -22279,7 +22353,7 @@ type Props = {
   setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   searchField?: React.ReactNode;
   emptyContent?: React.ReactNode;
@@ -22344,7 +22418,7 @@ onClick=
 ================
 File: src/renderer/src/components/Workspace/TreeItemRenderer.tsx
 ================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import { useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
@@ -22373,7 +22447,7 @@ type Props = {
   setExpandedItems: (items: string[]) => void;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   disabledRuleFiles?: string[];
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
@@ -22524,7 +22598,7 @@ isGeneratingMessage
 ================
 File: src/renderer/src/components/Workspace/UpdatedFilesSection.tsx
 ================
-import { ContextFile, OS, TokensInfoData, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
 import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
@@ -22556,22 +22630,6 @@ interface CommitGroup {
   additions: number;
   deletions: number;
 }
-⋮----
-type Props = {
-  baseDir: string;
-  taskId: string;
-  isOpen: boolean;
-  tokensInfo?: TokensInfoData | null;
-  os: OS | null;
-  contextFilesMap: Map<string, ContextFile>;
-  visitedSections: Set<string>;
-  onToggle: () => void;
-  taskName?: string;
-  editMode?: boolean;
-  isHidden?: boolean;
-  onToggleHidden?: () => void;
-  showBorderTop?: boolean;
-};
 ⋮----
 className=
 ⋮----
@@ -22647,7 +22705,7 @@ body.theme-light .context-dimmed {
 ================
 File: src/renderer/src/components/Workspace/Workspace.tsx
 ================
-import { ContextFile, Mode, TokensInfoData } from '@common/types';
+import { ContextFile, Mode, TokensCost } from '@common/types';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalStorage } from '@reactuses/core';
@@ -22673,19 +22731,6 @@ import { useOS } from '@/hooks/useOS';
 import { useApi } from '@/contexts/ApiContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
-type Props = {
-  baseDir: string;
-  taskId: string;
-  allFiles: string[];
-  contextFiles: ContextFile[];
-  showFileDialog: () => void;
-  tokensInfo?: TokensInfoData | null;
-  refreshAllFiles: (useGit?: boolean) => Promise<void>;
-  mode: Mode;
-  onToggleFilesSidebarCollapse?: () => void;
-  taskName?: string;
-};
-⋮----
 type SortableSectionWrapperProps = {
   id: SectionType;
   editMode: boolean;
@@ -22694,13 +22739,11 @@ type SortableSectionWrapperProps = {
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
-⋮----
-onToggleHidden=
 
 ================
 File: src/renderer/src/components/Workspace/WorkspaceSection.tsx
 ================
-import { ContextFile, OS, TokensInfoData, UpdatedFile } from '@common/types';
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
 import React, { Activity } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -22721,7 +22764,7 @@ type Props = {
   setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
-  tokensInfo?: TokensInfoData | null;
+  fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
   actions?: React.ReactNode;
   searchField?: React.ReactNode;
@@ -22752,7 +22795,7 @@ export const WorkspaceSection = ({
   setExpandedItems,
   contextFilesMap,
   updatedFiles,
-  tokensInfo,
+  fileTokensInfo,
   os,
   actions,
   searchField,
@@ -22948,7 +22991,7 @@ File: src/renderer/src/constants/keyboardKeys.ts
 ================
 File: src/renderer/src/contexts/AgentsContext.tsx
 ================
-import { createContext, useContext, useEffect, useOptimistic, startTransition, ReactNode, useCallback, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useOptimistic, startTransition, ReactNode, useCallback, useState } from 'react';
 import { AgentProfile } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
@@ -22969,14 +23012,6 @@ interface AgentsProviderProps {
   children: ReactNode;
 }
 ⋮----
-const createProfile = async (profile: AgentProfile, projectDir?: string) =>
-⋮----
-const updateProfile = async (profile: AgentProfile, projectDir?: string) =>
-⋮----
-const deleteProfile = async (profileId: string, projectDir?: string) =>
-⋮----
-const updateProfilesOrder = async (agentProfiles: AgentProfile[]): Promise<void> =>
-⋮----
 // Register event listener for agent profiles updates
 ⋮----
 export const useAgents = (): AgentsContextType =>
@@ -22995,7 +23030,7 @@ export const useApi = (): ApplicationAPI =>
 ================
 File: src/renderer/src/contexts/ContextMenuContext.tsx
 ================
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ContextMenuParams } from '@common/types';
 ⋮----
@@ -23068,6 +23103,7 @@ import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react'
 import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 ⋮----
+import { iconPackStubs, useReactIcons } from '@/utils/extension-icons';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -23114,7 +23150,7 @@ export const useExtensions = (): ExtensionsHookResult =>
 ================
 File: src/renderer/src/contexts/ModelProviderContext.tsx
 ================
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState, useOptimistic, startTransition } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, useOptimistic, startTransition } from 'react';
 import { Model, ProviderProfile } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
@@ -23138,12 +23174,14 @@ export type ModelProviderContextType = {
 // eslint-disable-next-line no-console
 ⋮----
 // Create optimistic updates
+⋮----
+export const useModelProviders = (): ModelProviderContextType =>
 
 ================
 File: src/renderer/src/contexts/ProjectSettingsContext.tsx
 ================
 import { ProjectSettings } from '@common/types';
-import { createContext, ReactNode, startTransition, useContext, useEffect, useOptimistic, useState } from 'react';
+import { createContext, ReactNode, startTransition, useCallback, useContext, useEffect, useMemo, useOptimistic, useState } from 'react';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
@@ -23156,10 +23194,6 @@ type ProjectSettingsProviderProps = {
   baseDir: string;
   children: ReactNode;
 };
-⋮----
-export const ProjectSettingsProvider = (
-⋮----
-const saveProjectSettings = async (updated: Partial<ProjectSettings>) =>
 ⋮----
 // Optimistically update the state
 ⋮----
@@ -23177,7 +23211,7 @@ export const useProjectSettings = () =>
 File: src/renderer/src/contexts/SettingsContext.tsx
 ================
 import { Font, SettingsData, Theme } from '@common/types';
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
@@ -23192,11 +23226,7 @@ type SettingsContextType = {
   setFontSize: (fontSize: number) => void;
 };
 ⋮----
-export const SettingsProvider = (
-⋮----
 const loadSettings = async () =>
-⋮----
-const saveSettings = async (updated: SettingsData) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -23205,13 +23235,11 @@ export const useSettings = () =>
 ================
 File: src/renderer/src/contexts/TasksContext.tsx
 ================
-import React, { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
 import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages, setTodoItems, setAiderModelsData } from '@/stores/taskStore';
 import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
 import { useTaskLogHandlers } from '@/hooks/useTaskLogHandlers';
@@ -23328,7 +23356,7 @@ type RefType =
   | RefObject<HTMLAnchorElement | null>
   | RefObject<HTMLInputElement | null>;
 ⋮----
-export const useClickOutside = (refs: RefType | RefType[], handler: (event: MouseEvent) => void) =>
+export const useClickOutside = (refs: RefType | RefType[], handler: (event: MouseEvent) => void, enabled = true) =>
 ⋮----
 const listener = (event: MouseEvent) =>
 ⋮----
@@ -23520,6 +23548,20 @@ File: src/renderer/src/hooks/usePythonInstallStatus.ts
 // This file was removed — use useAiderConnectorStatus instead
 
 ================
+File: src/renderer/src/hooks/useRefractorLanguage.ts
+================
+import { useCallback, useEffect, useState } from 'react';
+⋮----
+import { refractor } from '@/utils/highlighter';
+import { getLangLoader } from '@/utils/refractor-languages';
+⋮----
+export const useRefractorLanguage = (language: string): boolean =>
+⋮----
+// Registration may fail if the grammar has unmet dependencies
+⋮----
+// Suppress the unused variable warning — registeredVersion is the re-render trigger
+
+================
 File: src/renderer/src/hooks/useRequestyModels.ts
 ================
 import { useEffect, useState } from 'react';
@@ -23619,14 +23661,12 @@ navigateToElement(0); // Navigate to the first result
 ================
 File: src/renderer/src/hooks/useTaskActions.ts
 ================
-import { useCallback } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
+import { useCallback, useMemo } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
 import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 ⋮----
-import { useTaskStore } from '@/stores/taskStore';
+import { updateTaskState, clearSession, setMessages, setAllFiles } from '@/stores/taskStore';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type UseTaskActionsParams = {
@@ -23642,13 +23682,11 @@ File: src/renderer/src/hooks/useTaskCommandHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 ⋮----
 const isCommandOutputMessage = (message: Message): message is CommandOutputMessage =>
 ⋮----
@@ -23658,8 +23696,6 @@ export const useTaskCommandHandlers = (baseDir: string, taskId: string) =>
 File: src/renderer/src/hooks/useTaskDataHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type {
   AutocompletionData,
@@ -23672,7 +23708,7 @@ import type {
 } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { updateTaskState, setQuestion, setAllFiles, setAutocompletionWords, setTokensInfo, setAiderModelsData, setQueuedPrompts } from '@/stores/taskStore';
 ⋮----
 export const useTaskDataHandlers = (baseDir: string, taskId: string) =>
 
@@ -23680,13 +23716,11 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) =>
 File: src/renderer/src/hooks/useTaskLifecycleHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type { ClearTaskData } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { clearSession, setMessages } from '@/stores/taskStore';
 ⋮----
 export const useTaskLifecycleHandlers = (baseDir: string, taskId: string) =>
 
@@ -23696,13 +23730,11 @@ File: src/renderer/src/hooks/useTaskLogHandlers.ts
 import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { v4 as uuidv4 } from 'uuid';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type { LogData, LogMessage, LoadingMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 ⋮----
 const isLoadingMessage = (message: Message): message is LoadingMessage =>
 ⋮----
@@ -23712,13 +23744,11 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) =>
 File: src/renderer/src/hooks/useTaskMessageHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 ⋮----
 export const useTaskMessageHandlers = (baseDir: string, taskId: string) =>
 
@@ -23727,14 +23757,12 @@ File: src/renderer/src/hooks/useTaskResponseHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 import { isResponseMessage } from '@common/types';
 ⋮----
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages } from '@/stores/taskStore';
 ⋮----
 export const useTaskResponseHandlers = (baseDir: string, taskId: string) =>
 
@@ -23743,13 +23771,11 @@ File: src/renderer/src/hooks/useTaskToolHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
-import { useStoreWithEqualityFn } from 'zustand/traditional';
-import { shallow } from 'zustand/vanilla/shallow';
 ⋮----
 import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { useTaskStore } from '@/stores/taskStore';
+import { setMessages, setTodoItems } from '@/stores/taskStore';
 ⋮----
 export const useTaskToolHandlers = (baseDir: string, taskId: string) =>
 ⋮----
@@ -24599,7 +24625,7 @@ File: src/renderer/src/pages/Home.tsx
 ================
 import { ProjectData } from '@common/types';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
+import { Activity, Suspense, lazy, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
 import { MdBarChart, MdSettings, MdUpload } from 'react-icons/md';
 import { PiNotebookFill } from 'react-icons/pi';
 import { useTranslation } from 'react-i18next';
@@ -24609,7 +24635,6 @@ import { compareBaseDirs } from '@common/utils';
 ⋮----
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { useOS } from '@/hooks/useOS';
-import { UsageDashboard } from '@/components/usage/UsageDashboard';
 import { LogsPage } from '@/components/logs/LogsPage';
 import { IconButton } from '@/components/common/IconButton';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -24617,7 +24642,6 @@ import { NoProjectsOpen } from '@/components/project/NoProjectsOpen';
 import { OpenProjectDialog } from '@/components/project/OpenProjectDialog';
 import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { ProjectView } from '@/components/project/ProjectView';
-import { SettingsPage } from '@/components/settings/SettingsPage';
 import { useVersions } from '@/hooks/useVersions';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
@@ -24625,7 +24649,6 @@ import { ProjectSettingsProvider } from '@/contexts/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
 import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
-import { ModelLibrary } from '@/components/ModelLibrary';
 import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 ⋮----
@@ -24970,6 +24993,24 @@ const checkLoaded = () =>
 ⋮----
 // If partial key, find all matching
 ⋮----
+// Module-level action functions (no hook subscription required)
+export const loadExtensionUIComponents = (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string)
+⋮----
+export const loadExtensionComponentData = (
+  api: ApplicationAPI,
+  extensionId: string,
+  componentId: string,
+  projectDir?: string,
+  taskId?: string,
+  forceRefresh?: boolean,
+)
+⋮----
+export const handleExtensionUIRefreshEvent = (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string)
+⋮----
+export const isExtensionUIDataLoaded = (extensionId: string, componentId: string, projectDir?: string, taskId?: string)
+⋮----
+export const getExtensionComponentData = (extensionId: string, componentId: string, projectDir?: string, taskId?: string)
+⋮----
 // Selector hooks for optimized re-renders
 export const useExtensionComponents = (placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[] | undefined =>
 ⋮----
@@ -24995,9 +25036,22 @@ interface ProjectStore {
   clearProjectTasks: (projectBaseDir: string) => void;
 }
 ⋮----
+// Module-level action functions (no hook subscription required)
+export const setProjectTasks = (projectBaseDir: string, tasks: TaskData[])
+⋮----
+export const updateProjectTask = (projectBaseDir: string, taskData: TaskData)
+⋮----
+export const addProjectTask = (projectBaseDir: string, taskData: TaskData)
+⋮----
+export const removeProjectTask = (projectBaseDir: string, taskId: string)
+⋮----
+export const clearProjectTasks = (projectBaseDir: string)
+⋮----
 export const useProjectTasks = (projectBaseDir: string)
 ⋮----
 export const useProjectProcessingState = (projectBaseDir: string)
+⋮----
+export const useProjectTaskWorktreePath = (projectBaseDir: string, taskId: string)
 
 ================
 File: src/renderer/src/stores/taskStore.ts
@@ -25040,7 +25094,38 @@ interface TaskStore {
 ⋮----
 // we are already in a pending state, no need to update
 ⋮----
-export const useTaskState = (taskId: string)
+// Module-level action functions (no hook subscription required)
+export const updateTaskState = (taskId: string, updates: Partial<TaskState>)
+⋮----
+export const setMessages = (taskId: string, updateMessages: (prev: Message[])
+⋮----
+export const setTodoItems = (taskId: string, updateTodoItems: (prev: TodoItem[])
+⋮----
+export const setAllFiles = (taskId: string, allFiles: string[])
+⋮----
+export const setAutocompletionWords = (taskId: string, autocompletionWords: string[])
+⋮----
+export const setTokensInfo = (taskId: string, tokensInfo: TokensInfoData | null)
+⋮----
+export const setQuestion = (taskId: string, question: QuestionData | null)
+⋮----
+export const setAiderModelsData = (taskId: string, modelsData: ModelsData | null)
+⋮----
+export const setQueuedPrompts = (taskId: string, queuedPrompts: QueuedPromptData[])
+⋮----
+export const clearSession = (taskId: string)
+⋮----
+export const useOptimizedTaskState = (taskId: string)
+⋮----
+export const useTaskTokensInfo = (taskId: string)
+⋮----
+export const useTaskFileTokensInfo = (taskId: string)
+⋮----
+export const useTaskQuestion = (taskId: string)
+⋮----
+export const useTaskTodoItems = (taskId: string)
+⋮----
+export const useTaskQueuedPrompts = (taskId: string)
 ⋮----
 export const useTaskMessages = (taskId: string)
 
@@ -27051,6 +27136,17 @@ export const getTaskDateGroup = (task: TaskData): string =>
 export const groupTasksByDate = (tasks: TaskData[]): Map<string, TaskData[]> =>
 
 ================
+File: src/renderer/src/utils/extension-icons.ts
+================
+import { useEffect, useRef, useState } from 'react';
+⋮----
+type ReactIconsMap = Record<string, Record<string, unknown>>;
+⋮----
+export const loadReactIcons = (): Promise<ReactIconsMap> =>
+⋮----
+export const useReactIcons = (): ReactIconsMap | null =>
+
+================
 File: src/renderer/src/utils/extension-library-loader.ts
 ================
 import { ApplicationAPI } from '@common/api';
@@ -27075,7 +27171,7 @@ export const loadAllLibraries = async (api: ApplicationAPI, libraries: Record<st
 File: src/renderer/src/utils/highlighter.tsx
 ================
 import { common, createLowlight } from 'lowlight';
-import { refractor } from 'refractor/all';
+import { refractor } from 'refractor';
 import { ReactNode, Fragment } from 'react';
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { jsx, jsxs } from 'react/jsx-runtime';
@@ -27116,8 +27212,6 @@ export const highlightWithLowlight = (code: string, language?: string): ReactNod
  * Highlights code using refractor (best for diffs/Prism compatibility)
  */
 export const highlightWithRefractor = (code: string, language: string): ReactNode =>
-⋮----
-// refractor.highlight returns a Root node
 ⋮----
 // eslint-disable-next-line no-console
 
@@ -27199,6 +27293,17 @@ export const showWarningNotification = (message: string) =>
 File: src/renderer/src/utils/path-utils.ts
 ================
 export const getPathBasename = (inputPath: string): string =>
+
+================
+File: src/renderer/src/utils/refractor-languages.ts
+================
+// Auto-generated map of lazy-loadable refractor language grammars
+// Each entry maps a language name or alias to a dynamic import
+import type { Syntax } from 'refractor';
+⋮----
+type LangLoader = () => Promise<{ default: Syntax }>;
+⋮----
+export const getLangLoader = (lang: string): LangLoader | undefined
 
 ================
 File: src/renderer/src/utils/routes.ts
@@ -27432,14 +27537,13 @@ export enum VoiceSessionState {
 File: src/renderer/src/App.tsx
 ================
 import { AnimatePresence, motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { THEMES } from '@common/types';
 import { IconContext } from 'react-icons';
 ⋮----
-import { Onboarding } from '@/pages/Onboarding';
 import { Home } from '@/pages/Home';
 import { Logs } from '@/pages/Logs';
 import { ContextMenuProvider, useContextMenu } from '@/contexts/ContextMenuContext';
@@ -27499,6 +27603,8 @@ File: src/renderer/src/main.css
 ⋮----
 html {
 ⋮----
+.break-words {
+⋮----
 :root {
 ⋮----
 body {
@@ -27544,6 +27650,8 @@ File: src/renderer/src/main.tsx
 import ReactDOM from 'react-dom/client';
 ⋮----
 import App from './App';
+⋮----
+import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
 
 ================
 File: src/renderer/index.html
@@ -27984,23 +28092,19 @@ File: package.json
     "@aws-sdk/credential-provider-node": "^3.972.49",
     "@aws-sdk/credential-providers": "^3.1059.0",
     "@aws-sdk/types": "^3.973.10",
-    "@babel/standalone": "^7.26.9",
     "@codemirror/autocomplete": "^6.18.7",
     "@codemirror/language": "^6.12.2",
-    "@codemirror/language-data": "^6.5.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dotenvx/dotenvx": "^1.24.5",
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
     "@google-cloud/aiplatform": "^5.7.0",
-    "@google-cloud/speech": "^7.2.1",
     "@google/genai": "^1.30.0",
     "@headlessui/react": "^2.2.0",
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
-    "@mastra/core": "^0.24.9",
     "@openrouter/ai-sdk-provider": "1.5.4",
     "@opentelemetry/auto-instrumentations-node": "^0.76.0",
     "@opentelemetry/sdk-node": "^0.218.0",
@@ -28026,7 +28130,7 @@ File: package.json
     "ai-sdk-provider-gemini-cli": "1.5.1",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
-    "babel-plugin-react-compiler": "^19.1.0-rc.3",
+    "babel-plugin-react-compiler": "^1.0.0",
     "cheerio": "^1.0.0",
     "chokidar": "^4.0.3",
     "cloudflared": "^0.7.1",
@@ -28055,14 +28159,12 @@ File: package.json
     "i18next-browser-languagedetector": "^8.0.4",
     "istextorbinary": "^9.5.0",
     "jiti": "^2.6.1",
-    "js-tiktoken": "^1.0.20",
     "langfuse-vercel": "^3.38.4",
     "lodash": "^4.18.1",
     "lowlight": "^3.3.0",
     "mark.js": "^8.11.1",
     "match-sorter": "^8.0.0",
     "mermaid": "^11.14.0",
-    "object-hash": "^3.0.0",
     "ollama-ai-provider-v2": "^1.5.5",
     "openai": "^6.9.1",
     "os-name": "^6.0.0",
@@ -28080,12 +28182,9 @@ File: package.json
     "react-resizable": "^3.0.5",
     "react-rnd": "^10.5.3",
     "react-router-dom": "^7.0.1",
-    "react-textarea-autosize": "^8.5.6",
     "react-toastify": "^10.0.6",
     "recharts": "3.0.2",
     "refractor": "^5.0.0",
-    "rehype-autolink-headings": "^7.1.0",
-    "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "simple-git": "^3.27.0",
     "slugify": "^1.6.6",
@@ -28093,7 +28192,6 @@ File: package.json
     "socket.io-client": "^4.8.1",
     "sucrase": "^3.35.1",
     "tailwind-merge": "^3.3.1",
-    "textarea-caret": "^3.1.0",
     "tmp": "^0.2.3",
     "tree-kill": "^1.2.2",
     "turndown": "^7.2.1",
@@ -28119,18 +28217,15 @@ File: package.json
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
-    "@testing-library/user-event": "^14.6.1",
     "@types/handlebars": "^4.0.40",
     "@types/lodash": "^4.17.17",
     "@types/node": "^22.16.5",
-    "@types/object-hash": "^3.0.6",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/react-resizable": "^3.0.8",
     "@types/refractor": "^3.4.1",
     "@types/socket.io": "^3.0.1",
-    "@types/textarea-caret": "^3.0.3",
     "@types/tmp": "^0.2.6",
     "@types/yaml-front-matter": "^4.1.3",
     "@vitejs/plugin-react": "^5.0.4",
@@ -28138,19 +28233,20 @@ File: package.json
     "@vitest/ui": "^4.1.8",
     "adm-zip": "^0.5.16",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^9.2.1",
+    "concurrently": "^10.0.3",
     "dts-bundle-generator": "^9.5.1",
     "electron": "^39.8.5",
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "encoding": "^0.1.13",
-    "esbuild": "^0.25.9",
+    "esbuild": "^0.27.7",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.7.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.2.1",
     "eslint-plugin-react": "^7.37.2",
+    "eslint-plugin-react-compiler": "^19.1.0-rc.2",
     "eslint-plugin-react-hooks": "^7.0.0",
     "globals": "^15.9.0",
     "husky": "^9.1.7",
