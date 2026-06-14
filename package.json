@@ -43,6 +43,10 @@
     "test:watch": "concurrently \"npm run test:node -- --watch\" \"npm run test:web -- --watch\"",
     "test:coverage": "npm run test:node -- --coverage && npm run test:web -- --coverage",
     "test:ui": "vitest --config vitest.config.web.ts --ui",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
+    "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
@@ -187,6 +191,7 @@
     "@electron/notarize": "^3.1.1",
     "@eslint/js": "^9.33.0",
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",

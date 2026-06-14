@@ -14,6 +14,7 @@
 - added lazy loading for heavy dependencies and optimized rendering performance
 - added error boundary and crash fallback screen
 - added missing /settings/versions endpoint
+- added support for Playwright testing framework and initial test cases for onboarding
 
 ## [0.69.0]
 

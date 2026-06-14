@@ -65,14 +65,32 @@ npm run typecheck     # All processes
 
 ### Testing
 
+#### Unit & Component Tests (Vitest)
+
 ```bash
-npm run test          # All tests
+npm run test          # All unit tests
 npm run test:node     # Main process tests
 npm run test:web      # Renderer (React) tests
 npm run test:mcp      # MCP server tests
 npm run test:watch    # Watch mode
 npm run test:coverage # With coverage reports
 ```
+
+#### E2E Tests (Playwright)
+
+E2E tests run against the headless server mode on an isolated port (24336) with a separate data directory.
+
+```bash
+npm run build:server  # Required: build the server first
+npm run test:e2e      # Run all E2E tests headlessly
+npm run test:e2e:ui   # Open Playwright UI mode (interactive)
+npm run test:e2e:headed # Run with visible browser
+npm run test:e2e:debug  # Debug mode with step-through
+```
+
+E2E tests are located in `e2e/tests/`. The test server uses:
+- **Port:** 24336 (isolated from default 24337)
+- **Data directory:** `e2e/.test-data/` (cleaned before each test run)
 
 ## Submitting Changes
 
