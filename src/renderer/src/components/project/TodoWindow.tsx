@@ -62,13 +62,17 @@ export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDe
   const completedCount = todos.filter((todo) => todo.completed).length;
   const totalCount = todos.length;
 
-  // Auto-collapse when all todo items are completed
+  // Auto-collapse when all items are completed
   useEffect(() => {
     if (totalCount > 0 && completedCount === totalCount) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsExpanded(false);
     }
   }, [completedCount, totalCount]);
+
+  if (totalCount === 0) {
+    return null; // Don't render the if there are no todos
+  }
 
   return (
     <div className="absolute top-3 right-3 z-20 max-w-[360px]">
