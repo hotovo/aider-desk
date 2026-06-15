@@ -23,6 +23,7 @@ import type {
   ToolCallPart,
   ToolResultOutput,
 } from '@aiderdesk/extensions';
+import type { SettingSource } from '@cursor/sdk';
 
 interface CursorConfig {
   apiKey: string;
@@ -437,7 +438,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.7.0',
+    version: '1.8.0',
     description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -546,8 +547,7 @@ export default class CursorSdkExtension implements Extension {
     const agentOptions = {
       apiKey,
       model: { id: modelId },
-      local: { cwd: projectDir },
-      ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
+      local: { cwd: projectDir, settingSources: ['project', 'user'] as SettingSource[] },
     };
 
     let agent: SDKAgent | undefined;
@@ -566,7 +566,17 @@ export default class CursorSdkExtension implements Extension {
         });
       }
 
-      const run = await agent.send(prompt);
+      try {
+        await agent.reload();
+      } catch (err) {
+        context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
+      }
+
+      const sendOptions = {
+        ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
+      };
+
+      const run = await agent.send(prompt, sendOptions as Parameters<typeof agent.send>[1]);
       context.log(`Cursor run started: ${run.id}`, 'info');
 
       this.activeRuns.set(taskId, run);
@@ -674,9 +684,6 @@ export default class CursorSdkExtension implements Extension {
   }
 }
 
-const THINKING_TAG = '---\n► **THINKING**\n';
-const ANSWER_TAG = '---\n► **ANSWER**\n';
-
 type AssistantContentPart = ReasoningPart | TextPart | ToolCallPart;
 
 async function processStream(run: Run, taskContext: TaskContext, context: ExtensionContext): Promise<ContextMessage[]> {
@@ -751,13 +758,12 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
     const text = extractText(parts).trim();
 
     if (reasoning || text) {
-      const finishedContent = reasoning && text
-        ? `${THINKING_TAG}${reasoning}${ANSWER_TAG}${text}`
-        : reasoning
-          ? `${THINKING_TAG}${reasoning}`
-          : text;
-
-      await taskContext.addResponseMessage({ id: currentAssistantMessage.id, content: finishedContent, finished: true }, true);
+      await taskContext.addResponseMessage({
+        id: currentAssistantMessage.id,
+        content: text,
+        reasoning: reasoning || undefined,
+        finished: true,
+      }, true);
     }
 
     currentAssistantMessage = null;
@@ -779,16 +785,11 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
 
         if (!hasActiveReasoning) {
           hasActiveReasoning = true;
-          await taskContext.addResponseMessage({
-            id: msg.id,
-            content: THINKING_TAG,
-            finished: false,
-          });
         }
 
         await taskContext.addResponseMessage({
           id: msg.id,
-          content: message.text,
+          reasoning: message.text,
           finished: false,
         });
         break;
@@ -811,11 +812,6 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
             const msg = ensureAssistantMessage();
 
             if (hasActiveReasoning) {
-              await taskContext.addResponseMessage({
-                id: msg.id,
-                content: ANSWER_TAG,
-                finished: false,
-              });
               hasActiveReasoning = false;
             }
 
