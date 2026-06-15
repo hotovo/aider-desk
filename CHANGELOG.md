@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- removed integrated MCP server and added it as separate package @aiderdesk/mcp-server
+
 ## [0.70.0]
 
 - added generateObject function to extension task context for generating structured objects from LLM responses

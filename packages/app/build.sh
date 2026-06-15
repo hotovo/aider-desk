@@ -42,27 +42,18 @@ cp -r "$ROOT_DIR/resources/skills" "$SCRIPT_DIR/out/resources/skills"
 echo "Resources copied successfully."
 echo ""
 
-# Step 4: Build and copy MCP server
-echo "--- Building MCP server ---"
-cd "$ROOT_DIR"
-npx esbuild src/mcp-server/aider-desk-mcp-server.ts --bundle --platform=node --outdir=out/mcp-server
-mkdir -p "$SCRIPT_DIR/out/resources/mcp-server"
-cp -r "$ROOT_DIR/out/mcp-server/." "$SCRIPT_DIR/out/resources/mcp-server/"
-echo "MCP server built and copied successfully."
-echo ""
-
-# Step 5: Copy download scripts into package
+# Step 4: Copy download scripts into package
 echo "--- Copying download scripts ---"
 cp "$ROOT_DIR/scripts/download-probe.mjs" "$SCRIPT_DIR/scripts/download-probe.mjs"
 echo "Download scripts copied."
 echo ""
 
-# Step 6: Generate package.json
+# Step 5: Generate package.json
 echo "--- Generating package.json ---"
 node "$SCRIPT_DIR/scripts/generate-package.mjs"
 echo ""
 
-# Step 7: Install dependencies (rebuilds native deps)
+# Step 6: Install dependencies (rebuilds native deps)
 echo "--- Installing dependencies ---"
 cd "$SCRIPT_DIR"
 npm install --ignore-scripts --legacy-peer-deps

@@ -28,7 +28,7 @@ AiderDesk is an Electron app with three main processes:
 | `src/renderer/` | Chromium / React | UI components, chat interface, settings |
 | `src/preload/` | Isolated | Secure bridge between main and renderer |
 | `packages/common/src/` | Shared | TypeScript types, utilities, i18n locales |
-| `src/mcp-server/` | Node.js | MCP server for external tool integration |
+| `packages/mcp-server/` | Node.js | MCP server for external tool integration (`@aiderdesk/mcp-server`) |
 | `resources/connector/` | Python | Aider CLI integration |
 
 **Tech stack:** React 19, TypeScript, Tailwind CSS, Framer Motion, Electron, Vitest, i18next.
@@ -71,7 +71,6 @@ npm run typecheck     # All processes
 npm run test          # All unit tests
 npm run test:node     # Main process tests
 npm run test:web      # Renderer (React) tests
-npm run test:mcp      # MCP server tests
 npm run test:watch    # Watch mode
 npm run test:coverage # With coverage reports
 ```

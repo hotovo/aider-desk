@@ -39,7 +39,7 @@ RUN node -e "const pkg = require('./package.json'); delete pkg.scripts.postinsta
 # Download required binaries (uv and probe) before building
 RUN node scripts/download-probe.mjs
 
-# Build the server and MCP server (includes resources copy) - prebuild:server builds renderer
+# Build the server (includes resources copy) - prebuild:server builds renderer
 RUN POSTHOG_PUBLIC_API_KEY=${POSTHOG_PUBLIC_API_KEY} npm run build:server
 
 # Production stage
@@ -94,7 +94,6 @@ COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/out/server ./out/server
 COPY --from=builder /app/out/renderer ./out/renderer
 COPY --from=builder /app/out/resources ./out/resources
-COPY --from=builder /app/out/mcp-server ./out/resources/mcp-server
 
 # Set environment for Python package installation
 ENV AIDER_DESK_DATA_DIR=/app/data

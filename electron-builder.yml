@@ -19,10 +19,6 @@ extraResources:
     to: connector
     filter:
       - '**/*'
-  - from: ./out/mcp-server
-    to: mcp-server
-    filter:
-      - '**/*'
   - from: ./resources/prompts
     to: prompts
     filter:

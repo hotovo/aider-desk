@@ -1,0 +1,41 @@
+{
+  "name": "@aiderdesk/mcp-server",
+  "version": "0.2.0",
+  "description": "MCP server that exposes AiderDesk functionality to external MCP-compatible clients",
+  "author": "Hotovo",
+  "homepage": "https://aiderdesk.hotovo.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hotovo/aider-desk.git",
+    "directory": "packages/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/hotovo/aider-desk/issues"
+  },
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "bin": {
+    "aider-desk-mcp-server": "./dist/index.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outdir=dist --out-extension:.js=.js",
+    "test": "vitest run",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "aiderdesk",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "coding-assistant"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "axios": "^1.7.0",
+    "zod": "^3.25.0"
+  }
+}

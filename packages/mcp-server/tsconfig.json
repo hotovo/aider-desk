@@ -8,11 +8,11 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "outDir": "out",
+    "outDir": "dist",
     "rootDir": "src"
   },
   "include": [
-    "src/mcp-server/**/*"
+    "src/index.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }
