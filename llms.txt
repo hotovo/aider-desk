@@ -578,7 +578,6 @@ src/
         ExtensionsContext.tsx
         ModelProviderContext.tsx
         ProjectSettingsContext.tsx
-        SettingsContext.tsx
         TasksContext.tsx
       fonts/
         Enriqueta.ttf
@@ -676,6 +675,7 @@ src/
       stores/
         extensionUIStore.ts
         projectStore.ts
+        settingsStore.ts
         taskStore.ts
       themes/
         theme-aurora.scss
@@ -1984,8 +1984,6 @@ export const createTodoToolset = (task: Task, profile: AgentProfile, promptConte
 ================
 File: src/main/agent/agent-profile-manager.ts
 ================
-import { homedir } from 'os';
-⋮----
 import { FSWatcher, watch } from 'chokidar';
 import { debounce } from 'lodash';
 import { DEFAULT_AGENT_PROFILE, DEFAULT_AGENT_PROFILES } from '@common/agent';
@@ -1997,7 +1995,7 @@ import type { Store } from '@/store';
 ⋮----
 import { Project } from '@/project';
 import { ExtensionManager, ExtensionsChangeListener } from '@/extensions/extension-manager';
-import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
+import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_HOME_DIR, AIDER_DESK_RULES_DIR } from '@/constants';
 import logger from '@/logger';
 import { EventManager } from '@/events';
 import { deriveDirName } from '@/utils';
@@ -2632,9 +2630,10 @@ private async processStep<TOOLS extends ToolSet>(
 reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
 text: text?.substring(0, 100), // Log truncated text
 ⋮----
-const processToolResult = (toolResult: TypedToolResult<TOOLS>) =>
+const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast: boolean) =>
 ⋮----
 // Update the existing tool message with the result
+// Only attach usage report to the last tool message when there is no assistant message
 ⋮----
 // move to the next one right away
 ⋮----
@@ -3223,7 +3222,6 @@ File: src/main/custom-commands/custom-command-manager.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 ⋮----
@@ -3236,7 +3234,7 @@ import type { EventManager } from '@/events';
 import type { ExtensionManager, ExtensionsChangeListener } from '@/extensions';
 import type { Store } from '@/store';
 ⋮----
-import { AIDER_DESK_COMMANDS_DIR } from '@/constants';
+import { AIDER_DESK_COMMANDS_DIR, AIDER_DESK_HOME_DIR } from '@/constants';
 import logger from '@/logger';
 import { Project } from '@/project';
 import { shouldUsePolling } from '@/utils/file-watch';
@@ -7076,7 +7074,7 @@ import {
 import type { ExtensionManager } from '@/extensions/extension-manager';
 import type { Store } from '@/store';
 ⋮----
-import { AIDER_DESK_DEFAULT_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
 import { shouldUsePolling } from '@/utils/file-watch';
@@ -7086,7 +7084,7 @@ export class PromptsManager
 constructor(
     private readonly extensionManager: ExtensionManager,
     private readonly store: Store,
-    private readonly defaultTemplatesDir = AIDER_DESK_DEFAULT_PROMPTS_DIR,
+    private readonly builtinTemplatesDir = AIDER_DESK_BUILTIN_PROMPTS_DIR,
     private readonly globalPromptsDir = AIDER_DESK_GLOBAL_PROMPTS_DIR,
 )
 ⋮----
@@ -7993,7 +7991,6 @@ File: src/main/skills/skill-manager.ts
 ================
 import fs from 'fs/promises';
 import path from 'path';
-import { homedir } from 'os';
 ⋮----
 import { v4 as uuidv4 } from 'uuid';
 import { loadFront } from 'yaml-front-matter';
@@ -8003,7 +8000,7 @@ import { ContextAssistantMessage, ContextMessage, ContextToolMessage, SkillDefin
 import type { Project } from '@/project';
 import type { Task } from '@/task';
 ⋮----
-import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR } from '@/constants';
+import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR, AIDER_DESK_HOME_DIR } from '@/constants';
 import { ExtensionManager } from '@/extensions/extension-manager';
 ⋮----
 const parseSkillFrontMatter = (markdown: string):
@@ -13146,7 +13143,7 @@ import { McpServerSelectorItem } from './McpServerSelectorItem';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
 import { Accordion } from '@/components/common/Accordion';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
@@ -13802,7 +13799,7 @@ import { CompactSelect } from './CompactSelect';
 ⋮----
 import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/DiffViewer';
 import { useApi } from '@/contexts/ApiContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { highlightWithLowlight, lowlight } from '@/utils/highlighter';
 ⋮----
@@ -14279,7 +14276,7 @@ import { getProviderModelId } from '@common/agent';
 ⋮----
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 type Props = {
   className?: string;
@@ -15930,7 +15927,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 export type MessagesRef = {
   exportToImage: () => void;
@@ -16701,7 +16698,7 @@ import { groupAssistantMessages, groupMessagesByPromptContext } from '@/componen
 import { showInfoNotification } from '@/utils/notifications';
 import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -17857,7 +17854,7 @@ import { FaCheck, FaPlus, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa
 ⋮----
 import { ZaiPlanThinkingSetting } from './ZaiPlanThinkingSetting';
 ⋮----
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { Button } from '@/components/common/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -19160,7 +19157,7 @@ import { clsx } from 'clsx';
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 ⋮----
 import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { TaskView, TaskViewRef } from '@/components/project/TaskView';
@@ -19261,7 +19258,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
 import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useApi } from '@/contexts/ApiContext';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
@@ -19399,7 +19396,7 @@ import { useSidebarWidth } from './useSidebarWidth';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Messages, MessagesRef } from '@/components/message/Messages';
 import { VirtualizedMessages, VirtualizedMessagesRef } from '@/components/message/VirtualizedMessages';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
@@ -19565,9 +19562,11 @@ const handleCancelAdd = () =>
 ⋮----
 const handleKeyPress = (e: React.KeyboardEvent) =>
 ⋮----
-// Auto-collapse when all todo items are completed
+// Auto-collapse when all items are completed
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+return null; // Don't render the if there are no todos
 ⋮----
 {/* Header */}
 ⋮----
@@ -21333,7 +21332,7 @@ import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 ⋮----
 import { Settings } from '@/pages/Settings';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, setFont, setFontSize, setTheme, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useApi } from '@/contexts/ApiContext';
@@ -22949,7 +22948,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { Button } from '@/components/common/Button';
 import { Checkbox } from '@/components/common/Checkbox';
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 const handleOk = async () =>
 ⋮----
@@ -22965,7 +22964,7 @@ import { useTranslation } from 'react-i18next';
 import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
 ⋮----
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { formatHumanReadable } from '@/utils/string-utils';
 ⋮----
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig:
@@ -23088,7 +23087,7 @@ import Worker from '@pierre/diffs/worker/worker.js?worker';
 ⋮----
 import type { Theme } from '@common/types';
 ⋮----
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 const workerFactory = ()
 ⋮----
@@ -23206,31 +23205,6 @@ const loadSettings = async () =>
 // eslint-disable-next-line no-console
 ⋮----
 export const useProjectSettings = () =>
-
-================
-File: src/renderer/src/contexts/SettingsContext.tsx
-================
-import { Font, SettingsData, Theme } from '@common/types';
-import { createContext, useCallback, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-⋮----
-import { useApi } from '@/contexts/ApiContext';
-⋮----
-type SettingsContextType = {
-  settings: SettingsData | null;
-  saveSettings: (settings: SettingsData) => Promise<void>;
-  theme: Theme | null;
-  setTheme: (theme: Theme) => void;
-  font: Font | null;
-  setFont: (font: Font) => void;
-  fontSize: number | null;
-  setFontSize: (fontSize: number) => void;
-};
-⋮----
-const loadSettings = async () =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-export const useSettings = () =>
 
 ================
 File: src/renderer/src/contexts/TasksContext.tsx
@@ -23383,7 +23357,7 @@ File: src/renderer/src/hooks/useConfiguredHotkeys.ts
 ================
 import { useMemo } from 'react';
 ⋮----
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { getHotkeys } from '@/utils/hotkeys';
 ⋮----
 export const useConfiguredHotkeys = () =>
@@ -24747,7 +24721,7 @@ import { useTranslation } from 'react-i18next';
 import { isEqual } from 'lodash';
 import { SettingsData } from '@common/types';
 ⋮----
-import { useSettings } from '@/contexts/SettingsContext';
+import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
@@ -25052,6 +25026,42 @@ export const useProjectTasks = (projectBaseDir: string)
 export const useProjectProcessingState = (projectBaseDir: string)
 ⋮----
 export const useProjectTaskWorktreePath = (projectBaseDir: string, taskId: string)
+
+================
+File: src/renderer/src/stores/settingsStore.ts
+================
+import { useCallback } from 'react';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
+import { Font, SettingsData, Theme } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+interface SettingsState {
+  settings: SettingsData | null;
+  theme: Theme | null;
+  font: Font | null;
+  fontSize: number | null;
+}
+⋮----
+interface SettingsActions {
+  setSettingsState: (settings: SettingsData) => void;
+  setThemeValue: (theme: Theme) => void;
+  setFontValue: (font: Font) => void;
+  setFontSizeValue: (fontSize: number) => void;
+}
+⋮----
+type SettingsStore = SettingsState & SettingsActions;
+⋮----
+export const useSaveSettings = () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+export const setTheme = (theme: Theme)
+⋮----
+export const setFont = (font: Font)
+⋮----
+export const setFontSize = (fontSize: number)
 
 ================
 File: src/renderer/src/stores/taskStore.ts
@@ -27537,7 +27547,7 @@ export enum VoiceSessionState {
 File: src/renderer/src/App.tsx
 ================
 import { AnimatePresence, motion } from 'framer-motion';
-import { Suspense, lazy, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
@@ -27547,7 +27557,6 @@ import { IconContext } from 'react-icons';
 import { Home } from '@/pages/Home';
 import { Logs } from '@/pages/Logs';
 import { ContextMenuProvider, useContextMenu } from '@/contexts/ContextMenuContext';
-import { SettingsProvider, useSettings } from '@/contexts/SettingsContext';
 ⋮----
 import { ROUTES } from '@/utils/routes';
 ⋮----
@@ -27559,8 +27568,11 @@ import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 const ModalOverlayUrlHandler = () =>
+⋮----
+const SettingsInitializer = () =>
 ⋮----
 const ThemeAndFontManager = () =>
 ⋮----
@@ -28070,6 +28082,10 @@ File: package.json
     "test:watch": "concurrently \"npm run test:node -- --watch\" \"npm run test:web -- --watch\"",
     "test:coverage": "npm run test:node -- --coverage && npm run test:web -- --coverage",
     "test:ui": "vitest --config vitest.config.web.ts --ui",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
+    "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
+    "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
@@ -28214,6 +28230,7 @@ File: package.json
     "@electron/notarize": "^3.1.1",
     "@eslint/js": "^9.33.0",
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
