@@ -45,6 +45,7 @@ export const AIDER_DESK_EXTENSIONS_REPO_URL = 'https://github.com/hotovo/aider-d
 export interface ResponseMessage {
   id: string;
   content: string;
+  reasoning?: string;
   reflectedMessage?: string;
   finished: boolean;
   usageReport?: UsageReportData;
