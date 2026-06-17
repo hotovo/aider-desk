@@ -1,0 +1,9 @@
+{
+  "name": "github-copilot",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "description": "Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK",
+  "dependencies": {
+    "@github/copilot-sdk": "^1.0.1"
+  }
+}
