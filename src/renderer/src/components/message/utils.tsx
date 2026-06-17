@@ -15,6 +15,7 @@ import {
   ToolMessage,
 } from '@common/types';
 
+import { CompactionSnippetBlock } from './CompactionSnippetBlock';
 import { CustomCommandBashBlock } from './CustomCommandBashBlock';
 import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 
@@ -217,6 +218,14 @@ export const parseMessageContent = (
           i = endIndex;
           continue;
         }
+      }
+
+      // Check for <file-edited> compaction placeholder tags
+      const fileEditedMatch = line.match(/<file-edited\s+path="([^"]+)">/);
+      if (fileEditedMatch) {
+        processTextBlock();
+        parts.push(<CompactionSnippetBlock key={parts.length} filePath={fileEditedMatch[1]} />);
+        continue;
       }
 
       // Check if line starts a code block

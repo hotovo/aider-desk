@@ -1204,6 +1204,9 @@
     "cacheWriteTokens": "缓存写入令牌",
     "cacheReadTokens": "缓存读取令牌"
   },
+  "compaction": {
+    "fileEdited": "文件已编辑（上下文已压缩）"
+  },
   "thinkingAnswer": {
     "thinking": "思考中",
     "answer": "回答"

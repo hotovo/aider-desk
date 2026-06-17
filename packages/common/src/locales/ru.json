@@ -1237,6 +1237,9 @@
     "cacheWriteTokens": "Токены записи в кэш",
     "cacheReadTokens": "Токены чтения из кэша"
   },
+  "compaction": {
+    "fileEdited": "Файл изменён (контекст компактизирован)"
+  },
   "thinkingAnswer": {
     "thinking": "ДУМАЮ",
     "answer": "ОТВЕТ"

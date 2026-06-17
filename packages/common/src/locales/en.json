@@ -1243,6 +1243,9 @@
     "cacheWriteTokens": "Cache Write Tokens",
     "cacheReadTokens": "Cache Read Tokens"
   },
+  "compaction": {
+    "fileEdited": "File edited (context compacted)"
+  },
   "thinkingAnswer": {
     "thinking": "THINKING",
     "answer": "ANSWER"
