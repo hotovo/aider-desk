@@ -7,6 +7,7 @@
 - added non-interactive CLI run command to execute prompts on runnning server
 - added Move to top action for task in task sidebar
 - added probe binary verification and automatic download on runner startup
+- truncating long model IDs in Model Library table
 
 ## [0.70.0]
 

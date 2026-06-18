@@ -194,15 +194,17 @@ export const ModelLibrary = ({ onClose }: Props) => {
           />
         )}
         <div className="flex flex-col h-full overflow-hidden">
-          <ProviderHeader
-            providers={providers}
-            providerErrors={providerErrors}
-            selectedProfileIds={selectedProviderIds}
-            onToggleSelect={handleToggleProviderSelect}
-            onAddProvider={handleAddProvider}
-            onEditProfile={handleEditProfile}
-            onDeleteProfile={handleDeleteProfile}
-          />
+          <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary max-h-[50%] shrink-0">
+            <ProviderHeader
+              providers={providers}
+              providerErrors={providerErrors}
+              selectedProfileIds={selectedProviderIds}
+              onToggleSelect={handleToggleProviderSelect}
+              onAddProvider={handleAddProvider}
+              onEditProfile={handleEditProfile}
+              onDeleteProfile={handleDeleteProfile}
+            />
+          </div>
           <ModelTableSection
             models={models}
             selectedProviderIds={selectedProviderIds}

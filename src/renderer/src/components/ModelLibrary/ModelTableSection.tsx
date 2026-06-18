@@ -147,8 +147,12 @@ export const ModelTableSection = ({
       {
         accessor: 'id',
         header: t('modelLibrary.modelId'),
-        cell: (value) => value as ReactNode,
-        cellClassName: 'text-xs',
+        cell: (value) => (
+          <Tooltip content={String(value ?? '')} delayDuration={1000}>
+            <span className="truncate block">{String(value ?? '')}</span>
+          </Tooltip>
+        ),
+        cellClassName: 'text-xs overflow-hidden',
       },
       {
         accessor: 'providerId',
