@@ -1694,6 +1694,7 @@
     "rename": "重命名",
     "pinTask": "固定任务",
     "unpinTask": "取消固定任务",
+    "moveToTop": "移至顶部",
     "taskNamePlaceholder": "输入任务名称...",
     "untitled": "[未命名]",
     "exportAsMarkdown": "导出为 Markdown",

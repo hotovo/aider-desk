@@ -5,7 +5,7 @@ import { HiOutlinePencil, HiOutlineTrash } from 'react-icons/hi';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { IoLogoMarkdown } from 'react-icons/io';
 import { RiFlag2Line } from 'react-icons/ri';
-import { MdImage, MdPushPin, MdChevronRight } from 'react-icons/md';
+import { MdImage, MdPushPin, MdChevronRight, MdVerticalAlignTop } from 'react-icons/md';
 import { BiDuplicate, BiArchive, BiArchiveIn, BiCopy } from 'react-icons/bi';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
@@ -25,6 +25,7 @@ type Props = {
   onUnarchiveTask?: () => void;
   onTogglePin?: () => void;
   onChangeState?: (newState: string) => void;
+  onMoveToTop?: () => void;
   isPinned?: boolean;
 };
 
@@ -41,6 +42,7 @@ export const TaskMenuButton = memo(
     onUnarchiveTask,
     onTogglePin,
     onChangeState,
+    onMoveToTop,
     isPinned,
   }: Props) => {
     const { t } = useTranslation();
@@ -142,6 +144,12 @@ export const TaskMenuButton = memo(
     const handlePinClick = (e: MouseEvent) => {
       e.stopPropagation();
       onTogglePin?.();
+    };
+
+    const handleMoveToTopClick = (e: MouseEvent) => {
+      e.stopPropagation();
+      onMoveToTop?.();
+      setIsMenuOpen(false);
     };
 
     const handleStateSubmenuToggle = () => {
@@ -248,6 +256,15 @@ export const TaskMenuButton = memo(
                     <RiFlag2Line className="w-4 h-4" />
                     <span className="whitespace-nowrap flex-1">{t('taskSidebar.changeState')}</span>
                     <MdChevronRight className="w-3.5 h-3.5 text-text-muted" />
+                  </li>
+                )}
+                {onMoveToTop && !isNewTask && (
+                  <li
+                    className="flex items-center gap-2 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                    onClick={handleMoveToTopClick}
+                  >
+                    <MdVerticalAlignTop className="w-4 h-4" />
+                    <span className="whitespace-nowrap">{t('taskSidebar.moveToTop')}</span>
                   </li>
                 )}
                 {onArchiveTask && (

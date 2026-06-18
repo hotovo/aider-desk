@@ -1686,6 +1686,7 @@
     "rename": "Rename",
     "pinTask": "Pin task",
     "unpinTask": "Unpin task",
+    "moveToTop": "Move to top",
     "taskNamePlaceholder": "Enter task name...",
     "untitled": "[Untitled]",
     "exportAsMarkdown": "Export as markdown",

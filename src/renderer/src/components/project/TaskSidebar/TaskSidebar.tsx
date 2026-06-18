@@ -318,6 +318,20 @@ const TaskSidebarComponent = ({
     [updateTask],
   );
 
+  const handleMoveToTop = useCallback(
+    async (taskId: string) => {
+      try {
+        if (updateTask) {
+          await updateTask(taskId, { updatedAt: new Date().toISOString() });
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to move task to top:', error);
+      }
+    },
+    [updateTask],
+  );
+
   // Multiselect handlers
   const handleTaskCtrlClick = useCallback(
     (e: MouseEvent, taskId: string) => {
@@ -693,6 +707,7 @@ const TaskSidebarComponent = ({
                             onUnarchiveTask={handleUnarchiveTask}
                             onTogglePin={handleTogglePin}
                             onChangeState={handleChangeState}
+                            onMoveToTop={handleMoveToTop}
                             onCopyAsMarkdown={onCopyAsMarkdown}
                             onExportToMarkdown={onExportToMarkdown}
                             onExportToImage={onExportToImage}

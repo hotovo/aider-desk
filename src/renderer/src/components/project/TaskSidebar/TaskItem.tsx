@@ -37,6 +37,7 @@ type Props = {
   onUnarchiveTask: (taskId: string) => Promise<void>;
   onTogglePin: (taskId: string) => Promise<void>;
   onChangeState: (taskId: string, newState: string) => Promise<void>;
+  onMoveToTop?: (taskId: string) => Promise<void>;
   onCopyAsMarkdown?: (taskId: string) => void;
   onExportToMarkdown?: (taskId: string) => void;
   onExportToImage?: (taskId: string) => void;
@@ -109,6 +110,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.onUnarchiveTask !== nextProps.onUnarchiveTask ||
     prevProps.onTogglePin !== nextProps.onTogglePin ||
     prevProps.onChangeState !== nextProps.onChangeState ||
+    prevProps.onMoveToTop !== nextProps.onMoveToTop ||
     prevProps.onCopyAsMarkdown !== nextProps.onCopyAsMarkdown ||
     prevProps.onExportToMarkdown !== nextProps.onExportToMarkdown ||
     prevProps.onExportToImage !== nextProps.onExportToImage ||
@@ -144,6 +146,7 @@ export const TaskItem = memo(
     onUnarchiveTask,
     onTogglePin,
     onChangeState,
+    onMoveToTop,
     onCopyAsMarkdown,
     onExportToMarkdown,
     onExportToImage,
@@ -306,6 +309,7 @@ export const TaskItem = memo(
                 onUnarchiveTask={task.archived ? () => onUnarchiveTask(task.id) : undefined}
                 onTogglePin={() => onTogglePin(task.id)}
                 onChangeState={(newState) => onChangeState(task.id, newState)}
+                onMoveToTop={onMoveToTop && task.createdAt ? () => onMoveToTop(task.id) : undefined}
                 isPinned={task.pinned || false}
               />
             </div>

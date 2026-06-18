@@ -1677,6 +1677,7 @@
     "rename": "Переименовать",
     "pinTask": "Закрепить задачу",
     "unpinTask": "Открепить задачу",
+    "moveToTop": "Переместить наверх",
     "taskNamePlaceholder": "Введите название задачи...",
     "untitled": "[Без названия]",
     "exportAsMarkdown": "Экспортировать как Markdown",
