@@ -27,7 +27,7 @@ export default defineConfig({
         '@homebridge/node-pty-prebuilt-multiarch',
         '@huggingface/transformers',
         '@lancedb/lancedb',
-        '@mariozechner/pi-tui',
+        '@earendil-works/pi-tui',
         'commander',
       ],
     },

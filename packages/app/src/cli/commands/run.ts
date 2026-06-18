@@ -1,8 +1,10 @@
 import { request } from 'http';
 
+import { TUI, ProcessTerminal, matchesKey as piMatchesKey, Key } from '@earendil-works/pi-tui';
 import { Command } from 'commander';
 
-import { DEFAULT_HOST, DEFAULT_PORT, resolvePort } from '../constants';
+import { DEFAULT_HOST, resolvePort } from '../constants';
+import { RunStreamModel, RunStreamView } from './run-stream-view';
 
 type EventData = {
   baseDir?: string;
@@ -19,6 +21,7 @@ type EventData = {
   toolName?: string;
   toolCallId?: string;
   output?: string;
+  response?: string;
   error?: string;
   args?: unknown;
   // log
@@ -33,6 +36,14 @@ type EventData = {
   model?: string;
   // usage
   usageReport?: unknown;
+};
+
+const parseEventData = (raw: string): EventData | undefined => {
+  try {
+    return JSON.parse(raw) as EventData;
+  } catch {
+    return undefined;
+  }
 };
 
 type Deferred<T> = {
@@ -124,6 +135,81 @@ const fetchJSON = async (
     if (payload) {
       req.write(payload);
     }
+    req.end();
+  });
+};
+
+const callInterrupt = (host: string, port: number, projectDir: string, taskId: string): Promise<void> => {
+  if (!taskId) return Promise.resolve();
+  const body = JSON.stringify({ projectDir, taskId });
+  return new Promise((resolve) => {
+    const options = {
+      hostname: host,
+      port,
+      path: '/api/project/interrupt',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    };
+    const req = request(options, (res) => {
+      res.on('data', () => {});
+      res.on('end', () => resolve());
+    });
+    req.on('error', () => resolve());
+    req.setTimeout(2000, () => {
+      req.destroy();
+      resolve();
+    });
+    req.write(body);
+    req.end();
+  });
+};
+
+type SSEStreamResult = {
+  stream: NodeJS.ReadableStream & {
+    destroy(error?: Error): void;
+  };
+  taskId: string;
+};
+
+const requestSSEStream = (host: string, port: number, body: string): Promise<SSEStreamResult> => {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: host,
+      port,
+      path: '/api/run-prompt',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Content-Length': Buffer.byteLength(body),
+      },
+    };
+
+    const req = request(options, (res) => {
+      if (res.statusCode !== 200) {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf-8');
+          reject(new Error(`Server returned ${res.statusCode}: ${raw}`));
+        });
+        return;
+      }
+      const taskId = res.headers['x-task-id'] as string | undefined;
+      resolve({ stream: res, taskId: taskId || '' });
+    });
+
+    req.on('error', reject);
+    req.setTimeout(600_000, () => {
+      req.destroy(new Error('Request timed out'));
+    });
+
+    req.write(body);
     req.end();
   });
 };
@@ -249,64 +335,57 @@ const runPrompt = async (
   const body = JSON.stringify(requestBody);
   let reqClosed = false;
 
-  const sseResponse = await new Promise<{ stream: NodeJS.ReadableStream; taskId: string }>((resolve, reject) => {
-    const options = {
-      hostname: host,
-      port,
-      path: '/api/run-prompt',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Content-Length': Buffer.byteLength(body),
-      },
-    };
-
-    const req = request(options, (res) => {
-      if (res.statusCode !== 200) {
-        const chunks: Buffer[] = [];
-        res.on('data', (chunk: Buffer) => chunks.push(chunk));
-        res.on('end', () => {
-          const raw = Buffer.concat(chunks).toString('utf-8');
-          reject(new Error(`Server returned ${res.statusCode}: ${raw}`));
-        });
-        return;
-      }
-
-      const taskId = res.headers['x-task-id'] as string | undefined;
-      resolve({ stream: res, taskId: taskId || '' });
-    });
-
-    req.on('error', reject);
-    req.setTimeout(600_000, () => {
-      req.destroy(new Error('Request timed out'));
-    });
-
-    req.write(body);
-    req.end();
-  });
+  const sseResponse = await requestSSEStream(host, port, body);
+  const taskId = sseResponse.taskId;
 
   const eventStream = parseSSEEvents(sseResponse.stream);
 
-  // Handle Ctrl+C gracefully
+  // Handle Ctrl+C gracefully: destroy the stream, best-effort call the
+  // server's interrupt endpoint, then exit 130.
   let interrupted = false;
-  const handleInterrupt = () => {
+  const handleInterrupt = (tui?: TUI) => {
     if (interrupted) {
       process.exit(130);
     }
     interrupted = true;
+    if (tui) {
+      tui.stop();
+    }
     process.stderr.write('\nInterrupting...\n');
     if (!reqClosed) {
       sseResponse.stream.destroy();
     }
-    process.exit(130);
+    void callInterrupt(host, port, projectDir, taskId).then(() => process.exit(130));
+    setTimeout(() => process.exit(130), 2000);
   };
 
-  process.on('SIGINT', handleInterrupt);
-  process.on('SIGTERM', handleInterrupt);
+  process.on('SIGINT', () => handleInterrupt());
+  process.on('SIGTERM', () => handleInterrupt());
 
-  // 3. Consume SSE events
+  // 3. Consume SSE events. When stdout/stdin are both TTYs and the format
+  // is text + non-quiet, render the live streaming UI with collapsible
+  // reasoning/tool views. Otherwise use the plain stdout/stderr stream.
+  const interactive = format === 'text' && !quiet && !!process.stdout.isTTY && !!process.stdin.isTTY;
+
+  if (interactive) {
+    await runInteractiveStream({
+      host,
+      port,
+      projectDir,
+      taskId,
+      prompt,
+      eventStream,
+      sseResponse,
+      onInterrupt: (tui: TUI) => handleInterrupt(tui),
+      onDone: (success: boolean) => {
+        reqClosed = true;
+        process.exit(success ? 0 : 1);
+      },
+    });
+    return;
+  }
+
+  // Plain (non-interactive) streaming path
   let currentResponseText = '';
   let finished = false;
   let lastResponseCompleted: Record<string, unknown> | null = null;
@@ -318,18 +397,14 @@ const runPrompt = async (
   }
 
   for await (const event of eventStream) {
-    let eventData: EventData | undefined;
-    try {
-      eventData = JSON.parse(event.data);
-    } catch {
-      continue;
-    }
+    const eventData = parseEventData(event.data);
+    if (!eventData) continue;
 
     switch (event.type) {
       case 'response-chunk': {
         if (format === 'json' && !quiet) {
           process.stdout.write(formatJSONLine('response-chunk', eventData));
-        } else if (format === 'text') {
+        } else if (format === 'text' && !quiet) {
           const text = eventData.chunk || '';
           if (text) {
             process.stdout.write(text);
@@ -342,7 +417,7 @@ const runPrompt = async (
       case 'response-completed': {
         if (format === 'json' && !quiet) {
           process.stdout.write(formatJSONLine('response-completed', eventData));
-        } else if (format === 'json' && quiet) {
+        } else if (quiet) {
           lastResponseCompleted = eventData;
         } else {
           if (eventData.content) {
@@ -364,8 +439,18 @@ const runPrompt = async (
       }
 
       case 'stream-end': {
-        if (format === 'json' && quiet && lastResponseCompleted) {
-          process.stdout.write(formatJSONLine('response-completed', lastResponseCompleted));
+        if (quiet && lastResponseCompleted) {
+          if (format === 'json') {
+            process.stdout.write(formatJSONLine('response-completed', lastResponseCompleted));
+          } else {
+            const content = (lastResponseCompleted.content as string) || '';
+            if (content) {
+              process.stdout.write(content);
+              if (!content.endsWith('\n')) {
+                process.stdout.write('\n');
+              }
+            }
+          }
         }
         finished = true;
         break;
@@ -435,6 +520,120 @@ const runPrompt = async (
 
   reqClosed = true;
   process.exit(finished ? 0 : 1);
+};
+
+// === Interactive (TUI) streaming path ===
+
+type InteractiveRunArgs = {
+  host: string;
+  port: number;
+  projectDir: string;
+  taskId: string;
+  prompt: string;
+  eventStream: AsyncIterable<{ type: string; data: string }>;
+  sseResponse: SSEStreamResult;
+  onInterrupt: (tui: TUI) => void;
+  onDone: (success: boolean) => void;
+};
+
+const runInteractiveStream = async (args: InteractiveRunArgs): Promise<void> => {
+  const terminal = new ProcessTerminal();
+  const tui = new TUI(terminal);
+
+  const model = new RunStreamModel();
+  const view = new RunStreamView(tui, model, {
+    projectDir: args.projectDir,
+    taskId: args.taskId,
+    host: args.host,
+    port: args.port,
+    prompt: args.prompt,
+    onInterrupt: () => {},
+  });
+  tui.addChild(view);
+  tui.setFocus(view);
+  tui.addInputListener((data: string) => {
+    if (piMatchesKey(data, Key.ctrl('c'))) {
+      view.setInterrupted();
+      args.onInterrupt(tui);
+      return { consume: true };
+    }
+    return undefined;
+  });
+  process.stdout.write('\x1b[2J\x1b[H');
+  tui.start();
+
+  let success = false;
+  try {
+    for await (const event of args.eventStream) {
+      const eventData = parseEventData(event.data);
+      if (!eventData) continue;
+      switch (event.type) {
+        case 'response-chunk': {
+          if (eventData.reasoning && eventData.messageId) {
+            model.appendReasoning(eventData.messageId, eventData.reasoning);
+          }
+          if (eventData.chunk && eventData.messageId) {
+            model.appendAnswer(eventData.messageId, eventData.chunk);
+          }
+          view.notifyChanged();
+          break;
+        }
+        case 'response-completed': {
+          if (eventData.messageId) {
+            model.completeResponse(eventData.messageId, eventData.content);
+          }
+          view.notifyChanged();
+          break;
+        }
+        case 'tool': {
+          const toolId = eventData.id || '';
+          if (toolId && eventData.toolName) {
+            if (!eventData.finished) {
+              model.startTool(toolId, eventData.toolName, eventData.args);
+            } else {
+              const hasError = eventData.response === 'error';
+              model.endTool(toolId, eventData.response, hasError);
+            }
+            view.notifyChanged();
+          }
+          break;
+        }
+        case 'log': {
+          if (eventData.level === 'loading') {
+            if (eventData.message) {
+              view.setLoadingMessage(eventData.message);
+            } else {
+              view.setLoadingMessage(null);
+            }
+          } else if (eventData.level === 'error' && eventData.message) {
+            view.setLoadingMessage(null);
+          }
+          break;
+        }
+        case 'stream-end': {
+          success = true;
+          view.setFinished();
+          break;
+        }
+        default:
+          break;
+      }
+      if (success) {
+        break;
+      }
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message === 'Request timed out') {
+      view.setInterrupted();
+    }
+  } finally {
+    args.sseResponse.stream.destroy();
+    // Allow the user a moment to read the final state before exiting.
+    setTimeout(() => {
+      tui.stop();
+      args.onDone(success);
+    }, 750);
+  }
 };
 
 export function registerRunCommand(program: Command): void {

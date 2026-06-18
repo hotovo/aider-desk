@@ -22,7 +22,6 @@ import {
   ExtensionsApi,
   SkillsApi,
 } from '@/server/rest-api';
-
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';

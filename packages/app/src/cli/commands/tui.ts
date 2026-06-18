@@ -9,7 +9,7 @@ import {
   visibleWidth,
   wrapTextWithAnsi,
   type Component,
-} from '@mariozechner/pi-tui';
+} from '@earendil-works/pi-tui';
 
 import {
   c,
