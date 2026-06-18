@@ -1792,6 +1792,7 @@ export class ExtensionManager {
       const child = spawn('npm', ['install'], {
         cwd: extensionPath,
         stdio: 'inherit',
+        shell: true,
       });
 
       child.on('close', (code) => {

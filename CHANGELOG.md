@@ -8,6 +8,7 @@
 - added Move to top action for task in task sidebar
 - added probe binary verification and automatic download on runner startup
 - truncating long model IDs in Model Library table
+- using shell option for when installing dependencies for extensions to fix issues on Windows
 
 ## [0.70.0]
 
