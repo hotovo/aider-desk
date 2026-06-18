@@ -693,7 +693,7 @@ export class Task {
     }
   }
 
-  private async waitForCurrentAgentToFinish() {
+  public async waitForCurrentAgentToFinish() {
     if (this.agent.isRunning()) {
       logger.warn('Agent is already running, waiting for current operation to complete...', {
         baseDir: this.project.baseDir,
@@ -715,8 +715,22 @@ export class Task {
     }
   }
 
-  private isPromptRunning() {
+  public isPromptRunning() {
     return !!this.currentPromptContext || this.agent.isRunning() || this.isCompacting;
+  }
+
+  public hasQueuedPrompts(): boolean {
+    return this.queuedPrompts.length > 0;
+  }
+
+  public async waitForIdle(): Promise<void> {
+    while (this.isPromptRunning() || this.hasQueuedPrompts()) {
+      if (this.agent.isRunning()) {
+        await this.waitForCurrentAgentToFinish();
+      } else {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
   }
 
   public async runPrompt(

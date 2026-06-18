@@ -56,8 +56,14 @@ export interface EventsConnector extends EventsConnectorConfig {
   socket: Socket;
 }
 
+type EventListener = (event: { type: string; data: unknown }) => void;
+
+const EVENT_BUFFER_SIZE = 200;
+
 export class EventManager {
   private eventsConnectors: EventsConnector[] = [];
+  private sseListeners: Map<string, Set<EventListener>> = new Map();
+  private eventBuffer: { type: string; data: unknown }[] = [];
 
   constructor(private readonly windowManager?: WindowManager) {}
 
@@ -458,6 +464,24 @@ export class EventManager {
         this.unsubscribe(connector.socket, log);
       }
     });
+
+    // Notify SSE listeners
+    const event = { type: eventType, data };
+    for (const listeners of this.sseListeners.values()) {
+      for (const listener of listeners) {
+        try {
+          listener(event);
+        } catch {
+          // ignore broken listeners
+        }
+      }
+    }
+
+    // Buffer events for late-arriving SSE subscribers
+    this.eventBuffer.push(event);
+    if (this.eventBuffer.length > EVENT_BUFFER_SIZE) {
+      this.eventBuffer.shift();
+    }
   }
 
   // Extension UI events
@@ -479,5 +503,31 @@ export class EventManager {
     const data = { baseDir, taskId, status };
     this.sendToWindows('aider-connector-status', data);
     this.broadcastToEventConnectors('aider-connector-status', data);
+  }
+
+  // SSE event subscription for CLI streaming
+  subscribeSSE(listenerId: string, listener: EventListener, replayBuffer = false): void {
+    if (!this.sseListeners.has(listenerId)) {
+      this.sseListeners.set(listenerId, new Set());
+    }
+    this.sseListeners.get(listenerId)!.add(listener);
+
+    // Replay buffered events to late-arriving subscribers
+    if (replayBuffer) {
+      for (const event of this.eventBuffer) {
+        try {
+          listener(event);
+        } catch {
+          // ignore broken listeners
+        }
+      }
+    }
+  }
+
+  unsubscribeSSE(listenerId: string, listener: EventListener): void {
+    this.sseListeners.get(listenerId)?.delete(listener);
+    if (this.sseListeners.get(listenerId)?.size === 0) {
+      this.sseListeners.delete(listenerId);
+    }
   }
 }

@@ -2,6 +2,7 @@ import { resolve, dirname } from 'path';
 
 export const READY_PATTERN = /AiderDesk Runner is ready and running on port (\d+)/;
 export const DEFAULT_PORT = 24337;
+export const DEFAULT_HOST = 'localhost';
 export const MAX_LOG_LINES = 500;
 
 export const pkgRoot = resolve(dirname(__filename), '..');

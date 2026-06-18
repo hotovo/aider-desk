@@ -22,6 +22,7 @@ import {
   ExtensionsApi,
   SkillsApi,
 } from '@/server/rest-api';
+
 import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
@@ -47,7 +48,12 @@ export class ServerController {
     this.init();
   }
 
-  private serverGuardMiddleware(_: Request, res: Response, next: NextFunction): void {
+  private serverGuardMiddleware(req: Request, res: Response, next: NextFunction): void {
+    // Always allow health check regardless of server.enabled setting
+    if (req.path === '/api/health') {
+      next();
+      return;
+    }
     // In headless mode, always allow requests regardless of server.enabled setting
     if (process.env.AIDER_DESK_HEADLESS === 'true' || this.isStarted) {
       next();
@@ -59,6 +65,12 @@ export class ServerController {
   }
 
   private timeoutMiddleware(req: Request, res: Response, next: NextFunction): void {
+    // Skip timeout for SSE responses (Accept: text/event-stream)
+    if (req.accepts('text/event-stream')) {
+      next();
+      return;
+    }
+
     req.setTimeout(REQUEST_TIMEOUT_MS, () => {
       res.status(504).json({ error: 'Request timeout' });
     });
@@ -132,7 +144,6 @@ export class ServerController {
   }
 
   private init() {
-    // Configure Express
     this.app.use(express.json({ limit: '50mb' }));
     this.setupCors();
 

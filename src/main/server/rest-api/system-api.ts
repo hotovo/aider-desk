@@ -27,6 +27,14 @@ export class SystemApi extends BaseApi {
   }
 
   registerRoutes(router: Router): void {
+    // Health check
+    router.get(
+      '/health',
+      this.handleRequest(async (_req, res) => {
+        res.status(200).json({ status: 'ok' });
+      }),
+    );
+
     router.get(
       '/system/env-var',
       this.handleRequest(async (req, res) => {

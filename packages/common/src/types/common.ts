@@ -905,6 +905,7 @@ export interface CreateTaskParams {
   sendEvent?: boolean;
   provider?: string;
   model?: string;
+  agentProfileId?: string;
   mode?: Mode;
   workingMode?: WorkingMode;
   addInitialContextFiles?: boolean;

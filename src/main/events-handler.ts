@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 
 import {
   AgentProfile,
+  AutonomyMode,
   CloudflareTunnelStatus,
   CommandsData,
   CreateTaskParams,
@@ -85,6 +86,10 @@ export class EventsHandler {
 
   loadSettings(): SettingsData {
     return this.store.getSettings();
+  }
+
+  getEventManager(): EventManager {
+    return this.eventManager;
   }
 
   async saveSettings(newSettings: SettingsData): Promise<SettingsData> {
@@ -390,6 +395,34 @@ export class EventsHandler {
 
   async runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): Promise<ResponseCompletedData[]> {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.runPrompt(prompt, mode, true, undefined, true, images) || [];
+  }
+
+  async waitForTaskIdle(baseDir: string, taskId: string): Promise<void> {
+    const project = this.projectManager.getProject(baseDir);
+    const task = project?.getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found in project ${baseDir}`);
+    }
+    await task.waitForIdle();
+  }
+
+  async ensureProjectAndCreateTask(projectDir: string, params?: CreateTaskParams): Promise<{ taskId: string; projectDir: string }> {
+    const projects = this.store.getOpenProjects();
+    const baseDir = projectDir.endsWith('/') ? projectDir.slice(0, -1) : projectDir;
+
+    const existingProject = projects.find((p) => compareBaseDirs(p.baseDir, baseDir));
+    if (!existingProject) {
+      await this.addOpenProject(baseDir);
+    }
+
+    const taskParams: CreateTaskParams = {
+      ...params,
+      autonomyMode: params?.autonomyMode ?? AutonomyMode.Autonomous,
+    };
+
+    const task = await this.createNewTask(baseDir, taskParams);
+
+    return { taskId: task.id, projectDir: baseDir };
   }
 
   async savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void> {

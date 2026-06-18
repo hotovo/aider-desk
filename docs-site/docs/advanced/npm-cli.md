@@ -64,6 +64,34 @@ Runs the service in the foreground with logs printed to stdout. This is ideal fo
 | `-h, --help` | Show help message |
 | `-v, --version` | Show version number |
 
+### Run a Prompt Non-Interactively
+
+```bash
+aiderdesk run "Explain what closures are in JavaScript"
+```
+
+Connects to a running AiderDesk server, sends the prompt, streams the AI response to your terminal, and exits when done. The current working directory is used as the project. If the project doesn't exist yet, it's automatically created.
+
+You can also pipe input via stdin:
+
+```bash
+cat README.md | aiderdesk run "Summarize this file"
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-p, --port <port>` | Server port (default: `24337`) |
+| `--host <host>` | Server hostname (default: `localhost`) |
+| `-f, --format <format>` | Output format: `text` (default) or `json` |
+| `-q, --quiet` | Suppress progress indicators |
+| `-m, --model <provider/model>` | Override the model (e.g. `openai/gpt-4o-mini`) |
+| `-a, --agent-profile <id>` | Use a specific agent profile by ID or name |
+| `--task-id <id>` | Run on an existing task (multi-turn conversations) |
+
+See the [CLI Run Command](/docs/advanced/cli-run) page for full documentation.
+
 ### Port Configuration
 
 The port can be configured in three ways (highest priority first):

@@ -49,6 +49,55 @@ aiderdesk start
 
 Runs the service in the foreground with logs printed to stdout. Useful for Docker containers, systemd services, or CI environments.
 
+### Run a Prompt
+
+```bash
+aiderdesk run "What does this project do?"
+```
+
+Connects to a running AiderDesk server, sends the prompt, streams the AI response to your terminal, and exits when done. Uses the current working directory as the project (auto-creates it if needed).
+
+Stdin piping is supported:
+
+```bash
+cat README.md | aiderdesk run "Summarize this file"
+git diff | aiderdesk run "Review these changes"
+```
+
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `-p, --port <port>` | Server port (default: `24337`, env: `AIDER_DESK_PORT`) |
+| `--host <host>` | Server hostname (default: `localhost`) |
+| `-f, --format <format>` | Output format: `text` (default) or `json` (JSONL) |
+| `-q, --quiet` | Suppress progress indicators and tool call output |
+| `-m, --model <provider/model>` | Override the model (e.g. `openai/gpt-4o-mini`) |
+| `-a, --agent-profile <id>` | Use a specific agent profile by ID or name |
+| `--task-id <id>` | Run on an existing task (for multi-turn conversations) |
+
+**Output formats:**
+
+- `text` (default) — Streams the answer to stdout. Tool calls are shown as compact indicators (`⚙ tool_name(args)` / `✓ tool_name`) on stderr. Use `-q` to show only the answer.
+- `json` — One JSON object per line for each event with `{type, taskId, projectDir, data}` structure. Useful for scripting and automation.
+- `json -q` — Outputs only the final `response-completed` event as a single JSON line with content, usage stats, and metadata.
+
+**Multi-turn conversations:**
+
+```bash
+# First prompt — creates a new task
+aiderdesk run -q -f json "Remember the word BANANA. Say OK."
+# {"type":"response-completed","taskId":"a1b2c3d4","projectDir":"...","data":{"content":"OK.",...}}
+
+# Second prompt — resumes the same task
+aiderdesk run --task-id "a1b2c3d4" -q "What word did I ask you to remember?"
+# BANANA
+```
+
+:::info
+The `run` command requires a running AiderDesk server. If the server is not reachable, it will print an error and exit with code 1.
+:::
+
 ### Options
 
 ```

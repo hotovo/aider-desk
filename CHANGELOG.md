@@ -4,6 +4,7 @@
 
 - removed integrated MCP server and added it as separate package @aiderdesk/mcp-server
 - added special UI elements for edited files in assistant message after smart compaction
+- added non-interactive CLI run command to execute prompts on runnning server
 
 ## [0.70.0]
 

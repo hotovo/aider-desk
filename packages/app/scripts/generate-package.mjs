@@ -36,7 +36,7 @@ const NODE_BUILTINS = new Set([
 
 // Packages that are already in the committed package.json CLI deps
 const CLI_PACKAGES = new Set([
-  '@mariozechner/pi-tui',
+  '@earendil-works/pi-tui',
 ]);
 
 const runnerJs = readFileSync(resolve(PKG_DIR, 'out', 'runner.js'), 'utf8');
