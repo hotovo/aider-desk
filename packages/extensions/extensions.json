@@ -77,8 +77,9 @@
       "id": "external-rules",
       "name": "External Rules",
       "description": "Includes rule files from Cursor, Claude Code, and Roo Code",
-      "file": "external-rules.ts",
-      "type": "single",
+      "folder": "external-rules",
+      "type": "folder",
+      "hasDependencies": false,
       "capabilities": ["context"]
     },
     {
@@ -301,6 +302,15 @@
       "capabilities": ["providers", "agent-loop"]
     },
     {
+      "id": "github-copilot",
+      "name": "GitHub Copilot",
+      "description": "Integrates GitHub Copilot as an LLM provider using the official Copilot SDK (Copilot CLI). Agent mode only",
+      "folder": "github-copilot",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["providers", "agent-loop"]
+    },
+    {
       "id": "checkpoints",
       "name": "Checkpoints",
       "description": "Git-based checkpoints for file edits — revert to the state before any edit",
@@ -317,6 +327,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["tools", "search"]
+    },
+    {
+      "id": "kanban",
+      "name": "Kanban Board",
+      "description": "Kanban board for project tasks, grouped by state with auto-updating columns",
+      "folder": "kanban",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["ui"]
     }
   ]
 }
