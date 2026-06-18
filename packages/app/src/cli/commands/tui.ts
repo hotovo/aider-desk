@@ -105,7 +105,21 @@ class AiderDeskCli implements Component {
     this.selectedMenuIndex = 0;
     this.invalidate();
 
-    this.childProcess = spawnRunnerProcess(this.configuredPort, ['pipe', 'pipe', 'pipe']);
+    try {
+      this.childProcess = spawnRunnerProcess(
+        this.configuredPort,
+        ['pipe', 'pipe', 'pipe'],
+        (line, isError) => {
+          this.logBuffer.push(isError ? c.red(line) : c.cyan(line));
+        },
+      );
+    } catch (err) {
+      this.logBuffer.push(c.red(`Failed to start: ${(err as Error).message}`));
+      this.state = 'idle';
+      this.invalidate();
+      this.tui.requestRender();
+      return;
+    }
 
     const handleOutput = (data: Buffer) => {
       const text = data.toString();

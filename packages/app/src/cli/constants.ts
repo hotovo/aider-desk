@@ -1,4 +1,4 @@
-import { resolve, dirname } from 'path';
+import { resolve, dirname, join } from 'path';
 
 export const READY_PATTERN = /AiderDesk Runner is ready and running on port (\d+)/;
 export const DEFAULT_PORT = 24337;
@@ -8,6 +8,11 @@ export const pkgRoot = resolve(dirname(__filename), '..');
 export const resourcesDir = resolve(pkgRoot, 'out', 'resources');
 export const rendererDir = resolve(pkgRoot, 'out', 'renderer');
 export const runnerPath = resolve(pkgRoot, 'out', 'runner.js');
+
+const probePlatformDir = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'macos' : 'linux';
+const probeExeName = process.platform === 'win32' ? 'probe.exe' : 'probe';
+export const probeBinaryPath = join(resourcesDir, probePlatformDir, probeExeName);
+export const probeScriptPath = resolve(pkgRoot, 'scripts', 'download-probe.mjs');
 
 export function getPortFromEnv(): number | null {
   const envPort = process.env.AIDER_DESK_PORT;

@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'child_process';
 
 import { resourcesDir, rendererDir, runnerPath, DEFAULT_PORT } from './constants';
+import { ensureProbeBinary, type ProbeOutputSink } from './probe';
 
 export function getRunnerEnv(port: number): Record<string, string> {
   const env: Record<string, string> = {
@@ -19,7 +20,17 @@ export function getRunnerEnv(port: number): Record<string, string> {
   return env;
 }
 
-export function spawnRunnerProcess(port: number, stdio: 'inherit' | ['pipe', 'pipe', 'pipe']): ChildProcess {
+export function spawnRunnerProcess(
+  port: number,
+  stdio: 'inherit' | ['pipe', 'pipe', 'pipe'],
+  onEnsureProbeOutput?: ProbeOutputSink,
+): ChildProcess {
+  if (!ensureProbeBinary(onEnsureProbeOutput)) {
+    throw new Error(
+      'Probe binary is missing and could not be downloaded. Semantic search will not be available. ' +
+        'Re-run the probe download manually: RESOURCES_DIR=./out/resources node scripts/download-probe.mjs --current-platform-only',
+    );
+  }
   return spawn(process.execPath, [runnerPath], {
     env: getRunnerEnv(port),
     stdio,
@@ -27,7 +38,13 @@ export function spawnRunnerProcess(port: number, stdio: 'inherit' | ['pipe', 'pi
 }
 
 export function spawnRunner(port: number, stdio: 'inherit' | ['pipe', 'pipe', 'pipe']): void {
-  const child = spawnRunnerProcess(port, stdio);
+  let child: ChildProcess;
+  try {
+    child = spawnRunnerProcess(port, stdio);
+  } catch (err) {
+    console.error(`Failed to start: ${(err as Error).message}`);
+    process.exit(1);
+  }
 
   const forwardSignal = (signal: NodeJS.Signals) => {
     child.kill(signal);
