@@ -112,7 +112,6 @@
           <ui.Tooltip content={`Accounting: ${nw.accountingMethod || 'energy'}`}>
             <span>${creditsRemaining}</span>
           </ui.Tooltip>
-          <span>({nw.creditsPercentage}%)</span>
         </div>
       </div>
     );

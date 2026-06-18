@@ -415,7 +415,7 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.5.0',
+    version: '1.5.1',
     description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
