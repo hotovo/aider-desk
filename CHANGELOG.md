@@ -9,6 +9,7 @@
 - added probe binary verification and automatic download on runner startup
 - truncating long model IDs in Model Library table
 - using shell option for when installing dependencies for extensions to fix issues on Windows
+- updated power grep tool to stream output
 
 ## [0.70.0]
 

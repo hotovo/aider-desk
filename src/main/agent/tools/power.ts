@@ -1,11 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { spawn, execFile } from 'child_process';
+import { spawn } from 'child_process';
 import { ChildProcess } from 'node:child_process';
-import { promisify } from 'util';
-import { Buffer } from 'node:buffer';
-
-const execFileAsync = promisify(execFile);
 
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
@@ -446,7 +442,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       try {
-        const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never', '--max-count', String(maxResults)];
+        const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never'];
 
         if (!caseSensitive) {
           rgArgs.push('-i');
@@ -466,22 +462,6 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           cwd: taskDir,
         });
 
-        const { stdout, stderr } = await execFileAsync(RIPGREP_BINARY_PATH, rgArgs, {
-          cwd: taskDir,
-          env: { ...process.env, TERM: 'dumb', PATH: getShellPath() },
-          maxBuffer: 10 * 1024 * 1024,
-          windowsHide: true,
-        });
-
-        logger.debug('ripgrep stdout raw:', { stdout: stdout.substring(0, 2000) });
-        logger.debug('ripgrep stderr:', { stderr: stderr.substring(0, 2000) });
-
-        const outputLines = stdout.split('\n').filter(Boolean);
-        logger.debug('outputLines count:', { count: outputLines.length, lines: outputLines.slice(0, 20) });
-        if (outputLines.length === 0) {
-          return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
-        }
-
         const results: Array<{
           filePath: string;
           lineNumber: number;
@@ -497,42 +477,34 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         // When matches are far apart in the same file, rg inserts "--" between non-overlapping groups.
         const outputLineRegex = /^(.+?)([:-])(\d+)\2(.*)$/;
 
-        // Buffer for context lines that appear before a match in the output.
-        // These are "before-context" lines for the upcoming match.
         let pendingBeforeContext: string[] = [];
-        // After a "--" context break, context lines should go to pendingBeforeContext
-        // rather than being appended to the previous match's after-context.
         let afterContextBreak = false;
+        let stderrData = '';
+        let lineBuffer = '';
 
-        for (let rawLine of outputLines) {
-          // Fix: On Windows, stdout from ripgrep uses \r\n line endings.
-          // After split('\n'), each line retains a trailing \r, which
-          // causes the regex $ anchor to not match. Strip it here.
+        const processLine = (rawLine: string): boolean => {
           if (rawLine.endsWith('\r')) {
             rawLine = rawLine.slice(0, -1);
           }
 
-          // Handle rg context break separator ("--")
           if (rawLine === '--') {
             pendingBeforeContext = [];
             afterContextBreak = true;
-            continue;
+            return false;
           }
 
-          const line = rawLine;
-          const match = outputLineRegex.exec(line);
+          const match = outputLineRegex.exec(rawLine);
           if (!match) {
-            continue;
+            return false;
           }
 
           const [, rawFilePath, separator, lineNumStr, content] = match;
           const lineNum = parseInt(lineNumStr, 10);
           if (isNaN(lineNum)) {
-            continue;
+            return false;
           }
 
           const filePath = rawFilePath.startsWith('./') ? rawFilePath.slice(2) : rawFilePath;
-
           const isMatch = separator === ':';
 
           if (isMatch) {
@@ -561,14 +533,114 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             }
           }
 
-          if (results.length >= maxResults) {
-            break;
+          return results.length >= maxResults;
+        };
+
+        let wasAborted = false;
+
+        await new Promise<void>((resolveStream) => {
+          let streamResolved = false;
+          let childProcess: ChildProcess | null = null;
+          let abortListener: (() => void) | null = null;
+
+          const cleanup = () => {
+            if (abortListener && abortSignal) {
+              abortSignal.removeEventListener('abort', abortListener);
+            }
+          };
+
+          const finish = () => {
+            if (streamResolved) {
+              return;
+            }
+            streamResolved = true;
+            cleanup();
+            resolveStream();
+          };
+
+          abortListener = () => {
+            if (streamResolved) {
+              return;
+            }
+            wasAborted = true;
+            if (childProcess?.pid) {
+              try {
+                childProcess.kill('SIGKILL');
+              } catch {
+                // Process may have already exited
+              }
+            }
+          };
+
+          abortSignal?.addEventListener('abort', abortListener);
+
+          try {
+            childProcess = spawn(RIPGREP_BINARY_PATH, rgArgs, {
+              cwd: taskDir,
+              env: { ...process.env, TERM: 'dumb', PATH: getShellPath() },
+              windowsHide: true,
+            });
+          } catch (spawnError) {
+            stderrData = spawnError instanceof Error ? spawnError.message : String(spawnError);
+            finish();
+            return;
           }
+
+          childProcess.stdout?.on('data', (data: Buffer) => {
+            if (streamResolved) {
+              return;
+            }
+
+            lineBuffer += data.toString('utf-8');
+            const lines = lineBuffer.split('\n');
+            lineBuffer = lines.pop() || '';
+
+            for (const rawLine of lines) {
+              if (!rawLine) {
+                continue;
+              }
+              const reachedLimit = processLine(rawLine);
+              if (reachedLimit) {
+                try {
+                  childProcess?.kill('SIGKILL');
+                } catch {
+                  // Process may have already exited
+                }
+                finish();
+                return;
+              }
+            }
+          });
+
+          childProcess.stderr?.on('data', (data: Buffer) => {
+            stderrData += data.toString('utf-8');
+          });
+
+          childProcess.on('error', (error: Error) => {
+            if (!streamResolved) {
+              stderrData = error.message;
+              finish();
+            }
+          });
+
+          childProcess.on('close', () => {
+            if (!streamResolved && lineBuffer) {
+              processLine(lineBuffer);
+              lineBuffer = '';
+            }
+            finish();
+          });
+        });
+
+        if (wasAborted || abortSignal?.aborted) {
+          return 'Operation was cancelled by user.';
         }
 
+        logger.debug('ripgrep results count:', { count: results.length, stderr: stderrData.substring(0, 500) });
+
         if (results.length === 0) {
-          if (stderr.trim()) {
-            return `Error during grep: ${stderr.trim()}`;
+          if (stderrData.trim()) {
+            return `Error during grep: ${stderrData.trim()}`;
           }
           return `No matches found for pattern '${searchTerm}' in files matching '${filePattern}'.`;
         }
