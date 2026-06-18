@@ -84,7 +84,7 @@ export class PromptApi extends BaseApi {
       const isSSE = acceptsSSE && !acceptsJSON;
 
       if (isSSE) {
-        void this.handleRunPromptSSE(req, res, projectDir, prompt, taskId, mode, images, model, agentProfileId);
+        void this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId);
       } else {
         void this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId);
       }
@@ -130,7 +130,6 @@ export class PromptApi extends BaseApi {
   }
 
   private async handleRunPromptSSE(
-    req: Request,
     res: Response,
     projectDir: string,
     prompt: string,
@@ -218,7 +217,7 @@ export class PromptApi extends BaseApi {
 
     try {
       await this.eventsHandler.waitForTaskIdle(baseDir, resolvedTaskId);
-      const responses = await this.eventsHandler.runPrompt(baseDir, resolvedTaskId, prompt, mode, images);
+      await this.eventsHandler.runPrompt(baseDir, resolvedTaskId, prompt, mode, images);
 
       if (!closed) {
         try {
