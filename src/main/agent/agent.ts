@@ -760,6 +760,46 @@ export class Agent {
       systemPrompt = await this.promptsManager.getSystemPrompt(this.store.getSettings(), task, profile);
     }
 
+    const settings = this.store.getSettings();
+    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
+    const providers = this.modelManager.getProviders();
+
+    let provider = providers.find((p) => p.id === profile.provider);
+    let modelName = profile.model;
+
+    if (provider) {
+      const extensionResult = await this.extensionManager.dispatchEvent(
+        'onAgentStarted',
+        {
+          mode,
+          prompt,
+          agentProfile: profile,
+          providerProfile: provider,
+          model: modelName,
+          promptContext,
+          contextMessages,
+          contextFiles,
+          systemPrompt,
+          images,
+        },
+        task.project,
+        task,
+      );
+      if (extensionResult.blocked) {
+        logger.debug('Agent execution blocked by extension');
+        return [];
+      }
+      profile = extensionResult.agentProfile;
+      provider = extensionResult.providerProfile;
+      modelName = extensionResult.model;
+      prompt = extensionResult.prompt;
+      promptContext = extensionResult.promptContext;
+      contextMessages = extensionResult.contextMessages;
+      contextFiles = extensionResult.contextFiles;
+      systemPrompt = extensionResult.systemPrompt;
+      images = extensionResult.images ?? images;
+    }
+
     const userRequestMessage: ContextUserMessage | null = prompt
       ? {
           id: promptContext?.id || uuidv4(),
@@ -801,44 +841,7 @@ export class Agent {
       });
     }
 
-    const settings = this.store.getSettings();
-    const projectProfiles = this.agentProfileManager.getProjectProfiles(task.project);
     let resultMessages: ContextMessage[] = userRequestMessage ? [userRequestMessage] : [];
-
-    const providers = this.modelManager.getProviders();
-    let provider = providers.find((p) => p.id === profile.provider);
-    let modelName = profile.model;
-
-    if (provider) {
-      const extensionResult = await this.extensionManager.dispatchEvent(
-        'onAgentStarted',
-        {
-          mode,
-          prompt,
-          agentProfile: profile,
-          providerProfile: provider,
-          model: modelName,
-          promptContext,
-          contextMessages,
-          contextFiles,
-          systemPrompt,
-        },
-        task.project,
-        task,
-      );
-      if (extensionResult.blocked) {
-        logger.debug('Agent execution blocked by extension');
-        return [];
-      }
-      profile = extensionResult.agentProfile;
-      provider = extensionResult.providerProfile;
-      modelName = extensionResult.model;
-      prompt = extensionResult.prompt;
-      promptContext = extensionResult.promptContext;
-      contextMessages = extensionResult.contextMessages;
-      contextFiles = extensionResult.contextFiles;
-      systemPrompt = extensionResult.systemPrompt;
-    }
 
     if (userRequestMessage && includeInContext) {
       await task.addContextMessage(userRequestMessage);

@@ -119,6 +119,21 @@ describe('Event Payload Interfaces', () => {
       expect(event.blocked).toBe(true);
     });
 
+    it('AgentStartedEvent should support optional images field', () => {
+      const event: AgentStartedEvent = {
+        mode: 'agent',
+        agentProfile: {} as AgentProfile,
+        providerProfile: {} as ProviderProfile,
+        model: 'gpt-4',
+        prompt: 'test prompt',
+        systemPrompt: undefined,
+        contextMessages: [],
+        contextFiles: [],
+        images: ['data:image/png;base64,abc123'],
+      };
+      expect(event.images).toHaveLength(1);
+    });
+
     it('AgentFinishedEvent should have resultMessages field', () => {
       const event: AgentFinishedEvent = {
         mode: 'agent',

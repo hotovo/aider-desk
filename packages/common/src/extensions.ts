@@ -423,6 +423,7 @@ export interface AgentStartedEvent {
   contextMessages: ContextMessage[];
   contextFiles: ContextFile[];
   blocked?: boolean;
+  images?: string[];
 }
 
 /** Event payload for agent finished events */
