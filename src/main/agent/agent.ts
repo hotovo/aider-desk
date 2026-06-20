@@ -635,7 +635,7 @@ export class Agent {
 
   /**
    * Recursively strips unsupported JSON Schema 2019-09 keywords that are not
-   * recognized by some MCP servers (like gemini-cli).
+   * recognized by some MCP servers.
    */
   private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown> {
     // JSON Schema 2019-09 keywords to remove
@@ -685,7 +685,7 @@ export class Agent {
   }
 
   private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema {
-    if (provider === 'gemini' || provider === 'gemini-cli') {
+    if (provider === 'gemini') {
       // Deep clone to avoid modifying the original schema
       const fixedSchema = JSON.parse(JSON.stringify(inputSchema));
 

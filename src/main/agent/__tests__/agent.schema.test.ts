@@ -199,7 +199,7 @@ describe('Agent - Schema Manipulation', () => {
     });
   });
 
-  describe('fixInputSchema for gemini-cli', () => {
+  describe('fixInputSchema for gemini', () => {
     it('should strip all fields when anyOf is present (only keeps any_of)', () => {
       const inputSchema: McpToolInputSchema = {
         type: 'object',
@@ -216,7 +216,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('status');
       const status = (result.properties as any).status;
@@ -242,7 +242,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('type');
       const petType = (result.properties as any).type;
@@ -278,7 +278,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       // The current implementation only processes top-level properties,
       // not nested schemas. So nested anyOf is preserved (not converted to any_of).
@@ -314,7 +314,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).name).not.toHaveProperty('default');
       expect((result.properties as any).name).toHaveProperty('description');
@@ -353,7 +353,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       // Only 'enum' and 'date-time' formats are preserved, others are removed
       expect((result.properties as any).email).not.toHaveProperty('format');
@@ -370,7 +370,7 @@ describe('Agent - Schema Manipulation', () => {
         properties: {},
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       // Placeholder should be added when there are no properties
       expect(result.properties).toHaveProperty('placeholder');
@@ -411,7 +411,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('config');
       const config = (result.properties as any).config;
@@ -432,7 +432,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).value).toHaveProperty('type', 'string');
     });
@@ -447,7 +447,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini-cli', inputSchema);
+      const result = agent['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).value).toHaveProperty('type', 'string');
     });

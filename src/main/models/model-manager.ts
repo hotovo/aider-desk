@@ -13,7 +13,6 @@ import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
-import { geminiCliProviderStrategy } from './providers/gemini-cli';
 import { gpustackProviderStrategy } from './providers/gpustack';
 import { groqProviderStrategy } from './providers/groq';
 import { alibabaPlanProviderStrategy } from './providers/alibaba-plan';
@@ -95,7 +94,6 @@ export class ModelManager {
     cerebras: cerebrasProviderStrategy,
     deepseek: deepseekProviderStrategy,
     gemini: geminiProviderStrategy,
-    'gemini-cli': geminiCliProviderStrategy,
     gpustack: gpustackProviderStrategy,
     groq: groqProviderStrategy,
     'alibaba-plan': alibabaPlanProviderStrategy,

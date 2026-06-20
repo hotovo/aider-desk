@@ -257,10 +257,6 @@
       "invalidTemperature": "Температура должна быть от 0 до 2",
       "duplicateId": "Идентификатор провайдера уже существует"
     },
-    "geminiCliAuthRequired": "Для этого провайдера требуется установка и аутентификация Gemini CLI. Установите его на https://geminicli.com и выполните `gemini` для аутентификации.",
-    "geminiCliAgentOnly": "Этот провайдер работает только в режиме Agent и не поддерживается в режимах Code/Ask/Architect/Context.",
-    "projectId": "Идентификатор проекта",
-    "projectIdPlaceholder": "Необязательно. Требуется для организационных или корпоративных аккаунтов.",
     "overrides": {
       "title": "Переопределения провайдера",
       "resetToDefaults": "Сбросить переопределения",
@@ -405,7 +401,6 @@
     "cerebras": "Cerebras",
     "deepseek": "Deepseek",
     "gemini": "Gemini",
-    "gemini-cli": "Gemini CLI",
     "groq": "Groq",
     "kimi-plan": "Kimi Coding Plan",
     "gpustack": "GPUStack",

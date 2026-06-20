@@ -12,6 +12,7 @@
 - updated power grep tool to stream output
 - added images support to onAgentStarted extension event
 - added getElectronApp for some additional app information to extension context
+- removed Gemini CLI provider due to end of support for subscription from Google
 
 ## [0.70.0]
 

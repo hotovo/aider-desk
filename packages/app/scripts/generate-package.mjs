@@ -31,7 +31,6 @@ const NODE_BUILTINS = new Set([
   'node:tls', 'node:trace_events', 'node:tty', 'node:url', 'node:util',
   'node:v8', 'node:vm', 'node:wasi', 'node:worker_threads', 'node:zlib',
   'node:sqlite',
-  'undici',
 ]);
 
 // Packages that are already in the committed package.json CLI deps

@@ -38,7 +38,6 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   BedrockParameters: () => <div>Bedrock Parameters</div>,
   DeepseekParameters: () => <div>Deepseek Parameters</div>,
   GeminiParameters: () => <div>Gemini Parameters</div>,
-  GeminiCliParameters: () => <div>Gemini CLI Parameters</div>,
   GpustackParameters: () => <div>Gpustack Parameters</div>,
   GroqParameters: () => <div>Groq Parameters</div>,
   KimiPlanParameters: () => <div>KimiPlan Parameters</div>,

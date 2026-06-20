@@ -19,7 +19,6 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [Claude Agent SDK (Extension)](#claude-agent-sdk)
 - [Deepseek](#deepseek)
 - [Gemini](#gemini)
-- [Gemini CLI](#gemini-cli)
 - [GPUStack](#gpustack)
 - [Groq](#groq)
 - [Kimi Plan](#kimi-plan)
@@ -224,28 +223,6 @@ Google's Gemini models offer versatile AI capabilities with advanced features li
 3. Enter the API key in the Model Library Gemini configuration
 4. Configure optional parameters based on your needs
 5. Or set appropriate environment variables
-
----
-
-## Gemini CLI
-
-Gemini CLI uses the locally installed Gemini CLI tool for authentication, providing free access to Gemini models via your Google account.
-
-### Configuration Parameters
-
-- **Project ID**: Optional Google Cloud project ID (required for organization/enterprise accounts)
-
-### Setup
-
-1. Install the [Gemini CLI](https://github.com/google-gemini/gemini-cli)
-2. Authenticate with your Google account (`gemini` command will prompt you)
-3. Models are automatically available in AiderDesk when the Gemini CLI is detected in your PATH
-
-### Important Notes
-
-- **No API Key Required**: Authentication is handled by the Gemini CLI via OAuth
-- **Auto-Detection**: AiderDesk automatically detects the Gemini CLI installation
-- **Available Models**: Includes Gemini 2.5 and 3.x variants (e.g., `gemini-2.5-pro`, `gemini-3.1-pro-preview`)
 
 ---
 
@@ -784,7 +761,6 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 | Cerebras | `cerebras/` |
 | Deepseek | `deepseek/` |
 | Gemini | `gemini/` |
-| Gemini CLI | `gemini-cli/` |
 | GPUStack | `openai/` |
 | Groq | `groq/` |
 | Kimi Plan | `anthropic/` |

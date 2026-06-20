@@ -4,7 +4,6 @@ export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { CerebrasIcon } from './CerebrasIcon';
 export { DeepseekIcon } from './DeepseekIcon';
-export { GeminiCliIcon } from './GeminiCliIcon';
 export { GeminiIcon } from './GeminiIcon';
 export { GpustackIcon } from './GpustackIcon';
 export { GroqIcon } from './GroqIcon';
