@@ -1,15 +1,13 @@
 /**
  * Tests for power tools grep functionality.
- * Tests run real ripgrep against temp files to verify correctness.
- * Also includes a stress test that verifies large outputs don't cause
- * maxBuffer errors (relevant after refactoring from execFileAsync to spawn).
+ * Mocks child_process.spawn to test output parsing and formatting logic
+ * without requiring the real ripgrep binary (compatible with CI).
  */
 
-import fs from 'fs/promises';
-import path from 'path';
-import os from 'os';
+import { EventEmitter } from 'events';
+import { spawn } from 'child_process';
 
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/utils/ripgrep', () => ({
   ensureRipgrepBinary: vi.fn().mockResolvedValue(true),
@@ -19,7 +17,15 @@ vi.mock('@/constants', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/constants')>();
   return {
     ...actual,
-    RIPGREP_BINARY_PATH: process.platform === 'win32' ? 'rg.exe' : 'rg',
+    RIPGREP_BINARY_PATH: '/mock/rg',
+  };
+});
+
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
+  return {
+    ...actual,
+    spawn: vi.fn(),
   };
 });
 
@@ -32,16 +38,14 @@ describe('Power Tools - grep functionality', () => {
   let mockTask: any;
   let mockProfile: any;
   let mockPromptContext: any;
-  let tempDir: string;
+  let lastMockProcess: any;
 
   beforeEach(async () => {
     vi.clearAllMocks();
 
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'power-grep-test-'));
-
     mockTask = {
       taskId: 'current-task-id',
-      getTaskDir: vi.fn(() => tempDir),
+      getTaskDir: vi.fn(() => '/mock/task/dir'),
       addToolMessage: vi.fn(),
       addLogMessage: vi.fn(),
       addToGit: vi.fn(),
@@ -61,10 +65,6 @@ describe('Power Tools - grep functionality', () => {
     createPowerToolset = powerModule.createPowerToolset;
   }, 30000);
 
-  afterEach(async () => {
-    await fs.rm(tempDir, { recursive: true, force: true });
-  });
-
   const getGrepTool = () => {
     if (!createPowerToolset) {
       throw new Error('createPowerToolset not initialized');
@@ -83,26 +83,96 @@ describe('Power Tools - grep functionality', () => {
     ) as Promise<string>;
   };
 
-  describe('basic functionality', () => {
-    it('should find matches in a single file', async () => {
-      await fs.writeFile(
-        path.join(tempDir, 'component.tsx'),
-        `import React from 'react';
-const Component = () => <div>Hello</div>;
-export default Component;
-`,
-        'utf8',
-      );
+  const setSpawnOutput = (stdoutLines: string[], stderr: string = '') => {
+    vi.mocked(spawn).mockImplementation((() => {
+      const cp = new EventEmitter() as any;
+      cp.stdout = new EventEmitter();
+      cp.stderr = new EventEmitter();
+      cp.pid = 12345;
+      cp.kill = vi.fn();
+      lastMockProcess = cp;
+
+      process.nextTick(() => {
+        if (stdoutLines.length > 0) {
+          cp.stdout.emit('data', Buffer.from(stdoutLines.join('\n') + '\n'));
+        }
+        if (stderr) {
+          cp.stderr.emit('data', Buffer.from(stderr));
+        }
+        cp.emit('close', 0, null);
+      });
+
+      return cp;
+    }) as any);
+  };
+
+  const getLastSpawnArgs = (): string[] => {
+    const calls = vi.mocked(spawn).mock.calls;
+    return calls[calls.length - 1][1] as string[];
+  };
+
+  describe('argument construction', () => {
+    it('should pass correct base arguments to ripgrep', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.ts', 'searchTerm');
+
+      const args = getLastSpawnArgs();
+      expect(args).toContain('--no-heading');
+      expect(args).toContain('--line-number');
+      expect(args).toContain('--color');
+      expect(args[args.indexOf('--color') + 1]).toBe('never');
+      expect(args).toContain('-g');
+      expect(args[args.indexOf('-g') + 1]).toBe('*.ts');
+      expect(args).toContain('--');
+      expect(args[args.indexOf('--') + 1]).toBe('searchTerm');
+      expect(args[args.lastIndexOf('--') + 1]).toBe('searchTerm');
+      expect(args).toContain('.');
+    });
+
+    it('should use case-insensitive search by default', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.ts', 'searchTerm', { caseSensitive: false });
+
+      expect(getLastSpawnArgs()).toContain('-i');
+    });
+
+    it('should not use -i flag for case-sensitive search', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.ts', 'searchTerm', { caseSensitive: true });
+
+      expect(getLastSpawnArgs()).not.toContain('-i');
+    });
+
+    it('should pass context lines argument when contextLines > 0', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.ts', 'searchTerm', { contextLines: 3 });
+
+      const args = getLastSpawnArgs();
+      expect(args).toContain('-C');
+      expect(args[args.indexOf('-C') + 1]).toBe('3');
+    });
+
+    it('should not pass context lines argument when contextLines is 0', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.ts', 'searchTerm', { contextLines: 0 });
+
+      expect(getLastSpawnArgs()).not.toContain('-C');
+    });
+  });
+
+  describe('output parsing and formatting', () => {
+    it('should parse and format matches from a single file', async () => {
+      setSpawnOutput(["component.tsx:1:import React from 'react';"]);
 
       const result = await execGrep('*.tsx', 'React');
 
       expect(result).toContain('component.tsx');
       expect(result).toContain("import React from 'react'");
+      expect(result).toContain('1 match');
     });
 
-    it('should find matches across multiple files', async () => {
-      await fs.writeFile(path.join(tempDir, 'file1.ts'), 'const value = 42;\nconst value2 = 43;\n', 'utf8');
-      await fs.writeFile(path.join(tempDir, 'file2.ts'), 'const value = 99;\n', 'utf8');
+    it('should parse and format matches across multiple files', async () => {
+      setSpawnOutput(['file1.ts:1:const value = 42;', 'file2.ts:1:const value = 99;']);
 
       const result = await execGrep('*.ts', 'value');
 
@@ -110,10 +180,11 @@ export default Component;
       expect(result).toContain('file2.ts');
       expect(result).toContain('const value = 42');
       expect(result).toContain('const value = 99');
+      expect(result).toContain('2 matches');
     });
 
     it('should count matches correctly in the result header', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const hello = 1;\nconst hello2 = 2;\n', 'utf8');
+      setSpawnOutput(['test.ts:1:const hello = 1;', 'test.ts:2:const hello2 = 2;']);
 
       const result = await execGrep('*.ts', 'hello');
 
@@ -123,76 +194,26 @@ export default Component;
 
   describe('no matches', () => {
     it('should return no matches message when pattern not found', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'console.log("hello")', 'utf8');
+      setSpawnOutput([]);
 
       const result = await execGrep('*.ts', 'nonexistent_pattern_xyz123');
 
       expect(result).toContain('No matches');
     });
 
-    it('should return no matches message when file pattern matches no files', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const value = 1;\n', 'utf8');
+    it('should return error message when stderr has content and no matches', async () => {
+      setSpawnOutput([], 'Some error occurred');
 
-      const result = await execGrep('*.py', 'value');
+      const result = await execGrep('*.ts', 'value');
 
-      expect(result).toContain('No matches');
-    });
-  });
-
-  describe('maxResults limiting', () => {
-    it('should limit results to maxResults', async () => {
-      const lines: string[] = [];
-      for (let i = 0; i < 100; i++) {
-        lines.push(`const match${i} = ${i};`);
-      }
-      await fs.writeFile(path.join(tempDir, 'large.ts'), lines.join('\n') + '\n', 'utf8');
-
-      const result = await execGrep('*.ts', 'match', { maxResults: 10 });
-
-      expect(result).toContain('10 matches');
-      expect(result).toContain('limit reached');
-    });
-
-    it('should not show limit notice when under maxResults', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const hello = 1;\n', 'utf8');
-
-      const result = await execGrep('*.ts', 'hello', { maxResults: 50 });
-
-      expect(result).not.toContain('limit reached');
-    });
-  });
-
-  describe('case sensitivity', () => {
-    it('should perform case-insensitive search by default', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const Foo = 1;\nconst foo = 2;\nconst FOO = 3;\n', 'utf8');
-
-      const result = await execGrep('*.ts', 'foo', { caseSensitive: false });
-
-      expect(result).toContain('const Foo = 1');
-      expect(result).toContain('const foo = 2');
-      expect(result).toContain('const FOO = 3');
-    });
-
-    it('should perform case-sensitive search when requested', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const Foo = 1;\nconst foo = 2;\nconst FOO = 3;\n', 'utf8');
-
-      const result = await execGrep('*.ts', 'Foo', { caseSensitive: true });
-
-      expect(result).toContain('const Foo = 1');
-      expect(result).not.toContain('const foo = 2');
-      expect(result).not.toContain('const FOO = 3');
+      expect(result).toContain('Error during grep');
+      expect(result).toContain('Some error occurred');
     });
   });
 
   describe('context lines', () => {
     it('should include context lines around matches', async () => {
-      const content = `line1
-line2
-TARGET_LINE
-line4
-line5
-`;
-      await fs.writeFile(path.join(tempDir, 'test.ts'), content, 'utf8');
+      setSpawnOutput(['test.ts-2-line2', 'test.ts:3:TARGET_LINE', 'test.ts-4-line4']);
 
       const result = await execGrep('*.ts', 'TARGET_LINE', { contextLines: 1 });
 
@@ -202,96 +223,49 @@ line5
     });
 
     it('should not include context lines when contextLines is 0', async () => {
-      const content = `line1
-TARGET_LINE
-line3
-`;
-      await fs.writeFile(path.join(tempDir, 'test.ts'), content, 'utf8');
+      setSpawnOutput(['test.ts:3:TARGET_LINE']);
 
       const result = await execGrep('*.ts', 'TARGET_LINE', { contextLines: 0 });
 
       expect(result).toContain('TARGET_LINE');
-      expect(result).not.toContain('line1');
-      expect(result).not.toContain('line3');
     });
   });
 
-  describe('regex patterns', () => {
-    it('should support regex search terms', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const user123 = 1;\nconst product456 = 2;\nconst order789 = 3;\n', 'utf8');
+  describe('maxResults limiting', () => {
+    it('should limit results to maxResults', async () => {
+      const lines: string[] = [];
+      for (let i = 0; i < 100; i++) {
+        lines.push(`file_${i}.ts:1:const match${i} = ${i};`);
+      }
+      setSpawnOutput(lines);
 
-      const result = await execGrep('*.ts', 'user\\d+');
+      const result = await execGrep('*.ts', 'match', { maxResults: 10 });
 
-      expect(result).toContain('const user123 = 1');
-      expect(result).not.toContain('product456');
-      expect(result).not.toContain('order789');
+      expect(result).toContain('10 matches');
+      expect(result).toContain('limit reached');
     });
 
-    it('should support anchored regex', async () => {
-      await fs.writeFile(path.join(tempDir, 'test.ts'), 'const start = true;\nconst end_start = false;\n', 'utf8');
+    it('should not show limit notice when under maxResults', async () => {
+      setSpawnOutput(['test.ts:1:const hello = 1;']);
 
-      const result = await execGrep('*.ts', '^const start');
+      const result = await execGrep('*.ts', 'hello', { maxResults: 50 });
 
-      expect(result).toContain('const start = true');
-      expect(result).not.toContain('end_start');
-    });
-  });
-
-  describe('nested directories', () => {
-    it('should search files in nested directories', async () => {
-      await fs.mkdir(path.join(tempDir, 'src', 'components'), { recursive: true });
-      await fs.writeFile(path.join(tempDir, 'src', 'components', 'Button.ts'), 'export const MyComponent = 42;\n', 'utf8');
-      await fs.writeFile(path.join(tempDir, 'src', 'index.ts'), 'export { MyComponent } from "./components/Button";\n', 'utf8');
-
-      const result = await execGrep('*.ts', 'MyComponent');
-
-      expect(result).toContain('Button.ts');
-      expect(result).toContain('index.ts');
-    });
-
-    it('should search with glob pattern for specific extension', async () => {
-      await fs.mkdir(path.join(tempDir, 'src'), { recursive: true });
-      await fs.writeFile(path.join(tempDir, 'src', 'file.ts'), 'const target = 1;\n', 'utf8');
-      await fs.writeFile(path.join(tempDir, 'src', 'file.tsx'), 'const target = 2;\n', 'utf8');
-
-      const result = await execGrep('*.tsx', 'target');
-
-      expect(result).toContain('file.tsx');
-      expect(result).not.toContain('file.ts:');
-    });
-  });
-
-  describe('file pattern matching', () => {
-    it('should match multiple file extensions with glob', async () => {
-      await fs.writeFile(path.join(tempDir, 'a.ts'), 'const found = true;\n', 'utf8');
-      await fs.writeFile(path.join(tempDir, 'b.js'), 'const found = true;\n', 'utf8');
-      await fs.writeFile(path.join(tempDir, 'c.py'), 'const found = true;\n', 'utf8');
-
-      const resultTs = await execGrep('*.ts', 'found');
-      expect(resultTs).toContain('a.ts');
-      expect(resultTs).not.toContain('b.js');
-      expect(resultTs).not.toContain('c.py');
-
-      const resultJs = await execGrep('*.js', 'found');
-      expect(resultJs).toContain('b.js');
-      expect(resultJs).not.toContain('a.ts');
+      expect(result).not.toContain('limit reached');
     });
   });
 
   describe('large output handling', () => {
-    it('should handle many files with many matches without maxBuffer error', async () => {
+    it('should handle many matches without errors', async () => {
       const numFiles = 30;
       const linesPerFile = 200;
 
-      const writePromises: Promise<void>[] = [];
+      const lines: string[] = [];
       for (let f = 0; f < numFiles; f++) {
-        const lines: string[] = [];
         for (let i = 0; i < linesPerFile; i++) {
-          lines.push(`const searchTerm_${f}_${i} = ${i};`);
+          lines.push(`file_${f}.ts:${i + 1}:const searchTerm_${f}_${i} = ${i};`);
         }
-        writePromises.push(fs.writeFile(path.join(tempDir, `file_${f}.ts`), lines.join('\n') + '\n', 'utf8'));
       }
-      await Promise.all(writePromises);
+      setSpawnOutput(lines);
 
       const result = await execGrep('*.ts', 'searchTerm', { maxResults: 6000 });
 
@@ -304,15 +278,13 @@ line3
       const numFiles = 50;
       const linesPerFile = 500;
 
-      const writePromises: Promise<void>[] = [];
+      const lines: string[] = [];
       for (let f = 0; f < numFiles; f++) {
-        const lines: string[] = [];
         for (let i = 0; i < linesPerFile; i++) {
-          lines.push(`const searchTerm_${f}_${i} = ${i};`);
+          lines.push(`file_${f}.ts:${i + 1}:const searchTerm_${f}_${i} = ${i};`);
         }
-        writePromises.push(fs.writeFile(path.join(tempDir, `file_${f}.ts`), lines.join('\n') + '\n', 'utf8'));
       }
-      await Promise.all(writePromises);
+      setSpawnOutput(lines);
 
       const result = await execGrep('*.ts', 'searchTerm', { maxResults: 5 });
 
@@ -320,6 +292,7 @@ line3
       expect(result).not.toContain('Error during grep');
       expect(result).toContain('5 matches');
       expect(result).toContain('limit reached');
+      expect(lastMockProcess.kill).toHaveBeenCalled();
     });
   });
 });
