@@ -90,8 +90,24 @@ describe('Extension Command Registration', () => {
       const result = manager.validateCommandDefinition(command);
       expect(result.isValid).toBe(false);
       expect(result.errors).toContain(
-        "Command name 'TestCommand' must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, or underscores (e.g., 'generate-tests', 'my---command', 'command_name')",
+        "Command name 'TestCommand' must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, underscores, or colons (e.g., 'generate-tests', 'impl:tweak', 'command_name')",
       );
+    });
+
+    it('should accept command name with colons', () => {
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager, mockDeps.memoryManager);
+
+      const command: CommandDefinition = {
+        name: 'impl:tweak',
+        description: 'A tweak command',
+        execute: async () => {
+          // Command logic
+        },
+      };
+
+      const result = manager.validateCommandDefinition(command);
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
     });
 
     it('should reject command with empty description', () => {

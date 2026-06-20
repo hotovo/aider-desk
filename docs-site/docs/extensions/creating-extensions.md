@@ -776,7 +776,7 @@ If no metadata is provided, AiderDesk derives the name from the filename and set
 | Extension class | PascalCase | `MyExtension` |
 | Extension file | kebab-case | `my-extension.ts` |
 | Tool names | kebab-case | `run-linter` |
-| Command names | kebab-case | `generate-tests` |
+| Command names | kebab-case (colons allowed) | `generate-tests`, `impl:tweak` |
 | UI element IDs | kebab-case | `create-jira-ticket` |
 
 ## Best Practices

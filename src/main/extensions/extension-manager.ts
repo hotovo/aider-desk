@@ -742,6 +742,8 @@ export class ExtensionManager {
 
   private static readonly TOOL_NAME_REGEX = /^[a-z][a-z0-9_-]*$/;
 
+  private static readonly COMMAND_NAME_REGEX = /^[a-z][a-z0-9_:-]*$/;
+
   validateToolDefinition(tool: ToolDefinition): {
     isValid: boolean;
     errors: string[];
@@ -988,9 +990,9 @@ export class ExtensionManager {
     try {
       if (!command.name) {
         errors.push('Command name must be a non-empty string');
-      } else if (!ExtensionManager.TOOL_NAME_REGEX.test(command.name)) {
+      } else if (!ExtensionManager.COMMAND_NAME_REGEX.test(command.name)) {
         errors.push(
-          `Command name '${command.name}' must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, or underscores (e.g., 'generate-tests', 'my---command', 'command_name')`,
+          `Command name '${command.name}' must start with a lowercase letter and contain only lowercase letters, numbers, hyphens, underscores, or colons (e.g., 'generate-tests', 'impl:tweak', 'command_name')`,
         );
       }
 

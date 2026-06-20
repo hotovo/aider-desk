@@ -240,7 +240,7 @@ Define custom slash commands.
 
 ```typescript
 interface CommandDefinition {
-  name: string;              // Command name in kebab-case
+  name: string;              // Command name in kebab-case (colons allowed for namespacing, e.g. 'impl:tweak')
   description: string;       // Description shown in autocomplete
   arguments?: CommandArgument[];  // Optional command arguments
   execute: (args: string[], context: ExtensionContext) => Promise<void>;
