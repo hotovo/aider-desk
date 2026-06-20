@@ -11,6 +11,7 @@
 - using shell option for when installing dependencies for extensions to fix issues on Windows
 - updated power grep tool to stream output
 - added images support to onAgentStarted extension event
+- added getElectronApp for some additional app information to extension context
 
 ## [0.70.0]
 

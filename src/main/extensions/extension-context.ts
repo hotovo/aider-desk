@@ -1,7 +1,7 @@
 import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
-import type { ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
+import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
 import type { Model, ProviderProfile, SettingsData } from '@common/types';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
@@ -166,6 +166,20 @@ export class ExtensionContextImpl implements ExtensionContext {
     } catch (error) {
       this.log(`Failed to open path: ${error}`, 'error');
       return false;
+    }
+  }
+
+  async getElectronApp(): Promise<ElectronApp | null> {
+    try {
+      const electron = await import('electron');
+      const app = electron?.app ?? electron?.default?.app;
+      if (!app || typeof app.getAppMetrics !== 'function') {
+        return null;
+      }
+      return app as ElectronApp;
+    } catch (error) {
+      this.log(`Failed to get Electron app: ${error}`, 'debug');
+      return null;
     }
   }
 

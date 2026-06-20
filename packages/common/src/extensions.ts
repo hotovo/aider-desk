@@ -1225,6 +1225,75 @@ export interface ProjectContext {
 }
 
 /**
+ * A narrow subset of Electron's `App` object, exposed to extensions via
+ * {@link ExtensionContext.getElectronApp}.
+ *
+ * This is a hand-maintained interface (not imported from the `electron`
+ * package) so that it can be published in `@aiderdesk/extensions` without
+ * adding `electron` as a dependency.  When running inside Electron the real
+ * `App` object is structurally assignable to this interface; when running
+ * outside Electron `getElectronApp()` returns `null`.
+ */
+export interface ElectronApp {
+  /**
+   * Returns an array of `ProcessMetric` objects that correspond to memory
+   * and CPU usage statistics of all the processes associated with the app.
+   *
+   * Each metric's `memory.workingSetSize` is expressed in **kilobytes**.
+   */
+  getAppMetrics(): ElectronProcessMetric[];
+
+  /** The current application version. */
+  getVersion(): string;
+
+  /** The current application name. */
+  getName(): string;
+
+  /** A boolean that is true when the application has finished initializing. */
+  isReady(): boolean;
+}
+
+/** CPU usage statistics for a single Electron process. */
+export interface ElectronCPUUsage {
+  /** Percentage of CPU used since the last call (0–100). */
+  percentCPUUsage?: number;
+  /** Cumulative CPU time in seconds since process start. */
+  cumulativeCPUUsage?: number;
+}
+
+/** Memory usage statistics for a single Electron process. */
+export interface ElectronMemoryInfo {
+  /** Working set size in **kilobytes**. */
+  workingSetSize?: number;
+  /** Peak working set size in **kilobytes**. */
+  peakWorkingSetSize?: number;
+}
+
+/**
+ * Process metric returned by {@link ElectronApp.getAppMetrics}.
+ *
+ * All fields are optional because Electron may omit some of them depending
+ * on the process type and platform.
+ */
+export interface ElectronProcessMetric {
+  /** Process ID. */
+  pid?: number;
+  /**
+   * One of: `Browser` (main process), `Renderer`, `GPU`, `Utility`,
+   * `ForkedWorker`, `ServiceWorker`, etc.
+   */
+  type?: string;
+  /** Service name (only present for utility processes). */
+  serviceName?: string;
+  /** Display name of the process. */
+  name?: string;
+  /** CPU usage breakdown. */
+  cpu?: ElectronCPUUsage;
+  /** Memory usage breakdown. */
+  memory?: ElectronMemoryInfo;
+}
+
+/**
  * Context object passed to extension methods providing access to AiderDesk APIs.
  *
  * Availability depends on where the context is created:
@@ -1341,6 +1410,19 @@ export interface ExtensionContext {
    * @returns true if opened successfully, false if it failed (e.g., not in Electron environment)
    */
   openPath(path: string): Promise<boolean>;
+
+  /**
+   * Get a narrowed Electron `App` object for accessing host-level APIs
+   * (e.g. `getAppMetrics()` for CPU/memory statistics).
+   *
+   * Only available when AiderDesk is running as an Electron desktop
+   * application.  Returns `null` when running in Node.js server / headless
+   * mode, so extensions should perform a null-check before use.
+   *
+   * @returns Promise resolving to an {@link ElectronApp} instance, or
+   * `null` if Electron is not available.
+   */
+  getElectronApp(): Promise<ElectronApp | null>;
 
   /**
    * Get the memory context for vector store operations (store, retrieve, update, delete memories).
