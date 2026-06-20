@@ -14,6 +14,7 @@ import {
   ContextAssistantMessage,
   ContextFile,
   ContextMessage,
+  ContextToolMessage,
   DEFAULT_AUTONOMY_MODE,
   DefaultTaskState,
   EditFormat,
@@ -962,6 +963,7 @@ export class Task {
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
     images?: string[],
+    skillsToActivate?: string[],
   ): Promise<ResponseCompletedData[]> {
     if (waitForCurrentAgentToFinish) {
       await this.waitForCurrentAgentToFinish();
@@ -990,6 +992,7 @@ export class Task {
       true,
       undefined,
       images,
+      skillsToActivate,
     );
     if (agentMessages.length > 0) {
       // send messages to connectors
@@ -2199,50 +2202,73 @@ export class Task {
     return this.skillManager.getSkills(contextMessages);
   }
 
-  public async activateSkill(skillName: string): Promise<void> {
+  public async createSkillMessages(...skillNames: string[]): Promise<ContextMessage[] | null> {
+    if (skillNames.length === 0) {
+      return null;
+    }
+
     const contextMessages = await this.contextManager.getContextMessages();
     const activatedNames = this.skillManager.getActivatedSkillNames(contextMessages);
 
-    if (activatedNames.has(skillName)) {
-      logger.debug('Skill already activated, skipping', { skillName });
-      return;
+    const allMessages: ContextMessage[] = [];
+
+    for (const skillName of skillNames) {
+      if (activatedNames.has(skillName)) {
+        logger.debug('Skill already activated, skipping', { skillName });
+        continue;
+      }
+
+      const content = await this.skillManager.getSkillContent(skillName);
+      if (!content) {
+        throw new Error(`Skill '${skillName}' not found`);
+      }
+
+      const [assistantMessage, toolMessage] = this.skillManager.buildActivateSkillMessages(skillName, content);
+
+      await this.processResponseMessage(
+        {
+          id: assistantMessage.id,
+          action: 'response',
+          content: 'User requested the skill activation.',
+          finished: true,
+        },
+        false,
+      );
+
+      const toolCallId = (toolMessage.content as Array<{ toolCallId: string }>)[0].toolCallId;
+
+      this.addToolMessage(
+        toolCallId,
+        SKILLS_TOOL_GROUP_NAME,
+        SKILLS_TOOL_ACTIVATE_SKILL,
+        { skill: skillName },
+        JSON.stringify(content),
+        undefined,
+        undefined,
+        false,
+        true,
+      );
+
+      allMessages.push(assistantMessage, toolMessage);
+      activatedNames.add(skillName);
     }
 
-    const content = await this.skillManager.getSkillContent(skillName);
-    if (!content) {
-      throw new Error(`Skill '${skillName}' not found`);
+    return allMessages.length > 0 ? allMessages : null;
+  }
+
+  public async activateSkill(skillName: string): Promise<[ContextAssistantMessage, ContextToolMessage] | null> {
+    const messages = await this.createSkillMessages(skillName);
+    if (!messages) {
+      return null;
     }
 
-    const [assistantMessage, toolMessage] = this.skillManager.buildActivateSkillMessages(skillName, content);
-
-    this.contextManager.addContextMessage(assistantMessage);
-    this.contextManager.addContextMessage(toolMessage);
-
-    await this.processResponseMessage(
-      {
-        id: assistantMessage.id,
-        action: 'response',
-        content: 'User requested the skill activation.',
-        finished: true,
-      },
-      false,
-    );
-
-    const toolCallId = (toolMessage.content as Array<{ toolCallId: string }>)[0].toolCallId;
-
-    this.addToolMessage(
-      toolCallId,
-      SKILLS_TOOL_GROUP_NAME,
-      SKILLS_TOOL_ACTIVATE_SKILL,
-      { skill: skillName },
-      JSON.stringify(content),
-      undefined,
-      undefined,
-      false,
-      true,
-    );
+    for (const message of messages) {
+      this.contextManager.addContextMessage(message);
+    }
 
     await this.updateContextInfo();
+
+    return [messages[0] as ContextAssistantMessage, messages[1] as ContextToolMessage];
   }
 
   public async deactivateSkill(skillName: string): Promise<string[]> {
@@ -3568,17 +3594,6 @@ ${error.stderr}`,
           return;
         }
 
-        // Activate command skills before running the prompt
-        if (command.skills?.length) {
-          for (const skillName of command.skills) {
-            try {
-              await this.activateSkill(skillName);
-            } catch (error) {
-              logger.warn(`Failed to activate skill '${skillName}' for command '${commandName}': ${error instanceof Error ? error.message : String(error)}`);
-            }
-          }
-        }
-
         const systemPrompt = await this.promptsManager.getSystemPrompt(
           this.store.getSettings(),
           this,
@@ -3589,7 +3604,7 @@ ${error.stderr}`,
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
         this.addLogMessage('loading', 'Executing custom command...');
-        await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt);
+        await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt, true, true, undefined, command.skills);
       } else {
         // All other modes (code, ask, architect)
         this.addLogMessage('loading', 'Executing custom command...');

@@ -13,6 +13,8 @@
 - added images support to onAgentStarted extension event
 - added getElectronApp for some additional app information to extension context
 - removed Gemini CLI provider due to end of support for subscription from Google
+- correctly placing skill messages after the user prompt when used from custom commands
+- added skillsToActivate to onAgentStarted extension event to allow activating skills
 
 ## [0.70.0]
 

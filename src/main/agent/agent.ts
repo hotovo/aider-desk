@@ -752,6 +752,7 @@ export class Agent {
     includeInContext = true,
     abortSignal?: AbortSignal,
     images?: string[],
+    skillsToActivate?: string[],
   ): Promise<ContextMessage[]> {
     let contextMessages = initialContextMessages ?? (await task.getContextMessages());
     let contextFiles = initialContextFiles ?? (await task.getContextFiles());
@@ -781,6 +782,7 @@ export class Agent {
           contextFiles,
           systemPrompt,
           images,
+          skillsToActivate,
         },
         task.project,
         task,
@@ -798,6 +800,7 @@ export class Agent {
       contextFiles = extensionResult.contextFiles;
       systemPrompt = extensionResult.systemPrompt;
       images = extensionResult.images ?? images;
+      skillsToActivate = extensionResult.skillsToActivate;
     }
 
     const userRequestMessage: ContextUserMessage | null = prompt
@@ -846,6 +849,24 @@ export class Agent {
     if (userRequestMessage && includeInContext) {
       await task.addContextMessage(userRequestMessage);
     }
+
+    // Activate skills after the user message is persisted to context so the
+    // agent sees: [history -> user message -> skill activation] and doesn't
+    // re-activate them itself.
+    if (skillsToActivate && skillsToActivate.length > 0) {
+      try {
+        const skillMessages = await task.createSkillMessages(...skillsToActivate);
+        if (skillMessages) {
+          for (const message of skillMessages) {
+            await task.addContextMessage(message);
+            resultMessages.push(message);
+          }
+        }
+      } catch (error) {
+        logger.warn(`Failed to activate skills: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
     if (!provider) {
       logger.error(`Provider ${profile.provider} not found`);
       task.addLogMessage('error', 'Selected model is not configured. Select another model and try again.', true, promptContext);
@@ -892,7 +913,9 @@ export class Agent {
       ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
       : messages.length;
 
-    // add user message
+    // add user message and skill activation messages (skills right after the
+    // user message so the agent sees them already active and doesn't
+    // re-activate them itself)
     messages.push(...resultMessages);
 
     // Normalize messages for provider-specific requirements

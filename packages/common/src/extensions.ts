@@ -424,6 +424,7 @@ export interface AgentStartedEvent {
   contextFiles: ContextFile[];
   blocked?: boolean;
   images?: string[];
+  skillsToActivate?: string[];
 }
 
 /** Event payload for agent finished events */

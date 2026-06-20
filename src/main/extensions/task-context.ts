@@ -176,6 +176,7 @@ export class TaskContextImpl implements TaskContext {
     systemPrompt?: string,
     waitForCurrentAgentToFinish = true,
     sendNotification = true,
+    skillsToActivate?: string[],
   ): Promise<ResponseCompletedData[]> {
     return this.task.runPromptInAgent(
       profile,
@@ -187,6 +188,8 @@ export class TaskContextImpl implements TaskContext {
       systemPrompt,
       waitForCurrentAgentToFinish,
       sendNotification,
+      undefined,
+      skillsToActivate,
     );
   }
 
