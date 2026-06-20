@@ -1,9 +1,9 @@
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
-import { isNeuralwattProvider, NeuralwattProvider } from '@common/agent';
+import { isNeuralwattProvider, LlmProvider, NeuralwattProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -189,6 +189,32 @@ const getNeuralwattUsageReport = (
   };
 };
 
+const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+  if (!isNeuralwattProvider(llmProvider)) {
+    return undefined;
+  }
+
+  const neuralwattProvider = llmProvider as NeuralwattProvider;
+
+  // Extract reasoningEffort from model overrides or provider config
+  const providerOverrides = model.providerOverrides as Partial<NeuralwattProvider> | undefined;
+  const reasoningEffort = providerOverrides?.reasoningEffort ?? neuralwattProvider.reasoningEffort;
+
+  // Map ReasoningEffort enum to AI SDK format
+  const mappedReasoningEffort =
+    reasoningEffort === undefined ? undefined : (reasoningEffort.toLowerCase() as 'max' | 'xhigh' | 'high' | 'medium' | 'low' | 'minimal' | 'none');
+
+  if (mappedReasoningEffort) {
+    return {
+      neuralwatt: {
+        reasoningEffort: mappedReasoningEffort,
+      },
+    } satisfies SharedV2ProviderOptions;
+  }
+
+  return undefined;
+};
+
 export const neuralwattProviderStrategy: LlmProviderStrategy = {
   createLlm: createNeuralwattLlm,
   getUsageReport: getNeuralwattUsageReport,
@@ -196,4 +222,5 @@ export const neuralwattProviderStrategy: LlmProviderStrategy = {
   hasEnvVars: hasNeuralwattEnvVars,
   getAiderMapping: getNeuralwattAiderMapping,
   getModelInfo: getDefaultModelInfo,
+  getProviderOptions: getNeuralwattProviderOptions,
 };

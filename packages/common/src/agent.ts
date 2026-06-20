@@ -308,6 +308,7 @@ export const isMistralProvider = (provider: LlmProviderBase): provider is Mistra
 export interface NeuralwattProvider extends LlmProviderBase {
   name: 'neuralwatt';
   apiKey: string;
+  reasoningEffort?: ReasoningEffort;
 }
 export const isNeuralwattProvider = (provider: LlmProviderBase): provider is NeuralwattProvider => provider.name === 'neuralwatt';
 
@@ -799,6 +800,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
       provider = {
         name: 'neuralwatt',
         apiKey: '',
+        reasoningEffort: ReasoningEffort.High,
       } satisfies NeuralwattProvider;
       break;
     default:

@@ -19,6 +19,7 @@
 - replaced floating placement with task, project, and app-level floating placements in UI extensions
 - allowing colons in extension command names
 - added reasoning effort setting to Z.ai Coding Plan provider
+- added reasoning effort setting to NeuralWatt provider
 
 ## [0.70.0]
 

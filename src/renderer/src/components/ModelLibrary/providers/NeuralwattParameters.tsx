@@ -2,6 +2,8 @@ import { ChangeEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NeuralwattProvider } from '@common/agent';
 
+import { NeuralwattAdvancedSettings } from './NeuralwattAdvancedSettings';
+
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
@@ -39,6 +41,7 @@ export const NeuralwattParameters = ({ provider, onChange }: Props) => {
             : t('settings.agent.envVarPlaceholder', { envVar: 'NEURALWATT_API_KEY' })
         }
       />
+      <NeuralwattAdvancedSettings provider={provider} onChange={onChange} />
     </div>
   );
 };
