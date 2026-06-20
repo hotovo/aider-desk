@@ -236,17 +236,13 @@ export const UpdatedFilesSection = ({
     setFlatExpandedItems((prev) => Array.from(new Set([...prev, ...allFolders])));
   }, [flatTreeData]);
 
-  // Default: only the bottom-most (last) group is expanded.
-  // Only re-run when group count changes, not on every file refresh,
-  // to preserve user's manual expand/collapse choices between refreshes.
   useEffect(() => {
     if (commitGroups.length > 0) {
       setExpandedGroups([commitGroups[commitGroups.length - 1].id]);
     } else {
       setExpandedGroups([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [commitGroups.length]);
+  }, [commitGroups, commitGroups.length]);
 
   const fetchUpdatedFiles = useCallback(async () => {
     try {

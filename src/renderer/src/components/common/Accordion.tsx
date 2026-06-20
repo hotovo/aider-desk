@@ -61,14 +61,22 @@ export const Accordion = ({
 
   return (
     <div className={className}>
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={handleOpenChange}
-        className={twMerge('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors', buttonClassName)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleOpenChange();
+          }
+        }}
+        className={twMerge('w-full flex items-center gap-2 p-2 rounded hover:bg-bg-tertiary-strong transition-colors cursor-pointer', buttonClassName)}
       >
         {chevronPosition === 'left' && chevron}
         {title}
         {chevronPosition === 'right' && chevron}
-      </button>
+      </div>
       <div
         ref={contentRef}
         className={clsx(

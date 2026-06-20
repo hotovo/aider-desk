@@ -227,8 +227,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       removeTerminalDataListener();
       removeTerminalExitListener();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [terminalId, baseDir, api]);
+  }, [terminalId, baseDir, api, onExit]);
 
   // Handle restart on keypress after exit
   useEffect(() => {

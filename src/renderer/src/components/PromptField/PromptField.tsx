@@ -1,3 +1,4 @@
+/* eslint-disable react-compiler/react-compiler */
 import {
   acceptCompletion,
   autocompletion,
@@ -384,12 +385,15 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words],
     );
 
-    const allHistoryItems =
-      historyMenuVisible && debouncedText.trim().length > 0
-        ? inputHistory.filter((item) => item.toLowerCase().includes(debouncedText.trim().toLowerCase()))
-        : inputHistory;
+    const allHistoryItems = useMemo(
+      () =>
+        historyMenuVisible && debouncedText.trim().length > 0
+          ? inputHistory.filter((item) => item.toLowerCase().includes(debouncedText.trim().toLowerCase()))
+          : inputHistory,
+      [historyMenuVisible, debouncedText, inputHistory],
+    );
 
-    const historyItems = allHistoryItems.slice(0, historyLimit);
+    const historyItems = useMemo(() => allHistoryItems.slice(0, historyLimit), [allHistoryItems, historyLimit]);
 
     const loadMoreHistory = useCallback(() => {
       if (historyLimit < allHistoryItems.length) {
@@ -529,7 +533,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/handoff': {
             const focus = args || '';
             if (handoffConversation) {
-              handoffConversation(focus);
+              void handoffConversation(focus);
             }
             prepareForNextPrompt();
             break;

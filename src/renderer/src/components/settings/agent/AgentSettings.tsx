@@ -432,10 +432,20 @@ export const AgentSettings = ({
     }
   }, [selectedProfileContext, contexts]);
 
+  // Keep latest values in refs so the effect can read them without depending on them
+  const agentProfilesRef = useRef(agentProfiles);
+  const contextsRef = useRef(contexts);
+  useEffect(() => {
+    agentProfilesRef.current = agentProfiles;
+    contextsRef.current = contexts;
+  });
+
   // Handle initial profile ID - set context and select profile
   useEffect(() => {
-    if (initialProfileId && agentProfiles.length > 0) {
-      const initialProfile = agentProfiles.find((p) => p.id === initialProfileId);
+    const profiles = agentProfilesRef.current;
+    const contexts = contextsRef.current;
+    if (initialProfileId && profiles.length > 0) {
+      const initialProfile = profiles.find((p) => p.id === initialProfileId);
       if (initialProfile) {
         // Set the profile context based on the initial profile's projectDir
         const targetContext = initialProfile.projectDir || 'global';
@@ -451,8 +461,6 @@ export const AgentSettings = ({
         setSelectedProfileId(initialProfileId);
       }
     }
-    // only listen to initialProfileId change
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfileId]);
 
   const [mcpServersExpanded, setMcpServersExpanded] = useState(false);

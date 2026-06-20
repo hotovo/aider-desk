@@ -20,7 +20,7 @@ import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
 import { getProviderModelId } from '@common/agent';
 import { RiMenuUnfold4Line } from 'react-icons/ri';
-import { useLocalStorage } from '@reactuses/core';
+import { useEvent, useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -301,63 +301,48 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       updateTask(task.id, { state: DefaultTaskState.Done });
     }, [updateTask, task.id]);
 
-    const runPrompt = useCallback(
-      (prompt: string, images?: string[]) => {
-        updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
-        if (editingMessageIndex !== null) {
-          // This submission is an edit of a previous message
-          const editedMessageId = displayedMessages[editingMessageIndex]?.id;
-          setEditingMessageIndex(null); // Clear editing state
-          setMessages(task.id, (prevMessages) => {
-            return prevMessages
-              .filter((_, index) => index <= editingMessageIndex)
-              .map((message, index) => {
-                if (index === editingMessageIndex) {
-                  return {
-                    ...message,
-                    content: prompt,
-                    images,
-                  };
-                } else {
-                  return message;
-                }
-              });
-          });
-          if (editedMessageId) {
-            api.redoUserPrompt(projectDir, task.id, editedMessageId, currentMode, prompt, images);
-          }
-        } else {
-          if (!question && !inProgress) {
-            startTransition(() => {
-              // OPTIMISTIC: Add user message immediately before backend response
-              const optimisticUserMessage = {
-                id: uuidv4(),
-                type: 'user',
-                content: prompt,
-                images,
-                isOptimistic: true,
-              } satisfies UserMessage;
-              setMessages(task.id, (prevMessages) => [...prevMessages, optimisticUserMessage]);
-              setDisplayedMessages([...displayedMessages, optimisticUserMessage]);
+    const runPrompt = useEvent((prompt: string, images?: string[]) => {
+      updateOptimisticTaskState(task.id, DefaultTaskState.InProgress);
+      if (editingMessageIndex !== null) {
+        // This submission is an edit of a previous message
+        const editedMessageId = displayedMessages[editingMessageIndex]?.id;
+        setEditingMessageIndex(null); // Clear editing state
+        setMessages(task.id, (prevMessages) => {
+          return prevMessages
+            .filter((_, index) => index <= editingMessageIndex)
+            .map((message, index) => {
+              if (index === editingMessageIndex) {
+                return {
+                  ...message,
+                  content: prompt,
+                  images,
+                };
+              } else {
+                return message;
+              }
             });
-          }
-          api.runPrompt(projectDir, task.id, prompt, currentMode, images);
+        });
+        if (editedMessageId) {
+          api.redoUserPrompt(projectDir, task.id, editedMessageId, currentMode, prompt, images);
         }
-      },
-      [
-        updateOptimisticTaskState,
-        task.id,
-        editingMessageIndex,
-        setMessages,
-        api,
-        projectDir,
-        currentMode,
-        question,
-        inProgress,
-        setDisplayedMessages,
-        displayedMessages,
-      ],
-    );
+      } else {
+        if (!question && !inProgress) {
+          startTransition(() => {
+            // OPTIMISTIC: Add user message immediately before backend response
+            const optimisticUserMessage = {
+              id: uuidv4(),
+              type: 'user',
+              content: prompt,
+              images,
+              isOptimistic: true,
+            } satisfies UserMessage;
+            setMessages(task.id, (prevMessages) => [...prevMessages, optimisticUserMessage]);
+            setDisplayedMessages([...displayedMessages, optimisticUserMessage]);
+          });
+        }
+        api.runPrompt(projectDir, task.id, prompt, currentMode, images);
+      }
+    });
 
     const handleSavePrompt = useCallback(
       async (prompt: string) => {
@@ -416,8 +401,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
         updateTask(task.id, { handoff: false });
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [task.handoff, task.id]);
+    }, [handleEditUserMessage, task.handoff, task.id, updateTask]);
 
     const handleResetTask = useCallback(() => {
       resetTask(task.id);

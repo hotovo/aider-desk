@@ -74,16 +74,17 @@ interface ToggleProps {
   'aria-label'?: string;
 }
 
-// Mock react-i18next
+// Mock react-i18next — t must be a stable reference, matching real react-i18next behavior
+const mockT = (key: string, params?: Record<string, unknown>) => {
+  if (params?.name) {
+    return `${key}.${params.name}`;
+  }
+  return key;
+};
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>) => {
-      // Handle translation keys with parameters
-      if (params?.name) {
-        return `${key}.${params.name}`;
-      }
-      return key;
-    },
+    t: mockT,
     i18n: { changeLanguage: vi.fn() },
   }),
 }));

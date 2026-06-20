@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
@@ -39,7 +39,8 @@ export const useUserMessageNavigation = ({
 
   const updateNavigationButtons = useCallback(() => {
     const container = containerRef.current;
-    if (!container || userMessageIds.length === 0) {
+    const ids = userMessagesKey ? userMessagesKey.split(',') : [];
+    if (!container || ids.length === 0) {
       setHasPreviousUserMessage(false);
       setHasNextUserMessage(false);
       return;
@@ -52,7 +53,7 @@ export const useUserMessageNavigation = ({
     let hasPrevious = false;
     let hasNext = false;
 
-    for (const msgId of userMessageIds) {
+    for (const msgId of ids) {
       const msgElement = container.querySelector(`#user-message-${msgId}`) as HTMLElement;
       if (!msgElement) {
         continue;
@@ -73,7 +74,6 @@ export const useUserMessageNavigation = ({
 
     setHasPreviousUserMessage(hasPrevious);
     setHasNextUserMessage(hasNext);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef, userMessagesKey]);
 
   const handleNavigateToPreviousUserMessage = useCallback(() => {
@@ -85,8 +85,9 @@ export const useUserMessageNavigation = ({
     const containerRect = container.getBoundingClientRect();
     const viewportTop = containerRect.top;
 
-    for (let i = userMessageIds.length - 1; i >= 0; i--) {
-      const msgId = userMessageIds[i];
+    const ids = userMessagesKey ? userMessagesKey.split(',') : [];
+    for (let i = ids.length - 1; i >= 0; i--) {
+      const msgId = ids[i];
       const msgElement = container.querySelector(`#user-message-${msgId}`) as HTMLElement;
       if (!msgElement) {
         continue;
@@ -99,7 +100,6 @@ export const useUserMessageNavigation = ({
         break;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   const handleNavigateToNextUserMessage = useCallback(() => {
@@ -111,7 +111,8 @@ export const useUserMessageNavigation = ({
     const containerRect = container.getBoundingClientRect();
     const viewportBottom = containerRect.bottom;
 
-    for (const msgId of userMessageIds) {
+    const ids = userMessagesKey ? userMessagesKey.split(',') : [];
+    for (const msgId of ids) {
       const msgElement = container.querySelector(`#user-message-${msgId}`) as HTMLElement;
       if (!msgElement) {
         continue;
@@ -124,7 +125,6 @@ export const useUserMessageNavigation = ({
         break;
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   useEffect(() => {
@@ -159,35 +159,37 @@ export const useUserMessageNavigation = ({
     };
   }, [containerRef, updateNavigationButtons]);
 
-  const defaultButtonClassName = clsx(
-    'bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary',
-    !alwaysVisible && 'hidden group-hover:block',
-    buttonClassName,
-  );
+  const navigationButtons: NavigationButton[] = useMemo(() => {
+    const defaultButtonClassName = clsx(
+      'bg-bg-primary-light border border-border-default shadow-lg hover:bg-bg-secondary',
+      !alwaysVisible && 'hidden group-hover:block',
+      buttonClassName,
+    );
 
-  const navigationButtons: NavigationButton[] = [
-    {
-      key: 'previous',
-      icon: <MdKeyboardArrowUp className="h-6 w-6" />,
-      onClick: handleNavigateToPreviousUserMessage,
-      tooltip: t('messages.previousUserMessage'),
-      ariaLabel: t('messages.previousUserMessage'),
-      disabled: !hasPreviousUserMessage,
-      className: defaultButtonClassName,
-    },
-    {
-      key: 'next',
-      icon: <MdKeyboardArrowDown className="h-6 w-6" />,
-      onClick: handleNavigateToNextUserMessage,
-      tooltip: t('messages.nextUserMessage'),
-      ariaLabel: t('messages.nextUserMessage'),
-      disabled: !hasNextUserMessage,
-      className: defaultButtonClassName,
-    },
-  ];
+    return [
+      {
+        key: 'previous',
+        icon: <MdKeyboardArrowUp className="h-6 w-6" />,
+        onClick: handleNavigateToPreviousUserMessage,
+        tooltip: t('messages.previousUserMessage'),
+        ariaLabel: t('messages.previousUserMessage'),
+        disabled: !hasPreviousUserMessage,
+        className: defaultButtonClassName,
+      },
+      {
+        key: 'next',
+        icon: <MdKeyboardArrowDown className="h-6 w-6" />,
+        onClick: handleNavigateToNextUserMessage,
+        tooltip: t('messages.nextUserMessage'),
+        ariaLabel: t('messages.nextUserMessage'),
+        disabled: !hasNextUserMessage,
+        className: defaultButtonClassName,
+      },
+    ];
+  }, [handleNavigateToPreviousUserMessage, handleNavigateToNextUserMessage, t, hasPreviousUserMessage, hasNextUserMessage, alwaysVisible, buttonClassName]);
 
   const renderGoToPrevious = useCallback(() => {
-    if (userMessageIds.length === 0) {
+    if (!userMessagesKey) {
       return null;
     }
 
@@ -206,11 +208,10 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigationButtons, userMessagesKey]);
 
   const renderGoToNext = useCallback(() => {
-    if (userMessageIds.length === 0) {
+    if (!userMessagesKey) {
       return null;
     }
 
@@ -229,11 +230,10 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigationButtons, userMessagesKey]);
 
   const renderButtons = useCallback(() => {
-    if (userMessageIds.length === 0) {
+    if (!userMessagesKey) {
       return null;
     }
 
@@ -248,7 +248,6 @@ export const useUserMessageNavigation = ({
         disabled={button.disabled}
       />
     ));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigationButtons, userMessagesKey]);
 
   return {

@@ -50,12 +50,10 @@ export const DiffViewer = ({ oldValue, newValue, language, isComplete = false, v
   const { file: diffFile, error: diffError } = diffComputationResult;
 
   const tokens = useMemo(() => {
-    if (diffError || !diffFile || !diffFile.hunks) {
+    if (diffError || !diffFile || !diffFile.hunks || !isLanguageRegistered) {
       return undefined;
     }
     return createTokens(diffFile.hunks, language);
-    // isLanguageRegistered triggers token recomputation once the lazily loaded grammar registers
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [diffFile, language, diffError, isLanguageRegistered]);
 
   if (diffError) {

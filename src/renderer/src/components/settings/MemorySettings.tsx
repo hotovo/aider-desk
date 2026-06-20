@@ -1,7 +1,8 @@
 import { MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEmbeddingProvider, MemoryEntry, SettingsData } from '@common/types';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaTrash } from 'react-icons/fa';
+import { useMount } from '@reactuses/core';
 
 import { Checkbox } from '../common/Checkbox';
 import { Select } from '../common/Select';
@@ -51,15 +52,14 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
 
   const [embeddingProgress, setEmbeddingProgress] = useState<MemoryEmbeddingProgress | null>(null);
 
-  const loadMemories = async () => {
+  const loadMemories = useCallback(async () => {
     const all = await api.listAllMemories();
     setMemories(all);
-  };
+  }, [api]);
 
-  useEffect(() => {
+  useMount(() => {
     void loadMemories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  });
 
   useEffect(() => {
     let timeoutId: number | null = null;

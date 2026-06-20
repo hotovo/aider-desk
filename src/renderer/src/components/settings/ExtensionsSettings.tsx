@@ -1,5 +1,6 @@
 import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
-import { Activity, useEffect, useMemo, useState } from 'react';
+import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { useMount } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
@@ -110,7 +111,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
   const projectDir = profileContext !== 'global' ? profileContext : undefined;
 
-  const loadInstalledExtensions = async () => {
+  const loadInstalledExtensions = useCallback(async () => {
     setLoadingInstalled(true);
     try {
       const extensions = await api.getInstalledExtensions(projectDir);
@@ -120,35 +121,37 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     } finally {
       setLoadingInstalled(false);
     }
-  };
+  }, [projectDir, api, t]);
 
-  const loadAvailableExtensions = async (forceRefresh = false, repositories?: string[]) => {
-    setLoadingAvailable(true);
-    try {
-      const repos = repositories || settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
-      const extensions = await api.getAvailableExtensions(repos, forceRefresh);
-      setAvailableExtensions(extensions);
-    } catch {
-      showErrorNotification(t('settings.extensions.errors.loadAvailable'));
-    } finally {
-      setLoadingAvailable(false);
-    }
-  };
+  const loadAvailableExtensions = useCallback(
+    async (forceRefresh = false, repositories?: string[]) => {
+      setLoadingAvailable(true);
+      try {
+        const repos = repositories || settings.extensions?.repositories || [AIDER_DESK_EXTENSIONS_REPO_URL];
+        const extensions = await api.getAvailableExtensions(repos, forceRefresh);
+        setAvailableExtensions(extensions);
+      } catch {
+        showErrorNotification(t('settings.extensions.errors.loadAvailable'));
+      } finally {
+        setLoadingAvailable(false);
+      }
+    },
+    [settings.extensions?.repositories, api, t],
+  );
 
   const handleRefresh = async () => {
     await Promise.all([loadInstalledExtensions(), loadAvailableExtensions(true)]);
   };
 
+  // Re-load installed extensions when project context changes
   useEffect(() => {
     void loadInstalledExtensions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectDir]);
+  }, [loadInstalledExtensions]);
 
   // Load available extensions on initial mount only
-  useEffect(() => {
+  useMount(() => {
     void loadAvailableExtensions();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  });
 
   const handleToggleDisabled = (extensionFilePath: string, isCurrentlyDisabled: boolean) => {
     const disabledExtensions = settings.extensions?.disabled || [];

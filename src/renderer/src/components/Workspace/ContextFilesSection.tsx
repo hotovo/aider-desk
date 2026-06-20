@@ -61,7 +61,7 @@ export const ContextFilesSection = ({
   }, [sortedUserFiles]);
 
   useEffect(() => {
-    const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[], currentExpanded: string[]) => {
+    const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[]) => {
       const foldersToExpand = Object.keys(treeData).filter((key) => {
         const node = treeData[key];
         if (!node.isFolder) {
@@ -81,11 +81,10 @@ export const ContextFilesSection = ({
         return node.children?.some(checkChild) || false;
       });
 
-      setContextExpandedItems(Array.from(new Set([...currentExpanded, ...foldersToExpand])));
+      setContextExpandedItems((prevState) => Array.from(new Set([...prevState, ...foldersToExpand])));
     };
 
-    expandFolders(contextTreeData, userContextFiles, contextExpandedItems);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    expandFolders(contextTreeData, userContextFiles);
   }, [contextTreeData, userContextFiles]);
 
   const addFile = useCallback((_item: TreeItem) => (_event: React.MouseEvent<HTMLButtonElement>) => {}, []);
