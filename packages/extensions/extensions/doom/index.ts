@@ -15,6 +15,7 @@ export default class DoomExtension implements Extension {
     version: '1.0.0',
     description: 'Play DOOM while waiting for your agent to finish',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/doom/icon.png',
     capabilities: ['ui'],
   };
 
