@@ -1,4 +1,4 @@
-import { setGlobalDispatcher, ProxyAgent, Agent as UndiciAgent } from 'undici';
+import { setGlobalDispatcher, EnvHttpProxyAgent, Agent as UndiciAgent } from 'undici';
 import { bootstrap } from 'global-agent';
 
 import type { SettingsData } from '@common/types';
@@ -10,7 +10,8 @@ const PROXY_ENV_VAR_NAMES = ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_pro
 export const getProxyEnvVars = (settings: SettingsData): Record<string, string> => {
   if (settings.proxy?.enabled && settings.proxy?.url) {
     const url = settings.proxy.url;
-    return {
+    const noProxy = settings.proxy.noProxy;
+    const vars: Record<string, string> = {
       HTTP_PROXY: url,
       HTTPS_PROXY: url,
       ALL_PROXY: url,
@@ -18,6 +19,11 @@ export const getProxyEnvVars = (settings: SettingsData): Record<string, string> 
       https_proxy: url,
       all_proxy: url,
     };
+    if (noProxy) {
+      vars.NO_PROXY = noProxy;
+      vars.no_proxy = noProxy;
+    }
+    return vars;
   }
   return Object.fromEntries(PROXY_ENV_VAR_NAMES.map((key) => [key, '']));
 };
@@ -32,7 +38,7 @@ export class ProxyManager {
     bootstrap();
 
     if (settings.proxy?.enabled && settings.proxy?.url) {
-      this.applyProxy(settings.proxy.url);
+      this.applyProxy(settings.proxy.url, settings.proxy.noProxy);
     } else {
       this.clearProxy();
     }
@@ -46,10 +52,10 @@ export class ProxyManager {
     const oldProxy = oldSettings.proxy;
     const newProxy = newSettings.proxy;
 
-    if (oldProxy?.enabled !== newProxy?.enabled || oldProxy?.url !== newProxy?.url) {
+    if (oldProxy?.enabled !== newProxy?.enabled || oldProxy?.url !== newProxy?.url || oldProxy?.noProxy !== newProxy?.noProxy) {
       if (newProxy?.enabled && newProxy?.url) {
         logger.info(`[ProxyManager] Applying proxy: ${newProxy.url}`);
-        this.applyProxy(newProxy.url);
+        this.applyProxy(newProxy.url, newProxy.noProxy);
       } else if (this.currentUrl !== null) {
         logger.info('[ProxyManager] Clearing proxy');
         this.clearProxy();
@@ -57,13 +63,18 @@ export class ProxyManager {
     }
   }
 
-  private applyProxy(url: string): void {
+  private applyProxy(url: string, noProxy?: string): void {
     try {
       // Cover Axios, Got, and legacy HTTP libs via global-agent
       global.GLOBAL_AGENT.HTTP_PROXY = url;
+      global.GLOBAL_AGENT.NO_PROXY = noProxy || undefined;
 
-      // Cover native fetch via undici
-      const proxyAgent = new ProxyAgent(url);
+      // Cover native fetch via undici (EnvHttpProxyAgent honors NO_PROXY)
+      const proxyAgent = new EnvHttpProxyAgent({
+        httpProxy: url,
+        httpsProxy: url,
+        noProxy: noProxy || undefined,
+      });
       setGlobalDispatcher(proxyAgent);
 
       this.currentUrl = url;
@@ -76,6 +87,7 @@ export class ProxyManager {
   private clearProxy(): void {
     try {
       global.GLOBAL_AGENT.HTTP_PROXY = undefined;
+      global.GLOBAL_AGENT.NO_PROXY = undefined;
       setGlobalDispatcher(
         new UndiciAgent({
           headersTimeout: 30 * 60 * 1000, // 30 minutes

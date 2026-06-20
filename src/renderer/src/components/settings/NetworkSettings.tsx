@@ -50,6 +50,16 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleNoProxyChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setSettings({
+      ...settings,
+      proxy: {
+        ...settings.proxy,
+        noProxy: e.target.value,
+      },
+    });
+  };
+
   useEffect(() => {
     const loadTunnelStatus = async () => {
       if (isServerRunning) {
@@ -248,13 +258,27 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
           <p className="text-xs text-text-muted mt-2">{t('settings.network.enableProxyDescription')}</p>
         </div>
         {settings.proxy.enabled && (
-          <Input
-            label={<div className="text-xs">{t('settings.network.proxyUrl')}</div>}
-            value={settings.proxy.url}
-            onChange={handleProxyUrlChange}
-            type="text"
-            placeholder={t('settings.network.proxyUrlPlaceholder')}
-          />
+          <>
+            <Input
+              label={<div className="text-xs">{t('settings.network.proxyUrl')}</div>}
+              value={settings.proxy.url}
+              onChange={handleProxyUrlChange}
+              type="text"
+              placeholder={t('settings.network.proxyUrlPlaceholder')}
+            />
+            <Input
+              label={
+                <div className="flex items-center">
+                  <span className="text-xs">{t('settings.network.noProxy')}</span>
+                  <InfoIcon tooltip={t('settings.network.noProxyDescription')} />
+                </div>
+              }
+              value={settings.proxy.noProxy}
+              onChange={handleNoProxyChange}
+              type="text"
+              placeholder={t('settings.network.noProxyPlaceholder')}
+            />
+          </>
         )}
       </div>
     </Section>

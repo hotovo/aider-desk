@@ -114,6 +114,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   proxy: {
     enabled: false,
     url: '',
+    noProxy: '',
   },
   fileWatchMode: FileWatchMode.Auto,
 };

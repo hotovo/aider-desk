@@ -155,6 +155,7 @@ describe('Project - createNewTask', () => {
             proxy: {
               enabled: false,
               url: '',
+              noProxy: '',
             },
           }) as SettingsData,
       ),

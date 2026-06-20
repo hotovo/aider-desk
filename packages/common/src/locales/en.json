@@ -861,7 +861,10 @@
       "enableProxyDescription": "Route all HTTP/HTTPS traffic through a proxy server. Affects LLM API calls, extension fetching, update checks, and all other outbound requests.",
       "proxyUrl": "Proxy URL",
       "proxyUrlPlaceholder": "http://127.0.0.1:8888",
-      "proxyUrlDescription": "HTTP or SOCKS5 proxy server address"
+      "proxyUrlDescription": "HTTP or SOCKS5 proxy server address",
+      "noProxy": "No Proxy",
+      "noProxyPlaceholder": "localhost,127.0.0.1,.internal.example.com",
+      "noProxyDescription": "Comma-separated list of hosts or domains that should bypass the proxy. Supports exact hostnames, IP addresses, and wildcard domains (e.g., .example.com)"
     },
     "server": {
       "description": "Enable server on port 24337 to access AiderDesk from external applications",

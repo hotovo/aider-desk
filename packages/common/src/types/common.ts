@@ -687,6 +687,7 @@ export interface SettingsData {
   proxy: {
     enabled: boolean;
     url: string;
+    noProxy: string;
   };
   fileWatchMode?: FileWatchMode;
 }

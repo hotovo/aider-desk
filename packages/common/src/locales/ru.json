@@ -855,7 +855,10 @@
       "enableProxyDescription": "Направлять весь HTTP/HTTPS-трафик через прокси-сервер. Влияет на вызовы API LLM, загрузку расширений, проверку обновлений и все исходящие запросы.",
       "proxyUrl": "URL прокси",
       "proxyUrlPlaceholder": "http://127.0.0.1:8888",
-      "proxyUrlDescription": "Адрес HTTP- или SOCKS5-прокси-сервера"
+      "proxyUrlDescription": "Адрес HTTP- или SOCKS5-прокси-сервера",
+      "noProxy": "Без прокси",
+      "noProxyPlaceholder": "localhost,127.0.0.1,.internal.example.com",
+      "noProxyDescription": "Список хостов или доменов через запятую, которые должны обходить прокси. Поддерживаются точные имена хостов, IP-адреса и домены с подстановкой (например, .example.com)"
     },
     "server": {
       "description": "Включить сервер на порту 24337 для доступа к AiderDesk из внешних приложений",

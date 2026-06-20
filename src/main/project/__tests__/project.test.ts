@@ -134,6 +134,7 @@ describe('Project - createNewTask', () => {
             proxy: {
               enabled: false,
               url: '',
+              noProxy: '',
             },
           }) as SettingsData,
       ),
@@ -507,6 +508,7 @@ describe('Project - deleteTask', () => {
             proxy: {
               enabled: false,
               url: '',
+              noProxy: '',
             },
           }) as SettingsData,
       ),

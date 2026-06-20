@@ -1575,7 +1575,10 @@
     "enableProxyDescription": "通过代理服务器路由所有 HTTP/HTTPS 流量。影响 LLM API 调用、扩展获取、更新检查和所有其他出站请求。",
     "proxyUrl": "代理 URL",
     "proxyUrlPlaceholder": "http://127.0.0.1:8888",
-    "proxyUrlDescription": "HTTP 或 SOCKS5 代理服务器地址"
+    "proxyUrlDescription": "HTTP 或 SOCKS5 代理服务器地址",
+    "noProxy": "不使用代理",
+    "noProxyPlaceholder": "localhost,127.0.0.1,.internal.example.com",
+    "noProxyDescription": "逗号分隔的应绕过代理的主机或域名列表。支持精确主机名、IP 地址和通配符域名（例如 .example.com）"
   },
   "server": {
     "description": "启用 服务器，允许您通过浏览器在端口 24337 访问 AiderDesk",
