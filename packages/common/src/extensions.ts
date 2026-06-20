@@ -214,7 +214,9 @@ export type UIComponentPlacement =
   | 'task-state-actions'
   | 'task-state-actions-all'
   | 'welcome-page'
-  | 'floating';
+  | 'task-floating'
+  | 'project-floating'
+  | 'app-floating';
 
 /**
  * Definition of a React UI component that can be registered by an extension.

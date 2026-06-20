@@ -36,14 +36,16 @@ const ALWAYS_ON_PLACEMENTS: UIComponentPlacement[] = [
   'task-state-actions',
 ];
 
-// Placements toggled via the floating panel checkboxes (disabled by default)
+// Placements toggled via the task-floating panel checkboxes (disabled by default)
 const TOGGLABLE_PLACEMENTS: UIComponentPlacement[] = [
   'welcome-page',
   'task-state-actions-all',
   'task-message',
 ];
 
-const FLOATING_COMPONENT_ID = 'placement-demo-floating';
+const TASK_FLOATING_COMPONENT_ID = 'placement-demo-task-floating';
+const PROJECT_FLOATING_COMPONENT_ID = 'placement-demo-project-floating';
+const APP_FLOATING_COMPONENT_ID = 'placement-demo-app-floating';
 
 // Shared styles for all placement chips
 const CHIP_STYLES = `
@@ -140,8 +142,39 @@ const TASK_MESSAGE_JSX = `
   }
 `;
 
-// JSX for the floating placement — panel with checkboxes controlling togglable placements
-const FLOATING_PANEL_JSX = `
+// JSX for the task-floating placement — panel with checkboxes controlling togglable placements
+const TASK_FLOATING_PANEL_JSX = `
+  (props) => {
+    return (
+      <div className="p-3 space-y-3">
+        <p className="text-xs text-text-secondary">
+          {props.task ? 'Task: ' + props.task.name : 'No task context'}
+        </p>
+      </div>
+    );
+  }
+`;
+
+const PROJECT_FLOATING_PANEL_JSX = `
+  (props) => {
+    const data = props.data || {};
+    const enabledPlacements = data.enabledPlacements || {};
+
+    return (
+      <div className="p-3 space-y-3">
+        <p className="text-xs text-text-secondary">
+          Project-wide panel (persists across task switches)
+        </p>
+        <div className="space-y-1.5">
+          <p className="text-2xs text-text-muted font-medium uppercase tracking-wider">Project Floating</p>
+          <p className="text-2xs text-text-muted">Enabled placements: {Object.keys(enabledPlacements).length}</p>
+        </div>
+      </div>
+    );
+  }
+`;
+
+const APP_FLOATING_PANEL_JSX = `
   (props) => {
     const { useCallback } = React;
     const data = props.data || {};
@@ -159,15 +192,16 @@ const FLOATING_PANEL_JSX = `
     return (
       <div className="p-3 space-y-3">
         <p className="text-xs text-text-secondary">
-          Task: <span className="text-text-primary font-medium">{props.task?.name ?? 'none'}</span>
+          App-wide panel (persists across projects)
         </p>
+        <div className="space-y-1.5">
+          <p className="text-2xs text-text-muted font-medium uppercase tracking-wider">App Floating</p>
+          <p className="text-2xs text-text-muted">Always available regardless of project or task</p>
+        </div>
         <div className="space-y-1.5">
           <p className="text-2xs text-text-muted font-medium uppercase tracking-wider">Togglable Placements</p>
           {toggleItems.map((item) => (
-            <label key={item.placement} className="flex items-center gap-2 text-xs cursor-pointer">
-              <props.ui.Checkbox checked={item.enabled} onChange={() => handleToggle(item.placement)} />
-              <span className={item.enabled ? 'text-text-primary' : 'text-text-secondary'}>{item.placement}</span>
-            </label>
+            <props.ui.Checkbox checked={item.enabled} onChange={() => handleToggle(item.placement)} label={item.placement}/>
           ))}
         </div>
       </div>
@@ -178,7 +212,7 @@ const FLOATING_PANEL_JSX = `
 export default class UIPlacementDemoExtension implements Extension {
   static metadata = {
     name: 'UI Placement Demo',
-    version: '1.4.0',
+    version: '1.5.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
@@ -216,20 +250,38 @@ export default class UIPlacementDemoExtension implements Extension {
         return def;
       });
 
-    const floating: UIComponentDefinition = {
-      id: FLOATING_COMPONENT_ID,
-      placement: 'floating',
-      name: 'Placement Demo',
+    const taskFloating: UIComponentDefinition = {
+      id: TASK_FLOATING_COMPONENT_ID,
+      placement: 'task-floating',
+      name: 'Placement Demo (Task)',
       loadData: true,
       noDataCache: true,
-      jsx: FLOATING_PANEL_JSX,
+      jsx: TASK_FLOATING_PANEL_JSX,
     };
 
-    return [...alwaysOn, ...togglable, floating];
+    const projectFloating: UIComponentDefinition = {
+      id: PROJECT_FLOATING_COMPONENT_ID,
+      placement: 'project-floating',
+      name: 'Placement Demo (Project)',
+      loadData: true,
+      noDataCache: true,
+      jsx: PROJECT_FLOATING_PANEL_JSX,
+    };
+
+    const appFloating: UIComponentDefinition = {
+      id: APP_FLOATING_COMPONENT_ID,
+      placement: 'app-floating',
+      name: 'Placement Demo (App)',
+      loadData: true,
+      noDataCache: true,
+      jsx: APP_FLOATING_PANEL_JSX,
+    };
+
+    return [...alwaysOn, ...togglable, taskFloating, projectFloating, appFloating];
   }
 
   async getUIExtensionData(componentId: string, _context: ExtensionContext): Promise<unknown> {
-    if (componentId === FLOATING_COMPONENT_ID) {
+    if (componentId === APP_FLOATING_COMPONENT_ID || componentId === PROJECT_FLOATING_COMPONENT_ID) {
       return { enabledPlacements: this.enabledPlacements };
     }
     return null;
@@ -245,7 +297,8 @@ export default class UIPlacementDemoExtension implements Extension {
       const placement = args[0];
       this.enabledPlacements[placement] = !this.enabledPlacements[placement];
       context.triggerUIComponentsReload();
-      context.triggerUIDataRefresh(FLOATING_COMPONENT_ID);
+      context.triggerUIDataRefresh(APP_FLOATING_COMPONENT_ID);
+      context.triggerUIDataRefresh(PROJECT_FLOATING_COMPONENT_ID);
     }
     return null;
   }

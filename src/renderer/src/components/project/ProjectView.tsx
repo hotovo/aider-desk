@@ -518,6 +518,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
             }}
           >
             {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
+            {isProjectActive && <FloatingExtensionPanels placement="project-floating" />}
             {activeTask && (
               <Activity mode={isProjectActive ? 'visible' : 'hidden'}>
                 <ExtensionsProvider projectDir={projectDir} task={activeTask} agentProfile={agentProfile}>
@@ -536,7 +537,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
                     onDeleteTask={handleDeleteActiveTask}
                     onToggleTaskSidebar={isMobile ? toggleTaskSidebar : undefined}
                   />
-                  <FloatingExtensionPanels />
+                  <FloatingExtensionPanels placement="task-floating" />
                 </ExtensionsProvider>
               </Activity>
             )}

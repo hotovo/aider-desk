@@ -19,6 +19,7 @@ import { ProjectTabs } from '@/components/project/ProjectTabs';
 import { ProjectView } from '@/components/project/ProjectView';
 import { useVersions } from '@/hooks/useVersions';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { HtmlInfoDialog } from '@/components/common/HtmlInfoDialog';
 import { ProjectSettingsProvider } from '@/contexts/ProjectSettingsContext';
 import { TelemetryInfoDialog } from '@/components/TelemetryInfoDialog';
@@ -646,6 +647,8 @@ export const Home = () => {
             <NoProjectsOpen onOpenProject={handleOpenAddProjectDialog} />
           )}
         </div>
+        <div id="app-floating-panels-root" className="absolute inset-0 pointer-events-none z-50 overflow-visible" />
+        <FloatingExtensionPanels placement="app-floating" portalRootId="app-floating-panels-root" />
       </div>
     </div>
   );

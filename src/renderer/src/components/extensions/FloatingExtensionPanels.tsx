@@ -4,21 +4,24 @@ import { useEffect, useState } from 'react';
 import { FloatingPanel } from '@/components/common/FloatingPanel';
 import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 
-const FLOATING_ROOT_ID = 'floating-panels-root';
+type Props = {
+  placement?: string;
+  portalRootId?: string;
+};
 
-export const FloatingExtensionPanels = () => {
+export const FloatingExtensionPanels = ({ placement = 'task-floating', portalRootId = 'floating-panels-root' }: Props) => {
   const { isEmpty, renderComponents, components } = useExtensionComponentsWrapper({
-    placement: 'floating',
+    placement,
   });
 
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(() => document.getElementById(FLOATING_ROOT_ID));
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(() => document.getElementById(portalRootId));
 
   useEffect(() => {
     if (!portalRoot) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- portal target is external DOM, not available on first render
-      setPortalRoot(document.getElementById(FLOATING_ROOT_ID));
+      setPortalRoot(document.getElementById(portalRootId));
     }
-  }, [portalRoot]);
+  }, [portalRoot, portalRootId]);
 
   if (isEmpty || !portalRoot || !components) {
     return null;
@@ -32,7 +35,7 @@ export const FloatingExtensionPanels = () => {
         <FloatingPanel
           key={`${comp.extensionId}-${comp.componentId}`}
           title={comp.name ?? comp.componentId}
-          storageKey={`${comp.extensionId}-${comp.componentId}`}
+          storageKey={`${placement}-${comp.extensionId}-${comp.componentId}`}
         >
           {rendered[index]}
         </FloatingPanel>

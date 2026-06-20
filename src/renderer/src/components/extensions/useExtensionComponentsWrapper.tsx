@@ -1,13 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ExtensionUIComponent } from '@common/types';
 
-import StringToReactComponent from './StringToReactComponent';
+import { ExtensionComponentRenderer } from './ExtensionComponentRenderer';
 
-import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErrorBoundary';
 import { useApi } from '@/contexts/ApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import {
-  getExtensionComponentData,
   handleExtensionUIRefreshEvent,
   isExtensionUIDataLoaded,
   loadExtensionComponentData,
@@ -168,23 +165,6 @@ export const useExtensionComponentsWrapper = ({
 
   const componentLibraries = useMemo(() => ({ ...componentProps.libraries, ...libraries }), [componentProps.libraries, libraries]);
 
-  const getComponentData = useCallback(
-    (comp: ExtensionUIComponent) => {
-      const executeExtensionAction = async (action: string, ...args: unknown[]) => {
-        return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, currentActionProjectDir, currentActionTaskId);
-      };
-
-      return {
-        ...componentProps,
-        ...additionalProps,
-        executeExtensionAction,
-        libraries: componentLibraries,
-        data: getExtensionComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId),
-      };
-    },
-    [componentProps, additionalProps, componentLibraries, currentProjectDir, currentTaskId, currentActionProjectDir, currentActionTaskId, api],
-  );
-
   const renderComponents = useCallback(() => {
     if (!components) {
       return [];
@@ -195,11 +175,31 @@ export const useExtensionComponentsWrapper = ({
     }
 
     return components.map((comp) => (
-      <ExtensionUIErrorBoundary key={`${comp.extensionId}-${comp.componentId}`} extensionId={comp.extensionId} componentId={comp.componentId}>
-        <StringToReactComponent data={getComponentData(comp)}>{comp.jsx}</StringToReactComponent>
-      </ExtensionUIErrorBoundary>
+      <ExtensionComponentRenderer
+        key={`${comp.extensionId}-${comp.componentId}`}
+        comp={comp}
+        componentProps={componentProps}
+        additionalProps={additionalProps}
+        libraries={componentLibraries}
+        currentProjectDir={currentProjectDir}
+        currentTaskId={currentTaskId}
+        currentActionProjectDir={currentActionProjectDir}
+        currentActionTaskId={currentActionTaskId}
+        api={api}
+      />
     ));
-  }, [components, getComponentData, icons]);
+  }, [
+    components,
+    componentProps,
+    additionalProps,
+    componentLibraries,
+    currentProjectDir,
+    currentTaskId,
+    currentActionProjectDir,
+    currentActionTaskId,
+    api,
+    icons,
+  ]);
 
   return {
     components,
