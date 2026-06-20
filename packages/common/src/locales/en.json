@@ -390,7 +390,8 @@
       "configured": "Configured"
     },
     "thinkingEnabled": "Enable Thinking",
-    "thinkingEnabledTooltip": "When enabled, the model will use thinking mode for deeper reasoning (default). Disable for faster responses on simple tasks."
+    "thinkingEnabledTooltip": "When enabled, the model will use thinking mode for deeper reasoning (default). Disable for faster responses on simple tasks.",
+    "reasoningEffortTooltip": "Controls the model's reasoning effort level when thinking is enabled. Higher effort means deeper reasoning but slower responses. Only supported by GLM-5.2."
   },
   "azure": {
     "apiKey": "API Key",

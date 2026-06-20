@@ -317,7 +317,8 @@
       "configured": "已配置"
     },
     "thinkingEnabled": "启用思考",
-    "thinkingEnabledTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。"
+    "thinkingEnabledTooltip": "启用时，模型将使用思考模式进行更深入的推理（默认）。对于简单任务，可以禁用以获得更快的响应速度。",
+    "reasoningEffortTooltip": "控制启用思考时模型的推理力度。更高的力度意味着更深入的推理，但响应速度会更慢。仅 GLM-5.2 支持。"
   },
   "anthropic": {
     "apiKey": "API 密钥",

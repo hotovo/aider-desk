@@ -18,6 +18,7 @@ export const ZaiPlanModelOverrides = ({ provider, overrides, onChange }: Props) 
   const handleProviderChange = (updatedProvider: ZaiPlanProvider) => {
     const newOverrides = {
       thinkingEnabled: updatedProvider.thinkingEnabled,
+      reasoningEffort: updatedProvider.reasoningEffort,
     };
 
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([_, value]) => value !== undefined));

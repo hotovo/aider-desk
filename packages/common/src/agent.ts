@@ -289,6 +289,7 @@ export interface ZaiPlanProvider extends LlmProviderBase {
   name: 'zai-plan';
   apiKey: string;
   thinkingEnabled?: boolean;
+  reasoningEffort?: ReasoningEffort;
 }
 export const isZaiPlanProvider = (provider: LlmProviderBase): provider is ZaiPlanProvider => provider.name === 'zai-plan';
 
@@ -779,6 +780,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
       provider = {
         name: 'zai-plan',
         apiKey: '',
+        reasoningEffort: ReasoningEffort.High,
       } satisfies ZaiPlanProvider;
       break;
     case 'minimax':
