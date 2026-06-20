@@ -18,6 +18,7 @@
 - added noProxy support to network settings
 - replaced floating placement with task, project, and app-level floating placements in UI extensions
 - allowing colons in extension command names
+- added Doom extension that runs DOOM in a floating panel
 
 ## [0.70.0]
 

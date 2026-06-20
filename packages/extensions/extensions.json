@@ -336,6 +336,15 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["ui"]
+    },
+    {
+      "id": "doom",
+      "name": "Doom",
+      "description": "Play DOOM in a floating panel",
+      "folder": "doom",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["ui"]
     }
   ]
 }
