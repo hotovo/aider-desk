@@ -20,6 +20,7 @@
 - allowing colons in extension command names
 - added reasoning effort setting to Z.ai Coding Plan provider
 - added reasoning effort setting to NeuralWatt provider
+- added baseCommit validation and state updates on rebase continue
 
 ## [0.70.0]
 

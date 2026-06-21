@@ -497,6 +497,75 @@ export class WorktreeManager {
     }
   }
 
+  /**
+   * Check if a commit is an ancestor of another commit (or HEAD).
+   * Returns true if `ancestorCommit` is reachable from `descendantRef`.
+   */
+  async isCommitAncestorOf(worktreePath: string, ancestorCommit: string, descendantRef = 'HEAD'): Promise<boolean> {
+    try {
+      // git merge-base --is-ancestor returns exit code 0 if ancestor, 1 if not
+      await execWithShellPath(`git merge-base --is-ancestor ${ancestorCommit} ${descendantRef}`, { cwd: worktreePath });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Get the "onto" commit from an active rebase.
+   * Returns undefined if no rebase is in progress or the file doesn't exist.
+   */
+  async getRebaseOntoCommit(worktreePath: string): Promise<string | undefined> {
+    try {
+      // Try rebase-merge first (interactive rebase)
+      const { stdout: rebaseMergePath } = await execWithShellPath('git rev-parse --git-path rebase-merge', { cwd: worktreePath });
+      const ontoPath = `${rebaseMergePath.trim()}/onto`;
+      try {
+        const { stdout: ontoCommit } = await execWithShellPath(`cat "${ontoPath}"`, { cwd: worktreePath });
+        if (ontoCommit.trim()) {
+          return ontoCommit.trim();
+        }
+      } catch {
+        // rebase-merge/onto doesn't exist, try rebase-apply
+      }
+
+      // Try rebase-apply (non-interactive rebase)
+      const { stdout: rebaseApplyPath } = await execWithShellPath('git rev-parse --git-path rebase-apply', { cwd: worktreePath });
+      const ontoApplyPath = `${rebaseApplyPath.trim()}/onto`;
+      try {
+        const { stdout: ontoCommit } = await execWithShellPath(`cat "${ontoApplyPath}"`, { cwd: worktreePath });
+        if (ontoCommit.trim()) {
+          return ontoCommit.trim();
+        }
+      } catch {
+        // rebase-apply/onto doesn't exist either
+      }
+
+      return undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /**
+   * Resolve a commit to the branch name that points to it.
+   * Returns the first branch found, or undefined if no branch points to that exact commit.
+   */
+  async getBranchPointingAtCommit(projectPath: string, commit: string): Promise<string | undefined> {
+    try {
+      const { stdout } = await execWithShellPath(`git branch --points-at ${commit} --format='%(refname:short)'`, { cwd: projectPath });
+      const branches = stdout
+        .trim()
+        .split('\n')
+        .map((b) => b.trim())
+        .filter((b) => b && !b.includes('(') && !b.includes('HEAD'));
+
+      return branches.length > 0 ? branches[0] : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async getBranchesContainingCommit(projectPath: string, commit: string): Promise<string[]> {
     try {
       const { stdout } = await execWithShellPath(`git branch --contains ${commit} --format='%(refname:short)'`, { cwd: projectPath });
@@ -693,17 +762,28 @@ export class WorktreeManager {
           logger.info('Created temporary commit for uncommitted changes');
         }
 
-        // 2. Rebase the current worktree branch onto target branch
-        // When baseCommit is provided, use --onto to only replay commits made after baseCommit
+        // 2. Validate baseCommit if provided - ensure it's an ancestor of HEAD
+        // If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
+        let effectiveBaseCommit = baseCommit;
+        if (baseCommit) {
+          const isValid = await this.isCommitAncestorOf(worktreePath, baseCommit);
+          if (!isValid) {
+            logger.warn(`baseCommit ${baseCommit} is not an ancestor of HEAD, falling back to simple rebase`, { worktreePath, mainBranch });
+            effectiveBaseCommit = undefined;
+          }
+        }
+
+        // 3. Rebase the current worktree branch onto target branch
+        // When baseCommit is provided and valid, use --onto to only replay commits made after baseCommit
         // This avoids carrying over base branch commits that aren't in the target branch
-        const command = baseCommit ? `git rebase --onto ${mainBranch} ${baseCommit}` : `git rebase ${mainBranch}`;
+        const command = effectiveBaseCommit ? `git rebase --onto ${mainBranch} ${effectiveBaseCommit}` : `git rebase ${mainBranch}`;
         executedCommands.push(`${command} (in ${worktreePath})`);
         const rebaseResult = await execWithShellPath(command, {
           cwd: worktreePath,
         });
         lastOutput = rebaseResult.stdout || rebaseResult.stderr || '';
 
-        // 3. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
+        // 4. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
         if (hadUncommittedChanges) {
           await this.resetTempCommitIfExists(worktreePath);
           logger.info('Successfully reset temporary commit back to uncommitted changes');
@@ -759,10 +839,17 @@ export class WorktreeManager {
     }
   }
 
-  async continueRebase(worktreePath: string): Promise<void> {
+  async continueRebase(worktreePath: string): Promise<{ ontoCommit?: string; ontoBranch?: string }> {
     return await withLock(`git-rebase-continue-${worktreePath}`, async () => {
       const executedCommands: string[] = [];
       let lastOutput = '';
+
+      // Capture the "onto" info before continuing (it will be gone after rebase completes)
+      const ontoCommit = await this.getRebaseOntoCommit(worktreePath);
+      let ontoBranch: string | undefined;
+      if (ontoCommit) {
+        ontoBranch = await this.getBranchPointingAtCommit(worktreePath, ontoCommit);
+      }
 
       try {
         const command = 'git rebase --continue';
@@ -776,6 +863,8 @@ export class WorktreeManager {
         // Always try to reset temporary commit if it exists after successful continue
         await this.resetTempCommitIfExists(worktreePath);
         logger.info('Successfully handled temporary commit after continue rebase');
+
+        return { ontoCommit, ontoBranch };
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };
         logger.error(`Failed to continue rebase in ${worktreePath}:`, err);
@@ -819,9 +908,20 @@ export class WorktreeManager {
         return;
       }
 
+      // Validate baseCommit if provided - ensure it's an ancestor of HEAD
+      // If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
+      let effectiveBaseCommit = baseCommit;
+      if (baseCommit) {
+        const isValid = await this.isCommitAncestorOf(worktreePath, baseCommit);
+        if (!isValid) {
+          logger.warn(`baseCommit ${baseCommit} is not an ancestor of HEAD, falling back to simple rebase`, { worktreePath, mainBranch });
+          effectiveBaseCommit = undefined;
+        }
+      }
+
       // SAFETY CHECK 1: Rebase worktree onto main FIRST before squashing
       // Use --onto with baseCommit to only replay worktree-specific commits
-      command = baseCommit ? `git rebase --onto ${mainBranch} ${baseCommit}` : `git rebase ${mainBranch}`;
+      command = effectiveBaseCommit ? `git rebase --onto ${mainBranch} ${effectiveBaseCommit}` : `git rebase ${mainBranch}`;
       executedCommands.push(`${command} (in ${worktreePath})`);
       try {
         const rebaseWorktreeResult = await execWithShellPath(command, {
@@ -2129,7 +2229,7 @@ export class WorktreeManager {
    */
   private async resetTempCommit(worktreePath: string): Promise<void> {
     try {
-      await execWithShellPath('git reset --mixed HEAD^', { cwd: worktreePath });
+      await execWithShellPath('git reset --soft HEAD^', { cwd: worktreePath });
     } catch (error) {
       logger.error('Failed to reset temp commit:', error);
       throw new Error(`Failed to restore uncommitted changes: ${error instanceof Error ? error.message : String(error)}`);

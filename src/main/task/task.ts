@@ -4484,10 +4484,25 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', 'Continuing rebase...');
-      await this.worktreeManager.continueRebase(this.task.worktree.path);
+      const { ontoBranch } = await this.worktreeManager.continueRebase(this.task.worktree.path);
 
-      // Clear any remaining merge state after successful rebase continuation
-      await this.saveTask({ lastMergeState: undefined });
+      // Update baseCommit to the new HEAD after successful rebase continuation
+      // This ensures subsequent rebases only replay commits made after this point
+      const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
+      if (newHead) {
+        await this.saveTask({
+          lastMergeState: undefined,
+          worktree: {
+            ...this.task.worktree,
+            baseCommit: newHead,
+            // Update baseBranch if we could determine it from the rebase state, otherwise keep existing
+            baseBranch: ontoBranch || this.task.worktree.baseBranch,
+          },
+        });
+      } else {
+        // Clear any remaining merge state after successful rebase continuation
+        await this.saveTask({ lastMergeState: undefined });
+      }
 
       this.addLogMessage('info', 'Rebase completed', true);
     } catch (error) {
