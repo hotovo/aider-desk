@@ -118,7 +118,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
   if (isZaiPlanProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
     const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
-    const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort ?? ReasoningEffort.High;
+    const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort ?? ReasoningEffort.Max;
 
     // Only disable thinking if explicitly set to false
     if (thinkingEnabled === false) {
@@ -131,8 +131,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
       } as SharedV2ProviderOptions;
     }
 
-    const mappedReasoningEffort =
-      reasoningEffort === ReasoningEffort.None ? undefined : (reasoningEffort.toLowerCase() as 'max' | 'xhigh' | 'high' | 'medium' | 'low' | 'minimal');
+    const mappedReasoningEffort = reasoningEffort === ReasoningEffort.None ? undefined : (reasoningEffort.toLowerCase() as 'max' | 'high');
 
     if (mappedReasoningEffort) {
       return {

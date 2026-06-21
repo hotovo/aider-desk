@@ -20,12 +20,8 @@ export const ZaiPlanThinkingSetting = ({ provider, onChange }: Props) => {
   };
 
   const reasoningEffortOptions: Option[] = [
-    { value: 'max', label: t('reasoningEffort.max') },
-    { value: 'xhigh', label: t('reasoningEffort.xhigh') },
     { value: 'high', label: t('reasoningEffort.high') },
-    { value: 'medium', label: t('reasoningEffort.medium') },
-    { value: 'low', label: t('reasoningEffort.low') },
-    { value: 'minimal', label: t('reasoningEffort.minimal') },
+    { value: 'max', label: t('reasoningEffort.max') },
   ];
 
   const handleReasoningEffortChange = (value: string) => {
@@ -47,7 +43,7 @@ export const ZaiPlanThinkingSetting = ({ provider, onChange }: Props) => {
               <InfoIcon className="ml-1" tooltip={t('zaiPlan.reasoningEffortTooltip')} />
             </div>
           }
-          value={reasoningEffort ?? ReasoningEffort.High}
+          value={reasoningEffort ?? ReasoningEffort.Max}
           onChange={handleReasoningEffortChange}
           options={reasoningEffortOptions}
         />
