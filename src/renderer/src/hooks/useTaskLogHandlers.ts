@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { LogData, LogMessage, LoadingMessage, Message } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 
 const isLoadingMessage = (message: Message): message is LoadingMessage => {
   return message.type === 'loading';
@@ -17,6 +17,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
 
   const handleLog = useCallback(
     ({ level, message, finished, promptContext, actionIds, timestamp }: LogData) => {
+      touchTaskActivity(taskId);
       if (level === 'loading') {
         if (finished) {
           const currentGroupId = promptContext?.group?.id;

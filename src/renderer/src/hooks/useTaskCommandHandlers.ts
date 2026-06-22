@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 
 const isCommandOutputMessage = (message: Message): message is CommandOutputMessage => {
   return message.type === 'command-output';
@@ -15,6 +15,7 @@ export const useTaskCommandHandlers = (baseDir: string, taskId: string) => {
 
   const handleCommandOutput = useCallback(
     ({ command, output, timestamp }: CommandOutputData) => {
+      touchTaskActivity(taskId);
       setMessages(taskId, (prevMessages) => {
         const lastMessage = prevMessages[prevMessages.length - 1];
 

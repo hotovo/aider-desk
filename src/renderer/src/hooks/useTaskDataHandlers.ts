@@ -11,7 +11,16 @@ import type {
 } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { updateTaskState, setQuestion, setAllFiles, setAutocompletionWords, setTokensInfo, setAiderModelsData, setQueuedPrompts } from '@/stores/taskStore';
+import {
+  updateTaskState,
+  setQuestion,
+  setAllFiles,
+  setAutocompletionWords,
+  setTokensInfo,
+  setAiderModelsData,
+  setQueuedPrompts,
+  touchTaskActivity,
+} from '@/stores/taskStore';
 
 export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
@@ -48,6 +57,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
 
   const handleContextFilesUpdated = useCallback(
     ({ files }: ContextFilesUpdatedData) => {
+      touchTaskActivity(taskId);
       updateTaskState(taskId, { contextFiles: files });
     },
     [taskId],
@@ -55,6 +65,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
 
   const handleUpdateAiderModels = useCallback(
     (data: ModelsData) => {
+      touchTaskActivity(taskId);
       setAiderModelsData(taskId, data);
     },
     [taskId],
@@ -62,6 +73,7 @@ export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
 
   const handleQueuedPromptsUpdated = useCallback(
     ({ queuedPrompts }: QueuedPromptsUpdatedData) => {
+      touchTaskActivity(taskId);
       setQueuedPrompts(taskId, queuedPrompts);
     },
     [taskId],

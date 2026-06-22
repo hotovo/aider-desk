@@ -90,6 +90,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           todoItems: todoItems || [],
           question,
           queuedPrompts,
+          lastActiveAt: new Date(),
         });
       } catch (error) {
         // eslint-disable-next-line no-console

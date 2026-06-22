@@ -4,7 +4,7 @@ import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_
 import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages, setTodoItems } from '@/stores/taskStore';
+import { setMessages, setTodoItems, touchTaskActivity } from '@/stores/taskStore';
 
 export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
@@ -55,6 +55,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
 
   const handleTool = useCallback(
     ({ id, serverName, toolName, args, response, usageReport, promptContext, finished, timestamp }: ToolData) => {
+      touchTaskActivity(taskId);
       if (serverName === TODO_TOOL_GROUP_NAME) {
         handleTodoTool(toolName, args as Record<string, unknown>, response);
         return;

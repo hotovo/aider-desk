@@ -1,9 +1,11 @@
-import { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { createContext, memo, ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 
-import { setMessages, setTodoItems, setAiderModelsData } from '@/stores/taskStore';
-import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
+import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { cleanupTaskCache } from '@/stores/extensionUIStore';
+import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
 import { useTaskLogHandlers } from '@/hooks/useTaskLogHandlers';
 import { useTaskCommandHandlers } from '@/hooks/useTaskCommandHandlers';
@@ -11,6 +13,9 @@ import { useTaskDataHandlers } from '@/hooks/useTaskDataHandlers';
 import { useTaskMessageHandlers } from '@/hooks/useTaskMessageHandlers';
 import { useTaskLifecycleHandlers } from '@/hooks/useTaskLifecycleHandlers';
 import { useTaskActions } from '@/hooks/useTaskActions';
+
+const TASK_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
 
 interface TaskEventSubscriberProps {
   baseDir: string;
@@ -38,7 +43,28 @@ const TaskEventSubscriber = memo(function TaskEventSubscriber({ baseDir, taskId,
   return null;
 });
 
-TaskEventSubscriber.displayName = 'TaskEventSubscriber';
+const TaskEventSubscriberWrapper = memo(function TaskEventSubscriberWrapper({
+  baseDir,
+  taskId,
+  state,
+  isActive,
+}: {
+  baseDir: string;
+  taskId: string;
+  state?: string;
+  isActive: boolean;
+}) {
+  const loaded = useTaskLoaded(taskId);
+  const inProgress = state === DefaultTaskState.InProgress;
+
+  if (!isActive && !inProgress && !loaded) {
+    return null;
+  }
+
+  return <TaskEventSubscriber baseDir={baseDir} taskId={taskId} state={state} />;
+});
+
+TaskEventSubscriberWrapper.displayName = 'TaskEventSubscriberWrapper';
 
 export interface TaskContextType {
   loadTask: (taskId: string) => void;
@@ -52,12 +78,72 @@ export interface TaskContextType {
   interruptResponse: (taskId: string, interruptId?: string) => void;
   updateTaskAgentProfile: (taskId: string, agentProfileId: string, provider: string, model: string) => void;
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
+  markTaskActive: (taskId: string) => void;
 }
 
 const TasksContext = createContext<TaskContextType | null>(null);
 
-export const TasksProvider = ({ baseDir, tasks, children }: { baseDir: string; tasks: TaskData[]; children: ReactNode }) => {
+export const TasksProvider = ({
+  baseDir,
+  tasks,
+  activeTaskId,
+  children,
+}: {
+  baseDir: string;
+  tasks: TaskData[];
+  activeTaskId?: string | null;
+  children: ReactNode;
+}) => {
   const taskActions = useTaskActions({ baseDir });
+  const inactivityCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const markTaskActive = useCallback((taskId: string) => {
+    const state = useTaskStore.getState().taskStateMap.get(taskId);
+    if (!state?.loaded) {
+      return;
+    }
+
+    updateTaskState(taskId, { lastActiveAt: new Date() });
+  }, []);
+
+  const checkAndUnloadInactiveTasks = useCallback(() => {
+    const now = Date.now();
+    const taskStateMap = useTaskStore.getState().taskStateMap;
+
+    for (const [taskId, state] of taskStateMap) {
+      if (!state.loaded || !state.lastActiveAt) {
+        continue;
+      }
+
+      if (taskId === activeTaskId) {
+        continue;
+      }
+
+      const projectTasks = useProjectStore.getState().projectTasksMap.get(baseDir) || [];
+      const task = projectTasks.find((t) => t.id === taskId);
+      if (task?.state === DefaultTaskState.InProgress) {
+        continue;
+      }
+
+      const inactiveTime = now - state.lastActiveAt.getTime();
+      if (inactiveTime >= TASK_INACTIVITY_TIMEOUT_MS) {
+        unloadTask(taskId);
+        cleanupTaskCache(baseDir, taskId);
+        cleanupProcessingResponseMessage(taskId);
+      }
+    }
+  }, [baseDir, activeTaskId]);
+
+  useEffect(() => {
+    inactivityCheckIntervalRef.current = setInterval(checkAndUnloadInactiveTasks, INACTIVITY_CHECK_INTERVAL_MS);
+
+    return () => {
+      if (inactivityCheckIntervalRef.current) {
+        clearInterval(inactivityCheckIntervalRef.current);
+        inactivityCheckIntervalRef.current = null;
+      }
+    };
+  }, [checkAndUnloadInactiveTasks]);
 
   const contextValue = useMemo(
     () => ({
@@ -65,14 +151,15 @@ export const TasksProvider = ({ baseDir, tasks, children }: { baseDir: string; t
       setTodoItems,
       setMessages,
       setAiderModelsData,
+      markTaskActive,
     }),
-    [taskActions],
+    [taskActions, markTaskActive],
   );
 
   return (
     <TasksContext.Provider value={contextValue}>
       {tasks.map((task) => (
-        <TaskEventSubscriber key={task.id} baseDir={baseDir} taskId={task.id} state={task.state} />
+        <TaskEventSubscriberWrapper key={task.id} baseDir={baseDir} taskId={task.id} state={task.state} isActive={task.id === activeTaskId} />
       ))}
       {children}
     </TasksContext.Provider>

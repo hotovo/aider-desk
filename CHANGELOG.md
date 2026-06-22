@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - correctly selecting the input history item
+- improved task memory management in renderer process
 
 ## [0.71.0]
 

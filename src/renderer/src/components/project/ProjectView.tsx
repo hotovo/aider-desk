@@ -7,7 +7,18 @@ import { clsx } from 'clsx';
 
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 
-import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
+import {
+  useProjectTasks,
+  setProjectTasks,
+  updateProjectTask,
+  addProjectTask,
+  removeProjectTask,
+  clearProjectTasks,
+  useProjectStore,
+} from '@/stores/projectStore';
+import { unloadTasks } from '@/stores/taskStore';
+import { cleanupProjectCache } from '@/stores/extensionUIStore';
+import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -262,7 +273,16 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       removeTaskDeletedListener();
       removeNotificationListener();
       removeInputHistoryListener();
+
+      const taskIds =
+        useProjectStore
+          .getState()
+          .projectTasksMap.get(projectDir)
+          ?.map((t) => t.id) || [];
       clearProjectTasks(projectDir);
+      unloadTasks(taskIds);
+      taskIds.forEach(cleanupProcessingResponseMessage);
+      cleanupProjectCache(projectDir);
     };
   }, [activateTask, api, projectDir, startupMode, initialTaskId]);
 
@@ -381,8 +401,9 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const handleArchiveActiveTask = useCallback(async () => {
     if (activeTaskId) {
       await handleUpdateTask(activeTaskId, { archived: true });
+      await createNewTask();
     }
-  }, [activeTaskId, handleUpdateTask]);
+  }, [activeTaskId, handleUpdateTask, createNewTask]);
 
   const handleUnarchiveActiveTask = useCallback(async () => {
     if (activeTaskId) {
@@ -475,7 +496,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   }
 
   return (
-    <TasksProvider baseDir={projectDir} tasks={tasks}>
+    <TasksProvider baseDir={projectDir} tasks={tasks} activeTaskId={activeTaskId}>
       <ExtensionsProvider projectDir={projectDir} agentProfile={agentProfile} activateTask={activateTask}>
         <div className="h-full w-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative">
           {isProjectActive && (

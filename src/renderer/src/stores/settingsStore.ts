@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 import { Font, SettingsData, Theme } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
@@ -21,23 +22,37 @@ interface SettingsActions {
 
 type SettingsStore = SettingsState & SettingsActions;
 
-export const useSettingsStore = createWithEqualityFn<SettingsStore>(
-  (set) => ({
-    settings: null,
-    theme: null,
-    font: null,
-    fontSize: null,
-    setSettingsState: (newSettings) =>
-      set({
-        settings: newSettings,
-        theme: newSettings.theme ?? null,
-        font: newSettings.font ?? null,
-        fontSize: newSettings.fontSize ?? null,
-      }),
-    setThemeValue: (theme) => set({ theme }),
-    setFontValue: (font) => set({ font }),
-    setFontSizeValue: (fontSize) => set({ fontSize }),
-  }),
+const DEVTOOLS_OPTIONS = {
+  name: 'SettingsStore',
+  enabled: import.meta.env.DEV,
+  serialize: {
+    options: {
+      map: true,
+      set: true,
+    },
+  },
+};
+
+export const useSettingsStore = createWithEqualityFn<SettingsStore>()(
+  devtools(
+    (set) => ({
+      settings: null,
+      theme: null,
+      font: null,
+      fontSize: null,
+      setSettingsState: (newSettings) =>
+        set({
+          settings: newSettings,
+          theme: newSettings.theme ?? null,
+          font: newSettings.font ?? null,
+          fontSize: newSettings.fontSize ?? null,
+        }),
+      setThemeValue: (theme) => set({ theme }),
+      setFontValue: (font) => set({ font }),
+      setFontSizeValue: (fontSize) => set({ fontSize }),
+    }),
+    DEVTOOLS_OPTIONS,
+  ),
   shallow,
 );
 

@@ -5,15 +5,20 @@ import { isResponseMessage } from '@common/types';
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 
 const processingResponseMessageMap = new Map<string, ResponseMessage>();
+
+export const cleanupProcessingResponseMessage = (taskId: string) => {
+  processingResponseMessageMap.delete(taskId);
+};
 
 export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
 
   const handleResponseChunk = useCallback(
     ({ messageId, chunk, reasoning, reflectedMessage, promptContext }: ResponseChunkData) => {
+      touchTaskActivity(taskId);
       const timestamp = Date.now();
       let processingMessage = processingResponseMessageMap.get(taskId);
       if (processingMessage?.id === messageId) {
@@ -88,6 +93,7 @@ export const useTaskResponseHandlers = (baseDir: string, taskId: string) => {
 
   const handleResponseCompleted = useCallback(
     ({ messageId, usageReport, content, reasoning, reflectedMessage, promptContext, timestamp }: ResponseCompletedData) => {
+      touchTaskActivity(taskId);
       const processingMessage = processingResponseMessageMap.get(taskId);
 
       if (content) {

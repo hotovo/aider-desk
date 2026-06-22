@@ -3,13 +3,14 @@ import { useCallback, useEffect } from 'react';
 import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 
 export const useTaskMessageHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
 
   const handleUserMessage = useCallback(
     (data: UserMessageData) => {
+      touchTaskActivity(taskId);
       const userMessage: UserMessage = {
         id: data.id,
         type: 'user',

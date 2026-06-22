@@ -122,6 +122,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       answerQuestion,
       interruptResponse,
       refreshAllFiles,
+      markTaskActive,
     } = useTask();
 
     const taskState = useOptimizedTaskState(task.id);
@@ -154,10 +155,13 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const activeAgentProfile = useActiveAgentProfile(task, projectDir);
 
     useEffect(() => {
-      if (isActive && !loaded && !loading) {
-        loadTask(task.id);
+      if (isActive) {
+        markTaskActive(task.id);
+        if (!loaded && !loading) {
+          loadTask(task.id);
+        }
       }
-    }, [isActive, loadTask, task.id, loaded, loading]);
+    }, [isActive, loadTask, task.id, loaded, loading, markTaskActive]);
 
     useImperativeHandle(ref, () => ({
       exportMessagesToImage: () => {

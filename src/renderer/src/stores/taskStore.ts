@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData, Message } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 
 export interface TaskState {
   loading: boolean;
@@ -36,6 +37,8 @@ export const EMPTY_TASK_STATE: TaskState = {
 export const EMPTY_MESSAGES: Message[] = [];
 
 const taskPendingMessages = new Map<string, Message[]>();
+const lastActiveAtThrottleMap = new Map<string, number>();
+const TOUCH_THROTTLE_MS = 60_000;
 
 interface TaskStore {
   taskStateMap: Map<string, TaskState>;
@@ -51,115 +54,155 @@ interface TaskStore {
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
   setQueuedPrompts: (taskId: string, queuedPrompts: QueuedPromptData[]) => void;
   clearSession: (taskId: string) => void;
+  unloadTask: (taskId: string) => void;
+  unloadTasks: (taskIds: string[]) => void;
 }
 
-export const useTaskStore = createWithEqualityFn<TaskStore>(
-  (set, get) => ({
-    taskStateMap: new Map(),
-    taskMessagesMap: new Map(),
-
-    updateTaskState: (taskId, updates) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, ...updates });
-        return { taskStateMap: newMap };
-      }),
-
-    setMessages: (taskId, updateMessages) => {
-      const pendingMessages = taskPendingMessages.get(taskId);
-      taskPendingMessages.set(taskId, updateMessages(pendingMessages || get().taskMessagesMap.get(taskId) || []));
-
-      if (pendingMessages) {
-        // we are already in a pending state, no need to update
-        return;
-      }
-      requestAnimationFrame(() => {
-        set((state) => {
-          if (!taskPendingMessages.has(taskId)) {
-            return state;
-          }
-
-          const newMessagesMap = new Map(state.taskMessagesMap);
-          newMessagesMap.set(taskId, taskPendingMessages.get(taskId) || []);
-          taskPendingMessages.delete(taskId);
-          return { taskMessagesMap: newMessagesMap };
-        });
-      });
+const DEVTOOLS_OPTIONS = {
+  name: 'TaskStore',
+  enabled: import.meta.env.DEV,
+  serialize: {
+    options: {
+      map: true,
+      set: true,
     },
+  },
+};
 
-    setTodoItems: (taskId, updateTodoItems) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, {
-          ...current,
-          todoItems: updateTodoItems(current.todoItems),
+export const useTaskStore = createWithEqualityFn<TaskStore>()(
+  devtools(
+    (set, get) => ({
+      taskStateMap: new Map(),
+      taskMessagesMap: new Map(),
+
+      updateTaskState: (taskId, updates) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, ...updates });
+          return { taskStateMap: newMap };
+        }),
+
+      setMessages: (taskId, updateMessages) => {
+        const pendingMessages = taskPendingMessages.get(taskId);
+        taskPendingMessages.set(taskId, updateMessages(pendingMessages || get().taskMessagesMap.get(taskId) || []));
+
+        if (pendingMessages) {
+          // we are already in a pending state, no need to update
+          return;
+        }
+        requestAnimationFrame(() => {
+          set((state) => {
+            if (!taskPendingMessages.has(taskId)) {
+              return state;
+            }
+
+            const newMessagesMap = new Map(state.taskMessagesMap);
+            newMessagesMap.set(taskId, taskPendingMessages.get(taskId) || []);
+            taskPendingMessages.delete(taskId);
+            return { taskMessagesMap: newMessagesMap };
+          });
         });
-        return { taskStateMap: newMap };
-      }),
+      },
 
-    setAllFiles: (taskId, allFiles) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, allFiles });
-        return { taskStateMap: newMap };
-      }),
+      setTodoItems: (taskId, updateTodoItems) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, {
+            ...current,
+            todoItems: updateTodoItems(current.todoItems),
+          });
+          return { taskStateMap: newMap };
+        }),
 
-    setAutocompletionWords: (taskId, autocompletionWords) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, autocompletionWords });
-        return { taskStateMap: newMap };
-      }),
+      setAllFiles: (taskId, allFiles) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, allFiles });
+          return { taskStateMap: newMap };
+        }),
 
-    setTokensInfo: (taskId, tokensInfo) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, tokensInfo });
-        return { taskStateMap: newMap };
-      }),
+      setAutocompletionWords: (taskId, autocompletionWords) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, autocompletionWords });
+          return { taskStateMap: newMap };
+        }),
 
-    setQuestion: (taskId, question) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, question });
-        return { taskStateMap: newMap };
-      }),
+      setTokensInfo: (taskId, tokensInfo) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, tokensInfo });
+          return { taskStateMap: newMap };
+        }),
 
-    setAiderModelsData: (taskId, modelsData) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, aiderModelsData: modelsData });
-        return { taskStateMap: newMap };
-      }),
+      setQuestion: (taskId, question) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, question });
+          return { taskStateMap: newMap };
+        }),
 
-    setQueuedPrompts: (taskId, queuedPrompts) =>
-      set((state) => {
-        const newMap = new Map(state.taskStateMap);
-        const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-        newMap.set(taskId, { ...current, queuedPrompts });
-        return { taskStateMap: newMap };
-      }),
+      setAiderModelsData: (taskId, modelsData) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, aiderModelsData: modelsData });
+          return { taskStateMap: newMap };
+        }),
 
-    clearSession: (taskId) =>
-      set((state) => {
-        const newStateMap = new Map(state.taskStateMap);
-        const current = newStateMap.get(taskId) || EMPTY_TASK_STATE;
+      setQueuedPrompts: (taskId, queuedPrompts) =>
+        set((state) => {
+          const newMap = new Map(state.taskStateMap);
+          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
+          newMap.set(taskId, { ...current, queuedPrompts });
+          return { taskStateMap: newMap };
+        }),
 
-        newStateMap.set(taskId, {
-          ...current,
-          question: null,
-          tokensInfo: null,
-        });
-        return { taskStateMap: newStateMap };
-      }),
-  }),
+      clearSession: (taskId) =>
+        set((state) => {
+          const newStateMap = new Map(state.taskStateMap);
+          const current = newStateMap.get(taskId) || EMPTY_TASK_STATE;
+
+          newStateMap.set(taskId, {
+            ...current,
+            question: null,
+            tokensInfo: null,
+          });
+          return { taskStateMap: newStateMap };
+        }),
+
+      unloadTask: (taskId) =>
+        set((state) => {
+          const newStateMap = new Map(state.taskStateMap);
+          const newMessagesMap = new Map(state.taskMessagesMap);
+          newStateMap.set(taskId, { ...EMPTY_TASK_STATE, loaded: false });
+          newMessagesMap.delete(taskId);
+          taskPendingMessages.delete(taskId);
+          lastActiveAtThrottleMap.delete(taskId);
+          return { taskStateMap: newStateMap, taskMessagesMap: newMessagesMap };
+        }),
+
+      unloadTasks: (taskIds) =>
+        set((state) => {
+          const newStateMap = new Map(state.taskStateMap);
+          const newMessagesMap = new Map(state.taskMessagesMap);
+          for (const taskId of taskIds) {
+            newStateMap.set(taskId, { ...EMPTY_TASK_STATE, loaded: false });
+            newMessagesMap.delete(taskId);
+            taskPendingMessages.delete(taskId);
+            lastActiveAtThrottleMap.delete(taskId);
+          }
+          return { taskStateMap: newStateMap, taskMessagesMap: newMessagesMap };
+        }),
+    }),
+    DEVTOOLS_OPTIONS,
+  ),
   shallow,
 );
 
@@ -186,6 +229,25 @@ export const setQueuedPrompts = (taskId: string, queuedPrompts: QueuedPromptData
 
 export const clearSession = (taskId: string) => useTaskStore.getState().clearSession(taskId);
 
+export const unloadTask = (taskId: string) => useTaskStore.getState().unloadTask(taskId);
+
+export const unloadTasks = (taskIds: string[]) => useTaskStore.getState().unloadTasks(taskIds);
+
+export const touchTaskActivity = (taskId: string) => {
+  const state = useTaskStore.getState().taskStateMap.get(taskId);
+  if (!state?.loaded) {
+    return;
+  }
+
+  const now = Date.now();
+  const lastUpdate = lastActiveAtThrottleMap.get(taskId);
+  if (lastUpdate && now - lastUpdate < TOUCH_THROTTLE_MS) {
+    return;
+  }
+  lastActiveAtThrottleMap.set(taskId, now);
+  updateTaskState(taskId, { lastActiveAt: new Date() });
+};
+
 export const useOptimizedTaskState = (taskId: string) =>
   useTaskStore(
     useShallow((state) => {
@@ -207,3 +269,5 @@ export const useTaskQueuedPrompts = (taskId: string) =>
   useTaskStore(useShallow((state) => state.taskStateMap.get(taskId)?.queuedPrompts ?? EMPTY_TASK_STATE.queuedPrompts));
 
 export const useTaskMessages = (taskId: string) => useTaskStore(useShallow((state) => state.taskMessagesMap.get(taskId) || EMPTY_MESSAGES));
+
+export const useTaskLoaded = (taskId: string) => useTaskStore((state) => state.taskStateMap.get(taskId)?.loaded ?? false);

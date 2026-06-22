@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { TaskData, DefaultTaskState } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 
 const EMPTY_TASKS: TaskData[] = [];
 
@@ -15,54 +16,68 @@ interface ProjectStore {
   clearProjectTasks: (projectBaseDir: string) => void;
 }
 
-export const useProjectStore = createWithEqualityFn<ProjectStore>(
-  (set) => ({
-    projectTasksMap: new Map(),
+const DEVTOOLS_OPTIONS = {
+  name: 'ProjectStore',
+  enabled: import.meta.env.DEV,
+  serialize: {
+    options: {
+      map: true,
+      set: true,
+    },
+  },
+};
 
-    setProjectTasks: (projectBaseDir, tasks) =>
-      set((state) => {
-        const newMap = new Map(state.projectTasksMap);
-        newMap.set(projectBaseDir, tasks);
-        return { projectTasksMap: newMap };
-      }),
+export const useProjectStore = createWithEqualityFn<ProjectStore>()(
+  devtools(
+    (set) => ({
+      projectTasksMap: new Map(),
 
-    updateProjectTask: (projectBaseDir, taskData) =>
-      set((state) => {
-        const newMap = new Map(state.projectTasksMap);
-        const tasks = newMap.get(projectBaseDir) || [];
-        newMap.set(
-          projectBaseDir,
-          tasks.map((task) => (task.id === taskData.id ? taskData : task)),
-        );
-        return { projectTasksMap: newMap };
-      }),
+      setProjectTasks: (projectBaseDir, tasks) =>
+        set((state) => {
+          const newMap = new Map(state.projectTasksMap);
+          newMap.set(projectBaseDir, tasks);
+          return { projectTasksMap: newMap };
+        }),
 
-    addProjectTask: (projectBaseDir, taskData) =>
-      set((state) => {
-        const newMap = new Map(state.projectTasksMap);
-        const tasks = newMap.get(projectBaseDir) || [];
-        newMap.set(projectBaseDir, [...tasks, taskData]);
-        return { projectTasksMap: newMap };
-      }),
+      updateProjectTask: (projectBaseDir, taskData) =>
+        set((state) => {
+          const newMap = new Map(state.projectTasksMap);
+          const tasks = newMap.get(projectBaseDir) || [];
+          newMap.set(
+            projectBaseDir,
+            tasks.map((task) => (task.id === taskData.id ? taskData : task)),
+          );
+          return { projectTasksMap: newMap };
+        }),
 
-    removeProjectTask: (projectBaseDir, taskId) =>
-      set((state) => {
-        const newMap = new Map(state.projectTasksMap);
-        const tasks = newMap.get(projectBaseDir) || [];
-        newMap.set(
-          projectBaseDir,
-          tasks.filter((task) => task.id !== taskId),
-        );
-        return { projectTasksMap: newMap };
-      }),
+      addProjectTask: (projectBaseDir, taskData) =>
+        set((state) => {
+          const newMap = new Map(state.projectTasksMap);
+          const tasks = newMap.get(projectBaseDir) || [];
+          newMap.set(projectBaseDir, [...tasks, taskData]);
+          return { projectTasksMap: newMap };
+        }),
 
-    clearProjectTasks: (projectBaseDir) =>
-      set((state) => {
-        const newMap = new Map(state.projectTasksMap);
-        newMap.delete(projectBaseDir);
-        return { projectTasksMap: newMap };
-      }),
-  }),
+      removeProjectTask: (projectBaseDir, taskId) =>
+        set((state) => {
+          const newMap = new Map(state.projectTasksMap);
+          const tasks = newMap.get(projectBaseDir) || [];
+          newMap.set(
+            projectBaseDir,
+            tasks.filter((task) => task.id !== taskId),
+          );
+          return { projectTasksMap: newMap };
+        }),
+
+      clearProjectTasks: (projectBaseDir) =>
+        set((state) => {
+          const newMap = new Map(state.projectTasksMap);
+          newMap.delete(projectBaseDir);
+          return { projectTasksMap: newMap };
+        }),
+    }),
+    DEVTOOLS_OPTIONS,
+  ),
   shallow,
 );
 
