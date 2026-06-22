@@ -857,7 +857,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 }
               } else if (historyMenuVisible) {
                 setHistoryMenuVisible(false);
-                const newText = historyItems[historyItems.length - 1 - highlightedHistoryItemIndex];
+                const newText = historyItems[highlightedHistoryItemIndex];
                 view.dispatch({
                   changes: {
                     from: 0,
