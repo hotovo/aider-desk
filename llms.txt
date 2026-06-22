@@ -9680,6 +9680,11 @@ public async resolveConflictsWithAgent(): Promise<void>
 ⋮----
 public async continueWorktreeRebase(): Promise<void>
 ⋮----
+// Update baseCommit to the new HEAD after successful rebase continuation
+// This ensures subsequent rebases only replay commits made after this point
+⋮----
+// Update baseBranch if we could determine it from the rebase state, otherwise keep existing
+⋮----
 // Clear any remaining merge state after successful rebase continuation
 ⋮----
 public async duplicateFrom(sourceTask: Task): Promise<void>
@@ -10815,6 +10820,34 @@ async getEffectiveMainBranch(project:
 ⋮----
 async getHeadCommit(worktreePath: string): Promise<string | undefined>
 ⋮----
+/**
+   * Check if a commit is an ancestor of another commit (or HEAD).
+   * Returns true if `ancestorCommit` is reachable from `descendantRef`.
+   */
+async isCommitAncestorOf(worktreePath: string, ancestorCommit: string, descendantRef = 'HEAD'): Promise<boolean>
+⋮----
+// git merge-base --is-ancestor returns exit code 0 if ancestor, 1 if not
+⋮----
+/**
+   * Get the "onto" commit from an active rebase.
+   * Returns undefined if no rebase is in progress or the file doesn't exist.
+   */
+async getRebaseOntoCommit(worktreePath: string): Promise<string | undefined>
+⋮----
+// Try rebase-merge first (interactive rebase)
+⋮----
+// rebase-merge/onto doesn't exist, try rebase-apply
+⋮----
+// Try rebase-apply (non-interactive rebase)
+⋮----
+// rebase-apply/onto doesn't exist either
+⋮----
+/**
+   * Resolve a commit to the branch name that points to it.
+   * Returns the first branch found, or undefined if no branch points to that exact commit.
+   */
+async getBranchPointingAtCommit(projectPath: string, commit: string): Promise<string | undefined>
+⋮----
 async getBranchesContainingCommit(projectPath: string, commit: string): Promise<string[]>
 ⋮----
 async hasChangesToRebase(worktreePath: string, mainBranch: string): Promise<boolean>
@@ -10866,11 +10899,14 @@ async rebaseMainIntoWorktree(
 ⋮----
 // Create temporary commit with unique timestamp
 ⋮----
-// 2. Rebase the current worktree branch onto target branch
-// When baseCommit is provided, use --onto to only replay commits made after baseCommit
+// 2. Validate baseCommit if provided - ensure it's an ancestor of HEAD
+// If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
+⋮----
+// 3. Rebase the current worktree branch onto target branch
+// When baseCommit is provided and valid, use --onto to only replay commits made after baseCommit
 // This avoids carrying over base branch commits that aren't in the target branch
 ⋮----
-// 3. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
+// 4. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
 ⋮----
 // Create detailed error with git command output
 ⋮----
@@ -10882,7 +10918,9 @@ async abortRebase(worktreePath: string): Promise<void>
 ⋮----
 // Always try to reset temporary commit if it exists
 ⋮----
-async continueRebase(worktreePath: string): Promise<void>
+async continueRebase(worktreePath: string): Promise<
+⋮----
+// Capture the "onto" info before continuing (it will be gone after rebase completes)
 ⋮----
 // Always try to reset temporary commit if it exists after successful continue
 ⋮----
@@ -10897,6 +10935,9 @@ private async squashAndMergeWorktreeToMain(
 // Get current branch name in worktree (for logging purposes)
 ⋮----
 // Check if there are any changes to merge (before rebase)
+⋮----
+// Validate baseCommit if provided - ensure it's an ancestor of HEAD
+// If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
 ⋮----
 // SAFETY CHECK 1: Rebase worktree onto main FIRST before squashing
 // Use --onto with baseCommit to only replay worktree-specific commits
