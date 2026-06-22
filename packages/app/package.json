@@ -48,7 +48,7 @@
     "@ai-sdk/mistral": "2.0.35",
     "@ai-sdk/openai": "2.0.108",
     "@ai-sdk/openai-compatible": "1.0.41",
-    "@aiderdesk/extensions": "0.22.0",
+    "@aiderdesk/extensions": "0.23.0",
     "@aws-sdk/client-bedrock": "^3.1059.0",
     "@aws-sdk/credential-providers": "^3.1059.0",
     "@dotenvx/dotenvx": "^1.24.5",
