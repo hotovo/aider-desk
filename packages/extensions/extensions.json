@@ -52,9 +52,10 @@
     {
       "id": "protected-paths",
       "name": "Protected Paths",
-      "description": "Blocks file operations on protected paths (.env, .git/, node_modules/)",
-      "file": "protected-paths.ts",
-      "type": "single",
+      "description": "Blocks file operations on sensitive files and protected directories (.env*, *.pem, .ssh/, .aws/, .git/, system dirs, etc.)",
+      "folder": "protected-paths",
+      "type": "folder",
+      "hasDependencies": false,
       "capabilities": ["security"]
     },
     {
