@@ -3973,11 +3973,31 @@ ${error.stderr}`,
         }
       } catch (error) {
         logger.error('Failed to stash uncommitted changes before worktree switch:', { error });
-        stashId = null;
+        throw new Error(`Failed to stash uncommitted changes: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
-    await this.updateTask({ workingMode: 'worktree' });
+    const existingWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
+    if (!existingWorktree && !this.task.worktree) {
+      try {
+        await this.initWorktree();
+      } catch (error) {
+        if (stashId) {
+          try {
+            await this.worktreeManager.applyStash(this.project.baseDir, stashId);
+            await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+          } catch (restoreError) {
+            logger.error('Failed to restore stash after worktree creation failure:', { error: restoreError, stashId });
+            throw new Error(
+              `Failed to create worktree and could not restore stashed changes. Stash ID "${stashId}" still exists. Manual recovery required. Error: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+        throw error;
+      }
+    } else if (existingWorktree && !this.task.worktree) {
+      this.task.worktree = existingWorktree;
+    }
 
     if (stashId && this.task.worktree) {
       try {
@@ -3990,8 +4010,27 @@ ${error.stderr}`,
         await this.worktreeManager.dropStash(this.project.baseDir, stashId);
       } catch (error) {
         logger.error('Failed to apply stashed changes to worktree:', { error });
+
+        const originalMessage = error instanceof Error ? error.message : String(error);
+
+        try {
+          await this.worktreeManager.applyStash(this.project.baseDir, stashId);
+          await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+          logger.info('Stashed changes restored to project root after failed apply to worktree');
+          throw new Error(`Failed to apply stashed changes to worktree. Changes have been restored to project root. Error: ${originalMessage}`);
+        } catch (restoreError) {
+          if (restoreError instanceof Error && restoreError.message.includes('restored to project root')) {
+            throw restoreError;
+          }
+          logger.error('Failed to restore stash to project root:', { error: restoreError, stashId });
+          throw new Error(
+            `Failed to apply stashed changes to worktree and could not restore them. Stash ID "${stashId}" still exists. Manual recovery required. Original error: ${originalMessage}`,
+          );
+        }
       }
     }
+
+    await this.updateTask({ workingMode: 'worktree' });
 
     void this.sendUpdatedFilesUpdated();
   }

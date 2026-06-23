@@ -4,6 +4,7 @@
 
 - correctly selecting the input history item
 - improved task memory management in renderer process
+- correctly restoring stashed changes on failures when switching to worktree
 
 ## [0.71.0]
 
