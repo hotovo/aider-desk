@@ -264,13 +264,16 @@ const TaskSidebarComponent = ({
       try {
         if (updateTask) {
           await updateTask(taskId, { archived: true });
+          if (optimisticActiveTaskId === taskId && createNewTask) {
+            createNewTask();
+          }
         }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to archive task:', error);
       }
     },
-    [updateTask],
+    [updateTask, optimisticActiveTaskId, createNewTask],
   );
 
   const handleUnarchiveTask = useCallback(
