@@ -124,7 +124,7 @@
     {
       "id": "redact-secrets",
       "name": "Redact Secrets",
-      "description": "Redacts secret values from .env* files in file read results",
+      "description": "Redacts secrets from file read results using regex patterns and .env* file values",
       "folder": "redact-secrets",
       "type": "folder",
       "hasDependencies": true,

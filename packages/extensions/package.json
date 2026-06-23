@@ -36,6 +36,7 @@
   "scripts": {
     "build": "dts-bundle-generator --external-imports zod node --project ../../tsconfig.node.json --no-check --no-banner -o extensions.d.ts ../../packages/common/src/extensions.ts && node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run --no-color",
     "prepublishOnly": "npm run build",
     "publish:next": "node scripts/publish-next.mjs",
     "release:latest": "node scripts/release-latest.mjs"
