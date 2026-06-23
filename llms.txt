@@ -19267,7 +19267,18 @@ import { clsx } from 'clsx';
 ⋮----
 import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 ⋮----
-import { useProjectTasks, setProjectTasks, updateProjectTask, addProjectTask, removeProjectTask, clearProjectTasks } from '@/stores/projectStore';
+import {
+  useProjectTasks,
+  setProjectTasks,
+  updateProjectTask,
+  addProjectTask,
+  removeProjectTask,
+  clearProjectTasks,
+  useProjectStore,
+} from '@/stores/projectStore';
+import { unloadTasks } from '@/stores/taskStore';
+import { cleanupProjectCache } from '@/stores/extensionUIStore';
+import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
@@ -23304,12 +23315,14 @@ export const useProjectSettings = () =>
 ================
 File: src/renderer/src/contexts/TasksContext.tsx
 ================
-import { createContext, memo, ReactNode, useContext, useEffect, useMemo } from 'react';
+import { createContext, memo, ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
 import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 ⋮----
-import { setMessages, setTodoItems, setAiderModelsData } from '@/stores/taskStore';
-import { useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
+import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { cleanupTaskCache } from '@/stores/extensionUIStore';
+import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
 import { useTaskLogHandlers } from '@/hooks/useTaskLogHandlers';
 import { useTaskCommandHandlers } from '@/hooks/useTaskCommandHandlers';
@@ -23317,6 +23330,9 @@ import { useTaskDataHandlers } from '@/hooks/useTaskDataHandlers';
 import { useTaskMessageHandlers } from '@/hooks/useTaskMessageHandlers';
 import { useTaskLifecycleHandlers } from '@/hooks/useTaskLifecycleHandlers';
 import { useTaskActions } from '@/hooks/useTaskActions';
+⋮----
+const TASK_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const INACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
 ⋮----
 interface TaskEventSubscriberProps {
   baseDir: string;
@@ -23336,6 +23352,7 @@ export interface TaskContextType {
   interruptResponse: (taskId: string, interruptId?: string) => void;
   updateTaskAgentProfile: (taskId: string, agentProfileId: string, provider: string, model: string) => void;
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
+  markTaskActive: (taskId: string) => void;
 }
 ⋮----
 export const useTask = (): TaskContextType =>
@@ -23751,7 +23768,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { CommandOutputData, CommandOutputMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 ⋮----
 const isCommandOutputMessage = (message: Message): message is CommandOutputMessage =>
 ⋮----
@@ -23773,7 +23790,16 @@ import type {
 } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { updateTaskState, setQuestion, setAllFiles, setAutocompletionWords, setTokensInfo, setAiderModelsData, setQueuedPrompts } from '@/stores/taskStore';
+import {
+  updateTaskState,
+  setQuestion,
+  setAllFiles,
+  setAutocompletionWords,
+  setTokensInfo,
+  setAiderModelsData,
+  setQueuedPrompts,
+  touchTaskActivity,
+} from '@/stores/taskStore';
 ⋮----
 export const useTaskDataHandlers = (baseDir: string, taskId: string) =>
 
@@ -23799,7 +23825,7 @@ import { v4 as uuidv4 } from 'uuid';
 import type { LogData, LogMessage, LoadingMessage, Message } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 ⋮----
 const isLoadingMessage = (message: Message): message is LoadingMessage =>
 ⋮----
@@ -23813,7 +23839,7 @@ import { useCallback, useEffect } from 'react';
 import type { UserMessageData, MessageRemovedData, UserMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
 ⋮----
 export const useTaskMessageHandlers = (baseDir: string, taskId: string) =>
 
@@ -23827,7 +23853,9 @@ import { isResponseMessage } from '@common/types';
 import type { ResponseChunkData, ResponseCompletedData, Message, ReflectedMessage, ResponseMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages } from '@/stores/taskStore';
+import { setMessages, touchTaskActivity } from '@/stores/taskStore';
+⋮----
+export const cleanupProcessingResponseMessage = (taskId: string) =>
 ⋮----
 export const useTaskResponseHandlers = (baseDir: string, taskId: string) =>
 
@@ -23840,7 +23868,7 @@ import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_
 import type { TodoItem, ToolData, ToolMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import { setMessages, setTodoItems } from '@/stores/taskStore';
+import { setMessages, setTodoItems, touchTaskActivity } from '@/stores/taskStore';
 ⋮----
 export const useTaskToolHandlers = (baseDir: string, taskId: string) =>
 ⋮----
@@ -24948,6 +24976,7 @@ File: src/renderer/src/stores/extensionUIStore.ts
 import { useShallow } from 'zustand/react/shallow';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 ⋮----
@@ -24981,6 +25010,8 @@ interface ExtensionUIActions {
   getComponentData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => unknown;
   isDataLoaded: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => boolean;
   isLoadingComponents: (placement?: string, projectDir?: string, taskId?: string) => boolean;
+  cleanupTaskCache: (projectDir: string, taskId: string) => void;
+  cleanupProjectCache: (projectDir: string) => void;
 }
 ⋮----
 type ExtensionUIStore = ExtensionUIState & ExtensionUIActions;
@@ -25051,6 +25082,10 @@ export const useExtensionComponents = (placement?: string, projectDir?: string, 
 export const useExtensionComponentData = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): unknown =>
 ⋮----
 export const useIsLoadingComponents = (placement?: string, projectDir?: string, taskId?: string): boolean =>
+⋮----
+export const cleanupTaskCache = (projectDir: string, taskId: string)
+⋮----
+export const cleanupProjectCache = (projectDir: string)
 
 ================
 File: src/renderer/src/stores/projectStore.ts
@@ -25059,6 +25094,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { TaskData, DefaultTaskState } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 ⋮----
 interface ProjectStore {
   projectTasksMap: Map<string, TaskData[]>;
@@ -25093,6 +25129,7 @@ File: src/renderer/src/stores/settingsStore.ts
 import { useCallback } from 'react';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 import { Font, SettingsData, Theme } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
@@ -25130,6 +25167,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { ContextFile, ModelsData, QueuedPromptData, QuestionData, TodoItem, TokensInfoData, Message } from '@common/types';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
 ⋮----
 export interface TaskState {
   loading: boolean;
@@ -25160,6 +25198,8 @@ interface TaskStore {
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
   setQueuedPrompts: (taskId: string, queuedPrompts: QueuedPromptData[]) => void;
   clearSession: (taskId: string) => void;
+  unloadTask: (taskId: string) => void;
+  unloadTasks: (taskIds: string[]) => void;
 }
 ⋮----
 // we are already in a pending state, no need to update
@@ -25185,6 +25225,12 @@ export const setQueuedPrompts = (taskId: string, queuedPrompts: QueuedPromptData
 ⋮----
 export const clearSession = (taskId: string)
 ⋮----
+export const unloadTask = (taskId: string)
+⋮----
+export const unloadTasks = (taskIds: string[])
+⋮----
+export const touchTaskActivity = (taskId: string) =>
+⋮----
 export const useOptimizedTaskState = (taskId: string)
 ⋮----
 export const useTaskTokensInfo = (taskId: string)
@@ -25198,6 +25244,8 @@ export const useTaskTodoItems = (taskId: string)
 export const useTaskQueuedPrompts = (taskId: string)
 ⋮----
 export const useTaskMessages = (taskId: string)
+⋮----
+export const useTaskLoaded = (taskId: string)
 
 ================
 File: src/renderer/src/themes/theme-aurora.scss
@@ -28095,7 +28143,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.71.0-dev",
+  "version": "0.72.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
