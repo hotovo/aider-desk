@@ -988,13 +988,29 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       language: z.string().optional().describe('Limit search to files of a specific programming language'),
     }),
     execute: async (input, { toolCallId }) => {
-      const { query: searchQuery, path: inputPath, allowTests, exact, maxTokens: paramMaxTokens, language } = input;
-      task.addToolMessage(toolCallId, TOOL_GROUP_NAME, TOOL_SEMANTIC_SEARCH, { searchQuery, path: inputPath }, undefined, undefined, promptContext);
+      const { query: searchQuery, path: inputPath, allowTests, exact, maxResults: paramMaxResults, maxTokens: paramMaxTokens, language } = input;
+      task.addToolMessage(
+        toolCallId,
+        TOOL_GROUP_NAME,
+        TOOL_SEMANTIC_SEARCH,
+        {
+          query: searchQuery,
+          path: inputPath,
+          allowTests,
+          exact,
+          maxResults: paramMaxResults,
+          maxTokens: paramMaxTokens,
+          language,
+        },
+        undefined,
+        undefined,
+        promptContext,
+      );
 
       const toolName = `${TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TOOL_SEMANTIC_SEARCH}`;
       const questionKey = toolName;
       const questionText = 'Approve running codebase search?';
-      const questionSubject = `Query: ${searchQuery}\nPath: ${inputPath || '.'}\nAllow Tests: ${allowTests}\nExact: ${exact}\nLanguage: ${language}`;
+      const questionSubject = `Query: ${searchQuery}\nPath: ${inputPath || '.'}\nAllow Tests: ${allowTests}\nExact: ${exact}\nMax Results: ${paramMaxResults ?? 'default'}\nMax Tokens: ${paramMaxTokens}\nLanguage: ${language || 'all'}`;
 
       const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
@@ -1040,6 +1056,13 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         'rb',
         'php',
         'swift',
+        'solidity',
+        'sol',
+        'crystal',
+        'cr',
+        'haskell',
+        'hs',
+        'lhs',
         'csharp',
         'cs',
         'yaml',
@@ -1058,6 +1081,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           timeout: 5 * 60, // 5 minutes
           json: false,
           maxTokens: effectiveMaxTokens,
+          maxResults: paramMaxResults,
           language: effectiveLanguage,
         });
 

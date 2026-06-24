@@ -9,7 +9,7 @@ import AdmZip from 'adm-zip';
 
 const streamPipeline = promisify(pipeline);
 
-const PROBE_VERSION = 'v0.6.0-rc161';
+const PROBE_VERSION = 'v0.6.0-rc325';
 const BASE_URL = `https://github.com/probelabs/probe/releases/download/${PROBE_VERSION}`;
 const RESOURCES_DIR = process.env.RESOURCES_DIR || './resources';
 
