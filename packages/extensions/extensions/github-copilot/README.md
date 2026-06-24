@@ -5,15 +5,15 @@ Integrates [GitHub Copilot](https://github.com/features/copilot) as an LLM provi
 ## How It Works
 
 1. Registers `github-copilot` as an LLM provider in AiderDesk
-2. Uses the official `@github/copilot-sdk` which bundles the Copilot CLI binary
+2. Uses the official `@github/copilot-sdk` which spawns the Copilot CLI as a child process
 3. The CLI handles all model routing (Responses API, Chat Completions, Messages API), authentication, and endpoint selection internally
 4. Forwards AiderDesk's tools to the Copilot agent via `defineTool`
 5. The user authenticates once via the Copilot CLI (keychain credentials)
 
 ## Prerequisites
 
-- **Copilot CLI**: The CLI is bundled with this extension — no separate installation needed
-- **Authentication**: Run the Copilot CLI once to authenticate, or ensure you have stored credentials
+- **Copilot CLI**: Install it manually from [github.com/features/copilot/cli](https://github.com/features/copilot/cli). You only need it to authenticate — the extension bundles its own CLI binary for runtime use.
+- **Authentication**: Run `copilot` in your terminal once to authenticate before using this provider
 - **Copilot Subscription**: Active GitHub Copilot subscription (Individual, Business, or Enterprise)
 
 ## Mode Support
@@ -42,10 +42,11 @@ No additional configuration is needed. Once the extension is installed and the C
 
 **Provider Not Available**:
 1. Verify the extension is installed and enabled in AiderDesk
-2. Check that the Copilot CLI can authenticate (run `copilot` in your terminal)
+2. Ensure the Copilot CLI is installed (see [github.com/features/copilot/cli](https://github.com/features/copilot/cli))
+3. Check that the Copilot CLI can authenticate (run `copilot` in your terminal)
 
 **Authentication Fails**:
-1. Run `copilot` in your terminal to re-authenticate
+1. Run `copilot` in your terminal to re-authenticate (ensure the CLI is installed)
 2. Check that your Copilot subscription is active
 
 **Model Not Supported**:
