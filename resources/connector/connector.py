@@ -1448,7 +1448,12 @@ class Connector:
     info = self.coder.main_model.info
 
     if self.coder.main_model.missing_keys:
-      error = "Missing keys for the model: " + ", ".join(self.coder.main_model.missing_keys)
+      error = (
+        "Missing keys for the model: "
+        + ", ".join(self.coder.main_model.missing_keys)
+        + ". If you are using a local OpenAI-compatible server such as llama.cpp, "
+        + "configure any dummy API key for the model/provider."
+      )
 
     await self.send_action({
       "action": "set-models",
