@@ -7,6 +7,7 @@
 - correctly restoring stashed changes on failures when switching to worktree
 - added support for Solidity, Crystal and Haskel languages in semantic search
 - added some worktree related functions into the Extensions API
+- clarify missing API key warning when using local inference via Aider
 
 ## [0.71.0]
 
