@@ -2452,6 +2452,117 @@ export class WorktreeManager {
     }
   }
 
+  async mergeWorktreeToWorktree(sourceWorktreeDir: string, targetWorktreeDir: string, includeUncommitted = false): Promise<void> {
+    logger.info('Merging worktree to worktree', {
+      sourceWorktreeDir,
+      targetWorktreeDir,
+      includeUncommitted,
+    });
+
+    if (sourceWorktreeDir === targetWorktreeDir) {
+      logger.warn('Source and target worktree directories are the same, skipping merge');
+      return;
+    }
+
+    const { stdout: sourceHead } = await execWithShellPath('git rev-parse HEAD', { cwd: sourceWorktreeDir });
+    const { stdout: targetHead } = await execWithShellPath('git rev-parse HEAD', { cwd: targetWorktreeDir });
+    const sourceCommit = sourceHead.trim();
+    const targetCommit = targetHead.trim();
+
+    if (sourceCommit === targetCommit) {
+      logger.info('Source and target worktrees are at the same commit, skipping commit merge');
+    } else {
+      const { stdout: mergeBase } = await execWithShellPath(`git merge-base ${sourceCommit} ${targetCommit}`, {
+        cwd: targetWorktreeDir,
+      });
+      const baseCommit = mergeBase.trim();
+
+      if (baseCommit === sourceCommit) {
+        logger.info('Source worktree has no commits ahead of target, skipping commit merge');
+      } else if (baseCommit === targetCommit) {
+        logger.info('Target worktree is at merge base, fast-forwarding to source HEAD');
+        try {
+          await execWithShellPath(`git merge --ff-only ${sourceCommit}`, { cwd: targetWorktreeDir });
+          logger.info('Successfully fast-forwarded target worktree to source HEAD');
+        } catch (error) {
+          logger.error('Failed to fast-forward target worktree:', { error });
+          throw new Error(`Failed to fast-forward target worktree to source HEAD. Error: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      } else {
+        logger.info('Worktrees have diverged, cherry-picking source commits onto target');
+        const { stdout: commits } = await execWithShellPath(`git log --reverse --format=%H ${baseCommit}..${sourceCommit}`, {
+          cwd: sourceWorktreeDir,
+        });
+        const commitList = commits.trim().split('\n').filter(Boolean);
+
+        if (commitList.length === 0) {
+          logger.info('No commits to cherry-pick');
+        } else {
+          for (const commitHash of commitList) {
+            try {
+              await execWithShellPath(`git cherry-pick ${commitHash}`, { cwd: targetWorktreeDir });
+              logger.debug(`Cherry-picked commit ${commitHash.substring(0, 8)}`);
+            } catch (error) {
+              try {
+                await execWithShellPath('git cherry-pick --abort', { cwd: targetWorktreeDir });
+              } catch {
+                // Ignore abort errors
+              }
+              throw new Error(
+                `Failed to cherry-pick commit ${commitHash.substring(0, 8)} onto target worktree. ` +
+                  `Cherry-pick aborted. Error: ${error instanceof Error ? error.message : String(error)}`,
+              );
+            }
+          }
+          logger.info(`Successfully cherry-picked ${commitList.length} commit(s) onto target worktree`);
+        }
+      }
+    }
+
+    if (includeUncommitted) {
+      const hasChanges = await this.hasUncommittedChanges(sourceWorktreeDir);
+      if (!hasChanges) {
+        logger.info('No uncommitted changes in source worktree, skipping uncommitted merge');
+        return;
+      }
+
+      const timestamp = Date.now();
+      const stashId = `worktree-to-worktree-${timestamp}`;
+
+      try {
+        const stashResult = await this.stashUncommittedChanges(stashId, sourceWorktreeDir, 'Uncommitted changes carried over to target worktree');
+
+        if (!stashResult) {
+          logger.info('No changes to carry over after stash attempt');
+          return;
+        }
+
+        try {
+          await this.applyStash(targetWorktreeDir, stashId);
+          await this.applyStash(sourceWorktreeDir, stashId);
+        } catch (error) {
+          logger.error('Failed to apply stash to worktrees:', { error });
+          try {
+            await this.applyStash(sourceWorktreeDir, stashId);
+          } catch (restoreError) {
+            logger.error('Failed to restore stash to source worktree:', { error: restoreError, stashId });
+            throw new Error(
+              `Failed to apply stashed changes to target worktree and could not restore them. Stash ID "${stashId}" still exists. Manual recovery required. Original error: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+          throw new Error(
+            `Failed to apply stashed changes to target worktree. Changes have been restored to source worktree. Error: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+
+        await this.dropStash(sourceWorktreeDir, stashId);
+      } catch (error) {
+        logger.error('Failed to carry over uncommitted changes:', { error });
+        throw error;
+      }
+    }
+  }
+
   async close(projectDir: string) {
     logger.info('Closing worktree manager');
     await this.pruneDeleted(projectDir);

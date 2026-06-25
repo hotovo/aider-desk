@@ -28,14 +28,18 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   TodoItem,
   ToolApprovalState,
   UpdatedFile,
   UsageReportData,
   VoiceSession,
+  WorktreeUncommittedFiles,
 } from "@common/types";
 
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState };
+export type { SwitchToLocalOptions, SwitchToWorktreeOptions, WorktreeUncommittedFiles };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -1115,6 +1119,46 @@ export interface TaskContext {
    * @returns True if a pending question was answered, false if no question is pending
    */
   answerQuestion(answer: string, userInput?: string): Promise<boolean>;
+
+  // Working Mode & Worktrees
+
+  /**
+   * Switch the task to worktree working mode, optionally carrying over uncommitted changes
+   * from the project root (or current worktree) into the new worktree.
+   * Stashes uncommitted changes, creates a git worktree, applies the stash to the new worktree,
+   * and optionally re-applies to the source if `dropSourceChanges` is false.
+   * @param options - Optional configuration: `carryOverUncommittedChanges` to transfer uncommitted
+   *   changes, `dropSourceChanges` to keep (false) or remove (true, default) them from the source
+   */
+  switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void>;
+
+  /**
+   * Switch the task to local working mode, optionally merging the worktree branch first.
+   * @param options - Optional configuration: `mergeBeforeSwitch` to merge worktree to main before
+   *   switching, `targetBranch` to specify a merge target, `switchAllInWorktree` to switch all
+   *   tasks sharing the same worktree
+   */
+  switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>;
+
+  /**
+   * Get uncommitted files from the project's main repository (not from a worktree).
+   * @returns Object containing arrays of unstaged, staged, and untracked file paths
+   */
+  getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>;
+
+  /**
+   * Apply uncommitted changes from the task's worktree to a target branch in the main repository.
+   * @param targetBranch - Optional target branch name (defaults to the project's main branch)
+   */
+  applyUncommittedChanges(targetBranch?: string): Promise<void>;
+
+  /**
+   * Merge commits and optionally uncommitted changes from this task's worktree to a target worktree directory.
+   * Useful for carrying over changes between worktrees when running multiple models.
+   * @param targetWorktreeDir - The absolute path to the target worktree directory
+   * @param includeUncommitted - Whether to include uncommitted changes (default: false)
+   */
+  mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>;
 }
 
 /**

@@ -6,6 +6,7 @@
 - improved task memory management in renderer process
 - correctly restoring stashed changes on failures when switching to worktree
 - added support for Solidity, Crystal and Haskel languages in semantic search
+- added some worktree related functions into the Extensions API
 
 ## [0.71.0]
 

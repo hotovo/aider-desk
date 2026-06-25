@@ -1126,6 +1126,8 @@ export class Task {
       this.addLogMessage('loading', 'Updating task state...');
 
       const answer = await this.agent.generateText(modelId, await this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage, this.getProjectDir());
+
+      this.addLogMessage('loading', undefined, true);
       if (!answer) {
         logger.warn('Task state determination interrupted');
         return null;
@@ -4093,6 +4095,25 @@ ${error.stderr}`,
 
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  public async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted = false): Promise<void> {
+    if (!this.task.worktree) {
+      throw new Error('No worktree exists for this task');
+    }
+
+    logger.info('Merging worktree to worktree', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      targetWorktreeDir,
+      includeUncommitted,
+    });
+
+    await this.waitForCurrentPromptToFinish();
+
+    await this.worktreeManager.mergeWorktreeToWorktree(this.task.worktree.path, targetWorktreeDir, includeUncommitted);
+
+    await this.sendUpdatedFilesUpdated();
   }
 
   public async revertLastMerge(): Promise<void> {

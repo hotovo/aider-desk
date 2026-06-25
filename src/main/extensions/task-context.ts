@@ -6,10 +6,13 @@ import {
   PromptContext,
   QueuedPromptData,
   ResponseCompletedData,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   TaskData,
   TodoItem,
   UpdatedFile,
   UsageReportData,
+  WorktreeUncommittedFiles,
 } from '@common/types';
 
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
@@ -231,6 +234,10 @@ export class TaskContextImpl implements TaskContext {
     return answer;
   }
 
+  async answerQuestion(answer: string, userInput?: string): Promise<boolean> {
+    return this.task.answerQuestion(answer, userInput);
+  }
+
   addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void {
     this.task.addLogMessage(level, message);
   }
@@ -240,6 +247,10 @@ export class TaskContextImpl implements TaskContext {
   }
 
   // Task Management
+
+  async getTaskAgentProfile(): Promise<AgentProfile | null> {
+    return this.task.getTaskAgentProfile();
+  }
 
   async updateTask(updates: Partial<TaskData>): Promise<TaskData> {
     return this.task.updateTask(updates);
@@ -298,13 +309,25 @@ export class TaskContextImpl implements TaskContext {
     this.task.editQueuedPrompt(promptId, newText);
   }
 
-  // Advanced Operations
+  // Working Mode & Worktrees
 
-  async getTaskAgentProfile(): Promise<AgentProfile | null> {
-    return this.task.getTaskAgentProfile();
+  async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void> {
+    await this.task.switchToWorktreeWorkingMode(options);
   }
 
-  async answerQuestion(answer: string, userInput?: string): Promise<boolean> {
-    return this.task.answerQuestion(answer, userInput);
+  async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void> {
+    await this.task.switchToLocalWorkingMode(options);
+  }
+
+  async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles> {
+    return this.task.getLocalUncommittedFiles();
+  }
+
+  async applyUncommittedChanges(targetBranch?: string): Promise<void> {
+    await this.task.applyUncommittedChanges(targetBranch);
+  }
+
+  async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void> {
+    await this.task.mergeWorktreeToWorktree(targetWorktreeDir, includeUncommitted);
   }
 }
