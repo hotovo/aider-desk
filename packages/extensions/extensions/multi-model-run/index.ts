@@ -2,7 +2,7 @@
  * Multi-Model Run Extension
  *
  * Allows running the same prompt across multiple models simultaneously.
- * Provides a UI component at 'task-input-above' placement to select up to 10 models.
+ * Provides a UI component at 'task-top-bar-left' placement to select up to 10 models.
  * When a prompt is started with multiple models configured, duplicates the task
  * for each additional model and runs the same prompt.
  */
@@ -26,7 +26,7 @@ const COMPONENT_ID = 'multi-model-selector';
 export default class MultiModelRunExtension implements Extension {
   static metadata = {
     name: 'Multi-Model Run',
-    version: '1.0.0',
+    version: '2.0.0',
     description: 'Run the same prompt across multiple models simultaneously',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/icon.png',
@@ -45,7 +45,7 @@ export default class MultiModelRunExtension implements Extension {
 
     const COMPONENT: UIComponentDefinition = {
       id: COMPONENT_ID,
-      placement: 'task-input-above',
+      placement: 'task-top-bar-left',
       jsx: jsxTemplate,
       loadData: true,
     };
@@ -161,17 +161,63 @@ export default class MultiModelRunExtension implements Extension {
     const projectContext = context.getProjectContext();
     const { prompt, mode } = event;
 
+    const sourceWorktreePath = taskContext?.data?.worktree?.path;
+    const sourceInWorktree = taskContext?.data?.workingMode === 'worktree' && !!sourceWorktreePath;
+
+    let firstDuplicateHandled = false;
+
     for (const selection of validSelections) {
       const duplicatedTask = await projectContext.duplicateTask(taskId);
 
       const newTaskContext = projectContext.getTask(duplicatedTask.id);
       if (newTaskContext) {
+        const modelParts = selection.modelId.split('/');
+
         await newTaskContext.updateTask({
-          name: `${selection.modelId.split('/').slice(1).join('/')}: ${prompt.substring(0, 45)}${prompt.length > 45 ? '...' : ''}`,
-          model: selection.modelId,
-          autoApprove: taskContext?.data?.autoApprove,
-          ...(useWorktrees ? { workingMode: 'worktree' } : {}),
+          name: `[${modelParts.slice(1).join('/')}] ${prompt.substring(0, 45)}${prompt.length > 45 ? '...' : ''}`,
+          provider: modelParts[0],
+          model: modelParts.slice(1).join('/'),
+          autonomyMode: taskContext?.data?.autonomyMode,
         });
+
+        if (useWorktrees) {
+          if (sourceInWorktree) {
+            await newTaskContext.switchToLocalWorkingMode({
+              mergeBeforeSwitch: false,
+            });
+            // Clear the parent
+            await newTaskContext.updateTask({
+              parentId: null
+            });
+            await newTaskContext.switchToWorktreeWorkingMode({
+              carryOverUncommittedChanges: false,
+              dropSourceChanges: false,
+            });
+
+            // Carry over commits and uncommitted changes from the source worktree
+            const newWorktreePath = newTaskContext.data?.worktree?.path;
+            if (newWorktreePath && taskContext) {
+              await taskContext.mergeWorktreeToWorktree(newWorktreePath, true);
+            }
+          } else {
+            await newTaskContext.switchToWorktreeWorkingMode({
+              carryOverUncommittedChanges: true,
+              dropSourceChanges: false,
+            });
+          }
+        } else if (sourceInWorktree) {
+          if (!firstDuplicateHandled) {
+            await newTaskContext.switchToLocalWorkingMode({
+              mergeBeforeSwitch: true,
+            });
+            firstDuplicateHandled = true;
+          } else {
+            await newTaskContext.switchToLocalWorkingMode({
+              mergeBeforeSwitch: false,
+            });
+          }
+          await newTaskContext.updateTask({ parentId: null });
+        }
 
         void newTaskContext.runPrompt(prompt, mode);
       }

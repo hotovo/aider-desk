@@ -1,6 +1,16 @@
-({ data, models, providers, ui, executeExtensionAction }) => {
-  const { useState, useEffect, useCallback } = React;
-  const { Button, ModelSelector, IconButton, Checkbox } = ui;
+({ data, models, providers, ui, icons, task, executeExtensionAction }) => {
+  const { useCallback } = React;
+  const { ModelSelector, Checkbox, IconButton } = ui;
+  const Tooltip = ui.Tooltip;
+  const FiPlus = icons.Fi.FiPlus;
+  const FiX = icons.Fi.FiX;
+  const GrMultiple = icons.Gr.GrMultiple;
+
+  const AIDER_MODES = ["code", "ask", "architect", "context"];
+  const currentMode = task?.currentMode;
+  if (!currentMode || AIDER_MODES.includes(currentMode)) {
+    return null;
+  }
 
   const modelSelections = data?.models ?? [];
   const useWorktrees = data?.useWorktrees ?? true;
@@ -37,45 +47,43 @@
   );
 
   return (
-    <div className="flex flex-col gap-2 pb-2 w-full">
-      <div className="flex gap-4 w-full justify-between items-center">
-        <div className="flex items-center gap-2 flex-wrap">
-          {modelSelections.map((selection, index) => (
-            <div key={selection.index} className="flex items-center gap-1">
-              <ModelSelector
-                models={models}
-                providers={providers}
-                selectedModelId={getModelId(selection.modelId)}
-                onChange={handleModelChange(index)}
-                popupPlacement="top"
-              />
-              <button
+    <div className="flex items-center gap-2 ml-3">
+      {modelSelections.length > 0 && (
+        <Tooltip content="Additional models">
+          <GrMultiple className="w-3 h-3"/>
+        </Tooltip>
+      )}
+      <div className="flex items-center gap-3 flex-wrap">
+        {modelSelections.map((selection, index) => (
+          <div key={selection.index} className="flex items-center ml-1 gap-1">
+            <ModelSelector
+              models={models}
+              providers={providers}
+              selectedModelId={getModelId(selection.modelId)}
+              onChange={handleModelChange(index)}
+              popupPlacement="bottom"
+            />
+            <Tooltip content="Remove model">
+              <IconButton
+                icon={<FiX className="w-3 h-3" />}
                 onClick={handleRemoveModel(index)}
-                className="text-text-muted hover:text-text-primary text-sm p-1.5"
-                title="Remove model"
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="flex flex-shrink-0 gap-2 items-center">
-          <Checkbox
-            label="Use worktrees"
-            checked={useWorktrees}
-            onChange={handleUseWorktreesChange}
-            size="xs"
-          />
-          <Button
-            variant="outline"
-            color="tertiary"
-            size="xs"
-            onClick={handleAddModel}
-          >
-            + Add model
-          </Button>
-        </div>
+              />
+            </Tooltip>
+          </div>
+        ))}
       </div>
+      <IconButton
+        icon={<FiPlus className="w-4 h-4" />}
+        tooltip="Add model"
+        onClick={handleAddModel}
+        className="p-1.5 rounded-md hover:bg-bg-tertiary"
+      />
+      <Checkbox
+        label="Use worktrees"
+        checked={useWorktrees}
+        onChange={handleUseWorktreesChange}
+        size="xs"
+      />
     </div>
   );
 };
