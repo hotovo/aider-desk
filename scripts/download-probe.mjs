@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+import { ProxyAgent, setGlobalDispatcher } from 'undici';
 import { createWriteStream, existsSync, mkdirSync, unlinkSync, renameSync, rmSync } from 'fs';
 import { join } from 'path';
 import fs from 'fs';
@@ -6,6 +6,13 @@ import { pipeline } from 'stream';
 import { promisify } from 'util';
 import { extract } from "tar";
 import AdmZip from 'adm-zip';
+
+const proxyUrl = process.env.https_proxy || process.env.HTTPS_PROXY
+    || process.env.http_proxy || process.env.HTTP_PROXY;
+if (proxyUrl) {
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+    console.log(`Using proxy: ${proxyUrl}`);
+}
 
 const streamPipeline = promisify(pipeline);
 
