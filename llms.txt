@@ -1373,7 +1373,7 @@ async def send_current_models(self)
 error = None
 info = self.coder.main_model.info
 ⋮----
-error = "Missing keys for the model: " + ", ".join(self.coder.main_model.missing_keys)
+error = (
 ⋮----
 async def send_tokens_info(self, messages, files)
 ⋮----
@@ -4416,10 +4416,13 @@ import {
   PromptContext,
   QueuedPromptData,
   ResponseCompletedData,
+  SwitchToLocalOptions,
+  SwitchToWorktreeOptions,
   TaskData,
   TodoItem,
   UpdatedFile,
   UsageReportData,
+  WorktreeUncommittedFiles,
 } from '@common/types';
 ⋮----
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
@@ -4537,11 +4540,15 @@ async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, s
 ⋮----
 async askQuestion(text: string, options?: QuestionOptions): Promise<string>
 ⋮----
+async answerQuestion(answer: string, userInput?: string): Promise<boolean>
+⋮----
 addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void
 ⋮----
 addLoadingMessage(message?: string, finished?: boolean): void
 ⋮----
 // Task Management
+⋮----
+async getTaskAgentProfile(): Promise<AgentProfile | null>
 ⋮----
 async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
@@ -4573,11 +4580,17 @@ reorderQueuedPrompts(prompts: QueuedPromptData[]): void
 ⋮----
 editQueuedPrompt(promptId: string, newText: string): void
 ⋮----
-// Advanced Operations
+// Working Mode & Worktrees
 ⋮----
-async getTaskAgentProfile(): Promise<AgentProfile | null>
+async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
-async answerQuestion(answer: string, userInput?: string): Promise<boolean>
+async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>
+⋮----
+async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
+⋮----
+async applyUncommittedChanges(targetBranch?: string): Promise<void>
+⋮----
+async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>
 
 ================
 File: src/main/logger/event-transport.ts
@@ -9629,6 +9642,8 @@ public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
 ⋮----
 public async applyUncommittedChanges(targetBranch?: string): Promise<void>
 ⋮----
+public async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted = false): Promise<void>
+⋮----
 public async revertLastMerge(): Promise<void>
 ⋮----
 // Clear merge state after successful revert
@@ -11296,6 +11311,10 @@ async revertMerge(projectPath: string, taskId: string, worktreePath: string, mer
 private async pruneDeleted(projectDir: string): Promise<void>
 ⋮----
 // in case of failure, try to remove the directory manually
+⋮----
+async mergeWorktreeToWorktree(sourceWorktreeDir: string, targetWorktreeDir: string, includeUncommitted = false): Promise<void>
+⋮----
+// Ignore abort errors
 ⋮----
 async close(projectDir: string)
 
@@ -28371,7 +28390,6 @@ File: package.json
     "husky": "^9.1.7",
     "jsdom": "^27.3.0",
     "lint-staged": "^15.4.1",
-    "node-fetch": "^3.3.2",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.2",
     "react": "^19.2.0",
