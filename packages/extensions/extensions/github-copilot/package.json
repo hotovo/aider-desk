@@ -4,6 +4,7 @@
   "main": "index.ts",
   "description": "Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK",
   "dependencies": {
-    "@github/copilot-sdk": "^1.0.1"
+    "@github/copilot-sdk": "^1.0.1",
+    "detect-libc": "^2.1.2"
   }
 }

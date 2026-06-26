@@ -1,4 +1,7 @@
-import { CopilotClient, defineTool, ToolSet, type ModelInfo } from '@github/copilot-sdk';
+import fs from 'fs';
+import path from 'path';
+
+import { CopilotClient, RuntimeConnection, defineTool, ToolSet, type ModelInfo } from '@github/copilot-sdk';
 
 import type {
   Extension,
@@ -13,6 +16,39 @@ import type {
 } from '@aiderdesk/extensions';
 
 const PROVIDER_NAME = 'github-copilot';
+
+const getCopilotCliPath = (): string => {
+  const platform = process.platform;
+  const arch = process.arch;
+
+  let pkgPlatform: string;
+  if (platform === 'linux') {
+    let isMusl = false;
+    try {
+      const { isNonGlibcLinuxSync } = require('detect-libc');
+      isMusl = isNonGlibcLinuxSync();
+    } catch {
+      // detect-libc not available, assume glibc
+    }
+    pkgPlatform = isMusl ? 'linuxmusl' : 'linux';
+  } else {
+    pkgPlatform = platform;
+  }
+
+  const packageName = `copilot-${pkgPlatform}-${arch}`;
+  const binaryPath = path.join(__dirname, 'node_modules', '@github', packageName, 'copilot');
+
+  if (fs.existsSync(binaryPath)) {
+    return binaryPath;
+  }
+
+  // Fallback: let the SDK resolve the bundled JS entry point
+  return '';
+};
+
+const copilotConnection = RuntimeConnection.forStdio(
+  getCopilotCliPath() ? { path: getCopilotCliPath() } : {},
+);
 
 type LogFn = (message: string, type?: 'info' | 'error' | 'warn' | 'debug') => void;
 
@@ -89,12 +125,12 @@ const mapModelInfo = (info: ModelInfoRuntime, providerId: string): Model | null 
     maxInputTokens: info.capabilities?.limits?.max_prompt_tokens ?? info.capabilities?.limits?.max_context_window_tokens,
     maxOutputTokensLimit: info.capabilities?.limits?.max_output_tokens,
     supportsTools: info.capabilities?.supports?.tool_calls ?? false,
-    isHidden: info.id === 'auto',
+    isHidden: false,
   };
 };
 
 const fetchModels = async (providerId: string): Promise<Model[]> => {
-  const client = new CopilotClient({ useLoggedInUser: true });
+  const client = new CopilotClient({ useLoggedInUser: true, connection: copilotConnection });
   await client.start();
   try {
     const modelInfos = await client.listModels();
@@ -309,6 +345,7 @@ const createLlm = (
     if (!client) {
       client = new CopilotClient({
         useLoggedInUser: true,
+        connection: copilotConnection,
         ...(options.projectDir ? { workingDirectory: options.projectDir } : {}),
       });
     }
@@ -608,7 +645,7 @@ const createLlm = (
 export default class GithubCopilotExtension implements Extension {
   static metadata = {
     name: 'GitHub Copilot',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK',
     author: 'wladimiiir',
     iconUrl:
