@@ -16,10 +16,16 @@ import { v4 as uuidv4 } from 'uuid';
 import { truncateToolResult } from '@/agent/utils';
 import logger from '@/logger';
 
+const VERBOSE_COMPACT_WINDOW = 50;
+const VERBOSE_TOOL_INPUT_THRESHOLD = 150;
+
 export enum CompactionLevel {
   One = 1,
   Two = 2,
   Three = 3,
+  Four = 4,
+  Five = 5,
+  Max = CompactionLevel.Five,
 }
 
 type ToolInfo = {
@@ -311,6 +317,8 @@ export const smartCompactMessages = async (
   result = compactBashOutputs(result, protectedMessageCount, compactionLevel);
   result = redactFetchOutputs(result, protectedMessageCount);
   result = await truncateNonPowerToolResults(result, protectedMessageCount, compactionLevel);
+  result = removeVerboseToolCalls(result, protectedMessageCount, compactionLevel);
+  result = removeReasoningFromAssistant(result, protectedMessageCount, compactionLevel);
   result = mergeConsecutiveAssistantMessages(result);
 
   return result;
@@ -882,6 +890,84 @@ export const compactBashOutputs = (messages: ContextMessage[], protectedMessageC
       } catch {
         // Not JSON, leave as-is
       }
+    }
+  }
+
+  return messages;
+};
+
+export const removeVerboseToolCalls = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] => {
+  if (compactionLevel < CompactionLevel.Four) {
+    return messages;
+  }
+
+  const protectedStart = getProtectedStartIndex(messages, Math.max(protectedMessageCount, VERBOSE_COMPACT_WINDOW));
+
+  for (let i = protectedStart - 1; i >= 0; i--) {
+    if (i >= messages.length) {
+      continue;
+    }
+    const msg = messages[i] as ContextAssistantMessage;
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      continue;
+    }
+
+    const toolCallIdsToRemove: string[] = [];
+
+    for (let j = msg.content.length - 1; j >= 0; j--) {
+      const part = msg.content[j];
+      if (part.type !== 'tool-call') {
+        continue;
+      }
+      const inputStr = JSON.stringify(part.input);
+      if (inputStr.length > VERBOSE_TOOL_INPUT_THRESHOLD) {
+        toolCallIdsToRemove.push(part.toolCallId);
+        msg.content.splice(j, 1);
+      }
+    }
+
+    for (const toolCallId of toolCallIdsToRemove) {
+      removeToolResult(messages, toolCallId);
+    }
+
+    if (Array.isArray(msg.content) && msg.content.length === 0) {
+      messages.splice(i, 1);
+    }
+  }
+
+  return messages;
+};
+
+export const removeReasoningFromAssistant = (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): ContextMessage[] => {
+  if (compactionLevel < CompactionLevel.Five) {
+    return messages;
+  }
+
+  const protectedStart = getProtectedStartIndex(messages, Math.max(protectedMessageCount, VERBOSE_COMPACT_WINDOW));
+
+  for (let i = protectedStart - 1; i >= 0; i--) {
+    if (i >= messages.length) {
+      continue;
+    }
+    const msg = messages[i] as ContextAssistantMessage;
+    if (msg.role !== 'assistant' || !Array.isArray(msg.content)) {
+      continue;
+    }
+
+    const hadReasoning = msg.content.some((p) => p.type === 'reasoning');
+
+    if (!hadReasoning) {
+      continue;
+    }
+
+    msg.content = msg.content.filter((p) => p.type !== 'reasoning');
+
+    if (msg.content.length === 0) {
+      messages.splice(i, 1);
     }
   }
 

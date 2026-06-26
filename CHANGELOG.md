@@ -9,6 +9,7 @@
 - added some worktree related functions into the Extensions API
 - clarify missing API key warning when using local inference via Aider
 - added proxy support to when downloading dependencies
+- added additional compaction levels to smart compaction to remove verbose bash tools and reasonings
 
 ## [0.71.0]
 

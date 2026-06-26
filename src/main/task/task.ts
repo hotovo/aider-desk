@@ -2926,7 +2926,7 @@ export class Task {
         messagesSinceLastCompaction,
         smartCompactionLevel: this.smartCompactionLevel,
       });
-      this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Three) as CompactionLevel;
+      this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Max) as CompactionLevel;
     } else if (messagesSinceLastCompaction > 5 && this.smartCompactionLevel > CompactionLevel.One) {
       logger.info('Decreasing compaction level to mild due to high message count since last compaction.', {
         messagesSinceLastCompaction,

@@ -12,6 +12,8 @@ import {
   compactBashOutputs,
   redactFetchOutputs,
   truncateNonPowerToolResults,
+  removeVerboseToolCalls,
+  removeReasoningFromAssistant,
 } from '../smart-compaction';
 
 import type { ContextMessage, ContextAssistantMessage, ContextToolMessage, ToolResultPart } from '@common/types/context';
@@ -146,6 +148,27 @@ const fetchTool = (url: string, content: string) => {
   };
 };
 
+const assistantReasoningMsg = (reasoningText: string, text?: string): ContextMessage => {
+  const content: Array<{ type: string; text: string }> = [{ type: 'reasoning', text: reasoningText }];
+  if (text) {
+    content.push({ type: 'text', text });
+  }
+  return {
+    id: nextId(),
+    role: 'assistant',
+    content: content as any,
+  };
+};
+
+const assistantReasoningAndToolCallMsg = (reasoningText: string, toolCallId: string, toolName: string, input: unknown): ContextMessage => ({
+  id: nextId(),
+  role: 'assistant',
+  content: [
+    { type: 'reasoning', text: reasoningText },
+    { type: 'tool-call', toolCallId, toolName, input },
+  ] as any,
+});
+
 const nonPowerTool = (toolName: string, resultText = 'done') => {
   const tcId = nextTcId();
   return {
@@ -224,6 +247,10 @@ const resetCounters = () => {
   tcCounter = 0;
 };
 
+const padMessages = (count: number): ContextMessage[] => {
+  return Array.from({ length: count }, (_, i) => userMsg(`padding-${i}`));
+};
+
 // No protected zone — useful for testing compaction logic in isolation
 const NO_PROTECTION = 0;
 
@@ -248,6 +275,218 @@ describe('smartCompactMessages', () => {
     const msgs: ContextMessage[] = [userMsg('read'), read.assistant, read.result, userMsg('protected')];
     const result = await smartCompactMessages(msgs, 4);
     expect(result).toHaveLength(4);
+    expectInvariants(result);
+  });
+});
+
+describe('CompactionLevel Four - removeVerboseToolCalls', () => {
+  it('does nothing at level 3', () => {
+    resetCounters();
+    const longInput = { query: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'power---semantic_search', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---semantic_search', output: { type: 'text', value: 'results' } }]),
+      userMsg('next'),
+    ];
+    const result = removeVerboseToolCalls(msgs, NO_PROTECTION, CompactionLevel.Three);
+    expect(result).toHaveLength(4);
+  });
+
+  it('removes tool calls with input exceeding 150 chars and their results', () => {
+    resetCounters();
+    const longInput = { query: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'power---semantic_search', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---semantic_search', output: { type: 'text', value: 'results' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    const toolMsgs = result.filter((m) => m.role === 'tool');
+    expect(toolMsgs).toHaveLength(0);
+    const assistant = result.find((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toBeUndefined();
+  });
+
+  it('keeps tool calls with short inputs', () => {
+    resetCounters();
+    const shortInput = { query: 'short' };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'power---grep', shortInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---grep', output: { type: 'text', value: 'found' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    const toolMsgs = result.filter((m) => m.role === 'tool');
+    expect(toolMsgs).toHaveLength(1);
+    const assistant = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toHaveLength(1);
+  });
+
+  it('removes assistant message if it becomes empty after tool call removal', () => {
+    resetCounters();
+    const longInput = { filePath: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'power---file_read', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---file_read', output: { type: 'text', value: 'content' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    expect(result.find((m) => m.role === 'assistant')).toBeUndefined();
+    expect(result.find((m) => m.role === 'tool')).toBeUndefined();
+  });
+
+  it('keeps assistant message text when tool call is removed but text remains', () => {
+    resetCounters();
+    const longInput = { filePath: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantTextAndToolCallMsg('Let me read this file', tcId, 'power---file_read', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---file_read', output: { type: 'text', value: 'content' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    const toolMsgs = result.filter((m) => m.role === 'tool');
+    expect(toolMsgs).toHaveLength(0);
+    const assistant = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toHaveLength(1);
+    expect(Array.isArray(assistant[0].content)).toBe(true);
+    const textParts = (assistant[0].content as any[]).filter((p) => p.type === 'text');
+    expect(textParts).toHaveLength(1);
+    expect(textParts[0].text).toBe('Let me read this file');
+  });
+
+  it('respects the 50-message protection window', () => {
+    resetCounters();
+    const longInput = { query: 'x'.repeat(200) };
+    const msgs: ContextMessage[] = [userMsg('start')];
+    for (let i = 0; i < 55; i++) {
+      msgs.push({ id: 'u' + i, role: 'user', content: `msg ${i}` });
+    }
+    const tcId = nextTcId();
+    msgs.push(assistantToolCallMsg(tcId, 'power---semantic_search', longInput));
+    msgs.push(toolResultMsg([{ toolCallId: tcId, toolName: 'power---semantic_search', output: { type: 'text', value: 'results' } }]));
+
+    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    expect(result).toHaveLength(msgs.length);
+    const toolMsgs = result.filter((m) => m.role === 'tool');
+    expect(toolMsgs).toHaveLength(1);
+  });
+});
+
+describe('CompactionLevel Five - removeReasoningFromAssistant', () => {
+  it('does nothing at level 4', () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('thinking about it'), userMsg('next')];
+    const result = removeReasoningFromAssistant(msgs, NO_PROTECTION, CompactionLevel.Four);
+    expect(result).toHaveLength(3);
+  });
+
+  it('removes reasoning parts from assistant messages', () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('thinking about it', 'Here is my answer'), userMsg('transition'), ...padMessages(50)];
+    const result = removeReasoningFromAssistant(msgs, 10, CompactionLevel.Five);
+    const assistant = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toHaveLength(1);
+    const parts = assistant[0].content as any[];
+    expect(parts.filter((p) => p.type === 'reasoning')).toHaveLength(0);
+    expect(parts.filter((p) => p.type === 'text')).toHaveLength(1);
+    expect(parts[0].text).toBe('Here is my answer');
+  });
+
+  it('removes assistant message if it only contained reasoning', () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('just thinking'), userMsg('transition'), ...padMessages(50)];
+    const result = removeReasoningFromAssistant(msgs, 10, CompactionLevel.Five);
+    expect(result.find((m) => m.role === 'assistant' && m.id === msgs[1].id)).toBeUndefined();
+  });
+
+  it('keeps tool calls when removing reasoning', () => {
+    resetCounters();
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantReasoningAndToolCallMsg('reasoning here', tcId, 'power---grep', { searchTerm: 'foo' }),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---grep', output: { type: 'text', value: 'found' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = removeReasoningFromAssistant(msgs, 10, CompactionLevel.Five);
+    const assistant = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toHaveLength(1);
+    const parts = assistant[0].content as any[];
+    expect(parts.filter((p) => p.type === 'reasoning')).toHaveLength(0);
+    expect(parts.filter((p) => p.type === 'tool-call')).toHaveLength(1);
+  });
+
+  it('respects the 50-message protection window', () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('start')];
+    for (let i = 0; i < 55; i++) {
+      msgs.push({ id: 'u' + i, role: 'user', content: `msg ${i}` });
+    }
+    msgs.push(assistantReasoningMsg('thinking deeply'));
+    msgs.push(userMsg('next'));
+
+    const result = removeReasoningFromAssistant(msgs, 10, CompactionLevel.Five);
+    expect(result).toHaveLength(msgs.length);
+    const assistant = result.find((m): m is ContextAssistantMessage => m.role === 'assistant');
+    expect(assistant).toBeDefined();
+    const parts = assistant!.content as any[];
+    expect(parts.some((p) => p.type === 'reasoning')).toBe(true);
+  });
+});
+
+describe('CompactionLevel 4 & 5 - smartCompactMessages pipeline', () => {
+  it('level 4 removes verbose tool calls in pipeline', async () => {
+    resetCounters();
+    const longInput = { filePath: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('read'),
+      assistantToolCallMsg(tcId, 'power---file_read', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---file_read', output: { type: 'text', value: 'content' } }]),
+      userMsg('next'),
+      ...padMessages(50),
+    ];
+    const result = await smartCompactMessages(msgs, 10, CompactionLevel.Four);
+    expect(result.find((m) => m.role === 'tool')).toBeUndefined();
+    const assistants = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    const verboseAssistant = assistants.find((m) => m.id === msgs[1].id);
+    expect(verboseAssistant).toBeUndefined();
+    expectInvariants(result);
+  });
+
+  it('level 5 removes reasoning in pipeline', async () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('thinking about it', 'Here is my answer'), userMsg('transition'), ...padMessages(50)];
+    const result = await smartCompactMessages(msgs, 10, CompactionLevel.Five);
+    const assistants = result.filter((m): m is ContextAssistantMessage => m.role === 'assistant');
+    const reasoningAssistant = assistants.find((m) => m.id === msgs[1].id);
+    expect(reasoningAssistant).toBeDefined();
+    const parts = reasoningAssistant!.content as any[];
+    expect(parts.filter((p) => p.type === 'reasoning')).toHaveLength(0);
+    expect(parts.filter((p) => p.type === 'text')).toHaveLength(1);
+    expectInvariants(result);
+  });
+
+  it('level 5 removes assistant message with only reasoning in pipeline', async () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('just thinking'), userMsg('transition'), ...padMessages(50)];
+    const result = await smartCompactMessages(msgs, 10, CompactionLevel.Five);
+    expect(result.find((m) => m.role === 'assistant' && m.id === msgs[1].id)).toBeUndefined();
     expectInvariants(result);
   });
 });
