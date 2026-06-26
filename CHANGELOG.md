@@ -10,6 +10,7 @@
 - clarify missing API key warning when using local inference via Aider
 - added proxy support to when downloading dependencies
 - added additional compaction levels to smart compaction to remove verbose bash tools and reasonings
+- added timeout to provider model loading
 
 ## [0.71.0]
 

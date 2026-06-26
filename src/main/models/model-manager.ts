@@ -44,6 +44,7 @@ import { EventManager } from '@/events';
 import { Task } from '@/task/task';
 import { AiderModelMapping, CacheControl, LoadModelsResponse, LlmProviderRegistry, LlmProviderStrategy } from '@/models/types';
 
+const MODEL_LOAD_TIMEOUT_MS = 30_000;
 const MODELS_META_URL = 'https://models.dev/api.json';
 const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
 const PROVIDER_MODELS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'provider-models.json');
@@ -346,60 +347,70 @@ export class ModelManager {
     return changedProviderProfiles.length > 0 || removedProviders.length > 0;
   }
 
+  private async withModelLoadTimeout(promise: Promise<void>, profile: ProviderProfile): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        if (!this.providerModels[profile.id]) {
+          const errorMsg = `Timed out after ${MODEL_LOAD_TIMEOUT_MS / 1000}s while loading models`;
+          logger.error(`Model loading timed out for provider profile ${profile.id}`);
+          this.providerErrors[profile.id] = errorMsg;
+        }
+        resolve();
+      }, MODEL_LOAD_TIMEOUT_MS);
+    });
+
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  }
+
   private async loadProviderModels(providers: ProviderProfile[]): Promise<void> {
     this.eventManager.sendProviderModelsUpdated({ loading: true });
 
-    // Group providers by their provider name
-    const providersByName: Record<LlmProviderName, ProviderProfile[]> = {} as Record<LlmProviderName, ProviderProfile[]>;
-    for (const provider of providers || []) {
-      if (!providersByName[provider.provider.name]) {
-        providersByName[provider.provider.name] = [];
-      }
-      providersByName[provider.provider.name].push(provider);
-    }
-
     const toLoadPromises: Promise<void>[] = [];
 
-    for (const providerName of Object.keys(providersByName) as LlmProviderName[]) {
-      const profilesForProvider = providersByName[providerName];
-      const strategy = this.providerRegistry[providerName];
+    for (const profile of providers || []) {
+      const strategy = this.providerRegistry[profile.provider.name as LlmProviderName];
 
-      if (strategy && profilesForProvider.length > 0) {
-        const loadModels = async () => {
-          // Load models from each profile for this provider type
-          for (const profile of profilesForProvider) {
-            // Skip disabled providers
-            if (profile.disabled) {
-              logger.debug(`Skipping disabled provider profile ${profile.id}`);
-              continue;
-            }
-
-            let providerModels: Model[] = [];
-            const response = await this.loadModelsWithRetry(strategy, profile);
-
-            delete this.providerErrors[profile.id];
-            if (response.success) {
-              providerModels.push(...response.models);
-            } else {
-              if (response.error) {
-                logger.error(`Failed to load models for provider profile ${profile.id}:`, {
-                  error: response.error,
-                });
-                this.providerErrors[profile.id] = response.error;
-              } else {
-                logger.warn(`Models for provider profile '${profile.id}' were not loaded due to misconfiguration.`);
-              }
-            }
-
-            providerModels = this.enrichWithModelInfo(providerModels, profile, strategy);
-            providerModels = this.enrichWithOverrides(providerModels, profile.id);
-
-            this.providerModels[profile.id] = providerModels;
-          }
-        };
-
-        toLoadPromises.push(loadModels());
+      if (!strategy) {
+        continue;
       }
+
+      if (profile.disabled) {
+        logger.debug(`Skipping disabled provider profile ${profile.id}`);
+        continue;
+      }
+
+      const loadModels = async () => {
+        let providerModels: Model[] = [];
+        const response = await this.loadModelsWithRetry(strategy, profile);
+
+        delete this.providerErrors[profile.id];
+        if (response.success) {
+          providerModels.push(...response.models);
+        } else {
+          if (response.error) {
+            logger.error(`Failed to load models for provider profile ${profile.id}:`, {
+              error: response.error,
+            });
+            this.providerErrors[profile.id] = response.error;
+          } else {
+            logger.warn(`Models for provider profile '${profile.id}' were not loaded due to misconfiguration.`);
+          }
+        }
+
+        providerModels = this.enrichWithModelInfo(providerModels, profile, strategy);
+        providerModels = this.enrichWithOverrides(providerModels, profile.id);
+
+        this.providerModels[profile.id] = providerModels;
+      };
+
+      toLoadPromises.push(this.withModelLoadTimeout(loadModels(), profile));
     }
 
     await Promise.all(toLoadPromises);
