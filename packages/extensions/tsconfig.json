@@ -26,6 +26,8 @@
   ],
   "exclude": [
     "**/node_modules/**",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "extensions/cursor/src/proto/**",
+    "extensions/cursor/src/proxy/**"
   ]
 }

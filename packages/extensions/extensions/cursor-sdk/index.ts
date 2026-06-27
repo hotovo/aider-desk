@@ -29,7 +29,7 @@ interface CursorConfig {
   apiKey: string;
 }
 
-const CURSOR_PROVIDER_NAME = 'cursor';
+const CURSOR_PROVIDER_NAME = 'cursor-sdk';
 const AGENT_ID_METADATA_KEY = 'cursorAgentId';
 const POWER_TOOL_SERVER_NAME = 'power';
 const CURSOR_SERVER_NAME = 'cursor';
@@ -438,8 +438,8 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '1.8.0',
-    description: 'Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop',
+    version: '2.0.0',
+    description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
     capabilities: ['providers', 'agent-loop'],

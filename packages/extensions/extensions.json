@@ -294,9 +294,18 @@
       "capabilities": ["providers"]
     },
     {
+      "id": "cursor",
+      "name": "Cursor",
+      "description": "Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control",
+      "folder": "cursor",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["providers"]
+    },
+    {
       "id": "cursor-sdk",
       "name": "Cursor SDK",
-      "description": "Integrates the Cursor SDK as a provider with cursor/ prefix, overriding the agent loop to run Cursor agents",
+      "description": "Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop to run Cursor agents",
       "folder": "cursor-sdk",
       "type": "folder",
       "hasDependencies": true,

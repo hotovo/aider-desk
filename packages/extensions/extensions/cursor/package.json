@@ -1,0 +1,13 @@
+{
+  "name": "cursor",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control",
+  "scripts": {
+    "build": "node build-proxy.mjs"
+  },
+  "dependencies": {
+    "@ai-sdk/openai-compatible": "^1.0.41",
+    "@bufbuild/protobuf": "^2.11.0"
+  }
+}
