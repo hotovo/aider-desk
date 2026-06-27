@@ -1,5 +1,5 @@
 import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
-import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
@@ -54,21 +54,31 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     updateTask(task.id, { contextCompactingThresholdTokens: value });
   }, 1000);
 
-  const handleTokenBarClick = useCallback(
-    (e: ReactMouseEvent<HTMLDivElement>) => {
-      if (!tokenBarRef.current || AIDER_MODES.includes(mode)) {
+  const setThresholdAtPosition = useCallback(
+    (clientX: number) => {
+      if (!tokenBarRef.current) {
         return;
       }
 
       const rect = tokenBarRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
+      const x = clientX - rect.left;
       const percentage = Math.min(Math.max((x / rect.width) * 100, 0), 100);
       const roundedPercentage = Math.round(percentage / 5) * 5;
 
       setLocalThreshold(roundedPercentage);
       debouncedOnContextCompactingThreshold(Math.round((roundedPercentage / 100) * maxInputTokens));
     },
-    [mode, debouncedOnContextCompactingThreshold, maxInputTokens],
+    [debouncedOnContextCompactingThreshold, maxInputTokens],
+  );
+
+  const handleTokenBarClick = useCallback(
+    (e: ReactMouseEvent<HTMLDivElement>) => {
+      if (AIDER_MODES.includes(mode)) {
+        return;
+      }
+      setThresholdAtPosition(e.clientX);
+    },
+    [mode, setThresholdAtPosition],
   );
 
   const updateThreshold = useCallback(
@@ -125,6 +135,33 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     [mode, handleTokenBarClick],
   );
 
+  const handleTouchStart = useCallback(
+    (e: ReactTouchEvent<HTMLDivElement>) => {
+      if (AIDER_MODES.includes(mode)) {
+        return;
+      }
+      setShowTooltip(true);
+      setIsDragging(true);
+      setThresholdAtPosition(e.touches[0].clientX);
+    },
+    [mode, setThresholdAtPosition],
+  );
+
+  const handleDocumentTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (isDragging) {
+        e.preventDefault();
+      }
+      updateThreshold(e.touches[0].clientX);
+    },
+    [isDragging, updateThreshold],
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    setIsDragging(false);
+    setShowTooltip(false);
+  }, []);
+
   const handleMouseEnter = useCallback(() => {
     if (!AIDER_MODES.includes(mode)) {
       setShowTooltip(true);
@@ -140,13 +177,19 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
     if (isDragging) {
       document.addEventListener('mouseup', handleMouseUp);
       document.addEventListener('mousemove', handleDocumentMouseMove);
+      document.addEventListener('touchend', handleTouchEnd);
+      document.addEventListener('touchcancel', handleTouchEnd);
+      document.addEventListener('touchmove', handleDocumentTouchMove, { passive: false });
       return () => {
         document.removeEventListener('mouseup', handleMouseUp);
         document.removeEventListener('mousemove', handleDocumentMouseMove);
+        document.removeEventListener('touchend', handleTouchEnd);
+        document.removeEventListener('touchcancel', handleTouchEnd);
+        document.removeEventListener('touchmove', handleDocumentTouchMove);
       };
     }
     return undefined;
-  }, [isDragging, handleMouseUp, handleDocumentMouseMove]);
+  }, [isDragging, handleMouseUp, handleDocumentMouseMove, handleTouchEnd, handleDocumentTouchMove]);
 
   const thresholdTokens = maxInputTokens > 0 ? Math.round((localThreshold / 100) * maxInputTokens) : 0;
 
@@ -168,6 +211,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
       onMouseDown={handleMouseDown}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
     >
       <div className="relative flex-1">
         {!!maxInputTokens && (
