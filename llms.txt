@@ -2956,6 +2956,9 @@ export enum CompactionLevel {
   One = 1,
   Two = 2,
   Three = 3,
+  Four = 4,
+  Five = 5,
+  Max = CompactionLevel.Five,
 }
 ⋮----
 type ToolInfo = {
@@ -3031,6 +3034,14 @@ export const compactSemanticSearches = (messages: ContextMessage[], protectedMes
 export const compactBashOutputs = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
 ⋮----
 // Not JSON, leave as-is
+⋮----
+export const removeVerboseToolCalls = (messages: ContextMessage[], protectedMessageCount = 10, compactionLevel = CompactionLevel.One): ContextMessage[] =>
+⋮----
+export const removeReasoningFromAssistant = (
+  messages: ContextMessage[],
+  protectedMessageCount = 10,
+  compactionLevel = CompactionLevel.One,
+): ContextMessage[] =>
 ⋮----
 export const redactFetchOutputs = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 
@@ -6384,15 +6395,11 @@ async providersChanged(oldProviders: ProviderProfile[], newProviders: ProviderPr
 ⋮----
 // Clear models for providers that became disabled
 ⋮----
+private async withModelLoadTimeout(promise: Promise<void>, profile: ProviderProfile): Promise<void>
+⋮----
 private async loadProviderModels(providers: ProviderProfile[]): Promise<void>
 ⋮----
-// Group providers by their provider name
-⋮----
 const loadModels = async () =>
-⋮----
-// Load models from each profile for this provider type
-⋮----
-// Skip disabled providers
 ⋮----
 // Emit the updated provider models event
 ⋮----
