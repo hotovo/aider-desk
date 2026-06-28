@@ -4,7 +4,15 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, ExtensionToolInfo, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import {
+  AvailableExtension,
+  ExtensionConfigComponent,
+  ExtensionOperationResult,
+  ExtensionToolInfo,
+  SettingsData,
+  SkillDefinition,
+  ToolApprovalState,
+} from '@common/types';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
@@ -1704,9 +1712,9 @@ export class ExtensionManager {
    * @param extensionId - Extension identifier
    * @param repositoryUrl - Repository URL where the extension is located
    * @param project - Optional project for project-level install
-   * @returns true if installation succeeded
+   * @returns ExtensionOperationResult indicating success or failure with error details
    */
-  async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean> {
+  async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<ExtensionOperationResult> {
     const projectDir = project?.baseDir;
     try {
       logger.debug(`[Extensions] Installing extension '${extensionId}' from ${repositoryUrl} into ${projectDir ?? 'global'}`);
@@ -1777,10 +1785,10 @@ export class ExtensionManager {
 
       logger.info(`[Extensions] Successfully installed ${extension.name}`);
       this.telemetryManager.captureExtensionInstalled(extension.name, projectDir ? 'project' : 'global');
-      return true;
+      return { success: true };
     } catch (error) {
       logger.error(`[Extensions] Failed to install extension '${extensionId}':`, error);
-      return false;
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 
@@ -1800,6 +1808,8 @@ export class ExtensionManager {
       child.on('close', (code) => {
         if (code === 0) {
           resolve();
+        } else if (code === 127) {
+          reject(new Error('npm-not-found'));
         } else {
           reject(new Error(`npm install failed with code ${code}`));
         }
@@ -1860,9 +1870,9 @@ export class ExtensionManager {
    * @param extensionId - Extension identifier (filePath of installed extension)
    * @param repositoryUrl - Repository URL where the extension is located
    * @param project - Optional project for project-level extension
-   * @returns true if update succeeded
+   * @returns ExtensionOperationResult indicating success or failure with error details
    */
-  async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean> {
+  async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<ExtensionOperationResult> {
     const projectDir = project?.baseDir;
     try {
       logger.debug(`[Extensions] Updating extension '${extensionId}' from ${repositoryUrl}`);
@@ -1956,10 +1966,10 @@ export class ExtensionManager {
       await this.loadExtensionsForDir(targetDir, project);
 
       logger.info(`[Extensions] Successfully updated ${extension.name}`);
-      return true;
+      return { success: true };
     } catch (error) {
       logger.error(`[Extensions] Failed to update extension '${extensionId}':`, error);
-      return false;
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
   }
 

@@ -75,6 +75,7 @@ import {
   ChangeRequestItem,
   SkillDefinition,
   SkillsUpdatedData,
+  ExtensionOperationResult,
 } from '@common/types';
 
 export interface ApplicationAPI {
@@ -155,9 +156,9 @@ export interface ApplicationAPI {
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => Promise<InstalledExtension[]>;
   getAvailableExtensions: (repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean) => Promise<AvailableExtension[]>;
-  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
+  installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<ExtensionOperationResult>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
-  updateExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<boolean>;
+  updateExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<ExtensionOperationResult>;
   getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => Promise<unknown>;
   executeUIExtensionAction: (

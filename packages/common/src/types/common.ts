@@ -1088,6 +1088,11 @@ export interface AvailableExtension {
   readmeContent?: string;
 }
 
+export interface ExtensionOperationResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface ExtensionUIComponent {
   extensionId: string;
   componentId: string;

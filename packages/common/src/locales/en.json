@@ -497,13 +497,14 @@
         "loadInstalled": "Failed to load installed extensions",
         "loadAvailable": "Failed to load available extensions",
         "loadSettings": "Failed to load extension settings components",
-        "install": "Failed to install extension",
-        "update": "Failed to update extension",
+        "install": "Failed to install extension. Check logs for details.",
+        "update": "Failed to update extension. Check logs for details.",
         "uninstall": "Failed to uninstall extension",
         "saveSettings": "Failed to save extension settings",
         "settingsNotAvailable": "Extension settings are not available",
         "repositoryExists": "This repository is already added",
-        "cannotRemoveDefault": "Cannot remove the default repository"
+        "cannotRemoveDefault": "Cannot remove the default repository",
+        "npmNotFound": "npm is not installed on your system. This extension requires npm to install its dependencies. Please install Node.js (which includes npm) and try again."
       },
       "previousContext": "Previous context",
       "nextContext": "Next context",

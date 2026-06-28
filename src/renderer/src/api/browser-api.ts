@@ -73,6 +73,7 @@ import {
   ChangeRequestItem,
   SkillDefinition,
   SkillsUpdatedData,
+  ExtensionOperationResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import { type AxiosInstance, create } from 'axios';
@@ -1269,7 +1270,7 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+  installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult> {
     return this.post('/extensions/install', {
       extensionId,
       repositoryUrl,
@@ -1284,7 +1285,7 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean> {
+  updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult> {
     return this.post('/extensions/update', {
       extensionId,
       repositoryUrl,

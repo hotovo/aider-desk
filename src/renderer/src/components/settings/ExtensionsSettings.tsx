@@ -192,10 +192,12 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const handleInstall = async (extension: AvailableExtension) => {
     setInstallingExtensions((prev) => new Set(prev).add(extension.id));
     try {
-      const success = await api.installExtension(extension.id, extension.repositoryUrl, projectDir);
-      if (success) {
+      const result = await api.installExtension(extension.id, extension.repositoryUrl, projectDir);
+      if (result.success) {
         showSuccessNotification(t('settings.extensions.success.install', { name: extension.name }));
         await loadInstalledExtensions();
+      } else if (result.error === 'npm-not-found') {
+        showErrorNotification(t('settings.extensions.errors.npmNotFound'), false);
       } else {
         showErrorNotification(t('settings.extensions.errors.install'));
       }
@@ -227,11 +229,13 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
     setUpdatingExtensions((prev) => new Set(prev).add(installedExtension.filePath));
     try {
-      const success = await api.updateExtension(installedExtension.filePath, extension.repositoryUrl, projectDir);
-      if (success) {
+      const result = await api.updateExtension(installedExtension.filePath, extension.repositoryUrl, projectDir);
+      if (result.success) {
         showSuccessNotification(t('settings.extensions.success.update', { name: extension.name }));
         await loadInstalledExtensions();
         await loadAvailableExtensions();
+      } else if (result.error === 'npm-not-found') {
+        showErrorNotification(t('settings.extensions.errors.npmNotFound'), false);
       } else {
         showErrorNotification(t('settings.extensions.errors.update'));
       }

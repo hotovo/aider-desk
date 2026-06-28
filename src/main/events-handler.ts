@@ -42,7 +42,7 @@ import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 
-import type { ModeDefinition, ExtensionConfigComponent, ExtensionUIComponent } from '@common/types';
+import type { ModeDefinition, ExtensionConfigComponent, ExtensionOperationResult, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
 
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -1228,7 +1228,7 @@ export class EventsHandler {
     return await this.extensionManager.getAvailableExtensions(repositories, forceRefresh, fetchOnly);
   }
 
-  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
+  async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult> {
     let project: Project | undefined = undefined;
     if (projectDir) {
       project = this.projectManager.getProject(projectDir);
@@ -1244,7 +1244,7 @@ export class EventsHandler {
     return await this.extensionManager.uninstallExtension(extensionId, projectDir);
   }
 
-  async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string) {
+  async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult> {
     let project: Project | undefined = undefined;
     if (projectDir) {
       project = this.projectManager.getProject(projectDir);

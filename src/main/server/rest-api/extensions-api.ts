@@ -97,12 +97,12 @@ export class ExtensionsApi extends BaseApi {
         }
 
         const { extensionId, repositoryUrl, projectDir } = parsed;
-        const success = await this.eventsHandler.installExtension(extensionId, repositoryUrl, projectDir);
+        const result = await this.eventsHandler.installExtension(extensionId, repositoryUrl, projectDir);
 
-        if (success) {
-          res.status(200).json({ message: 'Extension installed successfully', success });
+        if (result.success) {
+          res.status(200).json({ message: 'Extension installed successfully', success: true });
         } else {
-          res.status(500).json({ message: 'Failed to install extension', success });
+          res.status(500).json({ message: 'Failed to install extension', success: false, error: result.error });
         }
       }),
     );
@@ -137,12 +137,12 @@ export class ExtensionsApi extends BaseApi {
         }
 
         const { extensionId, repositoryUrl, projectDir } = parsed;
-        const success = await this.eventsHandler.updateExtension(extensionId, repositoryUrl, projectDir);
+        const result = await this.eventsHandler.updateExtension(extensionId, repositoryUrl, projectDir);
 
-        if (success) {
-          res.status(200).json({ message: 'Extension updated successfully', success });
+        if (result.success) {
+          res.status(200).json({ message: 'Extension updated successfully', success: true });
         } else {
-          res.status(500).json({ message: 'Failed to update extension', success });
+          res.status(500).json({ message: 'Failed to update extension', success: false, error: result.error });
         }
       }),
     );
