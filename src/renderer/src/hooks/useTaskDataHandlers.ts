@@ -11,30 +11,31 @@ import type {
 } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
-import {
-  updateTaskState,
-  setQuestion,
-  setAllFiles,
-  setAutocompletionWords,
-  setTokensInfo,
-  setAiderModelsData,
-  setQueuedPrompts,
-  touchTaskActivity,
-} from '@/stores/taskStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { setTaskAllFiles, setTaskAutocompletionWords } from '@/stores/taskFilesStore';
+import { updateTaskState, setQuestion, setTokensInfo, setAiderModelsData, setQueuedPrompts, touchTaskActivity } from '@/stores/taskStore';
+import { getTaskDir } from '@/utils/task-utils';
+
+const getTaskDirById = (baseDir: string, taskId: string) => {
+  const tasks = useProjectStore.getState().projectTasksMap.get(baseDir) || [];
+  const task = tasks.find((t) => t.id === taskId);
+  return task ? getTaskDir(task) : baseDir;
+};
 
 export const useTaskDataHandlers = (baseDir: string, taskId: string) => {
   const api = useApi();
 
   const handleUpdateAutocompletion = useCallback(
     ({ allFiles, words }: AutocompletionData) => {
+      const taskDir = getTaskDirById(baseDir, taskId);
       if (allFiles) {
-        setAllFiles(taskId, allFiles);
+        setTaskAllFiles(taskId, taskDir, allFiles);
       }
       if (words) {
-        setAutocompletionWords(taskId, words);
+        setTaskAutocompletionWords(taskId, taskDir, words);
       }
     },
-    [taskId],
+    [baseDir, taskId],
   );
 
   const handleTokensInfo = useCallback(

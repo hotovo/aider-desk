@@ -4,6 +4,7 @@ import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Mes
 
 import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
 import { useProjectStore } from '@/stores/projectStore';
+import { releaseTaskFiles } from '@/stores/taskFilesStore';
 import { cleanupTaskCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
@@ -128,6 +129,7 @@ export const TasksProvider = ({
       const inactiveTime = now - state.lastActiveAt.getTime();
       if (inactiveTime >= TASK_INACTIVITY_TIMEOUT_MS) {
         unloadTask(taskId);
+        releaseTaskFiles(taskId);
         cleanupTaskCache(baseDir, taskId);
         cleanupProcessingResponseMessage(taskId);
       }

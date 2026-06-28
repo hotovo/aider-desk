@@ -17,6 +17,8 @@ import {
   useProjectStore,
 } from '@/stores/projectStore';
 import { unloadTasks } from '@/stores/taskStore';
+import { releaseTaskFiles } from '@/stores/taskFilesStore';
+import { getTaskDir, getSortedVisibleTasks } from '@/utils/task-utils';
 import { cleanupProjectCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -26,7 +28,6 @@ import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
-import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
@@ -200,6 +201,13 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     };
 
     const handleTaskUpdated = (taskData: TaskData) => {
+      const existingTask = useProjectStore
+        .getState()
+        .projectTasksMap.get(projectDir)
+        ?.find((t) => t.id === taskData.id);
+      if (existingTask && getTaskDir(existingTask) !== getTaskDir(taskData)) {
+        releaseTaskFiles(taskData.id);
+      }
       updateProjectTask(projectDir, taskData);
     };
 
@@ -217,6 +225,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
 
     const handleTaskDeleted = (taskData: TaskData) => {
       removeProjectTask(projectDir, taskData.id);
+      releaseTaskFiles(taskData.id);
     };
 
     const handleInputHistoryUpdate = (data: InputHistoryData) => {
@@ -281,6 +290,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
           ?.map((t) => t.id) || [];
       clearProjectTasks(projectDir);
       unloadTasks(taskIds);
+      taskIds.forEach(releaseTaskFiles);
       taskIds.forEach(cleanupProcessingResponseMessage);
       cleanupProjectCache(projectDir);
     };

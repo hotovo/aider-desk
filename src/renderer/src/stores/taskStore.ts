@@ -10,8 +10,6 @@ export interface TaskState {
   tokensInfo: TokensInfoData | null;
   question: QuestionData | null;
   todoItems: TodoItem[];
-  allFiles: string[];
-  autocompletionWords: string[];
   contextFiles: ContextFile[];
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
@@ -25,8 +23,6 @@ export const EMPTY_TASK_STATE: TaskState = {
   tokensInfo: null,
   question: null,
   todoItems: [],
-  allFiles: [],
-  autocompletionWords: [],
   contextFiles: [],
   aiderModelsData: null,
   lastActiveAt: null,
@@ -47,8 +43,6 @@ interface TaskStore {
   updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
   setMessages: (taskId: string, updateMessages: (prev: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
-  setAllFiles: (taskId: string, allFiles: string[]) => void;
-  setAutocompletionWords: (taskId: string, autocompletionWords: string[]) => void;
   setTokensInfo: (taskId: string, tokensInfo: TokensInfoData | null) => void;
   setQuestion: (taskId: string, question: QuestionData | null) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
@@ -113,22 +107,6 @@ export const useTaskStore = createWithEqualityFn<TaskStore>()(
             ...current,
             todoItems: updateTodoItems(current.todoItems),
           });
-          return { taskStateMap: newMap };
-        }),
-
-      setAllFiles: (taskId, allFiles) =>
-        set((state) => {
-          const newMap = new Map(state.taskStateMap);
-          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-          newMap.set(taskId, { ...current, allFiles });
-          return { taskStateMap: newMap };
-        }),
-
-      setAutocompletionWords: (taskId, autocompletionWords) =>
-        set((state) => {
-          const newMap = new Map(state.taskStateMap);
-          const current = newMap.get(taskId) || EMPTY_TASK_STATE;
-          newMap.set(taskId, { ...current, autocompletionWords });
           return { taskStateMap: newMap };
         }),
 
@@ -213,11 +191,6 @@ export const setMessages = (taskId: string, updateMessages: (prev: Message[]) =>
 
 export const setTodoItems = (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) =>
   useTaskStore.getState().setTodoItems(taskId, updateTodoItems);
-
-export const setAllFiles = (taskId: string, allFiles: string[]) => useTaskStore.getState().setAllFiles(taskId, allFiles);
-
-export const setAutocompletionWords = (taskId: string, autocompletionWords: string[]) =>
-  useTaskStore.getState().setAutocompletionWords(taskId, autocompletionWords);
 
 export const setTokensInfo = (taskId: string, tokensInfo: TokensInfoData | null) => useTaskStore.getState().setTokensInfo(taskId, tokensInfo);
 

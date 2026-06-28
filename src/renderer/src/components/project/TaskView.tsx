@@ -51,6 +51,8 @@ import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useOptimizedTaskState, useTaskStore } from '@/stores/taskStore';
+import { useTaskAllFiles, useTaskAutocompletionWords } from '@/stores/taskFilesStore';
+import { getTaskDir } from '@/utils/task-utils';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
@@ -126,7 +128,9 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     } = useTask();
 
     const taskState = useOptimizedTaskState(task.id);
-    const { loading, loaded, allFiles, contextFiles, autocompletionWords, question, aiderModelsData, canUndoContextChange } = taskState;
+    const { loading, loaded, contextFiles, question, aiderModelsData, canUndoContextChange } = taskState;
+    const allFiles = useTaskAllFiles(getTaskDir(task));
+    const autocompletionWords = useTaskAutocompletionWords(getTaskDir(task));
 
     const messages = useTaskMessages(task.id);
     const deferredMessages = useDeferredValue(messages);

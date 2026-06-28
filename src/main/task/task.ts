@@ -3757,6 +3757,7 @@ ${error.stderr}`,
 
     void this.sendUpdatedFilesUpdated();
     void this.sendWorktreeIntegrationStatusUpdated();
+    await this.updateAutocompletionData(undefined, true);
 
     return true;
   }
@@ -3942,6 +3943,8 @@ ${error.stderr}`,
     }
 
     await this.updateTask({ workingMode: 'local' });
+
+    await this.updateAutocompletionData(undefined, true);
   }
 
   public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void> {
@@ -4035,6 +4038,7 @@ ${error.stderr}`,
     await this.updateTask({ workingMode: 'worktree' });
 
     void this.sendUpdatedFilesUpdated();
+    await this.updateAutocompletionData(undefined, true);
   }
 
   public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles> {

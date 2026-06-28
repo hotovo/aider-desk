@@ -12,6 +12,7 @@
 - added additional compaction levels to smart compaction to remove verbose bash tools and reasonings
 - added timeout to provider model loading
 - compaction slider can now be properly used on touch devices
+- optimized all files loading on renderer to avoid duplicated entries
 
 ## [0.71.0]
 

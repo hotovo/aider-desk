@@ -3,7 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
 import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 
-import { updateTaskState, clearSession, setMessages, setAllFiles } from '@/stores/taskStore';
+import { updateTaskState, clearSession, setMessages } from '@/stores/taskStore';
+import { setTaskAllFiles } from '@/stores/taskFilesStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { getTaskDir } from '@/utils/task-utils';
 import { useApi } from '@/contexts/ApiContext';
 
 type UseTaskActionsParams = {
@@ -148,7 +151,10 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
   const refreshAllFiles = useCallback(
     async (taskId: string, useGit = true) => {
       const refreshedFiles = await api.getAllFiles(baseDir, taskId, useGit);
-      setAllFiles(taskId, refreshedFiles);
+      const tasks = useProjectStore.getState().projectTasksMap.get(baseDir) || [];
+      const task = tasks.find((t) => t.id === taskId);
+      const taskDir = task ? getTaskDir(task) : baseDir;
+      setTaskAllFiles(taskId, taskDir, refreshedFiles);
     },
     [api, baseDir],
   );

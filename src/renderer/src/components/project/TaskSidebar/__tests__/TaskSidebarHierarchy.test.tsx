@@ -43,8 +43,6 @@ vi.mock('@/stores/taskStore', () => ({
     tokensInfo: null,
     question: null,
     todoItems: [],
-    allFiles: [],
-    autocompletionWords: [],
     aiderTotalCost: 0,
     contextFiles: [],
     aiderModelsData: null,

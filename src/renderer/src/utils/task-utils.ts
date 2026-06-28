@@ -4,6 +4,8 @@ import { getTaskDateGroup } from './date-utils';
 
 export type VirtualTaskItem = { type: 'header'; id: string; title: string } | { type: 'task'; id: string; task: TaskData; level: number };
 
+export const getTaskDir = (task: TaskData): string => task.worktree?.path ?? task.baseDir;
+
 const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined => {
   let mostRecent = task.updatedAt;
 

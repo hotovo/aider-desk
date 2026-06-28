@@ -73,6 +73,11 @@ vi.mock('@/stores/taskStore', () => ({
   useTaskQueuedPrompts: vi.fn(),
 }));
 
+vi.mock('@/stores/taskFilesStore', () => ({
+  useTaskAllFiles: vi.fn(() => []),
+  useTaskAutocompletionWords: vi.fn(() => []),
+}));
+
 vi.mock('@/contexts/ModelProviderContext', () => ({
   useModelProviders: vi.fn(),
 }));
@@ -165,9 +170,7 @@ describe('TaskView', () => {
   const mockTaskState: ReturnType<typeof useOptimizedTaskState> = {
     loaded: true,
     loading: false,
-    allFiles: [],
     contextFiles: [],
-    autocompletionWords: [],
     question: null,
     aiderModelsData: null,
     lastActiveAt: null,
