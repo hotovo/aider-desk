@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import { execFileSync } from 'child_process';
+
 import { CopilotClient, RuntimeConnection, defineTool, ToolSet, type ModelInfo } from '@github/copilot-sdk';
 
 import type {
@@ -17,7 +19,26 @@ import type {
 
 const PROVIDER_NAME = 'github-copilot';
 
+const findSystemCopilot = (): string | null => {
+  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
+  try {
+    const output = execFileSync(lookupCommand, ['copilot'], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: 'utf-8',
+    });
+    const resolved = output.trim().split('\n')[0].trim();
+    return resolved || null;
+  } catch {
+    return null;
+  }
+};
+
 const getCopilotCliPath = (): string => {
+  const systemCopilotPath = findSystemCopilot();
+  if (systemCopilotPath && fs.existsSync(systemCopilotPath)) {
+    return systemCopilotPath;
+  }
+
   const platform = process.platform;
   const arch = process.arch;
 
@@ -645,7 +666,7 @@ const createLlm = (
 export default class GithubCopilotExtension implements Extension {
   static metadata = {
     name: 'GitHub Copilot',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK',
     author: 'wladimiiir',
     iconUrl:
