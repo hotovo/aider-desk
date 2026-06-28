@@ -23091,7 +23091,7 @@ title=
 File: src/renderer/src/components/TokenUsageBar.tsx
 ================
 import { AIDER_MODES, Mode, TaskData, TokensInfoData } from '@common/types';
-import { MouseEvent as ReactMouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
