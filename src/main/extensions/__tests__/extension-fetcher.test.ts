@@ -171,6 +171,100 @@ describe('ExtensionFetcher', () => {
       });
     });
 
+    it('should resolve framework OS enum members in supportedOS', async () => {
+      const mockFileContent = `
+        import { OS } from '@aiderdesk/extensions';
+
+        export class FffExtension implements Extension {
+          static metadata = {
+            name: 'FFF',
+            version: '1.0.0',
+            supportedOS: [OS.Linux, OS.MacOS],
+          };
+        }
+      `;
+
+      const metadata = await createAndTestMetadata(mockFileContent);
+
+      expect(metadata).toEqual({
+        name: 'FFF',
+        version: '1.0.0',
+        supportedOS: ['linux', 'macos'],
+      });
+    });
+
+    it('should resolve locally-declared enum members in metadata', async () => {
+      const mockFileContent = `
+        enum Color { Red = 'red', Blue = 'blue' }
+
+        export class MyExtension implements Extension {
+          static metadata = {
+            name: 'Color Extension',
+            version: '1.0.0',
+            description: 'Uses a local enum',
+            author: 'Tester',
+            capabilities: [Color.Red, Color.Blue],
+          };
+        }
+      `;
+
+      const metadata = await createAndTestMetadata(mockFileContent);
+
+      expect(metadata).toEqual({
+        name: 'Color Extension',
+        version: '1.0.0',
+        description: 'Uses a local enum',
+        author: 'Tester',
+        capabilities: ['red', 'blue'],
+      });
+    });
+
+    it('should resolve framework OS enum members in variable-referenced metadata', async () => {
+      const mockFileContent = `
+        import { OS } from '@aiderdesk/extensions';
+
+        const metadata = {
+          name: 'Variable Extension',
+          version: '1.0.0',
+          supportedOS: [OS.Linux, OS.MacOS],
+        };
+
+        export class VariableExtension implements Extension {
+          static metadata = metadata;
+        }
+      `;
+
+      const metadataResult = await createAndTestMetadata(mockFileContent);
+
+      expect(metadataResult).toEqual({
+        name: 'Variable Extension',
+        version: '1.0.0',
+        supportedOS: ['linux', 'macos'],
+      });
+    });
+
+    it('should skip unknown enum references gracefully', async () => {
+      const mockFileContent = `
+        import { OS } from '@aiderdesk/extensions';
+
+        export class MyExtension implements Extension {
+          static metadata = {
+            name: 'Unknown Enum Extension',
+            version: '1.0.0',
+            supportedOS: [OS.Linux, OS.MacOS, SomeOtherEnum.Foo],
+          };
+        }
+      `;
+
+      const metadata = await createAndTestMetadata(mockFileContent);
+
+      expect(metadata).toEqual({
+        name: 'Unknown Enum Extension',
+        version: '1.0.0',
+        supportedOS: ['linux', 'macos', undefined],
+      });
+    });
+
     it('should handle JavaScript files (.js)', async () => {
       const realTempDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'ext-test-'));
       const extDir = path.join(realTempDir, 'js-extension');

@@ -14,6 +14,7 @@
 - compaction slider can now be properly used on touch devices
 - optimized all files loading on renderer to avoid duplicated entries
 - added specific error message when trying to install extension that requires npm while it is not available
+- correctly showing the Not supported on OS for available extensions
 
 ## [0.71.0]
 
