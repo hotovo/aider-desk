@@ -189,10 +189,21 @@ async function spawnProxy(
   spawnConfig: ProxySpawnConfig,
 ): Promise<ConnectResult> {
   const proxyEntry = resolveProxyEntry();
+
+  if (!existsSync(proxyEntry)) {
+    throw new Error(`Proxy entry not found at ${proxyEntry}. Run 'npm install' in the cursor extension directory to build it.`);
+  }
+
   const child = spawn('node', [proxyEntry], {
     stdio: ['pipe', 'pipe', 'pipe'],
     detached: false,
     windowsHide: true,
+  });
+
+  // Accumulate stderr from the start so we can include it in error messages
+  let stderrBuffer = '';
+  child.stderr.on('data', (chunk: Buffer) => {
+    stderrBuffer += chunk.toString();
   });
 
   // Send config on stdin
@@ -203,7 +214,7 @@ async function spawnProxy(
   const rl = createInterface({ input: child.stdout });
   const readyLine = await new Promise<string>((resolvePromise, reject) => {
     const timeout = setTimeout(() => {
-      reject(new Error('Proxy startup timeout'));
+      reject(new Error(`Proxy startup timeout. Stderr:\n${stderrBuffer.trim() || '(none)'}`));
     }, PROXY_STARTUP_TIMEOUT_MS);
     rl.once('line', (line) => {
       clearTimeout(timeout);
@@ -211,7 +222,8 @@ async function spawnProxy(
     });
     child.on('exit', (code) => {
       clearTimeout(timeout);
-      reject(new Error(`Proxy exited with code ${String(code)}`));
+      const stderr = stderrBuffer.trim() || '(none)';
+      reject(new Error(`Proxy exited with code ${String(code)}. Stderr:\n${stderr}`));
     });
   });
   rl.close();
@@ -227,10 +239,14 @@ async function spawnProxy(
   // Start heartbeat
   const timer = startHeartbeat(ready.port, child.pid!, sessionId, child);
 
-  // Forward stderr
+  // Forward stderr (append to the already-running accumulation listener)
   child.stderr.on('data', (chunk: Buffer) => {
     process.stderr.write(`[cursor-proxy] ${chunk.toString()}`);
   });
+  if (stderrBuffer) {
+    process.stderr.write(`[cursor-proxy] ${stderrBuffer}`);
+    stderrBuffer = '';
+  }
 
   child.unref();
 

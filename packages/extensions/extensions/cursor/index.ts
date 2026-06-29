@@ -80,7 +80,7 @@ function toAiderDeskModels(models: CursorModel[], providerId: string): Model[] {
 export default class CursorExtension implements Extension {
   static metadata = {
     name: 'Cursor',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor/icon.png',

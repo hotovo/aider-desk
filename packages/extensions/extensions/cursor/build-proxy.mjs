@@ -1,7 +1,8 @@
-import { execSync } from 'node:child_process'
 import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import esbuild from 'esbuild'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -13,12 +14,12 @@ if (!existsSync(distDir)) {
 
 console.log('Building Cursor proxy with esbuild...')
 
-execSync(
-  'esbuild src/proxy/main.ts --bundle --platform=node --outfile=dist/proxy.js --format=esm',
-  {
-    cwd: __dirname,
-    stdio: 'inherit',
-  },
-)
+await esbuild.build({
+  entryPoints: [join(__dirname, 'src', 'proxy', 'main.ts')],
+  bundle: true,
+  platform: 'node',
+  outfile: join(distDir, 'proxy.js'),
+  format: 'esm',
+})
 
 console.log('✓ Proxy built successfully')
