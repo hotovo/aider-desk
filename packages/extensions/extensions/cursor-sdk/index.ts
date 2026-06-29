@@ -438,7 +438,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '2.0.0',
+    version: '3.0.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -490,7 +490,7 @@ export default class CursorSdkExtension implements Extension {
             try {
               const cursorModels = await Cursor.models.list({ apiKey });
               const models: Model[] = cursorModels.map((m) => ({
-                id: `${CURSOR_PROVIDER_NAME}/${m.id}`,
+                id: m.id,
                 providerId: profile.id,
               }));
               return { models, success: true };
