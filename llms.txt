@@ -675,6 +675,7 @@ src/
         extensionUIStore.ts
         projectStore.ts
         settingsStore.ts
+        taskFilesStore.ts
         taskStore.ts
       themes/
         theme-aurora.scss
@@ -3775,9 +3776,11 @@ const visitor = (node: ts.Node) =>
 ⋮----
 private findVariableDeclaration(sourceFile: ts.SourceFile, variableName: string): ts.ObjectLiteralExpression | null
 ⋮----
-private parseObjectLiteral(node: ts.ObjectLiteralExpression): Record<string, unknown>
+private collectEnumValues(sourceFile: ts.SourceFile): Record<string, unknown>
 ⋮----
-private parsePropertyValue(node: ts.Node): unknown
+private parseObjectLiteral(node: ts.ObjectLiteralExpression, enumValues: Record<string, unknown>): Record<string, unknown>
+⋮----
+private parsePropertyValue(node: ts.Node, enumValues: Record<string, unknown>): unknown
 ⋮----
 private convertToGitHubRawUrl(webUrl: string): string | null
 ⋮----
@@ -3873,7 +3876,15 @@ import path from 'path';
 import { FSWatcher, watch } from 'chokidar';
 import debounce from 'lodash/debounce';
 import { z } from 'zod';
-import { AvailableExtension, ExtensionConfigComponent, ExtensionToolInfo, SettingsData, SkillDefinition, ToolApprovalState } from '@common/types';
+import {
+  AvailableExtension,
+  ExtensionConfigComponent,
+  ExtensionOperationResult,
+  ExtensionToolInfo,
+  SettingsData,
+  SkillDefinition,
+  ToolApprovalState,
+} from '@common/types';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
@@ -4237,9 +4248,9 @@ async getAvailableExtensions(repositories: string[], forceRefresh = false, fetch
    * @param extensionId - Extension identifier
    * @param repositoryUrl - Repository URL where the extension is located
    * @param project - Optional project for project-level install
-   * @returns true if installation succeeded
+   * @returns ExtensionOperationResult indicating success or failure with error details
    */
-async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
+async installExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<ExtensionOperationResult>
 ⋮----
 // For repo-root extensions (entire repo is the extension), use extensionsPath directly
 // For subdirectory extensions, join with the folder name
@@ -4264,9 +4275,9 @@ async uninstallExtension(extensionId: string, projectDir?: string): Promise<bool
    * @param extensionId - Extension identifier (filePath of installed extension)
    * @param repositoryUrl - Repository URL where the extension is located
    * @param project - Optional project for project-level extension
-   * @returns true if update succeeded
+   * @returns ExtensionOperationResult indicating success or failure with error details
    */
-async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<boolean>
+async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<ExtensionOperationResult>
 ⋮----
 // Unload existing extension before overwriting files
 ⋮----
@@ -11397,7 +11408,7 @@ import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 ⋮----
-import type { ModeDefinition, ExtensionConfigComponent, ExtensionUIComponent } from '@common/types';
+import type { ModeDefinition, ExtensionConfigComponent, ExtensionOperationResult, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
 ⋮----
 import { McpManager, AgentProfileManager } from '@/agent';
@@ -11737,11 +11748,11 @@ getExtensionToolsInfo(projectDir?: string): ExtensionToolInfo[]
 ⋮----
 async getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean)
 ⋮----
-async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string)
+async installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
 ⋮----
 async uninstallExtension(extensionId: string, projectDir?: string)
 ⋮----
-async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string)
+async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
 ⋮----
 getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[]
 ⋮----
@@ -12772,6 +12783,7 @@ import {
   ChangeRequestItem,
   SkillDefinition,
   SkillsUpdatedData,
+  ExtensionOperationResult,
 } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 import { type AxiosInstance, create } from 'axios';
@@ -13143,11 +13155,11 @@ getExtensionToolsInfo(projectDir?: string): Promise<ExtensionToolInfo[]>
 ⋮----
 getAvailableExtensions(repositories: string[], forceRefresh?: boolean, fetchOnly?: boolean): Promise<AvailableExtension[]>
 ⋮----
-installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
+installExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
 ⋮----
 uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 ⋮----
-updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<boolean>
+updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
 ⋮----
 getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]>
 ⋮----
@@ -19303,6 +19315,8 @@ import {
   useProjectStore,
 } from '@/stores/projectStore';
 import { unloadTasks } from '@/stores/taskStore';
+import { releaseTaskFiles } from '@/stores/taskFilesStore';
+import { getTaskDir, getSortedVisibleTasks } from '@/utils/task-utils';
 import { cleanupProjectCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
 import { useSettingsStore } from '@/stores/settingsStore';
@@ -19312,7 +19326,6 @@ import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
-import { getSortedVisibleTasks } from '@/utils/task-utils';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
@@ -19566,6 +19579,8 @@ import { useTask } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { useTaskMessages, useOptimizedTaskState, useTaskStore } from '@/stores/taskStore';
+import { useTaskAllFiles, useTaskAutocompletionWords } from '@/stores/taskFilesStore';
+import { getTaskDir } from '@/utils/task-utils';
 import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
@@ -23347,6 +23362,7 @@ import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Mes
 ⋮----
 import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
 import { useProjectStore } from '@/stores/projectStore';
+import { releaseTaskFiles } from '@/stores/taskFilesStore';
 import { cleanupTaskCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
 import { useTaskToolHandlers } from '@/hooks/useTaskToolHandlers';
@@ -23774,7 +23790,10 @@ import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
 import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 ⋮----
-import { updateTaskState, clearSession, setMessages, setAllFiles } from '@/stores/taskStore';
+import { updateTaskState, clearSession, setMessages } from '@/stores/taskStore';
+import { setTaskAllFiles } from '@/stores/taskFilesStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { getTaskDir } from '@/utils/task-utils';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type UseTaskActionsParams = {
@@ -23816,16 +23835,12 @@ import type {
 } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
-import {
-  updateTaskState,
-  setQuestion,
-  setAllFiles,
-  setAutocompletionWords,
-  setTokensInfo,
-  setAiderModelsData,
-  setQueuedPrompts,
-  touchTaskActivity,
-} from '@/stores/taskStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { setTaskAllFiles, setTaskAutocompletionWords } from '@/stores/taskFilesStore';
+import { updateTaskState, setQuestion, setTokensInfo, setAiderModelsData, setQueuedPrompts, touchTaskActivity } from '@/stores/taskStore';
+import { getTaskDir } from '@/utils/task-utils';
+⋮----
+const getTaskDirById = (baseDir: string, taskId: string) =>
 ⋮----
 export const useTaskDataHandlers = (baseDir: string, taskId: string) =>
 
@@ -25187,6 +25202,41 @@ export const setFont = (font: Font)
 export const setFontSize = (fontSize: number)
 
 ================
+File: src/renderer/src/stores/taskFilesStore.ts
+================
+import { useShallow } from 'zustand/react/shallow';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
+⋮----
+interface TaskFilesStore {
+  allFilesMap: Map<string, string[]>;
+  autocompletionWordsMap: Map<string, string[]>;
+  usageMap: Map<string, Set<string>>;
+  taskDirByTaskIdMap: Map<string, string>;
+
+  setAllFiles: (taskId: string, taskDir: string, allFiles: string[]) => void;
+  setAutocompletionWords: (taskId: string, taskDir: string, autocompletionWords: string[]) => void;
+  releaseTaskFiles: (taskId: string) => void;
+}
+⋮----
+const updateTaskDirTracking = (
+  state: TaskFilesStore,
+  taskId: string,
+  newTaskDir: string,
+): Pick<TaskFilesStore, 'allFilesMap' | 'autocompletionWordsMap' | 'usageMap' | 'taskDirByTaskIdMap'> =>
+⋮----
+export const setTaskAllFiles = (taskId: string, taskDir: string, allFiles: string[])
+⋮----
+export const setTaskAutocompletionWords = (taskId: string, taskDir: string, autocompletionWords: string[])
+⋮----
+export const releaseTaskFiles = (taskId: string)
+⋮----
+export const useTaskAllFiles = (taskDir: string | undefined)
+⋮----
+export const useTaskAutocompletionWords = (taskDir: string | undefined)
+
+================
 File: src/renderer/src/stores/taskStore.ts
 ================
 import { useShallow } from 'zustand/react/shallow';
@@ -25201,8 +25251,6 @@ export interface TaskState {
   tokensInfo: TokensInfoData | null;
   question: QuestionData | null;
   todoItems: TodoItem[];
-  allFiles: string[];
-  autocompletionWords: string[];
   contextFiles: ContextFile[];
   aiderModelsData: ModelsData | null;
   lastActiveAt: Date | null;
@@ -25217,8 +25265,6 @@ interface TaskStore {
   updateTaskState: (taskId: string, updates: Partial<TaskState>) => void;
   setMessages: (taskId: string, updateMessages: (prev: Message[]) => Message[]) => void;
   setTodoItems: (taskId: string, updateTodoItems: (prev: TodoItem[]) => TodoItem[]) => void;
-  setAllFiles: (taskId: string, allFiles: string[]) => void;
-  setAutocompletionWords: (taskId: string, autocompletionWords: string[]) => void;
   setTokensInfo: (taskId: string, tokensInfo: TokensInfoData | null) => void;
   setQuestion: (taskId: string, question: QuestionData | null) => void;
   setAiderModelsData: (taskId: string, modelsData: ModelsData | null) => void;
@@ -25236,10 +25282,6 @@ export const updateTaskState = (taskId: string, updates: Partial<TaskState>)
 export const setMessages = (taskId: string, updateMessages: (prev: Message[])
 ⋮----
 export const setTodoItems = (taskId: string, updateTodoItems: (prev: TodoItem[])
-⋮----
-export const setAllFiles = (taskId: string, allFiles: string[])
-⋮----
-export const setAutocompletionWords = (taskId: string, autocompletionWords: string[])
 ⋮----
 export const setTokensInfo = (taskId: string, tokensInfo: TokensInfoData | null)
 ⋮----
@@ -27483,6 +27525,8 @@ import { TaskData } from '@common/types';
 import { getTaskDateGroup } from './date-utils';
 ⋮----
 export type VirtualTaskItem = { type: 'header'; id: string; title: string } | { type: 'task'; id: string; task: TaskData; level: number };
+⋮----
+export const getTaskDir = (task: TaskData): string
 ⋮----
 const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined =>
 ⋮----
