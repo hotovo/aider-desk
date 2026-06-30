@@ -4296,7 +4296,14 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
-      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(this.task.worktree.path, effectiveFromBranch, this.task.worktree.baseCommit);
+      const settings = this.store.getSettings();
+      const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(
+        this.task.worktree.path,
+        effectiveFromBranch,
+        this.task.worktree.baseCommit,
+        symlinkFolders,
+      );
 
       if (success) {
         // Update baseCommit to the new HEAD after successful rebase

@@ -731,6 +731,7 @@ export class WorktreeManager {
     worktreePath: string,
     mainBranch: string,
     baseCommit?: string,
+    symlinkFolders: string[] = [],
   ): Promise<{
     success: boolean;
     error?: GitError;
@@ -751,6 +752,19 @@ export class WorktreeManager {
           const addCommand = 'git add -A';
           executedCommands.push(`${addCommand} (in ${worktreePath})`);
           await execWithShellPath(addCommand, { cwd: worktreePath });
+
+          // Unstage symlink folders to prevent them from being tracked by git
+          // (they are worktree infrastructure artifacts, not real project files)
+          if (symlinkFolders.length > 0) {
+            const resetPaths = symlinkFolders.map((f) => `"${f}"`).join(' ');
+            const resetCommand = `git reset HEAD -- ${resetPaths}`;
+            executedCommands.push(`${resetCommand} (in ${worktreePath})`);
+            try {
+              await execWithShellPath(resetCommand, { cwd: worktreePath });
+            } catch {
+              logger.debug('Some symlink folders could not be unstaged (may not be in index)');
+            }
+          }
 
           // Create temporary commit with unique timestamp
           const commitCommand = `git commit --no-verify -m "TEMP_UNCOMMITTED_${Date.now()}"`;
@@ -1756,6 +1770,11 @@ export class WorktreeManager {
             continue;
           }
 
+          // Skip symlink paths (worktree infrastructure artifacts)
+          if (this.isSymlinkPath(worktreePath, filePath)) {
+            continue;
+          }
+
           const absoluteFilePath = join(worktreePath, filePath);
 
           // Check binary - skip diff for binary files
@@ -1814,6 +1833,11 @@ export class WorktreeManager {
         const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
         const filePath = parts.slice(2).join('\t');
         if (!filePath) {
+          continue;
+        }
+
+        // Skip symlink paths (worktree infrastructure artifacts)
+        if (this.isSymlinkPath(worktreePath, filePath)) {
           continue;
         }
 
@@ -1883,6 +1907,11 @@ export class WorktreeManager {
           continue;
         }
 
+        // Skip symlink paths (worktree infrastructure artifacts)
+        if (this.isSymlinkPath(worktreePath, filePath)) {
+          continue;
+        }
+
         const absoluteFilePath = join(worktreePath, filePath);
 
         let diff = '';
@@ -1945,6 +1974,11 @@ export class WorktreeManager {
         const filePath = parts.slice(2).join('\t');
 
         if (!filePath) {
+          continue;
+        }
+
+        // Skip symlink paths (worktree infrastructure artifacts)
+        if (this.isSymlinkPath(worktreePath, filePath)) {
           continue;
         }
 
