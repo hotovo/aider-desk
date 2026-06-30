@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - showing correct compact threshold values from agent profile overrides
+- fixed shell PATH extraction when login messages were present in output
 
 ## [0.72.0]
 

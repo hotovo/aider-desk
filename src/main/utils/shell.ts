@@ -213,6 +213,16 @@ class ShellDetector {
 const getPathSeparator = (): string => (process.platform === 'win32' ? ';' : ':');
 
 /**
+ * Extract the PATH value from shell command output by taking the last
+ * non-empty line. This protects against login messages (MOTD, quota warnings,
+ * etc.) that may be printed to stdout during shell initialization.
+ */
+export const extractPathFromOutput = (output: string): string => {
+  const lines = output.split('\n').filter((line) => line.trim().length > 0);
+  return (lines[lines.length - 1] || '').trim();
+};
+
+/**
  * Get the user's shell PATH by executing their shell
  */
 export const getShellPath = (): string => {
@@ -300,34 +310,34 @@ export const getShellPath = (): string => {
           const homeDir = os.homedir();
 
           if (shell.includes('zsh')) {
-            // For zsh, source the standard config files
             sourceCommand =
-              'source /etc/zprofile 2>/dev/null || true; ' +
-              `source ${homeDir}/.zprofile 2>/dev/null || true; ` +
-              'source /etc/zshrc 2>/dev/null || true; ' +
-              `source ${homeDir}/.zshrc 2>/dev/null || true; `;
+              'source /etc/zprofile >/dev/null 2>&1 || true; ' +
+              `source ${homeDir}/.zprofile >/dev/null 2>&1 || true; ` +
+              'source /etc/zshrc >/dev/null 2>&1 || true; ' +
+              `source ${homeDir}/.zshrc >/dev/null 2>&1 || true; `;
           } else if (shell.includes('bash')) {
-            // For bash, source the standard config files
             sourceCommand =
-              'source /etc/profile 2>/dev/null || true; ' +
-              `source ${homeDir}/.bash_profile 2>/dev/null || true; ` +
-              `source ${homeDir}/.bashrc 2>/dev/null || true; `;
+              'source /etc/profile >/dev/null 2>&1 || true; ' +
+              `source ${homeDir}/.bash_profile >/dev/null 2>&1 || true; ` +
+              `source ${homeDir}/.bashrc >/dev/null 2>&1 || true; `;
           }
 
           const fullCommand = `${shell} -c '${sourceCommand}echo $PATH'`;
 
-          shellPath = execSync(fullCommand, {
-            encoding: 'utf8',
-            timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
-            env: {
-              PATH: minimalPath,
-              SHELL: shell,
-              USER: os.userInfo().username,
-              HOME: homeDir,
-              // Add ZDOTDIR for zsh users who might have custom config location
-              ZDOTDIR: process.env.ZDOTDIR || homeDir,
-            },
-          }).trim();
+          shellPath = extractPathFromOutput(
+            execSync(fullCommand, {
+              encoding: 'utf8',
+              timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
+              env: {
+                PATH: minimalPath,
+                SHELL: shell,
+                USER: os.userInfo().username,
+                HOME: homeDir,
+                // Add ZDOTDIR for zsh users who might have custom config location
+                ZDOTDIR: process.env.ZDOTDIR || homeDir,
+              },
+            }),
+          );
 
           logger.debug('Successfully loaded user PATH from shell config files', {
             fullCommand,
@@ -338,16 +348,18 @@ export const getShellPath = (): string => {
 
           // Try the standard login shell approach
           try {
-            shellPath = execSync(shellCommand, {
-              encoding: 'utf8',
-              timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
-              env: {
-                PATH: minimalPath,
-                SHELL: shell,
-                USER: os.userInfo().username,
-                HOME: os.homedir(),
-              },
-            }).trim();
+            shellPath = extractPathFromOutput(
+              execSync(shellCommand, {
+                encoding: 'utf8',
+                timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
+                env: {
+                  PATH: minimalPath,
+                  SHELL: shell,
+                  USER: os.userInfo().username,
+                  HOME: os.homedir(),
+                },
+              }),
+            );
             logger.debug('Loaded PATH using login shell flags');
           } catch (loginError) {
             logger.error('Failed to load PATH from login shell:', loginError);
@@ -358,21 +370,25 @@ export const getShellPath = (): string => {
       } else {
         // In development, try faster approach first
         try {
-          shellPath = execSync(`${shell} -c 'echo $PATH'`, {
-            encoding: 'utf8',
-            timeout: 2000,
-            env: process.env,
-          }).trim();
+          shellPath = extractPathFromOutput(
+            execSync(`${shell} -c 'echo $PATH'`, {
+              encoding: 'utf8',
+              timeout: 2000,
+              env: process.env,
+            }),
+          );
           logger.debug('Quick PATH retrieval succeeded');
         } catch (quickError) {
           logger.debug('Quick PATH retrieval failed, falling back to login shell approach', {
             error: quickError instanceof Error ? quickError.message : quickError,
           });
-          shellPath = execSync(shellCommand, {
-            encoding: 'utf8',
-            timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
-            env: process.env,
-          }).trim();
+          shellPath = extractPathFromOutput(
+            execSync(shellCommand, {
+              encoding: 'utf8',
+              timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
+              env: process.env,
+            }),
+          );
           logger.debug('Login shell PATH retrieval succeeded');
         }
       }
