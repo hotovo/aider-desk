@@ -6,6 +6,12 @@ import { clsx } from 'clsx';
 
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatHumanReadable } from '@/utils/string-utils';
+import { useActiveAgentProfile } from '@/utils/agents';
+
+const DEFAULT_TRESHOLD_CONFIG = {
+  percentage: 0,
+  tokens: 0,
+};
 
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig: { percentage: number; tokens: number }, maxInputTokens: number) => {
   if (task.contextCompactingThresholdTokens !== undefined) {
@@ -28,16 +34,18 @@ type Props = {
 
 export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, updateTask }: Props) => {
   const { t } = useTranslation();
-  const thresholdConfig = useSettingsStore((state) => state.settings?.taskSettings.contextCompactingThreshold) ?? {
-    percentage: 0,
-    tokens: 0,
-  };
+  const agentProfile = useActiveAgentProfile(task, task.baseDir);
+  const globalThresholdConfig = useSettingsStore((state) => state.settings?.taskSettings.contextCompactingThreshold) ?? DEFAULT_TRESHOLD_CONFIG;
   const [localThreshold, setLocalThreshold] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isHoveringThreshold, setIsHoveringThreshold] = useState(false);
   const tokenBarRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const thresholdConfig = {
+    percentage: agentProfile?.autoCompactThresholdPercentage ?? globalThresholdConfig.percentage,
+    tokens: agentProfile?.autoCompactThresholdTokens ?? globalThresholdConfig.tokens,
+  };
 
   const effectiveThresholdTokens = getDefaultThresholdTokens(task, thresholdConfig, maxInputTokens);
 
@@ -68,7 +76,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
       setLocalThreshold(roundedPercentage);
       debouncedOnContextCompactingThreshold(Math.round((roundedPercentage / 100) * maxInputTokens));
     },
-    [debouncedOnContextCompactingThreshold, maxInputTokens],
+    [debouncedOnContextCompactingThreshold, maxInputTokens, setLocalThreshold],
   );
 
   const handleTokenBarClick = useCallback(
@@ -103,7 +111,7 @@ export const TokenUsageBar = ({ task, tokensInfo, maxInputTokens = 0, mode, upda
         setIsHoveringThreshold(false);
       }
     },
-    [isDragging, mode, localThreshold, debouncedOnContextCompactingThreshold, maxInputTokens],
+    [isDragging, mode, localThreshold, debouncedOnContextCompactingThreshold, maxInputTokens, setIsHoveringThreshold, setLocalThreshold],
   );
 
   const handleMouseMove = useCallback(
