@@ -49,8 +49,8 @@ import type { PendingExec } from './tool-dispatch'
 const CURSOR_API_URL = 'https://api2.cursor.sh'
 const CURSOR_CLIENT_VERSION = 'cli-2026.01.09-231024f'
 const HEARTBEAT_INTERVAL_MS = 30_000
-const INACTIVITY_THINKING_MS = 30_000
-const INACTIVITY_STREAMING_MS = 15_000
+const INACTIVITY_THINKING_MS = 120_000
+const INACTIVITY_STREAMING_MS = 60_000
 const INACTIVITY_FLUSHED_MS = 10 * 60_000
 
 const CLOSE_OK = 0

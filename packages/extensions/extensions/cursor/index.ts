@@ -20,6 +20,7 @@ import {
   pushToken,
   stopProxy,
   cleanupSession,
+  checkProxyHealth,
   type ProxyConnection,
   type ProxySpawnConfig,
 } from './proxy-lifecycle';
@@ -80,7 +81,7 @@ function toAiderDeskModels(models: CursorModel[], providerId: string): Model[] {
 export default class CursorExtension implements Extension {
   static metadata = {
     name: 'Cursor',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor/icon.png',
@@ -132,7 +133,17 @@ export default class CursorExtension implements Extension {
   ): Promise<ProjectProxyState> {
     let state = this.projectStates.get(projectDir);
     if (state?.connection && state.port) {
-      return state;
+      if (await checkProxyHealth(state.port)) {
+        const apiKey = config.apiKey || process.env.CURSOR_API_KEY;
+        if (apiKey) {
+          const accessToken = await exchangeApiKeyForAccessToken(apiKey);
+          await pushToken(state.port, accessToken);
+        }
+        return state;
+      }
+      log('Cursor proxy is no longer responding, restarting...', 'warn');
+      stopProxy(state.connection, state.conversationDir);
+      this.projectStates.delete(projectDir);
     }
 
     const conversationDir = join(projectDir, '.aider-desk', 'cursor');

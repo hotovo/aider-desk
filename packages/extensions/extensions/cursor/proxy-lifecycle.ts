@@ -92,7 +92,7 @@ function writePortFile(conversationDir: string, info: ProxyInfo): void {
   writeFileSync(portFilePath(conversationDir), JSON.stringify(info));
 }
 
-async function checkProxyHealth(port: number): Promise<boolean> {
+export async function checkProxyHealth(port: number): Promise<boolean> {
   try {
     const res = await fetch(`http://localhost:${String(port)}/internal/health`, {
       signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS),
@@ -247,6 +247,17 @@ async function spawnProxy(
     process.stderr.write(`[cursor-proxy] ${stderrBuffer}`);
     stderrBuffer = '';
   }
+
+  // Clean up if the proxy dies unexpectedly
+  child.on('exit', (code) => {
+    clearInterval(timer);
+    try {
+      unlinkSync(portFilePath(spawnConfig.conversationDir));
+    } catch {
+      // Ignore
+    }
+    console.error(`[cursor-proxy] Process exited unexpectedly with code ${String(code)}`);
+  });
 
   child.unref();
 
