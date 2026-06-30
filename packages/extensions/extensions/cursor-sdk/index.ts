@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
-import type { Run, SDKAgent, SDKMessage } from '@cursor/sdk';
+import type { ModelListItem, ModelParameterValue, Run, SDKAgent, SDKMessage } from '@cursor/sdk';
 
 import type {
   AgentStartedEvent,
@@ -34,6 +34,8 @@ const AGENT_ID_METADATA_KEY = 'cursorAgentId';
 const POWER_TOOL_SERVER_NAME = 'power';
 const CURSOR_SERVER_NAME = 'cursor';
 const TOOL_SEPARATOR = '---';
+const FAST_PARAM_ID = 'fast';
+const FAST_MODEL_SUFFIX = '-fast';
 
 const powerToolName = (name: string) => `${POWER_TOOL_SERVER_NAME}${TOOL_SEPARATOR}${name}`;
 const cursorToolId = (name: string) => `${CURSOR_SERVER_NAME}${TOOL_SEPARATOR}${name}`;
@@ -433,12 +435,31 @@ function transformCursorResult(
   }
 }
 
+function modelSupportsFast(model: ModelListItem): boolean {
+  const hasFastParam = model.parameters?.some((p) => p.id === FAST_PARAM_ID);
+  if (hasFastParam) return true;
+  const hasFastVariant = model.variants?.some((v) =>
+    v.params.some((p) => p.id === FAST_PARAM_ID),
+  );
+  return !!hasFastVariant;
+}
+
+function resolveFastParams(modelId: string, fastCapableModels: Set<string>): ModelParameterValue[] | undefined {
+  if (modelId.endsWith(FAST_MODEL_SUFFIX)) {
+    return [{ id: FAST_PARAM_ID, value: 'true' }];
+  }
+  if (fastCapableModels.has(modelId)) {
+    return [{ id: FAST_PARAM_ID, value: 'false' }];
+  }
+  return undefined;
+}
+
 const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8');
 
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '3.0.0',
+    version: '3.1.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -447,6 +468,7 @@ export default class CursorSdkExtension implements Extension {
 
   private configPath = join(__dirname, 'config.json');
   private activeRuns = new Map<string, Run>();
+  private fastCapableModels = new Set<string>();
 
   private loadConfig(): CursorConfig {
     try {
@@ -489,10 +511,24 @@ export default class CursorSdkExtension implements Extension {
             }
             try {
               const cursorModels = await Cursor.models.list({ apiKey });
-              const models: Model[] = cursorModels.map((m) => ({
-                id: m.id,
-                providerId: profile.id,
-              }));
+              const models: Model[] = [];
+              for (const m of cursorModels) {
+                if (modelSupportsFast(m)) {
+                  this.fastCapableModels.add(m.id);
+                }
+
+                models.push({
+                  id: m.id,
+                  providerId: profile.id,
+                });
+
+                if (modelSupportsFast(m)) {
+                  models.push({
+                    id: `${m.id}${FAST_MODEL_SUFFIX}`,
+                    providerId: profile.id,
+                  });
+                }
+              }
               return { models, success: true };
             } catch (err) {
               return {
@@ -536,7 +572,7 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const taskId = taskContext.data.id;
-    const modelId = event.model.replace(`${CURSOR_PROVIDER_NAME}/`, '');
+    const rawModelId = event.model.replace(`${CURSOR_PROVIDER_NAME}/`, '');
     const projectDir = taskContext.getTaskDir();
 
     const mcpServers = await this.buildMcpServersConfig(event.agentProfile.enabledServers, projectDir, context);
@@ -544,9 +580,13 @@ export default class CursorSdkExtension implements Extension {
       context.log(`Passing ${Object.keys(mcpServers).length} MCP server(s) to Cursor agent: ${Object.keys(mcpServers).join(', ')}`, 'info');
     }
 
+    const isFastModel = rawModelId.endsWith(FAST_MODEL_SUFFIX);
+    const baseModelId = isFastModel ? rawModelId.slice(0, -FAST_MODEL_SUFFIX.length) : rawModelId;
+    const fastParams = resolveFastParams(rawModelId, this.fastCapableModels);
+
     const agentOptions = {
       apiKey,
-      model: { id: modelId },
+      model: { id: baseModelId, ...(fastParams ? { params: fastParams } : {}) },
       local: { cwd: projectDir, settingSources: ['project', 'user'] as SettingSource[] },
     };
 
