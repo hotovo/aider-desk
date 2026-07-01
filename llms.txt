@@ -10436,6 +10436,13 @@ static isShellAvailable(shellPath: string): boolean
 const getPathSeparator = (): string
 ⋮----
 /**
+ * Extract the PATH value from shell command output by taking the last
+ * non-empty line. This protects against login messages (MOTD, quota warnings,
+ * etc.) that may be printed to stdout during shell initialization.
+ */
+export const extractPathFromOutput = (output: string): string =>
+⋮----
+/**
  * Get the user's shell PATH by executing their shell
  */
 export const getShellPath = (): string =>
@@ -10466,10 +10473,6 @@ export const getShellPath = (): string =>
 // Use login shell to load user's full environment
 ⋮----
 // First try with explicit sourcing of shell config files
-⋮----
-// For zsh, source the standard config files
-⋮----
-// For bash, source the standard config files
 ⋮----
 timeout: isLinux ? 3000 : 10000, // Shorter timeout for Linux
 ⋮----
@@ -10924,11 +10927,15 @@ async rebaseMainIntoWorktree(
     worktreePath: string,
     mainBranch: string,
     baseCommit?: string,
+    symlinkFolders: string[] = [],
 ): Promise<
 ⋮----
 // 1. Check for uncommitted changes and create temporary commit if needed
 ⋮----
 // Stage all changes
+⋮----
+// Unstage symlink folders to prevent them from being tracked by git
+// (they are worktree infrastructure artifacts, not real project files)
 ⋮----
 // Create temporary commit with unique timestamp
 ⋮----
@@ -11187,6 +11194,8 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 ⋮----
 // Emit one UpdatedFile per file in this commit
 ⋮----
+// Skip symlink paths (worktree infrastructure artifacts)
+⋮----
 // Check binary - skip diff for binary files
 ⋮----
 // If we can't check, keep the diff as-is
@@ -11194,6 +11203,8 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 // 3. Get uncommitted changes (diff against HEAD, not merge-base)
 ⋮----
 // Check if HEAD exists (no commits yet in worktree)
+⋮----
+// Skip symlink paths (worktree infrastructure artifacts)
 ⋮----
 /**
    * Worktree flat mode: all changed files with diff from base to working tree,
@@ -11204,10 +11215,14 @@ private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: stri
 // git diff (without ...) compares mainBranch directly to the working tree,
 // including both committed and uncommitted changes.
 ⋮----
+// Skip symlink paths (worktree infrastructure artifacts)
+⋮----
 /**
    * Non-worktree mode: simple uncommitted changes vs HEAD.
    */
 private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
+⋮----
+// Skip symlink paths (worktree infrastructure artifacts)
 ⋮----
 /**
    * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
@@ -23113,6 +23128,7 @@ import { clsx } from 'clsx';
 ⋮----
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatHumanReadable } from '@/utils/string-utils';
+import { useActiveAgentProfile } from '@/utils/agents';
 ⋮----
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig:
 ⋮----
