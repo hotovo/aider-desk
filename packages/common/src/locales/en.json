@@ -901,8 +901,8 @@
       "viewMode": "Messages view mode",
       "viewModeFull": "Full",
       "viewModeCompact": "Compact",
-      "virtualizedRendering": "Use virtualized rendering (experimental)",
-      "virtualizedRenderingTooltip": "Experimental feature that can improve performance when you have many messages in your conversation history by only rendering visible messages."
+      "fullMessageRendering": "Use full message rendering (Legacy)",
+      "fullMessageRenderingTooltip": "Renders all messages in the DOM without virtualization. May impact performance with large conversation histories."
     },
     "memory": {
       "configuration": "Configuration",
@@ -973,7 +973,6 @@
     "previousUserMessage": "Previous user message",
     "nextUserMessage": "Next user message",
     "messageBar": "Message Bar",
-    "exportNotAvailableWithVirtualized": "Export to image is not available when using virtualized message rendering. Change to standard rendering in Settings -> General -> Message Display.",
     "execute": "Execute",
     "resume": "Resume",
     "taskReadyForReview": "Task Ready for Review",

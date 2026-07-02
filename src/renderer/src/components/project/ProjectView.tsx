@@ -554,6 +554,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               <Activity mode={isProjectActive ? 'visible' : 'hidden'}>
                 <ExtensionsProvider projectDir={projectDir} task={activeTask} agentProfile={agentProfile}>
                   <TaskView
+                    key={activeTask.id}
                     ref={taskViewRef}
                     projectDir={projectDir}
                     task={activeTask}

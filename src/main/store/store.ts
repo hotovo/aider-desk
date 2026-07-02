@@ -49,7 +49,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   theme: 'dark',
   font: 'Sono',
   renderMarkdown: true,
-  virtualizedRendering: false,
+  fullMessageRendering: false,
   aiderDeskAutoUpdate: true,
   messageViewMode: MessageViewMode.Compact,
   diffViewMode: DiffViewMode.SideBySide,

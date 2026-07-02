@@ -103,7 +103,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     ref,
   ) => {
     const { t } = useTranslation();
-    const virtualizedRendering = useSettingsStore((state) => state.settings?.virtualizedRendering);
+    const fullMessageRendering = useSettingsStore((state) => state.settings?.fullMessageRendering);
     const renderMarkdown = useSettingsStore((state) => state.settings?.renderMarkdown);
     const showTaskStateActions = useSettingsStore((state) => state.settings?.taskSettings?.showTaskStateActions);
     const promptBehavior = useSettingsStore((state) => state.settings?.promptBehavior);
@@ -751,8 +751,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
               ) : (
                 <>
-                  {virtualizedRendering ? (
-                    <VirtualizedMessages
+                  {fullMessageRendering ? (
+                    <Messages
                       ref={setMessagesRef}
                       baseDir={projectDir}
                       taskId={task.id}
@@ -768,7 +768,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       onRemoveUpToMessage={handleRemoveUpToMessage}
                     />
                   ) : (
-                    <Messages
+                    <VirtualizedMessages
                       ref={setMessagesRef}
                       baseDir={projectDir}
                       taskId={task.id}

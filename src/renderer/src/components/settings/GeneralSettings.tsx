@@ -279,16 +279,16 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
               />
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  label={t('settings.messages.virtualizedRendering')}
-                  checked={settings.virtualizedRendering ?? false}
+                  label={t('settings.messages.fullMessageRendering')}
+                  checked={settings.fullMessageRendering ?? false}
                   onChange={(checked) =>
                     setSettings({
                       ...settings,
-                      virtualizedRendering: checked,
+                      fullMessageRendering: checked,
                     })
                   }
                 />
-                <InfoIcon tooltip={t('settings.messages.virtualizedRenderingTooltip')} />
+                <InfoIcon tooltip={t('settings.messages.fullMessageRenderingTooltip')} />
               </div>
             </div>
           </div>

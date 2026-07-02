@@ -128,7 +128,13 @@ vi.mock('../../message/Messages', () => ({
 }));
 
 vi.mock('../../message/VirtualizedMessages', () => ({
-  VirtualizedMessages: () => <div data-testid="virtualized-messages">Virtualized Messages</div>,
+  VirtualizedMessages: ({ messages }: { messages: { id: string; content: string }[] }) => (
+    <div data-testid="virtualized-messages">
+      {messages.map((m) => (
+        <div key={m.id}>{m.content}</div>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock('../../PromptField', () => ({
@@ -188,7 +194,7 @@ describe('TaskView', () => {
     vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
       selector({
         settings: {
-          virtualizedRendering: false,
+          fullMessageRendering: false,
           renderMarkdown: true,
           taskSettings: { contextCompactingThreshold: { percentage: 90, tokens: 100000 } },
         },

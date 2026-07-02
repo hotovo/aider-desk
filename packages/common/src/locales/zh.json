@@ -838,8 +838,8 @@
       "viewMode": "消息视图模式",
       "viewModeFull": "完整",
       "viewModeCompact": "紧凑",
-      "virtualizedRendering": "使用虚拟化渲染（实验性）",
-      "virtualizedRenderingTooltip": "实验性功能，当您在对话历史中有大量消息时可以通过仅渲染可见消息来提高性能。"
+      "fullMessageRendering": "使用完整消息渲染（旧版）",
+      "fullMessageRenderingTooltip": "在 DOM 中渲染所有消息而不使用虚拟化。在对话历史较多时可能影响性能。"
     },
     "memory": {
       "configuration": "配置",
@@ -910,7 +910,6 @@
     "previousUserMessage": "上一条用户消息",
     "nextUserMessage": "下一条用户消息",
     "messageBar": "消息栏",
-    "exportNotAvailableWithVirtualized": "使用虚拟化消息渲染时无法导出为图片。请在 设置 -> 常规 -> 消息显示 中更改为标准渲染。",
     "execute": "执行",
     "resume": "继续",
     "taskReadyForReview": "任务准备就绪，待审查",

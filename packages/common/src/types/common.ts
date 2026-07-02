@@ -632,7 +632,7 @@ export interface SettingsData {
   font?: Font;
   fontSize?: number;
   renderMarkdown: boolean;
-  virtualizedRendering: boolean;
+  fullMessageRendering: boolean;
   aiderDeskAutoUpdate: boolean;
   diffViewMode?: DiffViewMode;
   messageViewMode?: MessageViewMode;
