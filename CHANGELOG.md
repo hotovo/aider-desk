@@ -5,6 +5,7 @@
 - showing correct compact threshold values from agent profile overrides
 - fixed shell PATH extraction when login messages were present in output
 - excluded worktree symlink folders from git tracking and diffs during rebase
+- fixed usage report not attached to tool-only responses, preventing context compaction from triggering
 
 ## [0.72.0]
 

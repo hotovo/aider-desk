@@ -2062,6 +2062,8 @@ export class Agent {
       task.addLogMessage('loading', undefined, false, promptContext);
     }
 
+    const lastToolMessage = response.messages.findLast((m) => m.role === 'tool');
+
     response.messages.forEach((message) => {
       if (message.role === 'assistant') {
         messages.push({
@@ -2077,6 +2079,7 @@ export class Agent {
           // @ts-expect-error the id is there
           id: message.id || uuidv4(),
           promptContext,
+          usageReport: !hasAssistantMessage && message === lastToolMessage ? usageReport : undefined,
           timestamp: Date.now(),
         });
       }
@@ -2123,8 +2126,8 @@ export class Agent {
       contextCompactionType,
     });
 
-    const lastAssistantMessage = [...resultMessages].reverse().find((m) => m.role === 'assistant');
-    const usageReport = lastAssistantMessage?.usageReport;
+    const lastUsageReportMessage = [...resultMessages].reverse().find((m) => (m.role === 'assistant' || m.role === 'tool') && m.usageReport);
+    const usageReport = lastUsageReportMessage?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(provider.id, model)?.maxInputTokens;
 
     if (!usageReport || !maxTokens) {
