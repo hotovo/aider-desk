@@ -2,7 +2,7 @@ import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/t
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModelV2, JSONValue, SharedV2ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -151,6 +151,7 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
   // Extract reasoningEffort from model overrides or provider config
   const providerOverrides = model.providerOverrides as Partial<OpenAiCompatibleProvider> | undefined;
   const reasoningEffort = providerOverrides?.reasoningEffort ?? openAiCompatibleProvider.reasoningEffort;
+  const extraBody = providerOverrides?.extraBody ?? openAiCompatibleProvider.extraBody;
 
   // Map ReasoningEffort enum to AI SDK format
   const mappedReasoningEffort =
@@ -158,14 +159,23 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
       ? undefined
       : (reasoningEffort.toLowerCase() as 'max' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
 
+  const providerOptions: Record<string, JSONValue> = {};
+
   if (mappedReasoningEffort) {
-    logger.debug('Using reasoning effort for OpenAI Compatible:', {
+    providerOptions.reasoningEffort = mappedReasoningEffort;
+  }
+
+  if (extraBody) {
+    Object.assign(providerOptions, extraBody);
+  }
+
+  if (Object.keys(providerOptions).length > 0) {
+    logger.debug('Using provider options for OpenAI Compatible:', {
       mappedReasoningEffort,
+      hasExtraBody: !!extraBody,
     });
     return {
-      [provider.name]: {
-        reasoningEffort: mappedReasoningEffort,
-      },
+      [provider.name]: providerOptions,
     } satisfies SharedV2ProviderOptions;
   }
 

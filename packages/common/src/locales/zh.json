@@ -265,6 +265,9 @@
     "disableStreamingInfo": "禁用响应流式传输。当提供商或模型不支持流式传输时使用此选项。",
     "trackTokenUsage": "跟踪 Token 使用量",
     "trackTokenUsageInfo": "在流式响应中包含 Token 使用量信息。如果提供商不支持流式块中的 usage 字段，请禁用此选项。",
+    "extraBody": "额外请求体参数",
+    "extraBodyInfo": "JSON 对象，其中的自定义字段将被合并到发送给提供商的请求体中。内置字段优先于此处的值。",
+    "extraBodyErrorInvalid": "无效的 JSON。请输入有效的 JSON 对象。",
     "disable": "禁用",
     "enable": "启用",
     "providerDisabled": "此提供商已被禁用。其模型将不可用。"

@@ -24,6 +24,7 @@ export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }
       reasoningEffort: updatedProvider.reasoningEffort,
       trackTokenUsage: updatedProvider.trackTokenUsage,
       disableStreaming: updatedProvider.disableStreaming,
+      extraBody: updatedProvider.extraBody,
     };
 
     // Remove undefined values
