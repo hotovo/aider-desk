@@ -16811,19 +16811,18 @@ const flushCurrentGroup = () =>
 ================
 File: src/renderer/src/components/message/VirtualizedMessages.tsx
 ================
+import { forwardRef, memo, RefObject, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { defaultRangeExtractor, useVirtualizer } from '@tanstack/react-virtual';
-import { MessageViewMode, isUserMessage, Message } from '@common/types';
-import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
-import { clsx } from 'clsx';
+import { LegendList, type LegendListRef } from '@legendapp/list/react';
+import { isUserMessage, Message, MessageViewMode } from '@common/types';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
-import { showInfoNotification } from '@/utils/notifications';
-import { useScrollingPaused } from '@/hooks/useScrollingPaused';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
 import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
@@ -16848,20 +16847,19 @@ type Props = {
   onRemoveUpToMessage?: (message: Message) => void;
 };
 ⋮----
-// Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
+const handleScroll = () =>
 ⋮----
-// Get all user message IDs
+const handleWheel = (e: WheelEvent) =>
 ⋮----
-// Create virtualizer for dynamic sized items
-// eslint-disable-next-line react-hooks/incompatible-library
+const handleTouchStart = (e: TouchEvent) =>
 ⋮----
-estimateSize: () => 44, // Initial estimate, will be measured
-⋮----
-// Scroll to last item when new messages arrive
+const handleTouchMove = (e: TouchEvent) =>
 ⋮----
 const exportToImage = async () =>
 ⋮----
-// Show notification that export is not available with virtualized rendering
+// eslint-disable-next-line no-console
+⋮----
+<div className=
 ⋮----
 aria-label=
 
@@ -28310,6 +28308,7 @@ File: package.json
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
+    "@legendapp/list": "^3.3.0",
     "@openrouter/ai-sdk-provider": "1.5.4",
     "@opentelemetry/auto-instrumentations-node": "^0.77.0",
     "@opentelemetry/sdk-node": "^0.219.0",
