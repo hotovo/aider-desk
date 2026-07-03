@@ -28,6 +28,7 @@ export default defineConfig({
         '@huggingface/transformers',
         '@lancedb/lancedb',
         '@earendil-works/pi-tui',
+        '@agentclientprotocol/sdk',
         'commander',
       ],
     },

@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { CreateTaskParams } from '@common/types';
+import { AutonomyMode, CreateTaskParams } from '@common/types';
 
 import { BaseApi } from './base-api';
 
@@ -16,10 +16,11 @@ const RunPromptSchema = z.object({
   images: z.array(z.string()).optional(),
   model: z.string().optional(),
   agentProfileId: z.string().optional(),
+  autonomyMode: z.nativeEnum(AutonomyMode).optional(),
 });
 
-const parseModelParam = (model?: string, agentProfileId?: string): CreateTaskParams | undefined => {
-  if (!model && !agentProfileId) {
+const parseTaskParams = (model?: string, agentProfileId?: string, autonomyMode?: AutonomyMode): CreateTaskParams | undefined => {
+  if (!model && !agentProfileId && !autonomyMode) {
     return undefined;
   }
 
@@ -27,6 +28,10 @@ const parseModelParam = (model?: string, agentProfileId?: string): CreateTaskPar
 
   if (agentProfileId) {
     params.agentProfileId = agentProfileId;
+  }
+
+  if (autonomyMode) {
+    params.autonomyMode = autonomyMode;
   }
 
   if (model) {
@@ -80,13 +85,13 @@ export class PromptApi extends BaseApi {
         return;
       }
 
-      const { projectDir, taskId, prompt, mode, images, model, agentProfileId } = parsed.data;
+      const { projectDir, taskId, prompt, mode, images, model, agentProfileId, autonomyMode } = parsed.data;
       const isSSE = acceptsSSE && !acceptsJSON;
 
       if (isSSE) {
-        void this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId);
+        void this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
       } else {
-        void this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId);
+        void this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
       }
     });
 
@@ -116,12 +121,13 @@ export class PromptApi extends BaseApi {
     images?: string[],
     model?: string,
     agentProfileId?: string,
+    autonomyMode?: AutonomyMode,
   ): Promise<void> {
     if (taskId) {
       const responses = await this.eventsHandler.runPrompt(projectDir, taskId, prompt, mode, images);
       res.status(200).json(responses);
     } else {
-      const taskParams = parseModelParam(model, agentProfileId);
+      const taskParams = parseTaskParams(model, agentProfileId, autonomyMode);
       const result = await this.eventsHandler.ensureProjectAndCreateTask(projectDir, taskParams);
       const responses = await this.eventsHandler.runPrompt(result.projectDir, result.taskId, prompt, mode, images);
       res.setHeader('X-Task-Id', result.taskId);
@@ -138,11 +144,12 @@ export class PromptApi extends BaseApi {
     images?: string[],
     model?: string,
     agentProfileId?: string,
+    autonomyMode?: AutonomyMode,
   ): Promise<void> {
     let resolvedTaskId = taskId;
 
     if (!resolvedTaskId) {
-      const taskParams = parseModelParam(model, agentProfileId);
+      const taskParams = parseTaskParams(model, agentProfileId, autonomyMode);
       const result = await this.eventsHandler.ensureProjectAndCreateTask(projectDir, taskParams);
       resolvedTaskId = result.taskId;
     }
