@@ -85,22 +85,10 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         return;
       }
 
-      const handleScroll = () => {
-        const contentSmallerThanArea = element.scrollHeight <= element.clientHeight;
-        if (contentSmallerThanArea) {
-          setScrollingPaused(false);
-        }
-      };
-
       const handleWheel = (e: WheelEvent) => {
         e.stopPropagation();
         if (e.deltaY < 0) {
           setScrollingPaused(true);
-        } else if (e.deltaY > 0) {
-          const isAtBottom = element.scrollHeight - element.scrollTop < element.clientHeight + e.deltaY + 20;
-          if (isAtBottom) {
-            setScrollingPaused(false);
-          }
         }
       };
 
@@ -119,13 +107,11 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         }
       };
 
-      element.addEventListener('scroll', handleScroll, { passive: true });
       element.addEventListener('wheel', handleWheel);
       element.addEventListener('touchstart', handleTouchStart, { passive: true });
       element.addEventListener('touchmove', handleTouchMove, { passive: true });
 
       return () => {
-        element.removeEventListener('scroll', handleScroll);
         element.removeEventListener('wheel', handleWheel);
         element.removeEventListener('touchstart', handleTouchStart);
         element.removeEventListener('touchmove', handleTouchMove);
@@ -268,7 +254,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
           extraData={extraData}
           estimatedItemSize={100}
           maintainScrollAtEnd={!scrollingPaused}
-          maintainScrollAtEndThreshold={0.1}
+          maintainScrollAtEndThreshold={100}
           onScroll={handleScrollState}
           initialScrollAtEnd
           alwaysRender={{ keys: userMessageIds }}
