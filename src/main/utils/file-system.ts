@@ -7,6 +7,7 @@ import slugify from 'slugify';
 import { glob } from 'glob';
 
 import logger from '@/logger';
+import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 // @ts-expect-error filenamify is not typed properly
 const filenamify = filenamifyImport.default;
 
@@ -168,6 +169,31 @@ const getAllFilesFromFS = async (baseDir: string, ignore: string[] = []): Promis
   }
 };
 
+const getProjectRuleFiles = async (baseDir: string): Promise<string[]> => {
+  try {
+    const rulesDir = path.join(baseDir, AIDER_DESK_PROJECT_RULES_DIR);
+    const entries = await fs.promises.readdir(rulesDir, { withFileTypes: true });
+
+    return entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+      .map((entry) => path.relative(baseDir, path.join(rulesDir, entry.name)).replace(/\\/g, '/'))
+      .sort((a, b) => a.localeCompare(b));
+  } catch (error) {
+    logger.debug('Could not read project rules directory while listing files', { error, baseDir });
+    return [];
+  }
+};
+
+const includeProjectRuleFiles = async (baseDir: string, files: string[]): Promise<string[]> => {
+  const allFiles = new Set(files.map((file) => file.replace(/\\/g, '/')));
+
+  for (const ruleFile of await getProjectRuleFiles(baseDir)) {
+    allFiles.add(ruleFile);
+  }
+
+  return Array.from(allFiles);
+};
+
 const getIgnoreGlobPatterns = async (gitignorePath: string): Promise<string[]> => {
   const ignore: string[] = [];
 
@@ -219,7 +245,7 @@ export const getAllFiles = async (baseDir: string, useGit = true): Promise<strin
         const result = await git.raw(['ls-files', '-z']);
         const files = result.split('\0').filter(Boolean);
         logger.debug('Retrieved tracked files from Git', { count: files.length, baseDir });
-        return files;
+        return await includeProjectRuleFiles(baseDir, files);
       } catch (gitError) {
         logger.warn('Failed to get tracked files from Git, falling back to filesystem', { error: gitError, baseDir });
       }
@@ -237,10 +263,10 @@ export const getAllFiles = async (baseDir: string, useGit = true): Promise<strin
         filtered: filteredFiles.length,
         baseDir,
       });
-      return filteredFiles;
+      return await includeProjectRuleFiles(baseDir, filteredFiles);
     }
 
-    return files;
+    return await includeProjectRuleFiles(baseDir, files);
   } catch (error) {
     logger.error('Failed to get files', { error, baseDir, useGit });
     return [];
