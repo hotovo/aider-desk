@@ -5776,7 +5776,7 @@ import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/t
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModelV2, JSONValue, SharedV2ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -14602,6 +14602,7 @@ import { ReactNode, TextareaHTMLAttributes } from 'react';
 export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode;
   wrapperClassName?: string;
+  error?: string | null;
 };
 ⋮----
 export const TextArea = (
@@ -16847,8 +16848,6 @@ type Props = {
   onRemoveUpToMessage?: (message: Message) => void;
 };
 ⋮----
-const handleScroll = () =>
-⋮----
 const handleWheel = (e: WheelEvent) =>
 ⋮----
 const handleTouchStart = (e: TouchEvent) =>
@@ -17517,12 +17516,15 @@ const handleUseWebSearchChange = (checked: boolean) =>
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleAdvancedSettings.tsx
 ================
+import { ChangeEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 import { ReasoningEffort } from '@common/types';
 ⋮----
 import { Select, Option } from '@/components/common/Select';
 import { Checkbox } from '@/components/common/Checkbox';
+import { TextArea } from '@/components/common/TextArea';
+import { Accordion } from '@/components/common/Accordion';
 import { InfoIcon } from '@/components/common/InfoIcon';
 ⋮----
 type Props = {
@@ -17533,6 +17535,8 @@ type Props = {
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
 const handleTrackTokenUsageChange = (trackTokenUsage: boolean) =>
+⋮----
+const handleExtraBodyChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
 ⋮----
 <span>
 ⋮----
