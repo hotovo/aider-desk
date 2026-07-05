@@ -9,6 +9,10 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
 
+const ensureV1Suffix = (baseUrl: string): string => {
+  return baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
+};
+
 const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isAnthropicCompatibleProvider(profile.provider)) {
     return { models: [], success: false };
@@ -29,7 +33,7 @@ const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings:
   }
 
   try {
-    const response = await fetch(`${effectiveBaseUrl}/v1/models`, {
+    const response = await fetch(`${ensureV1Suffix(effectiveBaseUrl)}/models`, {
       headers: {
         'x-api-key': effectiveApiKey,
         'anthropic-version': '2023-06-01',
@@ -130,10 +134,11 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
     throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the ANTHROPIC_API_BASE environment variable.`);
   }
 
-  // Use createAnthropic with custom baseURL to get a provider instance, then get the model
+  // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
+  // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
   const anthropicProvider = createAnthropic({
     apiKey,
-    baseURL: baseUrl,
+    baseURL: ensureV1Suffix(baseUrl),
     headers: profile.headers,
   });
   return anthropicProvider(model.id);
