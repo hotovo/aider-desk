@@ -16,7 +16,7 @@ Only when:
 3. **Implement Extension interface methods**
 4. **Export metadata and default class**
 5. **Update `packages/extensions/extensions.json`** — register the extension
-6. **Update `docs-site/docs/extensions/examples.md`** — document it
+6. **Update `docs-site/docs/extensions/extensions-gallery.md`** — document it
 7. **Verify with type checking and code-checker**
 
 ## Directory Structure
@@ -98,9 +98,9 @@ Add an entry to `packages/extensions/extensions.json`:
 
 **Important:** Always set `hasDependencies: true` for folder extensions, even if they don't have dependencies yet.
 
-### Step 5: Document in examples.md
+### Step 5: Document in extensions-gallery.md
 
-Add an entry to the table in `docs-site/docs/extensions/examples.md`:
+Add an entry to the table in `docs-site/docs/extensions/extensions-gallery.md`:
 
 | Extension | Description | Capabilities | Type |
 |-----------|-------------|-------------|------|
@@ -128,5 +128,5 @@ npm install
 
 - Do NOT use `@/` imports in extension files — use relative imports or `@aiderdesk/extensions` package imports only
 - Do NOT forget to update `extensions.json` — the extension won't load without registration
-- Do NOT forget to update `examples.md` — users won't know about the extension
+- Do NOT forget to update `extensions-gallery.md` — users won't know about the extension
 - Do NOT place files outside `packages/extensions/extensions/` unless there's a specific reason (e.g., shared utilities should go in `packages/extensions/src/`)

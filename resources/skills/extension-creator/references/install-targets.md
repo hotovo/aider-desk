@@ -48,7 +48,7 @@ AiderDesk extensions can be installed in three locations, each with different pu
 - Ships with the AiderDesk application as a built-in extension
 - Available to all users by default
 - Requires updating `packages/extensions/extensions.json` (the extension registry)
-- Requires updating documentation in `docs-site/docs/extensions/examples.md`
+- Requires updating documentation in `docs-site/docs/extensions/extensions-gallery.md`
 - Must follow monorepo conventions (no `@/` imports, proper tsconfig/package.json)
 - Subject to the full AiderDesk development workflow (type checking, testing, etc.)
 
@@ -80,7 +80,7 @@ Is the current project the AiderDesk codebase itself?
 | Scope | This project only | All projects | All users (ships with app) |
 | Version controlled | Yes (with project) | No | Yes (with AiderDesk) |
 | Update extensions.json | No | No | **Yes** |
-| Update examples.md docs | No | No | **Yes** |
+| Update extensions-gallery.md docs | No | No | **Yes** |
 | npm install needed | No | No | **Yes** (if folder extension) |
 | Available immediately | Yes | Yes | After build/restart |
 

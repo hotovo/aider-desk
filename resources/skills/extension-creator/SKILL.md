@@ -68,7 +68,7 @@ Do not use when:
 3. Implement Extension interface methods
 4. Export metadata and default class
 5. **Register in `packages/extensions/extensions.json`**
-6. **Document in `docs-site/docs/extensions/examples.md`**
+6. **Document in `docs-site/docs/extensions/extensions-gallery.md`**
 7. Install npm dependencies if folder extension
 8. Verify with type checking
 
@@ -154,13 +154,13 @@ Do not use when:
 
 **Must:** Set `hasDependencies: true` for folder extensions
 
-**Then:** Add entry to `docs-site/docs/extensions/examples.md` table
+**Then:** Add entry to `docs-site/docs/extensions/extensions-gallery.md` table
 
 **Must:** Include extension name, description, capabilities, and type
 
 **When:** Target is Project or Global
 
-**Then:** Do NOT modify `extensions.json` or `examples.md` — these are only for built-in extensions
+**Then:** Do NOT modify `extensions.json` or `extensions-gallery.md` — these are only for built-in extensions
 
 ### Rule: Use proper TypeScript config for folders
 
@@ -204,7 +204,7 @@ Do not use when:
 4. Implement Extension interface methods
 5. Export metadata and default class
 6. **Register in `packages/extensions/extensions.json`**
-7. **Document in `docs-site/docs/extensions/examples.md`**
+7. **Document in `docs-site/docs/extensions/extensions-gallery.md`**
 8. Run `npm install` in `packages/extensions/` (folder extensions)
 9. Verify with type checking
 
@@ -236,7 +236,7 @@ After completing this skill, verify:
 - Default export is the extension class
 - No `@/` imports used
 - **If In-Repo:** extensions.json updated correctly
-- **If In-Repo:** docs-site/docs/extensions/examples.md updated
+- **If In-Repo:** docs-site/docs/extensions/extensions-gallery.md updated
 - **If In-Repo:** Type checking passes
 - Extension loads without errors
 - Extension appears in extensions list

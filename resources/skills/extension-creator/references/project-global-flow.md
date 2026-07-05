@@ -71,6 +71,6 @@ The extension will be auto-discovered by AiderDesk from the target directory. No
 ## What NOT to do (Project/Global)
 
 - Do NOT modify `packages/extensions/extensions.json` — that registry is only for In-Repo extensions
-- Do NOT update `docs-site/docs/extensions/examples.md` — that's for documenting built-in extensions
+- Do NOT update `docs-site/docs/extensions/extensions-gallery.md` — that's for documenting built-in extensions
 - Do NOT use `@/` imports — they won't resolve outside the AiderDesk monorepo
 - Do NOT add to `packages/common/src/` or any other AiderDesk source directory
