@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.73.0]
 
 - showing correct compact threshold values from agent profile overrides
 - fixed shell PATH extraction when login messages were present in output
@@ -8,6 +8,7 @@
 - fixed usage report not attached to tool-only responses, preventing context compaction from triggering
 - using message virtualization to improve rendering performance as default
 - added extra body parameters support for OpenAI-compatible providers
+- added support for ACP (Agent Client Protocol) for the aiderdesk binary app
 - ensure correct /v1 suffix in base URL for Anthropic-compatible providers
 - updated default models for providers to use latest versions
 
