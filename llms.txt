@@ -4887,6 +4887,8 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
 ⋮----
+const ensureV1Suffix = (baseUrl: string): string =>
+⋮----
 const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
 const hasAnthropicCompatibleEnvVars = (settings: SettingsData): boolean =>
@@ -4898,7 +4900,8 @@ const getAnthropicCompatibleAiderMapping = (provider: ProviderProfile, modelId: 
 // === LLM Creation Functions ===
 const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
 ⋮----
-// Use createAnthropic with custom baseURL to get a provider instance, then get the model
+// Use createAnthropic with custom baseURL to get a provider instance, then get the model.
+// The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -7610,14 +7613,14 @@ File: src/main/server/rest-api/prompt-api.ts
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { CreateTaskParams } from '@common/types';
+import { AutonomyMode, CreateTaskParams } from '@common/types';
 ⋮----
 import { BaseApi } from './base-api';
 ⋮----
 import { EventsHandler } from '@/events-handler';
 import logger from '@/logger';
 ⋮----
-const parseModelParam = (model?: string, agentProfileId?: string): CreateTaskParams | undefined =>
+const parseTaskParams = (model?: string, agentProfileId?: string, autonomyMode?: AutonomyMode): CreateTaskParams | undefined =>
 ⋮----
 export class PromptApi extends BaseApi
 ⋮----
@@ -7634,6 +7637,7 @@ private async handleRunPromptJSON(
     images?: string[],
     model?: string,
     agentProfileId?: string,
+    autonomyMode?: AutonomyMode,
 ): Promise<void>
 ⋮----
 private async handleRunPromptSSE(
@@ -7645,6 +7649,7 @@ private async handleRunPromptSSE(
     images?: string[],
     model?: string,
     agentProfileId?: string,
+    autonomyMode?: AutonomyMode,
 ): Promise<void>
 ⋮----
 // Set SSE headers
