@@ -113,6 +113,7 @@ const sidebars: SidebarsConfig = {
         "advanced/docker",
         "advanced/npm-cli",
         "advanced/cli-run",
+        "advanced/acp",
         "advanced/custom-aider-version",
         "advanced/extra-python-packages",
         "advanced/open-telemetry",
