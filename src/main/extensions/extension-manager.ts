@@ -1,3 +1,4 @@
+import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -170,6 +171,7 @@ export class ExtensionManager {
   private projectWatchers: Map<string, FSWatcher> = new Map();
   private initialized = false;
   private listeners: ExtensionsChangeListener[] = [];
+  private extensionMtimes: Map<string, number> = new Map();
 
   private libraryLoader: ExtensionLibraryLoader;
 
@@ -359,6 +361,11 @@ export class ExtensionManager {
         return { success: false, hasUIComponents: false };
       }
 
+      const stat = await fs.stat(filePath).catch(() => null);
+      if (stat) {
+        this.extensionMtimes.set(filePath, stat.mtimeMs);
+      }
+
       logger.info(`[Extensions] Loaded and initialized extension: ${metadata.name} v${metadata.version}${project ? ` for project ${project.baseDir}` : ''}`);
       return { success: true, hasUIComponents: loaded.instance.getUIComponents !== undefined };
     } catch (error) {
@@ -403,6 +410,83 @@ export class ExtensionManager {
       logger.info(`[Extensions] Loaded ${initializedCount}/${loadedCount} extension(s) from ${dir}`);
     } else {
       logger.debug(`[Extensions] No extensions found in ${dir}`);
+    }
+
+    if (reloadComponents) {
+      this.eventManager.sendExtensionUIRefresh({
+        projectDir: project?.baseDir,
+        reloadComponents: true,
+      });
+    }
+
+    const providers = this.getProviders(project);
+    if (providers.length > 0) {
+      this.modelManager.registerExtensionProviders(providers);
+    }
+
+    this.debouncedNotifyListeners();
+  }
+
+  /**
+   * Diff-based reload: only unload/load extensions that were added, removed, or changed,
+   * rather than reloading all extensions in the directory.
+   */
+  private async reloadChangedExtensions(dir: string, project?: Project): Promise<void> {
+    const before = new Set(
+      this.registry
+        .getExtensions()
+        .filter((ext) => ext.filePath.startsWith(dir))
+        .map((ext) => ext.filePath),
+    );
+
+    const after = await this.discoverExtensionsFromDir(dir);
+
+    let reloadComponents = false;
+
+    // Unload removed extensions
+    for (const filePath of before) {
+      if (!after.includes(filePath)) {
+        logger.debug(`[Extensions] Extension removed: ${filePath}`);
+        const ext = this.registry.getExtension(filePath);
+        await this.unloadExtension(filePath);
+        if (ext?.instance.getUIComponents !== undefined) {
+          reloadComponents = true;
+        }
+      }
+    }
+
+    // Load added extensions
+    for (const filePath of after) {
+      if (!before.has(filePath)) {
+        logger.debug(`[Extensions] Extension added: ${filePath}`);
+        const { success, hasUIComponents } = await this.loadAndInitializeExtension(filePath, project);
+        if (success && hasUIComponents) {
+          reloadComponents = true;
+        }
+      }
+    }
+
+    // Reload changed extensions (file exists before and after, but mtime differs)
+    for (const filePath of after) {
+      if (!before.has(filePath)) {
+        continue;
+      }
+      const oldMtime = this.extensionMtimes.get(filePath);
+      const stat = await fs.stat(filePath).catch(() => null);
+      if (!stat) {
+        continue;
+      }
+      if (oldMtime === undefined || stat.mtimeMs !== oldMtime) {
+        logger.debug(`[Extensions] Extension changed: ${filePath}`);
+        const ext = this.registry.getExtension(filePath);
+        await this.unloadExtension(filePath);
+        const { success, hasUIComponents } = await this.loadAndInitializeExtension(filePath, project);
+        if (success && hasUIComponents) {
+          reloadComponents = true;
+        } else if (ext?.instance.getUIComponents !== undefined) {
+          reloadComponents = true;
+        }
+      }
     }
 
     if (reloadComponents) {
@@ -509,6 +593,7 @@ export class ExtensionManager {
       }
     }
 
+    this.extensionMtimes.clear();
     this.initialized = false;
     logger.debug('[Extensions] Extension system disposed');
   }
@@ -533,6 +618,7 @@ export class ExtensionManager {
     }
 
     this.registry.unregister(filePath);
+    this.extensionMtimes.delete(filePath);
     this.modelManager.unregisterExtensionProviders(extension.id);
     logger.debug(`[Extensions] Unloaded extension: ${filePath}`);
   }
@@ -630,6 +716,9 @@ export class ExtensionManager {
           if (basename.startsWith('.')) {
             return true;
           }
+          if (basename === 'node_modules') {
+            return true;
+          }
           if (!path.extname(filePath)) {
             return false;
           }
@@ -671,8 +760,7 @@ export class ExtensionManager {
   }
 
   private async reloadGlobalExtensions(): Promise<void> {
-    await this.unloadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
-    await this.loadExtensionsForDir(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
+    await this.reloadChangedExtensions(AIDER_DESK_GLOBAL_EXTENSIONS_DIR);
   }
 
   private async unloadExtensionsForDir(dir: string): Promise<void> {
@@ -704,8 +792,7 @@ export class ExtensionManager {
     if (!this.projectWatchers.has(projectDir)) {
       const watcher = await this.setupWatcherForDir(projectExtensionsDir, async () => {
         logger.debug(`[Extensions] Project extensions changed for ${projectDir}, reloading...`);
-        await this.unloadExtensionsForDir(projectExtensionsDir);
-        await this.loadExtensionsForDir(projectExtensionsDir, project);
+        await this.reloadChangedExtensions(projectExtensionsDir, project);
       });
 
       if (watcher) {
@@ -739,8 +826,7 @@ export class ExtensionManager {
       const projectExtensionsDir = path.join(dir, AIDER_DESK_EXTENSIONS_DIR);
       const watcher = await this.setupWatcherForDir(projectExtensionsDir, async () => {
         logger.debug(`[Extensions] Project extensions changed for ${dir}, reloading...`);
-        await this.unloadExtensionsForDir(projectExtensionsDir);
-        await this.loadExtensionsForDir(projectExtensionsDir);
+        await this.reloadChangedExtensions(projectExtensionsDir);
       });
       if (watcher) {
         this.projectWatchers.set(dir, watcher);
@@ -1765,17 +1851,29 @@ export class ExtensionManager {
           throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
 
-        await fs.cp(sourcePath, targetPath, { recursive: true });
+        // Use temp dir for npm install to avoid triggering the watcher with
+        // hundreds of node_modules file writes
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aider-desk-ext-'));
+        const tempExtPath = path.join(tempDir, extension.folder);
 
-        // Remove .git directory if present (from cloned repos)
-        const gitDir = path.join(targetPath, '.git');
-        if (await this.fileExists(gitDir)) {
-          await fs.rm(gitDir, { recursive: true, force: true });
-        }
+        try {
+          await fs.cp(sourcePath, tempExtPath, { recursive: true });
 
-        if (extension.hasDependencies) {
-          logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
-          await this.installDependencies(targetPath);
+          // Remove .git directory if present (from cloned repos)
+          const gitDir = path.join(tempExtPath, '.git');
+          if (await this.fileExists(gitDir)) {
+            await fs.rm(gitDir, { recursive: true, force: true });
+          }
+
+          if (extension.hasDependencies) {
+            logger.debug(`[Extensions] Installing dependencies for ${extension.name} in temp dir...`);
+            await this.installDependencies(tempExtPath);
+          }
+
+          // Copy to final location — node_modules is ignored by the watcher
+          await fs.cp(tempExtPath, targetPath, { recursive: true });
+        } finally {
+          await fs.rm(tempDir, { recursive: true, force: true });
         }
 
         logger.debug(`[Extensions] Installed folder extension: ${extension.folder}`);
@@ -1900,8 +1998,8 @@ export class ExtensionManager {
         throw new Error('Invalid GitHub repository URL');
       }
 
-      // Unload existing extension before overwriting files
-      await this.unloadExtensionsForDir(targetDir);
+      // Unload only the extension being updated (not all extensions in the directory)
+      await this.unloadExtension(existingExtension.filePath);
 
       // Clean up old extension if the type changed (file → folder or folder → file)
       const parsedExistingPath = path.parse(existingExtension.filePath);
@@ -1917,6 +2015,8 @@ export class ExtensionManager {
         logger.debug(`[Extensions] Removed old folder extension: ${parsedExistingPath.dir}`);
       }
 
+      let entryPath: string;
+
       if (extension.type === 'single' && extension.file) {
         const url = `${githubRawBase}/${extension.file}`;
         const response = await fetch(url);
@@ -1926,8 +2026,8 @@ export class ExtensionManager {
         }
 
         const code = await response.text();
-        const targetPath = path.join(targetDir, extension.file);
-        await fs.writeFile(targetPath, code, 'utf-8');
+        entryPath = path.join(targetDir, extension.file);
+        await fs.writeFile(entryPath, code, 'utf-8');
 
         logger.debug(`[Extensions] Updated single-file extension: ${extension.file}`);
       } else if (extension.type === 'folder' && extension.folder) {
@@ -1946,24 +2046,52 @@ export class ExtensionManager {
           throw new Error(`Extension folder not found in repository: ${extension.folder}`);
         }
 
-        await fs.cp(sourcePath, targetPath, { recursive: true });
+        // Use temp dir for npm install to avoid triggering the watcher
+        const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aider-desk-ext-'));
+        const tempExtPath = path.join(tempDir, extension.folder);
 
-        // Remove .git directory if present (from cloned repos)
-        const gitDir = path.join(targetPath, '.git');
-        if (await this.fileExists(gitDir)) {
-          await fs.rm(gitDir, { recursive: true, force: true });
+        try {
+          await fs.cp(sourcePath, tempExtPath, { recursive: true });
+
+          // Remove .git directory if present (from cloned repos)
+          const gitDir = path.join(tempExtPath, '.git');
+          if (await this.fileExists(gitDir)) {
+            await fs.rm(gitDir, { recursive: true, force: true });
+          }
+
+          const packageJsonPath = path.join(tempExtPath, 'package.json');
+          if (await this.fileExists(packageJsonPath)) {
+            logger.debug(`[Extensions] Installing dependencies for ${extension.name} in temp dir...`);
+            await this.installDependencies(tempExtPath);
+          }
+
+          // Copy on top of existing directory — merges files, overwriting source
+          // files while preserving user-created files like config.json
+          await fs.cp(tempExtPath, targetPath, { recursive: true });
+        } finally {
+          await fs.rm(tempDir, { recursive: true, force: true });
         }
 
-        const packageJsonPath = path.join(targetPath, 'package.json');
-        if (await this.fileExists(packageJsonPath)) {
-          logger.debug(`[Extensions] Installing dependencies for ${extension.name}...`);
-          await this.installDependencies(targetPath);
-        }
+        // Determine the entry file path
+        const indexTs = path.join(targetPath, 'index.ts');
+        const indexJs = path.join(targetPath, 'index.js');
+        entryPath = (await this.fileExists(indexTs)) ? indexTs : indexJs;
 
         logger.debug(`[Extensions] Updated folder extension: ${extension.folder}`);
+      } else {
+        throw new Error(`Unknown extension type for ${extension.name}`);
       }
 
-      await this.loadExtensionsForDir(targetDir, project);
+      // Load only the updated extension
+      const { hasUIComponents } = await this.loadAndInitializeExtension(entryPath, project);
+      if (hasUIComponents) {
+        this.eventManager.sendExtensionUIRefresh({ projectDir: project?.baseDir, reloadComponents: true });
+      }
+      const providers = this.getProviders(project);
+      if (providers.length > 0) {
+        this.modelManager.registerExtensionProviders(providers);
+      }
+      this.debouncedNotifyListeners();
 
       logger.info(`[Extensions] Successfully updated ${extension.name}`);
       return { success: true };

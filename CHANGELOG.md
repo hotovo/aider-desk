@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- added diff-based extension reloads and optimized dependency installation
+
 ## [0.73.0]
 
 - showing correct compact threshold values from agent profile overrides
