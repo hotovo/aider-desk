@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - added diff-based extension reloads and optimized dependency installation
+- updated Gemini voice model to gemini-3.1-flash-live-preview and improved session handling
 
 ## [0.73.0]
 

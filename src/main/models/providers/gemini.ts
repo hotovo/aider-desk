@@ -258,7 +258,7 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
     });
 
     // Default to the model specified in requirements or fallback
-    const modelId = provider.voice?.model ?? GeminiVoiceModel.GeminiLive25FlashNativeAudio;
+    const modelId = provider.voice?.model ?? GeminiVoiceModel.Gemini31FlashLivePreview;
     const temperature = provider.voice?.temperature ?? 0.7;
     const systemInstruction = provider.voice?.systemInstructions ?? DEFAULT_VOICE_SYSTEM_INSTRUCTIONS;
     const idleTimeoutMs = provider.voice?.idleTimeoutMs ?? 5000;
@@ -275,11 +275,6 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
           model: modelId,
           config: {
             inputAudioTranscription: {},
-            realtimeInputConfig: {
-              automaticActivityDetection: {
-                disabled: true,
-              },
-            },
             temperature,
             responseModalities: [Modality.AUDIO],
             systemInstruction,

@@ -1,4 +1,4 @@
-import { GoogleGenAI, LiveServerMessage, Session } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Session } from '@google/genai';
 
 import { VoiceProvider, VoiceSession, VoiceSessionConfig, VoiceSessionState } from './types';
 
@@ -17,16 +17,16 @@ export class GeminiVoiceProvider implements VoiceProvider {
   private stopRecordingCallback: (() => void) | null = null;
 
   // Session management refs
-  private sessionTimerRef: NodeJS.Timeout | null = null;
   private audioQueue: string[] = [];
-  private sessionRestartInProgress: boolean = false;
   private isSessionActive: boolean = false;
   private audioProcessingActive: boolean = false;
+  private isUserStopped: boolean = false;
 
   async startSession(config: VoiceSessionConfig): Promise<VoiceSession> {
     this.config = config;
     this.stopRecordingCallback = config.onStopRecording || null;
     this.setState(VoiceSessionState.CONNECTING);
+    this.isUserStopped = false;
 
     // Setup audio processing once and keep it alive
     if (!this.audioProcessingActive) {
@@ -48,10 +48,13 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
       const session = await client.live.connect({
         model: config.model,
+        config: {
+          responseModalities: [Modality.AUDIO],
+          inputAudioTranscription: {},
+        },
         callbacks: {
           onopen: () => {
             this.setState(VoiceSessionState.ACTIVE);
-            this.startSessionTimer();
             this.isSessionActive = true;
           },
           onmessage: (message: LiveServerMessage) => {
@@ -62,9 +65,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
           onclose: (e) => {
             // eslint-disable-next-line no-console
             console.log('Session closed:', e);
-            if (!this.sessionRestartInProgress) {
-              this.setState(VoiceSessionState.CLOSED);
-            }
+            this.handleSessionClose();
           },
           onerror: (e) => {
             this.setState(VoiceSessionState.ERROR);
@@ -78,8 +79,6 @@ export class GeminiVoiceProvider implements VoiceProvider {
       // Initialize silence detection
       this.lastAudioTimeRef = Date.now();
 
-      session.sendRealtimeInput({ activityStart: {} });
-
       this.flushAudioQueue();
 
       return { isActive: true, provider: this };
@@ -92,13 +91,8 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
   async stopSession(): Promise<void> {
     this.isSessionActive = false;
+    this.isUserStopped = true;
     this.setState(VoiceSessionState.CLOSED);
-
-    // Clear session timer
-    if (this.sessionTimerRef) {
-      clearTimeout(this.sessionTimerRef);
-      this.sessionTimerRef = null;
-    }
 
     // Clear silence detection timeout
     if (this.silenceTimeoutRef) {
@@ -189,7 +183,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
       if (this.session && this.isSessionActive) {
         // Send directly to active session
         this.session.sendRealtimeInput({
-          media: {
+          audio: {
             data: base64Audio,
             mimeType: 'audio/pcm;rate=16000',
           },
@@ -213,6 +207,18 @@ export class GeminiVoiceProvider implements VoiceProvider {
     }
   }
 
+  private async handleSessionClose(): Promise<void> {
+    this.isSessionActive = false;
+
+    if (this.isUserStopped) {
+      this.setState(VoiceSessionState.CLOSED);
+    } else {
+      this.setState(VoiceSessionState.ERROR);
+      this.config?.onError(new Error('Voice session ended unexpectedly. The stream could not continue.'));
+      this.stopRecordingCallback?.();
+    }
+  }
+
   private convertFloat32ToInt16(float32Array: Float32Array): Int16Array {
     const pcmData = new Int16Array(float32Array.length);
     for (let i = 0; i < float32Array.length; i++) {
@@ -228,42 +234,6 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
   private setState(newState: VoiceSessionState): void {
     this.config?.onSessionStateChange?.(newState);
-  }
-
-  private startSessionTimer(): void {
-    if (this.sessionTimerRef) {
-      clearTimeout(this.sessionTimerRef);
-    }
-
-    // Restart session every 30 seconds
-    this.sessionTimerRef = setTimeout(() => {
-      this.restartSession();
-    }, 10000);
-  }
-
-  private async restartSession(): Promise<void> {
-    if (this.sessionRestartInProgress || !this.config || !this.audioProcessingActive) {
-      return;
-    }
-
-    this.sessionRestartInProgress = true;
-    this.isSessionActive = false;
-    // Don't set external state to INACTIVE - keep it as ACTIVE from user perspective
-
-    try {
-      // eslint-disable-next-line no-console
-      console.log('Restarting session...');
-      // Close current session but keep audio processing
-      await this.closeGeminiSession();
-
-      // Start new session without tearing down audio processing
-      await this.createGeminiSession(this.config);
-    } catch (error) {
-      this.setState(VoiceSessionState.ERROR);
-      this.config?.onError(error as Error);
-    } finally {
-      this.sessionRestartInProgress = false;
-    }
   }
 
   private queueAudioData(base64Audio: string): void {
@@ -282,7 +252,7 @@ export class GeminiVoiceProvider implements VoiceProvider {
 
     this.audioQueue.forEach((audioData) => {
       this.session!.sendRealtimeInput({
-        media: {
+        audio: {
           data: audioData,
           mimeType: 'audio/pcm;rate=16000',
         },
