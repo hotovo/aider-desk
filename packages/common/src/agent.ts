@@ -815,8 +815,17 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
   return provider as T;
 };
 
-export const isSubagentEnabled = (agentProfile: AgentProfile, currentProfileId?: string): boolean => {
-  return Boolean(agentProfile.subagent.systemPrompt && agentProfile.subagent.enabled && (!currentProfileId || agentProfile.id !== currentProfileId));
+export const isSubagentEnabled = (agentProfile: AgentProfile, mainAgentProfile?: AgentProfile): boolean => {
+  if (!agentProfile.subagent.systemPrompt || !agentProfile.subagent.enabled) {
+    return false;
+  }
+  if (!mainAgentProfile) {
+    return true;
+  }
+  if (agentProfile.id === mainAgentProfile.id) {
+    return false;
+  }
+  return !mainAgentProfile.enabledSubagentIds || mainAgentProfile.enabledSubagentIds.includes(agentProfile.id);
 };
 
 export const getProviderModelId = (model: Model): string => {

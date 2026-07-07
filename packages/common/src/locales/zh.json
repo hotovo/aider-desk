@@ -636,6 +636,16 @@
     "windowTitleTemplateLabel": "窗口标题模板",
     "windowTitleTemplateTooltip": "使用 {project} 表示项目名称，{task} 表示当前任务名称。例如：'AiderDesk - {project}' 或 '{project} - {task}'",
     "agent": {
+      "tabs": {
+        "general": "常规",
+        "prompts": "提示词",
+        "tools": "工具",
+        "subagents": "子代理"
+      },
+      "systemPrompt": "系统提示词",
+      "systemPromptTooltip": "设置后，当此配置作为主代理运行时，将替换默认内置系统提示词。留空则使用内置系统提示词。",
+      "systemPromptPlaceholder": "此代理的自定义系统提示词。留空则使用默认内置系统提示词。",
+      "systemPromptInfo": "覆盖代理的默认系统提示词。如需在默认系统提示词后追加指令，请使用下方的规则。",
       "mcpServers": "MCP 服务器",
       "provider": "提供商",
       "providerSettings": "提供商设置",
@@ -700,6 +710,11 @@
         "enableAsSubagentInformation": "启用后，此配置可被其他代理用作子代理。",
         "canUseSubagents": "可以使用子代理",
         "canUseSubagentsInformation": "启用后，此代理可以使用其他代理作为子代理。",
+        "usingSubagents": "使用子代理",
+        "actingAsSubagent": "作为子代理",
+        "allowAllSubagents": "允许所有子代理",
+        "allowAllSubagentsInformation": "启用后，此代理可以使用任何已启用子代理功能的配置。禁用以选择此代理允许使用的特定子代理。",
+        "noSubagentsAvailable": "没有可用的子代理配置。在其他配置上启用「启用为子代理」以使其在此处可用。",
         "contextMemory": "上下文记忆",
         "contextMemoryTooltip": "控制子代理记住多少之前的对话上下文。'完整上下文' 保持所有历史记录，'最后消息' 仅使用最近的互动，'关闭' 每次重新开始。",
         "contextMemory.off": "关闭",

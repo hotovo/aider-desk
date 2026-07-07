@@ -1,382 +1,36 @@
-import {
-  AgentProfile,
-  ContextCompactionType,
-  ContextMemoryMode,
-  ExtensionToolInfo,
-  GenericTool,
-  InvocationMode,
-  McpServerConfig,
-  Model,
-  ProjectData,
-  SettingsData,
-  ToolApprovalState,
-} from '@common/types';
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AgentProfile, ExtensionToolInfo, McpServerConfig, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
-import {
-  MdExtension,
-  MdFlashOn,
-  MdOutlineChecklist,
-  MdOutlineFileCopy,
-  MdOutlineHdrAuto,
-  MdOutlineMap,
-  MdRepeat,
-  MdThermostat,
-  MdPsychology,
-} from 'react-icons/md';
+import { FaChevronLeft, FaChevronRight, FaPaste, FaPlus } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
-import { BiTrash } from 'react-icons/bi';
-import { clsx } from 'clsx';
-import Sketch from '@uiw/react-color-sketch';
+import { BiReset, BiTrash } from 'react-icons/bi';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import {
-  AIDER_TOOL_ADD_CONTEXT_FILES,
-  AIDER_TOOL_DESCRIPTIONS,
-  AIDER_TOOL_DROP_CONTEXT_FILES,
-  AIDER_TOOL_GET_CONTEXT_FILES,
-  AIDER_TOOL_GROUP_NAME,
-  AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_BASH,
-  POWER_TOOL_DESCRIPTIONS,
-  POWER_TOOL_FETCH,
-  POWER_TOOL_FILE_EDIT,
-  POWER_TOOL_FILE_READ,
-  POWER_TOOL_FILE_WRITE,
-  POWER_TOOL_GLOB,
-  POWER_TOOL_GREP,
-  POWER_TOOL_GROUP_NAME,
-  POWER_TOOL_SEMANTIC_SEARCH,
-  TODO_TOOL_CLEAR_ITEMS,
-  TODO_TOOL_DESCRIPTIONS,
-  TODO_TOOL_GET_ITEMS,
-  TODO_TOOL_GROUP_NAME,
-  TODO_TOOL_SET_ITEMS,
-  TODO_TOOL_UPDATE_ITEM_COMPLETION,
-  TASKS_TOOL_CREATE_TASK,
-  TASKS_TOOL_DELETE_TASK,
-  TASKS_TOOL_DESCRIPTIONS,
-  TASKS_TOOL_GET_TASK,
-  TASKS_TOOL_GET_TASK_MESSAGE,
-  TASKS_TOOL_GROUP_NAME,
-  TASKS_TOOL_LIST_TASKS,
-  TASKS_TOOL_SEARCH_TASK,
-  MEMORY_TOOL_DELETE,
-  MEMORY_TOOL_DESCRIPTIONS,
-  MEMORY_TOOL_GROUP_NAME,
-  MEMORY_TOOL_LIST,
-  MEMORY_TOOL_UPDATE,
-  MEMORY_TOOL_RETRIEVE,
-  MEMORY_TOOL_STORE,
-  SKILLS_TOOL_GROUP_NAME,
-} from '@common/tools';
 import { useTranslation } from 'react-i18next';
-import { FaArrowRightFromBracket } from 'react-icons/fa6';
 
 import { McpServer, McpServerForm } from './McpServerForm';
-import { McpServerItem } from './McpServerItem';
-import { GenericToolGroupItem } from './GenericToolGroupItem';
-import { AgentRules } from './AgentRules';
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
+import { ProfileGeneralSection } from './sections/ProfileGeneralSection';
+import { ProfilePromptsSection } from './sections/ProfilePromptsSection';
+import { ProfileToolsSection } from './sections/ProfileToolsSection';
+import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 
 import { useApi } from '@/contexts/ApiContext';
 import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
 import { ModelSelector } from '@/components/ModelSelector';
-import { Slider } from '@/components/common/Slider';
-import { InfoIcon } from '@/components/common/InfoIcon';
-import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
-import { Select } from '@/components/common/Select';
-import { TextArea } from '@/components/common/TextArea';
+import { Tabs } from '@/components/common/Tabs';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
-import { Tooltip } from '@/components/ui/Tooltip';
 
-const tools: Record<string, GenericTool[]> = {
-  [AIDER_TOOL_GROUP_NAME]: [
-    {
-      groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_GET_CONTEXT_FILES,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_GET_CONTEXT_FILES],
-    },
-    {
-      groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_ADD_CONTEXT_FILES,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_ADD_CONTEXT_FILES],
-    },
-    {
-      groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_DROP_CONTEXT_FILES,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_DROP_CONTEXT_FILES],
-    },
-    {
-      groupName: AIDER_TOOL_GROUP_NAME,
-      name: AIDER_TOOL_RUN_PROMPT,
-      description: AIDER_TOOL_DESCRIPTIONS[AIDER_TOOL_RUN_PROMPT],
-    },
-  ],
-  [POWER_TOOL_GROUP_NAME]: [
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_FILE_EDIT,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FILE_EDIT],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_FILE_READ,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FILE_READ],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_FILE_WRITE,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FILE_WRITE],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_GLOB,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_GLOB],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_GREP,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_GREP],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_SEMANTIC_SEARCH,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_SEMANTIC_SEARCH],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_BASH,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_BASH],
-    },
-    {
-      groupName: POWER_TOOL_GROUP_NAME,
-      name: POWER_TOOL_FETCH,
-      description: POWER_TOOL_DESCRIPTIONS[POWER_TOOL_FETCH],
-    },
-  ],
-  [TODO_TOOL_GROUP_NAME]: [
-    {
-      groupName: TODO_TOOL_GROUP_NAME,
-      name: TODO_TOOL_SET_ITEMS,
-      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_SET_ITEMS],
-    },
-    {
-      groupName: TODO_TOOL_GROUP_NAME,
-      name: TODO_TOOL_GET_ITEMS,
-      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_GET_ITEMS],
-    },
-    {
-      groupName: TODO_TOOL_GROUP_NAME,
-      name: TODO_TOOL_UPDATE_ITEM_COMPLETION,
-      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_UPDATE_ITEM_COMPLETION],
-    },
-    {
-      groupName: TODO_TOOL_GROUP_NAME,
-      name: TODO_TOOL_CLEAR_ITEMS,
-      description: TODO_TOOL_DESCRIPTIONS[TODO_TOOL_CLEAR_ITEMS],
-    },
-  ],
-  [TASKS_TOOL_GROUP_NAME]: [
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_LIST_TASKS,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_LIST_TASKS],
-    },
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_GET_TASK,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_GET_TASK],
-    },
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_GET_TASK_MESSAGE,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_GET_TASK_MESSAGE],
-    },
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_CREATE_TASK,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_CREATE_TASK],
-    },
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_DELETE_TASK,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_DELETE_TASK],
-    },
-    {
-      groupName: TASKS_TOOL_GROUP_NAME,
-      name: TASKS_TOOL_SEARCH_TASK,
-      description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_SEARCH_TASK],
-    },
-  ],
-  [MEMORY_TOOL_GROUP_NAME]: [
-    {
-      groupName: MEMORY_TOOL_GROUP_NAME,
-      name: MEMORY_TOOL_STORE,
-      description: MEMORY_TOOL_DESCRIPTIONS[MEMORY_TOOL_STORE],
-    },
-    {
-      groupName: MEMORY_TOOL_GROUP_NAME,
-      name: MEMORY_TOOL_RETRIEVE,
-      description: MEMORY_TOOL_DESCRIPTIONS[MEMORY_TOOL_RETRIEVE],
-    },
-    {
-      groupName: MEMORY_TOOL_GROUP_NAME,
-      name: MEMORY_TOOL_LIST,
-      description: MEMORY_TOOL_DESCRIPTIONS[MEMORY_TOOL_LIST],
-    },
-    {
-      groupName: MEMORY_TOOL_GROUP_NAME,
-      name: MEMORY_TOOL_UPDATE,
-      description: MEMORY_TOOL_DESCRIPTIONS[MEMORY_TOOL_UPDATE],
-    },
-    {
-      groupName: MEMORY_TOOL_GROUP_NAME,
-      name: MEMORY_TOOL_DELETE,
-      description: MEMORY_TOOL_DESCRIPTIONS[MEMORY_TOOL_DELETE],
-    },
-  ],
-  [SKILLS_TOOL_GROUP_NAME]: [
-    {
-      groupName: SKILLS_TOOL_GROUP_NAME,
-      name: 'activate_skill',
-      description: 'Execute a skill. Description is generated dynamically at runtime based on discovered skills.',
-    },
-  ],
-};
-
-// Helper functions for accordion summaries
-const getRunSettingsSummary = (profile: AgentProfile) => {
-  const settings: React.ReactNode[] = [];
-
-  // Always show max iterations
-  settings.push(
-    <div key="iterations" className="flex items-center gap-1">
-      <MdRepeat className="w-3 h-3 text-text-secondary" />
-      <span>{profile.maxIterations === 0 ? '∞' : profile.maxIterations}</span>
-    </div>,
-  );
-
-  // Only show temperature if it's overridden
-  if (profile.temperature !== undefined) {
-    settings.push(
-      <div key="temperature" className="flex items-center gap-1">
-        <MdThermostat className="w-3 h-3 text-text-secondary" />
-        <span>{profile.temperature}</span>
-      </div>,
-    );
-  }
-
-  // Only show max tokens if it's overridden
-  if (profile.maxTokens !== undefined) {
-    settings.push(
-      <div key="tokens" className="flex items-center gap-1">
-        <FaArrowRightFromBracket className="w-2.5 h-2.5 -rotate-90 text-text-secondary" />
-        <span>{profile.maxTokens}</span>
-      </div>,
-    );
-  }
-
-  if (profile.autoCompactThresholdPercentage !== undefined) {
-    settings.push(
-      <div key="threshold-pct" className="flex items-center gap-1">
-        <span>{profile.autoCompactThresholdPercentage}%</span>
-      </div>,
-    );
-  }
-
-  if (profile.autoCompactThresholdTokens !== undefined) {
-    settings.push(
-      <div key="threshold-tokens" className="flex items-center gap-1">
-        <span>{profile.autoCompactThresholdTokens.toLocaleString()} tok</span>
-      </div>,
-    );
-  }
-
-  if (profile.autoCompactionType !== undefined) {
-    settings.push(
-      <div key="compaction-type" className="flex items-center gap-1">
-        <span>{profile.autoCompactionType}</span>
-      </div>,
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      {settings.map((setting, index) => (
-        <React.Fragment key={index}>
-          {index > 0 && <span className="text-text-muted">|</span>}
-          {setting}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-};
-
-const getContextSummary = (profile: AgentProfile) => {
-  const enabled: ReactNode[] = [];
-  if (profile.includeContextFiles) {
-    enabled.push(<MdOutlineFileCopy key="files" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.includeRepoMap) {
-    enabled.push(<MdOutlineMap key="map" className="w-3 h-3 text-text-secondary" />);
-  }
-  return enabled.length > 0 ? (
-    <div className="flex items-center gap-2">
-      {enabled.map((icon, index) => (
-        <React.Fragment key={index}>{icon}</React.Fragment>
-      ))}
-    </div>
-  ) : (
-    <span className="text-xs text-text-muted-light">None</span>
-  );
-};
-
-const getGenericToolsSummary = (profile: AgentProfile) => {
-  const enabled: ReactNode[] = [];
-  if (profile.useAiderTools) {
-    enabled.push(<MdOutlineHdrAuto key="aider" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.usePowerTools) {
-    enabled.push(<MdFlashOn key="power" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.useTodoTools) {
-    enabled.push(<MdOutlineChecklist key="todo" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.useTaskTools) {
-    enabled.push(<FaList key="tasks" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.useMemoryTools) {
-    enabled.push(<FaBrain key="memory" className="w-3 h-3 text-text-secondary" />);
-  }
-  if (profile.useSkillsTools) {
-    enabled.push(<MdPsychology key="skills" className="w-3.5 h-3.5 text-text-secondary" />);
-  }
-  if (!profile.disabledExtensionTools || profile.disabledExtensionTools.length === 0) {
-    enabled.push(<MdExtension key="ext" className="w-3.5 h-3.5 text-text-secondary" />);
-  }
-  return enabled.length > 0 ? (
-    <div className="flex items-center gap-2">
-      {enabled.map((icon, index) => (
-        <React.Fragment key={index}>{icon}</React.Fragment>
-      ))}
-    </div>
-  ) : (
-    <span className="text-xs text-text-muted-light">None</span>
-  );
-};
-
-const getMcpServersSummary = (profile: AgentProfile, mcpServers: Record<string, McpServerConfig>) => {
-  const enabledCount = (profile.enabledServers || []).filter((serverName) => mcpServers[serverName]).length;
-  const totalCount = Object.keys(mcpServers).length;
-  return `${enabledCount}/${totalCount}`;
-};
+enum ProfileTab {
+  General = 'general',
+  Prompts = 'prompts',
+  Tools = 'tools',
+  Subagents = 'subagents',
+}
 
 type Props = {
   settings: SettingsData;
@@ -403,6 +57,7 @@ export const AgentSettings = ({
   const [isEditingMcpServersConfig, setIsEditingMcpServersConfig] = useState(false);
   const [mcpServersReloadTrigger, setMcpServersReloadTrigger] = useState(0);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(initialProfileId || DEFAULT_AGENT_PROFILE.id);
+  const [activeTab, setActiveTab] = useState<ProfileTab>(ProfileTab.General);
 
   // Profile context state for project-level profiles
   const contexts = useMemo(() => ['global', ...openProjects.map((p) => p.baseDir)], [openProjects]);
@@ -463,9 +118,7 @@ export const AgentSettings = ({
     }
   }, [initialProfileId]);
 
-  const [mcpServersExpanded, setMcpServersExpanded] = useState(false);
   const profileNameInputRef = useRef<HTMLInputElement>(null);
-  const [showColorPicker, setShowColorPicker] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [clipboardProfile, setClipboardProfile] = useState<{ profile: AgentProfile; action: 'copy' | 'cut' } | null>(null);
 
@@ -497,6 +150,14 @@ export const AgentSettings = ({
     const currentProfileIds = agentProfiles.map((p) => p.id);
     return DEFAULT_AGENT_PROFILES.filter((defaultProfile) => !currentProfileIds.includes(defaultProfile.id));
   }, [agentProfiles, profileContext]);
+
+  // Profiles that can act as subagents for the selected profile
+  const availableSubagents = useMemo(() => {
+    if (!selectedProfile) {
+      return [];
+    }
+    return agentProfiles.filter((p) => p.id !== selectedProfile.id && p.subagent.enabled && (!p.projectDir || p.projectDir === profileContext));
+  }, [agentProfiles, selectedProfile, profileContext]);
 
   // Get context display name
   const getContextDisplayName = () => {
@@ -555,21 +216,6 @@ export const AgentSettings = ({
 
   // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
   const agentProfileIds = useMemo(() => filteredProfiles.map((p) => p.id), [filteredProfiles]);
-
-  const getSubagentSummary = (profile: AgentProfile) => {
-    if (!profile.subagent.enabled) {
-      return t('settings.agent.subagent.statusDisabled');
-    }
-    const statusText =
-      profile.subagent.invocationMode === InvocationMode.Automatic ? t('settings.agent.subagent.statusAutomatic') : t('settings.agent.subagent.statusOnDemand');
-
-    return (
-      <div className="flex items-center gap-2">
-        <span>{statusText}</span>
-        <div className="w-3 h-3 rounded border border-border-default" style={{ backgroundColor: profile.subagent.color }} />
-      </div>
-    );
-  };
 
   const handleCreateNewProfile = () => {
     const newProfileId = uuidv4();
@@ -855,23 +501,16 @@ export const AgentSettings = ({
     }
   };
 
-  const renderSectionAccordion = (title: ReactNode, children: ReactNode, open?: boolean, setOpen?: (open: boolean) => void, summary?: ReactNode) => (
-    <Accordion
-      title={
-        <div className="flex-1 text-left text-sm font-medium px-2 flex items-center justify-between">
-          <div>{title}</div>
-          {summary && <div className="text-xs text-text-muted-light ml-2">{summary}</div>}
-        </div>
-      }
-      chevronPosition="right"
-      className="mb-2 border rounded-md border-border-default-dark"
-      isOpen={open}
-      onOpenChange={setOpen}
-      scrollToVisibleWhenExpanded={true}
-    >
-      <div className="p-4 pt-2">{children}</div>
-    </Accordion>
-  );
+  const profileTabs = [
+    { id: ProfileTab.General, label: t('settings.agent.tabs.general') },
+    { id: ProfileTab.Prompts, label: t('settings.agent.tabs.prompts') },
+    { id: ProfileTab.Tools, label: t('settings.agent.tabs.tools') },
+    { id: ProfileTab.Subagents, label: t('settings.agent.tabs.subagents') },
+  ];
+
+  const handleTabChange = (tabId: string) => {
+    setActiveTab(tabId as ProfileTab);
+  };
 
   return isAddingMcpServer || editingMcpServer || isEditingMcpServersConfig ? (
     <McpServerForm
@@ -988,621 +627,87 @@ export const AgentSettings = ({
 
       {/* Right Details Pane */}
       <div className="flex-1 flex flex-col h-full min-w-0">
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
-          <div className="max-w-3xl mx-auto">
-            {selectedProfile ? (
-              <div className="space-y-4">
-                <Input
-                  ref={profileNameInputRef}
-                  label={t('agentProfiles.profileName')}
-                  value={selectedProfile.name}
-                  onChange={(e) => handleProfileSettingChange('name', e.target.value)}
-                  className="mb-1"
-                />
-                {selectedProfile && (
-                  <div className="!mb-4">
-                    <label className="block text-sm font-medium text-text-primary mb-1">{t('agentProfiles.model')}</label>
-                    <div className="w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
-                      <ModelSelector
-                        className="w-full justify-between"
-                        models={agentModels}
-                        selectedModelId={currentModelId}
-                        onChange={handleModelChange}
-                        preferredModelIds={settings.preferredModels || []}
-                        removePreferredModel={handleRemovePreferredModel}
-                        providers={providers}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.runSettings'),
-                  <div>
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                      <Slider
-                        label={
-                          <div className="flex items-center text-xs">
-                            <span>{t('settings.agent.maxIterations')}</span>
-                            <InfoIcon tooltip={t('settings.agent.computationalResources')} className="ml-1" />
-                          </div>
-                        }
-                        min={0}
-                        max={200}
-                        value={selectedProfile.maxIterations}
-                        onChange={(value) => handleProfileSettingChange('maxIterations', value)}
-                        formatValue={(v) => (v === 0 ? t('settings.agent.infinite') : String(v))}
-                      />
-
-                      <Input
-                        label={
-                          <div className="flex items-center text-xs">
-                            <span>{t('settings.agent.minTimeBetweenToolCalls')}</span>
-                            <InfoIcon tooltip={t('settings.agent.rateLimiting')} className="ml-1" />
-                          </div>
-                        }
-                        type="number"
-                        min={0}
-                        max={60000}
-                        step={100}
-                        value={selectedProfile.minTimeBetweenToolCalls.toString()}
-                        onChange={(e) => handleProfileSettingChange('minTimeBetweenToolCalls', Number(e.target.value))}
-                      />
-
-                      {/* Temperature Column */}
-                      {selectedProfile.temperature === undefined ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center text-xs">
-                            <span>{t('settings.agent.temperature')}</span>
-                            <InfoIcon tooltip={t('settings.agent.temperatureTooltip')} className="ml-1" />
-                            <div className="flex items-center justify-end w-full">
-                              <Button variant="text" size="xs" onClick={() => handleProfileSettingChange('temperature', 0.0)}>
-                                {t('settings.agent.override')}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Slider
-                              label={
-                                <div className="flex items-center text-xs">
-                                  <span>{t('settings.agent.temperature')}</span>
-                                  <InfoIcon tooltip={t('settings.agent.temperatureTooltip')} className="ml-2" />
-                                </div>
-                              }
-                              min={0}
-                              max={2}
-                              step={0.05}
-                              value={selectedProfile.temperature}
-                              className="flex-1"
-                              onChange={(value) => handleProfileSettingChange('temperature', value)}
-                            />
-                            <IconButton
-                              icon={<FaTimes className="w-3 h-3" />}
-                              onClick={() => handleProfileSettingChange('temperature', undefined)}
-                              tooltip={t('settings.agent.clearOverride')}
-                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm mt-8"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Max Tokens Column */}
-                      <div className="space-y-2">
-                        <div className="flex items-center text-xs">
-                          <span className="flex-shrink-0">{t('settings.agent.maxTokens')}</span>
-                          <InfoIcon tooltip={t('settings.agent.tokensPerResponse')} className="ml-1" />
-                          {selectedProfile.maxTokens === undefined && (
-                            <div className="flex items-center justify-end w-full">
-                              <Button variant="text" size="xs" onClick={() => handleProfileSettingChange('maxTokens', 32000)} className="justify-center">
-                                {t('settings.agent.override')}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        {selectedProfile.maxTokens !== undefined && (
-                          <div className="flex items-center gap-2 w-full">
-                            <div className="flex-1">
-                              <Input
-                                type="number"
-                                min={0}
-                                max={60000}
-                                step={100}
-                                value={selectedProfile.maxTokens.toString()}
-                                onChange={(e) => handleProfileSettingChange('maxTokens', Number(e.target.value))}
-                              />
-                            </div>
-                            <IconButton
-                              icon={<FaTimes className="w-3 h-3" />}
-                              onClick={() => handleProfileSettingChange('maxTokens', undefined)}
-                              tooltip={t('settings.agent.clearOverride')}
-                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Auto-compact Threshold Percentage */}
-                      {selectedProfile.autoCompactThresholdPercentage === undefined ? (
-                        <div className="space-y-2">
-                          <div className="flex items-center text-xs">
-                            <span className="whitespace-nowrap">{t('settings.agent.autoCompactThresholdPercentage')}</span>
-                            <InfoIcon tooltip={t('settings.agent.autoCompactThresholdPercentageTooltip')} className="ml-1" />
-                            <div className="flex items-center justify-end w-full">
-                              <Button
-                                variant="text"
-                                size="xs"
-                                onClick={() =>
-                                  handleProfileSettingChange('autoCompactThresholdPercentage', settings.taskSettings.contextCompactingThreshold.percentage)
-                                }
-                              >
-                                {t('settings.agent.override')}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Slider
-                              label={
-                                <div className="flex items-center text-xs">
-                                  <span className="whitespace-nowrap">{t('settings.agent.autoCompactThresholdPercentage')}</span>
-                                  <InfoIcon tooltip={t('settings.agent.autoCompactThresholdPercentageTooltip')} className="ml-1" />
-                                </div>
-                              }
-                              min={0}
-                              max={100}
-                              step={1}
-                              value={selectedProfile.autoCompactThresholdPercentage}
-                              className="flex-1"
-                              onChange={(value) => handleProfileSettingChange('autoCompactThresholdPercentage', value)}
-                            />
-                            <IconButton
-                              icon={<FaTimes className="w-3 h-3" />}
-                              onClick={() => handleProfileSettingChange('autoCompactThresholdPercentage', undefined)}
-                              tooltip={t('settings.agent.clearOverride')}
-                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm mt-8"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Auto-compact Threshold Tokens */}
-                      <div className="space-y-2">
-                        <div className="flex items-center text-xs">
-                          <span className="flex-shrink-0 whitespace-nowrap">{t('settings.agent.autoCompactThresholdTokens')}</span>
-                          <InfoIcon tooltip={t('settings.agent.autoCompactThresholdTokensTooltip')} className="ml-1" />
-                          {selectedProfile.autoCompactThresholdTokens === undefined && (
-                            <div className="flex items-center justify-end w-full">
-                              <Button
-                                variant="text"
-                                size="xs"
-                                onClick={() =>
-                                  handleProfileSettingChange('autoCompactThresholdTokens', settings.taskSettings.contextCompactingThreshold.tokens)
-                                }
-                              >
-                                {t('settings.agent.override')}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        {selectedProfile.autoCompactThresholdTokens !== undefined && (
-                          <div className="flex items-center gap-2 w-full">
-                            <div className="flex-1">
-                              <Input
-                                type="number"
-                                min={0}
-                                step={10000}
-                                value={selectedProfile.autoCompactThresholdTokens.toString()}
-                                onChange={(e) => handleProfileSettingChange('autoCompactThresholdTokens', Number(e.target.value))}
-                              />
-                            </div>
-                            <IconButton
-                              icon={<FaTimes className="w-3 h-3" />}
-                              onClick={() => handleProfileSettingChange('autoCompactThresholdTokens', undefined)}
-                              tooltip={t('settings.agent.clearOverride')}
-                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Compaction Type */}
-                      <div className="space-y-2">
-                        <div className="flex items-center text-xs">
-                          <span className="whitespace-nowrap">{t('settings.agent.autoCompactionType')}</span>
-                          <InfoIcon tooltip={t('settings.agent.autoCompactionTypeTooltip')} className="ml-1" />
-                          {selectedProfile.autoCompactionType === undefined && (
-                            <div className="flex items-center justify-end w-full">
-                              <Button
-                                variant="text"
-                                size="xs"
-                                onClick={() =>
-                                  handleProfileSettingChange('autoCompactionType', settings.taskSettings.contextCompactionType ?? ContextCompactionType.Compact)
-                                }
-                              >
-                                {t('settings.agent.override')}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        {selectedProfile.autoCompactionType !== undefined && (
-                          <div className="flex items-center gap-2">
-                            <div className="flex gap-2">
-                              <Tooltip content={t('settings.tasks.contextCompactionTypeCompactTooltip')}>
-                                <button
-                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Compact)}
-                                  className={clsx(
-                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
-                                    selectedProfile.autoCompactionType === ContextCompactionType.Compact
-                                      ? 'bg-bg-primary border-border-light text-text-primary'
-                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
-                                  )}
-                                >
-                                  {t('settings.tasks.contextCompactionTypeCompact')}
-                                </button>
-                              </Tooltip>
-                              <Tooltip content={t('settings.tasks.contextCompactionTypeSmartTooltip')}>
-                                <button
-                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Smart)}
-                                  className={clsx(
-                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
-                                    selectedProfile.autoCompactionType === ContextCompactionType.Smart
-                                      ? 'bg-bg-primary border-border-light text-text-primary'
-                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
-                                  )}
-                                >
-                                  {t('settings.tasks.contextCompactionTypeSmart')}
-                                </button>
-                              </Tooltip>
-                              <Tooltip content={t('settings.tasks.contextCompactionTypeHandoffTooltip')}>
-                                <button
-                                  onClick={() => handleProfileSettingChange('autoCompactionType', ContextCompactionType.Handoff)}
-                                  className={clsx(
-                                    'w-[100px] px-3 py-1.5 text-xs rounded border transition-colors',
-                                    selectedProfile.autoCompactionType === ContextCompactionType.Handoff
-                                      ? 'bg-bg-primary border-border-light text-text-primary'
-                                      : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary',
-                                  )}
-                                >
-                                  {t('settings.tasks.contextCompactionTypeHandoff')}
-                                </button>
-                              </Tooltip>
-                            </div>
-                            <IconButton
-                              icon={<FaTimes className="w-3 h-3" />}
-                              onClick={() => handleProfileSettingChange('autoCompactionType', undefined)}
-                              tooltip={t('settings.agent.clearOverride')}
-                              className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>,
-                  undefined,
-                  undefined,
-                  <span className="text-xs text-text-muted-light">{getRunSettingsSummary(selectedProfile)}</span>,
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.rules'),
-                  <AgentRules profile={selectedProfile} handleProfileSettingChange={handleProfileSettingChange} />,
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.context'),
-                  <div className="space-y-2">
-                    <Checkbox
-                      label={
-                        <div className="flex items-center">
-                          <span>{t('settings.agent.includeContextFiles')}</span>
-                          <InfoIcon className="ml-1" tooltip={t('settings.agent.includeFilesTooltip')} />
-                        </div>
-                      }
-                      checked={selectedProfile.includeContextFiles}
-                      onChange={(checked) => handleProfileSettingChange('includeContextFiles', checked)}
-                    />
-                    <Checkbox
-                      label={
-                        <div className="flex items-center">
-                          <span>{t('settings.agent.includeRepoMap')}</span>
-                          <InfoIcon className="ml-1" tooltip={t('settings.agent.includeRepoMapTooltip')} />
-                        </div>
-                      }
-                      checked={selectedProfile.includeRepoMap}
-                      onChange={(checked) => handleProfileSettingChange('includeRepoMap', checked)}
-                    />
-                  </div>,
-                  undefined,
-                  undefined,
-                  <span className="text-xs text-text-muted-light">{getContextSummary(selectedProfile)}</span>,
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.genericTools'),
-                  <div>
-                    <div className="space-y-1">
-                      {Object.entries(tools).map(([groupName, tools]) => {
-                        const isGroupEnabled =
-                          (selectedProfile.usePowerTools && groupName === POWER_TOOL_GROUP_NAME) ||
-                          (selectedProfile.useAiderTools && groupName === AIDER_TOOL_GROUP_NAME) ||
-                          (selectedProfile.useTodoTools && groupName === TODO_TOOL_GROUP_NAME) ||
-                          (selectedProfile.useTaskTools && groupName === TASKS_TOOL_GROUP_NAME) ||
-                          (selectedProfile.useMemoryTools && groupName === MEMORY_TOOL_GROUP_NAME) ||
-                          (selectedProfile.useSkillsTools && groupName === SKILLS_TOOL_GROUP_NAME);
-                        return (
-                          <div key={groupName}>
-                            <GenericToolGroupItem
-                              name={groupName}
-                              tools={tools}
-                              profile={selectedProfile}
-                              onApprovalChange={handleToolApprovalChange}
-                              onProfileChange={handleProfileSettingChange}
-                              enabled={isGroupEnabled}
-                              onEnabledChange={(enabled) => {
-                                if (groupName === POWER_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('usePowerTools', enabled);
-                                } else if (groupName === AIDER_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('useAiderTools', enabled);
-                                } else if (groupName === TODO_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('useTodoTools', enabled);
-                                } else if (groupName === TASKS_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('useTaskTools', enabled);
-                                } else if (groupName === MEMORY_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('useMemoryTools', enabled);
-                                } else if (groupName === SKILLS_TOOL_GROUP_NAME) {
-                                  handleProfileSettingChange('useSkillsTools', enabled);
-                                }
-                              }}
-                            />
-                          </div>
-                        );
-                      })}
-                      {extensionToolsInfo.map((extInfo) => {
-                        const extTools: GenericTool[] = extInfo.tools.map((tool) => ({
-                          groupName: extInfo.extensionId,
-                          name: tool.name,
-                          description: tool.description,
-                        }));
-                        const isExtEnabled = !(selectedProfile.disabledExtensionTools ?? []).includes(extInfo.extensionId);
-                        const handleExtEnabledChange = (enabled: boolean) => {
-                          const disabled = selectedProfile.disabledExtensionTools ?? [];
-                          const updated = enabled ? disabled.filter((id) => id !== extInfo.extensionId) : [...disabled, extInfo.extensionId];
-                          handleProfileSettingChange('disabledExtensionTools', updated);
-                        };
-                        return (
-                          <div key={extInfo.extensionId}>
-                            <GenericToolGroupItem
-                              name={extInfo.extensionId}
-                              displayName={extInfo.extensionName}
-                              tools={extTools}
-                              profile={selectedProfile}
-                              onApprovalChange={handleToolApprovalChange}
-                              onProfileChange={handleProfileSettingChange}
-                              enabled={isExtEnabled}
-                              onEnabledChange={handleExtEnabledChange}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {Object.keys(tools).length === 0 && extensionToolsInfo.length === 0 && (
-                      <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noGenericToolsConfigured')}</div>
-                    )}
-                  </div>,
-                  undefined,
-                  undefined,
-                  <span className="text-xs text-text-muted-light">{getGenericToolsSummary(selectedProfile)}</span>,
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.mcpServers'),
-                  <div>
-                    <div className="space-y-1">
-                      {Object.entries(mcpServers).map(([serverName, serverConfig]) => {
-                        const isServerEnabled = (selectedProfile.enabledServers || []).includes(serverName);
-                        return (
-                          <div key={serverName}>
-                            <McpServerItem
-                              serverName={serverName}
-                              config={serverConfig}
-                              toolApprovals={selectedProfile.toolApprovals || {}}
-                              onApprovalChange={handleToolApprovalChange}
-                              enabled={isServerEnabled}
-                              onEnabledChange={(checked) => handleToggleServerEnabled(serverName, checked)}
-                              onRemove={() => handleMcpServerRemove(serverName)}
-                              onEdit={() =>
-                                setEditingMcpServer({
-                                  name: serverName,
-                                  config: serverConfig,
-                                })
-                              }
-                              reloadTrigger={mcpServersReloadTrigger}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {Object.keys(mcpServers).length === 0 && (
-                      <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
-                    )}
-                    <div className={clsx('flex flex-1 items-center justify-end mt-4', Object.keys(mcpServers).length === 0 && 'justify-center')}>
-                      {Object.keys(mcpServers).length > 0 && (
-                        <>
-                          <Button variant="text" className="ml-2 text-xs" onClick={() => setIsEditingMcpServersConfig(true)}>
-                            <FaPencilAlt className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.editConfig')}
-                          </Button>
-                          <Button variant="text" className="ml-2 text-xs" onClick={handleMcpServersReload}>
-                            <FaSyncAlt className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.reloadServers')}
-                          </Button>
-                        </>
-                      )}
-                      <Button onClick={() => setIsAddingMcpServer(true)} variant="text" className="ml-2 text-xs">
-                        <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.addMcpServer')}
-                      </Button>
-                    </div>
-                  </div>,
-                  mcpServersExpanded,
-                  setMcpServersExpanded,
-                  <span className="text-xs text-text-muted-light">{getMcpServersSummary(selectedProfile, mcpServers)}</span>,
-                )}
-
-                {renderSectionAccordion(
-                  t('settings.agent.subagent.title'),
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Checkbox
-                        label={
-                          <div className="flex items-center">
-                            <span>{t('settings.agent.subagent.canUseSubagents')}</span>
-                            <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.canUseSubagentsInformation')} />
-                          </div>
-                        }
-                        checked={selectedProfile.useSubagents}
-                        onChange={(checked) => handleProfileSettingChange('useSubagents', checked)}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <Checkbox
-                        label={
-                          <div className="flex items-center">
-                            <span>{t('settings.agent.subagent.enableAsSubagent')}</span>
-                            <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.enableAsSubagentInformation')} />
-                          </div>
-                        }
-                        checked={selectedProfile.subagent.enabled}
-                        onChange={(checked) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, enabled: checked })}
-                      />
-                      {selectedProfile.subagent.enabled && (
-                        <div
-                          className="w-6 h-6 rounded border border-border-default cursor-pointer"
-                          style={{ backgroundColor: selectedProfile.subagent.color }}
-                          onClick={() => setShowColorPicker(!showColorPicker)}
-                        />
-                      )}
-                    </div>
-
-                    {selectedProfile.subagent.enabled && (
-                      <div className="flex items-center justify-between mt-2">
-                        <Select
-                          label={
-                            <div className="flex items-center">
-                              <span>{t('settings.agent.subagent.contextMemory')}</span>
-                              <InfoIcon className="ml-2" tooltip={t('settings.agent.subagent.contextMemoryTooltip')} />
-                            </div>
-                          }
-                          options={[
-                            { label: t('settings.agent.subagent.contextMemory.off'), value: ContextMemoryMode.Off },
-                            { label: t('settings.agent.subagent.contextMemory.fullContext'), value: ContextMemoryMode.FullContext },
-                            { label: t('settings.agent.subagent.contextMemory.lastMessage'), value: ContextMemoryMode.LastMessage },
-                          ]}
-                          value={selectedProfile.subagent.contextMemory}
-                          onChange={(value) =>
-                            handleProfileSettingChange('subagent', { ...selectedProfile.subagent, contextMemory: value as ContextMemoryMode })
-                          }
-                          size="sm"
-                        />
-                      </div>
-                    )}
-
-                    {selectedProfile.subagent.enabled && (
-                      <div className="mt-4 space-y-1">
-                        <TextArea
-                          label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.systemPrompt')}</label>}
-                          className="min-h-[160px]"
-                          value={selectedProfile.subagent.systemPrompt}
-                          onChange={(e) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, systemPrompt: e.target.value })}
-                          placeholder={t('settings.agent.subagent.systemPromptPlaceholder')}
-                        />
-
-                        <div className="flex items-center gap-4 mb-1">
-                          <Select
-                            label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.invocationMode')}</label>}
-                            options={[
-                              { label: t('settings.agent.subagent.invocationModeOnDemand'), value: InvocationMode.OnDemand },
-                              { label: t('settings.agent.subagent.invocationModeAutomatic'), value: InvocationMode.Automatic },
-                            ]}
-                            value={selectedProfile.subagent.invocationMode}
-                            onChange={(value) =>
-                              handleProfileSettingChange('subagent', { ...selectedProfile.subagent, invocationMode: value as InvocationMode })
-                            }
-                            size="sm"
-                          />
-                        </div>
-
-                        {selectedProfile.subagent.invocationMode === InvocationMode.Automatic && (
-                          <TextArea
-                            label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.description')}</label>}
-                            className="min-h-[100px]"
-                            value={selectedProfile.subagent.description}
-                            onChange={(e) => handleProfileSettingChange('subagent', { ...selectedProfile.subagent, description: e.target.value })}
-                            placeholder={t('settings.agent.subagent.descriptionPlaceholder')}
-                          />
-                        )}
-                        <div className="text-2xs text-text-muted-light mt-3">
-                          {selectedProfile.subagent.invocationMode === InvocationMode.Automatic
-                            ? !selectedProfile.subagent.description.trim()
-                              ? t('settings.agent.subagent.descriptionRequiredForAutomatic')
-                              : t('settings.agent.subagent.invocationModeAutomaticInformation')
-                            : t('settings.agent.subagent.invocationModeOnDemandInformation')}
-                        </div>
-                      </div>
-                    )}
-                  </div>,
-                  undefined,
-                  undefined,
-                  <span className="text-xs text-text-muted-light">{getSubagentSummary(selectedProfile)}</span>,
-                )}
-
-                {showColorPicker && selectedProfile.subagent.enabled && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setShowColorPicker(false)}>
-                    <div className="relative bg-bg-secondary border border-border-default rounded-lg shadow-lg p-4">
-                      <Sketch
-                        color={selectedProfile.subagent.color}
-                        onChange={(color) => {
-                          handleProfileSettingChange('subagent', {
-                            ...selectedProfile.subagent,
-                            color: color.hex,
-                          });
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4 pt-2 flex justify-end items-center gap-2">
+        {selectedProfile ? (
+          <>
+            {/* Profile Header */}
+            <div className="px-6 pt-5 pb-1">
+              <div className="max-w-3xl mx-auto space-y-3">
+                <div className="flex items-end gap-2">
+                  <Input
+                    ref={profileNameInputRef}
+                    label={t('agentProfiles.profileName')}
+                    value={selectedProfile.name}
+                    onChange={(e) => handleProfileSettingChange('name', e.target.value)}
+                    wrapperClassName="flex-1"
+                  />
                   {isDefaultProfile(selectedProfileId) && (
-                    <Button onClick={handleResetProfile} variant="text" size="sm" color="secondary" disabled={!selectedProfileId}>
-                      <FaSyncAlt className="w-4 h-4" />
-                      <span>{t('settings.agent.resetProfileToDefaults')}</span>
-                    </Button>
+                    <IconButton
+                      icon={<BiReset className="w-4 h-4" />}
+                      onClick={handleResetProfile}
+                      tooltip={t('settings.agent.resetProfileToDefaults')}
+                      className="p-2 mb-0.5 hover:bg-bg-tertiary rounded text-text-muted-light hover:text-text-primary"
+                    />
                   )}
-                  <Button
+                  <IconButton
+                    icon={<BiTrash className="w-4 h-4" />}
                     onClick={() => handleDeleteProfile(selectedProfileId)}
-                    variant="text"
-                    size="sm"
-                    color="danger"
+                    tooltip={t('common.delete')}
                     disabled={!selectedProfileId || selectedProfileId === DEFAULT_AGENT_PROFILE.id || agentProfiles.length <= 1}
-                  >
-                    <BiTrash className="w-4 h-4" />
-                    <span>{t('common.delete')}</span>
-                  </Button>
+                    className="p-2 mb-0.5 hover:bg-bg-tertiary rounded text-text-muted-light hover:text-text-error"
+                  />
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-text-primary mb-1">{t('agentProfiles.model')}</label>
+                  <div className="w-full p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+                    <ModelSelector
+                      className="w-full justify-between"
+                      models={agentModels}
+                      selectedModelId={currentModelId}
+                      onChange={handleModelChange}
+                      preferredModelIds={settings.preferredModels || []}
+                      removePreferredModel={handleRemovePreferredModel}
+                      providers={providers}
+                    />
+                  </div>
+                </div>
+                <Tabs tabs={profileTabs} activeTabId={activeTab} onTabChange={handleTabChange} />
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-xs">
-                <p className="text-text-muted">{t('settings.agent.selectOrCreateProfile')}</p>
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 min-h-0 overflow-hidden px-6 pb-4">
+              <div className="max-w-3xl mx-auto p-3 border border-border-dark-light rounded max-h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
+                {activeTab === ProfileTab.General && (
+                  <ProfileGeneralSection profile={selectedProfile} settings={settings} onSettingChange={handleProfileSettingChange} />
+                )}
+                {activeTab === ProfileTab.Prompts && <ProfilePromptsSection profile={selectedProfile} onSettingChange={handleProfileSettingChange} />}
+                {activeTab === ProfileTab.Tools && (
+                  <ProfileToolsSection
+                    profile={selectedProfile}
+                    mcpServers={mcpServers}
+                    extensionToolsInfo={extensionToolsInfo}
+                    mcpServersReloadTrigger={mcpServersReloadTrigger}
+                    onSettingChange={handleProfileSettingChange}
+                    onApprovalChange={handleToolApprovalChange}
+                    onToggleServerEnabled={handleToggleServerEnabled}
+                    onMcpServerRemove={handleMcpServerRemove}
+                    onMcpServerEdit={setEditingMcpServer}
+                    onAddMcpServer={() => setIsAddingMcpServer(true)}
+                    onEditMcpServersConfig={() => setIsEditingMcpServersConfig(true)}
+                    onReloadMcpServers={handleMcpServersReload}
+                  />
+                )}
+                {activeTab === ProfileTab.Subagents && (
+                  <ProfileSubagentsSection profile={selectedProfile} availableSubagents={availableSubagents} onSettingChange={handleProfileSettingChange} />
+                )}
               </div>
-            )}
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full text-xs">
+            <p className="text-text-muted">{t('settings.agent.selectOrCreateProfile')}</p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

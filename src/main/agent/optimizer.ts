@@ -108,7 +108,7 @@ const addImportantReminders = async (
 
   // Add reminder about automatic subagents
   if (profile.useSubagents) {
-    const enabledSubagents = projectProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, profile.id));
+    const enabledSubagents = projectProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, profile));
     const automaticSubagents = enabledSubagents.filter(
       (agentProfile) => agentProfile.subagent.invocationMode === InvocationMode.Automatic && agentProfile.subagent.description,
     );

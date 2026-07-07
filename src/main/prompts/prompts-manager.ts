@@ -353,6 +353,18 @@ export class PromptsManager {
     const rulesFiles = await this.getRulesContent(task, agentProfile);
     const customInstructions = [agentProfile.customInstructions, additionalInstructions].filter(Boolean).join('\n\n').trim();
 
+    const customSystemPrompt = agentProfile.systemPrompt?.trim();
+    if (customSystemPrompt) {
+      const parts = [customSystemPrompt];
+      if (rulesFiles) {
+        parts.push(`<Rules>\n${rulesFiles}\n</Rules>`);
+      }
+      if (customInstructions) {
+        parts.push(customInstructions);
+      }
+      return parts.join('\n\n');
+    }
+
     const osName = (await import('os-name')).default();
     const currentDate = new Date().toDateString();
 

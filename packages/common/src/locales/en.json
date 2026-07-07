@@ -637,6 +637,16 @@
     "windowTitleTemplateLabel": "Window title template",
     "windowTitleTemplateTooltip": "Use {project} for project name and {task} for current task name. Example: 'AiderDesk - {project}' or '{project} - {task}'",
     "agent": {
+      "tabs": {
+        "general": "General",
+        "prompts": "Prompts",
+        "tools": "Tools",
+        "subagents": "Subagents"
+      },
+      "systemPrompt": "System Prompt",
+      "systemPromptTooltip": "When set, this replaces the default built-in system prompt when the profile runs as the main agent. Leave empty to use the built-in system prompt.",
+      "systemPromptPlaceholder": "Custom system prompt for this agent. Leave empty to use the default built-in system prompt.",
+      "systemPromptInfo": "Overrides the default system prompt of the agent. To append instructions to the default system prompt instead, use the rules below.",
       "mcpServers": "MCP Servers",
       "provider": "Provider",
       "providerSettings": "Provider Settings",
@@ -702,6 +712,11 @@
         "enableAsSubagentInformation": "When enabled, this profile is available as a subagent to other agents.",
         "canUseSubagents": "Can use Subagents",
         "canUseSubagentsInformation": "When enabled, this agent can use subagents.",
+        "usingSubagents": "Using Subagents",
+        "actingAsSubagent": "Acting as Subagent",
+        "allowAllSubagents": "Allow all subagents",
+        "allowAllSubagentsInformation": "When enabled, this agent can use any subagent-enabled profile. Disable to select specific subagents this agent is allowed to use.",
+        "noSubagentsAvailable": "No subagent-enabled profiles available. Enable 'Enable as Subagent' on other profiles to make them available here.",
         "contextMemory": "Context memory",
         "contextMemoryTooltip": "Controls how much of the previous conversation context is remembered by the subagent. 'Full Context' maintains all previous subagents history, 'Last Message' only uses the final messages from previous subagent runs, and 'Off' starts fresh each time.",
         "contextMemory.off": "Off",

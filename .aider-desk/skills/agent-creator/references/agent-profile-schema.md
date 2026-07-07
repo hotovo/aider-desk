@@ -36,6 +36,8 @@ Complete reference for the `AgentProfile` interface defined in `packages/common/
 | `projectDir` | string? | Project directory (if project-level) | `"/path/to/project"` |
 | `isSubagent` | boolean? | Flag for subagent usage | `true` |
 | `ruleFiles` | string[]? | Paths to rule files (dynamic) | `["/path/to/rule.md"]` |
+| `systemPrompt` | string? | Overrides the default built-in system prompt when running as the main agent | `"You are a code reviewer..."` |
+| `enabledSubagentIds` | string[]? | Profile IDs allowed as subagents; omit to allow all | `["aider", "power-tools"]` |
 
 ## Supporting Types
 
