@@ -644,7 +644,7 @@
         "subagents": "Subagents"
       },
       "systemPrompt": "System Prompt",
-      "systemPromptTooltip": "When set, this replaces the default built-in system prompt when the profile runs as the main agent. Leave empty to use the built-in system prompt.",
+      "systemPromptTooltip": "When set, this replaces the default built-in system prompt when the profile runs as the main agent. When used as a subagent, this is used as a fallback if no subagent-specific system prompt is set. Leave empty to use the default built-in system prompt.",
       "systemPromptPlaceholder": "Custom system prompt for this agent. Leave empty to use the default built-in system prompt.",
       "systemPromptInfo": "Overrides the default system prompt of the agent. To append instructions to the default system prompt instead, use the rules below.",
       "mcpServers": "MCP Servers",
@@ -725,7 +725,7 @@
         "description": "Description",
         "descriptionPlaceholder": "Describe this subagent's purpose, capabilities, and specialization and when this subagent should be invoked",
         "systemPrompt": "System Prompt",
-        "systemPromptPlaceholder": "Your subagent's system prompt goes here. This can be multiple paragraphs and should clearly define the subagent's role, capabilities, and approach to solving problems.",
+        "systemPromptPlaceholder": "Your subagent's system prompt. This can be multiple paragraphs and should define the subagent's role, capabilities, and approach. If left empty, the agent's main System Prompt will be used; if that is also empty, the default built-in system prompt applies.",
         "invocationMode": "Invocation",
         "invocationModeOnDemand": "On demand",
         "invocationModeOnDemandInformation": "Subagent is only used when explicitly requested by the user.",

@@ -643,7 +643,7 @@
         "subagents": "子代理"
       },
       "systemPrompt": "系统提示词",
-      "systemPromptTooltip": "设置后，当此配置作为主代理运行时，将替换默认内置系统提示词。留空则使用内置系统提示词。",
+      "systemPromptTooltip": "设置后，当此配置作为主代理运行时，将替换默认内置系统提示词。作为子代理使用时，如果未设置子代理专用系统提示词，将以此作为回退。留空则使用内置系统提示词。",
       "systemPromptPlaceholder": "此代理的自定义系统提示词。留空则使用默认内置系统提示词。",
       "systemPromptInfo": "覆盖代理的默认系统提示词。如需在默认系统提示词后追加指令，请使用下方的规则。",
       "mcpServers": "MCP 服务器",
@@ -723,7 +723,7 @@
         "description": "描述",
         "descriptionPlaceholder": "描述此子代理的目的、能力和专长...",
         "systemPrompt": "系统提示",
-        "systemPromptPlaceholder": "输入此配置用作子代理时的自定义系统提示指令...",
+        "systemPromptPlaceholder": "此子代理的系统提示词。可以包含多个段落，应定义子代理的角色、能力和处理方式。如果留空，将使用代理的主系统提示词；如果主系统提示词也为空，则使用默认内置系统提示词。",
         "invocationMode": "调用方式",
         "invocationModeOnDemand": "按需",
         "invocationModeOnDemandInformation": "子代理仅在父代理明确请求时才使用。",

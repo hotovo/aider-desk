@@ -452,7 +452,7 @@ export interface AgentProfile {
   useExtensionTools: boolean;
   disabledExtensionTools: string[]; // Array of extension IDs whose tools are disabled
   customInstructions: string;
-  systemPrompt?: string; // when set, overrides the default built-in system prompt when the profile runs as the main agent
+  systemPrompt?: string; // when set, overrides the default built-in system prompt when the profile runs as the main agent; used as fallback for subagent runs when subagent.systemPrompt is not set
   enabledSubagentIds?: string[]; // profile IDs allowed to be used as subagents; undefined = all subagents allowed
   subagent: SubagentConfig;
   isSubagent?: boolean; // flag to indicate if this profile is being used as a subagent
