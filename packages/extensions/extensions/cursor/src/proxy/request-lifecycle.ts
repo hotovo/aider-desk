@@ -328,6 +328,7 @@ function buildRunRequest(
   nativeToolsMode: NativeToolsMode = 'reject',
   longContext = false,
   maxMode = false,
+  stripMaxSuffix = true,
 ): { requestBytes: Uint8Array; blobStore: Map<string, Uint8Array>; mcpTools: McpToolDefinition[] } {
   // Try decoding a persisted checkpoint
   const decodedCheckpoint = checkpoint ? decodeCheckpointState(checkpoint) : null
@@ -362,9 +363,12 @@ function buildRunRequest(
     },
   })
 
-  // Max mode: enabled via config toggle OR by -max suffix on the model ID.
-  // The -max suffix is stripped before sending to Cursor.
-  const hasMaxSuffix = modelId.endsWith('-max')
+  // Max mode: enabled via config toggle OR by a legacy -max suffix on the
+  // model ID, which is stripped before sending to Cursor. Discovered model
+  // IDs may legitimately end in -max (effort level, e.g.
+  // "claude-opus-4-8-thinking-max") — those must be sent unchanged
+  // (stripMaxSuffix=false).
+  const hasMaxSuffix = stripMaxSuffix && modelId.endsWith('-max')
   const isMaxMode = maxMode || hasMaxSuffix
   const cursorModelId = hasMaxSuffix ? modelId.slice(0, -4) : modelId
 
@@ -630,10 +634,12 @@ export async function handleChatCompletion(
   const cfg = ctx.config
   const bodyRecord = body as unknown as Record<string, unknown>
   let modelId: string
+  let isDiscoveredModel: boolean
   {
     const modelSet = ctx.getNormalizedSet()
     const effort = typeof bodyRecord.reasoning_effort === 'string' ? bodyRecord.reasoning_effort : null
     modelId = resolveModelId(baseModelId, effort, cfg.fast, cfg.thinking, modelSet)
+    isDiscoveredModel = modelSet.modelMeta.has(modelId)
   }
 
   const sessionId =
@@ -742,6 +748,7 @@ export async function handleChatCompletion(
     cfg.nativeToolsMode,
     longContext,
     cfg.maxMode,
+    !isDiscoveredModel,
   )
 
   const allowedRoot = cfg.nativeToolsMode === 'native' && projectDir ? resolveAllowedRoot(projectDir) : undefined
@@ -811,6 +818,7 @@ export async function handleChatCompletion(
                 cfg.nativeToolsMode,
                 longContext,
                 cfg.maxMode,
+                !isDiscoveredModel,
               ).requestBytes,
           },
         )
@@ -853,6 +861,7 @@ export async function handleChatCompletion(
             cfg.nativeToolsMode,
             longContext,
             cfg.maxMode,
+            !isDiscoveredModel,
           ).requestBytes,
         }
         persistConversation(sessionId, stored, convConfig)

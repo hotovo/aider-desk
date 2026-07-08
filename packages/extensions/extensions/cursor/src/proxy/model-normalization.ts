@@ -202,11 +202,12 @@ export function processModels(rawModels: CursorModel[]): NormalizedModelSet {
 // ---------------------------------------------------------------------------
 
 /**
- * Resolve a normalized model ID + settings into the legacy slug that
+ * Resolve a requested model ID + settings into the model ID that
  * Cursor's server accepts.
  *
- * Looks up the slug resolution table first. If no match, returns the
- * model ID as-is (works for models without legacy slugs like gemini).
+ * Exact discovered model IDs are returned unchanged. For unknown IDs the
+ * legacy slug resolution table is consulted; if no match, returns the
+ * model ID as-is.
  */
 export function resolveModelId(
   modelId: string,
@@ -215,6 +216,13 @@ export function resolveModelId(
   thinking: boolean,
   modelSet: NormalizedModelSet,
 ): string {
+  // Cursor's server rejects legacy slugs with `not_found` — discovered model
+  // IDs (which already encode thinking/effort/fast variants, e.g.
+  // "claude-sonnet-5-thinking-high") must be sent exactly as-is.
+  if (modelSet.modelMeta.has(modelId)) {
+    return modelId
+  }
+
   const meta = modelSet.modelMeta.get(modelId)
   if (!meta) {
     return modelId
