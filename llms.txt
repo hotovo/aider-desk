@@ -321,6 +321,7 @@ src/
           Slider.tsx
           StyledTooltip.tsx
           Table.tsx
+          Tabs.tsx
           TaskStateChip.tsx
           TextArea.tsx
           Toggle.tsx
@@ -503,6 +504,11 @@ src/
           usePromptFieldText.ts
         settings/
           agent/
+            sections/
+              ProfileGeneralSection.tsx
+              ProfilePromptsSection.tsx
+              ProfileSubagentsSection.tsx
+              ProfileToolsSection.tsx
             AgentProfileItem.tsx
             AgentRules.tsx
             AgentSettings.tsx
@@ -3870,6 +3876,7 @@ async loadExtension(filePath: string): Promise<
 ================
 File: src/main/extensions/extension-manager.ts
 ================
+import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
 ⋮----
@@ -4100,6 +4107,18 @@ private async loadAndInitializeExtension(filePath: string, project?: Project): P
    */
 private async loadExtensionsForDir(dir: string, project?: Project): Promise<void>
 ⋮----
+/**
+   * Diff-based reload: only unload/load extensions that were added, removed, or changed,
+   * rather than reloading all extensions in the directory.
+   */
+private async reloadChangedExtensions(dir: string, project?: Project): Promise<void>
+⋮----
+// Unload removed extensions
+⋮----
+// Load added extensions
+⋮----
+// Reload changed extensions (file exists before and after, but mtime differs)
+⋮----
 getExtensions(projectDir?: string): LoadedExtension[]
 ⋮----
 isInitialized(): boolean
@@ -4255,7 +4274,12 @@ async installExtension(extensionId: string, repositoryUrl: string, project?: Pro
 // For repo-root extensions (entire repo is the extension), use extensionsPath directly
 // For subdirectory extensions, join with the folder name
 ⋮----
+// Use temp dir for npm install to avoid triggering the watcher with
+// hundreds of node_modules file writes
+⋮----
 // Remove .git directory if present (from cloned repos)
+⋮----
+// Copy to final location — node_modules is ignored by the watcher
 ⋮----
 /**
    * Install npm dependencies for a folder extension
@@ -4279,7 +4303,7 @@ async uninstallExtension(extensionId: string, projectDir?: string): Promise<bool
    */
 async updateExtension(extensionId: string, repositoryUrl: string, project?: Project): Promise<ExtensionOperationResult>
 ⋮----
-// Unload existing extension before overwriting files
+// Unload only the extension being updated (not all extensions in the directory)
 ⋮----
 // Clean up old extension if the type changed (file → folder or folder → file)
 ⋮----
@@ -4289,7 +4313,16 @@ async updateExtension(extensionId: string, repositoryUrl: string, project?: Proj
 ⋮----
 // For repo-root extensions (entire repo is the extension), use extensionsPath directly
 ⋮----
+// Use temp dir for npm install to avoid triggering the watcher
+⋮----
 // Remove .git directory if present (from cloned repos)
+⋮----
+// Copy on top of existing directory — merges files, overwriting source
+// files while preserving user-created files like config.json
+⋮----
+// Determine the entry file path
+⋮----
+// Load only the updated extension
 ⋮----
 /**
    * Dispatches an event to all loaded and initialized extensions.
@@ -14578,6 +14611,30 @@ const handleSort = (column: Column<T>) =>
 onClick=
 
 ================
+File: src/renderer/src/components/common/Tabs.tsx
+================
+import { ReactNode } from 'react';
+import { clsx } from 'clsx';
+⋮----
+export type TabItem = {
+  id: string;
+  label: ReactNode;
+};
+⋮----
+type Props = {
+  tabs: TabItem[];
+  activeTabId: string;
+  onTabChange: (tabId: string) => void;
+  className?: string;
+};
+⋮----
+<div className=
+⋮----
+const handleClick = () =>
+⋮----
+className=
+
+================
 File: src/renderer/src/components/common/TaskStateChip.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -20399,6 +20456,178 @@ import { useIndexedDB } from '@/hooks/useIndexedDB';
 export const usePromptFieldText = (baseDir: string, taskId: string, onLoad?: (value: string) => void) =>
 
 ================
+File: src/renderer/src/components/settings/agent/sections/ProfileGeneralSection.tsx
+================
+import { AgentProfile, ContextCompactionType, SettingsData } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import { FaTimes } from 'react-icons/fa';
+import { clsx } from 'clsx';
+⋮----
+import { Slider } from '@/components/common/Slider';
+import { Input } from '@/components/common/Input';
+import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  profile: AgentProfile;
+  settings: SettingsData;
+  onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
+};
+⋮----
+const renderCompactionTypeButton = (type: ContextCompactionType, label: string, tooltip: string) =>
+⋮----
+const handleClick = () =>
+⋮----
+className=
+⋮----
+<span>
+⋮----
+{/* Temperature Column */}
+⋮----
+onClick=
+⋮----
+{/* Max Tokens Column */}
+⋮----
+onChange=
+⋮----
+{/* Auto-compact Threshold Percentage */}
+⋮----
+<span className="whitespace-nowrap">
+⋮----
+{/* Auto-compact Threshold Tokens */}
+⋮----
+{/* Compaction Type */}
+⋮----
+
+================
+File: src/renderer/src/components/settings/agent/sections/ProfilePromptsSection.tsx
+================
+import { AgentProfile } from '@common/types';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { AgentRules } from '../AgentRules';
+⋮----
+import { TextArea } from '@/components/common/TextArea';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type Props = {
+  profile: AgentProfile;
+  onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
+};
+⋮----
+<span>
+
+================
+File: src/renderer/src/components/settings/agent/sections/ProfileSubagentsSection.tsx
+================
+import { useState } from 'react';
+import { AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import Sketch from '@uiw/react-color-sketch';
+⋮----
+import { Checkbox } from '@/components/common/Checkbox';
+import { Select } from '@/components/common/Select';
+import { TextArea } from '@/components/common/TextArea';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type Props = {
+  profile: AgentProfile;
+  availableSubagents: AgentProfile[];
+  onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
+};
+⋮----
+const handleAllowAllSubagentsChange = (checked: boolean) =>
+⋮----
+const handleSubagentAllowedChange = (subagentId: string, checked: boolean) =>
+⋮----
+const handleToggleColorPicker = () =>
+⋮----
+{/* Using subagents */}
+⋮----
+<span>
+⋮----
+{/* Acting as subagent */}
+⋮----
+onClick=
+
+================
+File: src/renderer/src/components/settings/agent/sections/ProfileToolsSection.tsx
+================
+import { AgentProfile, ExtensionToolInfo, GenericTool, McpServerConfig, ToolApprovalState } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
+import { clsx } from 'clsx';
+import {
+  AIDER_TOOL_ADD_CONTEXT_FILES,
+  AIDER_TOOL_DESCRIPTIONS,
+  AIDER_TOOL_DROP_CONTEXT_FILES,
+  AIDER_TOOL_GET_CONTEXT_FILES,
+  AIDER_TOOL_GROUP_NAME,
+  AIDER_TOOL_RUN_PROMPT,
+  POWER_TOOL_BASH,
+  POWER_TOOL_DESCRIPTIONS,
+  POWER_TOOL_FETCH,
+  POWER_TOOL_FILE_EDIT,
+  POWER_TOOL_FILE_READ,
+  POWER_TOOL_FILE_WRITE,
+  POWER_TOOL_GLOB,
+  POWER_TOOL_GREP,
+  POWER_TOOL_GROUP_NAME,
+  POWER_TOOL_SEMANTIC_SEARCH,
+  TODO_TOOL_CLEAR_ITEMS,
+  TODO_TOOL_DESCRIPTIONS,
+  TODO_TOOL_GET_ITEMS,
+  TODO_TOOL_GROUP_NAME,
+  TODO_TOOL_SET_ITEMS,
+  TODO_TOOL_UPDATE_ITEM_COMPLETION,
+  TASKS_TOOL_CREATE_TASK,
+  TASKS_TOOL_DELETE_TASK,
+  TASKS_TOOL_DESCRIPTIONS,
+  TASKS_TOOL_GET_TASK,
+  TASKS_TOOL_GET_TASK_MESSAGE,
+  TASKS_TOOL_GROUP_NAME,
+  TASKS_TOOL_LIST_TASKS,
+  TASKS_TOOL_SEARCH_TASK,
+  MEMORY_TOOL_DELETE,
+  MEMORY_TOOL_DESCRIPTIONS,
+  MEMORY_TOOL_GROUP_NAME,
+  MEMORY_TOOL_LIST,
+  MEMORY_TOOL_UPDATE,
+  MEMORY_TOOL_RETRIEVE,
+  MEMORY_TOOL_STORE,
+  SKILLS_TOOL_GROUP_NAME,
+} from '@common/tools';
+⋮----
+import { McpServer } from '../McpServerForm';
+import { McpServerItem } from '../McpServerItem';
+import { GenericToolGroupItem } from '../GenericToolGroupItem';
+⋮----
+import { Button } from '@/components/common/Button';
+⋮----
+type Props = {
+  profile: AgentProfile;
+  mcpServers: Record<string, McpServerConfig>;
+  extensionToolsInfo: ExtensionToolInfo[];
+  mcpServersReloadTrigger: number;
+  onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
+  onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
+  onToggleServerEnabled: (serverKey: string, checked: boolean) => void;
+  onMcpServerRemove: (serverName: string) => void;
+  onMcpServerEdit: (server: McpServer) => void;
+  onAddMcpServer: () => void;
+  onEditMcpServersConfig: () => void;
+  onReloadMcpServers: () => void;
+};
+⋮----
+const handleExtEnabledChange = (enabled: boolean) =>
+⋮----
+onRemove=
+onEdit=
+
+================
 File: src/renderer/src/components/settings/agent/AgentProfileItem.tsx
 ================
 import { AgentProfile } from '@common/types';
@@ -20440,118 +20669,39 @@ type AgentRulesProps = {
 ================
 File: src/renderer/src/components/settings/agent/AgentSettings.tsx
 ================
-import {
-  AgentProfile,
-  ContextCompactionType,
-  ContextMemoryMode,
-  ExtensionToolInfo,
-  GenericTool,
-  InvocationMode,
-  McpServerConfig,
-  Model,
-  ProjectData,
-  SettingsData,
-  ToolApprovalState,
-} from '@common/types';
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AgentProfile, ExtensionToolInfo, McpServerConfig, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { FaChevronLeft, FaChevronRight, FaList, FaPaste, FaPencilAlt, FaPlus, FaSyncAlt, FaTimes, FaBrain } from 'react-icons/fa';
-import {
-  MdExtension,
-  MdFlashOn,
-  MdOutlineChecklist,
-  MdOutlineFileCopy,
-  MdOutlineHdrAuto,
-  MdOutlineMap,
-  MdRepeat,
-  MdThermostat,
-  MdPsychology,
-} from 'react-icons/md';
+import { FaChevronLeft, FaChevronRight, FaPaste, FaPlus } from 'react-icons/fa';
 import { DEFAULT_AGENT_PROFILE, getProviderModelId, DEFAULT_AGENT_PROFILES } from '@common/agent';
-import { BiTrash } from 'react-icons/bi';
-import { clsx } from 'clsx';
-import Sketch from '@uiw/react-color-sketch';
+import { BiReset, BiTrash } from 'react-icons/bi';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import {
-  AIDER_TOOL_ADD_CONTEXT_FILES,
-  AIDER_TOOL_DESCRIPTIONS,
-  AIDER_TOOL_DROP_CONTEXT_FILES,
-  AIDER_TOOL_GET_CONTEXT_FILES,
-  AIDER_TOOL_GROUP_NAME,
-  AIDER_TOOL_RUN_PROMPT,
-  POWER_TOOL_BASH,
-  POWER_TOOL_DESCRIPTIONS,
-  POWER_TOOL_FETCH,
-  POWER_TOOL_FILE_EDIT,
-  POWER_TOOL_FILE_READ,
-  POWER_TOOL_FILE_WRITE,
-  POWER_TOOL_GLOB,
-  POWER_TOOL_GREP,
-  POWER_TOOL_GROUP_NAME,
-  POWER_TOOL_SEMANTIC_SEARCH,
-  TODO_TOOL_CLEAR_ITEMS,
-  TODO_TOOL_DESCRIPTIONS,
-  TODO_TOOL_GET_ITEMS,
-  TODO_TOOL_GROUP_NAME,
-  TODO_TOOL_SET_ITEMS,
-  TODO_TOOL_UPDATE_ITEM_COMPLETION,
-  TASKS_TOOL_CREATE_TASK,
-  TASKS_TOOL_DELETE_TASK,
-  TASKS_TOOL_DESCRIPTIONS,
-  TASKS_TOOL_GET_TASK,
-  TASKS_TOOL_GET_TASK_MESSAGE,
-  TASKS_TOOL_GROUP_NAME,
-  TASKS_TOOL_LIST_TASKS,
-  TASKS_TOOL_SEARCH_TASK,
-  MEMORY_TOOL_DELETE,
-  MEMORY_TOOL_DESCRIPTIONS,
-  MEMORY_TOOL_GROUP_NAME,
-  MEMORY_TOOL_LIST,
-  MEMORY_TOOL_UPDATE,
-  MEMORY_TOOL_RETRIEVE,
-  MEMORY_TOOL_STORE,
-  SKILLS_TOOL_GROUP_NAME,
-} from '@common/tools';
 import { useTranslation } from 'react-i18next';
-import { FaArrowRightFromBracket } from 'react-icons/fa6';
 ⋮----
 import { McpServer, McpServerForm } from './McpServerForm';
-import { McpServerItem } from './McpServerItem';
-import { GenericToolGroupItem } from './GenericToolGroupItem';
-import { AgentRules } from './AgentRules';
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
+import { ProfileGeneralSection } from './sections/ProfileGeneralSection';
+import { ProfilePromptsSection } from './sections/ProfilePromptsSection';
+import { ProfileToolsSection } from './sections/ProfileToolsSection';
+import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
 import { ModelSelector } from '@/components/ModelSelector';
-import { Slider } from '@/components/common/Slider';
-import { InfoIcon } from '@/components/common/InfoIcon';
-import { Accordion } from '@/components/common/Accordion';
 import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
-import { Select } from '@/components/common/Select';
-import { TextArea } from '@/components/common/TextArea';
+import { Tabs } from '@/components/common/Tabs';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
-import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
-// Helper functions for accordion summaries
-const getRunSettingsSummary = (profile: AgentProfile) =>
-⋮----
-// Always show max iterations
-⋮----
-// Only show temperature if it's overridden
-⋮----
-// Only show max tokens if it's overridden
-⋮----
-const getContextSummary = (profile: AgentProfile) =>
-⋮----
-const getGenericToolsSummary = (profile: AgentProfile) =>
-⋮----
-const getMcpServersSummary = (profile: AgentProfile, mcpServers: Record<string, McpServerConfig>) =>
+enum ProfileTab {
+  General = 'general',
+  Prompts = 'prompts',
+  Tools = 'tools',
+  Subagents = 'subagents',
+}
 ⋮----
 type Props = {
   settings: SettingsData;
@@ -20586,6 +20736,8 @@ const navigateContext = (direction: 'prev' | 'next') =>
 ⋮----
 // Calculate missing default profiles (only for global context)
 ⋮----
+// Profiles that can act as subagents for the selected profile
+⋮----
 // Get context display name
 const getContextDisplayName = () =>
 ⋮----
@@ -20598,8 +20750,6 @@ const handleDragEnd = (event: DragEndEvent) =>
 // Update order using the new API
 ⋮----
 // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
-⋮----
-const getSubagentSummary = (profile: AgentProfile) =>
 ⋮----
 const handleCreateNewProfile = () =>
 ⋮----
@@ -20663,6 +20813,8 @@ const handleServersConfigSave = (servers: Record<string, McpServerConfig>) =>
 ⋮----
 const handleToolApprovalChange = (toolId: string, approval: ToolApprovalState) =>
 ⋮----
+const handleTabChange = (tabId: string) =>
+⋮----
 {/* Left List Pane */}
 ⋮----
 {/* Profile Context Header */}
@@ -20673,28 +20825,11 @@ onDelete=
 ⋮----
 {/* Right Details Pane */}
 ⋮----
-<span>
+{/* Profile Header */}
 ⋮----
-{/* Temperature Column */}
+{/* Tab Content */}
 ⋮----
-{/* Max Tokens Column */}
-⋮----
-onChange=
-⋮----
-{/* Auto-compact Threshold Percentage */}
-⋮----
-<span className="whitespace-nowrap">
-⋮----
-{/* Auto-compact Threshold Tokens */}
-⋮----
-{/* Compaction Type */}
-⋮----
-const handleExtEnabledChange = (enabled: boolean) =>
-⋮----
-onRemove=
-onEdit=
-⋮----
-<Button onClick=
+onEditMcpServersConfig=
 
 ================
 File: src/renderer/src/components/settings/agent/BashToolItem.tsx
@@ -27578,7 +27713,7 @@ const addTaskWithSubtasks = (task: TaskData, level: number) =>
 ================
 File: src/renderer/src/voice/gemini.ts
 ================
-import { GoogleGenAI, LiveServerMessage, Session } from '@google/genai';
+import { GoogleGenAI, LiveServerMessage, Modality, Session } from '@google/genai';
 ⋮----
 import { VoiceProvider, VoiceSession, VoiceSessionConfig, VoiceSessionState } from './types';
 ⋮----
@@ -27601,8 +27736,6 @@ private async createGeminiSession(config: VoiceSessionConfig): Promise<VoiceSess
 // Initialize silence detection
 ⋮----
 async stopSession(): Promise<void>
-⋮----
-// Clear session timer
 ⋮----
 // Clear silence detection timeout
 ⋮----
@@ -27635,25 +27768,13 @@ const audioThreshold = 0.01; // Threshold for detecting audio input
 ⋮----
 private handleMessage(message: LiveServerMessage): void
 ⋮----
+private async handleSessionClose(): Promise<void>
+⋮----
 private convertFloat32ToInt16(float32Array: Float32Array): Int16Array
 ⋮----
 private arrayBufferToBase64(buffer: ArrayBuffer): string
 ⋮----
 private setState(newState: VoiceSessionState): void
-⋮----
-private startSessionTimer(): void
-⋮----
-// Restart session every 30 seconds
-⋮----
-private async restartSession(): Promise<void>
-⋮----
-// Don't set external state to INACTIVE - keep it as ACTIVE from user perspective
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// Close current session but keep audio processing
-⋮----
-// Start new session without tearing down audio processing
 ⋮----
 private queueAudioData(base64Audio: string): void
 ⋮----
