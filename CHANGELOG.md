@@ -7,6 +7,7 @@
 - redesigned agent settings UI
 - added customizable system prompt for Agent profiles
 - added subagent filters for Agent profiles
+- applied timeout configuration to proxy agent to prevent premature request timeouts
 
 ## [0.73.0]
 

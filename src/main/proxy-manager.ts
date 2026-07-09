@@ -6,6 +6,9 @@ import type { SettingsData } from '@common/types';
 import logger from '@/logger';
 
 const PROXY_ENV_VAR_NAMES = ['HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy'] as const;
+const HEADERS_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const BODY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const CONNECT_TIMEOUT_MS = 30 * 1000; // 30 seconds
 
 export const getProxyEnvVars = (settings: SettingsData): Record<string, string> => {
   if (settings.proxy?.enabled && settings.proxy?.url) {
@@ -69,11 +72,13 @@ export class ProxyManager {
       global.GLOBAL_AGENT.HTTP_PROXY = url;
       global.GLOBAL_AGENT.NO_PROXY = noProxy || undefined;
 
-      // Cover native fetch via undici (EnvHttpProxyAgent honors NO_PROXY)
       const proxyAgent = new EnvHttpProxyAgent({
         httpProxy: url,
         httpsProxy: url,
         noProxy: noProxy || undefined,
+        headersTimeout: HEADERS_TIMEOUT_MS,
+        bodyTimeout: BODY_TIMEOUT_MS,
+        connectTimeout: CONNECT_TIMEOUT_MS,
       });
       setGlobalDispatcher(proxyAgent);
 
@@ -90,9 +95,9 @@ export class ProxyManager {
       global.GLOBAL_AGENT.NO_PROXY = undefined;
       setGlobalDispatcher(
         new UndiciAgent({
-          headersTimeout: 30 * 60 * 1000, // 30 minutes
-          bodyTimeout: 30 * 60 * 1000, // 30 minutes
-          connectTimeout: 30 * 1000, // 30 seconds
+          headersTimeout: HEADERS_TIMEOUT_MS,
+          bodyTimeout: BODY_TIMEOUT_MS,
+          connectTimeout: CONNECT_TIMEOUT_MS,
         }),
       );
       this.currentUrl = null;
