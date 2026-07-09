@@ -4,6 +4,8 @@ import { join } from 'path';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 
+import { REQUEST_TIMEOUT_MS } from './timeouts';
+
 import {
   AgentApi,
   CommandsApi,
@@ -27,8 +29,6 @@ import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
-
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export class ServerController {
   private readonly app = express();
