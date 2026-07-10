@@ -12393,6 +12393,10 @@ import type { SettingsData } from '@common/types';
 ⋮----
 import logger from '@/logger';
 ⋮----
+const HEADERS_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const BODY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const CONNECT_TIMEOUT_MS = 30 * 1000; // 30 seconds
+⋮----
 export const getProxyEnvVars = (settings: SettingsData): Record<string, string> =>
 ⋮----
 export class ProxyManager
@@ -12412,13 +12416,7 @@ private applyProxy(url: string, noProxy?: string): void
 ⋮----
 // Cover Axios, Got, and legacy HTTP libs via global-agent
 ⋮----
-// Cover native fetch via undici (EnvHttpProxyAgent honors NO_PROXY)
-⋮----
 private clearProxy(): void
-⋮----
-headersTimeout: 30 * 60 * 1000, // 30 minutes
-bodyTimeout: 30 * 60 * 1000, // 30 minutes
-connectTimeout: 30 * 1000, // 30 seconds
 
 ================
 File: src/main/python-dependencies-installer.ts
