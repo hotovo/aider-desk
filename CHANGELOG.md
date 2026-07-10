@@ -9,6 +9,7 @@
 - added subagent filters for Agent profiles
 - applied timeout configuration to proxy agent to prevent premature request timeouts
 - added gpt-realtime-whisper as a new OpenAI voice transcription model and set it as default
+- using task directory as working directory for custom command shell command execution
 
 ## [0.73.0]
 

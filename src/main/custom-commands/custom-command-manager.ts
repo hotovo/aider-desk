@@ -234,9 +234,9 @@ export class CustomCommandManager {
     };
   }
 
-  async processCommandTemplate(command: CustomCommand, args: string[]): Promise<string> {
+  async processCommandTemplate(command: CustomCommand, args: string[], cwd?: string): Promise<string> {
     let prompt = this.substituteArguments(command.template, args, command.arguments);
-    prompt = await this.executeShellCommands(prompt);
+    prompt = await this.executeShellCommands(prompt, cwd);
     return prompt;
   }
 
@@ -284,13 +284,13 @@ export class CustomCommandManager {
     return unreplacedPlaceholders;
   }
 
-  private async executeShellCommands(prompt: string): Promise<string> {
+  private async executeShellCommands(prompt: string, cwd?: string): Promise<string> {
     const lines = prompt.split('\n');
     const finalPrompt: string[] = [];
 
     for (const line of lines) {
       if (line.startsWith(SHELL_COMMAND_PREFIX)) {
-        const processedLine = await this.processShellCommandLine(line);
+        const processedLine = await this.processShellCommandLine(line, cwd);
         if (Array.isArray(processedLine)) {
           finalPrompt.push(...processedLine);
         } else {
@@ -304,7 +304,7 @@ export class CustomCommandManager {
     return finalPrompt.join('\n');
   }
 
-  private async processShellCommandLine(line: string): Promise<string | string[]> {
+  private async processShellCommandLine(line: string, cwd?: string): Promise<string | string[]> {
     const commandPortion = line.substring(SHELL_COMMAND_PREFIX.length).trim();
 
     if (!commandPortion) {
@@ -317,7 +317,7 @@ export class CustomCommandManager {
       logger.info('Executing shell command from custom command:', { command: commandPortion });
 
       const { stdout } = await execAsync(commandPortion, {
-        cwd: this.project.baseDir,
+        cwd: cwd || this.project.baseDir,
         timeout: SHELL_COMMAND_TIMEOUT,
         maxBuffer: 10 * 1024 * 1024, // 10 MB
       });

@@ -3562,7 +3562,7 @@ export class Task {
 
     if (!prompt) {
       try {
-        prompt = await this.customCommandManager.processCommandTemplate(command, args);
+        prompt = await this.customCommandManager.processCommandTemplate(command, args, this.getTaskDir());
       } catch (error) {
         // Handle shell command execution errors
         if (error instanceof ShellCommandError) {
