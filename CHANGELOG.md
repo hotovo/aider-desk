@@ -8,6 +8,7 @@
 - added customizable system prompt for Agent profiles
 - added subagent filters for Agent profiles
 - applied timeout configuration to proxy agent to prevent premature request timeouts
+- added gpt-realtime-whisper as a new OpenAI voice transcription model and set it as default
 
 ## [0.73.0]
 

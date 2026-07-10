@@ -238,10 +238,11 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
   try {
     // Generate ephemeral token for OpenAI Realtime API
     // This creates a short-lived token specifically for Realtime API usage
-    const model = provider.voice?.model ?? OpenAiVoiceModel.Gpt4oTranscribe;
+    const model = provider.voice?.model ?? OpenAiVoiceModel.GptRealtimeWhisper;
     const language = provider.voice?.language ?? 'en';
     const prompt = provider.voice?.systemInstructions ?? DEFAULT_VOICE_SYSTEM_INSTRUCTIONS;
     const idleTimeoutMs = provider.voice?.idleTimeoutMs ?? 5000;
+    const supportsTranscriptionParams = model !== OpenAiVoiceModel.GptRealtimeWhisper;
     const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -256,15 +257,17 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
               transcription: {
                 language,
                 model,
-                prompt,
+                ...(supportsTranscriptionParams && { prompt }),
               },
-              turn_detection: {
-                type: 'server_vad',
-                prefix_padding_ms: 300,
-                silence_duration_ms: 500,
-                threshold: 0.5,
-                idle_timeout_ms: idleTimeoutMs,
-              },
+              ...(supportsTranscriptionParams && {
+                turn_detection: {
+                  type: 'server_vad',
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 500,
+                  threshold: 0.5,
+                  idle_timeout_ms: idleTimeoutMs,
+                },
+              }),
               noise_reduction: {
                 type: 'near_field',
               },

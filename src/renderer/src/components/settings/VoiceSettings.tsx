@@ -332,6 +332,7 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
   const openAiModelOptions: Option[] = [
     { label: OpenAiVoiceModel.Gpt4oMiniTranscribe, value: OpenAiVoiceModel.Gpt4oMiniTranscribe },
     { label: OpenAiVoiceModel.Gpt4oTranscribe, value: OpenAiVoiceModel.Gpt4oTranscribe },
+    { label: OpenAiVoiceModel.GptRealtimeWhisper, value: OpenAiVoiceModel.GptRealtimeWhisper },
   ];
 
   const geminiModelOptions: Option[] = [
@@ -424,7 +425,7 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
   };
 
   const openAiProvider = selectedProfile?.provider.name === 'openai' ? (selectedProfile.provider as OpenAiProvider) : undefined;
-  const openAiModel = openAiProvider?.voice?.model ?? OpenAiVoiceModel.Gpt4oTranscribe;
+  const openAiModel = openAiProvider?.voice?.model ?? OpenAiVoiceModel.GptRealtimeWhisper;
   const openAiLanguage = openAiProvider?.voice?.language ?? 'en';
 
   const geminiProvider = selectedProfile?.provider.name === 'gemini' ? (selectedProfile.provider as GeminiProvider) : undefined;
