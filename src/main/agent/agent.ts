@@ -63,6 +63,7 @@ import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, truncateToolResult } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
+import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
 import type { z } from 'zod';
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
@@ -2109,8 +2110,8 @@ export class Agent {
     const taskTokensOverride = task.task.contextCompactingThresholdTokens;
     let contextCompactionType = profile.autoCompactionType ?? taskSettings.contextCompactionType ?? ContextCompactionType.Compact;
     if (profile.isSubagent && contextCompactionType === ContextCompactionType.Handoff) {
-      // subagent cannot use Handoff, so we fallback to Compact
-      contextCompactionType = ContextCompactionType.Compact;
+      // subagent cannot use Handoff, so we fallback to Smart compaction
+      contextCompactionType = ContextCompactionType.Smart;
     }
 
     logger.debug('Compaction threshold', {
@@ -2170,7 +2171,53 @@ export class Agent {
         `Token usage ${totalTokens} exceeds effective threshold of ${effectiveThreshold} (${thresholdDescription}). Compacting conversation with type: ${contextCompactionType}.`,
       );
 
-      if (contextCompactionType === ContextCompactionType.Compact) {
+      if (profile.isSubagent) {
+        const allMessages = [...contextMessages, ...resultMessages];
+
+        if (contextCompactionType === ContextCompactionType.Smart) {
+          const oldResultIds = getSubagentOldResultIds(resultMessages, userRequestMessage.id);
+
+          const compactedMessages = await smartCompactMessages(allMessages, 10, CompactionLevel.One);
+
+          contextMessages.length = 0;
+          messages.length = 0;
+          resultMessages.length = 0;
+
+          resultMessages.push(...compactedMessages);
+          messages.push(...(await this.prepareMessages(task, profile, compactedMessages, contextFiles)));
+
+          task.sendTaskMessageRemoved(oldResultIds);
+          task.reloadGroupMessages(getReloadableMessages(compactedMessages));
+          task.addLogMessage('info', 'Subagent conversation smart-compacted.', false, promptContext);
+        } else {
+          const oldResultIds = getSubagentOldResultIds(resultMessages, userRequestMessage.id);
+
+          task.addLogMessage('loading', 'Token usage exceeds threshold. Compacting subagent conversation...', false, promptContext);
+
+          const finalMessages = await generateCompactedSummary(
+            userRequestMessage,
+            allMessages,
+            profile,
+            task,
+            promptContext,
+            abortSignal,
+            (t, instructions) => this.promptsManager.getCompactConversationPrompt(t, instructions),
+            (modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal) =>
+              this.generateText(modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal),
+          );
+
+          contextMessages.length = 0;
+          messages.length = 0;
+          resultMessages.length = 0;
+
+          resultMessages.push(...finalMessages);
+          messages.push(...(await this.prepareMessages(task, profile, finalMessages, contextFiles)));
+
+          task.sendTaskMessageRemoved(oldResultIds);
+          task.reloadGroupMessages(getReloadableMessages(finalMessages));
+          task.addLogMessage('info', 'Subagent conversation compacted.', false, promptContext);
+        }
+      } else if (contextCompactionType === ContextCompactionType.Compact) {
         await task.compactConversation(
           'agent',
           undefined,

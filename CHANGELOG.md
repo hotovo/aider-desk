@@ -13,6 +13,7 @@
 - updated Agent selector to support enabled subagents management
 - added agent-creator skill to built-in skills
 - added description parameter to subagents tool for dynamic status messages
+- correctly compacting subagent messages
 
 ## [0.73.0]
 

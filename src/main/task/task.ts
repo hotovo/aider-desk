@@ -93,7 +93,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
-import { CompactionLevel, smartCompactMessages } from '@/agent/smart-compaction';
+import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/compaction';
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
@@ -2741,6 +2741,19 @@ export class Task {
     }
   }
 
+  public reloadGroupMessages(messages: ContextMessage[]) {
+    const messagesData = this.contextManager.getContextMessagesData(messages);
+    for (const messageData of messagesData) {
+      if (messageData.type === 'user') {
+        this.sendUserMessage(messageData);
+      } else if (messageData.type === 'response-completed') {
+        this.sendResponseCompleted(messageData);
+      } else if (messageData.type === 'tool') {
+        this.sendToolMessage(messageData);
+      }
+    }
+  }
+
   public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]) {
     logger.info('Redoing user prompt:', {
       baseDir: this.project.baseDir,
@@ -2906,7 +2919,7 @@ export class Task {
     return skillMessages;
   }
 
-  public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.') {
+  public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.'): Promise<ContextMessage[]> {
     if (!contextMessages) {
       contextMessages = await this.contextManager.getContextMessages();
     }
@@ -2959,7 +2972,7 @@ export class Task {
     abortSignal?: AbortSignal,
     waitForAgentCompletion = true,
     loadingMessage = 'Compacting conversation...',
-  ) {
+  ): Promise<void> {
     // Get profile if not provided
     if (!profile) {
       profile = await this.getTaskAgentProfile();
@@ -2971,7 +2984,7 @@ export class Task {
     const userMessage = contextMessages.find((msg) => msg.role === MessageRole.User);
 
     if (!userMessage) {
-      this.addLogMessage('warning', 'No conversation to compact.');
+      this.addLogMessage('warning', 'No conversation to compact.', false, promptContext);
       return;
     }
 
@@ -2985,16 +2998,6 @@ export class Task {
 
     this.addLogMessage('loading', loadingMessage);
     this.isCompacting = true;
-
-    const extractSummary = (content: string): string => {
-      const lines = content.split('\n');
-      const summaryMarker = '### **Conversation Summary**';
-      const markerIndex = lines.findIndex((line) => line.trim() === summaryMarker);
-      if (markerIndex !== -1) {
-        return lines.slice(markerIndex).join('\n');
-      }
-      return content;
-    };
 
     try {
       if (!AIDER_MODES.includes(mode)) {
