@@ -1422,7 +1422,9 @@
     "subagents": {
       "groupRunning": "{{name}}: Суб-агент работает...",
       "groupCompleted": "{{name}}: Суб-агент завершил задачу.",
+      "groupCompletedWithDescription": "{{name}}: Суб-агент завершил {{description}}",
       "groupCancelled": "{{name}}: Суб-агент был отменён пользователем.",
+      "groupCancelledWithDescription": "{{name}}: Выполнение суб-агента ({{description}}) отменено пользователем",
       "running": "Суб-агент работает...",
       "completed": "Суб-агент выполнил следующий запрос:",
       "prompt": "Запрос",

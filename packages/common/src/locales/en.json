@@ -1430,7 +1430,9 @@
     "subagents": {
       "groupRunning": "{{name}}: Subagent is working...",
       "groupCompleted": "{{name}}: Subagent finished the task.",
+      "groupCompletedWithDescription": "{{name}}: Subagent finished {{description}}",
       "groupCancelled": "{{name}}: Subagent run cancelled by user.",
+      "groupCancelledWithDescription": "{{name}}: Subagent run ({{description}}) cancelled by user",
       "running": "Subagent is working...",
       "completed": "Subagent finished the task.",
       "prompt": "Prompt",

@@ -63,8 +63,14 @@ export const createSubagentsToolset = async (
         .describe(
           'A clear and concise natural language prompt describing the task the subagent needs to perform. This prompt should provide all necessary information for the subagent to complete its task independently within its limited context.',
         ),
+      description: z
+        .string()
+        .optional()
+        .describe(
+          'A short informational message describing what the subagent is doing, in continuous present tense (e.g., "Fixing the login bug"). This will be shown to the user while the subagent is working.',
+        ),
     }),
-    execute: async ({ prompt, subagentId }, { toolCallId }) => {
+    execute: async ({ prompt, subagentId, description }, { toolCallId }) => {
       const targetSubagent = enabledSubagents.find((agentProfile) => getSubagentId(agentProfile) === subagentId);
       if (!targetSubagent) {
         return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
@@ -98,12 +104,14 @@ export const createSubagentsToolset = async (
         group: {
           id: uuidv4(),
           color: targetSubagent.subagent.color,
-          name: {
-            key: 'toolMessage.subagents.groupRunning',
-            params: {
-              name: targetSubagent.name,
-            },
-          },
+          name: description
+            ? `${targetSubagent.name}: ${description.endsWith('...') ? description : `${description}...`}`
+            : {
+                key: 'toolMessage.subagents.groupRunning',
+                params: {
+                  name: targetSubagent.name,
+                },
+              },
           interruptId,
         },
       };
@@ -197,6 +205,7 @@ export const createSubagentsToolset = async (
           {
             prompt,
             subagentId,
+            description,
           },
           undefined,
           undefined,
@@ -230,12 +239,20 @@ Make sure to reuse the previous conversation if possible.`
           // Update promptContext to finished state with cancellation
           promptContext.group = {
             ...promptContext.group!,
-            name: {
-              key: 'toolMessage.subagents.groupCancelled',
-              params: {
-                name: targetSubagent.name,
-              },
-            },
+            name: description
+              ? {
+                  key: 'toolMessage.subagents.groupCancelledWithDescription',
+                  params: {
+                    name: targetSubagent.name,
+                    description: description.endsWith('...') ? description.slice(0, -3) : description,
+                  },
+                }
+              : {
+                  key: 'toolMessage.subagents.groupCancelled',
+                  params: {
+                    name: targetSubagent.name,
+                  },
+                },
             finished: true,
           };
 
@@ -257,12 +274,20 @@ Make sure to reuse the previous conversation if possible.`
         // Update promptContext to finished state with success
         promptContext.group = {
           ...promptContext.group!,
-          name: {
-            key: 'toolMessage.subagents.groupCompleted',
-            params: {
-              name: targetSubagent.name,
-            },
-          },
+          name: description
+            ? {
+                key: 'toolMessage.subagents.groupCompletedWithDescription',
+                params: {
+                  name: targetSubagent.name,
+                  description: description.endsWith('...') ? description.slice(0, -3) : description,
+                },
+              }
+            : {
+                key: 'toolMessage.subagents.groupCompleted',
+                params: {
+                  name: targetSubagent.name,
+                },
+              },
           finished: true,
         };
 
@@ -278,12 +303,20 @@ Make sure to reuse the previous conversation if possible.`
           // Update promptContext to finished state with cancellation
           promptContext.group = {
             ...promptContext.group!,
-            name: {
-              key: 'toolMessage.subagents.groupCancelled',
-              params: {
-                name: targetSubagent.name,
-              },
-            },
+            name: description
+              ? {
+                  key: 'toolMessage.subagents.groupCancelledWithDescription',
+                  params: {
+                    name: targetSubagent.name,
+                    description: description.endsWith('...') ? description.slice(0, -3) : description,
+                  },
+                }
+              : {
+                  key: 'toolMessage.subagents.groupCancelled',
+                  params: {
+                    name: targetSubagent.name,
+                  },
+                },
             finished: true,
           };
 

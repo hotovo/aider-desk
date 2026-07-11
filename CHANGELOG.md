@@ -12,6 +12,7 @@
 - using task directory as working directory for custom command shell command execution
 - updated Agent selector to support enabled subagents management
 - added agent-creator skill to built-in skills
+- added description parameter to subagents tool for dynamic status messages
 
 ## [0.73.0]
 
