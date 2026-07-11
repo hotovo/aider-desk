@@ -11,6 +11,7 @@
 - added gpt-realtime-whisper as a new OpenAI voice transcription model and set it as default
 - using task directory as working directory for custom command shell command execution
 - updated Agent selector to support enabled subagents management
+- added agent-creator skill to built-in skills
 
 ## [0.73.0]
 

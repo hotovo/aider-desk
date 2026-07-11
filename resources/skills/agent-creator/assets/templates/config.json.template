@@ -1,5 +1,5 @@
 {
-  "id": "{{uuid}}",
+  "id": "{{id}}",
   "name": "{{profile-name}}",
   "provider": "{{provider}}",
   "model": "{{model}}",
@@ -28,6 +28,13 @@
   "useTaskTools": {{use-task-tools}},
   "useMemoryTools": {{use-memory-tools}},
   "useSkillsTools": {{use-skills-tools}},
+  "useExtensionTools": {{use-extension-tools}},
+  "disabledExtensionTools": {{disabled-extension-tools}},
+  {{#if system-prompt}}"systemPrompt": "{{system-prompt}}",{{/if}}
+  {{#if enabled-subagent-ids}}"enabledSubagentIds": [{{#each enabled-subagent-ids}}"{{this}}"{{#unless @last}},{{/unless}}{{/each}}],{{/if}}
+  {{#if auto-compact-threshold-percentage}}"autoCompactThresholdPercentage": {{auto-compact-threshold-percentage}},{{/if}}
+  {{#if auto-compact-threshold-tokens}}"autoCompactThresholdTokens": {{auto-compact-threshold-tokens}},{{/if}}
+  {{#if auto-compaction-type}}"autoCompactionType": "{{auto-compaction-type}}",{{/if}}
   "customInstructions": "{{custom-instructions}}",
   "subagent": {
     "enabled": {{subagent-enabled}},
