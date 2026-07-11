@@ -14,6 +14,7 @@
 - added agent-creator skill to built-in skills
 - added description parameter to subagents tool for dynamic status messages
 - correctly compacting subagent messages
+- storing agent profile to the task on the first run to preserve the agent profile in case default changes
 
 ## [0.73.0]
 

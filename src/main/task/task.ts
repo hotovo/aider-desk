@@ -800,6 +800,10 @@ export class Task {
         throw new Error('No active Agent profile found');
       }
 
+      if (!this.task.agentProfileId) {
+        await this.saveTask({ agentProfileId: profile.id });
+      }
+
       responses = await this.runPromptInAgent(profile, mode, prompt, promptContext, undefined, undefined, undefined, true, sendNotification, images);
     } else {
       responses = await this.runPromptInAider(mode, prompt, promptContext, sendNotification);
@@ -2806,6 +2810,10 @@ export class Task {
         logger.error('No active Agent profile found for resume');
         this.addLogMessage('error', 'No active Agent profile found');
         return;
+      }
+
+      if (!this.task.agentProfileId) {
+        await this.saveTask({ agentProfileId: profile.id });
       }
 
       logger.info('Resuming agent task...');
