@@ -736,7 +736,9 @@
         "statusAutomatic": "Automatic",
         "descriptionRequiredForAutomatic": "Description needs to be set in order to use this subagent automatically, otherwise the subagent can only be used when explicitly requested by the user.",
         "on-demand": "Used as subagent on user demand",
-        "automatic": "Used as subagent automatically"
+        "automatic": "Used as subagent automatically",
+        "automaticSubagent": "Automatic Subagent",
+        "onDemandSubagent": "On-demand Subagent"
       },
       "skills": {
         "activating": "Activating {{name}} skill...",
@@ -1519,6 +1521,7 @@
     "profileSettings": "Agent Profile: {{profileName}}",
     "newProfileName": "New Profile",
     "manageProfiles": "Manage Profiles",
+    "editProfile": "Edit Profile",
     "createNew": "New Profile",
     "profileName": "Name",
     "profileDescription": "Description",
@@ -1526,7 +1529,7 @@
     "tools": "Tools",
     "model": "Model",
     "selectProfile": "Select...",
-    "saveAsProjectDefault": "Save as project default"
+    "useAsProjectDefault": "Use as project default"
   },
   "projectBar": {
     "editFormatTooltip": "This is the format used for editing code. Changing it might cause the model to not perform as expected.",

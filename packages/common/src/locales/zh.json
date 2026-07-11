@@ -734,7 +734,9 @@
         "statusAutomatic": "自动",
         "descriptionRequiredForAutomatic": "需要设置描述才能自动使用此子代理，否则只能在用户明确请求时使用该子代理。",
         "on-demand": "仅在明确请求时按需使用",
-        "automatic": "在适当时自动使用"
+        "automatic": "在适当时自动使用",
+        "automaticSubagent": "自动子代理",
+        "onDemandSubagent": "按需子代理"
       },
       "skills": {
         "activating": "正在激活 {{name}} 技能...",
@@ -1474,6 +1476,7 @@
     "profileSettings": "代理配置: {{profileName}}",
     "newProfileName": "新配置",
     "manageProfiles": "管理配置",
+    "editProfile": "编辑配置",
     "createNew": "创建新配置",
     "profileName": "名称",
     "profileDescription": "描述",
@@ -1481,7 +1484,7 @@
     "tools": "工具",
     "model": "模型",
     "selectProfile": "选择...",
-    "saveAsProjectDefault": "保存为项目默认"
+    "useAsProjectDefault": "设为项目默认"
   },
   "projectBar": {
     "editFormatTooltip": "这是用于编辑代码的格式。更改它可能会导致模型表现不如预期。",
