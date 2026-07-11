@@ -817,7 +817,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
 };
 
 export const isSubagentEnabled = (agentProfile: AgentProfile, mainAgentProfile?: AgentProfile): boolean => {
-  if (!agentProfile.subagent.systemPrompt || !agentProfile.subagent.enabled) {
+  if (!agentProfile.subagent.enabled) {
     return false;
   }
   if (!mainAgentProfile) {
