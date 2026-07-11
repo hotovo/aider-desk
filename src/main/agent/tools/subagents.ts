@@ -222,12 +222,16 @@ export const createSubagentsToolset = async (
 Make sure to reuse the previous conversation if possible.`
             : prompt;
 
+        const subagentSystemPrompt = targetSubagent.subagent.systemPrompt?.trim()
+          ? await task.compileCustomSystemPrompt(targetSubagent.subagent.systemPrompt)
+          : undefined;
+
         const subagentResultMessages = await task.runSubagent(
           subagentProfile,
           effectivePrompt,
           subagentContextMessages,
           [],
-          targetSubagent.subagent.systemPrompt,
+          subagentSystemPrompt,
           subagentAbortController,
           promptContext,
         );

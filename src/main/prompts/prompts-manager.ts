@@ -355,7 +355,8 @@ export class PromptsManager {
 
     const customSystemPrompt = agentProfile.systemPrompt?.trim();
     if (customSystemPrompt) {
-      const parts = [customSystemPrompt];
+      const compiledSystemPrompt = await this.compileCustomSystemPrompt(task, customSystemPrompt);
+      const parts = [compiledSystemPrompt];
       if (rulesFiles) {
         parts.push(`<Rules>\n${rulesFiles}\n</Rules>`);
       }
@@ -413,6 +414,30 @@ export class PromptsManager {
     data.workflow = await this.render('workflow', data, projectDir, task);
 
     return await this.render('system-prompt', data, projectDir, task);
+  };
+
+  public compileCustomSystemPrompt = async (task: Task, template: string): Promise<string> => {
+    const trimmed = template.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    try {
+      const osName = (await import('os-name')).default();
+      const projectDir = task.getProjectDir();
+      const taskDir = task.getTaskDir();
+      const compiled = Handlebars.compile(trimmed, { noEscape: true });
+      return compiled({
+        projectDir,
+        taskDir,
+        currentDate: new Date().toDateString(),
+        osName,
+        projectGitRootDirectory: taskDir !== projectDir ? projectDir : '',
+      });
+    } catch (error) {
+      logger.warn(`Failed to compile custom system prompt placeholders: ${error}`);
+      return trimmed;
+    }
   };
 
   private getRulesContent = async (task: Task, agentProfile?: AgentProfile) => {

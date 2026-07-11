@@ -646,6 +646,13 @@
       "systemPromptTooltip": "设置后，当此配置作为主代理运行时，将替换默认内置系统提示词。作为子代理使用时，如果未设置子代理专用系统提示词，将以此作为回退。留空则使用内置系统提示词。",
       "systemPromptPlaceholder": "此代理的自定义系统提示词。留空则使用默认内置系统提示词。",
       "systemPromptInfo": "覆盖代理的默认系统提示词。如需在默认系统提示词后追加指令，请使用下方的规则。",
+      "systemPromptPlaceholders": {
+        "projectDir": "项目根目录的绝对路径",
+        "taskDir": "此任务的工作目录（项目根目录，或使用工作树时的工作树路径）",
+        "currentDate": "当前日期字符串",
+        "osName": "主机操作系统名称",
+        "projectGitRootDirectory": "任务使用工作树时的项目 Git 根目录；否则为空"
+      },
       "mcpServers": "MCP 服务器",
       "provider": "提供商",
       "providerSettings": "提供商设置",

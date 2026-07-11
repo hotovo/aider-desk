@@ -3,6 +3,8 @@ import { AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import Sketch from '@uiw/react-color-sketch';
 
+import { SystemPromptEditor } from '../SystemPromptEditor';
+
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
 import { TextArea } from '@/components/common/TextArea';
@@ -149,11 +151,10 @@ export const ProfileSubagentsSection = ({ profile, availableSubagents, onSetting
               />
             </div>
 
-            <TextArea
+            <SystemPromptEditor
               label={<label className="text-xs font-medium text-text-primary">{t('settings.agent.subagent.systemPrompt')}</label>}
-              className="min-h-[160px]"
               value={profile.subagent.systemPrompt}
-              onChange={(e) => onSettingChange('subagent', { ...profile.subagent, systemPrompt: e.target.value })}
+              onChange={(value) => onSettingChange('subagent', { ...profile.subagent, systemPrompt: value })}
               placeholder={t('settings.agent.subagent.systemPromptPlaceholder')}
             />
 

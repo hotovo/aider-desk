@@ -575,6 +575,10 @@ export class Task {
     return this.task.worktree ? this.task.worktree.path : this.project.baseDir;
   }
 
+  public compileCustomSystemPrompt(template: string): Promise<string> {
+    return this.promptsManager.compileCustomSystemPrompt(this, template);
+  }
+
   /**
    * Resolves a relative file path against taskDir first, then falls back to projectDir.
    * This handles git worktree cases where files may exist in the project directory

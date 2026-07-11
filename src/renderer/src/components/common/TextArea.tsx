@@ -1,4 +1,4 @@
-import { ReactNode, TextareaHTMLAttributes } from 'react';
+import { forwardRef, ReactNode, TextareaHTMLAttributes } from 'react';
 
 export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode;
@@ -6,11 +6,12 @@ export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   error?: string | null;
 };
 
-export const TextArea = ({ label, wrapperClassName, className = '', error, ...props }: Props) => {
+export const TextArea = forwardRef<HTMLTextAreaElement, Props>(({ label, wrapperClassName, className = '', error, ...props }, ref) => {
   return (
     <div className={wrapperClassName}>
       {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
       <textarea
+        ref={ref}
         spellCheck={false}
         {...props}
         className={`w-full p-2 bg-bg-secondary-light border-2 ${error ? 'border-error-emphasis' : 'border-border-default'} rounded focus:outline-none ${error ? 'focus:border-error-emphasis' : 'focus:border-border-light'} text-text-primary text-sm placeholder-text-muted
@@ -22,4 +23,6 @@ export const TextArea = ({ label, wrapperClassName, className = '', error, ...pr
       {error && <p className="text-xs text-error mt-1">{error}</p>}
     </div>
   );
-};
+});
+
+TextArea.displayName = 'TextArea';
