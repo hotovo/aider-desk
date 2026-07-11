@@ -3326,7 +3326,7 @@ getAllCommands(): CommandsData
 ⋮----
 // Get custom commands from files
 ⋮----
-async processCommandTemplate(command: CustomCommand, args: string[]): Promise<string>
+async processCommandTemplate(command: CustomCommand, args: string[], cwd?: string): Promise<string>
 ⋮----
 private substituteArguments(template: string, args: string[], commandArgs: CommandArgument[]): string
 ⋮----
@@ -3340,9 +3340,9 @@ private substituteArguments(template: string, args: string[], commandArgs: Comma
 ⋮----
 private findUnreplacedPlaceholders(template: string, argsLength: number): number[]
 ⋮----
-private async executeShellCommands(prompt: string): Promise<string>
+private async executeShellCommands(prompt: string, cwd?: string): Promise<string>
 ⋮----
-private async processShellCommandLine(line: string): Promise<string | string[]>
+private async processShellCommandLine(line: string, cwd?: string): Promise<string | string[]>
 ⋮----
 // Handle edge case: line with just '!' or '! ' (space after)
 ⋮----
