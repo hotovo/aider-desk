@@ -72,6 +72,7 @@ src/
         todo.ts
       agent-profile-manager.ts
       agent.ts
+      compaction.ts
       index.ts
       mcp-manager.ts
       optimizer.ts
@@ -519,6 +520,7 @@ src/
             McpServerItem.tsx
             McpToolItem.tsx
             SortableAgentProfileItem.tsx
+            SystemPromptEditor.tsx
           AboutSettings.tsx
           AiderSettings.tsx
           ExtensionCard.tsx
@@ -2323,6 +2325,7 @@ import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
 import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, truncateToolResult } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
+import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
 import type { z } from 'zod';
 import type { JSONSchema7Definition } from '@ai-sdk/provider';
@@ -2672,11 +2675,46 @@ private async compactMessagesIfNeeded(
     abortSignal?: AbortSignal,
 )
 ⋮----
-// subagent cannot use Handoff, so we fallback to Compact
+// subagent cannot use Handoff, so we fallback to Smart compaction
 ⋮----
 // reload messages after compacting
 ⋮----
 // Perform handoff
+
+================
+File: src/main/agent/compaction.ts
+================
+import { v4 as uuidv4 } from 'uuid';
+⋮----
+import type { AgentProfile, ContextMessage, PromptContext } from '@common/types';
+import type { Task } from '@/task';
+⋮----
+export const extractSummary = (content: string): string =>
+⋮----
+export const getSubagentOldResultIds = (resultMessages: ContextMessage[], userRequestMessageId: string): string[]
+⋮----
+export const getReloadableMessages = (messages: ContextMessage[]): ContextMessage[]
+⋮----
+export const buildCompactSummaryMessages = (
+⋮----
+export const generateCompactedSummary = async (
+  userMessage: ContextMessage,
+  allMessages: ContextMessage[],
+  profile: AgentProfile,
+  task: Task,
+  promptContext?: PromptContext,
+  abortSignal?: AbortSignal,
+  getCompactConversationPrompt: (task: Task, customInstructions?: string) => Promise<string> = async () => '',
+  generateText: (
+    modelId: string,
+    systemPrompt: string,
+    prompt: string,
+    projectDir: string,
+    messages: ContextMessage[],
+    abortable: boolean,
+    abortSignal?: AbortSignal,
+  ) => Promise<string | undefined> = async () => undefined,
+): Promise<ContextMessage[]> =>
 
 ================
 File: src/main/agent/index.ts
@@ -8960,7 +8998,7 @@ import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { getProxyEnvVars } from '@/proxy-manager';
-import { CompactionLevel, smartCompactMessages } from '@/agent/smart-compaction';
+import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/compaction';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
 ⋮----
@@ -9066,6 +9104,8 @@ public removeConnector(connector: Connector)
 public getProjectDir()
 ⋮----
 public getTaskDir()
+⋮----
+public compileCustomSystemPrompt(template: string): Promise<string>
 ⋮----
 /**
    * Resolves a relative file path against taskDir first, then falls back to projectDir.
@@ -9462,6 +9502,8 @@ public async removeMessagesUpTo(messageId: string): Promise<string[]>
 ⋮----
 public sendTaskMessageRemoved(messageIds: string[])
 ⋮----
+public reloadGroupMessages(messages: ContextMessage[])
+⋮----
 public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[])
 ⋮----
 // No need to await runPrompt here, let it run in the background
@@ -9500,7 +9542,7 @@ private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextM
 ⋮----
 // Create a filtered assistant message that only contains the skill activation tool-call
 ⋮----
-public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.')
+public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.'): Promise<ContextMessage[]>
 ⋮----
 // backing up the current context before compacting for debugging purposes
 ⋮----
@@ -9517,13 +9559,11 @@ public async compactConversation(
     abortSignal?: AbortSignal,
     waitForAgentCompletion = true,
     loadingMessage = 'Compacting conversation...',
-)
+): Promise<void>
 ⋮----
 // Get profile if not provided
 ⋮----
 // Find skill activation messages before generating summary
-⋮----
-const extractSummary = (content: string): string =>
 ⋮----
 // Agent mode logic
 ⋮----
@@ -13246,21 +13286,25 @@ File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
 ================
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology, MdSave } from 'react-icons/md';
+import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology } from 'react-icons/md';
 import { HiUserGroup } from 'react-icons/hi';
 import { RiToolsFill } from 'react-icons/ri';
 import { clsx } from 'clsx';
-import { AgentProfile, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, InvocationMode, TaskData, ToolApprovalState } from '@common/types';
+import { isSubagentEnabled } from '@common/agent';
 import { BiCog } from 'react-icons/bi';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { LuBrain, LuClipboardList } from 'react-icons/lu';
+⋮----
+import { Checkbox } from '../common/Checkbox';
 ⋮----
 import { McpServerSelectorItem } from './McpServerSelectorItem';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
 import { Accordion } from '@/components/common/Accordion';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
@@ -13281,27 +13325,9 @@ const calculateEnabledTools = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-if (activeTaskProfile)
-⋮----
-if (activeGlobalProfile)
-⋮----
 // Remove tool approvals for this server
 ⋮----
-{/* Profiles List */}
-⋮----
-onClick=
-⋮----
-{/* MCP Servers */}
-⋮----
-<span className="text-xs flex-1 font-medium text-text-secondary text-left px-1 uppercase">
-⋮----
-{/* Quick Settings */}
-⋮----
-className=
-⋮----
-<LuBrain className=
-⋮----
-<MdOutlineMap className=
+const handleToggleSubagent = (subagentProfile: AgentProfile) =>
 
 ================
 File: src/renderer/src/components/AgentSelector/index.ts
@@ -14657,15 +14683,13 @@ export const TaskStateChip = (
 ================
 File: src/renderer/src/components/common/TextArea.tsx
 ================
-import { ReactNode, TextareaHTMLAttributes } from 'react';
+import { forwardRef, ReactNode, TextareaHTMLAttributes } from 'react';
 ⋮----
 export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode;
   wrapperClassName?: string;
   error?: string | null;
 };
-⋮----
-export const TextArea = (
 
 ================
 File: src/renderer/src/components/common/Toggle.tsx
@@ -20507,8 +20531,8 @@ import { AgentProfile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { AgentRules } from '../AgentRules';
+import { SystemPromptEditor } from '../SystemPromptEditor';
 ⋮----
-import { TextArea } from '@/components/common/TextArea';
 import { InfoIcon } from '@/components/common/InfoIcon';
 ⋮----
 type Props = {
@@ -20525,6 +20549,8 @@ import { useState } from 'react';
 import { AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import Sketch from '@uiw/react-color-sketch';
+⋮----
+import { SystemPromptEditor } from '../SystemPromptEditor';
 ⋮----
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select } from '@/components/common/Select';
@@ -21021,6 +21047,31 @@ type SortableAgentProfileItemProps = {
 };
 ⋮----
 export const SortableAgentProfileItem = (
+
+================
+File: src/renderer/src/components/settings/agent/SystemPromptEditor.tsx
+================
+import { ChangeEvent, ReactNode, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { SYSTEM_PROMPT_PLACEHOLDERS, SystemPromptPlaceholder, formatSystemPromptPlaceholder } from '@common/system-prompt-placeholders';
+⋮----
+import { TextArea } from '@/components/common/TextArea';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  value: string;
+  onChange: (value: string) => void;
+  label?: ReactNode;
+  placeholder?: string;
+  className?: string;
+  info?: ReactNode;
+};
+⋮----
+export const SystemPromptEditor = (
+⋮----
+const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
+⋮----
+const handleInsertPlaceholder = (placeholderName: SystemPromptPlaceholder) =>
 
 ================
 File: src/renderer/src/components/settings/AboutSettings.tsx
