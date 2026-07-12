@@ -12,14 +12,17 @@ import {
   Message,
   ResponseMessage,
   ToolMessage,
+  MessageViewMode,
 } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 import { MessageBar } from './MessageBar';
-import { areMessagesEqual } from './utils';
+import { areMessagesEqual, groupAssistantMessages } from './utils';
 
 import { Accordion } from '@/components/common/Accordion';
 import { Button } from '@/components/common/Button';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 type Props = {
   baseDir: string;
@@ -52,6 +55,13 @@ const GroupMessageBlockComponent = ({
 }: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
+
+  const messageViewMode = useSettingsStore((state) => state.settings?.messageViewMode);
+  const isCompactMode = messageViewMode === MessageViewMode.Compact;
+
+  const processedChildren = useMemo(() => {
+    return isCompactMode ? groupAssistantMessages(message.children) : message.children;
+  }, [message.children, isCompactMode]);
 
   const previewMessage = useMemo(() => {
     const messages = message.children.filter((msg) => isResponseMessage(msg) || isToolMessage(msg) || isUserMessage(msg)).reverse();
@@ -189,18 +199,20 @@ const GroupMessageBlockComponent = ({
         onOpenChange={setIsOpen}
       >
         <div className="p-2 pl-3 bg-bg-primary-light space-y-2">
-          {message.children.map((child, index) => (
-            <MessageBlock
+          {processedChildren.map((child, index) => (
+            <MessageBlockWrapper
               key={child.id || index}
               baseDir={baseDir}
               taskId={taskId}
               message={child}
               allFiles={allFiles}
               renderMarkdown={renderMarkdown}
-              remove={remove ? () => remove(child) : undefined}
-              redo={redo}
-              edit={editUserMessage && isUserMessage(child) ? (content: string, images?: string[]) => editUserMessage(child.id, content, images) : undefined}
+              removeMessage={remove}
+              redoUserPrompt={redo ? () => redo() : undefined}
+              editUserMessage={editUserMessage}
               onInterrupt={onInterrupt}
+              onForkFromMessage={onFork}
+              onRemoveUpToMessage={onRemoveUpTo}
             />
           ))}
         </div>

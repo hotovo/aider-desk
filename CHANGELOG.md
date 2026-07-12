@@ -21,6 +21,7 @@
 - added support for removing group messages (subagent, aider) and Fork from here/Remove up to actions
 - added direct support for ClinePass provider
 - added user ID metadata for PostHog when used as OpenTelemetry tracer
+- added support for compact view mode in group message blocks
 
 ## [0.73.0]
 
