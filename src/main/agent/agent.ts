@@ -30,6 +30,7 @@ import {
   smoothStream,
   type StepResult,
   streamText,
+  type TelemetrySettings,
   type Tool,
   type ToolCallOptions,
   type ToolSet,
@@ -98,6 +99,16 @@ export class Agent {
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
   ) {}
+
+  private getTelemetrySettings(): TelemetrySettings {
+    return {
+      isEnabled: true,
+      metadata: {
+        // PostHog specific metadata
+        posthog_distinct_id: this.store.getUserId(),
+      },
+    };
+  }
 
   private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: (TextPart | ImagePart)[] }> {
     const textFileContents: string[] = [];
@@ -1142,9 +1153,7 @@ export class Agent {
           maxOutputTokens: effectiveMaxOutputTokens,
           maxRetries: 5,
           temperature: effectiveTemperature,
-          experimental_telemetry: {
-            isEnabled: true,
-          },
+          experimental_telemetry: this.getTelemetrySettings(),
           ...providerParameters,
         };
       };
@@ -1802,6 +1811,7 @@ export class Agent {
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
+        experimental_telemetry: this.getTelemetrySettings(),
       });
 
       return result.text;
@@ -1873,6 +1883,7 @@ export class Agent {
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
+        experimental_telemetry: this.getTelemetrySettings(),
       });
 
       return result.object as T;

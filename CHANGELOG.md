@@ -20,6 +20,7 @@
 - added /subagent command to manually invoke subagent from the prompt field
 - added support for removing group messages (subagent, aider) and Fork from here/Remove up to actions
 - added direct support for ClinePass provider
+- added user ID metadata for PostHog when used as OpenTelemetry tracer
 
 ## [0.73.0]
 
