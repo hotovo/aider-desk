@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState, MouseEvent } from 'react';
+import { memo, useMemo, useState, useCallback, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import {
@@ -28,12 +28,28 @@ type Props = {
   allFiles: string[];
   renderMarkdown: boolean;
   remove?: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redo?: () => void;
   editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: (interruptId?: string) => void;
+  onFork?: (message: Message) => void;
+  onRemoveUpTo?: (message: Message) => void;
 };
 
-const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, renderMarkdown, remove, redo, editUserMessage, onInterrupt }: Props) => {
+const GroupMessageBlockComponent = ({
+  baseDir,
+  taskId,
+  message,
+  allFiles,
+  renderMarkdown,
+  remove,
+  removeGroup,
+  redo,
+  editUserMessage,
+  onInterrupt,
+  onFork,
+  onRemoveUpTo,
+}: Props) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -81,6 +97,12 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
 
   const aggregatedUsage = aggregateUsage(message.children);
 
+  const copyContent = useMemo(() => {
+    const responseMessages = message.children.filter(isResponseMessage);
+    const lastResponse = responseMessages[responseMessages.length - 1];
+    return lastResponse?.content;
+  }, [message.children]);
+
   const getGroupDisplayName = (name?: string | LocalizedString) => {
     if (!name) {
       return t('messages.group');
@@ -100,6 +122,40 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
       onInterrupt(message.group.interruptId);
     }
   };
+
+  const handleRemove = useCallback(() => {
+    if (!removeGroup) {
+      return;
+    }
+    removeGroup(message);
+  }, [removeGroup, message]);
+
+  const handleRemoveUpTo = useCallback(() => {
+    if (!onRemoveUpTo) {
+      return;
+    }
+    // Target the first child (the subagent tool call message whose id === toolCallId), not the last child.
+    // Subagent group children are frontend-only streaming messages that are not persisted to the backend's
+    // ContextManager.messages — only the tool call message (first child) exists there. Using the last child
+    // would cause a "Message with id X not found" error in removeMessagesAfter.
+    const target = message.children[0];
+    if (target) {
+      onRemoveUpTo(target);
+    }
+  }, [onRemoveUpTo, message.children]);
+
+  const handleFork = useCallback(() => {
+    if (!onFork) {
+      return;
+    }
+    // Target the first child (the subagent tool call message whose id === toolCallId). This is the only
+    // child message that exists in the backend's ContextManager.messages, since subagent streaming messages
+    // are frontend-only and never persisted. See handleRemoveUpTo for the same reasoning.
+    const target = message.children[0];
+    if (target) {
+      onFork(target);
+    }
+  }, [onFork, message.children]);
 
   const header = (
     <div className={clsx('w-full px-3 py-1 group flex items-center justify-between', !message.group.finished && 'animate-pulse')}>
@@ -182,7 +238,15 @@ const GroupMessageBlockComponent = ({ baseDir, taskId, message, allFiles, render
         )}
       </AnimatePresence>
       <div className="px-3 pb-3">
-        <MessageBar className="mt-0" message={message} usageReport={aggregatedUsage} />
+        <MessageBar
+          className="mt-0"
+          message={message}
+          content={copyContent}
+          usageReport={aggregatedUsage}
+          remove={removeGroup ? handleRemove : undefined}
+          onFork={onFork ? handleFork : undefined}
+          onRemoveUpTo={onRemoveUpTo ? handleRemoveUpTo : undefined}
+        />
       </div>
     </div>
   );
@@ -193,10 +257,12 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.baseDir !== nextProps.baseDir ||
     prevProps.allFiles.length !== nextProps.allFiles.length ||
     prevProps.renderMarkdown !== nextProps.renderMarkdown ||
-    (prevProps.remove !== nextProps.remove && (prevProps.remove === undefined) !== (nextProps.remove === undefined)) ||
+    (prevProps.removeGroup !== nextProps.removeGroup && (prevProps.removeGroup === undefined) !== (nextProps.removeGroup === undefined)) ||
     (prevProps.redo !== nextProps.redo && (prevProps.redo === undefined) !== (nextProps.redo === undefined)) ||
     (prevProps.editUserMessage !== nextProps.editUserMessage && (prevProps.editUserMessage === undefined) !== (nextProps.editUserMessage === undefined)) ||
-    (prevProps.onInterrupt !== nextProps.onInterrupt && (prevProps.onInterrupt === undefined) !== (nextProps.onInterrupt === undefined))
+    (prevProps.onInterrupt !== nextProps.onInterrupt && (prevProps.onInterrupt === undefined) !== (nextProps.onInterrupt === undefined)) ||
+    (prevProps.onFork !== nextProps.onFork && (prevProps.onFork === undefined) !== (nextProps.onFork === undefined)) ||
+    (prevProps.onRemoveUpTo !== nextProps.onRemoveUpTo && (prevProps.onRemoveUpTo === undefined) !== (nextProps.onRemoveUpTo === undefined))
   ) {
     return false;
   }

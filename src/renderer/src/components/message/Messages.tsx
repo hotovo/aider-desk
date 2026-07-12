@@ -2,7 +2,7 @@ import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } fro
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { isUserMessage, Message, MessageViewMode } from '@common/types';
+import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/types';
 
 import { MessageBlockWrapper } from './MessageBlockWrapper';
 
@@ -26,6 +26,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt: (messageId: string) => void;
   editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -43,6 +44,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
       allFiles = [],
       renderMarkdown,
       removeMessage,
+      removeGroup,
       redoUserPrompt,
       editUserMessage,
       onInterrupt,
@@ -139,6 +141,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
               renderMarkdown={renderMarkdown}
               inProgress={inProgress}
               removeMessage={removeMessage}
+              removeGroup={removeGroup}
               redoUserPrompt={redoUserPrompt}
               editUserMessage={editUserMessage}
               onInterrupt={onInterrupt}

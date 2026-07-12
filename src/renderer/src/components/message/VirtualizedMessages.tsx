@@ -3,7 +3,7 @@ import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { LegendList, type LegendListRef } from '@legendapp/list/react';
-import { isUserMessage, Message, MessageViewMode } from '@common/types';
+import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/types';
 import { twMerge } from 'tailwind-merge';
 
 import { MessageBlockWrapper } from './MessageBlockWrapper';
@@ -27,6 +27,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt: (messageId: string) => void;
   editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -44,6 +45,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       allFiles = [],
       renderMarkdown,
       removeMessage,
+      removeGroup,
       redoUserPrompt,
       editUserMessage,
       onInterrupt,
@@ -187,6 +189,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         allFiles,
         renderMarkdown,
         removeMessage,
+        removeGroup,
         redoUserPrompt,
         editUserMessage,
         onInterrupt,
@@ -199,6 +202,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         allFiles,
         renderMarkdown,
         removeMessage,
+        removeGroup,
         redoUserPrompt,
         editUserMessage,
         onInterrupt,
@@ -219,6 +223,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
             renderMarkdown={renderMarkdown}
             inProgress={inProgress}
             removeMessage={removeMessage}
+            removeGroup={removeGroup}
             redoUserPrompt={redoUserPrompt}
             editUserMessage={editUserMessage}
             onInterrupt={onInterrupt}
@@ -234,6 +239,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         renderMarkdown,
         inProgress,
         removeMessage,
+        removeGroup,
         redoUserPrompt,
         editUserMessage,
         onInterrupt,

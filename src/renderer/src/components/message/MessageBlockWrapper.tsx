@@ -1,5 +1,5 @@
 import { memo, useMemo, type ReactNode } from 'react';
-import { isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
+import { GroupMessage, isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
 
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
@@ -20,6 +20,7 @@ type Props = {
   hideMessageBar?: boolean;
   inProgress?: boolean;
   removeMessage?: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt?: (messageId: string) => void;
   editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -37,6 +38,7 @@ const MessageBlockWrapperInner = ({
   hideMessageBar = false,
   inProgress = false,
   removeMessage,
+  removeGroup,
   redoUserPrompt,
   editUserMessage,
   onInterrupt,
@@ -68,9 +70,12 @@ const MessageBlockWrapperInner = ({
         allFiles={allFiles}
         renderMarkdown={renderMarkdown}
         remove={inProgress ? undefined : removeMessage}
+        removeGroup={removeGroup}
         redo={inProgress ? undefined : redoUserPrompt ? () => redoUserPrompt(message.id) : undefined}
         editUserMessage={editUserMessage}
         onInterrupt={onInterrupt}
+        onFork={onForkFromMessage}
+        onRemoveUpTo={onRemoveUpToMessage}
       />
     );
   } else if (isAssistantGroupMessage(message)) {
@@ -136,6 +141,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
 
   if (
     prevProps.removeMessage !== nextProps.removeMessage ||
+    prevProps.removeGroup !== nextProps.removeGroup ||
     prevProps.redoUserPrompt !== nextProps.redoUserPrompt ||
     prevProps.editUserMessage !== nextProps.editUserMessage ||
     prevProps.onInterrupt !== nextProps.onInterrupt ||

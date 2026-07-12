@@ -2,6 +2,7 @@ import {
   AIDER_MODES,
   AutonomyMode,
   DefaultTaskState,
+  GroupMessage,
   isLoadingMessage,
   isLogMessage,
   isUserMessage,
@@ -498,6 +499,30 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       [setMessages, task.id, api, projectDir, t],
     );
 
+    const handleRemoveGroup = useCallback(
+      async (group: GroupMessage) => {
+        const originalMessages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
+        const childIds = new Set(group.children.map((child) => child.id));
+
+        setMessages(task.id, (prevMessages) => prevMessages.filter((msg) => !childIds.has(msg.id)));
+
+        const firstChild = group.children[0];
+        if (!firstChild) {
+          return;
+        }
+
+        try {
+          await api.removeMessage(projectDir, task.id, firstChild.id);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to remove group:', error);
+          setMessages(task.id, () => originalMessages);
+          showErrorNotification(t('errors.removeMessageFailed'));
+        }
+      },
+      [setMessages, task.id, api, projectDir, t],
+    );
+
     const handleRemoveUpToMessage = useCallback(
       async (messageToRemove: Message) => {
         const originalMessages = useTaskStore.getState().taskMessagesMap.get(task.id) ?? [];
@@ -508,6 +533,20 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
           if (messageIndex === -1) {
             return prevMessages;
           }
+
+          // If the target message is part of a group (e.g. subagent group), we need to keep
+          // all messages belonging to that group, since the target is the first child but the
+          // group has additional children that come after it in the flat messages array.
+          // Without this, the optimistic slice would remove the remaining group children.
+          const groupId = messageToRemove.promptContext?.group?.id;
+          if (groupId) {
+            const lastGroupChildIndex = prevMessages.reduce(
+              (lastIdx, msg, idx) => (idx >= messageIndex && msg.promptContext?.group?.id === groupId ? idx : lastIdx),
+              messageIndex,
+            );
+            return prevMessages.slice(0, lastGroupChildIndex + 1);
+          }
+
           return prevMessages.slice(0, messageIndex + 1);
         });
 
@@ -761,6 +800,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
+                      removeGroup={handleRemoveGroup}
                       redoUserPrompt={handleRedoUserPrompt}
                       editUserMessage={handleEditUserMessage}
                       onInterrupt={handleInterruptResponse}
@@ -777,6 +817,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
+                      removeGroup={handleRemoveGroup}
                       redoUserPrompt={handleRedoUserPrompt}
                       editUserMessage={handleEditUserMessage}
                       onInterrupt={handleInterruptResponse}
