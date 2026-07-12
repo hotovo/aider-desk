@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.74.0]
 
 - added diff-based extension reloads and optimized dependency installation
 - updated Gemini voice model to gemini-3.1-flash-live-preview and improved session handling
@@ -22,6 +22,7 @@
 - added direct support for ClinePass provider
 - added user ID metadata for PostHog when used as OpenTelemetry tracer
 - added support for compact view mode in group message blocks
+- added Korean translations
 
 ## [0.73.0]
 
