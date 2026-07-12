@@ -3,6 +3,7 @@ export * from './AnthropicCompatibleParameters';
 export * from './AzureParameters';
 export * from './BedrockParameters';
 export * from './CerebrasParameters';
+export * from './ClinePassParameters';
 export * from './DeepseekParameters';
 export * from './GeminiParameters';
 export * from './GpustackParameters';

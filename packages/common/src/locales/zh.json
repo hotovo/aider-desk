@@ -399,6 +399,9 @@
     "apiVersion": "API 版本",
     "addCustomModelInfo": "Azure 提供商的模型无法自动加载，您需要手动使用“+ 添加模型”添加它们，并确保模型名称与部署名称匹配。"
   },
+  "clinepass": {
+    "apiKey": "API 密钥"
+  },
   "providers": {
     "anthropic": "Anthropic",
     "anthropic-compatible": "Anthropic 兼容",
@@ -421,6 +424,7 @@
     "openai-compatible": "OpenAI Compatible",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
+    "clinepass": "ClinePass",
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
     "zai-plan": "Z.ai Coding Plan",

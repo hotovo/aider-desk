@@ -19,6 +19,7 @@
 - added support for dynamic system prompt placeholders via editor
 - added /subagent command to manually invoke subagent from the prompt field
 - added support for removing group messages (subagent, aider) and Fork from here/Remove up to actions
+- added direct support for ClinePass provider
 
 ## [0.73.0]
 

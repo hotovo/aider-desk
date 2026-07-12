@@ -427,7 +427,11 @@
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
     "zai-plan": "Z.ai Coding Plan",
-    "azure": "Azure"
+    "azure": "Azure",
+    "clinepass": "ClinePass"
+  },
+  "clinepass": {
+    "apiKey": "API Key"
   },
   "select": {
     "placeholder": "Select an option"

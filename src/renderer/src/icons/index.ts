@@ -2,6 +2,7 @@ export { AnthropicIcon } from './AnthropicIcon';
 export { AnthropicCompatibleIcon } from './AnthropicCompatibleIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
+export { ClinePassIcon } from './ClinePassIcon';
 export { CerebrasIcon } from './CerebrasIcon';
 export { DeepseekIcon } from './DeepseekIcon';
 export { GeminiIcon } from './GeminiIcon';

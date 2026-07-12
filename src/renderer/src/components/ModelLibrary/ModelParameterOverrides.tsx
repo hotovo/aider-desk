@@ -39,6 +39,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   anthropic: DefaultModelOverrides,
   bedrock: DefaultModelOverrides,
   cerebras: DefaultModelOverrides,
+  clinepass: DefaultModelOverrides,
   deepseek: DeepseekModelOverrides,
   groq: DefaultModelOverrides,
   lmstudio: DefaultModelOverrides,

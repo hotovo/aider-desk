@@ -36,6 +36,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   AnthropicCompatibleParameters: () => <div>Anthropic Compatible Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
+  ClinePassParameters: () => <div>ClinePass Parameters</div>,
   DeepseekParameters: () => <div>Deepseek Parameters</div>,
   GeminiParameters: () => <div>Gemini Parameters</div>,
   GpustackParameters: () => <div>Gpustack Parameters</div>,

@@ -39,6 +39,7 @@ export type LlmProviderName =
   | 'azure'
   | 'bedrock'
   | 'cerebras'
+  | 'clinepass'
   | 'deepseek'
   | 'gemini'
   | 'gpustack'
@@ -86,6 +87,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'azure',
   'bedrock',
   'cerebras',
+  'clinepass',
   'deepseek',
   'gemini',
   'gpustack',
@@ -224,6 +226,12 @@ export interface CerebrasProvider extends LlmProviderBase {
 }
 export const isCerebrasProvider = (provider: LlmProviderBase): provider is CerebrasProvider => provider.name === 'cerebras';
 
+export interface ClinePassProvider extends LlmProviderBase {
+  name: 'clinepass';
+  apiKey?: string;
+}
+export const isClinePassProvider = (provider: LlmProviderBase): provider is ClinePassProvider => provider.name === 'clinepass';
+
 export interface BedrockProvider extends LlmProviderBase {
   name: 'bedrock';
   accessKeyId: string;
@@ -338,6 +346,7 @@ export type LlmProvider =
   | GroqProvider
   | GpustackProvider
   | CerebrasProvider
+  | ClinePassProvider
   | AlibabaPlanProvider
   | KimiPlanProvider
   | OpenAiCompatibleProvider
@@ -358,6 +367,7 @@ export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> =
   anthropic: 'claude-sonnet-5',
   bedrock: 'global.anthropic.claude-sonnet-5',
   cerebras: 'gpt-oss-120b',
+  clinepass: 'deepseek-v4-flash',
   deepseek: 'deepseek-v4-pro',
   gemini: 'gemini-3.5-flash',
   groq: 'openai/gpt-oss-120b',
@@ -702,6 +712,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'cerebras',
         apiKey: '',
       } satisfies CerebrasProvider;
+      break;
+    case 'clinepass':
+      provider = {
+        name: 'clinepass',
+        apiKey: '',
+      } satisfies ClinePassProvider;
       break;
     case 'deepseek':
       provider = {

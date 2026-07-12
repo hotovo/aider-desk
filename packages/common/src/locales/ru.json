@@ -397,6 +397,9 @@
     "apiVersion": "Версия API",
     "addCustomModelInfo": "Модели не могут быть загружены автоматически для провайдера Azure. Вам нужно добавить их вручную с помощью «+ Добавить модель», убедившись, что имя модели соответствует имени развёртывания."
   },
+  "clinepass": {
+    "apiKey": "API-ключ"
+  },
   "providers": {
     "anthropic": "Anthropic",
     "anthropic-compatible": "Совместимый с Anthropic",
@@ -418,6 +421,7 @@
     "openai-compatible": "Совместимый с OpenAI",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",
+    "clinepass": "ClinePass",
     "synthetic": "Синтетический",
     "vertex-ai": "Vertex AI",
     "zai-plan": "Z.ai Coding Plan",
