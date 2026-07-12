@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from '@common/locales/en.json';
 import zh from '@common/locales/zh.json';
 import ru from '@common/locales/ru.json';
+import ko from '@common/locales/ko.json';
 
 export const SUPPORTED_LANGUAGES = {
   en: {
@@ -19,6 +20,10 @@ export const SUPPORTED_LANGUAGES = {
     label: 'Русский',
     countryCode: 'RU',
   },
+  ko: {
+    label: '한국어',
+    countryCode: 'KR',
+  },
 };
 
 // eslint-disable-next-line import/no-named-as-default-member
@@ -30,6 +35,7 @@ void i18n
       en: { translation: en },
       zh: { translation: zh },
       ru: { translation: ru },
+      ko: { translation: ko },
     },
     fallbackLng: 'en',
     interpolation: {

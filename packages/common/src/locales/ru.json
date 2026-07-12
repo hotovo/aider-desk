@@ -2,7 +2,8 @@
   "languages": {
     "en": "English",
     "zh": "中文",
-    "ru": "Русский"
+    "ru": "Русский",
+    "ko": "한국어"
   },
   "common": {
     "settings": "Настройки",
