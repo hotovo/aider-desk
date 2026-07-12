@@ -829,6 +829,10 @@ export const isSubagentEnabled = (agentProfile: AgentProfile, mainAgentProfile?:
   return !mainAgentProfile.enabledSubagentIds || mainAgentProfile.enabledSubagentIds.includes(agentProfile.id);
 };
 
+export const getSubagentId = (subagent: AgentProfile): string => {
+  return subagent.name.toLowerCase().replace(/\s+/g, '-');
+};
+
 export const getProviderModelId = (model: Model): string => {
   return `${model.providerId}/${model.id}`;
 };

@@ -21,6 +21,7 @@ import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-ic
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
 import { parseCommandArgs } from '@common/utils';
+import { getSubagentId } from '@common/agent';
 
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
@@ -30,6 +31,7 @@ import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
 import { useApi } from '@/contexts/ApiContext';
+import { useAgents } from '@/contexts/AgentsContext';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
@@ -70,6 +72,7 @@ const COMMANDS = [
   '/clear-logs',
   '/resolve-conflicts',
   '/subtask',
+  '/subagent',
 ];
 
 const ANSWERS = ['y', 'n', 'a', 'd', 'maybe']; // Added 'maybe' (Branch B)
@@ -231,6 +234,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     const editorRef = useRef<ReactCodeMirrorRef>(null);
     const [customCommands, extensionCommands] = useCommands(baseDir);
     const api = useApi();
+    const { getProfiles } = useAgents();
+
+    const subagentProfiles = useMemo(() => {
+      return getProfiles(baseDir).filter((p) => p.subagent.enabled);
+    }, [getProfiles, baseDir]);
 
     const {
       isRecording,
@@ -315,15 +323,25 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const [command, ...args] = parseCommandArgs(text);
           const allCommands = [...customCommands, ...extensionCommands];
           const cmd = allCommands.find((c) => `/${c.name}` === command);
-          const argIndex = args.length - 1;
+          const argIndex = text.endsWith(' ') ? args.length : args.length - 1;
           if (cmd?.arguments?.[argIndex]?.options) {
-            const currentArg = args[argIndex];
+            const currentArg = args[argIndex] ?? '';
             return {
               from: state.doc.length - currentArg.length,
               options: cmd.arguments[argIndex].options.map((opt) => ({
                 label: opt,
                 type: 'constant',
               })),
+              validFor: /^\S*$/,
+            };
+          }
+
+          if (command === '/subagent' && argIndex === 0) {
+            const currentArg = args[0] ?? '';
+            const subagentIds = subagentProfiles.map((p) => getSubagentId(p));
+            return {
+              from: state.doc.length - currentArg.length,
+              options: subagentIds.map((id) => ({ label: id, type: 'variable' })),
               validFor: /^\S*$/,
             };
           }
@@ -353,7 +371,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         if (text.startsWith('/')) {
           if (text.includes(' ')) {
             const [command, ...args] = parseCommandArgs(text);
-            const currentArg = args[args.length - 1];
+            const currentArg = args[args.length - 1] ?? '';
             if (command === '/add' || command === '/read-only') {
               const files = await api.getAddableFiles(baseDir, taskId);
               return {
@@ -382,7 +400,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           options: [...words, ...allFiles].map((w) => ({ label: w, type: 'text' })),
         };
       },
-      [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words],
+      [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words, subagentProfiles],
     );
 
     const allHistoryItems = useMemo(
@@ -655,6 +673,11 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
     useEffect(() => {
       const commandMatch = COMMANDS.find((cmd) => {
+        // Skip auto-invoke for commands that need additional arguments
+        if (cmd === '/subagent') {
+          return false;
+        }
+
         if (text === cmd) {
           return true;
         }
@@ -726,6 +749,23 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             showErrorNotification(t('promptField.invalidCommand'));
             return;
           }
+
+          if (cmd === 'subagent') {
+            const subagentId = args[0];
+            if (!subagentId) {
+              showErrorNotification(t('promptField.invalidCommand'));
+              return;
+            }
+            const matchedProfile = subagentProfiles.find((p) => getSubagentId(p) === subagentId || p.name === subagentId);
+            if (!matchedProfile) {
+              showErrorNotification(`Subagent '${subagentId}' not found`);
+              return;
+            }
+            const subagentPrompt = args.slice(1).join(' ').trim();
+            prepareForNextPrompt();
+            runCommand(`subagent ${getSubagentId(matchedProfile)} ${subagentPrompt}`);
+            return;
+          }
         }
 
         if (pendingCommand) {
@@ -754,6 +794,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       pendingCommand,
       handleConfirmCommand,
       runPrompt,
+      runCommand,
+      subagentProfiles,
       t,
     ]);
 

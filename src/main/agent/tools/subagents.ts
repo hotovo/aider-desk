@@ -1,18 +1,12 @@
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { AgentProfile, ContextMemoryMode, ContextMessage, InvocationMode, PromptContext, SettingsData } from '@common/types';
-import { v4 as uuidv4 } from 'uuid';
+import { AgentProfile, ContextMessage, InvocationMode, SettingsData } from '@common/types';
+import { getSubagentId } from '@common/agent';
 import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
-import { extractServerNameToolName } from '@common/utils';
 
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
+import { findEnabledSubagent, getEnabledSubagents, runSubagentTask } from '@/agent/subagent';
 import { Task } from '@/task';
-import logger from '@/logger';
-
-export const getSubagentId = (subagent: AgentProfile): string => {
-  return subagent.name.toLowerCase().replace(/\s+/g, '-');
-};
 
 export const createSubagentsToolset = async (
   _settings: SettingsData,
@@ -24,7 +18,7 @@ export const createSubagentsToolset = async (
   currentMessages: ContextMessage[] = [],
 ): Promise<ToolSet> => {
   const allProfiles = agentProfileManager.getProjectProfiles(task.project);
-  const enabledSubagents = allProfiles.filter((agentProfile) => isSubagentEnabled(agentProfile, mainAgentProfile));
+  const enabledSubagents = getEnabledSubagents(allProfiles, mainAgentProfile);
 
   const generateSubagentsRunTaskDescription = (): string => {
     const automaticSubagents = enabledSubagents.filter((agentProfile) => agentProfile.subagent.invocationMode === InvocationMode.Automatic);
@@ -71,289 +65,55 @@ export const createSubagentsToolset = async (
         ),
     }),
     execute: async ({ prompt, subagentId, description }, { toolCallId }) => {
-      const targetSubagent = enabledSubagents.find((agentProfile) => getSubagentId(agentProfile) === subagentId);
+      const targetSubagent = findEnabledSubagent(enabledSubagents, subagentId);
       if (!targetSubagent) {
         return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
       }
 
-      // Create a subagent profile based on the selected subagent
-      const subagentProfile: AgentProfile = {
-        ...DEFAULT_AGENT_PROFILE,
-        ...targetSubagent,
-        useTodoTools: false, // Disable todo tools for simplicity,
-        useSubagents: false, // Disable nested subagents
-        useMemoryTools: targetSubagent.useMemoryTools ?? false, // Use memory tools if enabled, false by default
-      };
-
-      // Create interrupt ID and abort controller for the subagent
-      const interruptId = uuidv4();
-      const subagentAbortController = new AbortController();
-
-      // If the parent aborts, also abort the subagent
-      if (abortSignal) {
-        if (abortSignal.aborted) {
-          subagentAbortController.abort();
-        } else {
-          abortSignal.addEventListener('abort', () => subagentAbortController.abort());
-        }
-      }
-
-      // Create promptContext with working group
-      const promptContext: PromptContext = {
-        id: uuidv4(),
-        group: {
-          id: uuidv4(),
-          color: targetSubagent.subagent.color,
-          name: description
-            ? `${targetSubagent.name}: ${description.endsWith('...') ? description : `${description}...`}`
-            : {
-                key: 'toolMessage.subagents.groupRunning',
-                params: {
-                  name: targetSubagent.name,
-                },
-              },
-          interruptId,
+      const result = await runSubagentTask({
+        task,
+        targetSubagent,
+        prompt,
+        description,
+        abortSignal,
+        contextMessages,
+        currentMessages,
+        onStarted: (promptContext) => {
+          task.addToolMessage(
+            toolCallId,
+            SUBAGENTS_TOOL_GROUP_NAME,
+            SUBAGENTS_TOOL_RUN_TASK,
+            {
+              prompt,
+              subagentId,
+              description,
+            },
+            undefined,
+            undefined,
+            promptContext,
+          );
         },
-      };
+      });
 
-      const getSubagentContextMessages = (contextMemory: ContextMemoryMode) => {
-        const subagentContextMessages: ContextMessage[] = [];
-
-        const findMessagesForToolCallId = (toolCallId: string) => {
-          return [...contextMessages, ...currentMessages].reduce<ContextMessage[]>((acc, message) => {
-            if (message.role !== 'tool') {
-              return acc;
-            }
-
-            const matchingParts = message.content.filter(
-              (part) => part.type === 'tool-result' && part.toolCallId === toolCallId && part.output.type === 'json',
-            );
-
-            for (const part of matchingParts) {
-              // @ts-expect-error part.output.value is expected to be in the output
-              const messages = (part.output.value as { messages: ContextMessage[] }).messages;
-              if (messages.length > 0) {
-                acc.push(...messages);
-              }
-            }
-
-            return acc;
-          }, []);
-        };
-
-        logger.debug('Subagent context messages:', {
-          messages: contextMessages.length,
-          currentMessages: currentMessages.length,
-        });
-        [...contextMessages, ...currentMessages]
-          .filter((message) => message.role === 'assistant')
-          .forEach((message) => {
-            if (!Array.isArray(message.content)) {
-              return;
-            }
-
-            for (const part of message.content) {
-              if (part.type === 'tool-call') {
-                const [serverName, toolName] = extractServerNameToolName(part.toolName);
-                logger.info('Subagent context messages: tool-call', {
-                  serverName,
-                  toolName,
-                  subagentId,
-                  input: part.input,
-                });
-                // @ts-expect-error subagentId is expected to be in the input
-                if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK && part.input?.subagentId === subagentId) {
-                  const toolMessages = findMessagesForToolCallId(part.toolCallId);
-
-                  logger.info('Subagent context messages:', {
-                    count: toolMessages.length,
-                  });
-                  if (toolMessages.length > 0) {
-                    subagentContextMessages.push({
-                      id: message.id,
-                      role: 'user',
-                      // @ts-expect-error prompt is expected to be in the input
-                      content: part.input.prompt,
-                    });
-
-                    switch (contextMemory) {
-                      case ContextMemoryMode.FullContext:
-                        subagentContextMessages.push(...toolMessages);
-                        break;
-                      case ContextMemoryMode.LastMessage:
-                        subagentContextMessages.push(toolMessages[toolMessages.length - 1]);
-                        break;
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-        logger.info('Subagent context messages:', {
-          messages: subagentContextMessages.length,
-        });
-
-        return subagentContextMessages;
-      };
-
-      try {
-        task.addToolMessage(
-          toolCallId,
-          SUBAGENTS_TOOL_GROUP_NAME,
-          SUBAGENTS_TOOL_RUN_TASK,
-          {
-            prompt,
-            subagentId,
-            description,
-          },
-          undefined,
-          undefined,
-          promptContext,
-        );
-
-        // Run the subagent with the focused context
-        const subagentContextMessages =
-          subagentProfile.subagent.contextMemory !== ContextMemoryMode.Off ? getSubagentContextMessages(subagentProfile.subagent.contextMemory) : [];
-        const effectivePrompt =
-          subagentContextMessages.length > 0
-            ? `${prompt}
-
-Make sure to reuse the previous conversation if possible.`
-            : prompt;
-
-        const subagentSystemPrompt = targetSubagent.subagent.systemPrompt?.trim()
-          ? await task.compileCustomSystemPrompt(targetSubagent.subagent.systemPrompt)
-          : undefined;
-
-        const subagentResultMessages = await task.runSubagent(
-          subagentProfile,
-          effectivePrompt,
-          subagentContextMessages,
-          [],
-          subagentSystemPrompt,
-          subagentAbortController,
-          promptContext,
-        );
-
-        // Check if the subagent was cancelled
-        if (subagentAbortController.signal.aborted) {
-          logger.info('Subagent run cancelled by user', { subagentId, interruptId });
-
-          // Update promptContext to finished state with cancellation
-          promptContext.group = {
-            ...promptContext.group!,
-            name: description
-              ? {
-                  key: 'toolMessage.subagents.groupCancelledWithDescription',
-                  params: {
-                    name: targetSubagent.name,
-                    description: description.endsWith('...') ? description.slice(0, -3) : description,
-                  },
-                }
-              : {
-                  key: 'toolMessage.subagents.groupCancelled',
-                  params: {
-                    name: targetSubagent.name,
-                  },
-                },
-            finished: true,
-          };
-
-          // Add cancellation message to the result
-          subagentResultMessages.push({
-            id: uuidv4(),
-            role: 'user' as const,
-            content: 'Subagent run cancelled by user.',
-            promptContext,
-          });
-
-          return {
-            messages: subagentResultMessages,
-            promptContext,
-            cancelled: true,
-          };
-        }
-
-        // Update promptContext to finished state with success
-        promptContext.group = {
-          ...promptContext.group!,
-          name: description
-            ? {
-                key: 'toolMessage.subagents.groupCompletedWithDescription',
-                params: {
-                  name: targetSubagent.name,
-                  description: description.endsWith('...') ? description.slice(0, -3) : description,
-                },
-              }
-            : {
-                key: 'toolMessage.subagents.groupCompleted',
-                params: {
-                  name: targetSubagent.name,
-                },
-              },
-          finished: true,
-        };
-
+      if (result.status === 'cancelled') {
         return {
-          messages: subagentResultMessages,
-          promptContext,
-        };
-      } catch (error) {
-        // Check if the subagent was cancelled
-        if (subagentAbortController.signal.aborted) {
-          logger.info('Subagent run cancelled by user (in catch)', { subagentId, interruptId });
-
-          // Update promptContext to finished state with cancellation
-          promptContext.group = {
-            ...promptContext.group!,
-            name: description
-              ? {
-                  key: 'toolMessage.subagents.groupCancelledWithDescription',
-                  params: {
-                    name: targetSubagent.name,
-                    description: description.endsWith('...') ? description.slice(0, -3) : description,
-                  },
-                }
-              : {
-                  key: 'toolMessage.subagents.groupCancelled',
-                  params: {
-                    name: targetSubagent.name,
-                  },
-                },
-            finished: true,
-          };
-
-          return {
-            messages: [
-              {
-                id: uuidv4(),
-                role: 'user' as const,
-                content: 'Subagent run cancelled by user.',
-                promptContext,
-              },
-            ],
-            promptContext,
-            cancelled: true,
-          };
-        }
-
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('Error running subagent:', error);
-
-        // Update promptContext to finished state with error
-        promptContext.group = {
-          ...promptContext.group!,
-          name: 'toolMessage.error',
-          color: 'var(--color-error-muted)',
-          finished: true,
-        };
-
-        return {
-          error: `Error running subagent '${targetSubagent.name}': ${errorMessage}`,
-          promptContext,
+          messages: result.messages,
+          promptContext: result.promptContext,
+          cancelled: true,
         };
       }
+
+      if (result.status === 'error') {
+        return {
+          error: result.error,
+          promptContext: result.promptContext,
+        };
+      }
+
+      return {
+        messages: result.messages,
+        promptContext: result.promptContext,
+      };
     },
   });
 

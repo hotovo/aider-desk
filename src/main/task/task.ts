@@ -51,14 +51,26 @@ import {
   WorktreeUncommittedFiles,
 } from '@common/types';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
-import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
-import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import {
+  COMPACT_CONVERSATION_AGENT_PROFILE,
+  CONFLICT_RESOLUTION_PROFILE,
+  HANDOFF_AGENT_PROFILE,
+  INIT_PROJECT_AGENTS_PROFILE,
+  getSubagentId,
+} from '@common/agent';
+import {
+  SKILLS_TOOL_ACTIVATE_SKILL,
+  SKILLS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 
 import type { z } from 'zod';
-import type { ToolContent } from '@common/types';
+import type { ToolContent, JSONValue } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 
@@ -73,6 +85,7 @@ import {
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
+import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';
@@ -1710,6 +1723,11 @@ export class Task {
       }
     }
 
+    if (command.trim().startsWith('subagent ')) {
+      sendToConnectors = false;
+      await this.handleSubagentCommand(command.trim().slice('subagent '.length));
+    }
+
     if (sendToConnectors) {
       if (AIDER_COMMANDS.includes(command.trim()) && !this.aiderManager.isStarted()) {
         logger.info('Starting Aider for command:', { command });
@@ -1721,6 +1739,161 @@ export class Task {
       this.findMessageConnectors('run-command').forEach((connector) =>
         connector.sendRunCommandMessage(command, this.contextManager.toConnectorMessages(), this.contextManager.getContextFiles()),
       );
+    }
+  }
+
+  private async handleSubagentCommand(commandArgs: string): Promise<void> {
+    const spaceIndex = commandArgs.indexOf(' ');
+    if (spaceIndex === -1) {
+      this.addLogMessage('error', 'Usage: /subagent <subagent-id> <prompt>');
+      return;
+    }
+
+    const subagentId = commandArgs.substring(0, spaceIndex).trim();
+    const prompt = commandArgs.substring(spaceIndex + 1).trim();
+
+    if (!prompt) {
+      this.addLogMessage('error', 'Usage: /subagent <subagent-id> <prompt>');
+      return;
+    }
+
+    const mainAgentProfile = await this.getTaskAgentProfile();
+    if (!mainAgentProfile) {
+      this.addLogMessage('error', 'No active agent profile found.');
+      return;
+    }
+
+    const allProfiles = this.agentProfileManager.getProjectProfiles(this.project);
+    const enabledSubagents = allProfiles.filter((subagent) => subagent.subagent.enabled === true && subagent.id !== mainAgentProfile.id);
+    const targetSubagent = findEnabledSubagent(enabledSubagents, subagentId, { matchByName: true });
+
+    if (!targetSubagent) {
+      this.addLogMessage('error', `Subagent '${subagentId}' not found or not enabled.`);
+      return;
+    }
+
+    const toolCallId = uuidv4();
+    const fullToolName = `${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`;
+    const toolInput = { prompt, subagentId: getSubagentId(targetSubagent) };
+
+    const previousTaskState = this.task.state;
+    await this.saveTask({ state: DefaultTaskState.InProgress });
+
+    try {
+      const result = await runSubagentTask({
+        task: this,
+        targetSubagent,
+        prompt,
+        onStarted: (promptContext) => {
+          this.addToolMessage(toolCallId, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, toolInput, undefined, undefined, promptContext);
+          this.addLogMessage('loading', undefined, false, promptContext);
+        },
+      });
+
+      if (result.status === 'cancelled') {
+        const cancelledToolMessage: ContextToolMessage = {
+          id: uuidv4(),
+          role: 'tool',
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId,
+              toolName: fullToolName,
+              output: {
+                type: 'json',
+                value: {
+                  messages: result.messages,
+                  promptContext: result.promptContext,
+                  cancelled: true,
+                } as unknown as JSONValue,
+              },
+            },
+          ],
+          promptContext: result.promptContext,
+        };
+
+        this.addToolMessage(
+          toolCallId,
+          SUBAGENTS_TOOL_GROUP_NAME,
+          SUBAGENTS_TOOL_RUN_TASK,
+          toolInput,
+          JSON.stringify(cancelledToolMessage.content[0].output),
+          undefined,
+          result.promptContext,
+        );
+        this.addLogMessage('loading', undefined, false, result.promptContext);
+        return;
+      }
+
+      if (result.status === 'error') {
+        logger.error('Error running subagent from command:', result.error);
+
+        this.addToolMessage(
+          toolCallId,
+          SUBAGENTS_TOOL_GROUP_NAME,
+          SUBAGENTS_TOOL_RUN_TASK,
+          toolInput,
+          JSON.stringify({ type: 'error-text', value: result.error }),
+          undefined,
+          result.promptContext,
+        );
+        this.addLogMessage('loading', undefined, false, result.promptContext);
+        return;
+      }
+
+      const toolResultMessage: ContextToolMessage = {
+        id: uuidv4(),
+        role: 'tool',
+        content: [
+          {
+            type: 'tool-result',
+            toolCallId,
+            toolName: fullToolName,
+            output: {
+              type: 'json',
+              value: {
+                messages: result.messages,
+                promptContext: result.promptContext,
+              } as unknown as JSONValue,
+            },
+          },
+        ],
+        promptContext: result.promptContext,
+      };
+
+      const assistantMessage: ContextAssistantMessage = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: [
+          {
+            type: 'tool-call',
+            toolCallId,
+            toolName: fullToolName,
+            input: toolInput,
+          },
+        ],
+        promptContext: result.promptContext,
+      };
+
+      await this.addContextMessage(assistantMessage);
+      await this.addContextMessage(toolResultMessage);
+
+      this.addToolMessage(
+        toolCallId,
+        SUBAGENTS_TOOL_GROUP_NAME,
+        SUBAGENTS_TOOL_RUN_TASK,
+        toolInput,
+        JSON.stringify(toolResultMessage.content[0].output),
+        undefined,
+        result.promptContext,
+      );
+      this.addLogMessage('loading', undefined, false, result.promptContext);
+
+      await this.updateContextInfo();
+    } finally {
+      if (previousTaskState !== DefaultTaskState.InProgress) {
+        await this.saveTask({ state: previousTaskState });
+      }
     }
   }
 

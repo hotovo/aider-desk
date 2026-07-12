@@ -1,5 +1,5 @@
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
-import { isSubagentEnabled } from '@common/agent';
+import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
@@ -19,7 +19,6 @@ import { extractTextContent } from '@common/utils';
 import logger from '@/logger';
 import { type CacheControl } from '@/models';
 import { Task } from '@/task';
-import { getSubagentId } from '@/agent/tools/subagents';
 import { ExtensionManager } from '@/extensions';
 
 /**
