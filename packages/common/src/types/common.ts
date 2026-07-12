@@ -407,7 +407,9 @@ export interface PromptBehavior {
 }
 
 export enum InvocationMode {
+  /** Subagent is only used when explicitly requested by the user. */
   OnDemand = 'on-demand',
+  /** Subagent can be automatically invoked when appropriate by the agent. */
   Automatic = 'automatic',
 }
 

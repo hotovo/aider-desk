@@ -355,6 +355,15 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["ui"]
+    },
+    {
+      "id": "my-minions",
+      "name": "My Minions",
+      "description": "Adds Orchestrator and Minion agent profiles — a coordinator that delegates all work to a focused execution subagent",
+      "folder": "my-minions",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["agents", "example"]
     }
   ]
 }
