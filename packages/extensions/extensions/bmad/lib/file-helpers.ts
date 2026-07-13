@@ -11,6 +11,10 @@ export const registerFileHelpers = (): void => {
     }
 
     const absolutePath = path.resolve(projectDir, filePath);
+    const baseDir = path.resolve(projectDir);
+    if (!absolutePath.startsWith(baseDir + path.sep)) {
+      throw new Error('Path traversal detected');
+    }
     try {
       return JSON.stringify(fs.readFileSync(absolutePath, 'utf8'));
     } catch (error) {
