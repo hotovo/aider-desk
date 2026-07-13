@@ -186,7 +186,7 @@ const saveConfig = (config: MyMinionsConfig): void => {
 
 export default class MyMinionsExtension implements Extension {
   static metadata: ExtensionMetadata = {
-    name: 'my-minions',
+    name: 'My Minions',
     version: '1.0.0',
     description: 'Adds Orchestrator and Minion agent profiles — a coordinator that delegates all work to a focused execution subagent',
     author: 'wladimiiir',
