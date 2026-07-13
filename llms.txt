@@ -77,6 +77,7 @@ src/
       mcp-manager.ts
       optimizer.ts
       smart-compaction.ts
+      subagent.ts
       utils.ts
     connector/
       connector-manager.ts
@@ -118,6 +119,7 @@ src/
         azure.ts
         bedrock.ts
         cerebras.ts
+        clinepass.ts
         deepseek.ts
         default.ts
         gemini.ts
@@ -404,6 +406,7 @@ src/
             AzureParameters.tsx
             BedrockParameters.tsx
             CerebrasParameters.tsx
+            ClinePassParameters.tsx
             DeepseekModelOverrides.tsx
             DeepseekParameters.tsx
             DefaultModelOverrides.tsx
@@ -651,6 +654,7 @@ src/
         AzureIcon.tsx
         BedrockIcon.tsx
         CerebrasIcon.tsx
+        ClinePassIcon.tsx
         DeepseekIcon.tsx
         GeminiIcon.tsx
         gpustack.png
@@ -1839,17 +1843,13 @@ File: src/main/agent/tools/subagents.ts
 ================
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { AgentProfile, ContextMemoryMode, ContextMessage, InvocationMode, PromptContext, SettingsData } from '@common/types';
-import { v4 as uuidv4 } from 'uuid';
+import { AgentProfile, ContextMessage, InvocationMode, SettingsData } from '@common/types';
+import { getSubagentId } from '@common/agent';
 import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { DEFAULT_AGENT_PROFILE, isSubagentEnabled } from '@common/agent';
-import { extractServerNameToolName } from '@common/utils';
 ⋮----
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
+import { findEnabledSubagent, getEnabledSubagents, runSubagentTask } from '@/agent/subagent';
 import { Task } from '@/task';
-import logger from '@/logger';
-⋮----
-export const getSubagentId = (subagent: AgentProfile): string =>
 ⋮----
 export const createSubagentsToolset = async (
   _settings: SettingsData,
@@ -1862,44 +1862,6 @@ export const createSubagentsToolset = async (
 ): Promise<ToolSet> =>
 ⋮----
 const generateSubagentsRunTaskDescription = (): string =>
-⋮----
-// Create a subagent profile based on the selected subagent
-⋮----
-useTodoTools: false, // Disable todo tools for simplicity,
-useSubagents: false, // Disable nested subagents
-useMemoryTools: targetSubagent.useMemoryTools ?? false, // Use memory tools if enabled, false by default
-⋮----
-// Create interrupt ID and abort controller for the subagent
-⋮----
-// If the parent aborts, also abort the subagent
-⋮----
-// Create promptContext with working group
-⋮----
-const getSubagentContextMessages = (contextMemory: ContextMemoryMode) =>
-⋮----
-const findMessagesForToolCallId = (toolCallId: string) =>
-⋮----
-// @ts-expect-error part.output.value is expected to be in the output
-⋮----
-// @ts-expect-error subagentId is expected to be in the input
-⋮----
-// @ts-expect-error prompt is expected to be in the input
-⋮----
-// Run the subagent with the focused context
-⋮----
-// Check if the subagent was cancelled
-⋮----
-// Update promptContext to finished state with cancellation
-⋮----
-// Add cancellation message to the result
-⋮----
-// Update promptContext to finished state with success
-⋮----
-// Check if the subagent was cancelled
-⋮----
-// Update promptContext to finished state with cancellation
-⋮----
-// Update promptContext to finished state with error
 
 ================
 File: src/main/agent/tools/tasks.ts
@@ -2292,6 +2254,7 @@ import {
   smoothStream,
   type StepResult,
   streamText,
+  type TelemetrySettings,
   type Tool,
   type ToolCallOptions,
   type ToolSet,
@@ -2347,6 +2310,10 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 export class Agent
 ⋮----
 constructor(
+⋮----
+private getTelemetrySettings(): TelemetrySettings
+⋮----
+// PostHog specific metadata
 ⋮----
 private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<
 ⋮----
@@ -2863,7 +2830,7 @@ async reloadSingleServer(serverName: string, config: McpServerConfig): Promise<M
 File: src/main/agent/optimizer.ts
 ================
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
-import { isSubagentEnabled } from '@common/agent';
+import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
 import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
@@ -2883,7 +2850,6 @@ import { extractTextContent } from '@common/utils';
 import logger from '@/logger';
 import { type CacheControl } from '@/models';
 import { Task } from '@/task';
-import { getSubagentId } from '@/agent/tools/subagents';
 import { ExtensionManager } from '@/extensions';
 ⋮----
 /**
@@ -3089,6 +3055,97 @@ export const removeReasoningFromAssistant = (
 ): ContextMessage[] =>
 ⋮----
 export const redactFetchOutputs = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
+
+================
+File: src/main/agent/subagent.ts
+================
+import { AgentProfile, ContextMemoryMode, ContextMessage, PromptContext } from '@common/types';
+import { DEFAULT_AGENT_PROFILE, getSubagentId, isSubagentEnabled } from '@common/agent';
+import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
+import { extractServerNameToolName } from '@common/utils';
+import { v4 as uuidv4 } from 'uuid';
+⋮----
+import { Task } from '@/task';
+import logger from '@/logger';
+⋮----
+export type SubagentGroupName =
+  | string
+  | {
+      key: string;
+      params: Record<string, string>;
+    };
+⋮----
+export type RunSubagentTaskParams = {
+  task: Task;
+  targetSubagent: AgentProfile;
+  prompt: string;
+  description?: string;
+  abortSignal?: AbortSignal;
+  contextMessages?: ContextMessage[];
+  currentMessages?: ContextMessage[];
+  onStarted?: (promptContext: PromptContext) => void | Promise<void>;
+};
+⋮----
+export type RunSubagentTaskResult =
+  | {
+      status: 'success';
+      messages: ContextMessage[];
+      promptContext: PromptContext;
+    }
+  | {
+      status: 'cancelled';
+      messages: ContextMessage[];
+      promptContext: PromptContext;
+    }
+  | {
+      status: 'error';
+      error: string;
+      promptContext: PromptContext;
+    };
+⋮----
+export const getEnabledSubagents = (profiles: AgentProfile[], mainAgentProfile: AgentProfile): AgentProfile[] =>
+⋮----
+export const findEnabledSubagent = (
+  enabledSubagents: AgentProfile[],
+  subagentId: string,
+  options: { matchByName?: boolean } = {},
+): AgentProfile | undefined =>
+⋮----
+export const buildRestrictedSubagentProfile = (targetSubagent: AgentProfile): AgentProfile =>
+⋮----
+export const createSubagentPromptContext = (targetSubagent: AgentProfile, description?: string): PromptContext =>
+⋮----
+export const getRunningGroupName = (targetSubagent: AgentProfile, description?: string): SubagentGroupName =>
+⋮----
+export const getCancelledGroupName = (targetSubagent: AgentProfile, description?: string): SubagentGroupName =>
+⋮----
+export const getCompletedGroupName = (targetSubagent: AgentProfile, description?: string): SubagentGroupName =>
+⋮----
+const getSubagentContextMessages = (
+  subagentId: string,
+  contextMemory: ContextMemoryMode,
+  contextMessages: ContextMessage[],
+  currentMessages: ContextMessage[],
+): ContextMessage[] =>
+⋮----
+const findMessagesForToolCallId = (toolCallId: string) =>
+⋮----
+// @ts-expect-error part.output.value is expected to be in the output
+⋮----
+// @ts-expect-error subagentId is expected to be in the input
+⋮----
+// @ts-expect-error prompt is expected to be in the input
+⋮----
+export const runSubagentTask = async ({
+  task,
+  targetSubagent,
+  prompt,
+  description,
+  abortSignal,
+  contextMessages = [],
+  currentMessages = [],
+  onStarted,
+}: RunSubagentTaskParams): Promise<RunSubagentTaskResult> =>
 
 ================
 File: src/main/agent/utils.ts
@@ -5202,6 +5259,91 @@ export const createCerebrasLlm = (profile: ProviderProfile, model: Model, settin
 // Model discovery functions
 
 ================
+File: src/main/models/providers/clinepass.ts
+================
+import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { ClinePassProvider, isClinePassProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+⋮----
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+⋮----
+interface ClinePassModelMetadata {
+  id: string;
+  maxInputTokens: number;
+  inputCostPerToken: number;
+  outputCostPerToken: number;
+  cacheReadInputTokenCost: number;
+  cacheWriteInputTokenCost?: number;
+}
+⋮----
+inputCostPerToken: 0.0000014, // $1.40 per 1M
+outputCostPerToken: 0.0000044, // $4.40 per 1M
+cacheReadInputTokenCost: 0.00000026, // $0.26 per 1M
+⋮----
+inputCostPerToken: 0.00000095, // $0.95 per 1M
+outputCostPerToken: 0.000004, // $4.00 per 1M
+cacheReadInputTokenCost: 0.00000019, // $0.19 per 1M
+⋮----
+inputCostPerToken: 0.00000095, // $0.95 per 1M
+outputCostPerToken: 0.000004, // $4.00 per 1M
+cacheReadInputTokenCost: 0.00000016, // $0.16 per 1M
+⋮----
+inputCostPerToken: 0.00000174, // $1.74 per 1M
+outputCostPerToken: 0.00000348, // $3.48 per 1M
+cacheReadInputTokenCost: 0.0000000145, // $0.0145 per 1M
+⋮----
+inputCostPerToken: 0.00000014, // $0.14 per 1M
+outputCostPerToken: 0.00000028, // $0.28 per 1M
+cacheReadInputTokenCost: 0.0000000028, // $0.0028 per 1M
+⋮----
+inputCostPerToken: 0.00000014, // $0.14 per 1M
+outputCostPerToken: 0.00000028, // $0.28 per 1M
+cacheReadInputTokenCost: 0.0000000028, // $0.0028 per 1M
+⋮----
+inputCostPerToken: 0.00000174, // $1.74 per 1M
+outputCostPerToken: 0.00000348, // $3.48 per 1M
+cacheReadInputTokenCost: 0.0000000145, // $0.0145 per 1M
+⋮----
+inputCostPerToken: 0.0000003, // $0.30 per 1M
+outputCostPerToken: 0.0000012, // $1.20 per 1M
+cacheReadInputTokenCost: 0.00000006, // $0.06 per 1M
+⋮----
+inputCostPerToken: 0.0000025, // $2.50 per 1M
+outputCostPerToken: 0.0000075, // $7.50 per 1M
+cacheReadInputTokenCost: 0.0000005, // $0.50 per 1M
+cacheWriteInputTokenCost: 0.000003125, // $3.125 per 1M
+⋮----
+inputCostPerToken: 0.0000004, // $0.40 per 1M (≤ 256K tier)
+outputCostPerToken: 0.0000016, // $1.60 per 1M (≤ 256K tier)
+cacheReadInputTokenCost: 0.00000004, // $0.04 per 1M (≤ 256K tier)
+cacheWriteInputTokenCost: 0.0000005, // $0.50 per 1M (≤ 256K tier)
+⋮----
+const toClinePassModel = (metadata: ClinePassModelMetadata, providerId: string): Model => (
+⋮----
+interface ClinePassApiModel {
+  id: string;
+}
+⋮----
+interface ClinePassApiResponse {
+  data: ClinePassApiModel[];
+}
+⋮----
+const resolveApiKey = (provider: ClinePassProvider, settings: SettingsData, projectDir?: string): string =>
+⋮----
+export const loadClinePassModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+export const hasClinePassEnvVars = (settings: SettingsData): boolean =>
+⋮----
+export const getClinePassAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
+⋮----
+export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+
+================
 File: src/main/models/providers/deepseek.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
@@ -6371,6 +6513,7 @@ import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compa
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
+import { clinePassProviderStrategy } from './providers/clinepass';
 import { deepseekProviderStrategy } from './providers/deepseek';
 import { geminiProviderStrategy } from './providers/gemini';
 import { gpustackProviderStrategy } from './providers/gpustack';
@@ -8956,14 +9099,26 @@ import {
   WorktreeUncommittedFiles,
 } from '@common/types';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
-import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, HANDOFF_AGENT_PROFILE, INIT_PROJECT_AGENTS_PROFILE } from '@common/agent';
-import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import {
+  COMPACT_CONVERSATION_AGENT_PROFILE,
+  CONFLICT_RESOLUTION_PROFILE,
+  HANDOFF_AGENT_PROFILE,
+  INIT_PROJECT_AGENTS_PROFILE,
+  getSubagentId,
+} from '@common/agent';
+import {
+  SKILLS_TOOL_ACTIVATE_SKILL,
+  SKILLS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import { isEqual } from 'lodash';
 ⋮----
 import type { z } from 'zod';
-import type { ToolContent } from '@common/types';
+import type { ToolContent, JSONValue } from '@common/types';
 import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 ⋮----
@@ -8978,6 +9133,7 @@ import {
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpManager } from '@/agent';
+import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';
@@ -9307,6 +9463,8 @@ public async runCommand(command: string, addToHistory = true)
 // If it exists, checkout the previous version
 ⋮----
 // Reset --soft HEAD~1
+⋮----
+private async handleSubagentCommand(commandArgs: string): Promise<void>
 ⋮----
 public updateContextFiles(contextFiles: ContextFile[])
 ⋮----
@@ -15705,7 +15863,7 @@ if (
 File: src/renderer/src/components/message/GroupMessageBlock.tsx
 ================
 import { AnimatePresence, motion } from 'framer-motion';
-import { memo, useMemo, useState, MouseEvent } from 'react';
+import { memo, useMemo, useState, useCallback, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import {
@@ -15718,14 +15876,17 @@ import {
   Message,
   ResponseMessage,
   ToolMessage,
+  MessageViewMode,
 } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
+import { MessageBlockWrapper } from './MessageBlockWrapper';
 import { MessageBar } from './MessageBar';
-import { areMessagesEqual } from './utils';
+import { areMessagesEqual, groupAssistantMessages } from './utils';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
 import { Button } from '@/components/common/Button';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 type Props = {
   baseDir: string;
@@ -15734,9 +15895,12 @@ type Props = {
   allFiles: string[];
   renderMarkdown: boolean;
   remove?: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redo?: () => void;
   editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: (interruptId?: string) => void;
+  onFork?: (message: Message) => void;
+  onRemoveUpTo?: (message: Message) => void;
 };
 ⋮----
 const aggregateUsage = (messages: Message[]): UsageReportData | undefined =>
@@ -15753,11 +15917,22 @@ const getGroupDisplayName = (name?: string | LocalizedString) =>
 ⋮----
 const handleInterrupt = (e: MouseEvent<HTMLButtonElement>) =>
 ⋮----
+// Target the first child (the subagent tool call message whose id === toolCallId), not the last child.
+// Subagent group children are frontend-only streaming messages that are not persisted to the backend's
+// ContextManager.messages — only the tool call message (first child) exists there. Using the last child
+// would cause a "Message with id X not found" error in removeMessagesAfter.
+⋮----
+// Target the first child (the subagent tool call message whose id === toolCallId). This is the only
+// child message that exists in the backend's ContextManager.messages, since subagent streaming messages
+// are frontend-only and never persisted. See handleRemoveUpTo for the same reasoning.
+⋮----
 <div className=
 ⋮----
 {/* Color Bar */}
 ⋮----
 {/* Content */}
+⋮----
+redoUserPrompt=
 ⋮----
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 
@@ -16085,7 +16260,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 File: src/renderer/src/components/message/MessageBlockWrapper.tsx
 ================
 import { memo, useMemo, type ReactNode } from 'react';
-import { isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
+import { GroupMessage, isGroupMessage, isAssistantGroupMessage, isUserMessage, Message } from '@common/types';
 ⋮----
 import { MessageBlock } from './MessageBlock';
 import { GroupMessageBlock } from './GroupMessageBlock';
@@ -16106,6 +16281,7 @@ type Props = {
   hideMessageBar?: boolean;
   inProgress?: boolean;
   removeMessage?: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt?: (messageId: string) => void;
   editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -16124,7 +16300,7 @@ import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } fro
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
-import { isUserMessage, Message, MessageViewMode } from '@common/types';
+import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/types';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
 ⋮----
@@ -16148,6 +16324,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt: (messageId: string) => void;
   editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -16901,7 +17078,7 @@ import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { LegendList, type LegendListRef } from '@legendapp/list/react';
-import { isUserMessage, Message, MessageViewMode } from '@common/types';
+import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/types';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
@@ -16925,6 +17102,7 @@ type Props = {
   allFiles?: string[];
   renderMarkdown: boolean;
   removeMessage: (message: Message) => void;
+  removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt: (messageId: string) => void;
   editUserMessage: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
@@ -17169,6 +17347,27 @@ type Props = {
 };
 ⋮----
 export const CerebrasParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/ClinePassParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ClinePassProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: ClinePassProvider;
+  onChange: (updated: ClinePassProvider) => void;
+};
+⋮----
+export const ClinePassParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -18472,6 +18671,7 @@ import {
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
+  ClinePassIcon,
   DeepseekIcon,
   GeminiIcon,
   GpustackIcon,
@@ -18574,6 +18774,7 @@ import {
   AnthropicCompatibleParameters,
   AzureParameters,
   BedrockParameters,
+  ClinePassParameters,
   DeepseekParameters,
   GeminiParameters,
   GpustackParameters,
@@ -18665,6 +18866,7 @@ import {
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
+  ClinePassIcon,
   DeepseekIcon,
   GeminiIcon,
   GpustackIcon,
@@ -19631,6 +19833,7 @@ import {
   AIDER_MODES,
   AutonomyMode,
   DefaultTaskState,
+  GroupMessage,
   isLoadingMessage,
   isLogMessage,
   isUserMessage,
@@ -19727,7 +19930,14 @@ setEditingMessageIndex(null); // Clear editing state
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
 // Optimistically remove the messages after it
+⋮----
+// If the target message is part of a group (e.g. subagent group), we need to keep
+// all messages belonging to that group, since the target is the first child but the
+// group has additional children that come after it in the flat messages array.
+// Without this, the optimistic slice would remove the remaining group children.
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -20235,6 +20445,7 @@ import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-ic
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
 import { parseCommandArgs } from '@common/utils';
+import { getSubagentId } from '@common/agent';
 ⋮----
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
@@ -20244,6 +20455,7 @@ import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
 import { useApi } from '@/contexts/ApiContext';
+import { useAgents } from '@/contexts/AgentsContext';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { AudioAnalyzer } from '@/components/PromptField/AudioAnalyzer';
@@ -20328,6 +20540,8 @@ url = commandArgs; // Only URL provided
 filePath = undefined; // If only spaces after URL, treat as no filePath
 ⋮----
 const requiresConfirmation = (command: string): boolean =>
+⋮----
+// Skip auto-invoke for commands that need additional arguments
 ⋮----
 // Check if it's a custom or extension command
 ⋮----
@@ -24207,6 +24421,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 import en from '@common/locales/en.json';
 import zh from '@common/locales/zh.json';
 import ru from '@common/locales/ru.json';
+import ko from '@common/locales/ko.json';
 ⋮----
 // eslint-disable-next-line import/no-named-as-default-member
 
@@ -24318,6 +24533,34 @@ type Props = {
   height?: number;
   className?: string;
 };
+
+================
+File: src/renderer/src/icons/ClinePassIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const ClinePassIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="ClinePass"
+    className={`flex items-center justify-center rounded-full ${className || ''}`}
+    style={{
+      background: '#353d45',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg fill="currentColor" fillRule="evenodd" viewBox="0 0 24 24" width={width * 0.6} height={height * 0.6} xmlns="http://www.w3.org/2000/svg">
+      <title>ClinePass</title>
+      <path d="M17.035 3.991c2.75 0 4.98 2.24 4.98 5.003v1.667l1.45 2.896a1.01 1.01 0 0 1-.002.909l-1.448 2.864v1.668c0 2.762-2.23 5.002-4.98 5.002H7.074c-2.751 0-4.98-2.24-4.98-5.002V17.33l-1.48-2.855a1.01 1.01 0 0 1-.003-.927l1.482-2.887V8.994c0-2.763 2.23-5.003 4.98-5.003zM8.265 9.6a2.274 2.274 0 0 0-2.274 2.274v4.042a2.274 2.274 0 0 0 4.547 0v-4.042A2.274 2.274 0 0 0 8.265 9.6m7.326 0a2.274 2.274 0 0 0-2.274 2.274v4.042a2.274 2.274 0 1 0 4.548 0v-4.042A2.274 2.274 0 0 0 15.59 9.6z" />
+      <path d="M12.054 5.558a2.779 2.779 0 1 0 0-5.558 2.779 2.779 0 0 0 0 5.558" />
+    </svg>
+  </div>
+);
 
 ================
 File: src/renderer/src/icons/DeepseekIcon.tsx
