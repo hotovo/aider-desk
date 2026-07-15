@@ -1,4 +1,4 @@
-import { claudeCode } from 'ai-sdk-provider-claude-code';
+import { claudeCode, createAiSdkMcpServer } from 'ai-sdk-provider-claude-code';
 import { type JSONSchema, JSONSchemaToZod } from '@dmitryrechkin/json-schema-to-zod';
 
 import type {
@@ -17,23 +17,22 @@ import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code';
 
 const CLAUDE_AGENT_SDK_PROVIDER_NAME = 'claude-agent-sdk';
 
+interface Usage {
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+  input_tokens?: number;
+  output_tokens?: number;
+}
+
+interface ClaudeCodeMetadata {
+  costUsd?: number;
+  rawUsage?: Usage;
+  lastMessageRawUsage?: Usage;
+  sessionId?: string;
+}
+
 interface ClaudeCodeProviderMetadata {
-  'claude-code': {
-    costUsd?: number;
-    rawUsage: {
-      cache_creation_input_tokens?: number;
-      cache_read_input_tokens?: number;
-      input_tokens: number;
-      output_tokens: number;
-    };
-    lastMessageRawUsage?: {
-      cache_creation_input_tokens?: number;
-      cache_read_input_tokens?: number;
-      input_tokens: number;
-      output_tokens: number;
-    };
-    sessionId?: string;
-  };
+  'claude-code': ClaudeCodeMetadata;
 }
 
 const normalizeAiSdkToolSet = (toolSet: Record<string, unknown>): Record<string, unknown> => {
@@ -112,7 +111,7 @@ const normalizeAiSdkToolSet = (toolSet: Record<string, unknown>): Record<string,
 export default class ClaudeAgentSdkExtension implements Extension {
   static metadata = {
     name: 'Claude Agent SDK',
-    version: '1.1.0',
+    version: '2.0.0',
     description: 'Integrates the Claude Agent SDK as a provider using Claude Code CLI',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/claude-agent-sdk/icon.png',
@@ -143,6 +142,10 @@ export default class ClaudeAgentSdkExtension implements Extension {
               env: {
                 MAX_MCP_OUTPUT_TOKENS: '9999999',
               },
+              thinking: {
+                type: 'adaptive',
+                display: 'summarized',
+              },
               disallowedTools: [
                 'AskUserQuestion',
                 'Bash',
@@ -163,20 +166,36 @@ export default class ClaudeAgentSdkExtension implements Extension {
                 'TaskList',
                 'TaskUpdate',
                 'TodoWrite',
+                'ToolSearch',
                 'WebFetch',
                 'WebSearch',
                 'Write',
                 'LSP',
+                'CronCreate',
+                'CronDelete',
+                'CronList',
+                'Monitor',
+                'ScheduleWakeup',
+                'EnterWorktree',
+                'ExitWorktree',
+                'PushNotification',
+                'DesignSync',
+                'RemoteTrigger',
+                'SendMessage',
+                'Workflow',
+                'ReportFindings',
               ],
             };
 
             if (providerMetadata && typeof providerMetadata === 'object' && 'claude-code' in providerMetadata) {
-              const metadata = (providerMetadata as ClaudeCodeProviderMetadata)['claude-code'] || {};
+              const metadata = (providerMetadata as ClaudeCodeProviderMetadata)['claude-code'] || {} satisfies ClaudeCodeMetadata;
               settings.resume = metadata.sessionId;
             }
 
             if (toolSet && typeof toolSet === 'object' && Object.keys(toolSet).length > 0) {
-              settings.aiSdkTools = normalizeAiSdkToolSet(toolSet as Record<string, unknown>) as ClaudeCodeSettings['aiSdkTools'];
+              settings.mcpServers = {
+                'ai-sdk': createAiSdkMcpServer('ai-sdk', normalizeAiSdkToolSet(toolSet as Record<string, unknown>)),
+              };
               settings.allowedTools = ['mcp__ai-sdk'];
             } else {
               settings.allowedTools = [];
@@ -209,6 +228,12 @@ export default class ClaudeAgentSdkExtension implements Extension {
                   providerId: profile.id,
                   maxInputTokens: 200000,
                   maxOutputTokensLimit: 64000,
+                },
+                {
+                  id: 'fable',
+                  providerId: profile.id,
+                  maxInputTokens: 1000000,
+                  maxOutputTokensLimit: 64000,
                 }
               ];
 
@@ -233,8 +258,8 @@ export default class ClaudeAgentSdkExtension implements Extension {
             _usage: unknown,
             providerMetadata?: unknown,
           ): UsageReportData => {
-            const data = (providerMetadata as ClaudeCodeProviderMetadata)?.['claude-code'] || {};
-            const usage = data.lastMessageRawUsage || data.rawUsage || {};
+            const data = (providerMetadata as ClaudeCodeProviderMetadata)?.['claude-code'] || {} satisfies ClaudeCodeMetadata;
+            const usage = data.lastMessageRawUsage || data.rawUsage || {} satisfies Usage;
 
             const sentTokens = usage.input_tokens || 0;
             const receivedTokens = usage.output_tokens || 0;

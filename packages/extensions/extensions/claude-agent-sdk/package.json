@@ -7,7 +7,7 @@
     "postinstall": "patch-package"
   },
   "dependencies": {
-    "ai-sdk-provider-claude-code": "2.3.0",
+    "ai-sdk-provider-claude-code": "3.5.1",
     "@dmitryrechkin/json-schema-to-zod": "^1.0.1",
     "patch-package": "^8.0.0"
   }

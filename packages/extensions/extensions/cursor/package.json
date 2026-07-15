@@ -8,7 +8,7 @@
     "postinstall": "node build-proxy.mjs"
   },
   "dependencies": {
-    "@ai-sdk/openai-compatible": "^1.0.41",
+    "@ai-sdk/openai-compatible": "^2.0.58",
     "@bufbuild/protobuf": "^2.11.0"
   },
   "devDependencies": {

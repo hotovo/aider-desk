@@ -1,0 +1,126 @@
+diff --git a/node_modules/@augmentcode/auggie-sdk/dist/auggie/ai-sdk-provider.js b/node_modules/@augmentcode/auggie-sdk/dist/auggie/ai-sdk-provider.js
+index 37f5d1a..d0a6fb0 100644
+--- a/node_modules/@augmentcode/auggie-sdk/dist/auggie/ai-sdk-provider.js
++++ b/node_modules/@augmentcode/auggie-sdk/dist/auggie/ai-sdk-provider.js
+@@ -255,23 +255,48 @@ ${text}`;
+     toolDefinitions: toolsToDefinitions(tools)
+   };
+ }
++var STOP_REASON_RAW_NAMES = {
++  [ChatStopReason.REASON_UNSPECIFIED]: "REASON_UNSPECIFIED",
++  [ChatStopReason.END_TURN]: "END_TURN",
++  [ChatStopReason.MAX_TOKENS]: "MAX_TOKENS",
++  [ChatStopReason.TOOL_USE_REQUESTED]: "TOOL_USE_REQUESTED",
++  [ChatStopReason.SAFETY]: "SAFETY",
++  [ChatStopReason.RECITATION]: "RECITATION",
++  [ChatStopReason.MALFORMED_FUNCTION_CALL]: "MALFORMED_FUNCTION_CALL"
++};
+ function stopReasonToFinishReason(stopReason) {
++  const raw = stopReason !== void 0 ? (STOP_REASON_RAW_NAMES[stopReason] ?? String(stopReason)) : void 0;
+   switch (stopReason) {
+     case ChatStopReason.END_TURN:
+-      return "stop";
++      return { unified: "stop", raw };
+     case ChatStopReason.MAX_TOKENS:
+-      return "length";
++      return { unified: "length", raw };
+     case ChatStopReason.TOOL_USE_REQUESTED:
+-      return "tool-calls";
++      return { unified: "tool-calls", raw };
+     case ChatStopReason.SAFETY:
+     case ChatStopReason.RECITATION:
+-      return "content-filter";
++      return { unified: "content-filter", raw };
+     case ChatStopReason.MALFORMED_FUNCTION_CALL:
+-      return "error";
++      return { unified: "error", raw };
+     default:
+-      return "unknown";
++      return { unified: "other", raw };
+   }
+ }
++function tokenUsageToV4Usage(inputTokens, outputTokens) {
++  return {
++    inputTokens: {
++      total: inputTokens,
++      noCache: void 0,
++      cacheRead: void 0,
++      cacheWrite: void 0
++    },
++    outputTokens: {
++      total: outputTokens,
++      text: void 0,
++      reasoning: void 0
++    }
++  };
++}
+ function responseNodeToContent(node) {
+   if (node.type === ChatResultNodeType.TOOL_USE && node.tool_use) {
+     return {
+@@ -290,7 +315,7 @@ function responseNodeToContent(node) {
+   return null;
+ }
+ class AugmentLanguageModel {
+-  specificationVersion = "v2";
++  specificationVersion = "v4";
+   provider = "augment";
+   modelId;
+   apiKey;
+@@ -405,11 +430,10 @@ class AugmentLanguageModel {
+       return;
+     }
+     if (node.type === ChatResultNodeType.TOKEN_USAGE && node.token_usage) {
+-      acc.usage = {
+-        inputTokens: node.token_usage.input_tokens,
+-        outputTokens: node.token_usage.output_tokens,
+-        totalTokens: (node.token_usage.input_tokens ?? 0) + (node.token_usage.output_tokens ?? 0) || void 0
+-      };
++      acc.usage = tokenUsageToV4Usage(
++        node.token_usage.input_tokens,
++        node.token_usage.output_tokens
++      );
+     }
+   }
+   // Parse and apply a single NDJSON stream line to the accumulator. Node
+@@ -459,11 +483,7 @@ class AugmentLanguageModel {
+     const acc = {
+       accumulatedText: "",
+       content: [],
+-      usage: {
+-        inputTokens: void 0,
+-        outputTokens: void 0,
+-        totalTokens: void 0
+-      },
++      usage: tokenUsageToV4Usage(void 0, void 0),
+       stopReason: void 0,
+       toolCallsEmitted: /* @__PURE__ */ new Set()
+     };
+@@ -554,11 +574,10 @@ class AugmentLanguageModel {
+       return;
+     }
+     if (node.type === ChatResultNodeType.TOKEN_USAGE && node.token_usage) {
+-      emitState.usage = {
+-        inputTokens: node.token_usage.input_tokens,
+-        outputTokens: node.token_usage.output_tokens,
+-        totalTokens: (node.token_usage.input_tokens ?? 0) + (node.token_usage.output_tokens ?? 0) || void 0
+-      };
++      emitState.usage = tokenUsageToV4Usage(
++        node.token_usage.input_tokens,
++        node.token_usage.output_tokens
++      );
+     }
+   }
+   // Handle one parsed stream chunk: emit text deltas and dispatch its nodes.
+@@ -619,11 +638,7 @@ class AugmentLanguageModel {
+       textId: uuidv4(),
+       stopReason: void 0,
+       toolCallsEmitted: /* @__PURE__ */ new Set(),
+-      usage: {
+-        inputTokens: void 0,
+-        outputTokens: void 0,
+-        totalTokens: void 0
+-      }
++      usage: tokenUsageToV4Usage(void 0, void 0)
+     };
+     while (true) {
+       const { done, value } = await reader.read();

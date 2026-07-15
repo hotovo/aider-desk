@@ -1,0 +1,612 @@
+diff --git a/node_modules/ai-sdk-provider-claude-code/dist/index.cjs b/node_modules/ai-sdk-provider-claude-code/dist/index.cjs
+index e3305e3..75f7f8f 100644
+--- a/node_modules/ai-sdk-provider-claude-code/dist/index.cjs
++++ b/node_modules/ai-sdk-provider-claude-code/dist/index.cjs
+@@ -193,13 +193,33 @@ function parseFilePart(part) {
+   }
+   return { warning: IMAGE_CONVERSION_WARNING };
+ }
+-function convertToClaudeCodeMessages(prompt) {
++function convertToClaudeCodeMessages(prompt, sessionId) {
+   const messages = [];
+   const warnings = [];
+   let systemPrompt;
+   const streamingSegments = [];
+   const imageMap = /* @__PURE__ */ new Map();
+   let hasImageParts = false;
++  if (sessionId) {
++    const lastMessage = prompt.length > 0 ? prompt[prompt.length - 1] : void 0;
++    const extractTextContent = (content) => {
++      return typeof content === "string" ? content : content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
++    };
++    if (systemPrompt === void 0) {
++      for (const msg of prompt) {
++        if (msg.role === "system") { systemPrompt = msg.content; break; }
++      }
++    }
++    if (lastMessage?.role === "user") {
++      const textContent = extractTextContent(lastMessage.content);
++      return {
++        messagesPrompt: textContent,
++        systemPrompt,
++        streamingContentParts: [{ type: "text", text: textContent }],
++        hasImageParts
++      };
++    }
++  }
+   const addSegment = (formatted) => {
+     streamingSegments.push({ formatted });
+     return streamingSegments.length - 1;
+@@ -224,10 +244,10 @@ function convertToClaudeCodeMessages(prompt) {
+       case "user":
+         if (typeof message.content === "string") {
+           messages.push(message.content);
+-          addSegment(`Human: ${message.content}`);
++          addSegment(prompt.length > 1 ? `Human: ${message.content}` : message.content);
+         } else {
+           const textParts = message.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
+-          const segmentIndex = addSegment(textParts ? `Human: ${textParts}` : "");
++          const segmentIndex = addSegment(textParts && prompt.length > 1 ? `Human: ${textParts}` : "");
+           if (textParts) {
+             messages.push(textParts);
+           }
+@@ -1611,6 +1631,15 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     }
+     return result;
+   }
++  normalizeToolName(name) {
++    const normalized = name.startsWith("mcp__ai-sdk__") ? name.slice("mcp__ai-sdk__".length) : name;
++    if (normalized !== name) {
++      this.logger?.debug?.(`[claude-code] normalizeToolName: "${name}" -> "${normalized}"`);
++    } else if (name.startsWith("mcp__")) {
++      this.logger?.warn?.(`[claude-code] normalizeToolName: tool name "${name}" starts with mcp__ but does NOT match "mcp__ai-sdk__" — NOT normalized!`);
++    }
++    return normalized;
++  }
+   /**
+    * Builds a provider-executed `tool-call` part from an assistant `tool_use`
+    * block. Shared by doGenerate (content part) and doStream (stream part) so
+@@ -1620,7 +1649,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-call",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       input,
+       providerExecuted: true,
+       dynamic: true,
+@@ -1661,7 +1690,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-result",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       // `?? ''`: absent `content` (undefined) and string results that
+       // normalize to JSON null (e.g. the string "null") must not violate the
+       // NonNullable<JSONValue> contract of LanguageModelV3ToolResult.result.
+@@ -1701,7 +1730,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-error",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       error: rawError,
+       providerExecuted: true,
+       dynamic: true,
+@@ -1727,7 +1756,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-result",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       result: rawError,
+       isError: true,
+       providerExecuted: true,
+@@ -2276,12 +2305,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+   async doGenerate(options) {
+     this.logger.debug(`[claude-code] Starting doGenerate request with model: ${this.modelId}`);
+     this.logger.debug(`[claude-code] Response format: ${options.responseFormat?.type ?? "none"}`);
++    const sdkOptions = this.getSanitizedSdkOptions();
++    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const {
+       messagesPrompt,
+       warnings: messageWarnings,
+       streamingContentParts,
+       hasImageParts
+-    } = convertToClaudeCodeMessages(options.prompt);
++    } = convertToClaudeCodeMessages(options.prompt, effectiveResume);
+     this.logger.debug(
+       `[claude-code] Converted ${options.prompt.length} messages, hasImageParts: ${hasImageParts}`
+     );
+@@ -2294,8 +2325,6 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     const stderrCollector = (data) => {
+       collectedStderr += data;
+     };
+-    const sdkOptions = this.getSanitizedSdkOptions();
+-    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const queryOptions = this.createQueryOptions(
+       abortController,
+       options.responseFormat,
+@@ -2368,6 +2397,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     let timeToRequestMs;
+     let warmSpareClaimed;
+     let terminalReason;
++    let lastMessageRawUsage;
+     const metadataTracking = {
+       apiRetries: 0,
+       permissionDenials: [],
+@@ -2437,6 +2467,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+           if (typeof message.error === "string") {
+             lastAssistantErrorKind = message.error;
+           }
++          if ("usage" in message.message) {
++            lastMessageRawUsage = message.message.usage;
++          }
+           applySupersede(message, evictBuffered, this.logger, "truthy");
+           const messageUuid = typeof message.uuid === "string" ? message.uuid : void 0;
+           const sdkParentToolUseId = message.parent_tool_use_id;
+@@ -2495,6 +2528,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+             );
+             continue;
+           }
++          if ("usage" in message.message) {
++            lastMessageRawUsage = message.message.usage;
++          }
+           const sdkParentToolUseIdForResults = message.parent_tool_use_id;
+           const resultMessageUuid = typeof message.uuid === "string" ? message.uuid : void 0;
+           const content = message.message.content;
+@@ -2746,6 +2782,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+             estimatedThinkingTokens: metadataTracking.estimatedThinkingTokens
+           },
+           ...wasTruncated && { truncated: true },
++          ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage },
+           ...thinkingTraces.length > 0 && { thinkingTraces }
+         }
+       }
+@@ -2754,12 +2791,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+   async doStream(options) {
+     this.logger.debug(`[claude-code] Starting doStream request with model: ${this.modelId}`);
+     this.logger.debug(`[claude-code] Response format: ${options.responseFormat?.type ?? "none"}`);
++    const sdkOptions = this.getSanitizedSdkOptions();
++    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const {
+       messagesPrompt,
+       warnings: messageWarnings,
+       streamingContentParts,
+       hasImageParts
+-    } = convertToClaudeCodeMessages(options.prompt);
++    } = convertToClaudeCodeMessages(options.prompt, effectiveResume);
+     this.logger.debug(
+       `[claude-code] Converted ${options.prompt.length} messages for streaming, hasImageParts: ${hasImageParts}`
+     );
+@@ -2772,8 +2811,6 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     const stderrCollector = (data) => {
+       collectedStderr += data;
+     };
+-    const sdkOptions = this.getSanitizedSdkOptions();
+-    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const queryOptions = this.createQueryOptions(
+       abortController,
+       options.responseFormat,
+@@ -2859,6 +2896,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+         const textSegments = [];
+         let textPartId;
+         let streamedTextLength = 0;
++        let lastMessageRawUsage;
+         let emittedTextSinceLastAssistant = "";
+         let hasReceivedStreamEvents = false;
+         let hasStreamedJson = false;
+@@ -2875,6 +2913,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+         let textStreamedViaContentBlock = false;
+         const reasoningBlocksByIndex = /* @__PURE__ */ new Map();
+         let currentReasoningPartId;
++        let hadReasoningInCurrentAssistant = false;
+         const evictLive = (retracted) => {
+           if (retracted.size === 0) return;
+           for (let i = textSegments.length - 1; i >= 0; i--) {
+@@ -3040,7 +3079,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   controller.enqueue({
+                     type: "tool-input-start",
+                     id: toolId,
+-                    toolName,
++                    toolName: this.normalizeToolName(toolName),
+                     providerExecuted: true,
+                     dynamic: true,
+                     providerMetadata: {
+@@ -3092,6 +3131,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                 const reasoningPartId = (0, import_provider_utils.generateId)();
+                 reasoningBlocksByIndex.set(blockIndex, reasoningPartId);
+                 currentReasoningPartId = reasoningPartId;
++                hadReasoningInCurrentAssistant = true;
+                 this.logger.debug(
+                   `[claude-code] Reasoning started (content_block) - ID: ${reasoningPartId}`
+                 );
+@@ -3185,6 +3225,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+               if (typeof message.error === "string") {
+                 lastAssistantErrorKind = message.error;
+               }
++              if ("usage" in message.message) {
++                lastMessageRawUsage = message.message.usage;
++              }
+               const supersedesPriorMessages = applySupersede(message, evictLive, this.logger);
+               if (!message.message?.content) {
+                 this.logger.warn(
+@@ -3244,7 +3287,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   controller.enqueue({
+                     type: "tool-input-start",
+                     id: toolId,
+-                    toolName: tool3.name,
++                    toolName: this.normalizeToolName(tool3.name),
+                     providerExecuted: true,
+                     dynamic: true,
+                     // V3 field: indicates tool is provider-defined
+@@ -3398,6 +3441,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                 );
+                 continue;
+               }
++              if ("usage" in message.message) {
++                lastMessageRawUsage = message.message.usage;
++              }
+               if (textPartId) {
+                 const closedTextId = textPartId;
+                 controller.enqueue({
+@@ -3412,7 +3458,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   }
+                 }
+                 this.logger.debug("[claude-code] Closed text part due to user message");
++              } else if (hadReasoningInCurrentAssistant && streamedTextLength === 0) {
++                controller.enqueue({
++                  type: "text-end",
++                  id: (0, import_provider_utils.generateId)()
++                });
++                this.logger.debug("[claude-code] Closed text part due to user message (reasoning-only assistant message)");
+               }
++              hadReasoningInCurrentAssistant = false;
+               accumulatedText = "";
+               textSegments.length = 0;
+               streamedTextLength = 0;
+@@ -3449,7 +3502,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                     controller.enqueue({
+                       type: "tool-input-start",
+                       id: result.id,
+-                      toolName,
++                      toolName: this.normalizeToolName(toolName),
+                       providerExecuted: true,
+                       dynamic: true,
+                       // V3 field: indicates tool is provider-defined
+@@ -3677,7 +3730,8 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                     // a top-level warnings field (unlike stream-start which was already emitted)
+                     ...streamWarnings.length > 0 && {
+                       warnings: warningsJson
+-                    }
++                    },
++                    ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage }
+                   }
+                 }
+               });
+@@ -3770,7 +3824,8 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   },
+                   ...streamWarnings.length > 0 && {
+                     warnings: warningsJson
+-                  }
++                  },
++                  ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage }
+                 }
+               }
+             });
+@@ -3974,7 +4029,7 @@ function createAiSdkMcpServer(name, tools) {
+         try {
+           const extraInfo = extra ?? {};
+           const result = await execute.call(def, args, {
+-            toolCallId: extraInfo.requestId !== void 0 ? String(extraInfo.requestId) : void 0,
++            toolCallId: extraInfo._meta?.["claudecode/toolUseId"] ?? (extraInfo.requestId !== void 0 ? String(extraInfo.requestId) : void 0),
+             abortSignal: extraInfo.signal
+           });
+           const normalized = await normalizeToolResultToText(toolName, result);
+diff --git a/node_modules/ai-sdk-provider-claude-code/dist/index.js b/node_modules/ai-sdk-provider-claude-code/dist/index.js
+index 889059b..067c52d 100644
+--- a/node_modules/ai-sdk-provider-claude-code/dist/index.js
++++ b/node_modules/ai-sdk-provider-claude-code/dist/index.js
+@@ -139,13 +139,33 @@ function parseFilePart(part) {
+   }
+   return { warning: IMAGE_CONVERSION_WARNING };
+ }
+-function convertToClaudeCodeMessages(prompt) {
++function convertToClaudeCodeMessages(prompt, sessionId) {
+   const messages = [];
+   const warnings = [];
+   let systemPrompt;
+   const streamingSegments = [];
+   const imageMap = /* @__PURE__ */ new Map();
+   let hasImageParts = false;
++  if (sessionId) {
++    const lastMessage = prompt.length > 0 ? prompt[prompt.length - 1] : void 0;
++    const extractTextContent = (content) => {
++      return typeof content === "string" ? content : content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
++    };
++    if (systemPrompt === void 0) {
++      for (const msg of prompt) {
++        if (msg.role === "system") { systemPrompt = msg.content; break; }
++      }
++    }
++    if (lastMessage?.role === "user") {
++      const textContent = extractTextContent(lastMessage.content);
++      return {
++        messagesPrompt: textContent,
++        systemPrompt,
++        streamingContentParts: [{ type: "text", text: textContent }],
++        hasImageParts
++      };
++    }
++  }
+   const addSegment = (formatted) => {
+     streamingSegments.push({ formatted });
+     return streamingSegments.length - 1;
+@@ -170,10 +190,10 @@ function convertToClaudeCodeMessages(prompt) {
+       case "user":
+         if (typeof message.content === "string") {
+           messages.push(message.content);
+-          addSegment(`Human: ${message.content}`);
++          addSegment(prompt.length > 1 ? `Human: ${message.content}` : message.content);
+         } else {
+           const textParts = message.content.filter((part) => part.type === "text").map((part) => part.text).join("\n");
+-          const segmentIndex = addSegment(textParts ? `Human: ${textParts}` : "");
++          const segmentIndex = addSegment(textParts && prompt.length > 1 ? `Human: ${textParts}` : "");
+           if (textParts) {
+             messages.push(textParts);
+           }
+@@ -1557,6 +1577,15 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     }
+     return result;
+   }
++  normalizeToolName(name) {
++    const normalized = name.startsWith("mcp__ai-sdk__") ? name.slice("mcp__ai-sdk__".length) : name;
++    if (normalized !== name) {
++      this.logger?.debug?.(`[claude-code] normalizeToolName: "${name}" -> "${normalized}"`);
++    } else if (name.startsWith("mcp__")) {
++      this.logger?.warn?.(`[claude-code] normalizeToolName: tool name "${name}" starts with mcp__ but does NOT match "mcp__ai-sdk__" — NOT normalized!`);
++    }
++    return normalized;
++  }
+   /**
+    * Builds a provider-executed `tool-call` part from an assistant `tool_use`
+    * block. Shared by doGenerate (content part) and doStream (stream part) so
+@@ -1566,7 +1595,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-call",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       input,
+       providerExecuted: true,
+       dynamic: true,
+@@ -1607,7 +1636,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-result",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       // `?? ''`: absent `content` (undefined) and string results that
+       // normalize to JSON null (e.g. the string "null") must not violate the
+       // NonNullable<JSONValue> contract of LanguageModelV3ToolResult.result.
+@@ -1647,7 +1676,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-error",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       error: rawError,
+       providerExecuted: true,
+       dynamic: true,
+@@ -1673,7 +1702,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     return {
+       type: "tool-result",
+       toolCallId,
+-      toolName,
++      toolName: this.normalizeToolName(toolName),
+       result: rawError,
+       isError: true,
+       providerExecuted: true,
+@@ -2222,12 +2251,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+   async doGenerate(options) {
+     this.logger.debug(`[claude-code] Starting doGenerate request with model: ${this.modelId}`);
+     this.logger.debug(`[claude-code] Response format: ${options.responseFormat?.type ?? "none"}`);
++    const sdkOptions = this.getSanitizedSdkOptions();
++    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const {
+       messagesPrompt,
+       warnings: messageWarnings,
+       streamingContentParts,
+       hasImageParts
+-    } = convertToClaudeCodeMessages(options.prompt);
++    } = convertToClaudeCodeMessages(options.prompt, effectiveResume);
+     this.logger.debug(
+       `[claude-code] Converted ${options.prompt.length} messages, hasImageParts: ${hasImageParts}`
+     );
+@@ -2240,8 +2271,6 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     const stderrCollector = (data) => {
+       collectedStderr += data;
+     };
+-    const sdkOptions = this.getSanitizedSdkOptions();
+-    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const queryOptions = this.createQueryOptions(
+       abortController,
+       options.responseFormat,
+@@ -2314,6 +2343,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     let timeToRequestMs;
+     let warmSpareClaimed;
+     let terminalReason;
++    let lastMessageRawUsage;
+     const metadataTracking = {
+       apiRetries: 0,
+       permissionDenials: [],
+@@ -2383,6 +2413,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+           if (typeof message.error === "string") {
+             lastAssistantErrorKind = message.error;
+           }
++          if ("usage" in message.message) {
++            lastMessageRawUsage = message.message.usage;
++          }
+           applySupersede(message, evictBuffered, this.logger, "truthy");
+           const messageUuid = typeof message.uuid === "string" ? message.uuid : void 0;
+           const sdkParentToolUseId = message.parent_tool_use_id;
+@@ -2441,6 +2474,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+             );
+             continue;
+           }
++          if ("usage" in message.message) {
++            lastMessageRawUsage = message.message.usage;
++          }
+           const sdkParentToolUseIdForResults = message.parent_tool_use_id;
+           const resultMessageUuid = typeof message.uuid === "string" ? message.uuid : void 0;
+           const content = message.message.content;
+@@ -2692,7 +2728,8 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+             estimatedThinkingTokens: metadataTracking.estimatedThinkingTokens
+           },
+           ...wasTruncated && { truncated: true },
+-          ...thinkingTraces.length > 0 && { thinkingTraces }
++          ...thinkingTraces.length > 0 && { thinkingTraces },
++          ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage }
+         }
+       }
+     };
+@@ -2700,12 +2737,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+   async doStream(options) {
+     this.logger.debug(`[claude-code] Starting doStream request with model: ${this.modelId}`);
+     this.logger.debug(`[claude-code] Response format: ${options.responseFormat?.type ?? "none"}`);
++    const sdkOptions = this.getSanitizedSdkOptions();
++    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const {
+       messagesPrompt,
+       warnings: messageWarnings,
+       streamingContentParts,
+       hasImageParts
+-    } = convertToClaudeCodeMessages(options.prompt);
++    } = convertToClaudeCodeMessages(options.prompt, effectiveResume);
+     this.logger.debug(
+       `[claude-code] Converted ${options.prompt.length} messages for streaming, hasImageParts: ${hasImageParts}`
+     );
+@@ -2718,8 +2757,6 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+     const stderrCollector = (data) => {
+       collectedStderr += data;
+     };
+-    const sdkOptions = this.getSanitizedSdkOptions();
+-    const effectiveResume = this.getEffectiveResume(sdkOptions);
+     const queryOptions = this.createQueryOptions(
+       abortController,
+       options.responseFormat,
+@@ -2805,6 +2842,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+         const textSegments = [];
+         let textPartId;
+         let streamedTextLength = 0;
++        let lastMessageRawUsage;
+         let emittedTextSinceLastAssistant = "";
+         let hasReceivedStreamEvents = false;
+         let hasStreamedJson = false;
+@@ -2821,6 +2859,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+         let textStreamedViaContentBlock = false;
+         const reasoningBlocksByIndex = /* @__PURE__ */ new Map();
+         let currentReasoningPartId;
++        let hadReasoningInCurrentAssistant = false;
+         const evictLive = (retracted) => {
+           if (retracted.size === 0) return;
+           for (let i = textSegments.length - 1; i >= 0; i--) {
+@@ -2986,7 +3025,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   controller.enqueue({
+                     type: "tool-input-start",
+                     id: toolId,
+-                    toolName,
++                    toolName: this.normalizeToolName(toolName),
+                     providerExecuted: true,
+                     dynamic: true,
+                     providerMetadata: {
+@@ -3038,6 +3077,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                 const reasoningPartId = generateId();
+                 reasoningBlocksByIndex.set(blockIndex, reasoningPartId);
+                 currentReasoningPartId = reasoningPartId;
++                hadReasoningInCurrentAssistant = true;
+                 this.logger.debug(
+                   `[claude-code] Reasoning started (content_block) - ID: ${reasoningPartId}`
+                 );
+@@ -3131,6 +3171,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+               if (typeof message.error === "string") {
+                 lastAssistantErrorKind = message.error;
+               }
++              if ("usage" in message.message) {
++                lastMessageRawUsage = message.message.usage;
++              }
+               const supersedesPriorMessages = applySupersede(message, evictLive, this.logger);
+               if (!message.message?.content) {
+                 this.logger.warn(
+@@ -3190,7 +3233,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   controller.enqueue({
+                     type: "tool-input-start",
+                     id: toolId,
+-                    toolName: tool3.name,
++                    toolName: this.normalizeToolName(tool3.name),
+                     providerExecuted: true,
+                     dynamic: true,
+                     // V3 field: indicates tool is provider-defined
+@@ -3344,6 +3387,9 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                 );
+                 continue;
+               }
++              if ("usage" in message.message) {
++                lastMessageRawUsage = message.message.usage;
++              }
+               if (textPartId) {
+                 const closedTextId = textPartId;
+                 controller.enqueue({
+@@ -3358,7 +3404,14 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   }
+                 }
+                 this.logger.debug("[claude-code] Closed text part due to user message");
++              } else if (hadReasoningInCurrentAssistant && streamedTextLength === 0) {
++                controller.enqueue({
++                  type: "text-end",
++                  id: generateId()
++                });
++                this.logger.debug("[claude-code] Closed text part due to user message (reasoning-only assistant message)");
+               }
++              hadReasoningInCurrentAssistant = false;
+               accumulatedText = "";
+               textSegments.length = 0;
+               streamedTextLength = 0;
+@@ -3395,7 +3448,7 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                     controller.enqueue({
+                       type: "tool-input-start",
+                       id: result.id,
+-                      toolName,
++                      toolName: this.normalizeToolName(toolName),
+                       providerExecuted: true,
+                       dynamic: true,
+                       // V3 field: indicates tool is provider-defined
+@@ -3623,7 +3676,8 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                     // a top-level warnings field (unlike stream-start which was already emitted)
+                     ...streamWarnings.length > 0 && {
+                       warnings: warningsJson
+-                    }
++                    },
++                    ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage }
+                   }
+                 }
+               });
+@@ -3716,7 +3770,8 @@ var ClaudeCodeLanguageModel = class _ClaudeCodeLanguageModel {
+                   },
+                   ...streamWarnings.length > 0 && {
+                     warnings: warningsJson
+-                  }
++                  },
++                  ...lastMessageRawUsage !== void 0 && { lastMessageRawUsage }
+                 }
+               }
+             });
+@@ -3939,7 +3994,7 @@ function createAiSdkMcpServer(name, tools) {
+         try {
+           const extraInfo = extra ?? {};
+           const result = await execute.call(def, args, {
+-            toolCallId: extraInfo.requestId !== void 0 ? String(extraInfo.requestId) : void 0,
++            toolCallId: extraInfo._meta?.["claudecode/toolUseId"] ?? (extraInfo.requestId !== void 0 ? String(extraInfo.requestId) : void 0),
+             abortSignal: extraInfo.signal
+           });
+           const normalized = await normalizeToolResultToText(toolName, result);

@@ -81,7 +81,7 @@ function toAiderDeskModels(models: CursorModel[], providerId: string): Model[] {
 export default class CursorExtension implements Extension {
   static metadata = {
     name: 'Cursor',
-    version: '1.2.1',
+    version: '2.0.0',
     description: 'Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor/icon.png',
@@ -308,6 +308,49 @@ export default class CursorExtension implements Extension {
   _loadConfig = this.loadConfig.bind(this);
 }
 
+function convertCursorUsage(usage: Record<string, unknown> | null | undefined) {
+  if (usage == null) {
+    return {
+      inputTokens: {
+        total: 0,
+        noCache: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+      },
+      outputTokens: {
+        total: 0,
+        text: 0,
+        reasoning: 0,
+      },
+      raw: undefined,
+    };
+  }
+
+  const promptTokens = typeof usage.prompt_tokens === 'number' ? usage.prompt_tokens : 0;
+  const completionTokens = typeof usage.completion_tokens === 'number' ? usage.completion_tokens : 0;
+  const cacheReadTokens = typeof (usage.prompt_tokens_details as Record<string, unknown> | undefined)?.cached_tokens === 'number'
+    ? (usage.prompt_tokens_details as Record<string, number>).cached_tokens
+    : 0;
+  const reasoningTokens = typeof (usage.completion_tokens_details as Record<string, unknown> | undefined)?.reasoning_tokens === 'number'
+    ? (usage.completion_tokens_details as Record<string, number>).reasoning_tokens
+    : 0;
+
+  return {
+    inputTokens: {
+      total: promptTokens,
+      noCache: promptTokens - cacheReadTokens,
+      cacheRead: cacheReadTokens,
+      cacheWrite: 0,
+    },
+    outputTokens: {
+      total: completionTokens,
+      text: completionTokens - reasoningTokens,
+      reasoning: reasoningTokens,
+    },
+    raw: usage,
+  };
+}
+
 async function createOpenAICompatibleLm(
   modelId: string,
   projectDir: string,
@@ -327,6 +370,7 @@ async function createOpenAICompatibleLm(
       'X-Session-Id': sessionId,
       'X-Project-Dir': projectDir,
     },
+    convertUsage: convertCursorUsage,
   });
 
   return compatibleProvider(modelId);

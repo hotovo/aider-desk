@@ -85,7 +85,7 @@ const readAuggieSession = (context: ExtensionContext): AuggieSessionCredentials 
 export default class AuggieSdkExtension implements Extension {
   static metadata = {
     name: 'Auggie SDK',
-    version: '1.0.0',
+    version: '2.0.0',
     description: 'Integrates the Auggie SDK as an LLM provider using the Augment platform',
     author: 'wladimiiir',
     iconUrl:

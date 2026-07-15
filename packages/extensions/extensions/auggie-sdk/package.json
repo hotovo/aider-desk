@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "description": "Integrates the Auggie SDK as an LLM provider using the Augment platform",
+  "scripts": {
+    "postinstall": "patch-package"
+  },
   "dependencies": {
-    "@augmentcode/auggie-sdk": "0.1.15"
+    "@augmentcode/auggie-sdk": "0.2.0",
+    "patch-package": "^8.0.0"
   }
 }

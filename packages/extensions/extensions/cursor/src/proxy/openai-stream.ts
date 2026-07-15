@@ -142,6 +142,7 @@ export function createSSECtx(
         created,
         model: modelId,
         choices: [{ index: 0, delta, finish_reason: finishReason }],
+        usage: {},
       })
     },
 
