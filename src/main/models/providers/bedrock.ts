@@ -4,7 +4,7 @@ import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
 import { BedrockProvider, isBedrockProvider } from '@common/agent';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
@@ -176,7 +176,7 @@ export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: strin
 };
 
 // === LLM Creation Functions ===
-export const createBedrockLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createBedrockLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as BedrockProvider;
   let region = provider.region;
   let accessKeyId = provider.accessKeyId;

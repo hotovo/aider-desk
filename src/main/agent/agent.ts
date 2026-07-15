@@ -5,6 +5,8 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
   ContextCompactionType,
+  ContextAssistantMessage,
+  ContextToolMessage,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
@@ -32,7 +34,7 @@ import {
   streamText,
   type TelemetrySettings,
   type Tool,
-  type ToolCallOptions,
+  type ToolExecutionOptions,
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
@@ -67,7 +69,7 @@ import { extractReasoningMiddleware } from './middlewares/extract-reasoning-midd
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
 import type { z } from 'zod';
-import type { JSONSchema7Definition } from '@ai-sdk/provider';
+import type { JSONSchema7Definition, LanguageModelV3 } from '@ai-sdk/provider';
 
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
@@ -507,7 +509,7 @@ export class Agent {
     for (const [toolName, toolDef] of Object.entries(toolSet)) {
       wrappedToolSet[toolName] = {
         ...toolDef,
-        execute: async (input: Record<string, unknown> | undefined, options: ToolCallOptions) => {
+        execute: async (input: Record<string, unknown> | undefined, options: ToolExecutionOptions) => {
           let effectiveInput = input as Record<string, unknown> | undefined;
           const [serverName, messageToolName] = extractServerNameToolName(toolName);
 
@@ -567,7 +569,7 @@ export class Agent {
   ): Tool {
     const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
 
-    const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolCallOptions) => {
+    const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions) => {
       task.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
 
       // --- Tool Approval Logic ---
@@ -1003,7 +1005,7 @@ export class Agent {
         task.task.lastAgentProviderMetadata,
       );
       logger.debug('LLM model created successfully', {
-        model: model.modelId,
+        model: typeof model !== 'string' ? model.modelId : model,
       });
 
       // repairToolCall function that attempts to repair tool calls
@@ -1103,7 +1105,7 @@ export class Agent {
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
       logger.debug('Parameters:', {
-        model: model.modelId,
+        model: typeof model !== 'string' ? model.modelId : model,
         temperature: effectiveTemperature,
         maxOutputTokens: effectiveMaxOutputTokens,
         minTimeBetweenToolCalls: profile.minTimeBetweenToolCalls,
@@ -1141,7 +1143,7 @@ export class Agent {
         return {
           providerOptions,
           model: wrapLanguageModel({
-            model,
+            model: model as LanguageModelV3,
             middleware: extractReasoningMiddleware({
               tagName: 'think',
             }),
@@ -1298,7 +1300,7 @@ export class Agent {
 
           try {
             for await (const chunk of result.fullStream) {
-              logger.debug('Chunk:', { chunk: chunk.type, responseMessageIndex });
+              logger.debug('Chunk:', { chunk, responseMessageIndex });
 
               const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
               if (chunk.type === 'text-start') {
@@ -1408,7 +1410,7 @@ export class Agent {
           break;
         }
 
-        if ((finishReason === 'unknown' || finishReason === 'other' || !finishReason) && retryCount < MAX_RETRIES) {
+        if ((finishReason === 'other' || !finishReason) && retryCount < MAX_RETRIES) {
           logger.debug(`Finish reason is "${finishReason}". Retrying...`);
           retryCount++;
           continue;
@@ -1509,7 +1511,7 @@ export class Agent {
 
     return resultMessages.reduce<ContextMessage[]>((acc, message) => {
       if (message.role === 'tool') {
-        const nonHelpersContent = message.content.filter((part) => !part.toolName.startsWith(helpersPrefix));
+        const nonHelpersContent = message.content.filter((part) => part.type === 'tool-result' && !part.toolName.startsWith(helpersPrefix));
         if (nonHelpersContent.length === 0) {
           // All content parts are helpers — drop the message entirely
           return acc;
@@ -1981,14 +1983,14 @@ export class Agent {
 
   private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, rawFinishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     task: Task,
     provider: ProviderProfile,
     model: string,
     promptContext?: PromptContext,
     abortSignal?: AbortSignal,
   ): Promise<ContextMessage[]> {
-    logger.info(`Step finished. Reason: ${finishReason}`, {
+    logger.info(`Step finished. Reason: ${finishReason} (${rawFinishReason})`, {
       currentResponseId,
       reasoningText: reasoningText?.substring(0, 100), // Log truncated reasoning
       text: text?.substring(0, 100), // Log truncated text
@@ -1997,6 +1999,7 @@ export class Agent {
       usage,
       providerMetadata,
       promptContext,
+      contentLength: content.length,
     });
 
     const messages: ContextMessage[] = [];
@@ -2031,6 +2034,7 @@ export class Agent {
       let part = content[i];
       if (part.type === 'reasoning') {
         reasoningText = part.text;
+        text = '';
         // move to the next one right away
         part = content[++i];
       }
@@ -2084,7 +2088,7 @@ export class Agent {
           usageReport: hasAssistantMessage ? usageReport : undefined,
           promptContext,
           timestamp: Date.now(),
-        });
+        } as ContextAssistantMessage);
       } else if (message.role === 'tool') {
         messages.push({
           ...message,
@@ -2093,7 +2097,7 @@ export class Agent {
           promptContext,
           usageReport: !hasAssistantMessage && message === lastToolMessage ? usageReport : undefined,
           timestamp: Date.now(),
-        });
+        } as ContextToolMessage);
       }
     });
 

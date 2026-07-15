@@ -2,8 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
@@ -81,7 +80,7 @@ export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: str
 };
 
 // === LLM Creation Functions ===
-export const createAnthropicLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createAnthropicLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as AnthropicProvider;
   let apiKey = provider.apiKey;
 
@@ -146,7 +145,7 @@ export const getAnthropicUsageReport = (
   // Extract cache tokens from provider metadata
   const { anthropic } = (providerMetadata as AnthropicMetadata) || {};
   const cacheWriteTokens = anthropic?.cacheCreationInputTokens ?? 0;
-  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.cachedInputTokens ?? 0;
+  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.inputTokenDetails?.cacheReadTokens ?? 0;
 
   // Calculate cost internally with already deducted sentTokens
   const messageCost = calculateAnthropicCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);

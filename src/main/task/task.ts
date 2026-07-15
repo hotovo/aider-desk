@@ -1310,6 +1310,12 @@ export class Task {
   }
 
   public async processResponseMessage(message: ResponseMessage, saveToDb = true) {
+    logger.debug('Processing response message', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      messageData: message,
+    });
+
     if (!message.finished) {
       const sendResponseChunk = async (content?: string, reasoning?: string) => {
         let data: ResponseChunkData = {

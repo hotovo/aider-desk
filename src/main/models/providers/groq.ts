@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -84,7 +84,7 @@ export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string):
 };
 
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createGroqLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as GroqProvider;
   let apiKey = provider.apiKey;
 

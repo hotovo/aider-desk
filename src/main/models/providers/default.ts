@@ -43,7 +43,7 @@ export const calculateCost = (model: Model, sentTokens: number, receivedTokens: 
 export const getDefaultUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData => {
   const totalSentTokens = usage.inputTokens || 0;
   const receivedTokens = usage.outputTokens || 0;
-  const cacheReadTokens = usage.cachedInputTokens || 0;
+  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? 0;
   const sentTokens = totalSentTokens - cacheReadTokens;
 
   const messageCost = calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);

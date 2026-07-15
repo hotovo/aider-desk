@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { ClinePassProvider, isClinePassProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -196,7 +196,7 @@ export const getClinePassAiderMapping = (provider: ProviderProfile, modelId: str
   };
 };
 
-export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as ClinePassProvider;
   const apiKey = resolveApiKey(provider, settings, projectDir);
 

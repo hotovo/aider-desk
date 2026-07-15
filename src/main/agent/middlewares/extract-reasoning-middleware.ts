@@ -1,4 +1,4 @@
-import type { LanguageModelV2StreamPart, LanguageModelV2Middleware } from '@ai-sdk/provider';
+import type { LanguageModelV3StreamPart, LanguageModelV3Middleware } from '@ai-sdk/provider';
 
 import logger from '@/logger';
 
@@ -16,12 +16,12 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
   tagName: string;
   separator?: string;
   startWithReasoning?: boolean;
-}): LanguageModelV2Middleware {
+}): LanguageModelV3Middleware {
   const openingTag = `<${tagName}>`;
   const closingTag = `</${tagName}>`;
 
   return {
-    middlewareVersion: 'v2',
+    specificationVersion: 'v3',
 
     wrapStream: async ({ doStream }) => {
       const { stream, ...rest } = await doStream();
@@ -38,7 +38,7 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
 
       return {
         stream: stream.pipeThrough(
-          new TransformStream<LanguageModelV2StreamPart, LanguageModelV2StreamPart>({
+          new TransformStream<LanguageModelV3StreamPart, LanguageModelV3StreamPart>({
             transform: (chunk, controller) => {
               if (chunk.type !== 'text-delta') {
                 if (lastId && chunk.type === 'text-end' && fullText.trim() && fullText.trim().length < openingTag.length) {

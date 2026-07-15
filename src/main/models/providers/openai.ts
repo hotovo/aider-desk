@@ -2,8 +2,8 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
 import { Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 
-import type { LanguageModelUsage, ToolSet } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ToolSet } from 'ai';
+import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
 
 import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -98,7 +98,7 @@ export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string
 };
 
 // === LLM Creation Functions ===
-export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as OpenAiProvider;
   let apiKey = provider.apiKey;
 
@@ -140,7 +140,7 @@ export const getOpenAiUsageReport = (
 
   // Extract cache read tokens from provider metadata or usage
   const { openai } = (providerMetadata as OpenAiMetadata) || {};
-  const cacheReadTokens = openai?.cachedPromptTokens ?? usage.cachedInputTokens ?? 0;
+  const cacheReadTokens = openai?.cachedPromptTokens ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
 
   // Calculate sentTokens after deducting cached tokens
   const sentTokens = totalSentTokens - cacheReadTokens;
@@ -159,7 +159,7 @@ export const getOpenAiUsageReport = (
 };
 
 // === Configuration Helper Functions ===
-export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
   if (!isOpenAiProvider(provider)) {
     return undefined;
   }

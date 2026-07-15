@@ -2,8 +2,7 @@ import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/t
 import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -125,7 +124,7 @@ export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: st
 };
 
 // === LLM Creation Functions ===
-export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as OpenRouterProvider;
   let apiKey = provider.apiKey;
 

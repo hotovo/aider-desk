@@ -4,8 +4,8 @@ import { createGoogleGenerativeAI, google, type GoogleGenerativeAIProviderOption
 import { Modality } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 
-import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
+import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -87,7 +87,7 @@ const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string): Aide
 };
 
 // === LLM Creation Functions ===
-const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as GeminiProvider;
   let apiKey = provider.apiKey;
   let baseUrl = provider.customBaseUrl;
@@ -122,7 +122,7 @@ const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: Setti
 
 type GoogleMetadata = {
   google: {
-    cachedInputTokens?: number;
+    cachedContentTokenCount?: number;
   };
 };
 
@@ -145,7 +145,7 @@ const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Mode
 
   // Extract cache read tokens from provider metadata or usage
   const { google } = (providerMetadata as GoogleMetadata) || {};
-  const cacheReadTokens = google?.cachedInputTokens ?? usage.cachedInputTokens ?? 0;
+  const cacheReadTokens = google?.cachedContentTokenCount ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
 
   // Calculate sentTokens after deducting cached tokens
   const sentTokens = totalSentTokens - cacheReadTokens;
@@ -163,7 +163,7 @@ const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Mode
   };
 };
 
-const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
   if (isGeminiProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
 

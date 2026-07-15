@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isKimiPlanProvider, KimiPlanProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -82,7 +82,7 @@ const getKimiPlanAiderMapping = (provider: ProviderProfile, modelId: string, set
 };
 
 // === LLM Creation Functions ===
-const createKimiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+const createKimiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as KimiPlanProvider;
   let apiKey = provider.apiKey;
 

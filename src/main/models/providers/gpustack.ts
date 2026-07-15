@@ -2,8 +2,7 @@ import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/t
 import { GpustackProvider, isGpustackProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -98,7 +97,7 @@ const getGpustackAiderMapping = (provider: ProviderProfile, modelId: string, set
 };
 
 // === LLM Creation Functions ===
-const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as GpustackProvider;
   let apiKey = provider.apiKey;
   let baseUrl = provider.baseUrl;
@@ -141,7 +140,7 @@ const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: Set
 const getGpustackUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData => {
   const totalSentTokens = usage.inputTokens || 0;
   const receivedTokens = usage.outputTokens || 0;
-  const cacheReadTokens = usage.cachedInputTokens || 0;
+  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? 0;
   const sentTokens = totalSentTokens - cacheReadTokens;
 
   // Cost is always 0 for GPUStack

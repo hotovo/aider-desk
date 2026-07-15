@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -105,7 +105,7 @@ const getAnthropicCompatibleAiderMapping = (provider: ProviderProfile, modelId: 
 };
 
 // === LLM Creation Functions ===
-const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as AnthropicCompatibleProvider;
   let apiKey = provider.apiKey;
   let baseUrl = provider.baseUrl;

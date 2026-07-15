@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
-import type { ToolCallOptions } from 'ai';
+import type { ToolExecutionOptions } from 'ai';
 import type { Extension, ExtensionMetadata, ToolDefinition, ExtensionContext, ToolResult } from '@common/extensions';
 import type { TaskData, AgentProfile, ContextMemoryMode, InvocationMode } from '@common/types';
 import type { Task } from '@/task';
@@ -218,7 +218,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
 
       expect(executeMock).toHaveBeenCalled();
       const contextArg = executeMock.mock.calls[0][2] as ExtensionContext;
@@ -247,7 +247,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
 
       expect(executeMock).toHaveBeenCalled();
       const signalArg = executeMock.mock.calls[0][1] as AbortSignal;
@@ -277,7 +277,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
       // Should not throw
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
 
       expect(result).toBeDefined();
       expect(typeof result).toBe('string');
@@ -307,7 +307,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
 
       expect(result).toBe('Simple string result');
     });
@@ -335,7 +335,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolCallOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
 
       expect(result).toContain('Something went wrong');
     });
@@ -457,7 +457,7 @@ describe('Extension Tool Integration with Agent', () => {
       expect(Object.keys(toolset)).toContain('ask-approved-tool');
 
       // Execute the tool to trigger approval
-      await toolset['ask-approved-tool'].execute?.({ test: 'input' }, { toolCallId: 'call-1' } as ToolCallOptions);
+      await toolset['ask-approved-tool'].execute?.({ test: 'input' }, { toolCallId: 'call-1' } as ToolExecutionOptions);
 
       // ApprovalManager should have been called
       expect(mockApprovalManager.handleToolApproval).toHaveBeenCalledWith(
@@ -490,7 +490,7 @@ describe('Extension Tool Integration with Agent', () => {
 
       const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, mockApprovalManager as unknown as ApprovalManager, abortSignal);
 
-      const result = await toolset['ask-denied-tool'].execute?.({}, { toolCallId: 'call-1' } as ToolCallOptions);
+      const result = await toolset['ask-denied-tool'].execute?.({}, { toolCallId: 'call-1' } as ToolExecutionOptions);
 
       expect(result).toContain('Tool execution denied by user');
       expect(result).toContain('user reason');

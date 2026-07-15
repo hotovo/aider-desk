@@ -4,8 +4,8 @@ import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from
 import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
 import { createVertex } from '@ai-sdk/google-vertex';
 
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -118,7 +118,7 @@ export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: stri
 };
 
 // === LLM Creation Functions ===
-export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as VertexAiProvider;
   let project = provider.project;
   let location = provider.location;
@@ -161,7 +161,7 @@ export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settin
 };
 
 type VertexGoogleMetadata = {
-  google: {
+  vertex: {
     cachedContentTokenCount?: number;
   };
 };
@@ -190,8 +190,8 @@ const getVertexAiUsageReport = (
   const receivedTokens = usage.outputTokens || 0;
 
   // Extract cache read tokens from provider metadata
-  const { google } = (providerMetadata as VertexGoogleMetadata) || {};
-  const cacheReadTokens = google?.cachedContentTokenCount ?? usage.cachedInputTokens ?? 0;
+  const { vertex } = (providerMetadata as VertexGoogleMetadata) || {};
+  const cacheReadTokens = vertex?.cachedContentTokenCount ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
 
   // Calculate sentTokens after deducting cached tokens
   const sentTokens = totalSentTokens - cacheReadTokens;
@@ -211,7 +211,7 @@ const getVertexAiUsageReport = (
   return usageReportData;
 };
 
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined => {
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
   if (isVertexAiProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<VertexAiProvider> | undefined;
 
@@ -220,7 +220,7 @@ export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Mode
     const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
 
     return {
-      google: {
+      vertex: {
         ...((includeThoughts || thinkingBudget) && {
           thinkingConfig: {
             includeThoughts: includeThoughts && (thinkingBudget ?? 0) > 0,

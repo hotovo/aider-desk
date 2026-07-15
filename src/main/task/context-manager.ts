@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import {
+  ToolResultPart,
   ConnectorMessage,
   ContextFile,
   ContextMessage,
@@ -17,8 +18,6 @@ import {
 } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
-
-import type { ToolResultPart } from 'ai';
 
 import logger from '@/logger';
 import { Task } from '@/task';

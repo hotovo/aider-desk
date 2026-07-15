@@ -41,6 +41,7 @@ jobs:
             "@ai-sdk/deepseek"
             "@ai-sdk/google"
             "@ai-sdk/google-vertex"
+            "@ai-sdk/mistral"
             "@ai-sdk/groq"
             "@ai-sdk/openai"
             "@ai-sdk/openai-compatible"

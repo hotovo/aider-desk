@@ -1,7 +1,7 @@
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
-import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
+import { type TextPart, type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -67,8 +67,8 @@ export const optimizeMessages = async (
       if (Array.isArray(lastMessage.content) && lastMessage.content.length > 0) {
         const lastContent = lastMessage.content[lastMessage.content.length - 1];
         if (lastContent && typeof lastContent === 'object') {
-          lastContent.providerOptions = {
-            ...lastContent.providerOptions,
+          (lastContent as TextPart).providerOptions = {
+            ...(lastContent as TextPart).providerOptions,
             ...cacheControl.providerOptions,
           };
         }
@@ -191,7 +191,7 @@ const optimizeAiderMessages = (messages: ModelMessage[]): ModelMessage[] => {
 
   for (const message of newMessages) {
     if (message.role === 'tool') {
-      const toolContent = message.content as ToolContent;
+      const toolContent = message.content.filter((p) => p.type === 'tool-result') as ToolResultPart[];
 
       for (const toolResultPart of toolContent) {
         if (
@@ -222,7 +222,7 @@ const optimizeSubagentMessages = (messages: ModelMessage[]): ModelMessage[] => {
 
   for (const message of newMessages) {
     if (message.role === 'tool') {
-      const toolContent = message.content as ToolContent;
+      const toolContent = message.content.filter((p) => p.type === 'tool-result') as ToolResultPart[];
 
       for (const toolResultPart of toolContent) {
         if (
@@ -255,20 +255,28 @@ const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] => {
 
   for (const message of messages) {
     if (message.role === 'tool') {
-      const toolContent = message.content as ToolContent;
+      const toolContent = message.content.filter((p) => p.type === 'tool-result') as ToolResultPart[];
       const updatedToolContent: ToolResultPart[] = [];
       const userMessagesToAdd: UserModelMessage[] = [];
 
       for (const toolResultPart of toolContent) {
         try {
-          const resultString = toolResultPart.output.type === 'text' ? toolResultPart.output.value : JSON.stringify(toolResultPart.output.value);
-          const parsedResult = JSON.parse(resultString);
+          const parsedResult =
+            toolResultPart.output.type === 'text'
+              ? JSON.parse(toolResultPart.output.value)
+              : toolResultPart.output.type === 'json'
+                ? toolResultPart.output.value
+                : toolResultPart.output.type === 'content'
+                  ? {
+                      content: toolResultPart.output.value,
+                    }
+                  : null;
 
           if (
             parsedResult &&
             Array.isArray(parsedResult.content) &&
             parsedResult.content.length === 1 &&
-            parsedResult.content[0].type === 'image' &&
+            (parsedResult.content[0].type === 'image' || parsedResult.content[0] === 'media') &&
             (parsedResult.content[0].data || parsedResult.content[0].image) &&
             parsedResult.content[0].mimeType?.startsWith('image/')
           ) {
@@ -360,7 +368,7 @@ const removeDuplicateToolCalls = (messages: ModelMessage[]): ModelMessage[] => {
 
           const modifiedContent: ToolContent = originalToolContent.map((part) => {
             // Match the tool result part to the duplicate tool call id
-            if (part.toolCallId === thirdToolCallPart.toolCallId) {
+            if ((part as ToolResultPart).toolCallId === thirdToolCallPart.toolCallId) {
               return {
                 ...part,
                 output: {

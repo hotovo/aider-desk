@@ -168,7 +168,7 @@ export interface ExtensionProviderStrategy {
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
-  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue>> | undefined;
+  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue | undefined>> | undefined;
   getCacheControl?: (model: Model) => CacheControl | undefined;
   getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
   getProviderParameters?: (model: Model) => Record<string, unknown>;
@@ -456,7 +456,7 @@ export interface AgentStepFinishedEvent {
   readonly agentProfile: AgentProfile;
   readonly currentResponseId: string;
   readonly stepResult: AgentStepResult;
-  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'unknown';
+  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' ;
   responseMessages: ContextMessage[];
 }
 

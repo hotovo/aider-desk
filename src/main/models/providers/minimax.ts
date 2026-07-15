@@ -2,8 +2,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { isMinimaxProvider, MinimaxProvider } from '@common/agent';
 import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
 
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
 
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
@@ -130,7 +129,7 @@ export const getMinimaxAiderMapping = (provider: ProviderProfile, modelId: strin
 };
 
 // === LLM Creation Functions ===
-export const createMinimaxLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 => {
+export const createMinimaxLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as MinimaxProvider;
   let apiKey = provider.apiKey;
 
@@ -196,7 +195,7 @@ export const getMinimaxUsageReport = (
   // Extract cache tokens from provider metadata
   const { anthropic } = (providerMetadata as MinimaxMetadata) || {};
   const cacheWriteTokens = anthropic?.cacheCreationInputTokens ?? 0;
-  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.cachedInputTokens ?? 0;
+  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.inputTokenDetails?.cacheReadTokens ?? 0;
 
   // Calculate sentTokens after deducting cached tokens
   const sentTokens = totalSentTokens - cacheReadTokens;
