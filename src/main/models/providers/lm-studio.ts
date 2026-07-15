@@ -1,13 +1,13 @@
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { Task } from '@/task/task';
+import { getDefaultUsageReport } from '@/models/providers/default';
 
 export const loadLmStudioModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isLmStudioProvider(profile.provider)) {
@@ -99,30 +99,11 @@ export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settin
   return lmStudioProvider(model.id);
 };
 
-export const getLmStudioUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? 0;
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // no cost for LMStudio models
-  const messageCost = 0;
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
-
 // === Complete Strategy Implementation ===
 export const lmStudioProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createLmStudioLlm,
-  getUsageReport: getLmStudioUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadLmStudioModels,

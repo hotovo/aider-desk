@@ -2,7 +2,7 @@ import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/t
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { JSONValue, SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { JSONValue, SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -142,7 +142,7 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
 };
 
 // === Configuration Helper Functions ===
-const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (!isOpenAiCompatibleProvider(provider)) {
     return undefined;
   }
@@ -177,7 +177,7 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
     });
     return {
       [provider.name]: providerOptions,
-    } satisfies SharedV3ProviderOptions;
+    } satisfies SharedV4ProviderOptions;
   }
 
   return undefined;

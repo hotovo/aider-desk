@@ -34,7 +34,7 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 
 import type { RegisteredProvider } from '@/extensions/extension-manager';
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { getDefaultUsageReport } from '@/models/providers/default';
@@ -814,7 +814,7 @@ export class ModelManager {
       : (llmProvider.disableStreaming ?? false);
   }
 
-  getProviderOptions(provider: ProviderProfile, modelId: string): SharedV3ProviderOptions | undefined {
+  getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {

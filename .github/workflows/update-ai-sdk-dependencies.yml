@@ -42,6 +42,7 @@ jobs:
             "@ai-sdk/google"
             "@ai-sdk/google-vertex"
             "@ai-sdk/mistral"
+            "@ai-sdk/otel"
             "@ai-sdk/groq"
             "@ai-sdk/openai"
             "@ai-sdk/openai-compatible"
@@ -58,50 +59,50 @@ jobs:
           # Update each package to latest stable version within the same major version
           for package in "${packages[@]}"; do
             echo "Checking $package..."
-            
+
             # Get current version from package.json
             current_version=$(cat package.json | jq -r ".dependencies[\"$package\"] // empty")
             if [ -z "$current_version" ]; then
               echo "Package $package not found in dependencies, skipping..."
               continue
             fi
-            
+
             # Normalize current version (remove caret and leading v)
             current_clean=$(echo $current_version | sed 's/[\^v]//')
-            
+
             # Extract major version from current version
             current_major=$(echo $current_clean | cut -d. -f1)
-            
+
             # Get all versions for the package
             all_versions=$(npm view $package versions --json 2>/dev/null || echo "[]")
-            
+
             # Filter versions to get the latest within the same major version
             # Sort versions and find the latest matching current major
             latest_same_major=$(echo "$all_versions" | \
               jq -r --arg major "$current_major" \
-                '[.[] | select(. | match("^[0-9]+\\.[0-9]+\\.[0-9]+$") != null)] | 
-                 map(. as $v | split(".") | {major: (.[0] | tonumber), minor: (.[1] | tonumber), patch: (.[2] | tonumber), original: $v}) | 
-                 map(select(.major == ($major | tonumber))) | 
-                 sort_by(.major, .minor, .patch) | reverse | 
+                '[.[] | select(. | match("^[0-9]+\\.[0-9]+\\.[0-9]+$") != null)] |
+                 map(. as $v | split(".") | {major: (.[0] | tonumber), minor: (.[1] | tonumber), patch: (.[2] | tonumber), original: $v}) |
+                 map(select(.major == ($major | tonumber))) |
+                 sort_by(.major, .minor, .patch) | reverse |
                  .[0].original // empty')
-            
+
             # If no versions found or parsing failed, fallback to current version
             if [ -z "$latest_same_major" ]; then
               latest_same_major=$current_clean
             fi
-            
+
             echo "Current: $current_version, Latest (same major $current_major): $latest_same_major"
-            
+
             # Normalize latest version for comparison (remove caret and leading v)
             latest_clean=$(echo $latest_same_major | sed 's/[\^v]//')
-            
+
             # Update if different
             if [ "$current_clean" != "$latest_clean" ]; then
               echo "Updating $package from $current_version to $latest_clean"
               # Write pinned version directly to package.json (no ~ or ^ prefix)
               tmp=$(mktemp)
               jq --arg pkg "$package" --arg ver "$latest_clean" '.dependencies[$pkg] = $ver' package.json > "$tmp" && mv "$tmp" package.json
-              
+
               # Add to changelog
               changelog="$changelog\n| $package | $current_version | $latest_clean |"
               has_updates=true
@@ -144,13 +145,13 @@ jobs:
           title: "chore: update AI SDK dependencies"
           body: |
             ## Automated AI SDK Dependencies Update
-            
+
             This PR updates AI SDK packages to their latest stable versions within the same major version (to avoid breaking changes).
-            
+
             ${{ env.CHANGELOG }}
-            
+
             ---
-            
+
             🤖 This PR was created automatically by the [Update AI SDK Dependencies](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) workflow.
           branch: chore/update-ai-sdk-dependencies
           delete-branch: true

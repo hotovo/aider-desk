@@ -1,3 +1,5 @@
+import { registerTelemetry } from 'ai';
+import { OpenTelemetry } from '@ai-sdk/otel';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 
@@ -7,6 +9,8 @@ import { initializePostHogExporter } from './posthog';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 
 import logger from '@/logger';
+
+registerTelemetry(new OpenTelemetry());
 
 const traceExporter: SpanExporter | undefined = initializeLangfuseExporter() ?? initializePostHogExporter();
 

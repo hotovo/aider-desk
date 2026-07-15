@@ -7,7 +7,8 @@ import type { LanguageModel } from 'ai';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
+import { getAnthropicCacheControl } from '@/models/providers/anthropic';
+import { getDefaultUsageReport } from '@/models/providers/default';
 
 const ensureV1Suffix = (baseUrl: string): string => {
   return baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
@@ -148,7 +149,7 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
 export const anthropicCompatibleProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createAnthropicCompatibleLlm,
-  getUsageReport: getAnthropicUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadAnthropicCompatibleModels,

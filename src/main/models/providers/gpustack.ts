@@ -1,13 +1,13 @@
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { GpustackProvider, isGpustackProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultUsageReport } from '@/models/providers/default';
 
 interface GpustackModelResponse {
   items: Array<{
@@ -137,30 +137,11 @@ const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: Set
   return compatibleProvider(model.id);
 };
 
-const getGpustackUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? 0;
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // Cost is always 0 for GPUStack
-  const messageCost = 0;
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
-
 // === Complete Strategy Implementation ===
 export const gpustackProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createGpustackLlm,
-  getUsageReport: getGpustackUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadGpustackModels,

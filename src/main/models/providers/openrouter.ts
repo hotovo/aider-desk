@@ -205,21 +205,23 @@ export const getOpenRouterUsageReport = (
   const totalSentTokens = usage.inputTokens || 0;
   const receivedTokens = usage.outputTokens || 0;
 
-  // Extract cache read tokens from provider metadata
-  const { openrouter } = providerMetadata as OpenRouterMetadata;
-  const cacheReadTokens = openrouter.usage.promptTokensDetails?.cachedTokens ?? 0;
+  // Extract cache tokens from usage details, falling back to raw provider metadata
+  const { openrouter } = (providerMetadata as OpenRouterMetadata) || {};
+  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? openrouter?.usage?.promptTokensDetails?.cachedTokens ?? 0;
+  const cacheWriteTokens = usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
   // Calculate sentTokens after deducting cached tokens
   const sentTokens = totalSentTokens - cacheReadTokens;
 
   // Use cost from provider metadata if available, otherwise calculate
-  const messageCost = openrouter.usage.cost ?? calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);
+  const messageCost = openrouter?.usage?.cost ?? calculateCost(model, sentTokens, receivedTokens, cacheReadTokens, cacheWriteTokens);
 
   return {
     model: `${provider.id}/${model.id}`,
     sentTokens,
     receivedTokens,
     cacheReadTokens,
+    cacheWriteTokens,
     messageCost,
     agentTotalCost: task.task.agentTotalCost + messageCost,
   };

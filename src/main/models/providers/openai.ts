@@ -1,15 +1,14 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
 
-import type { LanguageModel, LanguageModelUsage, ToolSet } from 'ai';
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, ToolSet } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
 import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { calculateCost, getDefaultModelInfo } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 
 export const loadOpenAiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOpenAiProvider(profile.provider)) {
@@ -122,44 +121,8 @@ export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings
   return openAIProvider(model.id);
 };
 
-type OpenAiMetadata = {
-  openai: {
-    cachedPromptTokens?: number;
-  };
-};
-
-export const getOpenAiUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-
-  // Extract cache read tokens from provider metadata or usage
-  const { openai } = (providerMetadata as OpenAiMetadata) || {};
-  const cacheReadTokens = openai?.cachedPromptTokens ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
-
-  // Calculate sentTokens after deducting cached tokens
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
-
 // === Configuration Helper Functions ===
-export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (!isOpenAiProvider(provider)) {
     return undefined;
   }
@@ -307,7 +270,7 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
 export const openaiProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createOpenAiLlm,
-  getUsageReport: getOpenAiUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadOpenAiModels,

@@ -1,15 +1,14 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 
-import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { LanguageModel } from 'ai';
 
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultModelInfo } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 
 export const loadAnthropicModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isAnthropicProvider(profile.provider)) {
@@ -103,64 +102,6 @@ export const createAnthropicLlm = (profile: ProviderProfile, model: Model, setti
   return anthropicProvider(model.id);
 };
 
-type AnthropicMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-
-// === Cost and Usage Functions ===
-export const calculateAnthropicCost = (
-  model: Model,
-  sentTokens: number,
-  receivedTokens: number,
-  cacheWriteTokens: number = 0,
-  cacheReadTokens: number = 0,
-): number => {
-  const inputCostPerToken = model.inputCostPerToken ?? 0;
-  const outputCostPerToken = model.outputCostPerToken ?? 0;
-  const cacheWriteInputTokenCost = model.cacheWriteInputTokenCost ?? inputCostPerToken;
-  const cacheReadInputTokenCost = model.cacheReadInputTokenCost ?? 0;
-
-  const inputCost = sentTokens * inputCostPerToken;
-  const outputCost = receivedTokens * outputCostPerToken;
-  const cacheCreationCost = cacheWriteTokens * cacheWriteInputTokenCost;
-  const cacheReadCost = cacheReadTokens * cacheReadInputTokenCost;
-  const cacheCost = cacheCreationCost + cacheReadCost;
-
-  return inputCost + outputCost + cacheCost;
-};
-
-export const getAnthropicUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData => {
-  const sentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-
-  // Extract cache tokens from provider metadata
-  const { anthropic } = (providerMetadata as AnthropicMetadata) || {};
-  const cacheWriteTokens = anthropic?.cacheCreationInputTokens ?? 0;
-  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.inputTokenDetails?.cacheReadTokens ?? 0;
-
-  // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateAnthropicCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheWriteTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
-
 // === Configuration Helper Functions ===
 export const getAnthropicCacheControl = (): CacheControl | undefined => {
   return {
@@ -177,7 +118,7 @@ export const getAnthropicCacheControl = (): CacheControl | undefined => {
 export const anthropicProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createAnthropicLlm,
-  getUsageReport: getAnthropicUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadAnthropicModels,

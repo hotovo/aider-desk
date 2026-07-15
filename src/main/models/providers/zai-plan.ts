@@ -4,7 +4,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { getDefaultUsageReport } from './default';
 
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -115,7 +115,7 @@ const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allMod
   return allModelInfos[fullModelId];
 };
 
-const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (isZaiPlanProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
     const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
@@ -129,7 +129,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
             type: 'disabled',
           },
         },
-      } as SharedV3ProviderOptions;
+      } as SharedV4ProviderOptions;
     }
 
     const mappedReasoningEffort = reasoningEffort === ReasoningEffort.None ? undefined : (reasoningEffort.toLowerCase() as 'max' | 'high');
@@ -139,7 +139,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
         'zai-plan': {
           reasoningEffort: mappedReasoningEffort,
         },
-      } as SharedV3ProviderOptions;
+      } as SharedV4ProviderOptions;
     }
   }
 

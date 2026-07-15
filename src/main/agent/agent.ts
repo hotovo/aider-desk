@@ -22,9 +22,8 @@ import {
 import {
   APICallError,
   type FinishReason,
-  generateObject,
   generateText,
-  type ImagePart,
+  type FilePart,
   InvalidToolInputError,
   jsonSchema,
   type ModelMessage,
@@ -32,12 +31,13 @@ import {
   smoothStream,
   type StepResult,
   streamText,
-  type TelemetrySettings,
+  type TelemetryOptions,
   type Tool,
   type ToolExecutionOptions,
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
+  Output,
 } from 'ai';
 import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
@@ -53,7 +53,6 @@ import {
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { TextPart } from '@ai-sdk/provider-utils';
 
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
@@ -68,8 +67,9 @@ import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUser
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
+import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
-import type { JSONSchema7Definition, LanguageModelV3 } from '@ai-sdk/provider';
+import type { JSONSchema7Definition, LanguageModelV4 } from '@ai-sdk/provider';
 
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
@@ -102,19 +102,19 @@ export class Agent {
     private readonly extensionManager: ExtensionManager,
   ) {}
 
-  private getTelemetrySettings(): TelemetrySettings {
+  private getTelemetrySettings(): TelemetryOptions {
     return {
       isEnabled: true,
       metadata: {
         // PostHog specific metadata
         posthog_distinct_id: this.store.getUserId(),
       },
-    };
+    } as TelemetryOptions;
   }
 
-  private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: (TextPart | ImagePart)[] }> {
+  private async getFilesContentForPrompt(files: ContextFile[], task: Task): Promise<{ textFileContents: string[]; imageParts: (TextPart | FilePart)[] }> {
     const textFileContents: string[] = [];
-    const imageParts: (TextPart | ImagePart)[] = [];
+    const imageParts: (TextPart | FilePart)[] = [];
 
     const fileInfos = await Promise.all(
       files.map(async (file) => {
@@ -188,9 +188,9 @@ export class Agent {
           text: `Here is image ${path.basename(file!.path)} for your reference.`,
         });
         imageParts.push({
-          type: 'image',
-          image: file!.imageBase64,
-          mediaType: file!.mimeType,
+          type: 'file',
+          data: file!.imageBase64,
+          mediaType: 'image',
         });
       } else if (!file!.isImage && file!.content) {
         // Add to textFileContents array
@@ -225,7 +225,7 @@ export class Agent {
         ([readOnly, editable], file) => (file.readOnly ? [[...readOnly, file], editable] : [readOnly, [...editable, file]]),
         [[], []] as [ContextFile[], ContextFile[]],
       );
-      const allImageParts: (TextPart | ImagePart)[] = [];
+      const allImageParts: (TextPart | FilePart)[] = [];
 
       // Process readonly files first
       if (readOnlyFiles.length > 0) {
@@ -292,7 +292,7 @@ export class Agent {
     const messages: ModelMessage[] = [];
 
     if (contextFiles.length > 0) {
-      const imageParts: (TextPart | ImagePart)[] = [];
+      const imageParts: (TextPart | FilePart)[] = [];
       const nonImageFiles: ContextFile[] = [];
 
       // Separate image files from non-image files
@@ -320,9 +320,9 @@ export class Agent {
                   text: `Here is image ${path.basename(file.path)} for your reference.`,
                 });
                 imageParts.push({
-                  type: 'image',
-                  image: imageBase64,
-                  mediaType: detected.mime,
+                  type: 'file',
+                  data: imageBase64,
+                  mediaType: 'image',
                 });
                 continue;
               }
@@ -509,7 +509,7 @@ export class Agent {
     for (const [toolName, toolDef] of Object.entries(toolSet)) {
       wrappedToolSet[toolName] = {
         ...toolDef,
-        execute: async (input: Record<string, unknown> | undefined, options: ToolExecutionOptions) => {
+        execute: async (input: Record<string, unknown> | undefined, options: ToolExecutionOptions<unknown>) => {
           let effectiveInput = input as Record<string, unknown> | undefined;
           const [serverName, messageToolName] = extractServerNameToolName(toolName);
 
@@ -569,7 +569,7 @@ export class Agent {
   ): Tool {
     const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
 
-    const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions) => {
+    const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions<unknown>) => {
       task.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
 
       // --- Tool Approval Logic ---
@@ -930,7 +930,7 @@ export class Agent {
     // add user message and skill activation messages (skills right after the
     // user message so the agent sees them already active and doesn't
     // re-activate them itself)
-    messages.push(...resultMessages);
+    messages.push(...(resultMessages as ModelMessage[]));
 
     // Normalize messages for provider-specific requirements
     messages = this.modelManager.normalizeMessages(provider, modelName, messages);
@@ -1143,19 +1143,19 @@ export class Agent {
         return {
           providerOptions,
           model: wrapLanguageModel({
-            model: model as LanguageModelV3,
+            model: model as LanguageModelV4,
             middleware: extractReasoningMiddleware({
               tagName: 'think',
             }),
           }),
-          system: systemPrompt,
+          instructions: systemPrompt,
           messages: optimizedMessages,
           tools: toolSet,
           abortSignal: effectiveAbortSignal,
           maxOutputTokens: effectiveMaxOutputTokens,
           maxRetries: 5,
           temperature: effectiveTemperature,
-          experimental_telemetry: this.getTelemetrySettings(),
+          telemetry: this.getTelemetrySettings(),
           ...providerParameters,
         };
       };
@@ -1183,7 +1183,7 @@ export class Agent {
         let currentStepMessages: ContextMessage[] = [];
         let responseMessageIndex: number = 0;
 
-        const onStepFinish = async (stepResult: StepResult<typeof toolSet>) => {
+        const onStepEnd = async (stepResult: StepResult<typeof toolSet>) => {
           finishReason = stepResult.finishReason;
 
           if (finishReason === 'error') {
@@ -1236,7 +1236,7 @@ export class Agent {
           task,
         );
         if (extensionStepStartedResult.messages) {
-          messages = extensionStepStartedResult.messages;
+          messages = extensionStepStartedResult.messages as ModelMessage[];
         }
 
         const shouldContinue = await this.compactMessagesIfNeeded(
@@ -1265,7 +1265,7 @@ export class Agent {
           logger.debug('Streaming disabled, using generateText');
           await generateText({
             ...(await getBaseModelCallParams()),
-            onStepFinish,
+            onStepEnd,
             experimental_repairToolCall: repairToolCall,
           });
         } else {
@@ -1294,12 +1294,12 @@ export class Agent {
                 task.addLogMessage('error', JSON.stringify(error), false, promptContext);
               }
             },
-            onStepFinish,
+            onStepEnd,
             experimental_repairToolCall: repairToolCall,
           });
 
           try {
-            for await (const chunk of result.fullStream) {
+            for await (const chunk of result.stream) {
               logger.debug('Chunk:', { chunk, responseMessageIndex });
 
               const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
@@ -1385,7 +1385,7 @@ export class Agent {
         }
 
         const newMessages = this.filterResultMessages(currentStepMessages);
-        messages.push(...currentStepMessages);
+        messages.push(...(currentStepMessages as ModelMessage[]));
         resultMessages.push(...newMessages);
 
         if (includeInContext) {
@@ -1728,7 +1728,7 @@ export class Agent {
     return messages;
   }
 
-  private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ModelMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]> {
+  private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ContextMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]> {
     const messages: ModelMessage[] = [];
 
     // Add repo map if enabled
@@ -1750,13 +1750,13 @@ export class Agent {
     if (profile.includeContextFiles) {
       const contextFilesMessages = await this.getContextFilesAsToolCallMessages(task, profile, contextFiles);
       // Add message history before context files
-      messages.push(...contextMessages);
+      messages.push(...(contextMessages as ModelMessage[]));
       messages.push(...contextFilesMessages);
     } else {
       const workingFilesMessages = await this.getWorkingFilesMessages(task, contextFiles);
       messages.push(...workingFilesMessages);
       // Add message history after working files
-      messages.push(...contextMessages);
+      messages.push(...(contextMessages as ModelMessage[]));
     }
 
     return messages;
@@ -1808,12 +1808,12 @@ export class Agent {
     try {
       const result = await generateText({
         model,
-        system: systemPrompt,
-        messages: await optimizeMessages(messages, cacheControl),
+        instructions: systemPrompt,
+        messages: await optimizeMessages(messages as ModelMessage[], cacheControl),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
-        experimental_telemetry: this.getTelemetrySettings(),
+        telemetry: this.getTelemetrySettings(),
       });
 
       return result.text;
@@ -1877,18 +1877,18 @@ export class Agent {
     });
 
     try {
-      const result = await generateObject({
+      const result = await generateText({
         model,
-        schema,
-        system: systemPrompt,
-        messages: await optimizeMessages(messages, cacheControl),
+        output: Output.object({ schema }),
+        instructions: systemPrompt,
+        messages: await optimizeMessages(messages as ModelMessage[], cacheControl),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
-        experimental_telemetry: this.getTelemetrySettings(),
+        telemetry: this.getTelemetrySettings(),
       });
 
-      return result.object as T;
+      return result.output as T;
     } catch (error) {
       if (effectiveAbortSignal?.aborted) {
         logger.info('Generating object aborted by user');
@@ -2250,9 +2250,7 @@ export class Agent {
 
         messages.push(...(await this.prepareMessages(task, profile, await task.getContextMessages(), contextFiles)));
         const continuationText = `Based on your compacted summary of our previous conversation, please continue our work with my request:\n\n${extractTextContent(userRequestMessage.content)}`;
-        const originalImageParts = Array.isArray(userRequestMessage.content)
-          ? userRequestMessage.content.filter((part): part is ImagePart => part.type === 'image')
-          : [];
+        const originalImageParts = Array.isArray(userRequestMessage.content) ? userRequestMessage.content.filter((part) => part.type === 'file') : [];
 
         resultMessages.push({
           id: uuidv4(),
@@ -2260,7 +2258,7 @@ export class Agent {
           content: originalImageParts.length > 0 ? [{ type: 'text' as const, text: continuationText }, ...originalImageParts] : continuationText,
           promptContext,
         });
-        messages.push(...resultMessages);
+        messages.push(...(resultMessages as ModelMessage[]));
       } else if (contextCompactionType === ContextCompactionType.Smart) {
         const compactedMessages = await task.smartCompactConversation([...contextMessages, ...resultMessages], 'Previous conversation has been compacted.');
 

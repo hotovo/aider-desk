@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -93,7 +93,7 @@ export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settin
   return deepseekProvider(model.id);
 };
 
-const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (!isDeepseekProvider(llmProvider)) {
     return undefined;
   }

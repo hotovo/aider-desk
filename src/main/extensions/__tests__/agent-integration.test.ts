@@ -218,7 +218,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions<unknown>);
 
       expect(executeMock).toHaveBeenCalled();
       const contextArg = executeMock.mock.calls[0][2] as ExtensionContext;
@@ -247,7 +247,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
+      await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions<unknown>);
 
       expect(executeMock).toHaveBeenCalled();
       const signalArg = executeMock.mock.calls[0][1] as AbortSignal;
@@ -277,7 +277,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
       // Should not throw
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions<unknown>);
 
       expect(result).toBeDefined();
       expect(typeof result).toBe('string');
@@ -307,7 +307,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions<unknown>);
 
       expect(result).toBe('Simple string result');
     });
@@ -335,7 +335,7 @@ describe('Extension Tool Integration with Agent', () => {
       const toolKey = 'test-tool';
       const toolDef = toolset[toolKey];
       expect(toolDef).toBeDefined();
-      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions);
+      const result = await toolDef!.execute!({ input: 'test' }, { toolCallId: 'call-123' } as ToolExecutionOptions<unknown>);
 
       expect(result).toContain('Something went wrong');
     });
@@ -457,7 +457,7 @@ describe('Extension Tool Integration with Agent', () => {
       expect(Object.keys(toolset)).toContain('ask-approved-tool');
 
       // Execute the tool to trigger approval
-      await toolset['ask-approved-tool'].execute?.({ test: 'input' }, { toolCallId: 'call-1' } as ToolExecutionOptions);
+      await toolset['ask-approved-tool'].execute?.({ test: 'input' }, { toolCallId: 'call-1' } as ToolExecutionOptions<unknown>);
 
       // ApprovalManager should have been called
       expect(mockApprovalManager.handleToolApproval).toHaveBeenCalledWith(
@@ -490,7 +490,7 @@ describe('Extension Tool Integration with Agent', () => {
 
       const toolset = manager.createExtensionToolset(task, 'agent', profile, {}, mockApprovalManager as unknown as ApprovalManager, abortSignal);
 
-      const result = await toolset['ask-denied-tool'].execute?.({}, { toolCallId: 'call-1' } as ToolExecutionOptions);
+      const result = await toolset['ask-denied-tool'].execute?.({}, { toolCallId: 'call-1' } as ToolExecutionOptions<unknown>);
 
       expect(result).toContain('Tool execution denied by user');
       expect(result).toContain('user reason');

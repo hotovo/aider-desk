@@ -13,7 +13,7 @@ export const initializePostHogExporter = (): SpanExporter | undefined => {
   if (posthogApiKey) {
     logger.info('Initializing PostHog Trace Exporter...');
     return new PostHogTraceExporter({
-      apiKey: posthogApiKey.value,
+      projectToken: posthogApiKey.value,
       host: posthogHost?.value || 'https://us.i.posthog.com',
     });
   }

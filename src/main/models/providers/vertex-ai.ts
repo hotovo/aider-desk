@@ -5,12 +5,13 @@ import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent
 import { createVertex } from '@ai-sdk/google-vertex';
 
 import type { LanguageModel, LanguageModelUsage } from 'ai';
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
+import { calculateCost } from '@/models/providers/default';
 
 export const loadVertexAIModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isVertexAiProvider(profile.provider)) {
@@ -166,19 +167,6 @@ type VertexGoogleMetadata = {
   };
 };
 
-const calculateVertexAiCost = (model: Model, sentTokens: number, receivedTokens: number, cacheReadTokens: number = 0): number => {
-  // Use model overrides if available, otherwise use base model info
-  const inputCostPerToken = model.inputCostPerToken ?? 0;
-  const outputCostPerToken = model.outputCostPerToken ?? 0;
-  const cacheReadInputTokenCost = model.cacheReadInputTokenCost ?? inputCostPerToken * 0.25;
-
-  const inputCost = sentTokens * inputCostPerToken;
-  const outputCost = receivedTokens * outputCostPerToken;
-  const cacheCost = cacheReadTokens * cacheReadInputTokenCost;
-
-  return inputCost + outputCost + cacheCost;
-};
-
 const getVertexAiUsageReport = (
   task: Task,
   provider: ProviderProfile,
@@ -197,9 +185,9 @@ const getVertexAiUsageReport = (
   const sentTokens = totalSentTokens - cacheReadTokens;
 
   // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateVertexAiCost(model, sentTokens, receivedTokens, cacheReadTokens);
+  const messageCost = calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);
 
-  const usageReportData: UsageReportData = {
+  return {
     model: `${provider.id}/${model.id}`,
     sentTokens,
     receivedTokens,
@@ -207,11 +195,9 @@ const getVertexAiUsageReport = (
     messageCost,
     agentTotalCost: task.task.agentTotalCost + messageCost,
   };
-
-  return usageReportData;
 };
 
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (isVertexAiProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<VertexAiProvider> | undefined;
 

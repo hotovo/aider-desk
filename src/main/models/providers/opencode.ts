@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGoogle } from '@ai-sdk/google';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import { getDefaultModelInfo, getDefaultUsageReport } from './default';
@@ -165,7 +165,7 @@ export const createOpencodeLlm = (profile: ProviderProfile, model: Model, settin
       return anthropic(modelId);
     }
     case 'gemini': {
-      const google = createGoogleGenerativeAI({
+      const google = createGoogle({
         apiKey,
         baseURL: ENDPOINT_BASE_URL,
         headers: profile.headers,

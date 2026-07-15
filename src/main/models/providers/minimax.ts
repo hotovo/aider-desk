@@ -1,14 +1,14 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { isMinimaxProvider, MinimaxProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 
-import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { LanguageModel } from 'ai';
 
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultUsageReport } from '@/models/providers/default';
 
 export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadModelsResponse> => {
   if (!isMinimaxProvider(profile.provider)) {
@@ -153,67 +153,6 @@ export const createMinimaxLlm = (profile: ProviderProfile, model: Model, setting
   return anthropicProvider(model.id);
 };
 
-type MinimaxMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-
-// === Cost and Usage Functions ===
-export const calculateMinimaxCost = (
-  model: Model,
-  sentTokens: number,
-  receivedTokens: number,
-  cacheWriteTokens: number = 0,
-  cacheReadTokens: number = 0,
-): number => {
-  const inputCostPerToken = model.inputCostPerToken ?? 0;
-  const outputCostPerToken = model.outputCostPerToken ?? 0;
-  const cacheWriteInputTokenCost = model.cacheWriteInputTokenCost ?? inputCostPerToken;
-  const cacheReadInputTokenCost = model.cacheReadInputTokenCost ?? 0;
-
-  const inputCost = sentTokens * inputCostPerToken;
-  const outputCost = receivedTokens * outputCostPerToken;
-  const cacheCreationCost = cacheWriteTokens * cacheWriteInputTokenCost;
-  const cacheReadCost = cacheReadTokens * cacheReadInputTokenCost;
-  const cacheCost = cacheCreationCost + cacheReadCost;
-
-  return inputCost + outputCost + cacheCost;
-};
-
-export const getMinimaxUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-
-  // Extract cache tokens from provider metadata
-  const { anthropic } = (providerMetadata as MinimaxMetadata) || {};
-  const cacheWriteTokens = anthropic?.cacheCreationInputTokens ?? 0;
-  const cacheReadTokens = anthropic?.cacheReadInputTokens ?? usage?.inputTokenDetails?.cacheReadTokens ?? 0;
-
-  // Calculate sentTokens after deducting cached tokens
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateMinimaxCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheWriteTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
-
 // === Configuration Helper Functions ===
 export const getMinimaxCacheControl = (): CacheControl | undefined => {
   return {
@@ -230,7 +169,7 @@ export const getMinimaxCacheControl = (): CacheControl | undefined => {
 export const minimaxProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
   createLlm: createMinimaxLlm,
-  getUsageReport: getMinimaxUsageReport,
+  getUsageReport: getDefaultUsageReport,
 
   // Model discovery functions
   loadModels: loadMinimaxModels,

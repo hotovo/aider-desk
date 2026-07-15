@@ -2,7 +2,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
 
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -100,7 +100,7 @@ const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: 
   return alibabaPlanProvider(model.id);
 };
 
-const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV3ProviderOptions | undefined => {
+const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
   if (isAlibabaPlanProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<AlibabaPlanProvider> | undefined;
 

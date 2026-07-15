@@ -1014,7 +1014,7 @@ export class ExtensionManager {
       toolSet[toolId] = {
         description: tool.description,
         inputSchema: tool.inputSchema,
-        execute: async (input: Record<string, unknown>, options: ToolExecutionOptions) => {
+        execute: async (input: Record<string, unknown>, options: ToolExecutionOptions<unknown>) => {
           // --- Tool Approval Logic ---
           const toolApproval = profile.toolApprovals?.[fullToolId];
           logger.debug(
@@ -1044,6 +1044,7 @@ export class ExtensionManager {
                       toolCallId: '',
                       abortSignal: abortSignal || options.abortSignal,
                       messages: [],
+                      context: undefined as never,
                     });
                   } else {
                     return 'Tool does not have an execute function';

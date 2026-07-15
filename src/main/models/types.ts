@@ -1,13 +1,13 @@
 import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
-import type { SharedV3ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
 import { Task } from '@/task';
 
 export interface CacheControl {
-  providerOptions: SharedV3ProviderOptions;
+  providerOptions: SharedV4ProviderOptions;
   placement?: 'message' | 'message-part';
 }
 
@@ -77,7 +77,7 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific options for model instantiation
    */
-  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV3ProviderOptions | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV4ProviderOptions | undefined;
 
   /**
    * Returns provider-specific tools that should be available to the agent

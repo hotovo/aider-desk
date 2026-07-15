@@ -1,4 +1,5 @@
-import type { LanguageModelV3StreamPart, LanguageModelV3Middleware } from '@ai-sdk/provider';
+import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
+import type { LanguageModelMiddleware } from 'ai';
 
 import logger from '@/logger';
 
@@ -16,13 +17,11 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
   tagName: string;
   separator?: string;
   startWithReasoning?: boolean;
-}): LanguageModelV3Middleware {
+}): LanguageModelMiddleware {
   const openingTag = `<${tagName}>`;
   const closingTag = `</${tagName}>`;
 
   return {
-    specificationVersion: 'v3',
-
     wrapStream: async ({ doStream }) => {
       const { stream, ...rest } = await doStream();
 
@@ -38,7 +37,7 @@ export const extractReasoningMiddleware = function extractReasoningMiddleware({
 
       return {
         stream: stream.pipeThrough(
-          new TransformStream<LanguageModelV3StreamPart, LanguageModelV3StreamPart>({
+          new TransformStream<LanguageModelV4StreamPart, LanguageModelV4StreamPart>({
             transform: (chunk, controller) => {
               if (chunk.type !== 'text-delta') {
                 if (lastId && chunk.type === 'text-end' && fullText.trim() && fullText.trim().length < openingTag.length) {

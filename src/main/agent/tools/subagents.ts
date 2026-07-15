@@ -64,7 +64,8 @@ export const createSubagentsToolset = async (
           'A short informational message describing what the subagent is doing, in continuous present tense (e.g., "Fixing the login bug"). This will be shown to the user while the subagent is working.',
         ),
     }),
-    execute: async ({ prompt, subagentId, description }, { toolCallId }) => {
+    execute: async (input, { toolCallId }) => {
+      const { prompt, subagentId, description } = input;
       const targetSubagent = findEnabledSubagent(enabledSubagents, subagentId);
       if (!targetSubagent) {
         return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
