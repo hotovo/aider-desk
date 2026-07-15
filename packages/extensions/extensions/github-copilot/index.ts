@@ -374,19 +374,22 @@ const createLlm = (
   };
 
   return {
-    specificationVersion: 'v2' as const,
+    specificationVersion: 'v3' as const,
     provider: PROVIDER_NAME,
     modelId,
-    defaultObjectGenerationMode: 'json' as const,
-    supportsImageUrls: false,
+    supportedUrls: { '*/*': [] },
 
     async doGenerate(callOptions: {
       prompt: V2Message[];
       abortSignal?: AbortSignal;
     }): Promise<{
       content: Array<{ type: 'text'; text: string }>;
-      finishReason: string;
-      usage: { inputTokens: number | undefined; outputTokens: number | undefined; totalTokens: number | undefined };
+      finishReason: { unified: string; raw: unknown };
+      usage: {
+        inputTokens: { total: number | undefined; noCache: number | undefined; cacheRead: number | undefined; cacheWrite: number | undefined };
+        outputTokens: { total: number | undefined; text: number | undefined; reasoning: number | undefined };
+        raw?: unknown;
+      };
       warnings: Array<{ type: string; setting: string; message: string }>;
     }> {
       const promptText = convertPromptToText(callOptions.prompt);
@@ -433,11 +436,19 @@ const createLlm = (
 
         return {
           content: [{ type: 'text', text: responseText }],
-          finishReason: 'stop',
+          finishReason: { unified: 'stop', raw: undefined },
           usage: {
-            inputTokens,
-            outputTokens,
-            totalTokens: inputTokens !== undefined && outputTokens !== undefined ? inputTokens + outputTokens : undefined,
+            inputTokens: {
+              total: inputTokens,
+              noCache: inputTokens,
+              cacheRead: undefined,
+              cacheWrite: undefined,
+            },
+            outputTokens: {
+              total: outputTokens,
+              text: outputTokens,
+              reasoning: undefined,
+            },
           },
           warnings: [],
         };
@@ -494,6 +505,8 @@ const createLlm = (
               void session.disconnect().catch(() => {});
             }
           };
+
+          controller.enqueue({ type: 'stream-start', warnings: [] });
 
           if (callOptions.abortSignal?.aborted) {
             controller.enqueue({ type: 'error', error: new Error('Aborted') });
@@ -585,20 +598,22 @@ const createLlm = (
                   });
                 }
 
-                log(`Stream: finishing with reason=tool-calls (${toolRequests.length} tool calls)`, 'info');
-                const totalTokens =
-                  cachedUsage.inputTokens !== undefined && cachedUsage.outputTokens !== undefined
-                    ? cachedUsage.inputTokens + cachedUsage.outputTokens + (cachedUsage.reasoningTokens ?? 0)
-                    : undefined;
+                log(`Stream: finishing with reason=tool-calls (${toolRequests.length} tool calls)`, 'debug');
                 controller.enqueue({
                   type: 'finish',
-                  finishReason: 'tool-calls',
+                  finishReason: { unified: 'tool-calls', raw: undefined },
                   usage: {
-                    inputTokens: cachedUsage.inputTokens,
-                    outputTokens: cachedUsage.outputTokens,
-                    totalTokens,
-                    cachedInputTokens: cachedUsage.cacheReadTokens ?? undefined,
-                    reasoningTokens: cachedUsage.reasoningTokens ?? undefined,
+                    inputTokens: {
+                      total: cachedUsage.inputTokens,
+                      noCache: undefined,
+                      cacheRead: cachedUsage.cacheReadTokens,
+                      cacheWrite: cachedUsage.cacheWriteTokens,
+                    },
+                    outputTokens: {
+                      total: cachedUsage.outputTokens,
+                      text: undefined,
+                      reasoning: cachedUsage.reasoningTokens,
+                    },
                   },
                   providerMetadata: {
                     [PROVIDER_NAME]: {
@@ -615,19 +630,21 @@ const createLlm = (
                 if (finished) return;
                 closeTextPart();
                 closeReasoningPart();
-                const totalTokens =
-                  cachedUsage.inputTokens !== undefined && cachedUsage.outputTokens !== undefined
-                    ? cachedUsage.inputTokens + cachedUsage.outputTokens + (cachedUsage.reasoningTokens ?? 0)
-                    : undefined;
                 controller.enqueue({
                   type: 'finish',
-                  finishReason: 'stop',
+                  finishReason: { unified: 'stop', raw: undefined },
                   usage: {
-                    inputTokens: cachedUsage.inputTokens,
-                    outputTokens: cachedUsage.outputTokens,
-                    totalTokens,
-                    cachedInputTokens: cachedUsage.cacheReadTokens ?? undefined,
-                    reasoningTokens: cachedUsage.reasoningTokens ?? undefined,
+                    inputTokens: {
+                      total: cachedUsage.inputTokens,
+                      noCache: undefined,
+                      cacheRead: cachedUsage.cacheReadTokens,
+                      cacheWrite: cachedUsage.cacheWriteTokens,
+                    },
+                    outputTokens: {
+                      total: cachedUsage.outputTokens,
+                      text: undefined,
+                      reasoning: cachedUsage.reasoningTokens,
+                    },
                   },
                   providerMetadata: {
                     [PROVIDER_NAME]: {
@@ -666,7 +683,7 @@ const createLlm = (
 export default class GithubCopilotExtension implements Extension {
   static metadata = {
     name: 'GitHub Copilot',
-    version: '1.2.0',
+    version: '2.0.0',
     description: 'Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK',
     author: 'wladimiiir',
     iconUrl:
@@ -741,15 +758,20 @@ export default class GithubCopilotExtension implements Extension {
               apiEndpoint?: string;
             };
 
-            const v2Usage = usage as { inputTokens?: number; outputTokens?: number; cachedInputTokens?: number; reasoningTokens?: number } | undefined;
+            const v3Usage = usage as {
+              inputTokens?: number;
+              outputTokens?: number;
+              inputTokenDetails?: { cacheReadTokens?: number };
+              outputTokenDetails?: { reasoningTokens?: number };
+            } | undefined;
             const copilotMeta = (providerMetadata as Record<string, unknown> | undefined)?.[PROVIDER_NAME] as { usage?: CopilotUsage } | undefined;
             const copilotUsage = copilotMeta?.usage;
 
-            const inputTokens = copilotUsage?.inputTokens ?? v2Usage?.inputTokens ?? 0;
-            const outputTokens = copilotUsage?.outputTokens ?? v2Usage?.outputTokens ?? 0;
-            const cacheReadTokens = copilotUsage?.cacheReadTokens ?? v2Usage?.cachedInputTokens ?? 0;
+            const inputTokens = copilotUsage?.inputTokens ?? v3Usage?.inputTokens ?? 0;
+            const outputTokens = copilotUsage?.outputTokens ?? v3Usage?.outputTokens ?? 0;
+            const cacheReadTokens = copilotUsage?.cacheReadTokens ?? v3Usage?.inputTokenDetails?.cacheReadTokens ?? 0;
             const cacheWriteTokens = copilotUsage?.cacheWriteTokens ?? 0;
-            const reasoningTokens = copilotUsage?.reasoningTokens ?? v2Usage?.reasoningTokens ?? 0;
+            const reasoningTokens = copilotUsage?.reasoningTokens ?? v3Usage?.outputTokenDetails?.reasoningTokens ?? 0;
             const cost = copilotUsage?.cost ?? 0;
 
             return {
