@@ -2,6 +2,7 @@ import { getDefaultProviderParams, DeepseekProvider, DeepseekReasoningEffort, Ll
 import { useTranslation } from 'react-i18next';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select, Option } from '@/components/common/Select';
@@ -50,6 +51,13 @@ export const DeepseekModelOverrides = ({ provider, overrides, onChange }: Props)
     });
   };
 
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    onChange({
+      ...overrides,
+      disableToolCallStreaming,
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center space-x-2">
@@ -60,6 +68,7 @@ export const DeepseekModelOverrides = ({ provider, overrides, onChange }: Props)
         <Select label={t('deepseek.reasoningEffort')} value={reasoningEffort} onChange={handleReasoningEffortChange} options={reasoningEffortOptions} />
       )}
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };

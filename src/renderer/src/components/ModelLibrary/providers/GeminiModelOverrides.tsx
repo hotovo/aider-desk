@@ -1,6 +1,7 @@
 import { getDefaultProviderParams, GeminiProvider, LlmProvider } from '@common/agent';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { GeminiAdvancedSettings } from './GeminiAdvancedSettings';
 
@@ -25,6 +26,7 @@ export const GeminiModelOverrides = ({ provider, overrides, onChange }: Props) =
       includeThoughts: updatedProvider.includeThoughts,
       useSearchGrounding: updatedProvider.useSearchGrounding,
       disableStreaming: updatedProvider.disableStreaming,
+      disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
     // Remove undefined values
@@ -39,10 +41,16 @@ export const GeminiModelOverrides = ({ provider, overrides, onChange }: Props) =
     handleProviderChange(updatedProvider);
   };
 
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    const updatedProvider = { ...fullProvider, disableToolCallStreaming };
+    handleProviderChange(updatedProvider);
+  };
+
   return (
     <div className="space-y-4">
       <GeminiAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };

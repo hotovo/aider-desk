@@ -814,6 +814,20 @@ export class ModelManager {
       : (llmProvider.disableStreaming ?? false);
   }
 
+  isToolCallStreamingDisabled(provider: ProviderProfile, modelId: string): boolean {
+    const llmProvider = provider.provider;
+    const models = this.providerModels[provider.id] || [];
+    const modelObj = models.find((m) => m.id === modelId);
+
+    if (!modelObj) {
+      return llmProvider.disableToolCallStreaming ?? false;
+    }
+
+    return typeof modelObj.providerOverrides?.disableToolCallStreaming === 'boolean'
+      ? modelObj.providerOverrides.disableToolCallStreaming
+      : (llmProvider.disableToolCallStreaming ?? false);
+  }
+
   getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];

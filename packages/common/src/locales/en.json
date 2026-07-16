@@ -265,6 +265,8 @@
     },
     "disableStreaming": "Disable streaming",
     "disableStreamingInfo": "Disables response streaming. Use this when the provider or model does not support streaming responses.",
+    "disableToolCallStreaming": "Disable tool call streaming",
+    "disableToolCallStreamingInfo": "Disables streaming of tool call input. Tool calls will still execute but their arguments won't be shown progressively.",
     "trackTokenUsage": "Track token usage",
     "trackTokenUsageInfo": "Include token usage information in streaming responses. Disable if the provider does not support the usage field in stream chunks.",
     "extraBody": "Extra body parameters",

@@ -1,6 +1,7 @@
 import { getDefaultProviderParams, AzureProvider, LlmProvider } from '@common/agent';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { AzureAdvancedSettings } from './AzureAdvancedSettings';
 
@@ -11,29 +12,31 @@ type Props = {
 };
 
 export const AzureModelOverrides = ({ provider, overrides, onChange }: Props) => {
-  // Convert overrides to AzureProvider format for AdvancedSettings
   const fullProvider: AzureProvider = {
     ...getDefaultProviderParams('azure'),
     ...(provider as AzureProvider),
     ...overrides,
   };
 
-  // Convert AzureProvider back to overrides format
   const handleProviderChange = (updatedProvider: AzureProvider) => {
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
       disableStreaming: updatedProvider.disableStreaming,
+      disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
-    // Remove undefined values
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([_, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
   };
 
-  // Handle disable streaming change separately
   const handleDisableStreamingChange = (disableStreaming: boolean) => {
     const updatedProvider = { ...fullProvider, disableStreaming };
+    handleProviderChange(updatedProvider);
+  };
+
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    const updatedProvider = { ...fullProvider, disableToolCallStreaming };
     handleProviderChange(updatedProvider);
   };
 
@@ -41,6 +44,7 @@ export const AzureModelOverrides = ({ provider, overrides, onChange }: Props) =>
     <div className="space-y-4">
       <AzureAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };

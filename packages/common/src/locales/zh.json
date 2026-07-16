@@ -264,6 +264,8 @@
     },
     "disableStreaming": "禁用流式传输",
     "disableStreamingInfo": "禁用响应流式传输。当提供商或模型不支持流式传输时使用此选项。",
+    "disableToolCallStreaming": "禁用工具调用流式传输",
+    "disableToolCallStreamingInfo": "禁用工具调用输入的流式传输。工具调用仍将执行，但其参数不会逐步显示。",
     "trackTokenUsage": "跟踪 Token 使用量",
     "trackTokenUsageInfo": "在流式响应中包含 Token 使用量信息。如果提供商不支持流式块中的 usage 字段，请禁用此选项。",
     "extraBody": "额外请求体参数",

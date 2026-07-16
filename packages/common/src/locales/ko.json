@@ -265,6 +265,8 @@
     },
     "disableStreaming": "스트리밍 비활성화",
     "disableStreamingInfo": "응답 스트리밍을 비활성화합니다. 공급자 또는 모델이 스트리밍 응답을 지원하지 않을 때 사용하세요.",
+    "disableToolCallStreaming": "도구 호출 스트리밍 비활성화",
+    "disableToolCallStreamingInfo": "도구 호출 입력의 스트리밍을 비활성화합니다. 도구 호출은 여전히 실행되지만 인수가 점진적으로 표시되지 않습니다.",
     "trackTokenUsage": "토큰 사용량 추적",
     "trackTokenUsageInfo": "스트리밍 응답에 토큰 사용량 정보를 포함합니다. 공급자가 스트림 청크의 usage 필드를 지원하지 않으면 비활성화하세요.",
     "extraBody": "추가 본문 매개변수",

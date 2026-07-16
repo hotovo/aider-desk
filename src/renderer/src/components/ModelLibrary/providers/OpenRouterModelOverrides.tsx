@@ -1,6 +1,7 @@
 import { getDefaultProviderParams, LlmProvider, OpenRouterProvider } from '@common/agent';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 
@@ -30,6 +31,7 @@ export const OpenRouterModelOverrides = ({ provider, overrides, onChange }: Prop
       sort: updatedProvider.sort,
       requireParameters: updatedProvider.requireParameters,
       disableStreaming: updatedProvider.disableStreaming,
+      disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
     // Remove undefined values
@@ -44,10 +46,16 @@ export const OpenRouterModelOverrides = ({ provider, overrides, onChange }: Prop
     handleProviderChange(updatedProvider);
   };
 
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    const updatedProvider = { ...fullProvider, disableToolCallStreaming };
+    handleProviderChange(updatedProvider);
+  };
+
   return (
     <div className="space-y-4">
       <OpenRouterAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };

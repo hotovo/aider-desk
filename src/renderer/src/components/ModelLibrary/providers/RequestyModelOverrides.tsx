@@ -1,6 +1,7 @@
 import { getDefaultProviderParams, LlmProvider, RequestyProvider } from '@common/agent';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { RequestyAdvancedSettings } from './RequestyAdvancedSettings';
 
@@ -24,6 +25,7 @@ export const RequestyModelOverrides = ({ provider, overrides, onChange }: Props)
       useAutoCache: updatedProvider.useAutoCache,
       reasoningEffort: updatedProvider.reasoningEffort,
       disableStreaming: updatedProvider.disableStreaming,
+      disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
     // Remove undefined values
@@ -38,10 +40,16 @@ export const RequestyModelOverrides = ({ provider, overrides, onChange }: Props)
     handleProviderChange(updatedProvider);
   };
 
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    const updatedProvider = { ...fullProvider, disableToolCallStreaming };
+    handleProviderChange(updatedProvider);
+  };
+
   return (
     <div className="space-y-4">
       <RequestyAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };

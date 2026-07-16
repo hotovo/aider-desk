@@ -1270,6 +1270,7 @@ export class Agent {
           });
         } else {
           logger.debug('Streaming enabled, using streamText');
+          const toolCallStreamingDisabled = this.modelManager.isToolCallStreamingDisabled(provider, modelName);
           const result = streamText({
             ...(await getBaseModelCallParams()),
             experimental_transform: smoothStream({
@@ -1331,13 +1332,22 @@ export class Agent {
                   promptContext,
                 });
               } else if (chunk.type === 'tool-input-start') {
+                if (toolCallStreamingDisabled) {
+                  continue;
+                }
                 const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
                 task.startToolInput(chunk.id, serverName, toolName, promptContext);
                 task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
                 streamingMessageIds.add(chunk.id);
               } else if (chunk.type === 'tool-input-delta') {
+                if (toolCallStreamingDisabled) {
+                  continue;
+                }
                 task.processToolInputDelta(chunk.id, chunk.delta);
               } else if (chunk.type === 'tool-input-end') {
+                if (toolCallStreamingDisabled) {
+                  continue;
+                }
                 task.finishToolInput(chunk.id);
               } else if (chunk.type === 'tool-call') {
                 task.addLogMessage('loading', 'Executing tool...', false, promptContext);

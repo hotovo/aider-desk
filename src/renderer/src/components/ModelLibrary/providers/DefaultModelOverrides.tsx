@@ -1,6 +1,7 @@
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 type Props = {
   provider: LlmProvider;
@@ -9,28 +10,30 @@ type Props = {
 };
 
 export const DefaultModelOverrides = ({ provider, overrides, onChange }: Props) => {
-  // Convert overrides to LlmProvider format
   const fullProvider = {
     ...getDefaultProviderParams(provider.name),
     ...provider,
     ...overrides,
   } as LlmProvider;
 
-  // Convert back to overrides format
   const handleDisableStreamingChange = (disableStreaming: boolean) => {
-    const newOverrides = {
+    onChange({
+      ...overrides,
       disableStreaming,
-    };
+    });
+  };
 
-    // Remove undefined values
-    const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([_, value]) => value !== undefined));
-
-    onChange(cleanedOverrides);
+  const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
+    onChange({
+      ...overrides,
+      disableToolCallStreaming,
+    });
   };
 
   return (
     <div className="space-y-4">
       <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+      <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );
 };
