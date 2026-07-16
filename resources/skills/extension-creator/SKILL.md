@@ -220,12 +220,22 @@ Before using this skill, verify:
 - Extension type (single-file or folder) is determined
 - Extension interface and types are understood
 
-If any precondition fails:
+**IMPORTANT:** The reference files below are comprehensive but may lag behind the latest code. For the **authoritative** and **complete** API, always refer to these source files:
 
-- Review [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) for types
-- Check [references/install-targets.md](references/install-targets.md) for target options
-- Check [references/event-types.md](references/event-types.md) for event types
-- Check [references/command-definition.md](references/command-definition.md) for command structure
+- **Types source:** [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) — Extension interface, all contexts (ExtensionContext, TaskContext, ProjectContext), event payloads, UI component definitions
+- **Context message types:** [packages/common/src/types/context.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/context.ts) — ContextMessage, ContextFile, message part types
+- **Task/common types:** [packages/common/src/types/common.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/common.ts) — TaskData, Model, AgentProfile, CreateTaskParams, etc.
+
+When you need a method or type that's not in the reference docs, **fetch the raw source first** before guessing.
+
+**Built-in extension examples** are available at:
+- [Online extensions gallery](https://github.com/hotovo/aider-desk/blob/main/docs-site/docs/extensions/extensions-gallery.md) — documented overview
+- Source code for each built-in extension is in the AiderDesk repo at `packages/extensions/extensions/[extension-name]/` — browse these for real-world patterns
+
+### Reference docs
+- [references/install-targets.md](references/install-targets.md) for target options
+- [references/event-types.md](references/event-types.md) for event types
+- [references/command-definition.md](references/command-definition.md) for command structure
 
 ## Postconditions
 
@@ -256,6 +266,60 @@ After completing this skill, verify:
 - When: Extension needs to modify agent behavior
 - Then: Implement event handler methods (onAgentStarted, onToolCalled, etc.)
 - Return: Partial event object to modify behavior
+
+**Situation:** Extension needs to create subtasks and coordinate between them
+
+**Pattern:**
+- Create: `const newTask = await projectContext.createTask({ parentId: currentTaskId, name: 'Subtask' })`
+- Access another task: `const subtaskContext = projectContext.getTask(newTask.id)`
+- Execute commands in subtask: `await subtaskContext?.runCustomCommand('scope:start')`
+- Read subtask conversation: `const messages = await subtaskContext?.getContextMessages()`
+- List all tasks: `const allTasks = await projectContext.getTasks()`
+- Fork at specific message: `await projectContext.forkTask(taskId, messageId)`
+- Duplicate a task: `await projectContext.duplicateTask(taskId)`
+- Delete a task: `await projectContext.deleteTask(taskId)`
+
+**Situation:** Extension needs to make direct LLM calls without the full agent loop
+
+**Pattern:**
+- Get model ID: `const profile = await taskContext.getTaskAgentProfile(); const modelId = profile ? \`\${profile.provider}/\${profile.model}\` : 'openai/gpt-4o'`
+- Generate text: `const result = await taskContext.generateText(modelId, 'You are a helpful assistant', 'Summarize this code')`
+- Generate structured data: `const result = await taskContext.generateObject(modelId, systemPrompt, prompt, z.object({ category: z.string() }))`
+
+**Situation:** Extension needs to read conversation history
+
+**Pattern:**
+- Get messages: `const messages = await taskContext.getContextMessages()`
+- Extract text: ContextMessage content can be a string or an array of parts. For simple text extraction:
+  ```typescript
+  function extractText(content: ContextMessage['content']): string {
+    if (typeof content === 'string') return content;
+    if (Array.isArray(content)) {
+      return content
+        .filter((part): part is TextPart => part.type === 'text')
+        .map(part => part.text)
+        .join('\n');
+    }
+    return '';
+  }
+  ```
+- Reference: [context.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/context.ts) for full ContextMessage type
+
+**Situation:** Extension needs to run shell commands
+
+**Pattern:** Node.js built-in modules (`fs`, `path`, `child_process`, `os`, etc.) are available in extensions.
+- Synchronous: `import { execSync } from 'node:child_process'; const output = execSync('git status', { encoding: 'utf-8' });`
+- Asynchronous: `import { exec } from 'node:child_process'; import { promisify } from 'node:util'; const execAsync = promisify(exec);`
+- File operations: `import { readFileSync, writeFileSync } from 'node:fs'; import { join } from 'node:path';`
+
+**Situation:** Extension needs to manage todos
+
+**Pattern:**
+- Get todos: `const todos = await taskContext.getTodos()`
+- Add todo: `const todos = await taskContext.addTodo('Implement feature X')`
+- Update todo: `const todos = await taskContext.updateTodo('Implement feature X', { completed: true })`
+- Delete todo: `const todos = await taskContext.deleteTodo('Implement feature X')`
+- Replace all: `await taskContext.setTodos([{ name: 'Task 1', completed: false }])`
 
 **Situation:** Extension needs to register commands
 
@@ -369,9 +433,9 @@ After completing this skill, verify:
 ### Technical Reference (all targets)
 
 - [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) - Extension types and interfaces
-- [extension-interface.md](references/extension-interface.md) - Full Extension interface, ExtensionContext, TaskContext, Metadata
+- [extension-interface.md](references/extension-interface.md) - Full Extension interface, ExtensionContext, TaskContext, ProjectContext, MemoryContext, and all supporting types
 - [extension-types.md](references/extension-types.md) - Single-file vs folder extensions, examples, extensions.json format
-- [event-types.md](references/event-types.md) - All event types and payloads
+- [event-types.md](references/event-types.md) - All event types, payloads, and extension method mappings
 - [command-definition.md](references/command-definition.md) - Command structure
 - [ui-components.md](references/ui-components.md) - UI component system, placements, and available components
 - [external-libraries.md](references/external-libraries.md) - Loading third-party npm libraries in UI components (getUIComponentsLibraries)

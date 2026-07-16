@@ -133,6 +133,14 @@ UI components can be placed in various locations throughout the AiderDesk interf
   - *Use for*: Sidebar controls, filters, project actions
   - *Layout*: Full sidebar width at top
 
+- **tasks-sidebar-actions-left**: Left side of tasks sidebar action area
+  - *Use for*: Task sidebar action buttons (left group)
+  - *Layout*: Horizontal row, left-aligned
+
+- **tasks-sidebar-actions-right**: Right side of tasks sidebar action area
+  - *Use for*: Task sidebar action buttons (right group)
+  - *Layout*: Horizontal row, right-aligned
+
 - **tasks-sidebar-bottom**: Bottom of the tasks sidebar
   - *Use for*: Persistent sidebar actions, status
   - *Layout*: Full sidebar width at bottom
@@ -154,13 +162,23 @@ UI components can be placed in various locations throughout the AiderDesk interf
 
 ### Floating Panels
 
-- **floating**: Draggable, resizable floating panel rendered as a React portal
+- **task-floating**: Draggable, resizable floating panel rendered as a React portal, scoped to the current task
   - *Use for*: Side-by-side tools that need to coexist with the chat (inspectors, previews, dashboards, scratchpads)
   - *Layout*: Free-form floating panel — extension JSX is the panel content, panel chrome (title bar, resize handles) is automatic
-  - *Portal*: Rendered inside the project area via a portal host — has access to current task context
+  - *Portal*: Rendered inside the task area via a portal host — has access to current task context
   - *Title*: Set via the `name` property on `UIComponentDefinition` — used as the floating panel title
   - *Behavior*: Draggable by title bar, resizable from edges, minimizable. Position and size are persisted in local storage
   - *Note*: Extension JSX should only contain the inner content — never wrap in a panel component
+
+- **project-floating**: Draggable, resizable floating panel rendered as a React portal, scoped to the current project
+  - *Use for*: Project-level tools and dashboards that span multiple tasks
+  - *Layout*: Same free-form floating panel as `task-floating`
+  - *Portal*: Rendered inside the project area via a portal host
+
+- **app-floating**: Draggable, resizable floating panel rendered as a React portal, at the application level
+  - *Use for*: Global tools, settings panels, or utilities not tied to a specific project or task
+  - *Layout*: Same free-form floating panel as `task-floating`
+  - *Portal*: Rendered at the app level via a portal host
 
 ## Component Props
 
@@ -410,6 +428,16 @@ The `ui` prop provides pre-built AiderDesk components:
 >
   <p>Are you sure you want to do this?</p>
 </ui.ConfirmDialog>
+```
+
+### ModalOverlayLayout
+```jsx
+<ui.ModalOverlayLayout
+  title="My Modal"
+  onClose={handleClose}
+>
+  <p>Modal content here</p>
+</ui.ModalOverlayLayout>
 ```
 
 ## Using React
@@ -799,16 +827,16 @@ When handling `assistant-group` messages, access `message.responseMessage` and `
 }
 ```
 
-### Floating Panel (floating placement)
+### Floating Panel (task-floating placement)
 
-A draggable, resizable floating panel for side-by-side tools:
+A draggable, resizable floating panel for side-by-side tools. Use `task-floating` for task-scoped panels, `project-floating` for project-scoped panels, or `app-floating` for app-level panels:
 
 ```typescript
 // In your extension's getUIComponents():
 getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
   return [{
     id: 'my-panel',
-    placement: 'floating',
+    placement: 'task-floating',
     name: 'My Panel',  // Becomes the floating panel title
     loadData: true,
     noDataCache: true,
@@ -863,7 +891,7 @@ class MyExtension implements Extension {
   getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
     const components: UIComponentDefinition[] = [{
       id: 'feature-toggle-panel',
-      placement: 'floating',
+      placement: 'task-floating',
       name: 'Feature Toggles',
       loadData: true,
       noDataCache: true,
