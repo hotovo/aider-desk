@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FaRegUser } from 'react-icons/fa';
+import { IoClose } from 'react-icons/io5';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UserMessage } from '@common/types';
@@ -45,29 +47,46 @@ const MessageImages = ({ images }: { images: string[] }) => {
           />
         ))}
       </div>
-      <AnimatePresence>
-        {expandedIndex !== null && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 cursor-pointer"
-            onClick={handleExpandedClick}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            <motion.img
-              src={images[expandedIndex]}
-              alt={`Expanded image ${expandedIndex + 1}`}
-              className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl object-contain"
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+      {createPortal(
+        <AnimatePresence>
+          {expandedIndex !== null && (
+            <motion.div
+              className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 cursor-pointer p-8"
+              onClick={handleExpandedClick}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              onClick={(e) => e.stopPropagation()}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+            >
+              <motion.img
+                src={images[expandedIndex]}
+                alt={`Expanded image ${expandedIndex + 1}`}
+                className="max-w-[90vw] max-h-[90vh] object-contain"
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={(e) => e.stopPropagation()}
+              />
+              <motion.button
+                type="button"
+                className="fixed top-4 right-4 z-[10000] flex items-center justify-center w-10 h-10 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleExpandedClick();
+                }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+              >
+                <IoClose className="w-6 h-6" />
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
+      )}
     </>
   );
 };

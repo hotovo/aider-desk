@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- correcly showing full size image attached to user message when clicking on it
+
 ## [0.74.0]
 
 - added diff-based extension reloads and optimized dependency installation
