@@ -1518,7 +1518,8 @@ const timestamp = ()
 ================
 File: src/main/agent/middlewares/extract-reasoning-middleware.ts
 ================
-import type { LanguageModelV2StreamPart, LanguageModelV2Middleware } from '@ai-sdk/provider';
+import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
+import type { LanguageModelMiddleware } from 'ai';
 ⋮----
 import logger from '@/logger';
 ⋮----
@@ -2229,6 +2230,8 @@ import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
   ContextCompactionType,
+  ContextAssistantMessage,
+  ContextToolMessage,
   ContextFile,
   ContextMessage,
   ContextUserMessage,
@@ -2244,9 +2247,8 @@ import {
 import {
   APICallError,
   type FinishReason,
-  generateObject,
   generateText,
-  type ImagePart,
+  type FilePart,
   InvalidToolInputError,
   jsonSchema,
   type ModelMessage,
@@ -2254,12 +2256,13 @@ import {
   smoothStream,
   type StepResult,
   streamText,
-  type TelemetrySettings,
+  type TelemetryOptions,
   type Tool,
-  type ToolCallOptions,
+  type ToolExecutionOptions,
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
+  Output,
 } from 'ai';
 import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
@@ -2275,7 +2278,6 @@ import {
   TASKS_TOOL_SEARCH_PARENT_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { TextPart } from '@ai-sdk/provider-utils';
 ⋮----
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
@@ -2290,8 +2292,9 @@ import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUser
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
+import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
-import type { JSONSchema7Definition } from '@ai-sdk/provider';
+import type { JSONSchema7Definition, LanguageModelV4 } from '@ai-sdk/provider';
 ⋮----
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
@@ -2311,7 +2314,7 @@ export class Agent
 ⋮----
 constructor(
 ⋮----
-private getTelemetrySettings(): TelemetrySettings
+private getTelemetrySettings(): TelemetryOptions
 ⋮----
 // PostHog specific metadata
 ⋮----
@@ -2500,7 +2503,7 @@ const getBaseModelCallParams = async () =>
 ⋮----
 const getOptimizedMessages = async () =>
 ⋮----
-const onStepFinish = async (stepResult: StepResult<typeof toolSet>) =>
+const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // Reset retry count when we get a response
 ⋮----
@@ -2559,7 +2562,7 @@ const createToolCallAndResult = async (files: ContextFile[], readOnlyFile: boole
 ⋮----
 // Process editable files
 ⋮----
-private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ModelMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]>
+private async prepareMessages(task: Task, profile: AgentProfile, contextMessages: ContextMessage[], contextFiles: ContextFile[]): Promise<ModelMessage[]>
 ⋮----
 // Add repo map if enabled
 ⋮----
@@ -2606,7 +2609,7 @@ private removeUnfinishedStreamingMessages(task: Task, messageIds: Set<string>)
 ⋮----
 private async processStep<TOOLS extends ToolSet>(
     currentResponseId: string,
-    { content, reasoningText, text, toolCalls, toolResults, finishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
+    { content, reasoningText, text, toolCalls, toolResults, finishReason, rawFinishReason, usage, providerMetadata, response }: StepResult<TOOLS>,
     task: Task,
     provider: ProviderProfile,
     model: string,
@@ -2832,7 +2835,7 @@ File: src/main/agent/optimizer.ts
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
-import { type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
+import { type TextPart, type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -4046,7 +4049,7 @@ import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
-import type { ToolCallOptions, ToolSet } from 'ai';
+import type { ToolExecutionOptions, ToolSet } from 'ai';
 ⋮----
 import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
@@ -4984,7 +4987,8 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
 ⋮----
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -4997,9 +5001,9 @@ const hasAlibabaPlanEnvVars = (settings: SettingsData): boolean =>
 ⋮----
 const getAlibabaPlanAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
-const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 
 ================
 File: src/main/models/providers/anthropic-compatible.ts
@@ -5008,12 +5012,13 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
+import { getAnthropicCacheControl } from '@/models/providers/anthropic';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 const ensureV1Suffix = (baseUrl: string): string =>
 ⋮----
@@ -5026,7 +5031,7 @@ const getAnthropicCompatibleAiderMapping = (provider: ProviderProfile, modelId: 
 // Use anthropic prefix for Anthropic-compatible providers
 ⋮----
 // === LLM Creation Functions ===
-const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
 // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
@@ -5044,17 +5049,15 @@ File: src/main/models/providers/anthropic.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultModelInfo } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 export const loadAnthropicModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5063,35 +5066,7 @@ export const hasAnthropicEnvVars = (settings: SettingsData): boolean =>
 export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createAnthropicLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
-⋮----
-type AnthropicMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-⋮----
-// === Cost and Usage Functions ===
-export const calculateAnthropicCost = (
-  model: Model,
-  sentTokens: number,
-  receivedTokens: number,
-  cacheWriteTokens: number = 0,
-  cacheReadTokens: number = 0,
-): number =>
-⋮----
-export const getAnthropicUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData =>
-⋮----
-// Extract cache tokens from provider metadata
-⋮----
-// Calculate cost internally with already deducted sentTokens
+export const createAnthropicLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Configuration Helper Functions ===
 export const getAnthropicCacheControl = (): CacheControl | undefined =>
@@ -5108,18 +5083,17 @@ export const getAnthropicCacheControl = (): CacheControl | undefined =>
 File: src/main/models/providers/azure.ts
 ================
 import { createAzure } from '@ai-sdk/azure';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
 import { AzureProvider, isAzureProvider, LlmProvider } from '@common/agent';
 import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { Task } from '@/task/task';
-import { calculateCost, getDefaultModelInfo } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 const extractResourceNameFromEndpoint = (endpoint: string): string =>
 ⋮----
@@ -5130,30 +5104,9 @@ export const hasAzureEnvVars = (settings: SettingsData): boolean =>
 export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createAzureLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createAzureLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-type AzureMetadata = {
-  openai: {
-    cachedPromptTokens?: number;
-  };
-};
-⋮----
-// === Cost and Usage Functions ===
-export const getAzureUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData =>
-⋮----
-// Extract cache read tokens from provider metadata
-⋮----
-// Calculate sentTokens after deducting cached tokens
-⋮----
-// Calculate cost internally with already deducted sentTokens
-⋮----
-export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -5180,7 +5133,7 @@ import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
 import { BedrockProvider, isBedrockProvider } from '@common/agent';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
@@ -5207,7 +5160,7 @@ export const hasBedrockEnvVars = (settings: SettingsData): boolean =>
 export const getBedrockAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createBedrockLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createBedrockLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 const getBedrockModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
@@ -5229,7 +5182,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { CerebrasProvider, isCerebrasProvider } from '@common/agent';
 import { createCerebras } from '@ai-sdk/cerebras';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
@@ -5250,7 +5203,7 @@ export const hasCerebrasEnvVars = (settings: SettingsData): boolean =>
 export const getCerebrasAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createCerebrasLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createCerebrasLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5265,7 +5218,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { ClinePassProvider, isClinePassProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -5341,7 +5294,7 @@ export const hasClinePassEnvVars = (settings: SettingsData): boolean =>
 ⋮----
 export const getClinePassAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
-export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 
 ================
 File: src/main/models/providers/deepseek.ts
@@ -5350,7 +5303,8 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -5364,9 +5318,9 @@ export const hasDeepseekEnvVars = (settings: SettingsData): boolean =>
 export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> =>
 ⋮----
@@ -5393,7 +5347,7 @@ export const getDefaultModelInfo = (provider: ProviderProfile, modelId: string, 
 // If not found, try provider.id prefix
 ⋮----
 // === Cost and Usage Functions ===
-export const calculateCost = (model: Model, sentTokens: number, receivedTokens: number, cacheReadTokens: number = 0): number =>
+export const calculateCost = (model: Model, sentTokens: number, receivedTokens: number, cacheReadTokens: number = 0, cacheWriteTokens: number = 0): number =>
 ⋮----
 export const getDefaultUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData =>
 
@@ -5402,17 +5356,18 @@ File: src/main/models/providers/gemini.ts
 ================
 import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
-import { createGoogleGenerativeAI, google, type GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
+import { createGoogle, google, type GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
-import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
+import { calculateCost } from '@/models/providers/default';
 ⋮----
 const loadGeminiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5423,16 +5378,13 @@ const hasGeminiEnvVars = (settings: SettingsData): boolean =>
 const getGeminiAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 type GoogleMetadata = {
   google: {
-    cachedInputTokens?: number;
+    cachedContentTokenCount?: number;
   };
 };
-⋮----
-// === Cost and Usage Functions ===
-const calculateGeminiCost = (model: Model, sentTokens: number, receivedTokens: number, cacheReadTokens: number = 0): number =>
 ⋮----
 const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData =>
 ⋮----
@@ -5442,7 +5394,7 @@ const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Mode
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
-const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Use model-specific overrides, falling back to provider defaults
 ⋮----
@@ -5481,17 +5433,16 @@ const isGeminiRetryable = (error: unknown): boolean =>
 ================
 File: src/main/models/providers/gpustack.ts
 ================
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { GpustackProvider, isGpustackProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 interface GpustackModelResponse {
   items: Array<{
@@ -5513,14 +5464,10 @@ const getGpustackAiderMapping = (provider: ProviderProfile, modelId: string, set
 // Use openai prefix for GPUStack providers (compatible with OpenAI format)
 ⋮----
 // === LLM Creation Functions ===
-const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // Use createOpenAICompatible to get a provider instance, then get the model
 // GPUStack uses /v1-openai prefix for OpenAI compatibility
-⋮----
-const getGpustackUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData =>
-⋮----
-// Cost is always 0 for GPUStack
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5535,7 +5482,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { GroqProvider, isGroqProvider } from '@common/agent';
 import { createGroq } from '@ai-sdk/groq';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -5557,7 +5504,7 @@ export const hasGroqEnvVars = (settings: SettingsData): boolean =>
 export const getGroqAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createGroqLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createGroqLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5572,12 +5519,13 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isKimiPlanProvider, KimiPlanProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getAnthropicCacheControl, getAnthropicUsageReport } from '@/models/providers/anthropic';
+import { getAnthropicCacheControl } from '@/models/providers/anthropic';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 const loadKimiPlanModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5592,7 +5540,7 @@ const getKimiPlanAiderMapping = (provider: ProviderProfile, modelId: string, set
 // Use anthropic prefix for Kimi since it uses Anthropic-compatible API
 ⋮----
 // === LLM Creation Functions ===
-const createKimiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createKimiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // Use createAnthropic with Kimi's base URL
 ⋮----
@@ -5611,7 +5559,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { isLitellmProvider, LitellmProvider } from '@common/agent';
 import { Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -5671,7 +5619,7 @@ export const getLitellmAiderMapping = (provider: ProviderProfile, modelId: strin
 // Ensure no trailing slash to avoid double slashes if Aider appends paths
 ⋮----
 // === LLM Creation Functions ===
-export const createLitellmLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createLitellmLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a key.
 ⋮----
@@ -5684,17 +5632,16 @@ apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a k
 ================
 File: src/main/models/providers/lm-studio.ts
 ================
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { Task } from '@/task/task';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 export const loadLmStudioModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5705,11 +5652,7 @@ export const hasLmStudioEnvVars = (settings: SettingsData): boolean =>
 export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
-⋮----
-export const getLmStudioUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData =>
-⋮----
-// no cost for LMStudio models
+export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5722,16 +5665,15 @@ File: src/main/models/providers/minimax.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { isMinimaxProvider, MinimaxProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 export const loadMinimaxModels = async (profile: ProviderProfile): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5782,37 +5724,7 @@ export const hasMinimaxEnvVars = (settings: SettingsData): boolean =>
 export const getMinimaxAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createMinimaxLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
-⋮----
-type MinimaxMetadata = {
-  anthropic: {
-    cacheCreationInputTokens?: number;
-    cacheReadInputTokens?: number;
-  };
-};
-⋮----
-// === Cost and Usage Functions ===
-export const calculateMinimaxCost = (
-  model: Model,
-  sentTokens: number,
-  receivedTokens: number,
-  cacheWriteTokens: number = 0,
-  cacheReadTokens: number = 0,
-): number =>
-⋮----
-export const getMinimaxUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData =>
-⋮----
-// Extract cache tokens from provider metadata
-⋮----
-// Calculate sentTokens after deducting cached tokens
-⋮----
-// Calculate cost internally with already deducted sentTokens
+export const createMinimaxLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Configuration Helper Functions ===
 export const getMinimaxCacheControl = (): CacheControl | undefined =>
@@ -5832,7 +5744,7 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { MistralProvider, isMistralProvider } from '@common/agent';
 import { createMistral } from '@ai-sdk/mistral';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -5854,7 +5766,7 @@ export const hasMistralEnvVars = (settings: SettingsData): boolean =>
 export const getMistralAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createMistralLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createMistralLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5865,18 +5777,17 @@ export const createMistralLlm = (profile: ProviderProfile, model: Model, setting
 ================
 File: src/main/models/providers/neuralwatt.ts
 ================
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isNeuralwattProvider, LlmProvider, NeuralwattProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultModelInfo, calculateCost } from '@/models/providers/default';
-import { Task } from '@/task/task';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 interface NeuralwattModelPricing {
   input_per_million: number;
@@ -5930,17 +5841,9 @@ const hasNeuralwattEnvVars = (settings: SettingsData): boolean =>
 ⋮----
 const getNeuralwattAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
-const createNeuralwattLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createNeuralwattLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getNeuralwattUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData =>
-⋮----
-const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -5949,18 +5852,17 @@ const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): S
 ================
 File: src/main/models/providers/ollama.ts
 ================
-import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider-v2';
 import { simulateStreamingMiddleware, wrapLanguageModel } from 'ai';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { Task } from '@/task/task';
+import { getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 export const loadOllamaModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -5971,13 +5873,9 @@ export const hasOllamaEnvVars = (settings: SettingsData): boolean =>
 export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOllamaLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createOllamaLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
-⋮----
-export const getOllamaUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData =>
-⋮----
-// Cost is always 0 for Ollama
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5992,7 +5890,8 @@ import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/t
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
-import type { LanguageModelV2, JSONValue, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { JSONValue, SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -6008,12 +5907,12 @@ const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, modelId: str
 // Use openai prefix for OpenAI-compatible providers
 ⋮----
 // === LLM Creation Functions ===
-const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // Use createOpenAICompatible to get a provider instance, then get the model
 ⋮----
 // === Configuration Helper Functions ===
-const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -6032,16 +5931,15 @@ File: src/main/models/providers/openai.ts
 ================
 import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
 ⋮----
-import type { LanguageModelUsage, ToolSet } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, ToolSet } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
-import { Task } from '@/task/task';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { calculateCost, getDefaultModelInfo } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 ⋮----
 export const loadOpenAiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -6052,30 +5950,10 @@ export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string
 // clear any custom base URL
 ⋮----
 // === LLM Creation Functions ===
-export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
-⋮----
-type OpenAiMetadata = {
-  openai: {
-    cachedPromptTokens?: number;
-  };
-};
-⋮----
-export const getOpenAiUsageReport = (
-  task: Task,
-  provider: ProviderProfile,
-  model: Model,
-  usage: LanguageModelUsage,
-  providerMetadata?: unknown,
-): UsageReportData =>
-⋮----
-// Extract cache read tokens from provider metadata or usage
-⋮----
-// Calculate sentTokens after deducting cached tokens
-⋮----
-// Calculate cost internally with already deducted sentTokens
+export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Configuration Helper Functions ===
-export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -6109,12 +5987,12 @@ import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isOpenCodeProvider, OpenCodeProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createGoogle } from '@ai-sdk/google';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import { getDefaultModelInfo, getDefaultUsageReport } from './default';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
@@ -6146,7 +6024,7 @@ export const getOpencodeAiderMapping = (provider: ProviderProfile, modelId: stri
 // Use openai prefix for OpenCode providers
 ⋮----
 // === LLM Creation Functions ===
-export const createOpencodeLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createOpencodeLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -6161,8 +6039,7 @@ import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/t
 import { isOpenRouterProvider, LlmProvider, OpenRouterProvider } from '@common/agent';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
 ⋮----
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -6207,7 +6084,7 @@ export const hasOpenRouterEnvVars = (settings: SettingsData): boolean =>
 export const getOpenRouterAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 type OpenRouterMetadata = {
   openrouter: {
@@ -6234,7 +6111,7 @@ export const getOpenRouterUsageReport = (
   providerMetadata?: unknown,
 ): UsageReportData =>
 ⋮----
-// Extract cache read tokens from provider metadata
+// Extract cache tokens from usage details, falling back to raw provider metadata
 ⋮----
 // Calculate sentTokens after deducting cached tokens
 ⋮----
@@ -6259,8 +6136,7 @@ import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
 import { v4 as uuidv4 } from 'uuid';
 ⋮----
-import type { LanguageModelUsage, ModelMessage } from 'ai';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ModelMessage } from 'ai';
 ⋮----
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -6300,7 +6176,7 @@ export const getRequestyAiderMapping = (provider: ProviderProfile, modelId: stri
 // Requesty doesn't have direct Aider support, so we use OpenAI-compatible endpoint
 ⋮----
 // === LLM Creation Functions ===
-export const createRequestyLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createRequestyLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Cost and Usage Functions ===
 export const calculateRequestyCost = (
@@ -6352,7 +6228,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import { getDefaultUsageReport } from './default';
 ⋮----
-import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -6364,7 +6240,7 @@ const hasSyntheticEnvVars = (): boolean
 ⋮----
 const getSyntheticAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
-const createSyntheticLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createSyntheticLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 const getSyntheticModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 
@@ -6377,13 +6253,14 @@ import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from
 import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
 import { createVertex } from '@ai-sdk/google-vertex';
 ⋮----
-import type { LanguageModelUsage } from 'ai';
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
+import { calculateCost } from '@/models/providers/default';
 ⋮----
 export const loadVertexAIModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
 ⋮----
@@ -6403,19 +6280,15 @@ export const getVertexAiAiderMapping = (provider: ProviderProfile, modelId: stri
 // Aider uses vertex_ai prefix instead of vertex-ai
 ⋮----
 // === LLM Creation Functions ===
-export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // using custom base URL to fix the 'global' location
 ⋮----
 type VertexGoogleMetadata = {
-  google: {
+  vertex: {
     cachedContentTokenCount?: number;
   };
 };
-⋮----
-const calculateVertexAiCost = (model: Model, sentTokens: number, receivedTokens: number, cacheReadTokens: number = 0): number =>
-⋮----
-// Use model overrides if available, otherwise use base model info
 ⋮----
 const getVertexAiUsageReport = (
   task: Task,
@@ -6431,7 +6304,7 @@ const getVertexAiUsageReport = (
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Use model-specific overrides, falling back to provider defaults
 ⋮----
@@ -6454,7 +6327,8 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import { getDefaultUsageReport } from './default';
 ⋮----
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -6475,14 +6349,14 @@ const getZaiPlanAiderMapping = (provider: ProviderProfile, modelId: string, sett
 // Use zai-plan prefix for ZAI providers
 ⋮----
 // === LLM Creation Functions ===
-const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModelV2 =>
+const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // Use createOpenAICompatible to get a provider instance, then get the model
 // ZAI uses specific base URL for chat completions
 ⋮----
 const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
-const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV2ProviderOptions | undefined =>
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Only disable thinking if explicitly set to false
 ⋮----
@@ -6536,8 +6410,8 @@ import { vertexAiProviderStrategy } from './providers/vertex-ai';
 import { zaiPlanProviderStrategy } from './providers/zai-plan';
 ⋮----
 import type { RegisteredProvider } from '@/extensions/extension-manager';
-import type { LanguageModelV2 } from '@ai-sdk/provider';
-import type { JSONValue, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
 import { getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
@@ -6679,7 +6553,7 @@ createLlm(
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-): LanguageModelV2 | Promise<LanguageModelV2>
+): LanguageModel | Promise<LanguageModel>
 ⋮----
 // Resolve Model object if string is provided
 ⋮----
@@ -6693,7 +6567,7 @@ getCacheControl(provider: ProviderProfile, modelId: string): CacheControl | unde
 ⋮----
 isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
 ⋮----
-getProviderOptions(provider: ProviderProfile, modelId: string): Record<string, Record<string, JSONValue>> | undefined
+getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined
 ⋮----
 // Look up the actual Model object from providerModels
 ⋮----
@@ -6742,13 +6616,13 @@ File: src/main/models/types.ts
 import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 ⋮----
-import type { LanguageModelV2, SharedV2ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
+import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
 import { Task } from '@/task';
 ⋮----
 export interface CacheControl {
-  providerOptions: SharedV2ProviderOptions;
+  providerOptions: SharedV4ProviderOptions;
   placement?: 'message' | 'message-part';
 }
 ⋮----
@@ -6786,7 +6660,7 @@ export interface LlmProviderStrategy {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
-  ) => LanguageModelV2 | Promise<LanguageModelV2>;
+  ) => LanguageModel | Promise<LanguageModel>;
 
   /**
    * Generates usage reports with provider-specific metadata and calculates cost internally
@@ -6818,7 +6692,7 @@ export interface LlmProviderStrategy {
   /**
    * Returns provider-specific options for model instantiation
    */
-  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV2ProviderOptions | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV4ProviderOptions | undefined;
 
   /**
    * Returns provider-specific tools that should be available to the agent
@@ -8796,6 +8670,7 @@ import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
 import {
+  ToolResultPart,
   ConnectorMessage,
   ContextFile,
   ContextMessage,
@@ -8809,8 +8684,6 @@ import {
 } from '@common/types';
 import { extractServerNameToolName, extractTextContent, fileExists, isMessageEmpty, isTextContent } from '@common/utils';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK } from '@common/tools';
-⋮----
-import type { ToolResultPart } from 'ai';
 ⋮----
 import logger from '@/logger';
 import { Task } from '@/task';
@@ -10015,6 +9888,8 @@ export const getLangfuseEnvironmentVariables = (baseDir: string, settings: Setti
 ================
 File: src/main/telemetry/open-telemetry.ts
 ================
+import { registerTelemetry } from 'ai';
+import { OpenTelemetry } from '@ai-sdk/otel';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 ⋮----
@@ -28698,19 +28573,20 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "0.0.13",
-    "@ai-sdk/amazon-bedrock": "3.0.103",
-    "@ai-sdk/anthropic": "2.0.83",
-    "@ai-sdk/azure": "2.0.112",
-    "@ai-sdk/cerebras": "1.0.46",
-    "@ai-sdk/deepseek": "1.0.44",
-    "@ai-sdk/google": "2.0.76",
-    "@ai-sdk/google-vertex": "3.0.143",
-    "@ai-sdk/groq": "2.0.42",
-    "@ai-sdk/mistral": "2.0.35",
-    "@ai-sdk/openai": "2.0.108",
-    "@ai-sdk/openai-compatible": "1.0.41",
-    "@ai-sdk/provider": "2.0.3",
+    "@ai-sdk/alibaba": "2.0.13",
+    "@ai-sdk/amazon-bedrock": "5.0.23",
+    "@ai-sdk/anthropic": "4.0.15",
+    "@ai-sdk/azure": "4.0.16",
+    "@ai-sdk/cerebras": "3.0.11",
+    "@ai-sdk/deepseek": "3.0.11",
+    "@ai-sdk/google": "4.0.17",
+    "@ai-sdk/google-vertex": "5.0.21",
+    "@ai-sdk/groq": "4.0.11",
+    "@ai-sdk/mistral": "4.0.12",
+    "@ai-sdk/openai": "4.0.15",
+    "@ai-sdk/openai-compatible": "3.0.11",
+    "@ai-sdk/otel": "1.0.28",
+    "@ai-sdk/provider": "4.0.3",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-bedrock": "^3.1059.0",
@@ -28731,16 +28607,16 @@ File: package.json
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
     "@legendapp/list": "^3.3.0",
-    "@openrouter/ai-sdk-provider": "1.5.4",
+    "@openrouter/ai-sdk-provider": "3.0.0",
     "@opentelemetry/auto-instrumentations-node": "^0.77.0",
     "@opentelemetry/sdk-node": "^0.219.0",
     "@opentelemetry/sdk-trace-base": "^2.8.0",
     "@pierre/diffs": "^1.1.22",
-    "@posthog/ai": "^7.18.1",
+    "@posthog/ai": "^8.3.0",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
-    "@requesty/ai-sdk": "^2.3.0",
+    "@requesty/ai-sdk": "3.4.0",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
@@ -28752,7 +28628,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "5.0.195",
+    "ai": "7.0.28",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^1.0.0",
@@ -28790,7 +28666,7 @@ File: package.json
     "mark.js": "^8.11.1",
     "match-sorter": "^8.0.0",
     "mermaid": "^11.14.0",
-    "ollama-ai-provider-v2": "^1.5.5",
+    "ollama-ai-provider-v2": "4.0.1",
     "openai": "^6.9.1",
     "os-name": "^6.0.0",
     "patch-package": "^8.0.0",
@@ -28893,6 +28769,8 @@ File: package.json
     "vitest": "^4.1.8"
   },
   "overrides": {
+    "@ai-sdk/provider": "4.0.3",
+    "@ai-sdk/provider-utils": "5.0.10",
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },
