@@ -7,6 +7,24 @@
  */
 
 /**
+ * Supported operating systems for extensions
+ */
+export enum OS {
+  Windows = 'windows',
+  Linux = 'linux',
+  MacOS = 'macos',
+}
+
+/**
+ * Autonomy modes for tasks/agents
+ */
+export enum AutonomyMode {
+  Manual = 'manual',
+  Guided = 'guided',
+  Autonomous = 'autonomous',
+}
+
+/**
  * Tool approval states for agent profiles
  */
 export enum ToolApprovalState {

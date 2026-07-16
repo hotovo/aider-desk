@@ -5,6 +5,7 @@
 - correcly showing full size image attached to user message when clicking on it
 - added support for tool call streaming
 - improved built-in extension creator skill to have better understanding of the capabilities
+- added missing OS and AutonomyMode enums to extension runtime to avoid undefined error
 
 ## [0.74.0]
 

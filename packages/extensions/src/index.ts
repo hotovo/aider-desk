@@ -9,4 +9,4 @@
 
 // Re-export runtime values (enums, constants)
 // Types are already declared in extensions.d.ts
-export { ToolApprovalState, InvocationMode, ContextMemoryMode } from './runtime';
+export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState } from './runtime';
