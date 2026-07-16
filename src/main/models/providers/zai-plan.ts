@@ -120,6 +120,9 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
     const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
     const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
     const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort ?? ReasoningEffort.Max;
+    const toolCallStreamingDisabled = providerOverrides?.disableToolCallStreaming ?? llmProvider.disableToolCallStreaming ?? false;
+
+    const toolStreamOption = toolCallStreamingDisabled ? {} : { tool_stream: true };
 
     // Only disable thinking if explicitly set to false
     if (thinkingEnabled === false) {
@@ -128,6 +131,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
           thinking: {
             type: 'disabled',
           },
+          ...toolStreamOption,
         },
       } as SharedV4ProviderOptions;
     }
@@ -138,7 +142,14 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
       return {
         zaiPlan: {
           reasoningEffort: mappedReasoningEffort,
+          ...toolStreamOption,
         },
+      } as SharedV4ProviderOptions;
+    }
+
+    if (Object.keys(toolStreamOption).length > 0) {
+      return {
+        zaiPlan: toolStreamOption,
       } as SharedV4ProviderOptions;
     }
   }
