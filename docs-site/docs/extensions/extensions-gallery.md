@@ -36,6 +36,7 @@ Ready-to-use extensions that add functionality to AiderDesk.
 | [agent-observability](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/agent-observability/)                   | Records agent events and sends them to a pi-agent-observability server for real-time monitoring | `onLoad`, `onUnload`, `onTaskCreated`, `onTaskInitialized`, `onTaskClosed`, `onPromptStarted`, `onAgentStarted`, `onAgentFinished`, `onAgentStepStarted`, `onAgentStepFinished`, `onResponseChunk`, `onResponseCompleted`, `onToolCalled`, `onToolFinished`, `getConfigComponent` |
 | [auggie-sdk](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/auggie-sdk/)                                     | Integrates the Auggie SDK as an LLM provider using the Augment platform | `onLoad`, `getProviders` |
 | [doom](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/doom/)                                                 | Play DOOM in a floating panel — WASM doomgeneric rendered to canvas with keyboard controls | `onLoad`, `getUIComponents` |
+| [destructive-command-guard](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/destructive-command-guard/)     | Blocks dangerous git and shell commands from being executed by agents using dcg | `onLoad`, `getCommands`, `onToolCalled` |
 
 ---
 

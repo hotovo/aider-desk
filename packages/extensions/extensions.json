@@ -364,6 +364,15 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["agents", "example"]
+    },
+    {
+      "id": "destructive-command-guard",
+      "name": "Destructive Command Guard",
+      "description": "Blocks dangerous git and shell commands from being executed by agents using dcg",
+      "folder": "destructive-command-guard",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["security", "commands"]
     }
   ]
 }
