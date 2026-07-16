@@ -13,6 +13,8 @@ import { TokenUsageTrendChart } from './TokenUsageTrendChart';
 import { CostBreakdownChart } from './CostBreakdownChart';
 import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
+import { CacheHitRateTrendChart } from './CacheHitRateTrendChart';
+import { CacheSavingsChart } from './CacheSavingsChart';
 import { GroupBy } from './utils';
 
 import { useApi } from '@/contexts/ApiContext';
@@ -240,6 +242,8 @@ export const UsageDashboard = ({ onClose }: Props) => {
                 <ModelUsageDistributionChart data={filteredData} />
                 <CostBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
                 <MessageBreakdownChart data={filteredData} groupBy={selectedGroupBy} />
+                <CacheHitRateTrendChart data={filteredData} groupBy={selectedGroupBy} />
+                <CacheSavingsChart data={filteredData} groupBy={selectedGroupBy} />
               </div>
             </div>
           )}

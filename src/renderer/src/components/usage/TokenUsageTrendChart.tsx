@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 
 import { formatDateByGroup, GroupBy } from './utils';
@@ -9,7 +9,8 @@ type ChartDataPoint = {
   date: string;
   inputTokens: number;
   outputTokens: number;
-  totalTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
 };
 
 type Props = {
@@ -20,12 +21,12 @@ type Props = {
 export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
   const { t } = useTranslation();
 
-  // Process data for trend chart (aggregate by day)
+  // Process data for stacked composition chart (aggregate by period)
   const chartData = useMemo(() => {
     const aggregatedMap = new Map<string, ChartDataPoint>();
 
     data.forEach((row) => {
-      const date = formatDateByGroup(row.timestamp, groupBy); // Get YYYY-MM-DD format
+      const date = formatDateByGroup(row.timestamp, groupBy);
 
       if (aggregatedMap.has(date)) {
         const existing = aggregatedMap.get(date)!;
@@ -33,14 +34,16 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
           date,
           inputTokens: existing.inputTokens + (row.input_tokens || 0),
           outputTokens: existing.outputTokens + (row.output_tokens || 0),
-          totalTokens: existing.totalTokens + (row.input_tokens || 0) + (row.output_tokens || 0),
+          cacheReadTokens: existing.cacheReadTokens + (row.cache_read_tokens || 0),
+          cacheWriteTokens: existing.cacheWriteTokens + (row.cache_write_tokens || 0),
         });
       } else {
         aggregatedMap.set(date, {
           date,
           inputTokens: row.input_tokens || 0,
           outputTokens: row.output_tokens || 0,
-          totalTokens: (row.input_tokens || 0) + (row.output_tokens || 0),
+          cacheReadTokens: row.cache_read_tokens || 0,
+          cacheWriteTokens: row.cache_write_tokens || 0,
         });
       }
     });
@@ -58,6 +61,21 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
     return value.toString();
   };
 
+  const seriesLabel = (name: string) => {
+    switch (name) {
+      case 'inputTokens':
+        return t('usageDashboard.charts.inputTokens');
+      case 'outputTokens':
+        return t('usageDashboard.charts.outputTokens');
+      case 'cacheReadTokens':
+        return t('usageDashboard.table.cacheRead');
+      case 'cacheWriteTokens':
+        return t('usageDashboard.table.cacheWrite');
+      default:
+        return name;
+    }
+  };
+
   if (chartData.length === 0) {
     return (
       <div className="flex-grow flex items-center justify-center text-text-muted-light">
@@ -73,7 +91,7 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
       <div className="bg-bg-primary-light border border-border-dark-light p-4">
         <h3 className="text-sm font-medium text-text-primary mb-4">{t('usageDashboard.charts.tokenUsageTrend')}</h3>
         <ResponsiveContainer width="100%" height={400}>
-          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#3d4166" />
             <XAxis dataKey="date" stroke="#8c8e95" fontSize={12} />
             <YAxis tickFormatter={formatTokens} stroke="#8c8e95" fontSize={12} />
@@ -85,30 +103,14 @@ export const TokenUsageTrendChart = ({ data, groupBy }: Props) => {
                 color: 'var(--color-text-primary)',
               }}
               wrapperClassName="text-xs"
-              formatter={(value: number, name: string) => [
-                formatTokens(value),
-                name === 'inputTokens'
-                  ? t('usageDashboard.charts.inputTokens')
-                  : name === 'outputTokens'
-                    ? t('usageDashboard.charts.outputTokens')
-                    : t('usageDashboard.table.totalTokens'),
-              ]}
+              formatter={(value: number, name: string) => [formatTokens(value), seriesLabel(name)]}
             />
-            <Legend
-              formatter={(value) => (
-                <span className="mr-2 text-xs">
-                  {value === 'inputTokens'
-                    ? t('usageDashboard.charts.inputTokens')
-                    : value === 'outputTokens'
-                      ? t('usageDashboard.charts.outputTokens')
-                      : t('usageDashboard.table.totalTokens')}
-                </span>
-              )}
-            />
-            <Line type="monotone" dataKey="inputTokens" stroke="#3b82f6" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="outputTokens" stroke="#ef4444" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="totalTokens" stroke="#10b981" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-          </LineChart>
+            <Legend formatter={(value) => <span className="mr-2 text-xs">{seriesLabel(value)}</span>} />
+            <Area type="monotone" dataKey="inputTokens" stackId="tokens" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.6} />
+            <Area type="monotone" dataKey="cacheReadTokens" stackId="tokens" stroke="#10b981" fill="#10b981" fillOpacity={0.6} />
+            <Area type="monotone" dataKey="cacheWriteTokens" stackId="tokens" stroke="#f59e0b" fill="#f59e0b" fillOpacity={0.6} />
+            <Area type="monotone" dataKey="outputTokens" stackId="tokens" stroke="#ef4444" fill="#ef4444" fillOpacity={0.6} />
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

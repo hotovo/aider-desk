@@ -1668,7 +1668,13 @@
       "tokens": "Токены",
       "cost": "Стоимость",
       "share": "Доля",
-      "moreItems": "+{{count}} ещё"
+      "moreItems": "+{{count}} ещё",
+      "cacheHitRateTrend": "Динамика частоты попаданий в кэш",
+      "cacheHitRate": "Частота попаданий в кэш",
+      "cacheSavingsTrend": "Затраты и экономия на кэше",
+      "cacheSavings": "Экономия за счёт кэша",
+      "totalPaid": "Всего оплачено: {{amount}}",
+      "totalSaved": "Всего сэкономлено: {{amount}}"
     },
     "error": {
       "fetch": "Не удалось получить данные об использовании."
@@ -1681,6 +1687,7 @@
       "output": "Вывод",
       "cacheRead": "Чтение кэша",
       "cacheWrite": "Запись в кэш",
+      "cacheHitRate": "Частота попаданий в кэш",
       "totalTokens": "Всего токенов",
       "cost": "Стоимость"
     }

@@ -70,6 +70,13 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     );
   }, [aggregatedData]);
 
+  const totalsCacheHitRate = totals.input + totals.cacheRead > 0 ? (totals.cacheRead / (totals.input + totals.cacheRead)) * 100 : 0;
+
+  const getCacheHitRate = (row: UsageDataRow) => {
+    const sent = (row.input_tokens || 0) + (row.cache_read_tokens || 0);
+    return sent > 0 ? ((row.cache_read_tokens || 0) / sent) * 100 : 0;
+  };
+
   const columns: Column<UsageDataRow>[] = [
     {
       accessor: 'timestamp',
@@ -116,6 +123,13 @@ export const UsageTable = ({ data, groupBy }: Props) => {
       sort: (a, b) => (a.cache_write_tokens || 0) - (b.cache_write_tokens || 0),
     },
     {
+      accessor: 'cache_read_tokens',
+      header: t('usageDashboard.table.cacheHitRate'),
+      cell: (_, row) => `${getCacheHitRate(row).toFixed(1)}%`,
+      align: 'right',
+      sort: (a, b) => getCacheHitRate(a) - getCacheHitRate(b),
+    },
+    {
       accessor: 'input_tokens',
       header: t('usageDashboard.table.totalTokens'),
       cell: (_, row) => (row.input_tokens || 0) + (row.output_tokens || 0),
@@ -151,6 +165,10 @@ export const UsageTable = ({ data, groupBy }: Props) => {
     },
     {
       cell: totals.cacheWrite,
+      className: 'text-right',
+    },
+    {
+      cell: `${totalsCacheHitRate.toFixed(1)}%`,
       className: 'text-right',
     },
     {

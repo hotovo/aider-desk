@@ -1665,7 +1665,13 @@
       "tokens": "토큰",
       "cost": "비용",
       "share": "비중",
-      "moreItems": "+{{count}}개 더보기"
+      "moreItems": "+{{count}}개 더보기",
+      "cacheHitRateTrend": "캐시 적중률 추이",
+      "cacheHitRate": "캐시 적중률",
+      "cacheSavingsTrend": "캐시 비용 및 절감액",
+      "cacheSavings": "캐시 절감액",
+      "totalPaid": "총 지불액: {{amount}}",
+      "totalSaved": "총 절감액: {{amount}}"
     },
     "error": {
       "fetch": "사용량 데이터를 가져오지 못했습니다."
@@ -1678,6 +1684,7 @@
       "output": "출력",
       "cacheRead": "캐시 읽기",
       "cacheWrite": "캐시 쓰기",
+      "cacheHitRate": "캐시 적중률",
       "totalTokens": "총 토큰",
       "cost": "비용"
     }

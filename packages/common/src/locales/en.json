@@ -1678,7 +1678,13 @@
       "tokens": "Tokens",
       "cost": "Cost",
       "share": "Share",
-      "moreItems": "+{{count}} more"
+      "moreItems": "+{{count}} more",
+      "cacheHitRateTrend": "Cache Hit Rate Trend",
+      "cacheHitRate": "Cache Hit Rate",
+      "cacheSavingsTrend": "Cache Cost & Savings",
+      "cacheSavings": "Cache Savings",
+      "totalPaid": "Total paid: {{amount}}",
+      "totalSaved": "Total saved: {{amount}}"
     },
     "error": {
       "fetch": "Failed to fetch usage data."
@@ -1691,6 +1697,7 @@
       "output": "Output",
       "cacheRead": "Cache Read",
       "cacheWrite": "Cache Write",
+      "cacheHitRate": "Cache Hit %",
       "totalTokens": "Total Tokens",
       "cost": "Cost"
     }

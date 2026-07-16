@@ -6,6 +6,7 @@
 - added support for tool call streaming
 - improved built-in extension creator skill to have better understanding of the capabilities
 - added missing OS and AutonomyMode enums to extension runtime to avoid undefined error
+- added cache hit rate and savings charts to usage dashboard
 
 ## [0.74.0]
 

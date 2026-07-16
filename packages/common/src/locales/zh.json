@@ -1686,7 +1686,13 @@
       "tokens": "令牌",
       "cost": "成本",
       "share": "份额",
-      "moreItems": "+{{count}} 更多"
+      "moreItems": "+{{count}} 更多",
+      "cacheHitRateTrend": "缓存命中率趋势",
+      "cacheHitRate": "缓存命中率",
+      "cacheSavingsTrend": "缓存成本与节省",
+      "cacheSavings": "缓存节省",
+      "totalPaid": "已支付: {{amount}}",
+      "totalSaved": "总节省: {{amount}}"
     },
     "error": {
       "fetch": "获取使用数据失败。"
@@ -1699,6 +1705,7 @@
       "output": "输出",
       "cacheRead": "缓存读取",
       "cacheWrite": "缓存写入",
+      "cacheHitRate": "缓存命中率",
       "totalTokens": "总令牌数",
       "cost": "成本"
     }
