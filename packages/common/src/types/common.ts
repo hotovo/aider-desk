@@ -157,6 +157,17 @@ export interface ResponseChunkData {
   promptContext?: PromptContext;
 }
 
+export interface ToolInputChunkData {
+  baseDir: string;
+  taskId: string;
+  toolCallId: string;
+  serverName?: string;
+  toolName?: string;
+  partialArgs?: unknown;
+  isComplete: boolean;
+  promptContext?: PromptContext;
+}
+
 export interface ResponseCompletedData {
   type: 'response-completed';
   messageId: string;

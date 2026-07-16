@@ -34,6 +34,7 @@ import {
   TerminalExitData,
   TokensInfoData,
   ToolData,
+  ToolInputChunkData,
   UpdatedFilesUpdatedData,
   SkillsUpdatedData,
   UserMessageData,
@@ -407,6 +408,19 @@ const api: ApplicationAPI = {
     ipcRenderer.on('tool', listener);
     return () => {
       ipcRenderer.removeListener('tool', listener);
+    };
+  },
+
+  addToolInputChunkListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: ToolInputChunkData) => {
+      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+        return;
+      }
+      callback(data);
+    };
+    ipcRenderer.on('tool-input-chunk', listener);
+    return () => {
+      ipcRenderer.removeListener('tool-input-chunk', listener);
     };
   },
 

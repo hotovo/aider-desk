@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - correcly showing full size image attached to user message when clicking on it
+- added support for tool call streaming
 
 ## [0.74.0]
 

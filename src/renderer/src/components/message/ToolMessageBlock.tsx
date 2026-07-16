@@ -19,7 +19,7 @@ import {
 import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
-import { parseToolContent } from './utils';
+import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 
 import { CodeInline } from '@/components/common/CodeInline';
@@ -33,17 +33,10 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
-const formatName = (name: string): string => {
-  return name
-    .replace(/[-_]/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
 export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar = false }: Props) => {
   const { t } = useTranslation();
   const isExecuting = message.content === '';
+  const isStreaming = message.isStreaming === true;
   const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
 
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
@@ -82,27 +75,30 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.fileRead.title')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primary-light">{(message.args.filePath as string).split(/[/\\\\]/).pop()}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{((message.args.filePath as string) || '').split(/[/\\\\]/).pop()}</CodeInline>
                 </span>
               </div>
             );
           case POWER_TOOL_GLOB:
-            return t('toolMessage.power.glob', { pattern: message.args.pattern as string });
+            return t('toolMessage.power.glob', { pattern: (message.args.pattern as string) || '' });
           case POWER_TOOL_GREP:
-            return t('toolMessage.power.grep', { filePattern: message.args.filePattern as string, searchTerm: message.args.searchTerm as string });
+            return t('toolMessage.power.grep', {
+              filePattern: (message.args.filePattern as string) || '',
+              searchTerm: (message.args.searchTerm as string) || '',
+            });
           case POWER_TOOL_BASH:
             return (
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.bash')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primary-light">{message.args.command as string}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{(message.args.command as string) || ''}</CodeInline>
                 </span>
               </div>
             );
           case POWER_TOOL_SEMANTIC_SEARCH:
-            return t('toolMessage.power.semanticSearch', { query: message.args.searchQuery as string, path: (message.args.path as string) || '' });
+            return t('toolMessage.power.semanticSearch', { query: (message.args.searchQuery as string) || '', path: (message.args.path as string) || '' });
           case POWER_TOOL_FETCH:
-            return t('toolMessage.power.fetch', { url: message.args.url as string });
+            return t('toolMessage.power.fetch', { url: (message.args.url as string) || '' });
           default:
             return defaultLabel();
         }
@@ -113,7 +109,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
 
   const renderToolSpecificContent = () => {
     if (message.serverName === AIDER_TOOL_GROUP_NAME && message.toolName === AIDER_TOOL_RUN_PROMPT) {
-      const promptText = message.args.prompt as string;
+      const promptText = (message.args.prompt as string) || '';
 
       return (
         <div className="text-xs text-text-tertiary pt-2 px-1">
@@ -181,13 +177,24 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
     <div className="text-2xs whitespace-pre-wrap text-text-tertiary bg-bg-secondary relative p-3">
       {Object.keys(message.args).length > 0 && (
         <div className="mb-3">
-          <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
-          <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
+          <div className="font-semibold mb-1 text-text-secondary">
+            {t('toolMessage.arguments')}
+            {isStreaming && <span className="ml-2 text-text-muted-light italic font-normal text-2xs">{t('toolMessage.preparing')}</span>}
+          </div>
+          <pre
+            className={`whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs${isStreaming ? ' animate-pulse' : ''}`}
+          >
             {JSON.stringify(message.args, null, 2)}
           </pre>
         </div>
       )}
-      {isExecuting ? <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div> : getResultContent()}
+      {isStreaming && Object.keys(message.args).length === 0 ? (
+        <div className="text-xs italic text-text-muted-light">{t('toolMessage.preparing')}</div>
+      ) : isExecuting ? (
+        <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div>
+      ) : (
+        getResultContent()
+      )}
     </div>
   );
 

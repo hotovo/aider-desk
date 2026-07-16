@@ -21,7 +21,7 @@ type Props = {
 export const FetchToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const url = message.args.url as string;
+  const url = (message.args.url as string) || '';
   const format = (message.args.format as string) || 'markdown';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error:');

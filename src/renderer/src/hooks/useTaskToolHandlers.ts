@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from 'react';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 
-import type { TodoItem, ToolData, ToolMessage } from '@common/types';
+import type { TodoItem, ToolData, ToolInputChunkData, ToolMessage } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { setMessages, setTodoItems, touchTaskActivity } from '@/stores/taskStore';
@@ -53,6 +53,41 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
     [taskId],
   );
 
+  const handleToolInputChunk = useCallback(
+    ({ toolCallId, serverName, toolName, partialArgs, isComplete, promptContext }: ToolInputChunkData) => {
+      touchTaskActivity(taskId);
+      setMessages(taskId, (prevMessages) => {
+        const existingIndex = prevMessages.findIndex((m) => m.id === toolCallId);
+        if (existingIndex !== -1) {
+          const updated = [...prevMessages];
+          const existing = updated[existingIndex] as ToolMessage;
+          updated[existingIndex] = {
+            ...existing,
+            args: (partialArgs as Record<string, unknown>) || existing.args,
+            isStreaming: !isComplete,
+            promptContext: promptContext ?? existing.promptContext,
+          } as ToolMessage;
+          return updated;
+        }
+        const newToolMessage: ToolMessage = {
+          id: toolCallId,
+          type: 'tool',
+          serverName: serverName || '',
+          toolName: toolName || '',
+          args: (partialArgs as Record<string, unknown>) || {},
+          content: '',
+          isStreaming: !isComplete,
+          promptContext,
+          timestamp: Date.now(),
+        };
+        const loadingMessages = prevMessages.filter((m) => m.type === 'loading');
+        const nonLoadingMessages = prevMessages.filter((m) => m.type !== 'loading' && m.id !== toolCallId);
+        return [...nonLoadingMessages, newToolMessage, ...loadingMessages];
+      });
+    },
+    [taskId],
+  );
+
   const handleTool = useCallback(
     ({ id, serverName, toolName, args, response, usageReport, promptContext, finished, timestamp }: ToolData) => {
       touchTaskActivity(taskId);
@@ -92,6 +127,7 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
             usageReport,
             promptContext,
             finished,
+            isStreaming: false,
           } as ToolMessage;
           return updatedMessages;
         } else {
@@ -109,4 +145,11 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
       removeListener();
     };
   }, [api, baseDir, taskId, handleTool]);
+
+  useEffect(() => {
+    const removeToolInputListener = api.addToolInputChunkListener(baseDir, taskId, handleToolInputChunk);
+    return () => {
+      removeToolInputListener();
+    };
+  }, [api, baseDir, taskId, handleToolInputChunk]);
 };

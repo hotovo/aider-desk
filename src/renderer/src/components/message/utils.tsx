@@ -23,6 +23,14 @@ import { CodeBlock } from '@/components/common/CodeBlock';
 import { MermaidDiagram } from '@/components/common/MermaidDiagram';
 import { CodeInline } from '@/components/common/CodeInline';
 
+export const formatName = (name: string): string => {
+  return name
+    .replace(/[-_]/g, ' ')
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 const ALL_FENCES = [
   ['````', '````'],
   ['```', '```'],
@@ -593,6 +601,9 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
       return false;
     }
     if (prevToolMessage.finished !== nextToolMessage.finished) {
+      return false;
+    }
+    if (prevToolMessage.isStreaming !== nextToolMessage.isStreaming) {
       return false;
     }
   }

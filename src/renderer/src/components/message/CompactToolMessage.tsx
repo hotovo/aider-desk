@@ -21,7 +21,7 @@ import {
 import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
-import { parseToolContent } from './utils';
+import { formatName, parseToolContent } from './utils';
 
 import { CodeInline } from '@/components/common/CodeInline';
 
@@ -29,14 +29,6 @@ type Props = {
   message: ToolMessage;
   isExpanded: boolean;
   onToggle: () => void;
-};
-
-const formatName = (name: string): string => {
-  return name
-    .replace(/[-_]/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
 };
 
 const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) => {
@@ -76,27 +68,33 @@ const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) =
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.fileRead.title')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primary-light">{(toolMessage.args.filePath as string).split(/[/\\\\]/).pop()}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{((toolMessage.args.filePath as string) || '').split(/[/\\\\]/).pop()}</CodeInline>
                 </span>
               </div>
             );
           case POWER_TOOL_GLOB:
-            return t('toolMessage.power.glob', { pattern: toolMessage.args.pattern as string });
+            return t('toolMessage.power.glob', { pattern: (toolMessage.args.pattern as string) || '' });
           case POWER_TOOL_GREP:
-            return t('toolMessage.power.grep', { filePattern: toolMessage.args.filePattern as string, searchTerm: toolMessage.args.searchTerm as string });
+            return t('toolMessage.power.grep', {
+              filePattern: (toolMessage.args.filePattern as string) || '',
+              searchTerm: (toolMessage.args.searchTerm as string) || '',
+            });
           case POWER_TOOL_BASH:
             return (
               <div className="flex flex-wrap gap-1">
                 <span>{t('toolMessage.power.bash')}</span>
                 <span>
-                  <CodeInline className="bg-bg-primary-light">{toolMessage.args.command as string}</CodeInline>
+                  <CodeInline className="bg-bg-primary-light">{(toolMessage.args.command as string) || ''}</CodeInline>
                 </span>
               </div>
             );
           case POWER_TOOL_SEMANTIC_SEARCH:
-            return t('toolMessage.power.semanticSearch', { query: toolMessage.args.searchQuery as string, path: (toolMessage.args.path as string) || '' });
+            return t('toolMessage.power.semanticSearch', {
+              query: (toolMessage.args.searchQuery as string) || (toolMessage.args.query as string) || '',
+              path: (toolMessage.args.path as string) || '',
+            });
           case POWER_TOOL_FETCH:
-            return t('toolMessage.power.fetch', { url: toolMessage.args.url as string });
+            return t('toolMessage.power.fetch', { url: (toolMessage.args.url as string) || '' });
           default:
             return defaultLabel();
         }

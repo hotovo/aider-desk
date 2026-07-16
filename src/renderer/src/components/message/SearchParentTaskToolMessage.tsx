@@ -20,7 +20,7 @@ type Props = {
 export const SearchParentTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const query = message.args.query as string;
+  const query = (message.args.query as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error');
   const isDenied = content && typeof content === 'string' && content.startsWith('Parent task search denied');

@@ -100,9 +100,9 @@ const parseMarkdownResults = (md: string): Array<Match> | null => {
 const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const filePattern = message.args.filePattern as string;
-  const searchTerm = message.args.searchTerm as string;
-  const contextLines = message.args.contextLines as number;
+  const filePattern = (message.args.filePattern as string) || '';
+  const searchTerm = (message.args.searchTerm as string) || '';
+  const contextLines = (message.args.contextLines as number) ?? 0;
   const rawContent = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
   const isMarkdown = rawContent && typeof rawContent === 'string' && rawContent.startsWith('## Grep Results:');
   const isError =

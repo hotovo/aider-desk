@@ -36,7 +36,7 @@ const hasDeniedProperty = (obj: unknown): obj is { denied: string } => {
 export const BashToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const command = message.args.command as string;
+  const command = (message.args.command as string) || '';
   const timeout = message.args.timeout as number | undefined;
   const content = message.content && JSON.parse(message.content);
   const isStandardOutput = isStandardBashOutput(content);

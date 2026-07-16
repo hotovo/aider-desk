@@ -57,6 +57,7 @@ const SSE_ALLOWED_EVENT_TYPES = new Set([
   'response-chunk',
   'response-completed',
   'tool',
+  'tool-input-chunk',
   'user-message',
   'log',
   'ask-question',

@@ -124,7 +124,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
     // Only disable thinking if explicitly set to false
     if (thinkingEnabled === false) {
       return {
-        'zai-plan': {
+        zaiPlan: {
           thinking: {
             type: 'disabled',
           },
@@ -136,7 +136,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
 
     if (mappedReasoningEffort) {
       return {
-        'zai-plan': {
+        zaiPlan: {
           reasoningEffort: mappedReasoningEffort,
         },
       } as SharedV4ProviderOptions;

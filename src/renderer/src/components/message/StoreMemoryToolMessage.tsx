@@ -18,7 +18,7 @@ type Props = {
 export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const type = message.args.type as string;
+  const type = (message.args.type as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to store memory');
   const isDenied = content && typeof content === 'string' && content.includes('denied');
@@ -88,7 +88,7 @@ export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onF
               </div>
               <div className="mt-1 p-2 bg-bg-secondary rounded border border-border-dark-light">
                 <pre className="whitespace-pre-wrap text-2xs text-text-primary max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
-                  {message.args.content as string}
+                  {(message.args.content as string) || ''}
                 </pre>
               </div>
             </div>

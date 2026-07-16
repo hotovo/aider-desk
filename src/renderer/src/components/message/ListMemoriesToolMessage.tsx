@@ -19,7 +19,7 @@ type Props = {
 export const ListMemoriesToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const type = message.args.type as string;
+  const type = (message.args.type as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to list memories');
   const isDenied = content && typeof content === 'string' && content.includes('denied');

@@ -19,19 +19,11 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
-const formatName = (name: string): string => {
-  return name
-    .replace(/[-_]/g, ' ')
-    .split(' ')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
 export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
   const expandableRef = useRef<ExpandableMessageBlockRef>(null);
 
-  const contentToWrite = message.args.content as string;
+  const contentToWrite = (message.args.content as string) || '';
   const filePath = (message.args.filePath as string) || '';
   const language = getLanguageFromPath(filePath);
   const content = message.content && JSON.parse(message.content);
@@ -53,10 +45,8 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFor
         return t('toolMessage.power.fileWrite.overwrite');
       case FileWriteMode.Append:
         return t('toolMessage.power.fileWrite.append');
-      case FileWriteMode.CreateOnly:
-        return t('toolMessage.power.fileWrite.createOnly');
       default:
-        return t('toolMessage.toolLabel', { server: formatName(message.serverName), tool: formatName(message.toolName) });
+        return t('toolMessage.power.fileWrite.createOnly');
     }
   };
 

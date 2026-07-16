@@ -53,6 +53,7 @@ import {
   TodoItem,
   TokensInfoData,
   ToolData,
+  ToolInputChunkData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
@@ -238,6 +239,7 @@ export interface ApplicationAPI {
   addCommandOutputListener: (baseDir: string, taskId: string, callback: (data: CommandOutputData) => void) => () => void;
   addTokensInfoListener: (baseDir: string, taskId: string, callback: (data: TokensInfoData) => void) => () => void;
   addToolListener: (baseDir: string, taskId: string, callback: (data: ToolData) => void) => () => void;
+  addToolInputChunkListener: (baseDir: string, taskId: string, callback: (data: ToolInputChunkData) => void) => () => void;
   addUserMessageListener: (baseDir: string, taskId: string, callback: (data: UserMessageData) => void) => () => void;
   addInputHistoryUpdatedListener: (baseDir: string, callback: (data: InputHistoryData) => void) => () => void;
   addClearTaskListener: (baseDir: string, taskId: string, callback: (data: ClearTaskData) => void) => () => void;

@@ -15,6 +15,7 @@ import {
   TerminalData,
   TerminalExitData,
   ToolData,
+  ToolInputChunkData,
   TokensInfoData,
   UserMessageData,
   MessageRemovedData,
@@ -219,6 +220,11 @@ export class EventManager {
   sendTool(data: ToolData): void {
     this.sendToWindows('tool', data);
     this.broadcastToEventConnectors('tool', data);
+  }
+
+  sendToolInputChunk(data: ToolInputChunkData): void {
+    this.sendToWindows('tool-input-chunk', data);
+    this.broadcastToEventConnectors('tool-input-chunk', data);
   }
 
   // User message events

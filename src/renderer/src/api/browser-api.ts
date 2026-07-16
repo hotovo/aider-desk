@@ -48,6 +48,7 @@ import {
   TodoItem,
   TokensInfoData,
   ToolData,
+  ToolInputChunkData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
@@ -98,6 +99,7 @@ type EventDataMap = {
   'command-output': CommandOutputData;
   'update-tokens-info': TokensInfoData;
   tool: ToolData;
+  'tool-input-chunk': ToolInputChunkData;
   'user-message': UserMessageData;
   'input-history-updated': InputHistoryData;
   'clear-task': ClearTaskData;
@@ -177,6 +179,7 @@ export class BrowserApi implements ApplicationAPI {
       'command-output': new Map(),
       'update-tokens-info': new Map(),
       tool: new Map(),
+      'tool-input-chunk': new Map(),
       'user-message': new Map(),
       'input-history-updated': new Map(),
       'clear-task': new Map(),
@@ -854,6 +857,9 @@ export class BrowserApi implements ApplicationAPI {
   }
   addToolListener(baseDir: string, taskId: string, callback: (data: ToolData) => void): () => void {
     return this.addListener('tool', callback, baseDir, taskId);
+  }
+  addToolInputChunkListener(baseDir: string, taskId: string, callback: (data: ToolInputChunkData) => void): () => void {
+    return this.addListener('tool-input-chunk', callback, baseDir, taskId);
   }
   addUserMessageListener(baseDir: string, taskId: string, callback: (data: UserMessageData) => void): () => void {
     return this.addListener('user-message', callback, baseDir, taskId);

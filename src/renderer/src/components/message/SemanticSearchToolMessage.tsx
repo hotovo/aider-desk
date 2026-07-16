@@ -21,7 +21,7 @@ type Props = {
 export const SemanticSearchToolMessage = ({ message, taskDir, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const searchQuery = (message.args.searchQuery as string) || (message.args.query as string);
+  const searchQuery = (message.args.searchQuery as string) || (message.args.query as string) || '';
   const path = (message.args.path as string) || '.';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error:');

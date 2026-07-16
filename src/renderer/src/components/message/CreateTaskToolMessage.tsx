@@ -20,11 +20,11 @@ type Props = {
 export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const prompt = message.args.prompt as string;
-  const agentProfileId = message.args.agentProfileId as string;
+  const prompt = (message.args.prompt as string) || '';
+  const agentProfileId = (message.args.agentProfileId as string) || '';
   const name = message.args.name as string | undefined;
   const parentTaskId = message.args.parentTaskId as string | null | undefined;
-  const modelId = message.args.modelId as string;
+  const modelId = (message.args.modelId as string) || '';
   const mode = message.args.mode as string | undefined;
   const autonomyMode = message.args.autonomyMode as AutonomyMode | undefined;
   const worktree = message.args.worktree as boolean | undefined;

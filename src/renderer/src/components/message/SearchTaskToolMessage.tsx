@@ -20,8 +20,8 @@ type Props = {
 export const SearchTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const taskId = message.args.taskId as string;
-  const query = message.args.query as string;
+  const taskId = (message.args.taskId as string) || '';
+  const query = (message.args.query as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error');
   const isDenied = content && typeof content === 'string' && content.startsWith('Task search denied');

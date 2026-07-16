@@ -40,6 +40,7 @@ import {
   TokensInfoData,
   ToolCallPart,
   ToolData,
+  ToolInputChunkData,
   ToolResultPart,
   UpdatedFile,
   UpdatedFilesGroupMode,
@@ -50,6 +51,7 @@ import {
   WorkingMode,
   WorktreeUncommittedFiles,
 } from '@common/types';
+import { parsePartialJson } from 'ai';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import {
   COMPACT_CONVERSATION_AGENT_PROFILE,
@@ -110,6 +112,7 @@ import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/c
 
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
+export const TOOL_INPUT_FLUSH_INTERVAL_MS = 50;
 
 export const EMPTY_TASK_DATA: TaskData = {
   id: '',
@@ -151,6 +154,16 @@ export class Task {
   private agentRunResolves: (() => void)[] = [];
   private git: SimpleGit | null = null;
   private responseChunkMap: Map<string, { contentBuffer: string; reasoningBuffer: string; interval: NodeJS.Timeout }> = new Map();
+  private toolInputChunkMap: Map<
+    string,
+    {
+      accumulatedDelta: string;
+      serverName: string;
+      toolName: string;
+      promptContext?: PromptContext;
+      interval: NodeJS.Timeout | null;
+    }
+  > = new Map();
   private isDeterminingTaskState = false;
   private resolutionAbortControllers: Record<string, AbortController> = {};
   private subagentAbortControllers: Record<string, AbortController> = {};
@@ -649,6 +662,13 @@ export class Task {
       clearInterval(entry.interval);
     }
     this.responseChunkMap.clear();
+
+    for (const entry of this.toolInputChunkMap.values()) {
+      if (entry.interval) {
+        clearInterval(entry.interval);
+      }
+    }
+    this.toolInputChunkMap.clear();
   }
 
   public async close(clearContext = false, cleanupEmptyTask = true) {
@@ -1451,6 +1471,81 @@ export class Task {
 
   sendResponseCompleted(data: ResponseCompletedData) {
     this.eventManager.sendResponseCompleted(data);
+  }
+
+  public startToolInput(toolCallId: string, serverName: string, toolName: string, promptContext?: PromptContext): void {
+    this.toolInputChunkMap.set(toolCallId, {
+      accumulatedDelta: '',
+      serverName,
+      toolName,
+      promptContext,
+      interval: null,
+    });
+    this.sendToolInputChunk(toolCallId, {}, false);
+  }
+
+  public processToolInputDelta(toolCallId: string, delta: string): void {
+    const entry = this.toolInputChunkMap.get(toolCallId);
+    if (!entry) {
+      return;
+    }
+    entry.accumulatedDelta += delta;
+    if (!entry.interval) {
+      entry.interval = setInterval(async () => {
+        await this.flushToolInput(toolCallId, false);
+      }, TOOL_INPUT_FLUSH_INTERVAL_MS);
+    }
+  }
+
+  public finishToolInput(toolCallId: string): void {
+    const entry = this.toolInputChunkMap.get(toolCallId);
+    if (!entry) {
+      return;
+    }
+    if (entry.interval) {
+      clearInterval(entry.interval);
+      entry.interval = null;
+    }
+    void this.flushToolInput(toolCallId, true);
+  }
+
+  private async flushToolInput(toolCallId: string, isComplete: boolean): Promise<void> {
+    const entry = this.toolInputChunkMap.get(toolCallId);
+    if (!entry) {
+      return;
+    }
+
+    let partialArgs: unknown = undefined;
+    try {
+      const result = await parsePartialJson(entry.accumulatedDelta);
+      if (result.state !== 'failed-parse' && result.state !== 'undefined-input') {
+        partialArgs = result.value;
+      }
+    } catch {
+      // Graceful fallback — skip this flush
+    }
+
+    if (partialArgs !== undefined || isComplete) {
+      this.sendToolInputChunk(toolCallId, partialArgs, isComplete);
+    }
+  }
+
+  private sendToolInputChunk(toolCallId: string, partialArgs: unknown, isComplete: boolean): void {
+    const entry = this.toolInputChunkMap.get(toolCallId);
+    if (!entry) {
+      return;
+    }
+    const data: ToolInputChunkData = {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      toolCallId,
+      serverName: entry.serverName,
+      toolName: entry.toolName,
+      partialArgs,
+      isComplete,
+      promptContext: entry.promptContext,
+    };
+    this.eventManager.sendToolInputChunk(data);
   }
 
   private notifyIfEnabled(title: string, text: string) {
@@ -2812,6 +2907,14 @@ export class Task {
     if (!id) {
       logger.debug('No tool id provided tool message, skipping...');
       return;
+    }
+
+    const toolInputEntry = this.toolInputChunkMap.get(id);
+    if (toolInputEntry) {
+      if (toolInputEntry.interval) {
+        clearInterval(toolInputEntry.interval);
+      }
+      this.toolInputChunkMap.delete(id);
     }
 
     logger.debug('Sending tool message:', {

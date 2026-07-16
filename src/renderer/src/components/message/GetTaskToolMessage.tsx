@@ -21,7 +21,7 @@ type Props = {
 export const GetTaskToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const taskId = message.args.taskId as string;
+  const taskId = (message.args.taskId as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError =
     content &&

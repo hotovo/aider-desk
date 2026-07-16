@@ -23,8 +23,8 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
   const { t } = useTranslation();
   const api = useApi();
 
-  const query = message.args.query as string;
-  const limit = (message.args.limit as number) ?? 5;
+  const query = (message.args.query as string) || '';
+  const limit = (message.args.limit as number) ?? 3;
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to retrieve memories');
   const isDenied = content && typeof content === 'string' && content.includes('denied');

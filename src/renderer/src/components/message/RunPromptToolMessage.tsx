@@ -21,8 +21,8 @@ type Props = {
 export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const taskId = message.args.taskId as string;
-  const prompt = message.args.prompt as string;
+  const taskId = (message.args.taskId as string) || '';
+  const prompt = (message.args.prompt as string) || '';
   const mode = message.args.mode as string | undefined;
   const executeAndWait = message.args.executeAndWait as boolean | undefined;
   const content = message.content && JSON.parse(message.content);

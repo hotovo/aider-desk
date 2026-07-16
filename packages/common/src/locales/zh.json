@@ -1243,6 +1243,7 @@
     "toolLabel": "工具: {{server}}/{{tool}}",
     "arguments": "参数:",
     "executing": "执行工具...",
+    "preparing": "准备工具...",
     "result": "结果:",
     "error": "执行工具时出错:",
     "denied": "拒绝访问",

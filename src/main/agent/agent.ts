@@ -1331,8 +1331,14 @@ export class Agent {
                   promptContext,
                 });
               } else if (chunk.type === 'tool-input-start') {
+                const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
+                task.startToolInput(chunk.id, serverName, toolName, promptContext);
                 task.addLogMessage('loading', 'Preparing tool...', false, promptContext);
                 streamingMessageIds.add(chunk.id);
+              } else if (chunk.type === 'tool-input-delta') {
+                task.processToolInputDelta(chunk.id, chunk.delta);
+              } else if (chunk.type === 'tool-input-end') {
+                task.finishToolInput(chunk.id);
               } else if (chunk.type === 'tool-call') {
                 task.addLogMessage('loading', 'Executing tool...', false, promptContext);
                 streamingMessageIds.add(chunk.toolCallId);

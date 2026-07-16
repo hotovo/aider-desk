@@ -23,7 +23,7 @@ type Props = {
 const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const pattern = message.args.pattern as string;
+  const pattern = (message.args.pattern as string) || '';
   const content = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
   const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Glob search with pattern');

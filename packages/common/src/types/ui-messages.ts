@@ -56,6 +56,7 @@ export interface ToolMessage extends Message {
   content: string; // Empty while executing, contains result when complete
   usageReport?: UsageReportData;
   finished?: boolean;
+  isStreaming?: boolean;
 }
 
 export const isUserMessage = (message: Message): message is UserMessage => {

@@ -22,13 +22,13 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemo
   const isExecuting = message.content === '';
   const content = message.content && JSON.parse(message.content);
   const error = content && typeof content === 'string' && content.startsWith('Error') ? content : null;
-  const promptText = message.args.prompt as string;
+  const promptText = (message.args.prompt as string) || '';
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
 
   const getToolName = (): string => {
     if (error) {
       return t('toolMessage.subagents.error', {
-        name: message.args.name,
+        name: message.args.subagentId,
         error,
       });
     }

@@ -1285,6 +1285,7 @@
     "toolLabel": "{{server}}: {{tool}}",
     "arguments": "Arguments:",
     "executing": "Executing tool...",
+    "preparing": "Preparing tool...",
     "result": "Result:",
     "error": "Error while executing tool:",
     "denied": "Denied by user.",

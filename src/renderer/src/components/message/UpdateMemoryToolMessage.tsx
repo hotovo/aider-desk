@@ -18,10 +18,10 @@ type Props = {
 export const UpdateMemoryToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
-  const id = message.args.id as string;
+  const id = (message.args.id as string) || '';
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to update memory');
-  const isDenied = (content && typeof content === 'string' && content.includes('cancelled')) || content.includes('denied');
+  const isDenied = typeof content === 'string' && (content.includes('cancelled') || content.includes('denied'));
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">
