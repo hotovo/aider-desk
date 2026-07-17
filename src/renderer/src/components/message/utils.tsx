@@ -419,18 +419,87 @@ interface ParsedToolMessage {
   isError: boolean;
 }
 
+export interface ToolResultImage {
+  data: string;
+  mediaType: string;
+}
+
 export interface ToolContentResult {
   extractedText: string | null;
   json: object | null;
   isError: boolean | null;
-  rawContent: string; // Always include the original raw content
+  rawContent: string;
+  images: ToolResultImage[];
 }
+
+const extractImagesFromContentArray = (content: ParsedToolContentItem[]): ToolResultImage[] => {
+  const images: ToolResultImage[] = [];
+
+  for (const item of content) {
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+
+    if (item.type === 'image' || item.type === 'image-data') {
+      const data = item.data;
+      const mediaType = item.mimeType ?? item.mediaType;
+      if (typeof data === 'string' && typeof mediaType === 'string') {
+        images.push({ data, mediaType });
+      }
+    } else if (item.type === 'file') {
+      const dataField = item.data;
+      const mediaType = item.mediaType;
+      if (
+        typeof mediaType === 'string' &&
+        typeof dataField === 'object' &&
+        dataField !== null &&
+        dataField.type === 'data' &&
+        typeof dataField.data === 'string'
+      ) {
+        images.push({ data: dataField.data, mediaType });
+      } else if (typeof mediaType === 'string' && typeof dataField === 'string') {
+        images.push({ data: dataField, mediaType });
+      }
+    } else if (item.type === 'media') {
+      if (typeof item.data === 'string' && typeof item.mediaType === 'string') {
+        images.push({ data: item.data, mediaType: item.mediaType });
+      }
+    }
+  }
+
+  return images;
+};
+
+const processContentArray = (content: ParsedToolContentItem[], result: ToolContentResult) => {
+  // Extract images from the content array
+  result.images = extractImagesFromContentArray(content);
+
+  // Extract text from the 'content' array
+  const textParts = content.map((item) => (item.type === 'text' && item.text ? item.text : null)).filter((text): text is string => text !== null);
+
+  if (textParts.length > 0) {
+    result.extractedText = textParts.join('');
+
+    // Try parsing the extracted text as JSON
+    try {
+      const innerJson = JSON.parse(result.extractedText);
+      if (typeof innerJson === 'object' && innerJson !== null) {
+        result.json = innerJson;
+      }
+    } catch (innerError) {
+      // eslint-disable-next-line no-console
+      console.debug('Inner content is not valid JSON:', innerError);
+    }
+  }
+};
 
 /**
  * Parses the content string from a ToolMessage.
- * Expected format: A JSON string containing an object with 'content' (an array) and 'isError' (boolean).
- * The 'content' array items should have a 'text' property.
- * The concatenated 'text' properties might themselves be a JSON string.
+ * Handles multiple storage formats:
+ * 1. Raw MCP result: { content: [{ type: 'text' }, { type: 'image' }], isError: false }
+ * 2. AI SDK ToolResultOutput content array: [{ type: 'text' }, { type: 'file' }]
+ * 3. Wrapped ToolResultOutput: { type: 'content', value: [...] }
+ * 4. Wrapped JSON: { type: 'json', value: { content: [...] } }
  */
 export const parseToolContent = (rawContent: string): ToolContentResult => {
   const result: ToolContentResult = {
@@ -438,10 +507,11 @@ export const parseToolContent = (rawContent: string): ToolContentResult => {
     json: null,
     isError: null,
     rawContent: rawContent,
+    images: [],
   };
 
   if (!rawContent) {
-    return result; // Return default if rawContent is empty
+    return result;
   }
 
   try {
@@ -452,41 +522,49 @@ export const parseToolContent = (rawContent: string): ToolContentResult => {
       return result;
     }
 
-    // Type check for the expected outer structure
-    if (typeof parsedOuter === 'object' && parsedOuter !== null) {
-      if ('content' in parsedOuter && Array.isArray(parsedOuter.content)) {
-        const toolMessage = parsedOuter as ParsedToolMessage;
-        result.isError = toolMessage.isError || false;
-
-        // Extract text from the 'content' array
-        const textParts = toolMessage.content
-          .map((item) => (item.type === 'text' && item.text ? item.text : null))
-          .filter((text): text is string => text !== null);
-
-        if (textParts.length > 0) {
-          result.extractedText = textParts.join('');
-
-          // Try parsing the extracted text as JSON
-          try {
-            const innerJson = JSON.parse(result.extractedText);
-            if (typeof innerJson === 'object' && innerJson !== null) {
-              result.json = innerJson;
-            }
-          } catch (innerError) {
-            // Ignore error if inner content is not valid JSON
-            // eslint-disable-next-line no-console
-            console.debug('Inner content is not valid JSON:', innerError);
-          }
-        }
-      } else {
-        result.json = parsedOuter;
-      }
-    } else {
+    if (typeof parsedOuter !== 'object' || parsedOuter === null) {
       // eslint-disable-next-line no-console
       console.warn('Parsed tool content does not match expected structure:', parsedOuter);
+      return result;
     }
+
+    // Format 2: Direct content array [{ type: 'text' }, { type: 'file' }]
+    if (Array.isArray(parsedOuter)) {
+      processContentArray(parsedOuter as ParsedToolContentItem[], result);
+      return result;
+    }
+
+    const obj = parsedOuter as Record<string, unknown>;
+
+    // Format 3: Wrapped ToolResultOutput { type: 'content', value: [...] }
+    if (obj.type === 'content' && Array.isArray(obj.value)) {
+      processContentArray(obj.value as ParsedToolContentItem[], result);
+      return result;
+    }
+
+    // Format 4: Wrapped JSON { type: 'json', value: { content: [...] } }
+    if ((obj.type === 'json' || obj.type === 'error-json') && typeof obj.value === 'object' && obj.value !== null) {
+      const jsonValue = obj.value as Record<string, unknown>;
+      if ('content' in jsonValue && Array.isArray(jsonValue.content)) {
+        result.isError = (jsonValue.isError as boolean) || false;
+        processContentArray(jsonValue.content as ParsedToolContentItem[], result);
+        return result;
+      }
+      result.json = obj.value as object;
+      return result;
+    }
+
+    // Format 1: Raw MCP result { content: [...], isError: false }
+    if ('content' in obj && Array.isArray(obj.content)) {
+      const toolMessage = obj as unknown as ParsedToolMessage;
+      result.isError = toolMessage.isError || false;
+      processContentArray(toolMessage.content, result);
+      return result;
+    }
+
+    // Fallback: treat as JSON object
+    result.json = obj;
   } catch (outerError) {
-    // Ignore error if the raw content is not valid JSON
     // eslint-disable-next-line no-console
     console.debug('Raw tool content is not valid JSON:', outerError);
   }

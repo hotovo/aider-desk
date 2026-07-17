@@ -22,6 +22,7 @@ import { ToolMessage } from '@common/types';
 
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
+import { ToolResultImages } from './ToolResultImages';
 
 import { CodeInline } from '@/components/common/CodeInline';
 
@@ -143,6 +144,7 @@ const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) =
         >
           {displayContent}
         </pre>
+        {parsedResult.images.length > 0 && <ToolResultImages images={parsedResult.images} />}
       </>
     );
   };

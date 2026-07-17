@@ -1,7 +1,7 @@
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
-import { type TextPart, type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
+import { type FilePart, type ModelMessage, type TextPart, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -15,6 +15,8 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { extractTextContent } from '@common/utils';
+
+import { convertMcpResultToModelOutput } from './utils';
 
 import logger from '@/logger';
 import { type CacheControl } from '@/models';
@@ -248,80 +250,92 @@ const optimizeSubagentMessages = (messages: ModelMessage[]): ModelMessage[] => {
 };
 
 /**
- * Converts tool results containing images into a separate user message containing the image.
+ * Converts tool results containing image data (from MCP tools that return
+ * content with image parts) into a user message with image parts, and
+ * replaces the tool result output with text-only content.
+ *
+ * This is necessary because the OpenAI API (and OpenAI-compatible providers)
+ * only supports string content in tool results — images cannot be sent
+ * inline. By moving images to a user message, all providers can handle
+ * them via their native image support (e.g. OpenAI `image_url`, Anthropic
+ * `image` with base64, Google `inlineData`).
  */
-const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] => {
+export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] => {
   const newMessages: ModelMessage[] = [];
 
   for (const message of messages) {
     if (message.role === 'tool') {
       const toolContent = message.content.filter((p) => p.type === 'tool-result') as ToolResultPart[];
       const updatedToolContent: ToolResultPart[] = [];
-      const userMessagesToAdd: UserModelMessage[] = [];
+      const imageParts: FilePart[] = [];
 
       for (const toolResultPart of toolContent) {
         try {
-          const parsedResult =
-            toolResultPart.output.type === 'text'
-              ? JSON.parse(toolResultPart.output.value)
-              : toolResultPart.output.type === 'json'
-                ? toolResultPart.output.value
-                : toolResultPart.output.type === 'content'
-                  ? {
-                      content: toolResultPart.output.value,
-                    }
-                  : null;
+          // Skip content-type outputs — they may already have file parts
+          // from a provider that supports them natively
+          if (toolResultPart.output.type !== 'text' && toolResultPart.output.type !== 'json') {
+            updatedToolContent.push(toolResultPart);
+            continue;
+          }
 
-          if (
-            parsedResult &&
-            Array.isArray(parsedResult.content) &&
-            parsedResult.content.length === 1 &&
-            (parsedResult.content[0].type === 'image' || parsedResult.content[0] === 'media') &&
-            (parsedResult.content[0].data || parsedResult.content[0].image) &&
-            parsedResult.content[0].mimeType?.startsWith('image/')
-          ) {
-            updatedToolContent.push({
-              ...toolResultPart,
-              output: {
-                type: 'text',
-                value: 'Image rendered.',
-              },
-            });
-            userMessagesToAdd.push({
-              role: 'user',
-              content: [
-                {
-                  type: 'image',
-                  image: parsedResult.content[0].data || parsedResult.content[0].image,
-                  mediaType: parsedResult.content[0].mimeType,
-                },
-              ],
-            } satisfies UserModelMessage);
+          let parsedResult: unknown = null;
+
+          if (toolResultPart.output.type === 'text') {
+            parsedResult = JSON.parse(toolResultPart.output.value);
+          } else if (toolResultPart.output.type === 'json') {
+            parsedResult = toolResultPart.output.value;
+          }
+
+          if (parsedResult && Array.isArray((parsedResult as { content: unknown[] }).content)) {
+            const converted = convertMcpResultToModelOutput(parsedResult);
+
+            if (converted.type === 'content' && converted.value.some((p) => p.type === 'file')) {
+              const fileParts = converted.value.filter((p) => p.type === 'file');
+              const textParts = converted.value.filter((p) => p.type === 'text');
+
+              logger.info(`[convertImageToolResults] Extracting ${fileParts.length} image(s) from tool result "${toolResultPart.toolName}" into user message`);
+
+              for (const filePart of fileParts) {
+                if (filePart.data.type === 'data') {
+                  imageParts.push({
+                    type: 'file',
+                    data: filePart.data,
+                    mediaType: filePart.mediaType,
+                  });
+                }
+              }
+
+              const textValue = textParts.length > 0 ? textParts.map((p) => (p as { text: string }).text).join('\n\n') : 'Image rendered.';
+
+              updatedToolContent.push({
+                ...toolResultPart,
+                output: { type: 'text', value: textValue },
+              });
+            } else {
+              updatedToolContent.push(toolResultPart);
+            }
           } else {
             updatedToolContent.push(toolResultPart);
           }
         } catch {
-          // If result is not valid JSON, or doesn't match the image format,
-          // just keep the original toolResultPart as is.
           updatedToolContent.push(toolResultPart);
         }
       }
 
-      // Push the modified tool message
       newMessages.push({
         ...message,
         content: updatedToolContent,
       });
 
-      // Push the user message if it was created
-      for (const userMessage of userMessagesToAdd) {
-        logger.info('Adding user message for image tool result', {
-          toolCallId: toolContent[0].toolCallId,
-        });
-        newMessages.push(userMessage);
+      // If images were extracted, add a user message with the image parts
+      if (imageParts.length > 0) {
+        logger.info(`[convertImageToolResults] Added user message with ${imageParts.length} image(s)`);
+        newMessages.push({
+          role: 'user',
+          content: imageParts,
+        } as UserModelMessage);
       }
     } else {
-      // For non-tool messages, just push them as is
       newMessages.push(message);
     }
   }

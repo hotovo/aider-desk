@@ -9,6 +9,8 @@
 - added cache hit rate and savings charts to usage dashboard
 - handle errors during the handoff action gracefully and provide feedback to the user
 - cancel action on some loading messages now works properly
+- showing images in the tool message that generate them
+- properly handle image content in the tool outputs
 
 ## [0.74.0]
 

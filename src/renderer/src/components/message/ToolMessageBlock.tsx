@@ -21,6 +21,7 @@ import { ToolMessage } from '@common/types';
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
+import { ToolResultImages } from './ToolResultImages';
 
 import { CodeInline } from '@/components/common/CodeInline';
 
@@ -169,6 +170,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
         >
           {displayContent}
         </pre>
+        {parsedResult.images.length > 0 && <ToolResultImages images={parsedResult.images} />}
       </>
     );
   };

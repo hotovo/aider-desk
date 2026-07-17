@@ -1292,6 +1292,8 @@
     "error": "Error while executing tool:",
     "denied": "Denied by user.",
     "deniedByReason": "Denied by user:\n{{reason}}",
+    "images_one": "1 image",
+    "images_other": "{{count}} images",
     "tasks": {
       "listTasks": "List tasks",
       "listTasksWithState": "List tasks with state: {{state}}",

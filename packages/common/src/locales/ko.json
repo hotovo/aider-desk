@@ -1280,6 +1280,8 @@
     "error": "도구 실행 중 오류:",
     "denied": "사용자가 거부함.",
     "deniedByReason": "사용자가 거부함:\n{{reason}}",
+    "images_one": "이미지 1개",
+    "images_other": "이미지 {{count}}개",
     "tasks": {
       "listTasks": "작업 목록",
       "listTasksWithState": "상태별 작업 목록: {{state}}",

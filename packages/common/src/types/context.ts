@@ -6,15 +6,60 @@ export type JSONArray = JSONValue[];
 // Data content type for binary data
 export type DataContent = string | Uint8Array | ArrayBuffer | Buffer;
 
+export type FileDataData = {
+  type: 'data';
+  data: DataContent;
+};
+
+type ProviderReference = Record<string, string> & {
+  type?: never;
+};
+
+export type FileDataReference = {
+  type: 'reference';
+  reference: ProviderReference;
+};
+
+export type FileDataUrl = {
+  type: 'url';
+  url: URL;
+};
+
+export type FileDataText = {
+  type: 'text';
+  text: string;
+};
+
+export type FileData = FileDataData | FileDataUrl | FileDataReference | FileDataText;
+
+export type ProviderOptions = Record<string, JSONObject>;
+
 // Tool result output union
 export type ToolResultOutput =
-  | { type: 'text'; value: string }
-  | { type: 'json'; value: JSONValue }
-  | { type: 'error-text'; value: string }
-  | { type: 'error-json'; value: JSONValue }
+  | { type: 'text'; value: string; providerOptions?: ProviderOptions }
+  | { type: 'json'; value: JSONValue; providerOptions?: ProviderOptions }
+  | { type: 'error-text'; value: string; providerOptions?: ProviderOptions }
+  | { type: 'error-json'; value: JSONValue; providerOptions?: ProviderOptions }
   | {
       type: 'content';
-      value: Array<{ type: 'text'; text: string } | { type: 'media'; data: string; mediaType: string }>;
+      value: Array<
+        | {
+            type: 'text';
+            text: string;
+            providerOptions?: ProviderOptions;
+          }
+        | {
+            type: 'file';
+            data: FileData;
+            mediaType: string;
+            filename?: string;
+            providerOptions?: ProviderOptions;
+          }
+        | {
+            type: 'custom';
+            providerOptions?: ProviderOptions;
+          }
+      >;
     };
 
 // Content part interfaces

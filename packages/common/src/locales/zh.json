@@ -1250,6 +1250,8 @@
     "error": "执行工具时出错:",
     "denied": "拒绝访问",
     "deniedByReason": "用户拒绝: {{reason}}",
+    "images_one": "1 张图片",
+    "images_other": "{{count}} 张图片",
     "tasks": {
       "listTasks": "列出任务",
       "listTasksWithState": "列出状态为 {{state}} 的任务",

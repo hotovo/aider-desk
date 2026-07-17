@@ -7,8 +7,21 @@ import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
 import reactPlugin from 'eslint-plugin-react';
 
-export default tseslint.config({ ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**', 'docs-site', 'packages'] }, {
-  ignores: ['build', 'dist', 'node_modules', 'out', '**/__fixtures__/**', 'docs-site', 'packages', '.aider-desk'],
+const ignores = [
+  'build',
+  'dist',
+  'node_modules',
+  'out',
+  '**/__fixtures__/**',
+  'docs-site',
+  'packages/app',
+  'packages/extensions',
+  'packages/tree-sitter-utils',
+  '.aider-desk'
+];
+
+export default tseslint.config({ ignores }, {
+  ignores,
   extends: [
     js.configs.recommended,
     ...tseslint.configs.recommended,

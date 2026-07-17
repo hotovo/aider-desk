@@ -6,7 +6,7 @@ import path from 'path';
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
-import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
+import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 
 /**
  * Zod schema that coerces string values to booleans before validation.
@@ -243,6 +243,58 @@ export const isNetworkError = (error: unknown): boolean => {
   }
 
   return false;
+};
+
+/**
+ * Converts MCP tool result output to AI SDK's ToolResultOutput format,
+ * extracting image parts into `content`-type output with `file` parts.
+ * The AI SDK handles per-provider conversion (e.g. OpenAI `input_image`,
+ * Anthropic `image` with base64, Google `inlineData`).
+ *
+ * Handles MCP content parts of type `image`, `image-data`, and `media`,
+ * with `data` or `image` fields, and optional `mimeType`/`mediaType`.
+ */
+export const convertMcpResultToModelOutput = (output: unknown): ToolResultOutput => {
+  if (output && typeof output === 'object' && 'content' in output && Array.isArray((output as { content: unknown[] }).content)) {
+    const content = (output as { content: Array<Record<string, unknown>> }).content;
+    const hasNonTextParts = content.some((part) => part && typeof part === 'object' && part.type !== 'text');
+
+    if (hasNonTextParts) {
+      const value: Array<{ type: 'text'; text: string } | { type: 'file'; data: { type: 'data'; data: string }; mediaType: string }> = [];
+
+      for (const part of content) {
+        if (!part || typeof part !== 'object') {
+          continue;
+        }
+
+        if (part.type === 'text' && typeof part.text === 'string') {
+          value.push({ type: 'text', text: part.text });
+        } else if ((part.type === 'image' || part.type === 'image-data' || part.type === 'media') && typeof (part.data ?? part.image) === 'string') {
+          const data = (part.data ?? part.image) as string;
+          const mediaType = typeof (part.mimeType ?? part.mediaType) === 'string' ? ((part.mimeType ?? part.mediaType) as string) : 'image/png';
+          value.push({ type: 'file', data: { type: 'data', data }, mediaType });
+        }
+      }
+
+      if (value.length > 0) {
+        return { type: 'content', value };
+      }
+    }
+
+    const textParts = content
+      .filter((part) => part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string')
+      .map((part) => part.text as string);
+
+    if (textParts.length > 0) {
+      return { type: 'text', value: textParts.join('') };
+    }
+  }
+
+  if (typeof output === 'string') {
+    return { type: 'text', value: output };
+  }
+
+  return { type: 'json', value: (output as JSONValue) ?? null };
 };
 
 const IMAGE_TOKEN_ESTIMATE = 1000;
