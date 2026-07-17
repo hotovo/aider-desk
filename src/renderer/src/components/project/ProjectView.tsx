@@ -5,7 +5,7 @@ import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
 
-import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
+import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 
 import {
   useProjectTasks,
@@ -60,9 +60,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [tasksLoading, setTasksLoading] = useState(true);
   const [isTaskBarCollapsed, setIsTaskBarCollapsed] = useLocalStorage(`task-sidebar-collapsed-${projectDir}`, false);
+  const [taskSidebarWidth, setTaskSidebarWidth] = useLocalStorage(`task-sidebar-width-${projectDir}`, EXPANDED_WIDTH);
   const [isTaskSidebarOpen, , hideTaskSidebar, toggleTaskSidebar] = useBooleanState();
   const [shouldFocusNewTask, setShouldFocusNewTask] = useState(false);
   const taskViewRef = useRef<TaskViewRef>(null);
+  const taskContentRef = useRef<HTMLDivElement>(null);
   const creatingTaskRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
   const agentProfile = useActiveAgentProfile(activeTask, projectDir) || undefined;
@@ -357,6 +359,13 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     setIsTaskBarCollapsed(!isTaskBarCollapsed);
   }, [isTaskBarCollapsed, setIsTaskBarCollapsed]);
 
+  const handleTaskSidebarResize = useCallback(
+    (newWidth: number) => {
+      setTaskSidebarWidth(Math.min(Math.max(newWidth, MIN_WIDTH), MAX_WIDTH));
+    },
+    [setTaskSidebarWidth],
+  );
+
   const handleUpdateTask = useCallback(
     async (taskId: string, updates: Partial<TaskData>, useOptimistic = true) => {
       startTransition(async () => {
@@ -539,13 +548,17 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               onDuplicateTask={handleDuplicateTask}
               isMobile={isMobile}
               onClose={hideTaskSidebar}
+              width={taskSidebarWidth ?? EXPANDED_WIDTH}
+              onResize={handleTaskSidebarResize}
+              contentRef={taskContentRef}
             />
           )}
 
           <div
+            ref={taskContentRef}
             className={clsx('absolute top-0 h-full transition-all duration-300 ease-in-out', isMobile ? 'left-0 right-0' : 'right-0')}
             style={{
-              left: isMobile ? 0 : isTaskBarCollapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
+              left: isMobile ? 0 : isTaskBarCollapsed ? COLLAPSED_WIDTH : (taskSidebarWidth ?? EXPANDED_WIDTH),
             }}
           >
             {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}

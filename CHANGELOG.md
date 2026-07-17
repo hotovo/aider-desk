@@ -14,6 +14,7 @@
 - improved token threshold calculation to handle zero values correctly
 - added warning when context window is not set for a model
 - setting the task to Interrupted on agent error
+- making the task sidebar resizable
 
 ## [0.74.0]
 
