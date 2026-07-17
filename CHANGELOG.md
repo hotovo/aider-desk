@@ -12,6 +12,7 @@
 - showing images in the tool message that generate them
 - properly handle image content in the tool outputs
 - improved token threshold calculation to handle zero values correctly
+- added warning when context window is not set for a model
 
 ## [0.74.0]
 
