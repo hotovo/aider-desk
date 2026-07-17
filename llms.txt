@@ -452,6 +452,7 @@ src/
             ZaiPlanParameters.tsx
             ZaiPlanThinkingSetting.tsx
           DisableStreaming.tsx
+          DisableToolCallStreaming.tsx
           index.ts
           ModelDialog.tsx
           ModelLibrary.tsx
@@ -546,6 +547,8 @@ src/
         ui/
           Tooltip.tsx
         usage/
+          CacheHitRateTrendChart.tsx
+          CacheSavingsChart.tsx
           CostBreakdownChart.tsx
           MessageBreakdownChart.tsx
           ModelUsageDistributionChart.tsx
@@ -3538,6 +3541,7 @@ import {
   TerminalData,
   TerminalExitData,
   ToolData,
+  ToolInputChunkData,
   TokensInfoData,
   UserMessageData,
   MessageRemovedData,
@@ -3631,6 +3635,8 @@ sendSystemLog(data: SystemLogData): void
 ⋮----
 // Tool events
 sendTool(data: ToolData): void
+⋮----
+sendToolInputChunk(data: ToolInputChunkData): void
 ⋮----
 // User message events
 sendUserMessage(data: UserMessageData): void
@@ -6567,6 +6573,8 @@ getCacheControl(provider: ProviderProfile, modelId: string): CacheControl | unde
 ⋮----
 isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
 ⋮----
+isToolCallStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
+⋮----
 getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined
 ⋮----
 // Look up the actual Model object from providerModels
@@ -8961,6 +8969,7 @@ import {
   TokensInfoData,
   ToolCallPart,
   ToolData,
+  ToolInputChunkData,
   ToolResultPart,
   UpdatedFile,
   UpdatedFilesGroupMode,
@@ -8971,6 +8980,7 @@ import {
   WorkingMode,
   WorktreeUncommittedFiles,
 } from '@common/types';
+import { parsePartialJson } from 'ai';
 import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
 import {
   COMPACT_CONVERSATION_AGENT_PROFILE,
@@ -9284,6 +9294,18 @@ const sendResponseChunk = async (content?: string, reasoning?: string) =>
 // Sort by sequence number when adding
 ⋮----
 sendResponseCompleted(data: ResponseCompletedData)
+⋮----
+public startToolInput(toolCallId: string, serverName: string, toolName: string, promptContext?: PromptContext): void
+⋮----
+public processToolInputDelta(toolCallId: string, delta: string): void
+⋮----
+public finishToolInput(toolCallId: string): void
+⋮----
+private async flushToolInput(toolCallId: string, isComplete: boolean): Promise<void>
+⋮----
+// Graceful fallback — skip this flush
+⋮----
+private sendToolInputChunk(toolCallId: string, partialArgs: unknown, isComplete: boolean): void
 ⋮----
 private notifyIfEnabled(title: string, text: string)
 ⋮----
@@ -12736,6 +12758,7 @@ import {
   TerminalExitData,
   TokensInfoData,
   ToolData,
+  ToolInputChunkData,
   UpdatedFilesUpdatedData,
   SkillsUpdatedData,
   UserMessageData,
@@ -12882,6 +12905,7 @@ import {
   TodoItem,
   TokensInfoData,
   ToolData,
+  ToolInputChunkData,
   UsageDataRow,
   UserMessageData,
   VersionsInfo,
@@ -12932,6 +12956,7 @@ type EventDataMap = {
   'command-output': CommandOutputData;
   'update-tokens-info': TokensInfoData;
   tool: ToolData;
+  'tool-input-chunk': ToolInputChunkData;
   'user-message': UserMessageData;
   'input-history-updated': InputHistoryData;
   'clear-task': ClearTaskData;
@@ -13141,6 +13166,7 @@ addUpdateAiderModelsListener(baseDir: string, taskId: string, callback: (data: M
 addCommandOutputListener(baseDir: string, taskId: string, callback: (data: CommandOutputData) => void): () => void
 addTokensInfoListener(baseDir: string, taskId: string, callback: (data: TokensInfoData) => void): () => void
 addToolListener(baseDir: string, taskId: string, callback: (data: ToolData) => void): () => void
+addToolInputChunkListener(baseDir: string, taskId: string, callback: (data: ToolInputChunkData) => void): () => void
 addUserMessageListener(baseDir: string, taskId: string, callback: (data: UserMessageData) => void): () => void
 addInputHistoryUpdatedListener(baseDir: string, callback: (data: InputHistoryData) => void): () => void
 addClearTaskListener(baseDir: string, taskId: string, callback: (data: ClearTaskData) => void): () => void
@@ -15332,7 +15358,7 @@ import {
 import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
-import { parseToolContent } from './utils';
+import { formatName, parseToolContent } from './utils';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
@@ -15342,11 +15368,9 @@ type Props = {
   onToggle: () => void;
 };
 ⋮----
-const formatName = (name: string): string =>
-⋮----
 const defaultLabel = () => t('toolMessage.toolLabel',
 ⋮----
-<span>
+if (!parsedResult)
 ⋮----
 
 ⋮----
@@ -15606,8 +15630,6 @@ type Props = {
   onRemoveUpTo?: () => void;
   hideMessageBar?: boolean;
 };
-⋮----
-const formatName = (name: string): string =>
 ⋮----
 const getToolName = (): string =>
 
@@ -16650,7 +16672,7 @@ import {
 import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
-import { parseToolContent } from './utils';
+import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
@@ -16664,15 +16686,11 @@ type Props = {
   hideMessageBar?: boolean;
 };
 ⋮----
-const formatName = (name: string): string =>
-⋮----
 const defaultLabel = () => t('toolMessage.toolLabel',
 ⋮----
 // Handles message.args.paths (array) or fallback to message.args.path (string)
 ⋮----
 // Handles message.args.paths (array) or fallback to message.args.path (string)
-⋮----
-<span>
 ⋮----
 // Display pretty-printed JSON
 ⋮----
@@ -16728,7 +16746,9 @@ type Props = {
 File: src/renderer/src/components/message/UserMessageBlock.tsx
 ================
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FaRegUser } from 'react-icons/fa';
+import { IoClose } from 'react-icons/io5';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UserMessage } from '@common/types';
@@ -16753,6 +16773,9 @@ type Props = {
 const handleImageClick = (index: number) =>
 ⋮----
 const handleExpandedClick = () =>
+⋮----
+e.stopPropagation();
+handleExpandedClick();
 ⋮----
 export const UserMessageBlock = (
 ⋮----
@@ -16787,6 +16810,8 @@ import { ThinkingAnswerBlock } from './ThinkingAnswerBlock';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { MermaidDiagram } from '@/components/common/MermaidDiagram';
 import { CodeInline } from '@/components/common/CodeInline';
+⋮----
+export const formatName = (name: string): string =>
 ⋮----
 // Handle code blocks - check if it's a mermaid diagram or regular code
 ⋮----
@@ -17126,6 +17151,7 @@ File: src/renderer/src/components/ModelLibrary/providers/AzureModelOverrides.tsx
 import { getDefaultProviderParams, AzureProvider, LlmProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { AzureAdvancedSettings } from './AzureAdvancedSettings';
 ⋮----
@@ -17137,15 +17163,11 @@ type Props = {
 ⋮----
 export const AzureModelOverrides = (
 ⋮----
-// Convert overrides to AzureProvider format for AdvancedSettings
-⋮----
-// Convert AzureProvider back to overrides format
 const handleProviderChange = (updatedProvider: AzureProvider) =>
 ⋮----
-// Remove undefined values
-⋮----
-// Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/AzureParameters.tsx
@@ -17255,6 +17277,7 @@ import { getDefaultProviderParams, DeepseekProvider, DeepseekReasoningEffort, Ll
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { Checkbox } from '@/components/common/Checkbox';
 import { Select, Option } from '@/components/common/Select';
@@ -17270,6 +17293,8 @@ const handleThinkingEnabledChange = (checked: boolean) =>
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 ⋮----
 <Select label=
 
@@ -17308,6 +17333,7 @@ File: src/renderer/src/components/ModelLibrary/providers/DefaultModelOverrides.t
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 type Props = {
   provider: LlmProvider;
@@ -17317,12 +17343,9 @@ type Props = {
 ⋮----
 export const DefaultModelOverrides = (
 ⋮----
-// Convert overrides to LlmProvider format
-⋮----
-// Convert back to overrides format
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
-// Remove undefined values
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/EnableVoiceControl.tsx
@@ -17367,6 +17390,7 @@ File: src/renderer/src/components/ModelLibrary/providers/GeminiModelOverrides.ts
 import { getDefaultProviderParams, GeminiProvider, LlmProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { GeminiAdvancedSettings } from './GeminiAdvancedSettings';
 ⋮----
@@ -17387,6 +17411,8 @@ const handleProviderChange = (updatedProvider: GeminiProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/GeminiParameters.tsx
@@ -17589,6 +17615,7 @@ File: src/renderer/src/components/ModelLibrary/providers/NeuralwattModelOverride
 import { getDefaultProviderParams, LlmProvider, NeuralwattProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { NeuralwattAdvancedSettings } from './NeuralwattAdvancedSettings';
 ⋮----
@@ -17606,6 +17633,8 @@ const handleProviderChange = (updatedProvider: NeuralwattProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/NeuralwattParameters.tsx
@@ -17706,6 +17735,7 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleModelOv
 import { getDefaultProviderParams, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenAiCompatibleAdvancedSettings } from './OpenAiCompatibleAdvancedSettings';
 ⋮----
@@ -17726,6 +17756,8 @@ const handleProviderChange = (updatedProvider: OpenAiCompatibleProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleParameters.tsx
@@ -17756,6 +17788,7 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenAiModelOverrides.ts
 import { getDefaultProviderParams, LlmProvider, OpenAiProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenAiAdvancedSettings } from './OpenAiAdvancedSettings';
 ⋮----
@@ -17776,6 +17809,8 @@ const handleProviderChange = (updatedProvider: OpenAiProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenAiParameters.tsx
@@ -17812,6 +17847,7 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenCodeModelOverrides.
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 type Props = {
   provider: LlmProvider;
@@ -17821,12 +17857,9 @@ type Props = {
 ⋮----
 export const OpenCodeModelOverrides = (
 ⋮----
-// Convert overrides to LlmProvider format
-⋮----
-// Convert back to overrides format
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
-// Remove undefined values
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenCodeParameters.tsx
@@ -17881,6 +17914,7 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenRouterModelOverride
 import { getDefaultProviderParams, LlmProvider, OpenRouterProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
 ⋮----
@@ -17901,6 +17935,8 @@ const handleProviderChange = (updatedProvider: OpenRouterProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/OpenRouterParameters.tsx
@@ -18001,6 +18037,7 @@ File: src/renderer/src/components/ModelLibrary/providers/RequestyModelOverrides.
 import { getDefaultProviderParams, LlmProvider, RequestyProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { RequestyAdvancedSettings } from './RequestyAdvancedSettings';
 ⋮----
@@ -18021,6 +18058,8 @@ const handleProviderChange = (updatedProvider: RequestyProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/RequestyParameters.tsx
@@ -18109,6 +18148,7 @@ File: src/renderer/src/components/ModelLibrary/providers/VertexAiModelOverrides.
 import { getDefaultProviderParams, LlmProvider, VertexAiProvider } from '@common/agent';
 ⋮----
 import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { VertexAiAdvancedSettings } from './VertexAiAdvancedSettings';
 ⋮----
@@ -18129,6 +18169,8 @@ const handleProviderChange = (updatedProvider: VertexAiProvider) =>
 ⋮----
 // Handle disable streaming change separately
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/VertexAIParameters.tsx
@@ -18254,6 +18296,21 @@ const handleReasoningEffortChange = (value: string) =>
 
 ================
 File: src/renderer/src/components/ModelLibrary/DisableStreaming.tsx
+================
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type Props = {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+};
+⋮----
+<Checkbox label=
+
+================
+File: src/renderer/src/components/ModelLibrary/DisableToolCallStreaming.tsx
 ================
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -18643,6 +18700,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 ⋮----
 import { DisableStreaming } from './DisableStreaming';
+import { DisableToolCallStreaming } from './DisableToolCallStreaming';
 ⋮----
 import {
   AnthropicParameters,
@@ -18710,6 +18768,8 @@ const addHeader = () =>
 const removeHeader = (id: string) =>
 ⋮----
 const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 ⋮----
 const validateForm = (): boolean =>
 ⋮----
@@ -22205,6 +22265,55 @@ export const Tooltip = ({ content, children, side, align, delayDuration, maxWidt
 // Use CSS border instead of outline
 
 ================
+File: src/renderer/src/components/usage/CacheHitRateTrendChart.tsx
+================
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { UsageDataRow } from '@common/types';
+⋮----
+import { formatDateByGroup, GroupBy } from './utils';
+⋮----
+type Props = {
+  data: UsageDataRow[];
+  groupBy: GroupBy;
+};
+⋮----
+const formatPercentage = (value: number) => `$
+
+================
+File: src/renderer/src/components/usage/CacheSavingsChart.tsx
+================
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { UsageDataRow, Model } from '@common/types';
+import { getProviderModelId } from '@common/agent';
+⋮----
+import { formatDateByGroup, GroupBy } from './utils';
+⋮----
+import { useModelProviders } from '@/contexts/ModelProviderContext';
+⋮----
+type ChartDataPoint = {
+  date: string;
+  paid: number;
+  savings: number;
+};
+⋮----
+type Props = {
+  data: UsageDataRow[];
+  groupBy: GroupBy;
+};
+⋮----
+const getCacheReadCostBreakdown = (model: Model | undefined):
+⋮----
+const formatCurrency = (value: number) =>
+⋮----
+const seriesLabel = (name: string)
+⋮----
+<Legend formatter=
+
+================
 File: src/renderer/src/components/usage/CostBreakdownChart.tsx
 ================
 import { useMemo } from 'react';
@@ -22330,7 +22439,7 @@ File: src/renderer/src/components/usage/TokenUsageTrendChart.tsx
 ================
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UsageDataRow } from '@common/types';
 ⋮----
 import { formatDateByGroup, GroupBy } from './utils';
@@ -22339,7 +22448,8 @@ type ChartDataPoint = {
   date: string;
   inputTokens: number;
   outputTokens: number;
-  totalTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
 };
 ⋮----
 type Props = {
@@ -22347,11 +22457,11 @@ type Props = {
   groupBy: GroupBy;
 };
 ⋮----
-// Process data for trend chart (aggregate by day)
-⋮----
-const date = formatDateByGroup(row.timestamp, groupBy); // Get YYYY-MM-DD format
+// Process data for stacked composition chart (aggregate by period)
 ⋮----
 const formatTokens = (value: number) =>
+⋮----
+const seriesLabel = (name: string) =>
 
 ================
 File: src/renderer/src/components/usage/UsageDashboard.tsx
@@ -22371,6 +22481,8 @@ import { TokenUsageTrendChart } from './TokenUsageTrendChart';
 import { CostBreakdownChart } from './CostBreakdownChart';
 import { MessageBreakdownChart } from './MessageBreakdownChart';
 import { ModelUsageDistributionChart } from './ModelUsageDistributionChart';
+import { CacheHitRateTrendChart } from './CacheHitRateTrendChart';
+import { CacheSavingsChart } from './CacheSavingsChart';
 import { GroupBy } from './utils';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
@@ -22429,6 +22541,8 @@ type Props = {
   data: UsageDataRow[];
   groupBy: GroupBy;
 };
+⋮----
+const getCacheHitRate = (row: UsageDataRow) =>
 
 ================
 File: src/renderer/src/components/usage/utils.ts
@@ -24202,7 +24316,7 @@ File: src/renderer/src/hooks/useTaskToolHandlers.ts
 import { useCallback, useEffect } from 'react';
 import { TODO_TOOL_CLEAR_ITEMS, TODO_TOOL_GET_ITEMS, TODO_TOOL_GROUP_NAME, TODO_TOOL_SET_ITEMS, TODO_TOOL_UPDATE_ITEM_COMPLETION } from '@common/tools';
 ⋮----
-import type { TodoItem, ToolData, ToolMessage } from '@common/types';
+import type { TodoItem, ToolData, ToolInputChunkData, ToolMessage } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { setMessages, setTodoItems, touchTaskActivity } from '@/stores/taskStore';
