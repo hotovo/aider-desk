@@ -53,7 +53,7 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt }: Prop
     switch (id) {
       case 'interrupt':
         return (
-          <Button key={id} size="xs" variant="outline" color="danger" onClick={onInterrupt}>
+          <Button key={id} size="xs" variant="outline" color="danger" onClick={() => onInterrupt?.()}>
             {t('common.cancel')}
           </Button>
         );

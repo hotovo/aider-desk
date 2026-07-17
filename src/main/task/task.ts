@@ -3417,41 +3417,48 @@ export class Task {
     // Get context files to transfer
     const contextFiles = await this.getContextFiles();
 
-    // Generate the handoff prompt using agent.generateText
-    const handoffPrompt = await this.promptsManager.getHandoffPrompt(this, focus.trim().length ? focus.trim() : undefined);
     let generatedPrompt: string | undefined;
 
-    if (!AIDER_MODES.includes(mode)) {
-      // Agent mode logic
-      const profile = await this.getTaskAgentProfile();
-      if (!profile) {
-        throw new Error('No active Agent profile found');
-      }
+    try {
+      const handoffPrompt = await this.promptsManager.getHandoffPrompt(this, focus.trim().length ? focus.trim() : undefined);
 
-      const handoffAgentProfile: AgentProfile = {
-        ...HANDOFF_AGENT_PROFILE,
-        provider: profile.provider,
-        model: profile.model,
-      };
+      if (!AIDER_MODES.includes(mode)) {
+        // Agent mode logic
+        const profile = await this.getTaskAgentProfile();
+        if (!profile) {
+          throw new Error('No active Agent profile found');
+        }
 
-      if (waitForAgentCompletion) {
-        await this.waitForCurrentAgentToFinish();
-      }
-      generatedPrompt = await this.agent.generateText(
-        `${handoffAgentProfile.provider}/${handoffAgentProfile.model}`,
-        '',
-        handoffPrompt,
-        this.getProjectDir(),
-        await this.contextManager.getContextMessages(),
-        true,
-      );
-    } else {
-      // Other modes (ask, edit)
-      const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
+        const handoffAgentProfile: AgentProfile = {
+          ...HANDOFF_AGENT_PROFILE,
+          provider: profile.provider,
+          model: profile.model,
+        };
 
-      if (responses.length > 0 && responses[0].content) {
-        generatedPrompt = extractTextContent(responses[0].content);
+        if (waitForAgentCompletion) {
+          await this.waitForCurrentAgentToFinish();
+        }
+        generatedPrompt = await this.agent.generateText(
+          `${handoffAgentProfile.provider}/${handoffAgentProfile.model}`,
+          '',
+          handoffPrompt,
+          this.getProjectDir(),
+          await this.contextManager.getContextMessages(),
+          true,
+        );
+      } else {
+        const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
+
+        if (responses.length > 0 && responses[0].content) {
+          generatedPrompt = extractTextContent(responses[0].content);
+        }
       }
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      this.addLogMessage('loading', '', true);
+      this.addLogMessage('error', `Handoff failed: ${errorMsg}`);
+      logger.error('Handoff prompt generation failed:', errorMsg);
+      return;
     }
 
     this.addLogMessage('loading', '', true);
