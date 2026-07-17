@@ -14,14 +14,17 @@ const DEFAULT_TRESHOLD_CONFIG = {
 };
 
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig: { percentage: number; tokens: number }, maxInputTokens: number) => {
-  if (task.contextCompactingThresholdTokens !== undefined) {
+  if (task.contextCompactingThresholdTokens !== undefined && task.contextCompactingThresholdTokens > 0) {
     return task.contextCompactingThresholdTokens;
   }
   if (maxInputTokens <= 0) {
     return 0;
   }
   const percentageThreshold = (maxInputTokens * thresholdConfig.percentage) / 100;
-  return Math.round(Math.min(percentageThreshold, thresholdConfig.tokens));
+  if (thresholdConfig.tokens > 0) {
+    return Math.round(Math.min(percentageThreshold, thresholdConfig.tokens));
+  }
+  return Math.round(percentageThreshold);
 };
 
 type Props = {

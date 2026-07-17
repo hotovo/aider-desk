@@ -11,6 +11,7 @@
 - cancel action on some loading messages now works properly
 - showing images in the tool message that generate them
 - properly handle image content in the tool outputs
+- improved token threshold calculation to handle zero values correctly
 
 ## [0.74.0]
 

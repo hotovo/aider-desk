@@ -2175,10 +2175,7 @@ export class Agent {
     let effectiveThreshold: number;
     let thresholdDescription: string;
 
-    if (taskTokensOverride !== undefined) {
-      if (taskTokensOverride === 0) {
-        return true;
-      }
+    if (taskTokensOverride !== undefined && taskTokensOverride > 0) {
       effectiveThreshold = taskTokensOverride;
       thresholdDescription = `task override: ${taskTokensOverride}`;
     } else {
@@ -2187,7 +2184,11 @@ export class Agent {
       }
       const percentageThreshold = (maxTokens * thresholdConfig.percentage) / 100;
       const tokenThreshold = thresholdConfig.tokens;
-      effectiveThreshold = Math.min(percentageThreshold, tokenThreshold);
+      if (tokenThreshold > 0) {
+        effectiveThreshold = Math.min(percentageThreshold, tokenThreshold);
+      } else {
+        effectiveThreshold = percentageThreshold;
+      }
       thresholdDescription = `percentage: ${percentageThreshold}, tokens: ${tokenThreshold}`;
     }
 
