@@ -1390,12 +1390,16 @@ export class Agent {
           } else if (
             iterationError instanceof APICallError &&
             iterationError.isRetryable &&
+            retryCount < MAX_RETRIES &&
             this.modelManager.isRetryable(resolvedProvider, modelName, iterationError)
           ) {
             // try again
+            retryCount++;
             continue;
           } else {
-            // stop
+            await task.updateTask({
+              state: DefaultTaskState.Interrupted,
+            });
             break;
           }
         }
