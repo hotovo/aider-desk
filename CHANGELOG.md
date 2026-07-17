@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- migrated to AI SDK v7
 - correcly showing full size image attached to user message when clicking on it
 - added support for tool call streaming
 - improved built-in extension creator skill to have better understanding of the capabilities
