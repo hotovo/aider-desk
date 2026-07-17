@@ -1,0 +1,84 @@
+diff --git a/node_modules/@requesty/ai-sdk/dist/index.js b/node_modules/@requesty/ai-sdk/dist/index.js
+index 7867bd3..ee8c830 100644
+--- a/node_modules/@requesty/ai-sdk/dist/index.js
++++ b/node_modules/@requesty/ai-sdk/dist/index.js
+@@ -154,7 +154,16 @@ const DEFAULT_PDF_NAME = "unnamed.pdf";
+ function toBase64DataUrl(base64Data, mediaType) {
+ 	return `data:${mediaType};base64,${base64Data}`;
+ }
++function unwrapFileData(data) {
++	if (data && typeof data === "object" && !Array.isArray(data) && !(data instanceof Uint8Array) && !(data instanceof URL)) {
++		if (data.type === "data") return data.data;
++		if (data.type === "url") return new URL(data.url);
++		if (data.type === "text") return data.text;
++	}
++	return data;
++}
+ function transformUrl({ data, mediaType }) {
++	data = unwrapFileData(data);
+ 	if (data instanceof Uint8Array) return [toBase64DataUrl(Buffer.from(data).toString("base64"), mediaType), true];
+ 	if (data instanceof URL) return [data.href, false];
+ 	if (typeof data === "string") if (data.startsWith("data:")) return [data, true];
+diff --git a/node_modules/@requesty/ai-sdk/dist/index.mjs b/node_modules/@requesty/ai-sdk/dist/index.mjs
+index ee02f74..abbd6d9 100644
+--- a/node_modules/@requesty/ai-sdk/dist/index.mjs
++++ b/node_modules/@requesty/ai-sdk/dist/index.mjs
+@@ -126,7 +126,16 @@ const DEFAULT_PDF_NAME = "unnamed.pdf";
+ function toBase64DataUrl(base64Data, mediaType) {
+ 	return `data:${mediaType};base64,${base64Data}`;
+ }
++function unwrapFileData(data) {
++	if (data && typeof data === "object" && !Array.isArray(data) && !(data instanceof Uint8Array) && !(data instanceof URL)) {
++		if (data.type === "data") return data.data;
++		if (data.type === "url") return new URL(data.url);
++		if (data.type === "text") return data.text;
++	}
++	return data;
++}
+ function transformUrl({ data, mediaType }) {
++	data = unwrapFileData(data);
+ 	if (data instanceof Uint8Array) return [toBase64DataUrl(Buffer.from(data).toString("base64"), mediaType), true];
+ 	if (data instanceof URL) return [data.href, false];
+ 	if (typeof data === "string") if (data.startsWith("data:")) return [data, true];
+diff --git a/node_modules/@requesty/ai-sdk/dist/internal/index.js b/node_modules/@requesty/ai-sdk/dist/internal/index.js
+index 65268df..c3dc0d3 100644
+--- a/node_modules/@requesty/ai-sdk/dist/internal/index.js
++++ b/node_modules/@requesty/ai-sdk/dist/internal/index.js
+@@ -154,7 +154,16 @@ const DEFAULT_PDF_NAME = "unnamed.pdf";
+ function toBase64DataUrl(base64Data, mediaType) {
+ 	return `data:${mediaType};base64,${base64Data}`;
+ }
++function unwrapFileData(data) {
++	if (data && typeof data === "object" && !Array.isArray(data) && !(data instanceof Uint8Array) && !(data instanceof URL)) {
++		if (data.type === "data") return data.data;
++		if (data.type === "url") return new URL(data.url);
++		if (data.type === "text") return data.text;
++	}
++	return data;
++}
+ function transformUrl({ data, mediaType }) {
++	data = unwrapFileData(data);
+ 	if (data instanceof Uint8Array) return [toBase64DataUrl(Buffer.from(data).toString("base64"), mediaType), true];
+ 	if (data instanceof URL) return [data.href, false];
+ 	if (typeof data === "string") if (data.startsWith("data:")) return [data, true];
+diff --git a/node_modules/@requesty/ai-sdk/dist/internal/index.mjs b/node_modules/@requesty/ai-sdk/dist/internal/index.mjs
+index af96f67..cac00be 100644
+--- a/node_modules/@requesty/ai-sdk/dist/internal/index.mjs
++++ b/node_modules/@requesty/ai-sdk/dist/internal/index.mjs
+@@ -126,7 +126,16 @@ const DEFAULT_PDF_NAME = "unnamed.pdf";
+ function toBase64DataUrl(base64Data, mediaType) {
+ 	return `data:${mediaType};base64,${base64Data}`;
+ }
++function unwrapFileData(data) {
++	if (data && typeof data === "object" && !Array.isArray(data) && !(data instanceof Uint8Array) && !(data instanceof URL)) {
++		if (data.type === "data") return data.data;
++		if (data.type === "url") return new URL(data.url);
++		if (data.type === "text") return data.text;
++	}
++	return data;
++}
+ function transformUrl({ data, mediaType }) {
++	data = unwrapFileData(data);
+ 	if (data instanceof Uint8Array) return [toBase64DataUrl(Buffer.from(data).toString("base64"), mediaType), true];
+ 	if (data instanceof URL) return [data.href, false];
+ 	if (typeof data === "string") if (data.startsWith("data:")) return [data, true];
