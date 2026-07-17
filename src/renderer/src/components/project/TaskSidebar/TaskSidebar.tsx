@@ -106,7 +106,6 @@ const TaskSidebarComponent = ({
       }
       const contentEl = contentRef?.current;
       if (contentEl) {
-        // eslint-disable-next-line react-compiler/react-compiler
         contentEl.style.transition = 'none';
       }
 
@@ -222,7 +221,14 @@ const TaskSidebarComponent = ({
     [setExpandedIds],
   );
 
+  const prevActiveTaskIdRef = useRef<string | null>(null);
+
   useEffect(() => {
+    if (activeTaskId === prevActiveTaskIdRef.current) {
+      return;
+    }
+    prevActiveTaskIdRef.current = activeTaskId;
+
     if (activeTaskId && tasks.length > 0) {
       const hasActiveSubtask = (taskId: string): boolean => {
         const childTasks = tasks.filter((t) => t.parentId === taskId);
@@ -233,11 +239,18 @@ const TaskSidebarComponent = ({
       };
 
       const parentWithActiveSubtask = tasks.find((task) => hasActiveSubtask(task.id));
-      if (parentWithActiveSubtask && !expandedIdsSet.has(parentWithActiveSubtask.id)) {
-        setExpandedIds((prev) => [...(prev ?? []), parentWithActiveSubtask.id]);
+      const parentId = parentWithActiveSubtask?.id;
+      if (parentId) {
+        setExpandedIds((prev) => {
+          const prevArr = prev ?? [];
+          if (prevArr.includes(parentId)) {
+            return prevArr;
+          }
+          return [...prevArr, parentId];
+        });
       }
     }
-  }, [activeTaskId, tasks, expandedIdsSet, setExpandedIds]);
+  }, [activeTaskId, tasks, setExpandedIds]);
 
   useEffect(() => {
     if (!optimisticActiveTaskId || !listContainerRef.current) {

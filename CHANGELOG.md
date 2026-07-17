@@ -16,6 +16,7 @@
 - added warning when context window is not set for a model
 - setting the task to Interrupted on agent error
 - making the task sidebar resizable
+- allow to collapse parent task in sideber when its subtask is selected
 
 ## [0.74.0]
 
