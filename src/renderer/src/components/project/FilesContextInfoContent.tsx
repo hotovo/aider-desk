@@ -19,6 +19,7 @@ type Props = {
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  refreshContextFiles: () => Promise<void>;
   onToggleFilesSidebarCollapse?: () => void;
 };
 
@@ -37,6 +38,7 @@ export const FilesContextInfoContent = ({
   task,
   updateTask,
   refreshAllFiles,
+  refreshContextFiles,
   onToggleFilesSidebarCollapse,
 }: Props) => {
   const tokensInfo = useTaskTokensInfo(taskId);
@@ -53,6 +55,7 @@ export const FilesContextInfoContent = ({
           showFileDialog={showFileDialog}
           fileTokensInfo={fileTokensInfo}
           refreshAllFiles={refreshAllFiles}
+          refreshContextFiles={refreshContextFiles}
           mode={mode}
           onToggleFilesSidebarCollapse={onToggleFilesSidebarCollapse}
           taskName={task.name}

@@ -95,6 +95,7 @@ const api: ApplicationAPI = {
   getFilePathSuggestions: (currentPath, directoriesOnly = false) => ipcRenderer.invoke('get-file-path-suggestions', currentPath, directoriesOnly),
   getAddableFiles: (baseDir, taskId) => ipcRenderer.invoke('get-addable-files', baseDir, taskId),
   getAllFiles: (baseDir, taskId, useGit = true) => ipcRenderer.invoke('get-all-files', baseDir, taskId, useGit),
+  refreshContextFiles: (baseDir, taskId) => ipcRenderer.invoke('refresh-context-files', baseDir, taskId),
   getUpdatedFiles: (baseDir, taskId) => ipcRenderer.invoke('get-updated-files', baseDir, taskId),
   restoreFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('restore-file', baseDir, taskId, filePath),
   readFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('read-file', baseDir, taskId, filePath),

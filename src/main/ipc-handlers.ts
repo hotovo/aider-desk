@@ -165,6 +165,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getUpdatedFiles(baseDir, taskId);
   });
 
+  ipcMain.handle('refresh-context-files', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.refreshContextFiles(baseDir, taskId);
+  });
+
   ipcMain.handle('is-project-path', async (_, path: string) => {
     return await eventsHandler.isProjectPath(path);
   });

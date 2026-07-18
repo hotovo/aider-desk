@@ -1749,6 +1749,10 @@ export class Task {
     this.eventManager.sendContextFilesUpdated(this.project.baseDir, this.taskId, allFiles);
   }
 
+  public async refreshContextFiles(): Promise<void> {
+    await this.sendContextFilesUpdated();
+  }
+
   public async runCommand(command: string, addToHistory = true) {
     const extensionResult = await this.extensionManager.dispatchEvent('onCommandExecuted', { command }, this.project, this);
     if (extensionResult.blocked) {

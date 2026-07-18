@@ -35,6 +35,11 @@ const GetUpdatedFilesSchema = z.object({
   taskId: z.string().min(1, 'Task ID is required'),
 });
 
+const RefreshContextFilesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
+});
+
 export class ContextApi extends BaseApi {
   constructor(
     private readonly projectManager: ProjectManager,
@@ -136,6 +141,20 @@ export class ContextApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         const updatedFiles = await this.eventsHandler.getUpdatedFiles(projectDir, taskId);
         res.status(200).json(updatedFiles);
+      }),
+    );
+
+    router.post(
+      '/refresh-context-files',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RefreshContextFilesSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.refreshContextFiles(projectDir, taskId);
+        res.status(200).json({ message: 'Context files refreshed' });
       }),
     );
   }

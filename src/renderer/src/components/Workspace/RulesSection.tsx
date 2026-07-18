@@ -1,7 +1,7 @@
 import { ContextFile } from '@common/types';
-import { Activity, useCallback, useMemo } from 'react';
+import { Activity, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdOutlinePublic } from 'react-icons/md';
+import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
 import { RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { motion } from 'framer-motion';
@@ -48,6 +48,7 @@ type Props = {
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
   visitedSections: Set<string>;
+  refreshContextFiles: () => Promise<void>;
   onToggle: () => void;
   editMode?: boolean;
   isHidden?: boolean;
@@ -55,9 +56,21 @@ type Props = {
   showBorderTop?: boolean;
 };
 
-export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, onToggle, editMode, isHidden, onToggleHidden, showBorderTop }: Props) => {
+export const RulesSection = ({
+  rulesFiles,
+  isOpen,
+  totalStats,
+  visitedSections,
+  refreshContextFiles,
+  onToggle,
+  editMode,
+  isHidden,
+  onToggleHidden,
+  showBorderTop,
+}: Props) => {
   const { t } = useTranslation();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const disabledRuleFiles = useMemo(() => projectSettings?.disabledRuleFiles ?? [], [projectSettings?.disabledRuleFiles]);
 
@@ -80,6 +93,29 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, 
 
   const enabledRuleCount = useMemo(() => rulesFiles.filter((f) => !disabledRuleFiles.includes(f.path)).length, [rulesFiles, disabledRuleFiles]);
 
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshContextFiles();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to refresh rules files:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshContextFiles]);
+
+  const actions = useMemo(
+    () => (
+      <Tooltip content={t('contextFiles.refresh')}>
+        <button className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleRefresh} disabled={isRefreshing}>
+          <MdOutlineRefresh className={clsx('w-4 h-4', isRefreshing && 'animate-spin')} />
+        </button>
+      </Tooltip>
+    ),
+    [t, handleRefresh, isRefreshing],
+  );
+
   const hasContent = visitedSections.has('rules') && sortedRulesFiles.length > 0;
 
   return (
@@ -100,6 +136,7 @@ export const RulesSection = ({ rulesFiles, isOpen, totalStats, visitedSections, 
         editMode={editMode}
         isHidden={isHidden}
         onToggleHidden={onToggleHidden}
+        actions={actions}
       />
       <Activity mode={isOpen ? 'visible' : 'hidden'}>
         <motion.div

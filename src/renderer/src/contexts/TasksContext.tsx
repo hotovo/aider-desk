@@ -79,6 +79,7 @@ export interface TaskContextType {
   interruptResponse: (taskId: string, interruptId?: string) => void;
   updateTaskAgentProfile: (taskId: string, agentProfileId: string, provider: string, model: string) => void;
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
+  refreshContextFiles: (taskId: string) => Promise<void>;
   markTaskActive: (taskId: string) => void;
 }
 

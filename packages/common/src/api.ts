@@ -124,6 +124,7 @@ export interface ApplicationAPI {
   getFilePathSuggestions: (currentPath: string, directoriesOnly?: boolean) => Promise<string[]>;
   getAddableFiles: (baseDir: string, taskId: string) => Promise<string[]>;
   getAllFiles: (baseDir: string, taskId: string, useGit?: boolean) => Promise<string[]>;
+  refreshContextFiles: (baseDir: string, taskId: string) => Promise<void>;
   getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
   restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
   readFile: (baseDir: string, taskId: string, filePath: string) => Promise<string>;
@@ -320,7 +321,10 @@ export interface ApplicationAPI {
   addSystemLogListener: (callback: (data: SystemLogData) => void) => () => void;
 
   // Aider connector status (Python install + per-task connector lifecycle)
-  addAiderConnectorStatusListener: (callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void, baseDir?: string, taskId?: string) => () => void;
+  addAiderConnectorStatusListener: (
+    callback: (data: { baseDir?: string; taskId?: string; status: AiderConnectorStatus }) => void,
+    baseDir?: string,
+    taskId?: string,
+  ) => () => void;
   getAiderConnectorStatus: () => Promise<AiderConnectorStatus>;
-
 }

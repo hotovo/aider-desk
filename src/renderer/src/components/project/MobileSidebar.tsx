@@ -27,6 +27,7 @@ type Props = {
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  refreshContextFiles: () => Promise<void>;
 };
 
 export const MobileSidebar = ({
@@ -46,6 +47,7 @@ export const MobileSidebar = ({
   task,
   updateTask,
   refreshAllFiles,
+  refreshContextFiles,
 }: Props) => {
   return (
     <motion.div
@@ -76,6 +78,7 @@ export const MobileSidebar = ({
           task={task}
           updateTask={updateTask}
           refreshAllFiles={refreshAllFiles}
+          refreshContextFiles={refreshContextFiles}
         />
       </div>
     </motion.div>

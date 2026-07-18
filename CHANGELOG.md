@@ -18,6 +18,7 @@
 - making the task sidebar resizable
 - allow to collapse parent task in sideber when its subtask is selected
 - added missing working directory into to the bash tool message
+- added refresh button to rules files section in workspace
 
 ## [0.74.0]
 

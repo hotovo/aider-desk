@@ -70,6 +70,7 @@ type Props = {
   showFileDialog: () => void;
   fileTokensInfo?: Record<string, TokensCost> | null;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  refreshContextFiles: () => Promise<void>;
   mode: Mode;
   onToggleFilesSidebarCollapse?: () => void;
   taskName?: string;
@@ -83,6 +84,7 @@ export const Workspace = ({
   showFileDialog,
   fileTokensInfo,
   refreshAllFiles,
+  refreshContextFiles,
   mode,
   onToggleFilesSidebarCollapse,
   taskName,
@@ -353,6 +355,7 @@ export const Workspace = ({
             isOpen={activeSection === 'rules' && !editMode}
             totalStats={totalStats}
             visitedSections={visitedSections}
+            refreshContextFiles={refreshContextFiles}
             onToggle={handleToggleRules}
             editMode={editMode}
             isHidden={sectionProps.isHidden('rules')}

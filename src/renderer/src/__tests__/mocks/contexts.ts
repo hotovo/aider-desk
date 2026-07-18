@@ -22,6 +22,7 @@ export const createMockTaskContext = (overrides: Partial<TaskContextType> = {}) 
     interruptResponse: vi.fn(),
     updateTaskAgentProfile: vi.fn(),
     refreshAllFiles: vi.fn(),
+    refreshContextFiles: vi.fn(),
     markTaskActive: vi.fn(),
   };
 

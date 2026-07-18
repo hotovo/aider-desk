@@ -322,6 +322,10 @@ export class EventsHandler {
     return task.getAllFiles(useGit);
   }
 
+  async refreshContextFiles(baseDir: string, taskId: string): Promise<void> {
+    await this.projectManager.getProject(baseDir).getTask(taskId)?.refreshContextFiles();
+  }
+
   async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {

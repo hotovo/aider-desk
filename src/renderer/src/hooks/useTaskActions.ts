@@ -159,6 +159,13 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
     [api, baseDir],
   );
 
+  const refreshContextFiles = useCallback(
+    async (taskId: string) => {
+      await api.refreshContextFiles(baseDir, taskId);
+    },
+    [api, baseDir],
+  );
+
   return useMemo(
     () => ({
       loadTask,
@@ -169,7 +176,8 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
       interruptResponse,
       updateTaskAgentProfile,
       refreshAllFiles,
+      refreshContextFiles,
     }),
-    [loadTask, resetTask, restartAiderConnector, answerQuestion, interruptResponse, updateTaskAgentProfile, refreshAllFiles],
+    [loadTask, resetTask, restartAiderConnector, answerQuestion, interruptResponse, updateTaskAgentProfile, refreshAllFiles, refreshContextFiles],
   );
 };

@@ -125,6 +125,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       answerQuestion,
       interruptResponse,
       refreshAllFiles,
+      refreshContextFiles,
       markTaskActive,
     } = useTask();
 
@@ -747,6 +748,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     }, []);
 
     const handleRefreshAllFiles = useCallback((useGit?: boolean) => refreshAllFiles(task.id, useGit), [refreshAllFiles, task.id]);
+    const handleRefreshContextFiles = useCallback(() => refreshContextFiles(task.id), [refreshContextFiles, task.id]);
 
     if (!projectSettings || !settingsLoaded) {
       return <LoadingOverlay message={t('common.loadingProjectSettings')} />;
@@ -993,6 +995,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                     task={task}
                     updateTask={updateTask}
                     refreshAllFiles={handleRefreshAllFiles}
+                    refreshContextFiles={handleRefreshContextFiles}
                     onToggleFilesSidebarCollapse={handleToggleFilesSidebarCollapse}
                   />
                 </div>
@@ -1031,6 +1034,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             task={task}
             updateTask={updateTask}
             refreshAllFiles={(useGit) => refreshAllFiles(task.id, useGit)}
+            refreshContextFiles={handleRefreshContextFiles}
           />
         )}
       </div>

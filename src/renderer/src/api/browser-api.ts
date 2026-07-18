@@ -512,6 +512,9 @@ export class BrowserApi implements ApplicationAPI {
   getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]> {
     return this.post('/get-all-files', { projectDir: baseDir, taskId, useGit });
   }
+  refreshContextFiles(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/refresh-context-files', { projectDir: baseDir, taskId });
+  }
   getUpdatedFiles(baseDir: string, taskId: string): Promise<{ path: string; additions: number; deletions: number }[]> {
     return this.post('/get-updated-files', { projectDir: baseDir, taskId });
   }
