@@ -45,6 +45,10 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
   const getToolLabel = (message: ToolMessage): ReactNode => {
     const defaultLabel = () => t('toolMessage.toolLabel', { server: formatName(message.serverName), tool: formatName(message.toolName) });
 
+    if (isStreaming) {
+      return defaultLabel();
+    }
+
     switch (message.serverName) {
       case AIDER_TOOL_GROUP_NAME:
         switch (message.toolName) {
@@ -177,20 +181,15 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
 
   const content = (
     <div className="text-2xs whitespace-pre-wrap text-text-tertiary bg-bg-secondary relative p-3">
-      {Object.keys(message.args).length > 0 && (
+      {!isStreaming && Object.keys(message.args).length > 0 && (
         <div className="mb-3">
-          <div className="font-semibold mb-1 text-text-secondary">
-            {t('toolMessage.arguments')}
-            {isStreaming && <span className="ml-2 text-text-muted-light italic font-normal text-2xs">{t('toolMessage.preparing')}</span>}
-          </div>
-          <pre
-            className={`whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs${isStreaming ? ' animate-pulse' : ''}`}
-          >
+          <div className="font-semibold mb-1 text-text-secondary">{t('toolMessage.arguments')}</div>
+          <pre className="whitespace-pre-wrap max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth bg-bg-primary-light p-2 rounded text-text-secondary text-2xs">
             {JSON.stringify(message.args, null, 2)}
           </pre>
         </div>
       )}
-      {isStreaming && Object.keys(message.args).length === 0 ? (
+      {isStreaming ? (
         <div className="text-xs italic text-text-muted-light">{t('toolMessage.preparing')}</div>
       ) : isExecuting ? (
         <div className="text-xs italic text-text-muted-light">{t('toolMessage.executing')}</div>
@@ -215,7 +214,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
         </div>
       </div>
       {/* Tool Specific Content */}
-      {renderToolSpecificContent()}
+      {!isStreaming && renderToolSpecificContent()}
     </div>
   );
 
