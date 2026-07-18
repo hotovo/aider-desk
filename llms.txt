@@ -373,6 +373,7 @@ src/
           MessageBar.tsx
           MessageBlock.tsx
           MessageBlockWrapper.tsx
+          MessageImages.tsx
           Messages.tsx
           RebaseConflictsActions.tsx
           RebaseResolvedActions.tsx
@@ -389,6 +390,7 @@ src/
           TaskStateActions.tsx
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
+          ToolResultImages.tsx
           UpdateMemoryToolMessage.tsx
           UsageInfo.tsx
           UserMessageBlock.tsx
@@ -2516,8 +2518,6 @@ const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // try again
 ⋮----
-// stop
-⋮----
 // Persist new messages incrementally after each iteration
 ⋮----
 // Check for 'stop' with trailing tool message
@@ -2838,7 +2838,7 @@ File: src/main/agent/optimizer.ts
 import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
 import { getSubagentId, isSubagentEnabled } from '@common/agent';
 import { cloneDeep } from 'lodash';
-import { type TextPart, type ModelMessage, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
+import { type FilePart, type ModelMessage, type TextPart, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
 import {
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
@@ -2852,6 +2852,8 @@ import {
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
 import { extractTextContent } from '@common/utils';
+⋮----
+import { convertMcpResultToModelOutput } from './utils';
 ⋮----
 import logger from '@/logger';
 import { type CacheControl } from '@/models';
@@ -2907,18 +2909,22 @@ const optimizeSubagentMessages = (messages: ModelMessage[]): ModelMessage[] =>
 // ignore
 ⋮----
 /**
- * Converts tool results containing images into a separate user message containing the image.
+ * Converts tool results containing image data (from MCP tools that return
+ * content with image parts) into a user message with image parts, and
+ * replaces the tool result output with text-only content.
+ *
+ * This is necessary because the OpenAI API (and OpenAI-compatible providers)
+ * only supports string content in tool results — images cannot be sent
+ * inline. By moving images to a user message, all providers can handle
+ * them via their native image support (e.g. OpenAI `image_url`, Anthropic
+ * `image` with base64, Google `inlineData`).
  */
-const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] =>
+export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] =>
 ⋮----
-// If result is not valid JSON, or doesn't match the image format,
-// just keep the original toolResultPart as is.
+// Skip content-type outputs — they may already have file parts
+// from a provider that supports them natively
 ⋮----
-// Push the modified tool message
-⋮----
-// Push the user message if it was created
-⋮----
-// For non-tool messages, just push them as is
+// If images were extracted, add a user message with the image parts
 ⋮----
 /**
  * Some models (Gemini Flash) are trying to call the same tool multiple times in a row.
@@ -3164,7 +3170,7 @@ import path from 'path';
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
-import { ContextMessage, ContextUserMessage, MessageRole, PromptContext } from '@common/types';
+import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 ⋮----
 /**
  * Zod schema that coerces string values to booleans before validation.
@@ -3217,6 +3223,17 @@ export const truncateToolResult = async (
 const getSuffix = () =>
 ⋮----
 export const isNetworkError = (error: unknown): boolean =>
+⋮----
+/**
+ * Converts MCP tool result output to AI SDK's ToolResultOutput format,
+ * extracting image parts into `content`-type output with `file` parts.
+ * The AI SDK handles per-provider conversion (e.g. OpenAI `input_image`,
+ * Anthropic `image` with base64, Google `inlineData`).
+ *
+ * Handles MCP content parts of type `image`, `image-data`, and `media`,
+ * with `data` or `image` fields, and optional `mimeType`/`mediaType`.
+ */
+export const convertMcpResultToModelOutput = (output: unknown): ToolResultOutput =>
 ⋮----
 type CountableMessage = { role: string; content: unknown };
 ⋮----
@@ -9643,11 +9660,7 @@ public async handoffConversation(
 ⋮----
 // Get context files to transfer
 ⋮----
-// Generate the handoff prompt using agent.generateText
-⋮----
 // Agent mode logic
-⋮----
-// Other modes (ask, edit)
 ⋮----
 // Create new task without sending event (sendEvent flag defaults to true)
 ⋮----
@@ -15359,6 +15372,7 @@ import { ToolMessage } from '@common/types';
 ⋮----
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
+import { ToolResultImages } from './ToolResultImages';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
@@ -16191,6 +16205,27 @@ onFork=
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 
 ================
+File: src/renderer/src/components/message/MessageImages.tsx
+================
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
+import { IoClose } from 'react-icons/io5';
+import { AnimatePresence, motion } from 'framer-motion';
+⋮----
+type Props = {
+  images: string[];
+  altPrefix?: string;
+  thumbnailClassName?: string;
+};
+⋮----
+const handleImageClick = (index: number) =>
+⋮----
+const handleExpandedClick = () =>
+⋮----
+e.stopPropagation();
+handleExpandedClick();
+
+================
 File: src/renderer/src/components/message/Messages.tsx
 ================
 import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
@@ -16674,6 +16709,7 @@ import { ToolMessage } from '@common/types';
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
+import { ToolResultImages } from './ToolResultImages';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
@@ -16703,6 +16739,21 @@ rawContentToCopy = JSON.stringify(parsedResult.json); // Copy raw JSON
 
 ⋮----
 {/* Tool Specific Content */}
+
+================
+File: src/renderer/src/components/message/ToolResultImages.tsx
+================
+import { useTranslation } from 'react-i18next';
+⋮----
+import { MessageImages } from './MessageImages';
+⋮----
+import type { ToolResultImage } from './utils';
+⋮----
+type Props = {
+  images: ToolResultImage[];
+};
+⋮----
+export const ToolResultImages = (
 
 ================
 File: src/renderer/src/components/message/UpdateMemoryToolMessage.tsx
@@ -16745,15 +16796,13 @@ type Props = {
 ================
 File: src/renderer/src/components/message/UserMessageBlock.tsx
 ================
-import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { FaRegUser } from 'react-icons/fa';
-import { IoClose } from 'react-icons/io5';
 import { clsx } from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UserMessage } from '@common/types';
 ⋮----
 import { MessageBar } from './MessageBar';
+import { MessageImages } from './MessageImages';
 ⋮----
 import { useParsedContent } from '@/hooks/useParsedContent';
 ⋮----
@@ -16769,13 +16818,6 @@ type Props = {
   onFork?: () => void;
   onRemoveUpTo?: () => void;
 };
-⋮----
-const handleImageClick = (index: number) =>
-⋮----
-const handleExpandedClick = () =>
-⋮----
-e.stopPropagation();
-handleExpandedClick();
 ⋮----
 export const UserMessageBlock = (
 ⋮----
@@ -16853,6 +16895,8 @@ if (line.trim() === '<custom-command-bash>')
 ⋮----
 // Check for <file-edited> compaction placeholder tags
 ⋮----
+processTextBlock();
+⋮----
 // Check if line starts a code block
 ⋮----
 // Try finding the file in the previous line first
@@ -16902,30 +16946,40 @@ export const parseThinkingAnswerFormat = (
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 [key: string]: any; // Allow other properties
 ⋮----
-rawContent: string; // Always include the original raw content
+const extractImagesFromContentArray = (content: ParsedToolContentItem[]): ToolResultImage[] =>
 ⋮----
-/**
- * Parses the content string from a ToolMessage.
- * Expected format: A JSON string containing an object with 'content' (an array) and 'isError' (boolean).
- * The 'content' array items should have a 'text' property.
- * The concatenated 'text' properties might themselves be a JSON string.
- */
-⋮----
-return result; // Return default if rawContent is empty
-⋮----
-// Type check for the expected outer structure
+// Extract images from the content array
 ⋮----
 // Extract text from the 'content' array
 ⋮----
 // Try parsing the extracted text as JSON
 ⋮----
-// Ignore error if inner content is not valid JSON
 // eslint-disable-next-line no-console
+⋮----
+/**
+ * Parses the content string from a ToolMessage.
+ * Handles multiple storage formats:
+ * 1. Raw MCP result: { content: [{ type: 'text' }, { type: 'image' }], isError: false }
+ * 2. AI SDK ToolResultOutput content array: [{ type: 'text' }, { type: 'file' }]
+ * 3. Wrapped ToolResultOutput: { type: 'content', value: [...] }
+ * 4. Wrapped JSON: { type: 'json', value: { content: [...] } }
+ */
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Ignore error if the raw content is not valid JSON
+// Format 2: Direct content array [{ type: 'text' }, { type: 'file' }]
+⋮----
+// Format 3: Wrapped ToolResultOutput { type: 'content', value: [...] }
+⋮----
+// Format 4: Wrapped JSON { type: 'json', value: { content: [...] } }
+⋮----
+// Format 1: Raw MCP result { content: [...], isError: false }
+⋮----
+// Fallback: treat as JSON object
+⋮----
 // eslint-disable-next-line no-console
+⋮----
+export const includeMessageProperty = (message: Message): boolean =>
 ⋮----
 /**
  * Groups ResponseMessage with their following ToolMessages into AssistantGroupMessage.
@@ -16937,6 +16991,7 @@ return result; // Return default if rawContent is empty
  * - Orphan ToolMessages (without preceding ResponseMessage) remain standalone
  * - Other message types remain standalone
  */
+export const groupAssistantMessages = (messages: Message[]): Message[] =>
 ⋮----
 const flushCurrentGroup = () =>
 ⋮----
@@ -16961,6 +17016,12 @@ const flushCurrentGroup = () =>
 // Check usageReport for ResponseMessage and ToolMessage
 ⋮----
 // Check args for ToolMessage
+⋮----
+if (!areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage))
+⋮----
+if (!areMessagesEqual(prevMessage.toolMessages[i], nextMessage.toolMessages[i]))
+⋮----
+export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 ⋮----
 // First pass: collect messages with groups
 ⋮----
@@ -19100,7 +19161,14 @@ type Props = {
   onDuplicateTask?: (taskId: string) => void;
   isMobile?: boolean;
   onClose?: () => void;
+  width?: number;
+  onResize?: (width: number) => void;
+  contentRef?: React.RefObject<HTMLDivElement | null>;
 };
+⋮----
+const handleMouseMove = (moveEvent: globalThis.MouseEvent) =>
+⋮----
+const handleMouseUp = () =>
 ⋮----
 // Multiselect state
 ⋮----
@@ -19146,6 +19214,8 @@ const handleBulkArchive = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+<RiMenuUnfold4Line className=
+⋮----
 <h3 className="text-sm font-semibold uppercase h-5">
 ⋮----
 onArchive=
@@ -19162,7 +19232,6 @@ title=
 {/* Bulk Archive Confirmation */}
 ⋮----
 // Custom comparison function for React.memo
-const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
 ⋮----
 // Compare primitive props
 ⋮----
@@ -19541,7 +19610,7 @@ import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
 ⋮----
-import { COLLAPSED_WIDTH, EXPANDED_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
+import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
 ⋮----
 import {
   useProjectTasks,
@@ -23519,10 +23588,12 @@ import { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent, useCallba
 import { useTranslation } from 'react-i18next';
 import { useDebounceFn } from '@reactuses/core';
 import { clsx } from 'clsx';
+import { FaExclamationTriangle } from 'react-icons/fa';
 ⋮----
 import { useSettingsStore } from '@/stores/settingsStore';
 import { formatHumanReadable } from '@/utils/string-utils';
 import { useActiveAgentProfile } from '@/utils/agents';
+import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig:
 ⋮----
@@ -28730,7 +28801,7 @@ File: package.json
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
-    "@requesty/ai-sdk": "3.4.0",
+    "@requesty/ai-sdk": "3.5.0",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
