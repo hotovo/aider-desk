@@ -1398,7 +1398,8 @@
         "stdout": "Stdout",
         "stderr": "Stderr",
         "commandFailed": "Command failed",
-        "timeout": "Timeout"
+        "timeout": "Timeout",
+        "workingDir": "Working Directory"
       },
       "semanticSearch": {
         "title": "Semantic search:",

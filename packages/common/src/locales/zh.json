@@ -1355,7 +1355,8 @@
         "stdout": "标准输出",
         "stderr": "标准错误",
         "commandFailed": "命令失败",
-        "timeout": "超时"
+        "timeout": "超时",
+        "workingDir": "工作目录"
       },
       "semanticSearch": {
         "title": "语义搜索:",
