@@ -1,16 +1,15 @@
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
-import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
+import { Button } from '@/components/common/Button';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
-import { Button } from '@/components/common/Button';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
@@ -28,20 +27,8 @@ enum WorktreeSwitchOption {
   CarryOverKeep = 'carryOverKeep',
 }
 
-const WORKING_MODE_ITEMS: ItemConfig<WorkingMode>[] = [
-  {
-    value: 'local',
-    icon: AiFillFolderOpen,
-    labelKey: 'workingMode.local',
-    tooltipKey: 'workingModeTooltip.local',
-  },
-  {
-    value: 'worktree',
-    icon: IoGitBranch,
-    labelKey: 'workingMode.worktree',
-    tooltipKey: 'workingModeTooltip.worktree',
-  },
-];
+const LOCAL_MODE_ICON = AiFillFolderOpen;
+const WORKTREE_MODE_ICON = IoGitBranch;
 
 type Props = {
   task: TaskData;
@@ -89,6 +76,32 @@ export const TaskWorkingMode = ({
     }
     return allTasks.some((t) => t.id !== task.id && t.workingMode === 'worktree' && t.worktree?.path === task.worktree!.path);
   }, [allTasks, task.id, task.worktree]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (task.workingMode !== 'local') {
+      setLocalUncommittedFiles(null);
+      return;
+    }
+    api
+      .getLocalUncommittedFiles(task.baseDir, task.id)
+      .then((files) => {
+        if (!cancelled) {
+          setLocalUncommittedFiles(files);
+        }
+      })
+      .catch((error) => {
+        // eslint-disable-next-line no-console
+        console.error('Failed to check local uncommitted files:', error);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, task.baseDir, task.id, task.workingMode]);
+
+  const hasWorktreeChanges = Boolean(worktreeStatus && (worktreeStatus.uncommittedFiles.count > 0 || worktreeStatus.aheadCommits.count > 0));
+  const hasLocalChanges = Boolean(localUncommittedFiles && localUncommittedFiles.count > 0);
+  const willShowConfirmDialog = isWorktree ? hasWorktreeChanges : hasLocalChanges;
 
   const performSwitch = useCallback(
     async (mode: WorkingMode) => {
@@ -227,6 +240,14 @@ export const TaskWorkingMode = ({
     return warnings.join('\n');
   };
 
+  const handleSwitchToLocal = () => {
+    handleWorkingModeChanged('local');
+  };
+
+  const handleSwitchToWorktree = () => {
+    handleWorkingModeChanged('worktree');
+  };
+
   return (
     <div className="flex items-center gap-1 max-h-5">
       {isSwitching ? (
@@ -257,14 +278,27 @@ export const TaskWorkingMode = ({
               />
             </>
           )}
-          <ItemSelector
-            items={WORKING_MODE_ITEMS}
-            selectedValue={task.workingMode!}
-            onChange={handleWorkingModeChanged}
-            popupPlacement="bottom-right"
-            minWidth={120}
-            iconOnly={isMobile}
-          />
+          {task.workingMode === 'worktree' ? (
+            <Button size="xs" variant="text" color="tertiary" onClick={handleSwitchToLocal} tooltip={t('workingMode.switchToLocalTooltip')}>
+              <LOCAL_MODE_ICON className="w-3.5 h-3.5" />
+              {!isMobile && (
+                <span className="text-2xs ml-1">
+                  {t('workingMode.switchToLocal')}
+                  {willShowConfirmDialog ? '...' : ''}
+                </span>
+              )}
+            </Button>
+          ) : (
+            <Button size="xs" variant="text" color="tertiary" onClick={handleSwitchToWorktree} tooltip={t('workingMode.switchToWorktreeTooltip')}>
+              <WORKTREE_MODE_ICON className="w-3.5 h-3.5" />
+              {!isMobile && (
+                <span className="text-2xs ml-1">
+                  {t('workingMode.switchToWorktree')}
+                  {willShowConfirmDialog ? '...' : ''}
+                </span>
+              )}
+            </Button>
+          )}
         </>
       )}
       {showConfirmLocal && (

@@ -1543,7 +1543,11 @@
     "worktreeOptionCarryOverRemoveLabel": "携带更改并从项目中移除",
     "worktreeOptionCarryOverRemoveDescription": "将未提交的更改移至工作树，并从项目目录中移除",
     "worktreeOptionCarryOverKeepLabel": "携带更改并保留在项目中",
-    "worktreeOptionCarryOverKeepDescription": "将未提交的更改复制到工作树，同时保留在项目目录中"
+    "worktreeOptionCarryOverKeepDescription": "将未提交的更改复制到工作树，同时保留在项目目录中",
+    "switchToLocal": "切换到本地",
+    "switchToWorktree": "切换到工作树",
+    "switchToLocalTooltip": "当前在 git 工作树中工作。切换以在此任务中直接在本地项目目录中进行更改。",
+    "switchToWorktreeTooltip": "当前在本地项目目录中工作。切换以使用 git 工作树为此任务进行隔离的更改。"
   },
   "workingModeTooltip": {
     "local": "在此任务中直接在本地项目目录中进行更改",

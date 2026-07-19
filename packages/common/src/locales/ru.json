@@ -1578,7 +1578,11 @@
     "worktreeOptionCarryOverRemoveLabel": "Перенести и удалить из проекта",
     "worktreeOptionCarryOverRemoveDescription": "Переместить незакоммиченные изменения в рабочее дерево, удалив их из каталога проекта",
     "worktreeOptionCarryOverKeepLabel": "Перенести и оставить в проекте",
-    "worktreeOptionCarryOverKeepDescription": "Скопировать незакоммиченные изменения в рабочее дерево, также сохранив их в каталоге проекта"
+    "worktreeOptionCarryOverKeepDescription": "Скопировать незакоммиченные изменения в рабочее дерево, также сохранив их в каталоге проекта",
+    "switchToLocal": "Перейти в локальный режим",
+    "switchToWorktree": "Перейти в рабочее дерево",
+    "switchToLocalTooltip": "Сейчас работа ведётся в git worktree. Перейти к внесению изменений непосредственно в локальный каталог проекта для этой задачи.",
+    "switchToWorktreeTooltip": "Сейчас работа ведётся в локальном каталоге проекта. Перейти к использованию git worktree для изолированных изменений в этой задаче."
   },
   "workingModeTooltip": {
     "local": "Вносить изменения непосредственно в локальный каталог проекта для этой задачи",

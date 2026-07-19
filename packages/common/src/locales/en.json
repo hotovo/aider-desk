@@ -1588,7 +1588,11 @@
     "worktreeOptionCarryOverRemoveLabel": "Carry over and remove from project",
     "worktreeOptionCarryOverRemoveDescription": "Move uncommitted changes into the worktree, removing them from the project directory",
     "worktreeOptionCarryOverKeepLabel": "Carry over and keep in project",
-    "worktreeOptionCarryOverKeepDescription": "Copy uncommitted changes into the worktree while also keeping them in the project directory"
+    "worktreeOptionCarryOverKeepDescription": "Copy uncommitted changes into the worktree while also keeping them in the project directory",
+    "switchToLocal": "Switch to Local",
+    "switchToWorktree": "Switch to Worktree",
+    "switchToLocalTooltip": "Currently working in a git worktree. Switch to make changes directly in the local project directory for this task.",
+    "switchToWorktreeTooltip": "Currently working locally in the project directory. Switch to use git worktree to make isolated changes for this task."
   },
   "workingModeTooltip": {
     "local": "Make changes directly in the local project directory for this task",

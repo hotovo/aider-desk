@@ -1575,7 +1575,11 @@
     "worktreeOptionCarryOverRemoveLabel": "가져온 후 프로젝트에서 제거",
     "worktreeOptionCarryOverRemoveDescription": "커밋되지 않은 변경 사항을 워크트리로 옮기고 프로젝트 디렉터리에서 제거합니다",
     "worktreeOptionCarryOverKeepLabel": "가져오고 프로젝트에도 유지",
-    "worktreeOptionCarryOverKeepDescription": "커밋되지 않은 변경 사항을 워크트리로 복사하면서 프로젝트 디렉터리에도 유지합니다"
+    "worktreeOptionCarryOverKeepDescription": "커밋되지 않은 변경 사항을 워크트리로 복사하면서 프로젝트 디렉터리에도 유지합니다",
+    "switchToLocal": "로컬로 전환",
+    "switchToWorktree": "워크트리로 전환",
+    "switchToLocalTooltip": "현재 git 워크트리에서 작업 중입니다. 이 작업에 대해 로컬 프로젝트 디렉터리에서 직접 변경하도록 전환합니다.",
+    "switchToWorktreeTooltip": "현재 로컬 프로젝트 디렉터리에서 작업 중입니다. 이 작업에 대해 격리된 변경을 위해 git 워크트리를 사용하도록 전환합니다."
   },
   "workingModeTooltip": {
     "local": "이 작업에 대해 로컬 프로젝트 디렉터리에서 직접 변경합니다",
