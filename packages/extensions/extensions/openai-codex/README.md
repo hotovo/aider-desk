@@ -1,37 +1,11 @@
 # OpenAI Codex Auth
 
-OpenAI Codex Auth is an extension for [AiderDesk](https://aiderdesk.hotovo.com) ([GitHub](https://github.com/hotovo/aider-desk)).
-
 It provides an OpenAI Codex provider using **ChatGPT Plus/Pro OAuth authentication**. No API key required — authenticate with your ChatGPT subscription directly through the browser.
-
-## Installation
-
-You can install the extension either with the AiderDesk extensions CLI or manually.
-
-### Option 1: Install with the extensions CLI globally for all projects
-
-```bash
-npx -y @aiderdesk/extensions install openai-codex --global
-```
-
-### Option 2: Manual installation
-
-Clone the AiderDesk repository and copy this extension into your `~/.aider-desk/extensions/` folder, then install dependencies:
-
-```bash
-git clone --depth 1 https://github.com/hotovo/aider-desk temp-aider
-cp -r temp-aider/packages/extensions/extensions/openai-codex ~/.aider-desk/extensions/
-cd ~/.aider-desk/extensions/openai-codex
-npm install
-rm -rf temp-aider
-```
-
-After installation, AiderDesk will pick up the extension automatically via hot reload.
 
 ## Usage
 
 1. In AiderDesk, open the model selector.
-2. Find **OpenAI Codex** and choose one of its models (e.g., `gpt-5.4`, `gpt-5.3-codex`, `gpt-5.2`).
+2. Find **OpenAI Codex** and choose one of its models (e.g., `gpt-5.6-sol`, `gpt-5.5`, `gpt-5.2`).
 3. Start a task — on first use, your browser will open for OpenAI login.
 4. Complete the login with your ChatGPT Plus/Pro account.
 5. After authentication, you'll see a success page and can return to AiderDesk.
