@@ -39,14 +39,19 @@ export const extractImagesFromContent = (content: unknown): string[] | undefined
   }
 
   const images = content
-    .filter((part): part is { type: 'image'; image: string; mediaType?: string } => part.type === 'image')
     .map((part) => {
-      const data = part.image;
-      if (typeof data !== 'string') {
-        return undefined;
+      const p = part as { type: string; image?: string; data?: string; mediaType?: string };
+      if (p.type === 'image' && typeof p.image === 'string') {
+        const data = p.image;
+        const mediaType = p.mediaType || 'image/png';
+        return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
       }
-      const mediaType = part.mediaType || 'image/png';
-      return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+      if (p.type === 'file' && typeof p.data === 'string' && (p.mediaType || '').startsWith('image/')) {
+        const data = p.data;
+        const mediaType = p.mediaType || 'image/png';
+        return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+      }
+      return undefined;
     })
     .filter((v): v is string => v !== undefined);
 

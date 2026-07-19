@@ -1120,12 +1120,23 @@ export class ContextManager {
         const content = extractTextContent(message.content);
         const images = Array.isArray(message.content)
           ? message.content
-              .filter((part): part is { type: 'image'; image: string; mediaType?: string } => part.type === 'image')
               .map((part) => {
-                const data = part.image;
-                const mediaType = part.mediaType || 'image/png';
-                return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+                const p = part as { type: string; image?: string; data?: string; mediaType?: string };
+                const isImage = p.type === 'image';
+                const isFileImage = p.type === 'file' && (p.mediaType || '').startsWith('image/');
+                if (isImage && typeof p.image === 'string') {
+                  const data = p.image;
+                  const mediaType = p.mediaType || 'image/png';
+                  return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+                }
+                if (isFileImage && typeof p.data === 'string') {
+                  const data = p.data;
+                  const mediaType = p.mediaType || 'image/png';
+                  return data.startsWith('data:') ? data : `data:${mediaType};base64,${data}`;
+                }
+                return undefined;
               })
+              .filter((v): v is string => v !== undefined)
           : undefined;
         const userMessageData: UserMessageData = {
           type: 'user',

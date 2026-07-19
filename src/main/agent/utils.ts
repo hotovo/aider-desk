@@ -344,7 +344,7 @@ export const estimateMessageTokens = (messages: CountableMessage[]): number => {
         textParts.push(extractToolResultText(part.output));
       } else if (type === 'reasoning' && typeof part.text === 'string') {
         textParts.push(part.text);
-      } else if (type === 'image') {
+      } else if (type === 'image' || (type === 'file' && typeof part.mediaType === 'string' && part.mediaType.startsWith('image/'))) {
         estimatedImageTokens += IMAGE_TOKEN_ESTIMATE;
       }
     }

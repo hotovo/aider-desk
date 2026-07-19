@@ -828,9 +828,9 @@ export class Agent {
                   ...images.map((dataUrl) => {
                     const match = dataUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
                     return {
-                      type: 'image' as const,
-                      image: match ? match[2] : dataUrl,
-                      mediaType: match ? match[1] : undefined,
+                      type: 'file' as const,
+                      data: match ? match[2] : dataUrl,
+                      mediaType: match ? match[1] : 'image/png',
                     };
                   }),
                 ]
@@ -847,11 +847,11 @@ export class Agent {
         ...(typeof userRequestMessage.content === 'string'
           ? { contentPreview: userRequestMessage.content.substring(0, 200) }
           : {
-              parts: (userRequestMessage.content as Array<{ type: string; text?: string; mediaType?: string; image?: string }>).map((part) => ({
+              parts: (userRequestMessage.content as Array<{ type: string; text?: string; mediaType?: string; data?: string }>).map((part) => ({
                 type: part.type,
                 ...(part.type === 'text' ? { textPreview: part.text?.substring(0, 100) } : {}),
-                ...(part.type === 'image'
-                  ? { mediaType: part.mediaType, imagePreview: typeof part.image === 'string' ? part.image.substring(0, 80) : typeof part.image }
+                ...(part.type === 'file'
+                  ? { mediaType: part.mediaType, dataPreview: typeof part.data === 'string' ? part.data.substring(0, 80) : typeof part.data }
                   : {}),
               })),
             }),
