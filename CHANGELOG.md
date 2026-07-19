@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.75.0]
 
 - migrated agent to AI SDK v7
 - correcly showing full size image attached to user message when clicking on it
