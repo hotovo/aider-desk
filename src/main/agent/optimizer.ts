@@ -293,7 +293,7 @@ export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[
               const fileParts = converted.value.filter((p) => p.type === 'file');
               const textParts = converted.value.filter((p) => p.type === 'text');
 
-              logger.info(`[convertImageToolResults] Extracting ${fileParts.length} image(s) from tool result "${toolResultPart.toolName}" into user message`);
+              logger.debug(`[convertImageToolResults] Extracting ${fileParts.length} image(s) from tool result "${toolResultPart.toolName}" into user message`);
 
               for (const filePart of fileParts) {
                 if (filePart.data.type === 'data') {
@@ -329,7 +329,7 @@ export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[
 
       // If images were extracted, add a user message with the image parts
       if (imageParts.length > 0) {
-        logger.info(`[convertImageToolResults] Added user message with ${imageParts.length} image(s)`);
+        logger.debug(`[convertImageToolResults] Added user message with ${imageParts.length} image(s)`);
         newMessages.push({
           role: 'user',
           content: imageParts,
