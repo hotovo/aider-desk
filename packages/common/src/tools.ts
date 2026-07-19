@@ -63,16 +63,6 @@ export const MEMORY_TOOL_DELETE = 'delete_memory';
 export const MEMORY_TOOL_LIST = 'list_memories';
 export const MEMORY_TOOL_UPDATE = 'update_memory';
 
-export const STREAMING_DISABLED_TOOLS: ReadonlySet<string> = new Set([
-  `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_FILE_READ}`,
-  `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GREP}`,
-  `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_GLOB}`,
-  `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_SEMANTIC_SEARCH}`,
-  `${MEMORY_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${MEMORY_TOOL_RETRIEVE}`,
-  `${MEMORY_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${MEMORY_TOOL_DELETE}`,
-  `${MEMORY_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${MEMORY_TOOL_LIST}`,
-]);
-
 export const MEMORY_TOOL_DESCRIPTIONS = {
   [MEMORY_TOOL_STORE]: 'Stores important information, patterns, or preferences into memory for future tasks',
   [MEMORY_TOOL_RETRIEVE]: `Searches and retrieves relevant memories using semantic vector search.

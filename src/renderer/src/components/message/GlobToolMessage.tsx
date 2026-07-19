@@ -9,6 +9,7 @@ import { areMessagesEqual } from './utils';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
@@ -44,6 +45,21 @@ const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
       }, {}),
     [content],
   );
+
+  if (message.isStreaming) {
+    return (
+      <StreamingToolMessage
+        message={message}
+        icon={<LuFolderSearch className="w-4 h-4" />}
+        label={t('toolMessage.power.glob.findingFiles')}
+        compact={compact}
+        onRemove={onRemove}
+        onFork={onFork}
+        onRemoveUpTo={onRemoveUpTo}
+        hideMessageBar={hideMessageBar}
+      />
+    );
+  }
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">

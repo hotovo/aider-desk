@@ -21,8 +21,6 @@ import {
   POWER_TOOL_SEMANTIC_SEARCH,
   SKILLS_TOOL_ACTIVATE_SKILL,
   SKILLS_TOOL_GROUP_NAME,
-  STREAMING_DISABLED_TOOLS,
-  TOOL_GROUP_NAME_SEPARATOR,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
   TASKS_TOOL_GROUP_NAME,
@@ -171,19 +169,6 @@ const MessageBlockComponent = ({
 
   if (isToolMessage(message)) {
     const toolMessage = message as ToolMessage;
-
-    if (toolMessage.isStreaming === true && STREAMING_DISABLED_TOOLS.has(`${toolMessage.serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolMessage.toolName}`)) {
-      return (
-        <ToolMessageBlock
-          message={toolMessage}
-          onRemove={remove}
-          compact={compact}
-          hideMessageBar={hideMessageBar}
-          onFork={onFork}
-          onRemoveUpTo={onRemoveUpTo}
-        />
-      );
-    }
 
     switch (toolMessage.serverName) {
       case POWER_TOOL_GROUP_NAME:

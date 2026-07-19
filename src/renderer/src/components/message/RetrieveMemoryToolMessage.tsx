@@ -5,6 +5,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { IconButton } from '@/components/common/IconButton';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -58,6 +59,21 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
       // Ignore errors loading memories
     }
   };
+
+  if (message.isStreaming) {
+    return (
+      <StreamingToolMessage
+        message={message}
+        icon={<FaBrain className="w-4 h-4" />}
+        label={t('toolMessage.memory.retrievingMemories')}
+        compact={compact}
+        onRemove={onRemove}
+        onFork={onFork}
+        onRemoveUpTo={onRemoveUpTo}
+        hideMessageBar={hideMessageBar}
+      />
+    );
+  }
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">

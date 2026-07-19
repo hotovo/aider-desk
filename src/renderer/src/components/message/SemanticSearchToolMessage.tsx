@@ -6,6 +6,7 @@ import { ToolMessage } from '@common/types';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
@@ -20,6 +21,21 @@ type Props = {
 
 export const SemanticSearchToolMessage = ({ message, taskDir, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
+
+  if (message.isStreaming) {
+    return (
+      <StreamingToolMessage
+        message={message}
+        icon={<FaSearchengin className="w-4 h-4" />}
+        label={t('toolMessage.power.semanticSearch.title')}
+        compact={compact}
+        onRemove={onRemove}
+        onFork={onFork}
+        onRemoveUpTo={onRemoveUpTo}
+        hideMessageBar={hideMessageBar}
+      />
+    );
+  }
 
   const searchQuery = (message.args.searchQuery as string) || (message.args.query as string) || '';
   const path = (message.args.path as string) || '.';
