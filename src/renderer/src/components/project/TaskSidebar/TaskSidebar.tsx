@@ -106,6 +106,7 @@ const TaskSidebarComponent = ({
       }
       const contentEl = contentRef?.current;
       if (contentEl) {
+        // eslint-disable-next-line react-compiler/react-compiler
         contentEl.style.transition = 'none';
       }
 
