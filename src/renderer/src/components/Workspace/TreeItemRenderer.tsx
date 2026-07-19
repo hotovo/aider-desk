@@ -151,7 +151,7 @@ export const TreeItemRenderer = ({
   const handleTitleClick = useCallback(() => {
     if (item.isFolder) {
       toggleFolder();
-    } else if (type === 'project' && filePath && onFilePreviewClick) {
+    } else if (!item.isFolder && filePath && (type === 'project' || type === 'context') && onFilePreviewClick) {
       onFilePreviewClick(filePath);
     }
   }, [item.isFolder, toggleFolder, type, filePath, onFilePreviewClick]);
@@ -207,7 +207,7 @@ export const TreeItemRenderer = ({
         );
       }
 
-      if (type === 'project' && !item.isFolder && filePath) {
+      if ((type === 'project' || type === 'context') && !item.isFolder && filePath) {
         return (
           <span className={twMerge(className, 'cursor-pointer hover:text-text-tertiary')} onClick={handleTitleClick}>
             {title}

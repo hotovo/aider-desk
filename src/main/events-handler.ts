@@ -59,6 +59,7 @@ import { ExtensionManager, LoadedExtension } from '@/extensions';
 import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
+import { expandTilde } from '@/agent/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
@@ -664,11 +665,12 @@ export class EventsHandler {
 
   async readFile(baseDir: string, taskId: string, filePath: string): Promise<string> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
-    const absolutePath = path.isAbsolute(filePath)
-      ? filePath
+    const expandedPath = expandTilde(filePath);
+    const absolutePath = path.isAbsolute(expandedPath)
+      ? expandedPath
       : task
-        ? ((await task.resolveContextFilePath(filePath)) ?? path.join(baseDir, filePath))
-        : path.join(baseDir, filePath);
+        ? ((await task.resolveContextFilePath(expandedPath)) ?? path.join(baseDir, expandedPath))
+        : path.join(baseDir, expandedPath);
     const fileContentBuffer = await fs.readFile(absolutePath);
 
     if (isBinary(filePath, fileContentBuffer)) {

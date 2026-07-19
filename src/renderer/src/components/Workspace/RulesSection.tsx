@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
+import { FileViewerModal } from './FileViewerModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
@@ -45,6 +46,8 @@ const getRuleSourceIcon = (source: string, t: (key: string) => string) => {
 
 type Props = {
   rulesFiles: ContextFile[];
+  baseDir: string;
+  taskId: string;
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
   visitedSections: Set<string>;
@@ -58,6 +61,8 @@ type Props = {
 
 export const RulesSection = ({
   rulesFiles,
+  baseDir,
+  taskId,
   isOpen,
   totalStats,
   visitedSections,
@@ -71,6 +76,7 @@ export const RulesSection = ({
   const { t } = useTranslation();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   const disabledRuleFiles = useMemo(() => projectSettings?.disabledRuleFiles ?? [], [projectSettings?.disabledRuleFiles]);
 
@@ -153,7 +159,10 @@ export const RulesSection = ({
                 <div key={file.path} className="flex items-center w-full px-1 h-6 group/item">
                   <div className="flex items-center flex-grow min-w-0 gap-1">
                     <Tooltip content={file.path} delayDuration={1000}>
-                      <span className="select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis text-text-primary cursor-default">
+                      <span
+                        className="select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis text-text-primary cursor-pointer hover:text-text-tertiary"
+                        onClick={() => setPreviewFilePath(file.path)}
+                      >
                         {getFileName(file.path)}
                       </span>
                     </Tooltip>
@@ -170,6 +179,8 @@ export const RulesSection = ({
           )}
         </motion.div>
       </Activity>
+
+      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </motion.div>
   );
 };

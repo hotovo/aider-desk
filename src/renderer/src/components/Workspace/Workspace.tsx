@@ -292,6 +292,8 @@ export const Workspace = ({
         return (
           <ContextFilesSection
             mode={mode}
+            baseDir={baseDir}
+            taskId={taskId}
             userContextFiles={userContextFiles}
             isOpen={activeSection === 'context' && !editMode}
             totalStats={totalStats}
@@ -352,6 +354,8 @@ export const Workspace = ({
         return (
           <RulesSection
             rulesFiles={rulesFiles}
+            baseDir={baseDir}
+            taskId={taskId}
             isOpen={activeSection === 'rules' && !editMode}
             totalStats={totalStats}
             visitedSections={visitedSections}

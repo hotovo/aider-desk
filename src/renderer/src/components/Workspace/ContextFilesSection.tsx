@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
+import { FileViewerModal } from './FileViewerModal';
 import { createFileTree } from './types';
 
 import type { TreeItem } from './types';
@@ -13,6 +14,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
   mode: Mode;
+  baseDir: string;
+  taskId: string;
   userContextFiles: ContextFile[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
@@ -32,6 +35,8 @@ type Props = {
 
 export const ContextFilesSection = ({
   mode,
+  baseDir,
+  taskId,
   userContextFiles,
   isOpen,
   totalStats,
@@ -51,6 +56,7 @@ export const ContextFilesSection = ({
   const { t } = useTranslation();
 
   const [contextExpandedItems, setContextExpandedItems] = useState<string[]>([]);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   const sortedUserFiles = useMemo(() => {
     return [...userContextFiles].sort((a, b) => a.path.localeCompare(b.path));
@@ -112,31 +118,41 @@ export const ContextFilesSection = ({
   );
 
   return (
-    <WorkspaceSection
-      section="context"
-      title={t('contextFiles.title')}
-      count={userContextFiles.length}
-      isOpen={isOpen}
-      totalStats={totalStats}
-      treeData={contextTreeData}
-      expandedItems={contextExpandedItems}
-      setExpandedItems={setContextExpandedItems}
-      contextFilesMap={contextFilesMap}
-      updatedFiles={[]}
-      fileTokensInfo={fileTokensInfo}
-      os={os}
-      actions={contextActions}
-      emptyContent={<EmptyContextInfo mode={mode} />}
-      onToggle={onToggle}
-      onFileDiffClick={() => {}}
-      onFilePreviewClick={onFilePreviewClick}
-      onRevertFile={() => {}}
-      onDropFile={onDropFile}
-      onAddFile={addFile}
-      editMode={editMode}
-      isHidden={isHidden}
-      onToggleHidden={onToggleHidden}
-      showBorderTop={showBorderTop}
-    />
+    <>
+      <WorkspaceSection
+        section="context"
+        title={t('contextFiles.title')}
+        count={userContextFiles.length}
+        isOpen={isOpen}
+        totalStats={totalStats}
+        treeData={contextTreeData}
+        expandedItems={contextExpandedItems}
+        setExpandedItems={setContextExpandedItems}
+        contextFilesMap={contextFilesMap}
+        updatedFiles={[]}
+        fileTokensInfo={fileTokensInfo}
+        os={os}
+        actions={contextActions}
+        emptyContent={<EmptyContextInfo mode={mode} />}
+        onToggle={onToggle}
+        onFileDiffClick={() => {}}
+        onFilePreviewClick={(filePath: string) => {
+          if (onFilePreviewClick) {
+            onFilePreviewClick(filePath);
+          } else {
+            setPreviewFilePath(filePath);
+          }
+        }}
+        onRevertFile={() => {}}
+        onDropFile={onDropFile}
+        onAddFile={addFile}
+        editMode={editMode}
+        isHidden={isHidden}
+        onToggleHidden={onToggleHidden}
+        showBorderTop={showBorderTop}
+      />
+
+      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
+    </>
   );
 };

@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- migrated to AI SDK v7
+- migrated agent to AI SDK v7
 - correcly showing full size image attached to user message when clicking on it
 - added support for tool call streaming
 - improved built-in extension creator skill to have better understanding of the capabilities
@@ -20,6 +20,7 @@
 - added missing working directory into to the bash tool message
 - added refresh button to rules files section in workspace
 - updated working mode switcher to use explicit buttons
+- added support for viewing files from also other Workspace sections
 
 ## [0.74.0]
 

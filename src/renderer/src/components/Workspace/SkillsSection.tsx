@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
+import { FileViewerModal } from './FileViewerModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
@@ -65,6 +66,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
   const [activating, setActivating] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   const loadSkills = useCallback(async () => {
     try {
@@ -181,9 +183,15 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
                   <Tooltip content={skill.description} delayDuration={500}>
                     <span
                       className={clsx(
-                        'select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis cursor-default',
+                        'select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis',
+                        skill.dirPath ? 'cursor-pointer hover:text-text-tertiary' : 'cursor-default',
                         skill.activated ? 'text-text-primary' : 'text-text-muted',
                       )}
+                      onClick={() => {
+                        if (skill.dirPath) {
+                          setPreviewFilePath(`${skill.dirPath}/SKILL.md`);
+                        }
+                      }}
                     >
                       {skill.name}
                     </span>
@@ -228,6 +236,8 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
           )}
         </motion.div>
       </Activity>
+
+      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </motion.div>
   );
 };
