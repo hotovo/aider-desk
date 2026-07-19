@@ -1,8 +1,9 @@
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
+import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
 import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -145,6 +146,21 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
   return anthropicProvider(model.id);
 };
 
+export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined => {
+  if (!isAnthropicCompatibleProvider(llmProvider)) {
+    return undefined;
+  }
+
+  // Explicitly request adaptive thinking with summarized display so reasoning/thinking
+  // text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
+  // default to 'omitted' display and return empty thinking blocks.
+  return {
+    anthropic: {
+      thinking: { type: 'adaptive', display: 'summarized' },
+    },
+  } satisfies SharedV4ProviderOptions;
+};
+
 // === Complete Strategy Implementation ===
 export const anthropicCompatibleProviderStrategy: LlmProviderStrategy = {
   // Core LLM functions
@@ -158,4 +174,5 @@ export const anthropicCompatibleProviderStrategy: LlmProviderStrategy = {
 
   // Cache control
   getCacheControl: getAnthropicCacheControl,
+  getProviderOptions: getAnthropicCompatibleProviderOptions,
 };
