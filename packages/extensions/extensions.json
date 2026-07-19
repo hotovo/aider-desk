@@ -220,6 +220,15 @@
       "capabilities": ["ui"]
     },
     {
+      "id": "openai-codex",
+      "name": "OpenAI Codex Auth",
+      "description": "OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication",
+      "folder": "openai-codex",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["providers"]
+    },
+    {
       "id": "fff",
       "name": "FFF",
       "description": "Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool",

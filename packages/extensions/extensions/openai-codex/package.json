@@ -1,0 +1,15 @@
+{
+  "name": "openai-codex",
+  "version": "1.0.0",
+  "description": "OpenAI Codex provider for AiderDesk using ChatGPT Plus/Pro OAuth authentication",
+  "main": "index.ts",
+  "author": "AiderDesk",
+  "license": "MIT",
+  "dependencies": {
+    "@ai-sdk/openai": "^4.0.16"
+  },
+  "devDependencies": {
+    "@aiderdesk/extensions": "^0.12.0",
+    "@types/node": "^25.5.2"
+  }
+}
