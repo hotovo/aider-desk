@@ -647,6 +647,49 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
 };
 
 /**
+ * Get a shell initialization prefix that sources the user's shell config files
+ * and activates direnv if available. This ensures the bash tool has access to
+ * the same environment (env vars, shell functions, direnv) as an interactive
+ * terminal session.
+ *
+ * Only applies to Unix shells (bash, zsh, fish). Returns empty string for
+ * Windows shells or unsupported shells.
+ *
+ * @returns Shell command prefix string to prepend before the actual command
+ */
+export const getShellInitCommand = (): string => {
+  const shellInfo = ShellDetector.getDefaultShell();
+  const homeDir = os.homedir();
+
+  switch (shellInfo.name) {
+    case 'bash': {
+      const sourceCmd =
+        'source /etc/profile >/dev/null 2>&1 || true; ' +
+        `source ${homeDir}/.bash_profile >/dev/null 2>&1 || true; ` +
+        `source ${homeDir}/.bashrc >/dev/null 2>&1 || true; `;
+      const direnvCmd = 'command -v direnv >/dev/null 2>&1 && eval "$(direnv export bash 2>/dev/null)" 2>/dev/null || true; ';
+      return sourceCmd + direnvCmd;
+    }
+    case 'zsh': {
+      const sourceCmd =
+        'source /etc/zprofile >/dev/null 2>&1 || true; ' +
+        `source ${homeDir}/.zprofile >/dev/null 2>&1 || true; ` +
+        'source /etc/zshrc >/dev/null 2>&1 || true; ' +
+        `source ${homeDir}/.zshrc >/dev/null 2>&1 || true; `;
+      const direnvCmd = 'command -v direnv >/dev/null 2>&1 && eval "$(direnv export zsh 2>/dev/null)" 2>/dev/null || true; ';
+      return sourceCmd + direnvCmd;
+    }
+    case 'fish': {
+      const sourceCmd = `source ${homeDir}/.config/fish/config.fish >/dev/null 2>&1 || true; `;
+      const direnvCmd = 'command -v direnv >/dev/null 2>&1 && direnv export fish 2>/dev/null | source || true; ';
+      return sourceCmd + direnvCmd;
+    }
+    default:
+      return '';
+  }
+};
+
+/**
  * Get shell and arguments to execute a command using the user's default shell.
  * This respects the $SHELL environment variable instead of always using /bin/sh.
  * @param command The command string to execute

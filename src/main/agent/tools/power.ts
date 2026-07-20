@@ -30,7 +30,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
-import { getShellCommandArgs, getShellPath } from '@/utils/shell';
+import { getShellCommandArgs, getShellInitCommand, getShellPath } from '@/utils/shell';
 import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 
@@ -817,7 +817,9 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         abortSignal?.addEventListener('abort', abortListener);
 
         try {
-          const { shell: shellExec, args: shellArgs } = getShellCommandArgs(command);
+          const shellInitCommand = getShellInitCommand();
+          const fullCommand = shellInitCommand ? `${shellInitCommand} ${command}` : command;
+          const { shell: shellExec, args: shellArgs } = getShellCommandArgs(fullCommand);
           childProcess = spawn(shellExec, shellArgs, {
             cwd: absoluteCwd,
             env: { ...process.env, TERM: 'dumb', DEBIAN_FRONTEND: 'noninteractive', PATH: getShellPath() },

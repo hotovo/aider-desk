@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- added shell initialization to bash tool for loading environment configs
+
 ## [0.75.0]
 
 - migrated agent to AI SDK v7
