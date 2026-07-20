@@ -296,7 +296,7 @@ async function tryInitialize(context: ExtensionContext): Promise<void> {
 export default class SandboxExtension implements Extension {
   static metadata = {
     name: 'Sandbox',
-    version: '1.0.0',
+    version: '1.0.1',
     description: 'OS-level sandboxing for bash commands using @anthropic-ai/sandbox-runtime (sandbox-exec on macOS, bubblewrap on Linux)',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sandbox/icon.png',

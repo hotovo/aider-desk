@@ -63,7 +63,7 @@
     "@openrouter/ai-sdk-provider": "3.0.0",
     "@posthog/ai": "^8.3.0",
     "@requesty/ai-sdk": "3.5.0",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "ai": "7.0.28",
     "chalk": "^5.6.2",
     "cheerio": "^1.0.0",

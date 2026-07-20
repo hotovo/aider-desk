@@ -4,6 +4,9 @@
   "main": "index.js",
   "description": "Integrates the Cursor SDK as a provider, running Cursor agents for cursor-sdk/* models",
   "dependencies": {
-    "@cursor/sdk": "1.0.18"
+    "@cursor/sdk": "^1.0.23"
+  },
+  "overrides": {
+    "undici": "^6.27.0"
   }
 }

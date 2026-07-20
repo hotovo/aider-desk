@@ -135,7 +135,7 @@ const execSearXng = (
 export default class SearXngSearchExtension implements Extension {
   static metadata = {
     name: 'SearXNG Search',
-    version: '1.0.0',
+    version: '1.0.1',
     description: 'Web search tool using SearXNG with auto-starting Docker container support',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
     author: 'wladimiiir',

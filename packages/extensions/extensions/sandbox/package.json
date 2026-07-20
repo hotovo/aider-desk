@@ -10,6 +10,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@anthropic-ai/sandbox-runtime": "^0.0.38"
+    "@anthropic-ai/sandbox-runtime": "^0.0.66"
   }
 }

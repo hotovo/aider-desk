@@ -459,7 +459,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '3.1.0',
+    version: '3.1.1',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
