@@ -501,20 +501,21 @@ export const THEMES = [
 ] as const;
 export type Theme = (typeof THEMES)[number];
 
-export const isCodeEditorDarkTheme = (theme: Theme) => [
-  'aurora',
-  'botanical-garden',
-  'botanical-garden-dark',
-  'charcoal',
-  'dark',
-  'forest',
-  'lavender',
-  'midnight',
-  'neon',
-  'neopunk',
-  'ocean',
-  'obsidian',
-].includes(theme)
+export const isCodeEditorDarkTheme = (theme: Theme) =>
+  [
+    'aurora',
+    'botanical-garden',
+    'botanical-garden-dark',
+    'charcoal',
+    'dark',
+    'forest',
+    'lavender',
+    'midnight',
+    'neon',
+    'neopunk',
+    'ocean',
+    'obsidian',
+  ].includes(theme);
 
 export const FONTS = [
   'Sono',
@@ -1158,6 +1159,7 @@ export interface ContextMenuParams {
   y: number;
   selectionText?: string;
   isEditable: boolean;
+  linkURL?: string;
 }
 
 export interface ModalOverlayUrlData {
@@ -1198,4 +1200,3 @@ export interface SkillsUpdatedData {
   taskId: string;
   skills: SkillDefinition[];
 }
-

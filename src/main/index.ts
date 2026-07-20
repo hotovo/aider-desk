@@ -196,6 +196,7 @@ const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projec
       y: params.y,
       selectionText: params.selectionText,
       isEditable: params.isEditable,
+      linkURL: params.linkURL || undefined,
     };
     newWindow.webContents.send('context-menu', contextMenuParams);
   });

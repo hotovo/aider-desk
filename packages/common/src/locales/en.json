@@ -1723,7 +1723,8 @@
     "close": "Close",
     "closeOtherTabs": "Close other tabs",
     "closeAllTabs": "Close all tabs",
-    "openInNewWindow": "Open in new window"
+    "openInNewWindow": "Open in new window",
+    "copyLink": "Copy Link"
   },
   "menu": {
     "file": {

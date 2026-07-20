@@ -1713,7 +1713,8 @@
     "close": "Закрыть",
     "closeOtherTabs": "Закрыть остальные вкладки",
     "closeAllTabs": "Закрыть все вкладки",
-    "openInNewWindow": "Открыть в новом окне"
+    "openInNewWindow": "Открыть в новом окне",
+    "copyLink": "Копировать ссылку"
   },
   "menu": {
     "file": {

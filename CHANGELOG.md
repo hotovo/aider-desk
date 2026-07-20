@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - added shell initialization to bash tool for loading environment configs
+- added Copy link context menu action to links in messages
 
 ## [0.75.0]
 

@@ -1731,7 +1731,8 @@
     "close": "关闭",
     "closeOtherTabs": "关闭其他标签页",
     "closeAllTabs": "关闭所有标签页",
-    "openInNewWindow": "在新窗口中打开"
+    "openInNewWindow": "在新窗口中打开",
+    "copyLink": "复制链接地址"
   },
   "menu": {
     "file": {

@@ -93,12 +93,27 @@ export const useContextMenu = () => {
 
   useEffect(() => {
     const handleContextMenu = (params: ContextMenuParams) => {
-      const { x, y, selectionText, isEditable } = params;
+      const { x, y, selectionText, isEditable, linkURL } = params;
 
       // Capture the target element when context menu is triggered
       const targetElement = document.elementFromPoint(x, y);
 
       const options: MenuOption[] = [];
+
+      // Show copy link option if right-clicked on a link
+      if (linkURL) {
+        options.push({
+          label: t('contextMenu.copyLink'),
+          action: async () => {
+            try {
+              await api.writeToClipboard(linkURL);
+            } catch (error) {
+              // eslint-disable-next-line no-console
+              console.error('Failed to copy link to clipboard:', error);
+            }
+          },
+        });
+      }
 
       // Always show copy option
       options.push({
