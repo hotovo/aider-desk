@@ -162,7 +162,10 @@ We welcome contributions from engineers who share our vision of transparent, ste
 
 ## ⭐ Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=hotovo/aider-desk&type=Date)](https://star-history.com/#hotovo/aider-desk&Date)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs-site/static/img/star-history-dark.svg">
+  <img src="docs-site/static/img/star-history-light.svg" alt="Star History Chart" />
+</picture>
 
 Thank you ❤️
 
