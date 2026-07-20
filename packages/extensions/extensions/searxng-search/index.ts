@@ -135,7 +135,7 @@ const execSearXng = (
 export default class SearXngSearchExtension implements Extension {
   static metadata = {
     name: 'SearXNG Search',
-    version: '1.0.1',
+    version: '1.0.2',
     description: 'Web search tool using SearXNG with auto-starting Docker container support',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
     author: 'wladimiiir',
@@ -248,7 +248,7 @@ export default class SearXngSearchExtension implements Extension {
           },
         ])
         .withWaitStrategy(
-          Wait.forLogMessage('Listening at:')
+          Wait.forHttp('/search?q=test&format=json', SEARXNG_INTERNAL_PORT)
             .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS),
         )
         .withStartupTimeout(CONTAINER_STARTUP_TIMEOUT_MS)
@@ -283,7 +283,7 @@ export default class SearXngSearchExtension implements Extension {
 
       const attempt = () => {
         attempts++;
-        const req = httpRequest(`${url}/`, { method: 'GET', timeout: 5000 }, (res) => {
+        const req = httpRequest(`${url}/search?q=test&format=json`, { method: 'GET', timeout: 5000 }, (res) => {
           if (res.statusCode === 200) {
             resolve();
           } else {
