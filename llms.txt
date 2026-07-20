@@ -385,6 +385,7 @@ src/
           SearchTaskToolMessage.tsx
           SemanticSearchToolMessage.tsx
           StoreMemoryToolMessage.tsx
+          StreamingToolMessage.tsx
           SubagentToolMessage.tsx
           TaskInfoPanel.tsx
           TaskStateActions.tsx
@@ -5032,10 +5033,11 @@ const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): 
 File: src/main/models/providers/anthropic-compatible.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
-import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider } from '@common/agent';
+import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
 import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
@@ -5059,6 +5061,12 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
 // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
 // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
 ⋮----
+export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+⋮----
+// Explicitly request adaptive thinking with summarized display so reasoning/thinking
+// text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
+// default to 'omitted' display and return empty thinking blocks.
+⋮----
 // === Complete Strategy Implementation ===
 ⋮----
 // Core LLM functions
@@ -5071,10 +5079,11 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
 File: src/main/models/providers/anthropic.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { AnthropicProvider, isAnthropicProvider } from '@common/agent';
+import { AnthropicProvider, isAnthropicProvider, LlmProvider } from '@common/agent';
 import { Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
 import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
@@ -5093,6 +5102,12 @@ export const createAnthropicLlm = (profile: ProviderProfile, model: Model, setti
 ⋮----
 // === Configuration Helper Functions ===
 export const getAnthropicCacheControl = (): CacheControl | undefined =>
+⋮----
+export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+⋮----
+// Explicitly request adaptive thinking with summarized display so reasoning/thinking
+// text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
+// default to 'omitted' display and return empty thinking blocks.
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5687,10 +5702,11 @@ export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settin
 File: src/main/models/providers/minimax.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { isMinimaxProvider, MinimaxProvider } from '@common/agent';
+import { isMinimaxProvider, MinimaxProvider, LlmProvider } from '@common/agent';
 import { Model, ProviderProfile, SettingsData } from '@common/types';
 ⋮----
 import type { LanguageModel } from 'ai';
+import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
@@ -5751,6 +5767,12 @@ export const createMinimaxLlm = (profile: ProviderProfile, model: Model, setting
 ⋮----
 // === Configuration Helper Functions ===
 export const getMinimaxCacheControl = (): CacheControl | undefined =>
+⋮----
+export const getMinimaxProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+⋮----
+// Explicitly request adaptive thinking with summarized display so reasoning/thinking
+// text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
+// default to 'omitted' display and return empty thinking blocks.
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -9360,6 +9382,8 @@ private sendStateUpdated()
 ⋮----
 private async sendContextFilesUpdated()
 ⋮----
+public async refreshContextFiles(): Promise<void>
+⋮----
 public async runCommand(command: string, addToHistory = true)
 ⋮----
 // Get the Git root directory to handle monorepo scenarios
@@ -11586,6 +11610,7 @@ import { ExtensionManager, LoadedExtension } from '@/extensions';
 import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
 import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
+import { expandTilde } from '@/agent/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
@@ -11666,6 +11691,8 @@ async loadInputHistory(baseDir: string): Promise<string[]>
 async getAddableFiles(baseDir: string, taskId: string, searchRegex?: string): Promise<string[]>
 ⋮----
 async getAllFiles(baseDir: string, taskId: string, useGit = true): Promise<string[]>
+⋮----
+async refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]>
 ⋮----
@@ -13086,6 +13113,7 @@ patchProjectSettings(baseDir: string, settings: Partial<ProjectSettings>): Promi
 getFilePathSuggestions(currentPath: string, directoriesOnly?: boolean): Promise<string[]>
 getAddableFiles(baseDir: string, taskId: string): Promise<string[]>
 getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]>
+refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
@@ -15470,6 +15498,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -15606,6 +15635,7 @@ import { ToolMessage } from '@common/types';
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -15717,6 +15747,7 @@ import { areMessagesEqual } from './utils';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -15742,6 +15773,7 @@ import { areMessagesEqual } from './utils';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 interface Match {
@@ -15862,6 +15894,7 @@ import { ToolMessage } from '@common/types';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -16072,8 +16105,6 @@ import {
   POWER_TOOL_SEMANTIC_SEARCH,
   SKILLS_TOOL_ACTIVATE_SKILL,
   SKILLS_TOOL_GROUP_NAME,
-  STREAMING_DISABLED_TOOLS,
-  TOOL_GROUP_NAME_SEPARATOR,
   SUBAGENTS_TOOL_GROUP_NAME,
   SUBAGENTS_TOOL_RUN_TASK,
   TASKS_TOOL_GROUP_NAME,
@@ -16386,6 +16417,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { IconButton } from '@/components/common/IconButton';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -16500,6 +16532,7 @@ import { ToolMessage } from '@common/types';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -16533,6 +16566,28 @@ type Props = {
 };
 ⋮----
 {/* Memory Details */}
+
+================
+File: src/renderer/src/components/message/StreamingToolMessage.tsx
+================
+import { ReactNode } from 'react';
+import { CgSpinner } from 'react-icons/cg';
+import { ToolMessage } from '@common/types';
+⋮----
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+⋮----
+type Props = {
+  message: ToolMessage;
+  icon: ReactNode;
+  label: string;
+  compact?: boolean;
+  onRemove?: () => void;
+  onFork?: () => void;
+  onRemoveUpTo?: () => void;
+  hideMessageBar?: boolean;
+};
+⋮----
+export const StreamingToolMessage = (
 
 ================
 File: src/renderer/src/components/message/SubagentToolMessage.tsx
@@ -19168,6 +19223,8 @@ type Props = {
   contentRef?: React.RefObject<HTMLDivElement | null>;
 };
 ⋮----
+// eslint-disable-next-line react-compiler/react-compiler
+⋮----
 const handleMouseMove = (moveEvent: globalThis.MouseEvent) =>
 ⋮----
 const handleMouseUp = () =>
@@ -19416,6 +19473,7 @@ type Props = {
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  refreshContextFiles: () => Promise<void>;
   onToggleFilesSidebarCollapse?: () => void;
 };
 ⋮----
@@ -19434,6 +19492,7 @@ export const FilesContextInfoContent = ({
   task,
   updateTask,
   refreshAllFiles,
+  refreshContextFiles,
   onToggleFilesSidebarCollapse,
 }: Props) =>
 
@@ -19469,6 +19528,7 @@ type Props = {
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
+  refreshContextFiles: () => Promise<void>;
 };
 ⋮----
 export const MobileSidebar = ({
@@ -19488,6 +19548,7 @@ export const MobileSidebar = ({
   task,
   updateTask,
   refreshAllFiles,
+  refreshContextFiles,
 }: Props) =>
 ⋮----
 className=
@@ -20614,18 +20675,17 @@ const handleDragEnd = (event: DragEndEvent) =>
 File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
 ================
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useCallback, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 ⋮----
-import { ItemConfig, ItemSelector } from '@/components/common/ItemSelector';
+import { Button } from '@/components/common/Button';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
-import { Button } from '@/components/common/Button';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
@@ -20661,6 +20721,8 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// eslint-disable-next-line no-console
+⋮----
 const performMergeAndSwitch = async () =>
 ⋮----
 // eslint-disable-next-line no-console
@@ -20678,6 +20740,12 @@ const performSwitchToWorktreeWithChanges = async (dropSourceChanges: boolean) =>
 // eslint-disable-next-line no-console
 ⋮----
 const getWarningMessage = () =>
+⋮----
+const handleSwitchToLocal = () =>
+⋮----
+const handleSwitchToWorktree = () =>
+⋮----
+<Button size="xs" variant="text" color="tertiary" onClick=
 ⋮----
 title=
 ⋮----
@@ -22701,6 +22769,7 @@ import { useTranslation } from 'react-i18next';
 ⋮----
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
+import { FileViewerModal } from './FileViewerModal';
 import { createFileTree } from './types';
 ⋮----
 import type { TreeItem } from './types';
@@ -22709,6 +22778,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
   mode: Mode;
+  baseDir: string;
+  taskId: string;
   userContextFiles: ContextFile[];
   isOpen: boolean;
   totalStats: { additions: number; deletions: number };
@@ -22947,21 +23018,24 @@ onFileDiffClick=
 File: src/renderer/src/components/Workspace/RulesSection.tsx
 ================
 import { ContextFile } from '@common/types';
-import { Activity, useCallback, useMemo } from 'react';
+import { Activity, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MdOutlinePublic } from 'react-icons/md';
+import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
 import { RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
+import { FileViewerModal } from './FileViewerModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
 const getFileName = (filePath: string) =>
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 className=
 
@@ -23039,11 +23113,15 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
+import { FileViewerModal } from './FileViewerModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
 className=
+⋮----
+if (skill.dirPath)
+setPreviewFilePath(`$
 ⋮----
 onClick=
 
@@ -23877,6 +23955,7 @@ export interface TaskContextType {
   interruptResponse: (taskId: string, interruptId?: string) => void;
   updateTaskAgentProfile: (taskId: string, agentProfileId: string, provider: string, model: string) => void;
   refreshAllFiles: (taskId: string, useGit?: boolean) => Promise<void>;
+  refreshContextFiles: (taskId: string) => Promise<void>;
   markTaskActive: (taskId: string) => void;
 }
 ⋮----
