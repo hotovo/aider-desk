@@ -23,5 +23,6 @@ jobs:
         with:
           repos: ${{ github.repository }}
           output-dir: docs-site/static/img
+          token: ${{ secrets.GH_TOKEN }}
           update-readme: 'false'
           commit-message: 'docs: updated star history'
