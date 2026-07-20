@@ -4,6 +4,7 @@
 
 - added shell initialization to bash tool for loading environment configs
 - added Copy link context menu action to links in messages
+- correctly rendering text on the same line as number in ordered lists in message markdown
 
 ## [0.75.0]
 
