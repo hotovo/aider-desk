@@ -110,10 +110,11 @@ describe('Power Tools - bash shell initialization', () => {
   const execBash = async (command: string, options: { cwd?: string; timeout?: number } = {}) => {
     const bashTool = getBashTool();
     const { cwd, timeout = 5000 } = options;
-    return bashTool.execute(
-      { command, cwd, timeout },
-      { toolCallId: `bash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` },
-    ) as Promise<{ stdout: string; stderr: string; exitCode: number }>;
+    return bashTool.execute({ command, cwd, timeout }, { toolCallId: `bash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }) as Promise<{
+      stdout: string;
+      stderr: string;
+      exitCode: number;
+    }>;
   };
 
   describe('command construction with shell init prefix', () => {
