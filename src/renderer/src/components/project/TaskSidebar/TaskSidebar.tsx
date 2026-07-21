@@ -111,12 +111,17 @@ const TaskSidebarComponent = ({
       }
 
       let finalWidth = currentWidth;
+      let hasMoved = false;
 
       const handleMouseMove = (moveEvent: globalThis.MouseEvent) => {
         if (!resizeStartRef.current) {
           return;
         }
         const delta = moveEvent.clientX - resizeStartRef.current.startX;
+        if (!hasMoved && Math.abs(delta) < 3) {
+          return;
+        }
+        hasMoved = true;
         finalWidth = Math.min(Math.max(resizeStartRef.current.startWidth + delta, MIN_WIDTH), MAX_WIDTH);
         if (sidebarEl) {
           sidebarEl.style.width = `${finalWidth}px`;
@@ -128,15 +133,17 @@ const TaskSidebarComponent = ({
 
       const handleMouseUp = () => {
         resizeStartRef.current = null;
-        if (sidebarEl) {
-          sidebarEl.style.transition = '';
-          sidebarEl.style.width = '';
+        if (hasMoved) {
+          if (sidebarEl) {
+            sidebarEl.style.transition = '';
+            sidebarEl.style.width = '';
+          }
+          if (contentEl) {
+            contentEl.style.transition = '';
+            contentEl.style.left = '';
+          }
+          onResize(finalWidth);
         }
-        if (contentEl) {
-          contentEl.style.transition = '';
-          contentEl.style.left = '';
-        }
-        onResize(finalWidth);
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
         document.body.style.cursor = '';
@@ -852,6 +859,7 @@ const TaskSidebarComponent = ({
         <div
           className="absolute top-0 right-0 w-1 h-full cursor-ew-resize hover:bg-accent-light/50 transition-colors z-10"
           onMouseDown={handleResizeMouseDown}
+          onDoubleClick={(e) => e.preventDefault()}
         />
       )}
     </>
