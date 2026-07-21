@@ -2,7 +2,16 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
-import type { ModelListItem, ModelParameterValue, Run, SDKAgent, SDKMessage } from '@cursor/sdk';
+import type {
+  ConversationStep,
+  InteractionUpdate,
+  ModelListItem,
+  ModelParameterValue,
+  Run,
+  SDKAgent,
+  SendOptions,
+  ToolCall,
+} from '@cursor/sdk';
 
 import type {
   AgentStartedEvent,
@@ -22,6 +31,7 @@ import type {
   TextPart,
   ToolCallPart,
   ToolResultOutput,
+  UsageReportData,
 } from '@aiderdesk/extensions';
 import type { SettingSource } from '@cursor/sdk';
 
@@ -263,6 +273,25 @@ function extractResultValue(cursorResult: unknown): unknown {
   return cursorResult;
 }
 
+interface TurnUsage {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  reasoningTokens?: number;
+}
+
+function mapTokenUsage(usage: TurnUsage, modelName: string): UsageReportData {
+  return {
+    model: modelName,
+    sentTokens: usage.inputTokens,
+    receivedTokens: usage.outputTokens,
+    messageCost: 0,
+    cacheWriteTokens: usage.cacheWriteTokens || undefined,
+    cacheReadTokens: usage.cacheReadTokens || undefined,
+  };
+}
+
 function transformCursorResult(
   cursorToolName: string,
   cursorResult: unknown,
@@ -459,7 +488,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '3.1.1',
+    version: '4.0.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -612,21 +641,25 @@ export default class CursorSdkExtension implements Extension {
         context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
       }
 
-      const sendOptions = {
+      const streamProcessor = createStreamProcessor(taskContext, baseModelId);
+
+      const sendOptions: SendOptions = {
         ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
+        onDelta: ({ update }) => streamProcessor.onDelta(update),
+        onStep: ({ step }) => streamProcessor.onStep(step),
       };
 
-      const run = await agent.send(prompt, sendOptions as Parameters<typeof agent.send>[1]);
+      const run = await agent.send(prompt, sendOptions);
       context.log(`Cursor run started: ${run.id}`, 'info');
 
       this.activeRuns.set(taskId, run);
 
       taskContext.addLoadingMessage('Running Cursor agent...');
 
-      const contextMessages = await processStream(run, taskContext, context);
-
       const result = await run.wait();
       context.log(`Cursor run finished: ${result.status}`, 'info');
+
+      const contextMessages = await streamProcessor.finish();
 
       if (prompt) {
         const userMessage: ContextUserMessage = {
@@ -726,14 +759,23 @@ export default class CursorSdkExtension implements Extension {
 
 type AssistantContentPart = ReasoningPart | TextPart | ToolCallPart;
 
-async function processStream(run: Run, taskContext: TaskContext, context: ExtensionContext): Promise<ContextMessage[]> {
+function createStreamProcessor(
+  taskContext: TaskContext,
+  modelName: string,
+): {
+  onDelta: (update: InteractionUpdate) => Promise<void>;
+  onStep: (step: ConversationStep) => Promise<void>;
+  finish: () => Promise<ContextMessage[]>;
+} {
   const contextMessages: ContextMessage[] = [];
 
   let currentAssistantMessage: ContextAssistantMessage | null = null;
   let hasActiveReasoning = false;
   let responseCounter = 0;
+  let accumulatedUsage: TurnUsage | null = null;
 
-  const generateResponseId = () => `${run.id}-${responseCounter++}`;
+  const streamId = `cursor-${Date.now()}`;
+  const generateResponseId = () => `${streamId}-${responseCounter++}`;
 
   const getParts = (msg: ContextAssistantMessage): AssistantContentPart[] =>
     msg.content as AssistantContentPart[];
@@ -810,9 +852,127 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
     hasActiveReasoning = false;
   };
 
-  for await (const message of run.stream()) {
-    switch (message.type) {
-      case 'thinking': {
+  const handleToolCompletion = async (callId: string, toolCall: ToolCall) => {
+    const msg = ensureAssistantMessage();
+
+    const toolName = toolCall.type as string;
+    const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+    const toolResult = toolCall.result as unknown;
+    const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
+
+    if (toolName === 'edit') {
+      const diffString = (toolResult as { value?: { diffString?: string } } | undefined)?.value?.diffString;
+      const editArgs = toolArgs as { path: string };
+
+      if (diffString) {
+        const edits = parseUnifiedDiff(diffString, editArgs.path ?? '');
+
+        if (edits.length > 0) {
+          const parts = getParts(msg);
+          const originalIdx = parts.findIndex(
+            (p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId,
+          );
+          if (originalIdx !== -1) {
+            parts.splice(originalIdx, 1);
+          }
+
+          const fileEditFullName = powerToolName('file_edit');
+
+          for (let i = 0; i < edits.length; i++) {
+            const edit = edits[i];
+            const editId = edits.length === 1 ? callId : `${callId}-${i}`;
+            const editInput = { filePath: edit.filePath, searchTerm: edit.searchTerm, replacementText: edit.replacementText };
+            const resultStr = `Successfully edited '${edit.filePath}'.`;
+
+            parts.push({
+              type: 'tool-call',
+              toolCallId: editId,
+              toolName: fileEditFullName,
+              input: editInput,
+            });
+
+            taskContext.addToolMessage(
+              editId,
+              POWER_TOOL_SERVER_NAME,
+              'file_edit',
+              editInput,
+              JSON.stringify(resultStr),
+              undefined,
+              undefined,
+              true,
+              true,
+            );
+
+            contextMessages.push({
+              id: editId,
+              role: 'tool',
+              content: [
+                {
+                  type: 'tool-result',
+                  toolCallId: editId,
+                  toolName: fileEditFullName,
+                  output: { type: 'text', value: resultStr },
+                },
+              ],
+            } as ContextToolMessage);
+
+            await taskContext.addToGit(resolve(taskContext.getTaskDir(), edit.filePath));
+          }
+
+          return;
+        }
+      }
+    }
+
+    const transformed = transformCursorTool(toolName, toolArgs);
+
+    if (!hasToolCallPart(msg, callId)) {
+      getParts(msg).push({
+        type: 'tool-call',
+        toolCallId: callId,
+        toolName: transformed.fullToolName,
+        input: transformed.input,
+      });
+    }
+
+    const transformedResult = transformCursorResult(toolName, toolResult, status, toolArgs);
+
+    taskContext.addToolMessage(
+      callId,
+      transformed.serverName,
+      transformed.toolName,
+      transformed.input,
+      transformedResult.resultStr ?? undefined,
+      undefined,
+      undefined,
+      true,
+      true,
+    );
+
+    contextMessages.push({
+      id: callId,
+      role: 'tool',
+      content: [
+        {
+          type: 'tool-result',
+          toolCallId: callId,
+          toolName: transformed.fullToolName,
+          output: transformedResult.output,
+        },
+      ],
+    } as ContextToolMessage);
+
+    if (toolName === 'write' || toolName === 'edit') {
+      const writeArgs = toolArgs as { path: string };
+      if (writeArgs.path) {
+        await taskContext.addToGit(resolve(taskContext.getTaskDir(), writeArgs.path));
+      }
+    }
+  };
+
+  const onDelta = async (update: InteractionUpdate) => {
+    switch (update.type) {
+      case 'thinking-delta': {
         if (currentAssistantMessage) {
           const text = extractText(getParts(currentAssistantMessage)).trim();
           if (text || hasToolCallParts(currentAssistantMessage)) {
@@ -821,188 +981,177 @@ async function processStream(run: Run, taskContext: TaskContext, context: Extens
         }
 
         const msg = ensureAssistantMessage();
-        appendReasoning(msg, message.text);
+        appendReasoning(msg, update.text);
 
-        if (!hasActiveReasoning) {
-          hasActiveReasoning = true;
-        }
+        hasActiveReasoning = true;
 
         await taskContext.addResponseMessage({
           id: msg.id,
-          reasoning: message.text,
+          content: '',
+          reasoning: extractReasoningText(getParts(msg)),
           finished: false,
         });
         break;
       }
 
-      case 'task': {
-        if (message.text) {
-          taskContext.addLogMessage('info', message.status ? `${message.status}: ${message.text}` : message.text);
+      case 'text-delta': {
+        if (currentAssistantMessage && hasToolCallParts(currentAssistantMessage)) {
+          await finishCurrentMessage();
         }
+
+        const msg = ensureAssistantMessage();
+        hasActiveReasoning = false;
+        appendText(msg, update.text);
+
+        await taskContext.addResponseMessage({
+          id: msg.id,
+          content: extractText(getParts(msg)),
+          finished: false,
+        });
         break;
       }
 
-      case 'assistant': {
-        for (const block of message.message.content) {
-          if (block.type === 'text') {
-            if (currentAssistantMessage && hasToolCallParts(currentAssistantMessage)) {
-              await finishCurrentMessage();
-            }
+      case 'tool-call-started': {
+        const { callId, toolCall } = update;
+        const msg = ensureAssistantMessage();
+        const transformed = transformCursorTool(
+          toolCall.type as string,
+          (toolCall.args ?? {}) as Record<string, unknown>,
+        );
 
-            const msg = ensureAssistantMessage();
-
-            if (hasActiveReasoning) {
-              hasActiveReasoning = false;
-            }
-
-            appendText(msg, block.text);
-
-            await taskContext.addResponseMessage({
-              id: msg.id,
-              content: block.text,
-              finished: false,
-            });
-          } else if (block.type === 'tool_use') {
-            const msg = ensureAssistantMessage();
-            const transformed = transformCursorTool(block.name, block.input as Record<string, unknown>);
-            getParts(msg).push({
-              type: 'tool-call',
-              toolCallId: block.id,
-              toolName: transformed.fullToolName,
-              input: transformed.input,
-            });
-
-            taskContext.addToolMessage(block.id, transformed.serverName, transformed.toolName, transformed.input, undefined, undefined, undefined, false, false);
-          }
-        }
-        break;
-      }
-
-      case 'tool_call': {
-        ensureAssistantMessage();
-
-        const finished =
-          message.status === "completed" || message.status === "error";
-
-        if (message.name === 'edit' && finished) {
-          const diffResult = message.result as { value?: { diffString?: string } } | undefined;
-          const diffString = diffResult?.value?.diffString;
-          const editArgs = (message.args ?? {}) as { path: string };
-
-          if (diffString) {
-            const edits = parseUnifiedDiff(diffString, editArgs.path ?? '');
-
-            if (edits.length > 0) {
-              const parts = getParts(currentAssistantMessage);
-              const originalIdx = parts.findIndex(
-                (p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === message.call_id,
-              );
-              if (originalIdx !== -1) {
-                parts.splice(originalIdx, 1);
-              }
-
-              const fileEditFullName = powerToolName('file_edit');
-
-              for (let i = 0; i < edits.length; i++) {
-                const edit = edits[i];
-                const editId = edits.length === 1 ? message.call_id : `${message.call_id}-${i}`;
-                const editInput = { filePath: edit.filePath, searchTerm: edit.searchTerm, replacementText: edit.replacementText };
-                const resultStr = `Successfully edited '${edit.filePath}'.`;
-
-                parts.push({
-                  type: "tool-call",
-                  toolCallId: editId,
-                  toolName: fileEditFullName,
-                  input: editInput,
-                });
-
-                taskContext.addToolMessage(
-                  editId,
-                  POWER_TOOL_SERVER_NAME,
-                  'file_edit',
-                  editInput,
-                  JSON.stringify(resultStr),
-                  undefined,
-                  undefined,
-                  true,
-                  true,
-                );
-
-                contextMessages.push({
-                  id: editId,
-                  role: "tool",
-                  content: [
-                    {
-                      type: "tool-result",
-                      toolCallId: editId,
-                      toolName: fileEditFullName,
-                      output: { type: "text", value: resultStr },
-                    },
-                  ],
-                } as ContextToolMessage);
-
-                await taskContext.addToGit(resolve(taskContext.getTaskDir(), edit.filePath));
-              }
-
-              break;
-            }
-          }
-        }
-
-        const transformed = transformCursorTool(message.name, (message.args ?? {}) as Record<string, unknown>);
-
-        if (!hasToolCallPart(currentAssistantMessage, message.call_id)) {
-          getParts(currentAssistantMessage).push({
-            type: "tool-call",
-            toolCallId: message.call_id,
+        if (!hasToolCallPart(msg, callId)) {
+          getParts(msg).push({
+            type: 'tool-call',
+            toolCallId: callId,
             toolName: transformed.fullToolName,
             input: transformed.input,
           });
         }
 
-        const transformedResult = finished
-          ? transformCursorResult(message.name, message.result, message.status ?? 'success', (message.args ?? {}) as Record<string, unknown>)
-          : null;
-
         taskContext.addToolMessage(
-          message.call_id,
+          callId,
           transformed.serverName,
           transformed.toolName,
           transformed.input,
-          transformedResult?.resultStr ?? undefined,
           undefined,
           undefined,
-          finished,
-          finished,
+          undefined,
+          false,
+          false,
         );
+        break;
+      }
 
-        if (finished && transformedResult) {
-          contextMessages.push({
-            id: message.call_id,
-            role: "tool",
-            content: [
-              {
-                type: "tool-result",
-                toolCallId: message.call_id,
-                toolName: transformed.fullToolName,
-                output: transformedResult.output,
-              },
-            ],
-          } as ContextToolMessage);
+      case 'partial-tool-call': {
+        const { callId, toolCall } = update;
+        if (!currentAssistantMessage) break;
 
-          if (message.name === 'write' || message.name === 'edit') {
-            const toolArgs = (message.args ?? {}) as { path: string };
-            if (toolArgs.path) {
-              await taskContext.addToGit(resolve(taskContext.getTaskDir(), toolArgs.path));
-            }
+        const parts = getParts(currentAssistantMessage);
+        const existingIdx = parts.findIndex(
+          (p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId,
+        );
+        if (existingIdx !== -1) {
+          const transformed = transformCursorTool(
+            toolCall.type as string,
+            (toolCall.args ?? {}) as Record<string, unknown>,
+          );
+          const part = parts[existingIdx] as ToolCallPart;
+          part.input = transformed.input;
+          part.toolName = transformed.fullToolName;
+
+          taskContext.addToolMessage(
+            callId,
+            transformed.serverName,
+            transformed.toolName,
+            transformed.input,
+            undefined,
+            undefined,
+            undefined,
+            false,
+            false,
+          );
+        }
+        break;
+      }
+
+      case 'tool-call-completed': {
+        await handleToolCompletion(update.callId, update.toolCall);
+        break;
+      }
+
+      case 'summary': {
+        if (update.summary) {
+          taskContext.addLogMessage('info', update.summary);
+        }
+        break;
+      }
+
+      case 'turn-ended': {
+        if (update.usage) {
+          if (accumulatedUsage) {
+            accumulatedUsage = {
+              inputTokens: accumulatedUsage.inputTokens + update.usage.inputTokens,
+              outputTokens: accumulatedUsage.outputTokens + update.usage.outputTokens,
+              cacheReadTokens: accumulatedUsage.cacheReadTokens + update.usage.cacheReadTokens,
+              cacheWriteTokens: accumulatedUsage.cacheWriteTokens + update.usage.cacheWriteTokens,
+              reasoningTokens: (accumulatedUsage.reasoningTokens ?? 0) + (update.usage.reasoningTokens ?? 0),
+            };
+          } else {
+            accumulatedUsage = { ...update.usage };
           }
         }
         break;
       }
+
+      default:
+        break;
     }
-  }
+  };
 
-  await finishCurrentMessage();
+  const onStep = async (step: ConversationStep) => {
+    switch (step.type) {
+      case 'assistantMessage':
+        await finishCurrentMessage();
+        break;
 
-  return contextMessages;
+      case 'thinkingMessage':
+        await finishCurrentMessage();
+        break;
+
+      case 'toolCall':
+        break;
+    }
+  };
+
+  const finish = async (): Promise<ContextMessage[]> => {
+    await finishCurrentMessage();
+
+    if (accumulatedUsage) {
+      const usageReport = mapTokenUsage(accumulatedUsage, modelName);
+
+      for (let i = contextMessages.length - 1; i >= 0; i--) {
+        const msg = contextMessages[i];
+        if (msg.role === 'assistant') {
+          msg.usageReport = usageReport;
+          const assistantMsg = msg as ContextAssistantMessage;
+          const parts = getParts(assistantMsg);
+          const text = extractText(parts).trim();
+          const reasoning = extractReasoningText(parts).trim();
+
+          await taskContext.addResponseMessage({
+            id: msg.id,
+            content: text,
+            reasoning: reasoning || undefined,
+            finished: true,
+            usageReport,
+          }, true);
+          break;
+        }
+      }
+    }
+
+    return contextMessages;
+  };
+
+  return { onDelta, onStep, finish };
 }
