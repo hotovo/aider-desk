@@ -1719,7 +1719,7 @@ import { Task } from '@/task';
 import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
-import { getShellCommandArgs, getShellPath } from '@/utils/shell';
+import { getShellCommandArgs, getShellInitCommand, getShellPath } from '@/utils/shell';
 import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 ⋮----
@@ -10708,6 +10708,19 @@ export const findExecutableInPath = (executable: string, checkOnly = false): str
 // On Unix, check if the executable exists and is executable
 ⋮----
 // Not found in this directory
+⋮----
+/**
+ * Get a shell initialization prefix that sources the user's shell config files
+ * and activates direnv if available. This ensures the bash tool has access to
+ * the same environment (env vars, shell functions, direnv) as an interactive
+ * terminal session.
+ *
+ * Only applies to Unix shells (bash, zsh, fish). Returns empty string for
+ * Windows shells or unsupported shells.
+ *
+ * @returns Shell command prefix string to prepend before the actual command
+ */
+export const getShellInitCommand = (): string =>
 ⋮----
 /**
  * Get shell and arguments to execute a command using the user's default shell.
@@ -23773,6 +23786,10 @@ const handleContextMenu = (params: ContextMenuParams) =>
 ⋮----
 // Capture the target element when context menu is triggered
 ⋮----
+// Show copy link option if right-clicked on a link
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 // Always show copy option
 ⋮----
 // If there's selected text, copy that
@@ -28790,7 +28807,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.75.0-dev",
+  "version": "0.76.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -28999,7 +29016,7 @@ File: package.json
     "@vitejs/plugin-react": "^5.0.4",
     "@vitest/coverage-v8": "^4.1.8",
     "@vitest/ui": "^4.1.8",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "autoprefixer": "^10.4.20",
     "concurrently": "^10.0.3",
     "dts-bundle-generator": "^9.5.1",
@@ -29007,7 +29024,6 @@ File: package.json
     "electron-builder": "^26.8.1",
     "electron-vite": "^5.0.0",
     "encoding": "^0.1.13",
-    "esbuild": "^0.27.7",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-import-resolver-typescript": "^3.7.0",
@@ -29030,7 +29046,7 @@ File: package.json
     "tar": "^7.5.13",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vite": "^7.3.2",
+    "vite": "^7.3.6",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.8"
   },
