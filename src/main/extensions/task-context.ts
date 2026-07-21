@@ -330,4 +330,8 @@ export class TaskContextImpl implements TaskContext {
   async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void> {
     await this.task.mergeWorktreeToWorktree(targetWorktreeDir, includeUncommitted);
   }
+
+  async resumeTask(): Promise<void> {
+    await this.task.resumeTask();
+  }
 }

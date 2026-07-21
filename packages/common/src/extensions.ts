@@ -36,7 +36,7 @@ import {
   UsageReportData,
   VoiceSession,
   WorktreeUncommittedFiles,
-} from "@common/types";
+} from '@common/types';
 
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState };
 export type { SwitchToLocalOptions, SwitchToWorktreeOptions, WorktreeUncommittedFiles };
@@ -456,7 +456,7 @@ export interface AgentStepFinishedEvent {
   readonly agentProfile: AgentProfile;
   readonly currentResponseId: string;
   readonly stepResult: AgentStepResult;
-  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' ;
+  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other';
   responseMessages: ContextMessage[];
 }
 
@@ -1159,6 +1159,14 @@ export interface TaskContext {
    * @param includeUncommitted - Whether to include uncommitted changes (default: false)
    */
   mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>;
+
+  /**
+   * Resume the task — starts execution as if the user clicked the "Execute"/"Resume" button.
+   * In agent mode, this runs the last user prompt through the agent pipeline.
+   * In Aider modes, this re-executes the last user message.
+   * No-op if the task is already running or has no prior user message to resume from.
+   */
+  resumeTask(): Promise<void>;
 }
 
 /**
