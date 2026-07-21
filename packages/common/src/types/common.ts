@@ -895,7 +895,7 @@ export const TaskDataSchema = z.object({
   lastMergeState: MergeStateSchema.optional(),
   aiderTotalCost: z.number(),
   agentTotalCost: z.number(),
-  autonomyMode: z.nativeEnum(AutonomyMode).optional(),
+  autonomyMode: z.enum(AutonomyMode).optional(),
   agentProfileId: z.string().optional(),
   provider: z.string().optional(),
   model: z.string().optional(),
