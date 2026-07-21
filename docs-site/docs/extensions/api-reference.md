@@ -170,6 +170,9 @@ interface TaskContext {
 
   // Redo
   redoLastUserPrompt(mode?: string, updatedPrompt?: string): Promise<void>;
+
+  // Resume
+  resumeTask(): Promise<void>;
 }
 ```
 
@@ -355,7 +358,7 @@ const myComponent: UIComponentDefinition = {
 
 ## UIComponentPlacement
 
-Available placement locations for UI components (21 total).
+Available placement locations for UI components (27 total).
 
 ```typescript
 type UIComponentPlacement =
@@ -370,6 +373,7 @@ type UIComponentPlacement =
   // Task Messages
   | 'task-messages-top'           // Above all messages
   | 'task-messages-bottom'        // Below all messages
+  | 'task-message'                // Replace default message rendering (requires messageFilter)
   | 'task-message-above'          // Above each message (receives message prop)
   | 'task-message-below'          // Below each message (receives message prop)
   | 'task-message-bar'            // In message action bar (receives message prop)
@@ -387,8 +391,11 @@ type UIComponentPlacement =
   | 'task-state-actions-all'      // Action buttons (all states)
   
   // Sidebar
-  | 'tasks-sidebar-header'        // Header of tasks sidebar
-  | 'tasks-sidebar-bottom'        // Bottom of tasks sidebar
+  | 'tasks-sidebar-header'              // Header of tasks sidebar
+  | 'tasks-sidebar-actions-left'        // Left side of tasks sidebar action area
+  | 'tasks-sidebar-actions-right'       // Right side of tasks sidebar action area
+  | 'tasks-sidebar-bottom'              // Bottom of tasks sidebar
+  | 'task-sidebar-item-badges'          // Badges within each task sidebar item (per-task)
   
   // Header
   | 'header-left'                 // Left side of main header
@@ -396,14 +403,11 @@ type UIComponentPlacement =
   
   // Welcome Page
   | 'welcome-page'                // Full welcome page (no task open)
-  | 'tasks-sidebar-header'
-  | 'tasks-sidebar-bottom'
-  | 'task-message-above'
-  | 'task-message-below'
-  | 'task-message-bar'
-  | 'task-top-bar-left'
-  | 'task-top-bar-right'
-  | 'task-state-actions';
+  
+  // Floating Panels
+  | 'task-floating'               // Draggable floating panel scoped to task
+  | 'project-floating'            // Draggable floating panel scoped to project
+  | 'app-floating';               // Draggable floating panel at app level
 ```
 
 ## UI Component Props

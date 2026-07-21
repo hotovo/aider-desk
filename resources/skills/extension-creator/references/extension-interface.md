@@ -668,6 +668,17 @@ interface TaskContext {
   /** Merge commits and optionally uncommitted changes from this task's worktree to a target worktree directory. */
   mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>;
 }
+
+### Resume
+
+```typescript
+interface TaskContext {
+  /** Resume the task — starts execution as if the user clicked the "Execute"/"Resume" button.
+   *  In agent mode, this runs the last user prompt through the agent pipeline.
+   *  In Aider modes, this re-executes the last user message.
+   *  No-op if the task is already running or has no prior user message to resume from. */
+  resumeTask(): Promise<void>;
+}
 ```
 
 ---
@@ -948,6 +959,7 @@ type UIComponentPlacement =
   | 'task-top-bar-right'
   | 'task-state-actions'
   | 'task-state-actions-all'
+  | 'task-sidebar-item-badges'
   | 'welcome-page'
   | 'task-floating'
   | 'project-floating'

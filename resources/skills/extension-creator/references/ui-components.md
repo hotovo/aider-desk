@@ -145,6 +145,12 @@ UI components can be placed in various locations throughout the AiderDesk interf
   - *Use for*: Persistent sidebar actions, status
   - *Layout*: Full sidebar width at bottom
 
+- **task-sidebar-item-badges**: Inside each task item in the sidebar (between state chip and worktree badge)
+  - *Use for*: Per-task badges, indicators, schedule status icons
+  - *Layout*: Inline, compact — renders directly in each sidebar task row
+  - *Props*: Receives `task` (the TaskData for this specific sidebar item) and `taskId`
+  - *Important*: Unlike most placements, this renders **once per task** in the sidebar, not just for the active task. Use `loadData: true` and `noDataCache: true` so each item fetches its own data. Call `context.triggerUIDataRefresh(componentId, taskId)` to refresh a specific task's badge.
+
 ### Global Placements
 
 - **header-left**: Left side of the main application header
