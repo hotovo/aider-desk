@@ -9,7 +9,7 @@ import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErr
 import { useExtensionComponentData } from '@/stores/extensionUIStore';
 
 type Props = {
-  comp: ExtensionUIComponent;
+  component: ExtensionUIComponent;
   componentProps: UIComponentProps;
   additionalProps?: Record<string, unknown>;
   libraries: Record<string, Record<string, unknown>>;
@@ -21,7 +21,7 @@ type Props = {
 };
 
 const ExtensionComponentRendererInner = ({
-  comp,
+  component,
   componentProps,
   additionalProps,
   libraries,
@@ -31,13 +31,13 @@ const ExtensionComponentRendererInner = ({
   currentActionTaskId,
   api,
 }: Props) => {
-  const data = useExtensionComponentData(comp.extensionId, comp.componentId, currentProjectDir, currentTaskId);
+  const data = useExtensionComponentData(component.extensionId, component.componentId, currentProjectDir, currentTaskId);
 
   const executeExtensionAction = useCallback(
     async (action: string, ...args: unknown[]) => {
-      return await api.executeUIExtensionAction(comp.extensionId, comp.componentId, action, args, currentActionProjectDir, currentActionTaskId);
+      return await api.executeUIExtensionAction(component.extensionId, component.componentId, action, args, currentActionProjectDir, currentActionTaskId);
     },
-    [api, comp.extensionId, comp.componentId, currentActionProjectDir, currentActionTaskId],
+    [api, component.extensionId, component.componentId, currentActionProjectDir, currentActionTaskId],
   );
 
   const componentData = useMemo(
@@ -52,8 +52,8 @@ const ExtensionComponentRendererInner = ({
   );
 
   return (
-    <ExtensionUIErrorBoundary extensionId={comp.extensionId} componentId={comp.componentId}>
-      <StringToReactComponent data={componentData}>{comp.jsx}</StringToReactComponent>
+    <ExtensionUIErrorBoundary extensionId={component.extensionId} componentId={component.componentId}>
+      <StringToReactComponent data={componentData}>{component.jsx}</StringToReactComponent>
     </ExtensionUIErrorBoundary>
   );
 };

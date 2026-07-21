@@ -177,7 +177,7 @@ export const useExtensionComponentsWrapper = ({
     return components.map((comp) => (
       <ExtensionComponentRenderer
         key={`${comp.extensionId}-${comp.componentId}`}
-        comp={comp}
+        component={comp}
         componentProps={componentProps}
         additionalProps={additionalProps}
         libraries={componentLibraries}
@@ -205,5 +205,12 @@ export const useExtensionComponentsWrapper = ({
     components,
     renderComponents,
     isEmpty: !components || components.length === 0,
+    componentProps,
+    componentLibraries,
+    api,
+    currentProjectDir,
+    currentTaskId,
+    currentActionProjectDir,
+    currentActionTaskId,
   };
 };

@@ -8,7 +8,7 @@ import { ApplicationAPI } from '@common/api';
 const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string =>
   `${placement || 'default'}:${projectDir || 'global'}:${taskId || ''}`;
 
-const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string =>
+export const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string =>
   `${extensionId}:${componentId}:${projectDir || ''}:${taskId || ''}`;
 
 interface ExtensionUIState {
