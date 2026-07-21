@@ -947,6 +947,8 @@ export enum DefaultTaskState {
   Done = 'DONE',
 }
 
+export const DEFAULT_TASK_STATES = new Set<string>(Object.values(DefaultTaskState));
+
 export const TaskStateEmoji: Record<DefaultTaskState, string> = {
   [DefaultTaskState.Todo]: '📋',
   [DefaultTaskState.ReadyForImplementation]: '🚀',

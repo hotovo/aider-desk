@@ -15,6 +15,7 @@ import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
@@ -266,6 +267,13 @@ export const TaskItem = memo(
                   </div>
                 )}
                 <TaskStateChip state={task.state || DefaultTaskState.Todo} className={hasChildren && !isSubtask ? '' : '-ml-0.5'} />
+                <ExtensionComponentWrapper
+                  placement="task-sidebar-item-badges"
+                  renderNullOnEmpty
+                  taskId={task.id}
+                  actionTaskId={task.id}
+                  additionalProps={{ task }}
+                />
                 {task.workingMode === 'worktree' && (
                   <span className="px-1 py-0.5 rounded border border-border-dark-light bg-bg-tertiary-emphasis text-text-tertiary">
                     <IoGitBranch className="w-3 h-3" />

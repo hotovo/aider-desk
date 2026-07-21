@@ -28,7 +28,12 @@ export const getStateTextClass = (state: string): string => {
 };
 
 export const getTaskStateLabel = (t: TFunction, state: string) => {
-  return t(`taskState.${state}`, { defaultValue: state.replace(/[-_]/g, ' ') });
+  return t(`taskState.${state}`, {
+    defaultValue: state
+      .replace(/[-_]/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase()),
+  });
 };
 
 type Props = {

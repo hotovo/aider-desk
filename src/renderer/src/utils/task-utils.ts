@@ -1,4 +1,4 @@
-import { TaskData } from '@common/types';
+import { DEFAULT_TASK_STATES, TaskData } from '@common/types';
 
 import { getTaskDateGroup } from './date-utils';
 
@@ -26,7 +26,7 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
       if (task.archived && !showArchived) {
         return false;
       }
-      if (task.state && !selectedStates.has(task.state)) {
+      if (task.state && DEFAULT_TASK_STATES.has(task.state) && !selectedStates.has(task.state)) {
         return false;
       }
       return true;

@@ -217,6 +217,7 @@ export type UIComponentPlacement =
   | 'task-top-bar-right'
   | 'task-state-actions'
   | 'task-state-actions-all'
+  | 'task-sidebar-item-badges'
   | 'welcome-page'
   | 'task-floating'
   | 'project-floating'
