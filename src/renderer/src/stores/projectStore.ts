@@ -54,7 +54,14 @@ export const useProjectStore = createWithEqualityFn<ProjectStore>()(
         set((state) => {
           const newMap = new Map(state.projectTasksMap);
           const tasks = newMap.get(projectBaseDir) || [];
-          newMap.set(projectBaseDir, [...tasks, taskData]);
+          if (tasks.some((task) => task.id === taskData.id)) {
+            newMap.set(
+              projectBaseDir,
+              tasks.map((task) => (task.id === taskData.id ? taskData : task)),
+            );
+          } else {
+            newMap.set(projectBaseDir, [...tasks, taskData]);
+          }
           return { projectTasksMap: newMap };
         }),
 
