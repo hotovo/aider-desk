@@ -409,6 +409,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["ui"]
+    },
+    {
+      "id": "task-scheduler",
+      "name": "Task Scheduler",
+      "description": "Schedule tasks to run automatically on a cron or periodic basis",
+      "folder": "task-scheduler",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["ui", "commands", "events"]
     }
   ]
 }

@@ -1,0 +1,11 @@
+{
+  "name": "task-scheduler",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "node-cron": "^4.0.5",
+    "cron-parser": "^5.3.2",
+    "cronstrue": "^3.2.0",
+    "chrono-node": "^2.8.2"
+  }
+}
