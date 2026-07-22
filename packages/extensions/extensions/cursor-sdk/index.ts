@@ -39,7 +39,7 @@ interface CursorConfig {
   apiKey: string;
 }
 
-const CURSOR_PROVIDER_NAME = 'cursor-sdk';
+const CURSOR_PROVIDER_ID = 'cursor-sdk';
 const AGENT_ID_METADATA_KEY = 'cursorAgentId';
 const POWER_TOOL_SERVER_NAME = 'power';
 const CURSOR_SERVER_NAME = 'cursor';
@@ -278,13 +278,14 @@ interface TurnUsage {
   outputTokens: number;
   cacheReadTokens: number;
   cacheWriteTokens: number;
+  totalTokens?: number;
   reasoningTokens?: number;
 }
 
 function mapTokenUsage(usage: TurnUsage, modelName: string): UsageReportData {
   return {
     model: modelName,
-    sentTokens: usage.inputTokens,
+    sentTokens: usage.inputTokens - usage.cacheReadTokens,
     receivedTokens: usage.outputTokens,
     messageCost: 0,
     cacheWriteTokens: usage.cacheWriteTokens || undefined,
@@ -488,7 +489,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.0.0',
+    version: '4.1.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -527,9 +528,9 @@ export default class CursorSdkExtension implements Extension {
   getProviders(_context: ExtensionContext): ProviderDefinition[] {
     return [
       {
-        id: CURSOR_PROVIDER_NAME,
-        name: CURSOR_PROVIDER_NAME,
-        provider: { name: CURSOR_PROVIDER_NAME },
+        id: CURSOR_PROVIDER_ID,
+        name: 'Cursor SDK',
+        provider: { name: CURSOR_PROVIDER_ID },
         strategy: {
           createLlm: () => ({}),
           loadModels: async (profile, _settings): Promise<LoadModelsResponse> => {
@@ -576,7 +577,7 @@ export default class CursorSdkExtension implements Extension {
     event: AgentStartedEvent,
     context: ExtensionContext,
   ): Promise<void | Partial<AgentStartedEvent>> {
-    if (!event.providerProfile.name.startsWith(CURSOR_PROVIDER_NAME)) {
+    if (!event.providerProfile.name.startsWith(CURSOR_PROVIDER_ID)) {
       return undefined;
     }
 
@@ -601,7 +602,7 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const taskId = taskContext.data.id;
-    const rawModelId = event.model.replace(`${CURSOR_PROVIDER_NAME}/`, '');
+    const rawModelId = event.model.replace(`${CURSOR_PROVIDER_ID}/`, '');
     const projectDir = taskContext.getTaskDir();
 
     const mcpServers = await this.buildMcpServersConfig(event.agentProfile.enabledServers, projectDir, context);
@@ -641,13 +642,13 @@ export default class CursorSdkExtension implements Extension {
         context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
       }
 
-      const streamProcessor = createStreamProcessor(taskContext, baseModelId);
+      const streamProcessor = createStreamProcessor(taskContext, context, baseModelId);
 
-      const sendOptions: SendOptions = {
+      const sendOptions = {
         ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
-        onDelta: ({ update }) => streamProcessor.onDelta(update),
-        onStep: ({ step }) => streamProcessor.onStep(step),
-      };
+        onDelta: ({ update }: { update: InteractionUpdate }) => streamProcessor.onDelta(update),
+        onStep: ({ step }: { step: ConversationStep }) => streamProcessor.onStep(step),
+      } as SendOptions;
 
       const run = await agent.send(prompt, sendOptions);
       context.log(`Cursor run started: ${run.id}`, 'info');
@@ -658,8 +659,9 @@ export default class CursorSdkExtension implements Extension {
 
       const result = await run.wait();
       context.log(`Cursor run finished: ${result.status}`, 'info');
+      context.log(`[cursor-sdk] run.wait() result.usage: ${result.usage ? JSON.stringify(result.usage) : 'undefined'}`, 'info');
 
-      const contextMessages = await streamProcessor.finish();
+      const contextMessages = await streamProcessor.finish(result.usage ?? undefined);
 
       if (prompt) {
         const userMessage: ContextUserMessage = {
@@ -761,11 +763,12 @@ type AssistantContentPart = ReasoningPart | TextPart | ToolCallPart;
 
 function createStreamProcessor(
   taskContext: TaskContext,
+  context: ExtensionContext,
   modelName: string,
 ): {
   onDelta: (update: InteractionUpdate) => Promise<void>;
   onStep: (step: ConversationStep) => Promise<void>;
-  finish: () => Promise<ContextMessage[]>;
+  finish: (runUsage?: TurnUsage) => Promise<ContextMessage[]>;
 } {
   const contextMessages: ContextMessage[] = [];
 
@@ -988,7 +991,7 @@ function createStreamProcessor(
         await taskContext.addResponseMessage({
           id: msg.id,
           content: '',
-          reasoning: extractReasoningText(getParts(msg)),
+          reasoning: update.text,
           finished: false,
         });
         break;
@@ -1005,7 +1008,7 @@ function createStreamProcessor(
 
         await taskContext.addResponseMessage({
           id: msg.id,
-          content: extractText(getParts(msg)),
+          content: update.text,
           finished: false,
         });
         break;
@@ -1087,6 +1090,7 @@ function createStreamProcessor(
       }
 
       case 'turn-ended': {
+        context.log(`[cursor-sdk] turn-ended delta received, usage: ${update.usage ? JSON.stringify(update.usage) : 'undefined'}`, 'debug');
         if (update.usage) {
           if (accumulatedUsage) {
             accumulatedUsage = {
@@ -1111,23 +1115,31 @@ function createStreamProcessor(
   const onStep = async (step: ConversationStep) => {
     switch (step.type) {
       case 'assistantMessage':
-        await finishCurrentMessage();
+        context.log(`[cursor-sdk] Step finished. Type: assistantMessage, text: ${step.message.text.substring(0, 100)}`, 'info');
         break;
 
       case 'thinkingMessage':
-        await finishCurrentMessage();
+        context.log(`[cursor-sdk] Step finished. Type: thinkingMessage, text: ${step.message.text.substring(0, 100)}, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`, 'info');
         break;
 
-      case 'toolCall':
+      case 'toolCall': {
+        const tc = step.message;
+        const resultStatus = tc.result?.status ?? 'pending';
+        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}`, 'info');
         break;
+      }
     }
   };
 
-  const finish = async (): Promise<ContextMessage[]> => {
+  const finish = async (runUsage?: TurnUsage): Promise<ContextMessage[]> => {
     await finishCurrentMessage();
 
-    if (accumulatedUsage) {
-      const usageReport = mapTokenUsage(accumulatedUsage, modelName);
+    context.log(`[cursor-sdk] finish() called, runUsage: ${runUsage ? JSON.stringify(runUsage) : 'undefined'}, accumulatedUsage: ${accumulatedUsage ? JSON.stringify(accumulatedUsage) : 'undefined'}`, 'debug');
+
+    const usage = runUsage ?? accumulatedUsage;
+    if (usage) {
+      const usageReport = mapTokenUsage(usage, modelName);
+      context.log(`[cursor-sdk] Attaching usageReport to last assistant message: ${JSON.stringify(usageReport)}`, 'debug');
 
       for (let i = contextMessages.length - 1; i >= 0; i--) {
         const msg = contextMessages[i];
@@ -1145,9 +1157,12 @@ function createStreamProcessor(
             finished: true,
             usageReport,
           }, true);
+          context.log(`[cursor-sdk] Usage attached to message ${msg.id}`, 'debug');
           break;
         }
       }
+    } else {
+      context.log('[cursor-sdk] No usage data available to attach', 'debug');
     }
 
     return contextMessages;
