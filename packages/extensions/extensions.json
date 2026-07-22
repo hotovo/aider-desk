@@ -375,6 +375,15 @@
       "capabilities": ["agents", "example"]
     },
     {
+      "id": "wigolo",
+      "name": "wigolo",
+      "description": "Local-first web search, fetch, crawl & research tools powered by wigolo — no API keys required",
+      "folder": "wigolo",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["tools", "search"]
+    },
+    {
       "id": "destructive-command-guard",
       "name": "Destructive Command Guard",
       "description": "Blocks dangerous git and shell commands from being executed by agents using dcg",

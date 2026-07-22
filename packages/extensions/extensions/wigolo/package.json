@@ -1,0 +1,16 @@
+{
+  "name": "wigolo-extension",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "description": "Local-first web search, fetch, crawl & research tools powered by wigolo",
+  "keywords": ["aiderdesk", "extension", "wigolo", "web-search", "search", "research"],
+  "author": "wladimiiir",
+  "license": "MIT",
+  "dependencies": {
+    "wigolo": "^0.2.1",
+    "wigolo-sdk": "^0.2.1"
+  },
+  "overrides": {
+    "zod": "^4.3.6"
+  }
+}
