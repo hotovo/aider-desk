@@ -352,6 +352,7 @@ src/
           CopyMessageButton.tsx
           CreateTaskToolMessage.tsx
           CustomCommandBashBlock.tsx
+          DefaultTaskStateActions.tsx
           DeleteMemoryToolMessage.tsx
           DeleteTaskToolMessage.tsx
           ExpandableMessageBlock.tsx
@@ -4768,6 +4769,8 @@ async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
 async applyUncommittedChanges(targetBranch?: string): Promise<void>
 ⋮----
 async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>
+⋮----
+async resumeTask(): Promise<void>
 
 ================
 File: src/main/logger/event-transport.ts
@@ -14952,7 +14955,7 @@ import { ExtensionUIErrorBoundary } from '@/components/extensions/ExtensionUIErr
 import { useExtensionComponentData } from '@/stores/extensionUIStore';
 ⋮----
 type Props = {
-  comp: ExtensionUIComponent;
+  component: ExtensionUIComponent;
   componentProps: UIComponentProps;
   additionalProps?: Record<string, unknown>;
   libraries: Record<string, Record<string, unknown>>;
@@ -14964,7 +14967,7 @@ type Props = {
 };
 ⋮----
 const ExtensionComponentRendererInner = ({
-  comp,
+  component,
   componentProps,
   additionalProps,
   libraries,
@@ -15501,6 +15504,63 @@ type Props = {
 };
 ⋮----
 const toggleAccordion = () =>
+
+================
+File: src/renderer/src/components/message/DefaultTaskStateActions.tsx
+================
+import { IoPlayOutline } from 'react-icons/io5';
+import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
+import { BiArchive, BiArchiveIn } from 'react-icons/bi';
+import { MdDeleteForever, MdOutlineDifference } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
+import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
+⋮----
+import type { DiffModalGroup } from '@/components/Workspace/UpdatedFilesDiffModal';
+⋮----
+import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
+import { Button } from '@/components/common/Button';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useApi } from '@/contexts/ApiContext';
+import { groupFilesByCommit } from '@/components/Workspace/group-files';
+import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
+⋮----
+type Props = {
+  projectDir: string;
+  taskId: string;
+  state: string | undefined;
+  mode?: Mode;
+  isArchived: boolean | undefined;
+  task?: TaskData | null;
+  onResumeTask?: () => void;
+  onMarkAsDone?: () => void;
+  onRunPrompt?: (prompt: string) => void;
+  onArchiveTask?: () => void;
+  onUnarchiveTask?: () => void;
+  onDeleteTask?: () => void;
+};
+⋮----
+const fetchUpdatedFiles = async () =>
+⋮----
+// silently ignore fetch errors
+⋮----
+const handleDeleteClick = () =>
+⋮----
+const handleCancelDelete = () =>
+⋮----
+const handleConfirmDelete = () =>
+⋮----
+const handleProceedClick = () =>
+⋮----
+const handleArchiveClick = () =>
+⋮----
+const handleUnarchiveClick = () =>
+⋮----
+const renderSection = (icon: ReactNode, text: string, actions: ReactNode) =>
+⋮----
+
+⋮----
+onClose=
 
 ================
 File: src/renderer/src/components/message/DeleteMemoryToolMessage.tsx
@@ -16656,27 +16716,16 @@ onClick=
 ================
 File: src/renderer/src/components/message/TaskStateActions.tsx
 ================
-import { IoPlayOutline } from 'react-icons/io5';
-import { RiAlertLine, RiCheckFill, RiCheckLine, RiPlayLine } from 'react-icons/ri';
-import { BiArchive, BiArchiveIn } from 'react-icons/bi';
-import { MdDeleteForever, MdOutlineDifference } from 'react-icons/md';
-import { useTranslation } from 'react-i18next';
-import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { DefaultTaskState, Mode, TaskData, UpdatedFile } from '@common/types';
+import { ExtensionUIComponent, Mode, TaskData } from '@common/types';
+import { UIComponentProps } from '@common/extensions';
+import { ApplicationAPI } from '@common/api';
 ⋮----
-import { useExtensionComponentsWrapper } from '../extensions/useExtensionComponentsWrapper';
-⋮----
-import type { DiffModalGroup } from '@/components/Workspace/UpdatedFilesDiffModal';
-⋮----
-import { UpdatedFilesDiffModal } from '@/components/Workspace/UpdatedFilesDiffModal';
-import { Button } from '@/components/common/Button';
-import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { DefaultTaskStateActions } from '@/components/message/DefaultTaskStateActions';
+import { ExtensionComponentRenderer } from '@/components/extensions/ExtensionComponentRenderer';
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
-import { useApi } from '@/contexts/ApiContext';
-import { groupFilesByCommit } from '@/components/Workspace/group-files';
-import { encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 ⋮----
 type Props = {
   projectDir: string;
@@ -16693,27 +16742,18 @@ type Props = {
   onDeleteTask?: () => void;
 };
 ⋮----
-const fetchUpdatedFiles = async () =>
-⋮----
-// silently ignore fetch errors
-⋮----
-const handleDeleteClick = () =>
-⋮----
-const handleCancelDelete = () =>
-⋮----
-const handleConfirmDelete = () =>
-⋮----
-const handleProceedClick = () =>
-⋮----
-const handleArchiveClick = () =>
-⋮----
-const handleUnarchiveClick = () =>
-⋮----
-const renderSection = (icon: ReactNode, text: string, actions: ReactNode) =>
-⋮----
-
-⋮----
-onClose=
+type ChainProps = {
+  components: ExtensionUIComponent[];
+  defaultTaskActionsProps: Props;
+  componentProps: UIComponentProps;
+  additionalProps: Record<string, unknown>;
+  libraries: Record<string, Record<string, unknown>>;
+  currentProjectDir?: string;
+  currentTaskId?: string;
+  currentActionProjectDir?: string;
+  currentActionTaskId?: string;
+  api: ApplicationAPI;
+};
 
 ================
 File: src/renderer/src/components/message/ThinkingAnswerBlock.tsx
@@ -19035,6 +19075,7 @@ import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
@@ -25631,7 +25672,7 @@ import { ApplicationAPI } from '@common/api';
 ⋮----
 const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string
 ⋮----
-const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string
+export const getDataCacheKey = (extensionId: string, componentId: string, projectDir?: string, taskId?: string): string
 ⋮----
 interface ExtensionUIState {
   componentsMap: Map<string, ExtensionUIComponent[]>;
@@ -28128,7 +28169,7 @@ export const formatHumanReadable = (t: TFunction, value: number): string =>
 ================
 File: src/renderer/src/utils/task-utils.ts
 ================
-import { TaskData } from '@common/types';
+import { DEFAULT_TASK_STATES, TaskData } from '@common/types';
 ⋮----
 import { getTaskDateGroup } from './date-utils';
 ⋮----
