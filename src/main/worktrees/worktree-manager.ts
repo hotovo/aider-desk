@@ -1813,7 +1813,7 @@ export class WorktreeManager {
       // Check if HEAD exists (no commits yet in worktree)
       await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
     } catch {
-      return files;
+      return files.concat(await this.getNoHeadUpdatedFiles(worktreePath));
     }
 
     try {
@@ -1956,7 +1956,7 @@ export class WorktreeManager {
     try {
       await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
     } catch {
-      return [];
+      return await this.getNoHeadUpdatedFiles(worktreePath);
     }
 
     const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
@@ -2014,6 +2014,82 @@ export class WorktreeManager {
 
         files.push({ path: filePath, additions, deletions, diff });
       }
+    }
+
+    return files;
+  }
+
+  /**
+   * No-HEAD mode: repo has no commits yet. Uses the well-known empty tree hash
+   * as the diff base, which is equivalent to `git diff HEAD` against an empty repo.
+   * Shows staged files and unstaged modifications to staged files (same as `git diff HEAD`
+   * would show if HEAD pointed to an empty commit). Untracked files are not shown,
+   * consistent with the existing HEAD-based behavior.
+   */
+  private async getNoHeadUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]> {
+    const EMPTY_TREE_HASH = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+    const files: UpdatedFile[] = [];
+
+    try {
+      const { stdout } = await execWithShellPath(`git diff --numstat -z ${EMPTY_TREE_HASH}`, {
+        cwd: worktreePath,
+      });
+
+      const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
+
+      for (const entry of entries) {
+        const parts = entry.split('\t');
+        if (parts.length < 3) {
+          continue;
+        }
+
+        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
+        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
+        const filePath = parts.slice(2).join('\t');
+        if (!filePath) {
+          continue;
+        }
+
+        if (this.isSymlinkPath(worktreePath, filePath)) {
+          continue;
+        }
+
+        const absoluteFilePath = join(worktreePath, filePath);
+
+        let diff = '';
+        try {
+          const fileExists = await fs
+            .access(absoluteFilePath)
+            .then(() => true)
+            .catch(() => false);
+
+          if (fileExists) {
+            const fileContentBuffer = await fs.readFile(absoluteFilePath);
+            if (isBinary(filePath, fileContentBuffer)) {
+              files.push({ path: filePath, additions, deletions, diff });
+              continue;
+            }
+          }
+
+          const escapedPath = filePath.replace(/"/g, '\\"');
+          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${EMPTY_TREE_HASH} -- "${escapedPath}"`, {
+            cwd: worktreePath,
+            maxBuffer: 10 * 1024 * 1024,
+          });
+          diff = diffOutput;
+        } catch (diffError) {
+          logger.warn(`Failed to get diff for file ${filePath}:`, {
+            error: diffError instanceof Error ? diffError.message : String(diffError),
+          });
+          diff = '';
+        }
+
+        files.push({ path: filePath, additions, deletions, diff });
+      }
+    } catch (error) {
+      logger.warn('Failed to get updated files for repo with no commits:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
 
     return files;

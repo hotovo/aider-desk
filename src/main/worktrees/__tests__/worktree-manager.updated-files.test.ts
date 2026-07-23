@@ -39,7 +39,7 @@ vi.mock('fs/promises', () => ({
 }));
 
 vi.mock('istextorbinary', () => ({
-  isBinary: () => false,
+  isBinary: vi.fn(() => false),
 }));
 
 const fs = await import('fs/promises');
@@ -166,5 +166,91 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
     const paths = result.map((f) => f.path);
     expect(paths).toContain('src/main/file.ts');
     expect(paths).not.toContain('resources/linux');
+  });
+});
+
+describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
+  let worktreeManager: WorktreeManager;
+  const testPath = '/test/worktree';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    worktreeManager = new WorktreeManager();
+  });
+
+  it('should return staged files when there are no commits (non-worktree mode)', async () => {
+    const diffContent =
+      'diff --git a/src/main.ts b/src/main.ts\nnew file mode 100644\n--- /dev/null\n+++ b/src/main.ts\n@@ -0,0 +1,3 @@\n+line1\n+line2\n+line3';
+
+    useMockSeq(createMockSeq([new Error('HEAD not found'), { stdout: '3\t0\tsrc/main.ts\0', stderr: '' }, { stdout: diffContent, stderr: '' }]));
+    (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('src/main.ts');
+    expect(result[0].additions).toBe(3);
+    expect(result[0].deletions).toBe(0);
+    expect(result[0].diff).toBe(diffContent);
+  });
+
+  it('should filter symlink paths in no-HEAD mode', async () => {
+    useMockSeq(
+      createMockSeq([
+        new Error('HEAD not found'),
+        { stdout: '3\t0\tsrc/main.ts\0-\t-\tresources/linux\0', stderr: '' },
+        { stdout: 'diff content', stderr: '' },
+      ]),
+    );
+    (lstatSync as Mock).mockImplementation((p: string) => ({
+      isSymbolicLink: () => p.includes('resources/linux'),
+    }));
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('src/main.ts');
+  });
+
+  it('should handle binary files in no-HEAD mode', async () => {
+    // @ts-expect-error istextorbinary library does not provide TypeScript definitions
+    const { isBinary } = await import('istextorbinary');
+    (isBinary as Mock).mockReturnValue(true);
+
+    useMockSeq(createMockSeq([new Error('HEAD not found'), { stdout: '-\t-\tassets/image.png\0', stderr: '' }]));
+    (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('assets/image.png');
+    expect(result[0].diff).toBe('');
+
+    (isBinary as Mock).mockReturnValue(false);
+  });
+
+  it('should return staged files in worktree mode when no HEAD exists', async () => {
+    const mainBranch = 'main';
+    const diffContent = 'diff --git a/src/app.ts b/src/app.ts\nnew file mode 100644\n--- /dev/null\n+++ b/src/app.ts\n@@ -0,0 +1,2 @@\n+hello\n+world';
+
+    useMockSeq(
+      createMockSeq([new Error('log failed'), new Error('HEAD not found'), { stdout: '2\t0\tsrc/app.ts\0', stderr: '' }, { stdout: diffContent, stderr: '' }]),
+    );
+    (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
+
+    const result = await worktreeManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('src/app.ts');
+    expect(result[0].additions).toBe(2);
+    expect(result[0].diff).toBe(diffContent);
   });
 });

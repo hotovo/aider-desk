@@ -11,6 +11,7 @@
 - added drag and drop support for tasks and subtasks
 - avoid showing password dialog on start up in some cases
 - added getOpenProjects to Extension Context API
+- correctly showing Updated Files in repos without any commits
 
 ## [0.75.0]
 
