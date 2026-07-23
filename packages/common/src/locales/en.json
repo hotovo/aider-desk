@@ -1772,6 +1772,8 @@
     "generatingName": "Generating name...",
     "changeState": "Change state",
     "createSubtask": "Create subtask",
+    "dropToRoot": "Drop here to move to top level",
+    "dropToSubtask": "Make subtask",
     "deleteConfirmWithSubtasks": "This task has {{count}} subtask(s). Delete anyway?"
   },
   "taskInfo": {

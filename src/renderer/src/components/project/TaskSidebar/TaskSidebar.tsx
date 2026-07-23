@@ -1,8 +1,8 @@
 import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
+import { MouseEvent, DragEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
 import { HiPlus } from 'react-icons/hi';
-import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { RiMenuUnfold4Line, RiMenuFold2Line } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineSearch } from 'react-icons/md';
 import { clsx } from 'clsx';
@@ -90,6 +90,9 @@ const TaskSidebarComponent = ({
   const [optimisticActiveTaskId, setOptimisticActiveTaskId] = useOptimistic(activeTaskId);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const resizeStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragOverList, setDragOverList] = useState(false);
 
   const handleResizeMouseDown = useCallback(
     (e: MouseEvent<HTMLDivElement>) => {
@@ -168,6 +171,16 @@ const TaskSidebarComponent = ({
   const multiselectButtonRef = useRef<HTMLDivElement>(null);
   const lastClickedTaskIdRef = useRef<string | null>(null);
   const selectedArchived = Array.from(selectedTasks).filter((taskId) => tasks.find((task) => task.id === taskId)?.archived);
+
+  const effectiveDraggedIds = useMemo(() => {
+    if (!draggedTaskId) {
+      return new Set<string>();
+    }
+    if (isMultiselectMode && selectedTasks.has(draggedTaskId) && selectedTasks.size > 1) {
+      return selectedTasks;
+    }
+    return new Set([draggedTaskId]);
+  }, [draggedTaskId, isMultiselectMode, selectedTasks]);
 
   const handleMultiselectClose = () => {
     setIsMultiselectMode(false);
@@ -424,6 +437,88 @@ const TaskSidebarComponent = ({
       }
     },
     [updateTask],
+  );
+
+  const isDescendantOf = useCallback(
+    (taskId: string, ancestorId: string): boolean => {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task || !task.parentId) {
+        return false;
+      }
+      if (task.parentId === ancestorId) {
+        return true;
+      }
+      return isDescendantOf(task.parentId, ancestorId);
+    },
+    [tasks],
+  );
+
+  const handleDragStart = useCallback((taskId: string) => {
+    setDraggedTaskId(taskId);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+    setDragOverList(false);
+  }, []);
+
+  const handleDropOnTask = useCallback(
+    async (targetId: string) => {
+      const idsToMove = Array.from(effectiveDraggedIds).filter(
+        (id) => id !== targetId && !isDescendantOf(targetId, id) && tasks.find((t) => t.id === id)?.parentId !== targetId,
+      );
+      const clearDragState = () => {
+        setDraggedTaskId(null);
+        setDragOverTaskId(null);
+        setDragOverList(false);
+      };
+      if (idsToMove.length === 0) {
+        clearDragState();
+        return;
+      }
+      try {
+        if (updateTask) {
+          await Promise.all(idsToMove.map((id) => updateTask(id, { parentId: targetId })));
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to move task:', error);
+      }
+      clearDragState();
+    },
+    [effectiveDraggedIds, isDescendantOf, tasks, updateTask],
+  );
+
+  const handleListDragOver = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      if (draggedTaskId) {
+        e.preventDefault();
+      }
+    },
+    [draggedTaskId],
+  );
+
+  const handleListDrop = useCallback(
+    async (e: DragEvent<HTMLDivElement>) => {
+      if (effectiveDraggedIds.size === 0) {
+        return;
+      }
+      e.preventDefault();
+      const idsToMove = Array.from(effectiveDraggedIds).filter((id) => tasks.find((t) => t.id === id)?.parentId);
+      if (idsToMove.length > 0 && updateTask) {
+        try {
+          await Promise.all(idsToMove.map((id) => updateTask(id, { parentId: null })));
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to move task to root:', error);
+        }
+      }
+      setDraggedTaskId(null);
+      setDragOverTaskId(null);
+      setDragOverList(false);
+    },
+    [effectiveDraggedIds, tasks, updateTask],
   );
 
   // Multiselect handlers
@@ -686,8 +781,43 @@ const TaskSidebarComponent = ({
         <ExtensionComponentWrapper placement="tasks-sidebar-header" />
       </div>
 
+      <AnimatePresence>
+        {draggedTaskId && Array.from(effectiveDraggedIds).some((id) => tasks.find((t) => t.id === id)?.parentId) && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="overflow-hidden shrink-0"
+          >
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragOverList(true);
+              }}
+              onDragLeave={() => setDragOverList(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                void handleListDrop(e);
+              }}
+              className={clsx(
+                'flex items-center justify-center gap-2 mx-1 my-1 px-3 py-2 rounded-md border border-dashed text-xs text-text-muted transition-colors',
+                dragOverList ? 'border-accent-primary bg-accent-primary/10 text-text-primary' : 'border-border-default',
+              )}
+            >
+              <RiMenuFold2Line className="w-4 h-4" />
+              <span>{t('taskSidebar.dropToRoot')}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div
         ref={listContainerRef}
+        onDragOver={handleListDragOver}
+        onDrop={handleListDrop}
         className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-bg-primary-light-strong scrollbar-thumb-border-default bg-bg-primary-light-strong py-0.5"
       >
         <AnimatePresence>
@@ -796,6 +926,12 @@ const TaskSidebarComponent = ({
                           isExpanded={isExpanded}
                           onToggleExpand={handleToggleExpand}
                           hasChildren={subtasks.length > 0}
+                          draggedTaskIds={effectiveDraggedIds}
+                          dragOverTaskId={dragOverTaskId}
+                          onDragStart={handleDragStart}
+                          onDragEnd={handleDragEnd}
+                          onDropOnTask={handleDropOnTask}
+                          setDragOverTaskId={setDragOverTaskId}
                         />
                       </div>
                     );

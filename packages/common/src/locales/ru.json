@@ -1762,6 +1762,8 @@
     "generatingName": "Генерация имени...",
     "changeState": "Изменить состояние",
     "createSubtask": "Создать подзадачу",
+    "dropToRoot": "Перетащите сюда, чтобы переместить на верхний уровень",
+    "dropToSubtask": "Сделать подзадачей",
     "deleteConfirmWithSubtasks": "Эта задача содержит {{count}} подзадач. Всё равно удалить?"
   },
   "taskInfo": {

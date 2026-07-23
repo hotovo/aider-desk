@@ -8,6 +8,7 @@
 - added resumeTask method to TaskContext for extension API
 - added task-sidebar-item-badges UI component placement for extensions
 - prevent accidental task sidebar resize on click
+- added drag and drop support for tasks and subtasks
 
 ## [0.75.0]
 

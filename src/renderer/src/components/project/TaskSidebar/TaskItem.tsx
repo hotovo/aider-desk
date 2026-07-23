@@ -1,9 +1,10 @@
 import { TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, memo, useState } from 'react';
+import { MouseEvent, DragEvent, memo, useRef, useState } from 'react';
 import { HiPlus, HiCheck, HiSparkles } from 'react-icons/hi';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
+import { RiFolderAddLine } from 'react-icons/ri';
 import { clsx } from 'clsx';
 import { useLongPress } from '@reactuses/core';
 import { BiArchiveIn } from 'react-icons/bi';
@@ -48,6 +49,12 @@ type Props = {
   isExpanded: boolean;
   onToggleExpand: (taskId: string) => void;
   hasChildren: boolean;
+  draggedTaskIds: Set<string>;
+  dragOverTaskId: string | null;
+  onDragStart: (taskId: string) => void;
+  onDragEnd: () => void;
+  onDropOnTask: (targetId: string) => void;
+  setDragOverTaskId: (taskId: string | null) => void;
 };
 
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
@@ -118,8 +125,20 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.onDuplicateTask !== nextProps.onDuplicateTask ||
     prevProps.handleConfirmDelete !== nextProps.handleConfirmDelete ||
     prevProps.handleCancelDelete !== nextProps.handleCancelDelete ||
-    prevProps.onToggleExpand !== nextProps.onToggleExpand
+    prevProps.onToggleExpand !== nextProps.onToggleExpand ||
+    prevProps.onDragStart !== nextProps.onDragStart ||
+    prevProps.onDragEnd !== nextProps.onDragEnd ||
+    prevProps.onDropOnTask !== nextProps.onDropOnTask ||
+    prevProps.setDragOverTaskId !== nextProps.setDragOverTaskId
   ) {
+    return false;
+  }
+
+  if (prevProps.dragOverTaskId !== nextProps.dragOverTaskId) {
+    return false;
+  }
+
+  if (prevProps.draggedTaskIds !== nextProps.draggedTaskIds) {
     return false;
   }
 
@@ -157,6 +176,12 @@ export const TaskItem = memo(
     isExpanded,
     onToggleExpand,
     hasChildren,
+    draggedTaskIds,
+    dragOverTaskId,
+    onDragStart,
+    onDragEnd,
+    onDropOnTask,
+    setDragOverTaskId,
   }: Props) => {
     const { t } = useTranslation();
     const [editTaskName, setEditTaskName] = useState(task.name);
@@ -167,8 +192,13 @@ export const TaskItem = memo(
     const taskName = task.name || t('taskSidebar.untitled');
     const showNameTooltip = !!task.name && task.name.length > 30;
 
+    const isDraggingRef = useRef(false);
+
     const longPressProps = useLongPress(
       () => {
+        if (isDraggingRef.current) {
+          return;
+        }
         setIsMultiselectMode(true);
       },
       {
@@ -194,13 +224,62 @@ export const TaskItem = memo(
       onEditClick(task.id);
     };
 
+    const isDragged = draggedTaskIds.has(task.id);
+    const isDropTarget = dragOverTaskId === task.id && !isDragged && level === 0;
+    const isRootLevel = level === 0;
+
+    const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
+      isDraggingRef.current = true;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', task.id);
+      onDragStart(task.id);
+    };
+
+    const handleDragEnd = () => {
+      isDraggingRef.current = false;
+      onDragEnd();
+    };
+
+    const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+      if (!isRootLevel || isDragged || draggedTaskIds.size === 0) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      setDragOverTaskId(task.id);
+    };
+
+    const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+      e.stopPropagation();
+      if (dragOverTaskId === task.id) {
+        setDragOverTaskId(null);
+      }
+    };
+
+    const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+      if (!isRootLevel || isDragged || draggedTaskIds.size === 0) {
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      onDropOnTask(task.id);
+    };
+
     return (
       <div className="relative">
         <div
           {...longPressProps}
+          draggable
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
           className={clsx(
             'group relative flex items-center justify-between py-1 pl-2 px-1 cursor-pointer transition-colors border select-none',
             isSubtask && 'ml-2',
+            isDragged && 'opacity-40',
             activeTaskId === task.id && !isMultiselectMode
               ? 'bg-bg-secondary border-border-dark-light'
               : selectedTasks.has(task.id) && isMultiselectMode
@@ -323,6 +402,13 @@ export const TaskItem = memo(
             </div>
           )}
         </div>
+
+        {isDropTarget && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center gap-1.5 rounded border-2 bg-black/20 text-2xs font-medium text-accent-primary pointer-events-none">
+            <RiFolderAddLine className="w-3.5 h-3.5" />
+            <span>{t('taskSidebar.dropToSubtask')}</span>
+          </div>
+        )}
 
         {isEditing && (
           <InlineEditPanel
