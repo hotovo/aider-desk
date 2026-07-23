@@ -1389,6 +1389,13 @@ export interface ExtensionContext {
   getProjectDir(): string;
 
   /**
+   * Get the base directories of all currently open projects (open project tabs/windows).
+   * Available regardless of whether the context itself is scoped to a project or task.
+   * @returns Array of absolute paths to currently open projects' base directories
+   */
+  getOpenProjectDirs(): string[];
+
+  /**
    * Get the task context for the current task.
    * Only available when the context is created for a specific task (e.g., task event handlers,
    * command execution within a task). Returns null when no task is available.

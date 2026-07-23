@@ -304,6 +304,10 @@ interface ExtensionContext {
   /** Get the current project directory path. Returns empty string when no project is available. */
   getProjectDir(): string;
 
+  /** Get the base directories of all currently open projects (open project tabs/windows).
+   *  Available regardless of whether the context itself is scoped to a project or task. */
+  getOpenProjectDirs(): string[];
+
   /** Get the task context for the current task. Returns null when no task is available. */
   getTaskContext(): TaskContext | null;
 

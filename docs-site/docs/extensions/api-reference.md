@@ -50,6 +50,7 @@ interface ExtensionContext {
   // Project access
   getProjectDir(): string;
   getProjectContext(): ProjectContext;
+  getOpenProjectDirs(): string[];
 
   // Task access
   getTaskContext(): TaskContext | null;
@@ -67,7 +68,7 @@ interface ExtensionContext {
   // UI refresh
   triggerUIDataRefresh(componentId?: string, taskId?: string): void;
   triggerUIComponentsReload(): void;
-  
+
   // Navigation
   openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
   openPath(path: string): Promise<boolean>;
@@ -80,6 +81,7 @@ interface ExtensionContext {
 |--------|-------------|
 | `log(message, type?)` | Log a message to AiderDesk console and log files |
 | `getProjectDir()` | Get the current project directory path |
+| `getOpenProjectDirs()` | Get the base directories of all currently open projects |
 | `getTaskContext()` | Get the current task context (null if no task active) |
 | `getProjectContext()` | Get the project context for project operations |
 | `getMemoryContext()` | Get the memory context for store/retrieve/delete memory operations |
@@ -326,12 +328,12 @@ const myComponent: UIComponentDefinition = {
   const { ui, data, task } = props;
   const { useState } = React;
   const { Tooltip } = ui;
-  
+
   const [isHovered, setIsHovered] = useState(false);
-  
+
   return (
     <Tooltip content="Task status">
-      <div 
+      <div
         className="flex items-center gap-1 text-xs"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -365,11 +367,11 @@ type UIComponentPlacement =
   // Task Status Bar
   | 'task-status-bar-left'        // Left side of task status bar (top of task page)
   | 'task-status-bar-right'       // Right side of task status bar
-  
+
   // Task Top Bar
   | 'task-top-bar-left'           // Left side of task top bar (above messages)
   | 'task-top-bar-right'          // Right side of task top bar
-  
+
   // Task Messages
   | 'task-messages-top'           // Above all messages
   | 'task-messages-bottom'        // Below all messages
@@ -377,33 +379,33 @@ type UIComponentPlacement =
   | 'task-message-above'          // Above each message (receives message prop)
   | 'task-message-below'          // Below each message (receives message prop)
   | 'task-message-bar'            // In message action bar (receives message prop)
-  
+
   // Task Usage Info
   | 'task-usage-info-bottom'      // Below usage info (tokens, costs)
-  
+
   // Task Input
   | 'task-input-above'            // Above input field
   | 'task-input-toolbar-left'     // Left side of input toolbar
   | 'task-input-toolbar-right'    // Right side of input toolbar
-  
+
   // Task State Actions
   | 'task-state-actions'          // Action buttons (when stopped/waiting)
   | 'task-state-actions-all'      // Action buttons (all states)
-  
+
   // Sidebar
   | 'tasks-sidebar-header'              // Header of tasks sidebar
   | 'tasks-sidebar-actions-left'        // Left side of tasks sidebar action area
   | 'tasks-sidebar-actions-right'       // Right side of tasks sidebar action area
   | 'tasks-sidebar-bottom'              // Bottom of tasks sidebar
   | 'task-sidebar-item-badges'          // Badges within each task sidebar item (per-task)
-  
+
   // Header
   | 'header-left'                 // Left side of main header
   | 'header-right'                // Right side of main header
-  
+
   // Welcome Page
   | 'welcome-page'                // Full welcome page (no task open)
-  
+
   // Floating Panels
   | 'task-floating'               // Draggable floating panel scoped to task
   | 'project-floating'            // Draggable floating panel scoped to project
@@ -424,22 +426,22 @@ interface UIComponentProps {
   agentProfile?: AgentProfile;      // Current agent profile
   models: Model[];                  // Available AI models
   providers: ProviderProfile[];     // Available provider profiles
-  
+
   // UI library
   ui: UIComponents;                 // Pre-built UI components
-  
+
   // Icons library (organized by icon set)
   icons: Record<string, Record<string, IconComponent>>;
-  
+
   // External libraries (loaded via getUIComponentsLibraries)
   libraries: Record<string, Record<string, unknown>>;
-  
+
   // Extension integration
   executeExtensionAction: (action: string, ...args: unknown[]) => Promise<unknown>;
-  
+
   // Data from getUIExtensionData() (if loadData: true)
   data?: unknown;
-  
+
   // Message-specific (for message placements)
   message?: MessageData;
 }
@@ -451,11 +453,11 @@ interface UIComponentProps {
 (props) => {
   const { useState, useEffect, useCallback } = React;
   const [count, setCount] = useState(0);
-  
+
   const handleClick = useCallback(() => {
     setCount(count + 1);
   }, [count]);
-  
+
   return <button onClick={handleClick}>Count: {count}</button>;
 }
 ```
@@ -469,7 +471,7 @@ The `icons` prop provides access to all react-icons libraries:
   const { icons } = props;
   const FiSettings = icons.Fi.FiSettings;
   const HiCheck = icons.Hi.HiCheck;
-  
+
   return (
     <div>
       <FiSettings className="w-4 h-4" />

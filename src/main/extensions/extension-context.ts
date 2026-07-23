@@ -41,6 +41,18 @@ export class ExtensionContextImpl implements ExtensionContext {
     return this.project?.baseDir ?? '';
   }
 
+  getOpenProjectDirs(): string[] {
+    if (!this.store) {
+      return [];
+    }
+    try {
+      return this.store.getOpenProjects().map((project) => project.baseDir);
+    } catch (error) {
+      this.log(`Failed to get open project dirs: ${error}`, 'error');
+      return [];
+    }
+  }
+
   getTaskContext(): TaskContext | null {
     return this.taskContext;
   }
