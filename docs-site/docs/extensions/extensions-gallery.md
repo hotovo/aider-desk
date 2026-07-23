@@ -39,6 +39,7 @@ Ready-to-use extensions that add functionality to AiderDesk.
 | [doom](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/doom/)                                                 | Play DOOM in a floating panel — WASM doomgeneric rendered to canvas with keyboard controls | `onLoad`, `getUIComponents` |
 | [destructive-command-guard](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/destructive-command-guard/)     | Blocks dangerous git and shell commands from being executed by agents using dcg | `onLoad`, `getCommands`, `onToolCalled` |
 | [wigolo](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/wigolo/)                                             | Local-first web search, fetch, crawl & research tools powered by wigolo — no API keys required | `onLoad`, `onUnload`, `getTools`, `getConfigComponent`, `onProjectStarted` |
+| [skill-gallery](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/skill-gallery/)                               | Browse and install Claude Skills from popular skill repositories (Anthropic, Awesome Claude Skills) directly from the header | `onLoad`, `getUIComponents`, `getUIExtensionData`, `executeUIExtensionAction`, `getConfigComponent`, `getConfigData`, `saveConfigData`, `triggerUIDataRefresh` |
 
 ---
 

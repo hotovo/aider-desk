@@ -391,6 +391,15 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": ["security", "commands"]
+    },
+    {
+      "id": "skill-gallery",
+      "name": "Skill Gallery",
+      "description": "Browse and install Claude Skills from popular skill repositories (Anthropic Official, Awesome Claude Skills)",
+      "folder": "skill-gallery",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": ["ui"]
     }
   ]
 }
