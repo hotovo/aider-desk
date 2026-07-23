@@ -623,6 +623,36 @@ export class ExtensionManager {
     logger.debug(`[Extensions] Unloaded extension: ${filePath}`);
   }
 
+  async reloadExtension(filePath: string, project?: Project): Promise<boolean> {
+    const extension = this.findExtensionByPath(filePath);
+    if (!extension) {
+      logger.warn(`[Extensions] Cannot reload: extension not found at ${filePath}`);
+      return false;
+    }
+
+    logger.info(`[Extensions] Reloading extension: ${extension.metadata.name} (${filePath})`);
+
+    const hadUIComponents = extension.instance.getUIComponents !== undefined;
+
+    await this.unloadExtension(filePath);
+    const { success, hasUIComponents } = await this.loadAndInitializeExtension(filePath, project);
+
+    if (success && (hasUIComponents || hadUIComponents)) {
+      this.eventManager.sendExtensionUIRefresh({
+        projectDir: project?.baseDir,
+        reloadComponents: true,
+      });
+    }
+
+    const providers = this.getProviders(project);
+    if (providers.length > 0) {
+      this.modelManager.registerExtensionProviders(providers);
+    }
+
+    this.debouncedNotifyListeners();
+    return success;
+  }
+
   private findExtensionByPath(filePath: string): LoadedExtension | undefined {
     const extensions = this.registry.getExtensions();
     return extensions.find((ext) => ext.filePath === filePath);

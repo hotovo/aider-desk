@@ -69,6 +69,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const [installingExtensions, setInstallingExtensions] = useState<Set<string>>(new Set());
   const [uninstallingExtensions, setUninstallingExtensions] = useState<Set<string>>(new Set());
   const [updatingExtensions, setUpdatingExtensions] = useState<Set<string>>(new Set());
+  const [reloadingExtensions, setReloadingExtensions] = useState<Set<string>>(new Set());
   const [newRepositoryUrl, setNewRepositoryUrl] = useState('');
   const [expandedRepositories, setExpandedRepositories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -250,6 +251,27 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     }
   };
 
+  const handleReload = async (extensionFilePath: string) => {
+    setReloadingExtensions((prev) => new Set(prev).add(extensionFilePath));
+    try {
+      const success = await api.reloadExtension(extensionFilePath, projectDir);
+      if (success) {
+        showSuccessNotification(t('settings.extensions.success.reload', { name: extensionFilePath }));
+        await loadInstalledExtensions();
+      } else {
+        showErrorNotification(t('settings.extensions.errors.reload'));
+      }
+    } catch {
+      showErrorNotification(t('settings.extensions.errors.reload'));
+    } finally {
+      setReloadingExtensions((prev) => {
+        const next = new Set(prev);
+        next.delete(extensionFilePath);
+        return next;
+      });
+    }
+  };
+
   const handleAddRepository = async () => {
     const trimmedUrl = newRepositoryUrl.trim();
     if (!trimmedUrl) {
@@ -405,10 +427,12 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
               isDisabled={disabledExtensions.includes(extension.filePath)}
               isUninstalling={uninstallingExtensions.has(extension.filePath)}
               isUpdating={updatingExtensions.has(extension.filePath)}
+              isReloading={reloadingExtensions.has(extension.filePath)}
               hasUpdate={extensionHasUpdate}
               onUpdate={availableExt ? () => handleUpdate(availableExt) : undefined}
               onToggle={handleToggleDisabled}
               onUninstall={handleUninstall}
+              onReload={handleReload}
             />
           );
         })}
@@ -476,11 +500,13 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             isDisabled={disabledExtensions.includes(installedExtension.filePath)}
             isUninstalling={uninstallingExtensions.has(installedExtension.filePath)}
             isUpdating={updatingExtensions.has(installedExtension.filePath)}
+            isReloading={reloadingExtensions.has(installedExtension.filePath)}
             hasUpdate={extensionHasUpdate}
             installedFilePath={installedExtension.filePath}
             onToggle={handleToggleDisabled}
             onUninstall={handleUninstall}
             onUpdate={() => handleUpdate(extension)}
+            onReload={handleReload}
           />
         );
       }

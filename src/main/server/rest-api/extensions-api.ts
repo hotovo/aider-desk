@@ -36,6 +36,11 @@ const UpdateExtensionSchema = z.object({
   projectDir: z.string().optional(),
 });
 
+const ReloadExtensionSchema = z.object({
+  filePath: z.string().min(1, 'File path is required'),
+  projectDir: z.string().optional(),
+});
+
 export class ExtensionsApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
@@ -143,6 +148,26 @@ export class ExtensionsApi extends BaseApi {
           res.status(200).json({ message: 'Extension updated successfully', success: true });
         } else {
           res.status(500).json({ message: 'Failed to update extension', success: false, error: result.error });
+        }
+      }),
+    );
+
+    // Reload extension
+    router.post(
+      '/extensions/reload',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ReloadExtensionSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { filePath, projectDir } = parsed;
+        const success = await this.eventsHandler.reloadExtension(filePath, projectDir);
+
+        if (success) {
+          res.status(200).json({ message: 'Extension reloaded successfully', success: true });
+        } else {
+          res.status(500).json({ message: 'Failed to reload extension', success: false });
         }
       }),
     );

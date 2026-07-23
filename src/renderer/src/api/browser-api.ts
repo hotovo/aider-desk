@@ -1302,6 +1302,13 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  reloadExtension(filePath: string, projectDir?: string): Promise<boolean> {
+    return this.post('/extensions/reload', {
+      filePath,
+      projectDir,
+    });
+  }
+
   getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]> {
     return this.get('/extensions/ui-components', {
       projectDir,

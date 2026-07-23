@@ -37,12 +37,14 @@ type Props = {
   isUninstalling?: boolean;
   isInstalling?: boolean;
   isUpdating?: boolean;
+  isReloading?: boolean;
   hasUpdate?: boolean;
   installedFilePath?: string;
   onToggle?: (extensionFilePath: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
   onUpdate?: () => void;
+  onReload?: (extensionFilePath: string) => void;
 };
 
 export const ExtensionCard = ({
@@ -52,12 +54,14 @@ export const ExtensionCard = ({
   isUninstalling = false,
   isInstalling = false,
   isUpdating = false,
+  isReloading = false,
   hasUpdate = false,
   installedFilePath,
   onToggle,
   onUninstall,
   onInstall,
   onUpdate,
+  onReload,
 }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -95,6 +99,12 @@ export const ExtensionCard = ({
 
   const handleUpdate = () => {
     onUpdate?.();
+  };
+
+  const handleReload = () => {
+    if (onReload && filePath) {
+      onReload(filePath);
+    }
   };
 
   const handleOpenSettings = () => {
@@ -174,6 +184,14 @@ export const ExtensionCard = ({
                     className="p-1"
                   />
                 )}
+
+                <IconButton
+                  icon={<FaSync className={clsx('w-3.5 h-3.5', isReloading && 'animate-spin')} />}
+                  onClick={handleReload}
+                  disabled={isReloading}
+                  tooltip={isReloading ? t('settings.extensions.reloading') : t('settings.extensions.reload')}
+                  className="p-1"
+                />
 
                 <Toggle checked={!isDisabled} onChange={handleToggleDisabled} aria-label={t('settings.extensions.enabled')} />
 

@@ -12,6 +12,7 @@
 - avoid showing password dialog on start up in some cases
 - added getOpenProjects to Extension Context API
 - correctly showing Updated Files in repos without any commits
+- added action to reload extension in case of error
 
 ## [0.75.0]
 

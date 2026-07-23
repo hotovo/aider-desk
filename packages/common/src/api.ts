@@ -161,6 +161,7 @@ export interface ApplicationAPI {
   installExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<ExtensionOperationResult>;
   uninstallExtension: (extensionId: string, projectDir?: string) => Promise<boolean>;
   updateExtension: (extensionId: string, repositoryUrl: string, projectDir?: string) => Promise<ExtensionOperationResult>;
+  reloadExtension: (filePath: string, projectDir?: string) => Promise<boolean>;
   getExtensionUIComponents: (placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   getUIExtensionData: (extensionId: string, componentId: string, projectDir?: string, taskId?: string) => Promise<unknown>;
   executeUIExtensionAction: (

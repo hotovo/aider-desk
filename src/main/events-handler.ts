@@ -1250,6 +1250,18 @@ export class EventsHandler {
     return await this.extensionManager.uninstallExtension(extensionId, projectDir);
   }
 
+  async reloadExtension(filePath: string, projectDir?: string): Promise<boolean> {
+    let project: Project | undefined = undefined;
+    if (projectDir) {
+      project = this.projectManager.getProject(projectDir);
+      if (!project) {
+        throw new Error('Project not found');
+      }
+    }
+
+    return await this.extensionManager.reloadExtension(filePath, project);
+  }
+
   async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult> {
     let project: Project | undefined = undefined;
     if (projectDir) {
