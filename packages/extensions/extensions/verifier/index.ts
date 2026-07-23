@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { AutonomyMode } from '@aiderdesk/extensions';
 import type {
   Extension,
   ExtensionContext,
@@ -53,7 +54,7 @@ const configComponentJsx = readFileSync(join(__dirname, 'ConfigComponent.jsx'), 
 export default class VerifierExtension implements Extension {
   static metadata = {
     name: 'Verifier',
-    version: '1.0.0',
+    version: '1.1.0',
     description:
       'Adds "Proceed & Verify" button to start implementation with automatic review against the plan. Configurable max retries.',
     author: 'wladimiiir',
@@ -225,7 +226,7 @@ export default class VerifierExtension implements Extension {
       const reviewTask = await projectContext.createTask({
         parentId,
         name: `Review: ${taskName}`,
-        autoApprove: true,
+        autonomyMode: AutonomyMode.Autonomous,
       });
 
       const reviewTaskContext = projectContext.getTask(reviewTask.id);
