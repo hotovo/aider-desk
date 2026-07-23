@@ -4,6 +4,8 @@ import path from 'path';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 
+import { REQUEST_TIMEOUT_MS } from './timeouts';
+
 import {
   AgentApi,
   CommandsApi,
@@ -30,8 +32,6 @@ import { Store } from '@/store';
 import { isDev, isElectron } from '@/app';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { createCorsOriginValidator } from '@/server/cors';
-
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
 export class ServerController {
   private readonly app = express();
