@@ -699,6 +699,32 @@ export const getShellCommandArgs = (command: string): { shell: string; args: str
   return ShellDetector.getShellCommandArgs(command);
 };
 
+/**
+ * Initialize the process PATH by loading it from the user's login shell.
+ * Uses non-interactive mode (-lc) to avoid triggering prompts from interactive configs (e.g. .bashrc).
+ */
+export const initPath = (): void => {
+  logger.info('Initializing PATH...');
+  try {
+    const userShell = os.userInfo().shell || process.env.SHELL || '/bin/sh';
+    const detectedPath = execSync(`${userShell} -lc 'echo $PATH'`, {
+      encoding: 'utf8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'ignore'],
+      env: { ...process.env, DISABLE_AUTO_UPDATE: 'true' },
+    }).trim();
+
+    if (detectedPath) {
+      process.env.PATH = detectedPath;
+      logger.info('PATH initialized from login shell');
+    }
+  } catch (error) {
+    logger.warn('Failed to initialize PATH from login shell, using process PATH', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,

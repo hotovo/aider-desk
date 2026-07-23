@@ -9,6 +9,7 @@
 - added task-sidebar-item-badges UI component placement for extensions
 - prevent accidental task sidebar resize on click
 - added drag and drop support for tasks and subtasks
+- avoid showing password dialog on start up in some cases
 
 ## [0.75.0]
 

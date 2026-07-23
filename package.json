@@ -120,7 +120,6 @@
     "express": "^4.21.2",
     "file-type": "^21.0.0",
     "filenamify": "^7.0.1",
-    "fix-path": "^4.0.0",
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
     "ghostty-web": "^0.4.0",
