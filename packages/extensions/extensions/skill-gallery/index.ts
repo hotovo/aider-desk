@@ -82,6 +82,7 @@ export default class SkillGalleryExtension implements Extension {
     version: '1.0.0',
     description: 'Browse and install Claude Skills from popular skill repositories',
     author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
     capabilities: ['ui'],
   };
 
