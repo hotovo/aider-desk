@@ -9,6 +9,8 @@ import type {
   ModelParameterValue,
   Run,
   SDKAgent,
+  SDKImage,
+  SDKUserMessage,
   SendOptions,
   ToolCall,
 } from '@cursor/sdk';
@@ -21,6 +23,7 @@ import type {
   ContextUserMessage,
   Extension,
   ExtensionContext,
+  FilePart,
   InterruptedEvent,
   LoadModelsResponse,
   McpServerConfig as AiderDeskMcpServerConfig,
@@ -67,6 +70,16 @@ type ParsedEdit = {
   searchTerm: string;
   replacementText: string;
 };
+
+const DATA_URL_RE = /^data:(image\/[^;]+);base64,(.+)$/;
+
+function parseDataUrl(dataUrl: string): { data: string; mimeType: string } {
+  const match = dataUrl.match(DATA_URL_RE);
+  if (match) {
+    return { data: match[2], mimeType: match[1] };
+  }
+  return { data: dataUrl, mimeType: 'image/png' };
+}
 
 const HUNK_HEADER_RE = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
@@ -489,7 +502,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.1.0',
+    version: '4.2.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -577,7 +590,7 @@ export default class CursorSdkExtension implements Extension {
     event: AgentStartedEvent,
     context: ExtensionContext,
   ): Promise<void | Partial<AgentStartedEvent>> {
-    if (!event.providerProfile.name.startsWith(CURSOR_PROVIDER_ID)) {
+    if (!event.providerProfile.id.startsWith(CURSOR_PROVIDER_ID)) {
       return undefined;
     }
 
@@ -589,6 +602,18 @@ export default class CursorSdkExtension implements Extension {
     const prompt = event.prompt || 'Continue where you left off.';
     if (!event.prompt) {
       context.log('Resuming Cursor agent with continuation prompt', 'info');
+    }
+
+    const images = event.images ?? [];
+    const sdkImages: SDKImage[] = images.map((dataUrl) => {
+      const { data, mimeType } = parseDataUrl(dataUrl);
+      return { data, mimeType };
+    });
+    const sendMessage: string | SDKUserMessage = sdkImages.length > 0
+      ? { text: prompt, images: sdkImages }
+      : prompt;
+    if (sdkImages.length > 0) {
+      context.log(`Sending ${sdkImages.length} image(s) to Cursor agent`, 'info');
     }
 
     const config = this.loadConfig();
@@ -650,7 +675,7 @@ export default class CursorSdkExtension implements Extension {
         onStep: ({ step }: { step: ConversationStep }) => streamProcessor.onStep(step),
       } as SendOptions;
 
-      const run = await agent.send(prompt, sendOptions);
+      const run = await agent.send(sendMessage, sendOptions);
       context.log(`Cursor run started: ${run.id}`, 'info');
 
       this.activeRuns.set(taskId, run);
@@ -667,7 +692,19 @@ export default class CursorSdkExtension implements Extension {
         const userMessage: ContextUserMessage = {
           id: `user-${run.id}`,
           role: 'user',
-          content: prompt,
+          content: images.length > 0
+            ? [
+                { type: 'text' as const, text: prompt },
+                ...images.map((dataUrl) => {
+                  const { data, mimeType } = parseDataUrl(dataUrl);
+                  return {
+                    type: 'file' as const,
+                    data,
+                    mediaType: mimeType,
+                  } satisfies FilePart;
+                }),
+              ]
+            : prompt,
         };
         await taskContext.addContextMessage(userMessage);
       }
