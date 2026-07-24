@@ -266,7 +266,7 @@ export const ModelTableSection = ({
 
           return (
             <div className="flex items-center justify-end space-x-2">
-              {!isExtension && <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />}
+              <IconButton icon={<FiEdit2 className="w-4 h-4" />} onClick={() => onEditModel(row)} />
               <IconButton
                 icon={<FiEye className="w-4 h-4" />}
                 onClick={() => onToggleHidden(row)}
