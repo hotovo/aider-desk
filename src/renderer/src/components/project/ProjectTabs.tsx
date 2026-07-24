@@ -193,6 +193,7 @@ export const ProjectTabs = ({
               ))}
             </SortableContext>
           </DndContext>
+          {showRightScrollButton && <div className="flex-shrink-0 w-[52px]" />}
         </div>
         {showRightScrollButton && (
           <button
