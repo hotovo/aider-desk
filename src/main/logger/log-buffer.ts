@@ -66,8 +66,13 @@ export class LogBuffer {
       VALUES (?, ?, ?, ?, ?)
     `;
 
+    const metadata = entry.metadata ? safeStringify(entry.metadata) : null;
+    if (metadata) {
+      entry.metadata = JSON.parse(metadata) as Record<string, unknown>;
+    }
+
     const stmt = this.db.prepare(sql);
-    const result = stmt.run(entry.timestamp, entry.level, entry.message, entry.extension || null, entry.metadata ? safeStringify(entry.metadata) : null);
+    const result = stmt.run(entry.timestamp, entry.level, entry.message, entry.extension || null, metadata);
     return result.lastInsertRowid as number;
   }
 
