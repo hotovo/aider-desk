@@ -344,7 +344,9 @@ export const getShellPath = (): string => {
             pathLength: shellPath.split(':').length,
           });
         } catch (error) {
-          logger.error('Failed to load PATH from shell config:', error);
+          logger.error('Failed to load PATH from shell config:', {
+            error: error instanceof Error ? { message: error.message, name: error.name } : String(error),
+          });
 
           // Try the standard login shell approach
           try {
@@ -362,7 +364,9 @@ export const getShellPath = (): string => {
             );
             logger.debug('Loaded PATH using login shell flags');
           } catch (loginError) {
-            logger.error('Failed to load PATH from login shell:', loginError);
+            logger.error('Failed to load PATH from login shell:', {
+              error: loginError instanceof Error ? { message: loginError.message, name: loginError.name } : String(loginError),
+            });
             // Fallback to current PATH + common locations
             shellPath = process.env.PATH || '';
           }
@@ -521,7 +525,7 @@ export const getShellPath = (): string => {
     return cachedPath;
   } catch (error) {
     logger.error('ERROR: Failed to get shell PATH', {
-      error,
+      error: error instanceof Error ? { message: error.message, name: error.name } : String(error),
       stack: error instanceof Error ? error.stack : 'No stack trace available',
     });
 
@@ -580,7 +584,7 @@ export const getShellPath = (): string => {
         }
       } catch (configError) {
         logger.error('ERROR: Failed to read shell config files', {
-          error: configError,
+          error: configError instanceof Error ? { message: configError.message, name: configError.name } : String(configError),
           stack: configError instanceof Error ? configError.stack : 'No stack trace',
         });
       }
