@@ -3808,6 +3808,8 @@ log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void
 ⋮----
 getProjectDir(): string
 ⋮----
+getOpenProjectDirs(): string[]
+⋮----
 getTaskContext(): TaskContext | null
 ⋮----
 getProjectContext(): ProjectContext
@@ -4257,6 +4259,8 @@ private captureExtensionsTelemetry()
 async dispose(): Promise<void>
 ⋮----
 async unloadExtension(filePath: string): Promise<void>
+⋮----
+async reloadExtension(filePath: string, project?: Project): Promise<boolean>
 ⋮----
 private findExtensionByPath(filePath: string): LoadedExtension | undefined
 ⋮----
@@ -7535,6 +7539,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Update extension
 ⋮----
+// Reload extension
+⋮----
 // Get extension UI components
 ⋮----
 // Get extension UI component data
@@ -10733,6 +10739,12 @@ export const getShellInitCommand = (): string =>
  */
 export const getShellCommandArgs = (command: string):
 ⋮----
+/**
+ * Initialize the process PATH by loading it from the user's login shell.
+ * Uses non-interactive mode (-lc) to avoid triggering prompts from interactive configs (e.g. .bashrc).
+ */
+export const initPath = (): void =>
+⋮----
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,
@@ -11411,6 +11423,15 @@ private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedF
 // Skip symlink paths (worktree infrastructure artifacts)
 ⋮----
 /**
+   * No-HEAD mode: repo has no commits yet. Uses the well-known empty tree hash
+   * as the diff base, which is equivalent to `git diff HEAD` against an empty repo.
+   * Shows staged files and unstaged modifications to staged files (same as `git diff HEAD`
+   * would show if HEAD pointed to an empty commit). Untracked files are not shown,
+   * consistent with the existing HEAD-based behavior.
+   */
+private async getNoHeadUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
+⋮----
+/**
    * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
    * Splits on "diff --git" boundaries to isolate per-file patches.
    */
@@ -11956,6 +11977,8 @@ async installExtension(extensionId: string, repositoryUrl: string, projectDir?: 
 ⋮----
 async uninstallExtension(extensionId: string, projectDir?: string)
 ⋮----
+async reloadExtension(filePath: string, projectDir?: string): Promise<boolean>
+⋮----
 async updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
 ⋮----
 getUIComponents(placement?: string, projectDir?: string, taskId?: string): ExtensionUIComponent[]
@@ -12000,7 +12023,7 @@ import { performStartUp, UpdateProgressData } from '@/start-up';
 import { Store } from '@/store';
 import logger, { eventTransport } from '@/logger';
 import { initManagers } from '@/managers';
-import { getDefaultProjectSettings } from '@/utils';
+import { getDefaultProjectSettings, initPath } from '@/utils';
 import { WindowManager } from '@/window-manager';
 ⋮----
 // Global instances shared across all windows
@@ -13367,6 +13390,8 @@ installExtension(extensionId: string, repositoryUrl: string, projectDir?: string
 uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 ⋮----
 updateExtension(extensionId: string, repositoryUrl: string, projectDir?: string): Promise<ExtensionOperationResult>
+⋮----
+reloadExtension(filePath: string, projectDir?: string): Promise<boolean>
 ⋮----
 getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]>
 ⋮----
@@ -19060,10 +19085,11 @@ File: src/renderer/src/components/project/TaskSidebar/TaskItem.tsx
 ================
 import { TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, memo, useState } from 'react';
+import { MouseEvent, DragEvent, memo, useRef, useState } from 'react';
 import { HiPlus, HiCheck, HiSparkles } from 'react-icons/hi';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdPushPin, MdChevronRight } from 'react-icons/md';
+import { RiFolderAddLine } from 'react-icons/ri';
 import { clsx } from 'clsx';
 import { useLongPress } from '@reactuses/core';
 import { BiArchiveIn } from 'react-icons/bi';
@@ -19108,6 +19134,12 @@ type Props = {
   isExpanded: boolean;
   onToggleExpand: (taskId: string) => void;
   hasChildren: boolean;
+  draggedTaskIds: Set<string>;
+  dragOverTaskId: string | null;
+  onDragStart: (taskId: string) => void;
+  onDragEnd: () => void;
+  onDropOnTask: (targetId: string) => void;
+  setDragOverTaskId: (taskId: string | null) => void;
 };
 ⋮----
 const arePropsEqual = (prevProps: Props, nextProps: Props): boolean =>
@@ -19129,6 +19161,16 @@ const toggleExpand = (e: MouseEvent) =>
 const handleCreateSubtask = (e: MouseEvent) =>
 ⋮----
 const handleOnEdit = () =>
+⋮----
+const handleDragStart = (e: DragEvent<HTMLDivElement>) =>
+⋮----
+const handleDragEnd = () =>
+⋮----
+const handleDragOver = (e: DragEvent<HTMLDivElement>) =>
+⋮----
+const handleDragLeave = (e: DragEvent<HTMLDivElement>) =>
+⋮----
+const handleDrop = (e: DragEvent<HTMLDivElement>) =>
 ⋮----
 className=
 ⋮----
@@ -19229,9 +19271,9 @@ File: src/renderer/src/components/project/TaskSidebar/TaskSidebar.tsx
 ================
 import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
+import { MouseEvent, DragEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
 import { HiPlus } from 'react-icons/hi';
-import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { RiMenuUnfold4Line, RiMenuFold2Line } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineSearch } from 'react-icons/md';
 import { clsx } from 'clsx';
@@ -19312,6 +19354,12 @@ const handleSearchClose = () =>
 // eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const clearDragState = () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -21518,12 +21566,14 @@ type Props = {
   isUninstalling?: boolean;
   isInstalling?: boolean;
   isUpdating?: boolean;
+  isReloading?: boolean;
   hasUpdate?: boolean;
   installedFilePath?: string;
   onToggle?: (extensionFilePath: string, isDisabled: boolean) => void;
   onUninstall?: (exensionFilePath: string) => void;
   onInstall?: (extension: AvailableExtension) => void;
   onUpdate?: () => void;
+  onReload?: (extensionFilePath: string) => void;
 };
 ⋮----
 const handleToggleExpand = () =>
@@ -21535,6 +21585,8 @@ const handleUninstall = () =>
 const handleInstall = () =>
 ⋮----
 const handleUpdate = () =>
+⋮----
+const handleReload = () =>
 ⋮----
 const handleOpenSettings = () =>
 ⋮----
@@ -21551,6 +21603,8 @@ className=
 <p className=
 ⋮----
 {/* Actions */}
+⋮----
+icon=
 ⋮----
 {/* Expandable README section */}
 ⋮----
@@ -21666,6 +21720,8 @@ const handleInstall = async (extension: AvailableExtension) =>
 ⋮----
 const handleUpdate = async (extension: AvailableExtension) =>
 ⋮----
+const handleReload = async (extensionFilePath: string) =>
+⋮----
 const handleAddRepository = async () =>
 ⋮----
 // Update settings first
@@ -21687,6 +21743,10 @@ const handleRemoveRepository = (repositoryUrl: string) =>
 ⋮----
 isUninstalling=
 ⋮----
+isReloading=
+⋮----
+onUpdate=
+⋮----
 // Group all extensions by repository URL
 ⋮----
 // Add all available extensions to the map
@@ -21701,9 +21761,9 @@ isUninstalling=
 ⋮----
 // If installed, render with available extension data but installed controls
 ⋮----
-onUpdate=
-⋮----
 // If not installed, render with available extension (AvailableExtension)
+⋮----
+const handleToggleRepository = (repositoryUrl: string) =>
 ⋮----
 // Render repository section
 ⋮----
@@ -28897,19 +28957,19 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "2.0.13",
-    "@ai-sdk/amazon-bedrock": "5.0.23",
-    "@ai-sdk/anthropic": "4.0.15",
-    "@ai-sdk/azure": "4.0.16",
-    "@ai-sdk/cerebras": "3.0.11",
-    "@ai-sdk/deepseek": "3.0.11",
-    "@ai-sdk/google": "4.0.17",
-    "@ai-sdk/google-vertex": "5.0.21",
-    "@ai-sdk/groq": "4.0.11",
-    "@ai-sdk/mistral": "4.0.12",
-    "@ai-sdk/openai": "4.0.15",
-    "@ai-sdk/openai-compatible": "3.0.11",
-    "@ai-sdk/otel": "1.0.28",
+    "@ai-sdk/alibaba": "2.0.15",
+    "@ai-sdk/amazon-bedrock": "5.0.25",
+    "@ai-sdk/anthropic": "4.0.16",
+    "@ai-sdk/azure": "4.0.17",
+    "@ai-sdk/cerebras": "3.0.13",
+    "@ai-sdk/deepseek": "3.0.12",
+    "@ai-sdk/google": "4.0.19",
+    "@ai-sdk/google-vertex": "5.0.23",
+    "@ai-sdk/groq": "4.0.12",
+    "@ai-sdk/mistral": "4.0.13",
+    "@ai-sdk/openai": "4.0.16",
+    "@ai-sdk/openai-compatible": "3.0.13",
+    "@ai-sdk/otel": "1.0.32",
     "@ai-sdk/provider": "4.0.3",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "^5.2.0",
@@ -28952,7 +29012,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "7.0.28",
+    "ai": "7.0.32",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^1.0.0",
@@ -28968,7 +29028,6 @@ File: package.json
     "express": "^4.21.2",
     "file-type": "^21.0.0",
     "filenamify": "^7.0.1",
-    "fix-path": "^4.0.0",
     "focus-trap-react": "^11.0.3",
     "framer-motion": "^11.18.2",
     "ghostty-web": "^0.4.0",
