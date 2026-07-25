@@ -598,7 +598,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
 
                 {/* Row 2: AIDER */}
                 {renderAiderInfo(true)}
-                <ExtensionComponentWrapper placement="task-top-bar-left" />
+                <ExtensionComponentWrapper placement="task-top-bar-left" className="gap-3" />
               </div>
             ) : (
               // Original horizontal layout for other modes
@@ -649,7 +649,7 @@ export const TaskBar = React.forwardRef<TaskBarRef, Props>(
                   </>
                 )}
                 {showAiderInfo && renderAiderInfo()}
-                <ExtensionComponentWrapper placement="task-top-bar-left" />
+                <ExtensionComponentWrapper placement="task-top-bar-left" className="gap-3" />
               </div>
             )}
           </div>
