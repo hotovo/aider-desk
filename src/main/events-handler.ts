@@ -181,9 +181,17 @@ export class EventsHandler {
     if (!existingProject) {
       logger.info('EventsHandler: addOpenProject', { baseDir });
       const providerModels = await this.modelManager.getProviderModels();
+      const defaultAgentProfileId = this.agentProfileManager.getDefaultAgentProfileId();
+      const settings = getDefaultProjectSettings(this.store, providerModels.models || [], baseDir, defaultAgentProfileId);
+      const agentProfile = this.agentProfileManager.getProfile(settings.agentProfileId);
+
+      if (!agentProfile || (agentProfile.projectDir && !compareBaseDirs(agentProfile.projectDir, baseDir))) {
+        settings.agentProfileId = defaultAgentProfileId;
+      }
+
       const newProject: ProjectData = {
         baseDir: baseDir.endsWith('/') ? baseDir.slice(0, -1) : baseDir,
-        settings: getDefaultProjectSettings(this.store, providerModels.models || [], baseDir, this.agentProfileManager.getDefaultAgentProfileId()),
+        settings,
         active: true,
       };
       const updatedProjects = [...projects.map((p) => ({ ...p, active: false })), newProject];
