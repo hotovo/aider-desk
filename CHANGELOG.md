@@ -17,6 +17,7 @@
 - prevent crash from circular references in error logging
 - added support for using custom and extension commands in saved prompts
 - added modelCallSettings property to onAgentStarted event for overriding AI SDK model call parameters
+- correctly handling multiple reasoning message parts
 
 ## [0.75.0]
 

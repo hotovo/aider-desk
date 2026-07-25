@@ -1308,6 +1308,7 @@ export class Agent {
             experimental_repairToolCall: repairToolCall,
           });
 
+          let currentMessageHasReasoning = false;
           try {
             for await (const chunk of result.stream) {
               logger.debug('Chunk:', { chunk, responseMessageIndex });
@@ -1317,6 +1318,7 @@ export class Agent {
                 // no-op
               } else if (chunk.type === 'text-end') {
                 responseMessageIndex++;
+                currentMessageHasReasoning = false;
               } else if (chunk.type === 'text-delta') {
                 if (chunk.text.trim()) {
                   streamingMessageIds.add(responseMessageId);
@@ -1330,8 +1332,19 @@ export class Agent {
                 }
               } else if (chunk.type === 'reasoning-start') {
                 streamingMessageIds.add(responseMessageId);
+                if (currentMessageHasReasoning) {
+                  await task.processResponseMessage({
+                    id: responseMessageId,
+                    action: 'response',
+                    content: '',
+                    reasoning: '\n\n',
+                    finished: false,
+                    promptContext,
+                  });
+                }
               } else if (chunk.type === 'reasoning-delta') {
                 streamingMessageIds.add(responseMessageId);
+                currentMessageHasReasoning = true;
                 await task.processResponseMessage({
                   id: responseMessageId,
                   action: 'response',
@@ -2041,6 +2054,8 @@ export class Agent {
     const hasAssistantMessage = content.some((part) => (part.type === 'text' || part.type === 'reasoning') && part.text?.trim());
 
     let responseMessageIndex: number = 0;
+    let localReasoningText: string | undefined;
+    let localText: string | undefined;
 
     const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast: boolean) => {
       const [serverName, toolName] = extractServerNameToolName(toolResult.toolName);
@@ -2060,41 +2075,57 @@ export class Agent {
     };
 
     for (let i = 0; i < content.length; i++) {
-      let part = content[i];
+      const part = content[i];
       if (part.type === 'reasoning') {
-        reasoningText = part.text;
-        text = '';
-        // move to the next one right away
-        part = content[++i];
+        if (localReasoningText) {
+          localReasoningText += '\n\n' + part.text;
+        } else {
+          localReasoningText = part.text;
+        }
+        continue;
       }
-      if (part?.type === 'text') {
-        text = part.text;
+      if (part.type === 'text') {
+        localText = part.text;
       }
 
-      if (text || reasoningText) {
+      if (localText || localReasoningText) {
         const message: ResponseMessage = {
           id: responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId,
           action: 'response',
-          content: text,
-          reasoning: reasoningText?.trim() || undefined,
+          content: localText || '',
+          reasoning: localReasoningText?.trim() || undefined,
           finished: true,
           usageReport: hasAssistantMessage ? usageReport : undefined,
           promptContext,
         };
         await task.processResponseMessage(message);
 
-        text = '';
-        reasoningText = undefined;
+        localText = undefined;
+        localReasoningText = undefined;
         responseMessageIndex++;
       }
 
-      if (part?.type === 'tool-result') {
+      if (part.type === 'tool-result') {
         const toolResult = toolResults.find((toolResult) => toolResult.toolCallId === part.toolCallId);
         if (toolResult) {
           toolResults = toolResults.filter((toolResult) => toolResult.toolCallId !== part.toolCallId);
           processToolResult(toolResult, i === content.length - 1 && toolResults.length === 0);
         }
       }
+    }
+
+    if (localReasoningText) {
+      const message: ResponseMessage = {
+        id: responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId,
+        action: 'response',
+        content: '',
+        reasoning: localReasoningText.trim() || undefined,
+        finished: true,
+        usageReport: hasAssistantMessage ? usageReport : undefined,
+        promptContext,
+      };
+      await task.processResponseMessage(message);
+      localReasoningText = undefined;
     }
 
     // Process successful tool results *after* sending text/reasoning and handling errors

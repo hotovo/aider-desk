@@ -942,8 +942,12 @@ export class ContextManager {
 
                   for (const subPart of subMessage.content) {
                     if (subPart.type === 'reasoning' && subPart.text?.trim()) {
-                      subReasoningContent = subPart.text.trim();
-                      subHasReasoning = true;
+                      if (subHasReasoning) {
+                        subReasoningContent += '\n\n' + subPart.text.trim();
+                      } else {
+                        subReasoningContent = subPart.text.trim();
+                        subHasReasoning = true;
+                      }
                     } else if (subPart.type === 'text' && subPart.text) {
                       subTextContent = subPart.text.trim();
                       subHasText = true;
@@ -1046,7 +1050,11 @@ export class ContextManager {
 
           for (const part of message.content) {
             if (part.type === 'reasoning' && part.text?.trim()) {
-              reasoning = part.text.trim();
+              if (reasoning) {
+                reasoning += '\n\n' + part.text.trim();
+              } else {
+                reasoning = part.text.trim();
+              }
             } else if (part.type === 'text' && part.text) {
               pushResponseCompletedData(part.text);
             } else if (part.type === 'tool-call') {
