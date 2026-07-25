@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider, isAnthropicProvider, LlmProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -115,8 +115,8 @@ export const getAnthropicCacheControl = (): CacheControl | undefined => {
   };
 };
 
-export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined => {
-  if (!isAnthropicProvider(llmProvider)) {
+export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
+  if (!isAnthropicProvider(llmProvider) || (reasoning && reasoning !== 'provider-default')) {
     return undefined;
   }
 

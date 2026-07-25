@@ -16,6 +16,7 @@
 - added possibility to edit models coming from extension provider
 - prevent crash from circular references in error logging
 - added support for using custom and extension commands in saved prompts
+- added modelCallSettings property to onAgentStarted event for overriding AI SDK model call parameters
 
 ## [0.75.0]
 

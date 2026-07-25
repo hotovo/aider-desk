@@ -1,4 +1,4 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
@@ -146,8 +146,8 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
   return anthropicProvider(model.id);
 };
 
-export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined => {
-  if (!isAnthropicCompatibleProvider(llmProvider)) {
+export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
+  if (!isAnthropicCompatibleProvider(llmProvider) || (reasoning && reasoning !== 'provider-default')) {
     return undefined;
   }
 

@@ -38,6 +38,52 @@ interface Extension {
 }
 ```
 
+## Model Call Settings
+
+Extensions can override AI SDK model-call parameters from `onAgentStarted` by returning `modelCallSettings`. The event receives the agent's computed defaults (including `maxRetries` and `abortSignal`); returned settings are merged with those defaults, so provide only the fields to override.
+
+```typescript
+async onAgentStarted(event: AgentStartedEvent): Promise<Partial<AgentStartedEvent>> {
+  return {
+    modelCallSettings: {
+      temperature: 0.2,
+      maxOutputTokens: 4096,
+      timeout: { totalMs: 120_000 },
+    },
+  };
+}
+```
+
+```typescript
+type Reasoning = 'provider-default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+interface ModelCallTimeout {
+  totalMs?: number;
+  stepMs?: number;
+  chunkMs?: number;
+  toolMs?: number;
+  tools?: Record<string, number>;
+}
+
+interface ModelCallSettings {
+  maxOutputTokens?: number;
+  temperature?: number;
+  topP?: number;
+  topK?: number;
+  presencePenalty?: number;
+  frequencyPenalty?: number;
+  stopSequences?: string[];
+  seed?: number;
+  reasoning?: Reasoning;
+  maxRetries?: number;
+  abortSignal?: AbortSignal;
+  timeout?: number | ModelCallTimeout;
+  headers?: Record<string, string>;
+}
+```
+
+Use either `temperature` or `topP` for sampling. Setting `reasoning` uses AI SDK's top-level reasoning control and takes precedence over provider-specific reasoning options.
+
 ## ExtensionContext
 
 Passed to all extension methods, providing access to AiderDesk APIs.

@@ -3,7 +3,7 @@ import path from 'path';
 
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderDefinition } from '@common/extensions';
-import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
@@ -828,7 +828,7 @@ export class ModelManager {
       : (llmProvider.disableToolCallStreaming ?? false);
   }
 
-  getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined {
+  getProviderOptions(provider: ProviderProfile, modelId: string, reasoning?: Reasoning): SharedV4ProviderOptions | undefined {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderOptions) {
@@ -849,17 +849,17 @@ export class ModelManager {
         id: modelId,
         providerId: provider.id,
       };
-      return strategy.getProviderOptions(llmProvider, fallbackModel);
+      return strategy.getProviderOptions(llmProvider, fallbackModel, reasoning);
     }
 
     logger.debug(`Found model object for ${modelId} in provider ${provider.id}`, {
       hasProviderOverrides: !!modelObj.providerOverrides,
     });
 
-    return strategy.getProviderOptions(llmProvider, modelObj);
+    return strategy.getProviderOptions(llmProvider, modelObj, reasoning);
   }
 
-  getProviderParameters(provider: ProviderProfile, modelId: string): Record<string, unknown> {
+  getProviderParameters(provider: ProviderProfile, modelId: string, reasoning?: Reasoning): Record<string, unknown> {
     const llmProvider = provider.provider;
     const strategy = this.providerRegistry[llmProvider.name];
     if (!strategy?.getProviderParameters) {
@@ -880,14 +880,14 @@ export class ModelManager {
         id: modelId,
         providerId: provider.id,
       };
-      return strategy.getProviderParameters(llmProvider, fallbackModel);
+      return strategy.getProviderParameters(llmProvider, fallbackModel, reasoning);
     }
 
     logger.debug(`Found model object for ${modelId} in provider ${provider.id}`, {
       hasProviderOverrides: !!modelObj.providerOverrides,
     });
 
-    return strategy.getProviderParameters(llmProvider, modelObj);
+    return strategy.getProviderParameters(llmProvider, modelObj, reasoning);
   }
 
   /**
@@ -972,11 +972,15 @@ export class ModelManager {
         createLlm: (profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata) =>
           provider.strategy.createLlm(profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata) as LanguageModel | Promise<LanguageModel>,
         getUsageReport: provider.strategy.getUsageReport || getDefaultUsageReport,
-        getProviderOptions: provider.strategy.getProviderOptions ? (_provider, model) => provider.strategy.getProviderOptions!(model) : undefined,
+        getProviderOptions: provider.strategy.getProviderOptions
+          ? (_provider, model, reasoning) => provider.strategy.getProviderOptions!(model, reasoning)
+          : undefined,
         getProviderTools: provider.strategy.getProviderTools
           ? (_provider, model) => provider.strategy.getProviderTools!(model) as ToolSet | Promise<ToolSet>
           : undefined,
-        getProviderParameters: provider.strategy.getProviderParameters ? (_provider, model) => provider.strategy.getProviderParameters!(model) : undefined,
+        getProviderParameters: provider.strategy.getProviderParameters
+          ? (_provider, model, reasoning) => provider.strategy.getProviderParameters!(model, reasoning)
+          : undefined,
         getCacheControl: provider.strategy.getCacheControl ? (_provider, model) => provider.strategy.getCacheControl!(model) : undefined,
         hasEnvVars: () => false,
         getAiderMapping: provider.strategy.getAiderMapping

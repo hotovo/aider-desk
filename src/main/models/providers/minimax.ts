@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { isMinimaxProvider, MinimaxProvider, LlmProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -166,8 +166,8 @@ export const getMinimaxCacheControl = (): CacheControl | undefined => {
   };
 };
 
-export const getMinimaxProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined => {
-  if (!isMinimaxProvider(llmProvider)) {
+export const getMinimaxProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
+  if (!isMinimaxProvider(llmProvider) || (reasoning && reasoning !== 'provider-default')) {
     return undefined;
   }
 

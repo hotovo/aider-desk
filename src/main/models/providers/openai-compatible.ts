@@ -1,4 +1,4 @@
-import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -142,7 +142,7 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
 };
 
 // === Configuration Helper Functions ===
-const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (!isOpenAiCompatibleProvider(provider)) {
     return undefined;
   }
@@ -154,16 +154,20 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
   const reasoningEffort = providerOverrides?.reasoningEffort ?? openAiCompatibleProvider.reasoningEffort;
   const extraBody = providerOverrides?.extraBody ?? openAiCompatibleProvider.extraBody;
 
-  // Map ReasoningEffort enum to AI SDK format
-  const mappedReasoningEffort =
-    reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
-      ? undefined
-      : (reasoningEffort.toLowerCase() as 'max' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
-
   const providerOptions: Record<string, JSONValue> = {};
 
-  if (mappedReasoningEffort) {
-    providerOptions.reasoningEffort = mappedReasoningEffort;
+  // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+  // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+  // Still apply extraBody since it may contain unrelated provider settings.
+  if (!reasoning || reasoning === 'provider-default') {
+    const mappedReasoningEffort =
+      reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
+        ? undefined
+        : (reasoningEffort.toLowerCase() as 'max' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
+
+    if (mappedReasoningEffort) {
+      providerOptions.reasoningEffort = mappedReasoningEffort;
+    }
   }
 
   if (extraBody) {
@@ -172,7 +176,7 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model)
 
   if (Object.keys(providerOptions).length > 0) {
     logger.debug('Using provider options for OpenAI Compatible:', {
-      mappedReasoningEffort,
+      reasoning,
       hasExtraBody: !!extraBody,
     });
     return {

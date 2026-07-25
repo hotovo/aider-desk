@@ -199,8 +199,12 @@ interface AgentStartedEvent {
   blocked?: boolean;
   images?: string[];
   skillsToActivate?: string[];
+  /** Computed defaults on dispatch; returned overrides are merged with them. */
+  modelCallSettings?: ModelCallSettings;
 }
 ```
+
+Use `modelCallSettings` to override AI SDK model-call parameters. The dispatched value includes computed defaults such as `maxRetries` and `abortSignal`; return only the settings to override.
 
 ### AgentFinishedEvent
 
@@ -625,6 +629,27 @@ async onAgentStarted(
   };
 }
 ```
+
+### Overriding Model Call Settings
+
+Override AI SDK model-call parameters when the agent starts. Return only the values to change; they are merged with the computed defaults in `event.modelCallSettings`.
+
+```typescript
+async onAgentStarted(
+  event: AgentStartedEvent,
+  context: ExtensionContext
+): Promise<Partial<AgentStartedEvent>> {
+  return {
+    modelCallSettings: {
+      temperature: 0.2,
+      maxOutputTokens: 4096,
+      timeout: { totalMs: 120_000 },
+    },
+  };
+}
+```
+
+Use either `temperature` or `topP` for sampling. Set `reasoning` to use AI SDK's portable reasoning control, which takes precedence over provider-specific reasoning options.
 
 ### Modifying Files
 

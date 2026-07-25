@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, ReasoningEffort, SettingsData } from '@common/types';
 import { isZaiPlanProvider, LlmProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -115,7 +115,7 @@ const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allMod
   return allModelInfos[fullModelId];
 };
 
-const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isZaiPlanProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<ZaiPlanProvider> | undefined;
     const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
@@ -123,6 +123,26 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): Shar
     const toolCallStreamingDisabled = providerOverrides?.disableToolCallStreaming ?? llmProvider.disableToolCallStreaming ?? false;
 
     const toolStreamOption = toolCallStreamingDisabled ? {} : { tool_stream: true };
+
+    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+    // omit thinking and reasoningEffort so the AI SDK's portable reasoning takes effect.
+    // For 'none', explicitly disable thinking. Keep tool_stream if set.
+    if (reasoning && reasoning !== 'provider-default') {
+      if (reasoning === 'none') {
+        return {
+          zaiPlan: {
+            thinking: { type: 'disabled' },
+            ...toolStreamOption,
+          },
+        } as SharedV4ProviderOptions;
+      }
+      if (Object.keys(toolStreamOption).length > 0) {
+        return {
+          zaiPlan: toolStreamOption,
+        } as SharedV4ProviderOptions;
+      }
+      return undefined;
+    }
 
     // Only disable thinking if explicitly set to false
     if (thinkingEnabled === false) {

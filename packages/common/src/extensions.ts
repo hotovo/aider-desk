@@ -17,9 +17,12 @@ import {
   Mode,
   ModeDefinition,
   Model,
+  ModelCallSettings,
+  ModelCallTimeout,
   OS,
   ProjectSettings,
   PromptContext,
+  Reasoning,
   SkillDefinition,
   ProviderProfile,
   QuestionData,
@@ -39,7 +42,7 @@ import {
 } from '@common/types';
 
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState };
-export type { SwitchToLocalOptions, SwitchToWorktreeOptions, WorktreeUncommittedFiles };
+export type { ModelCallSettings, ModelCallTimeout, Reasoning, SwitchToLocalOptions, SwitchToWorktreeOptions, WorktreeUncommittedFiles };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -168,10 +171,10 @@ export interface ExtensionProviderStrategy {
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
-  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue | undefined>> | undefined;
+  getProviderOptions?: (model: Model, reasoning?: Reasoning) => Record<string, Record<string, JSONValue | undefined>> | undefined;
   getCacheControl?: (model: Model) => CacheControl | undefined;
   getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
-  getProviderParameters?: (model: Model) => Record<string, unknown>;
+  getProviderParameters?: (model: Model, reasoning?: Reasoning) => Record<string, unknown>;
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
   isRetryable?: (error: unknown) => boolean;
 }
@@ -432,6 +435,12 @@ export interface AgentStartedEvent {
   blocked?: boolean;
   images?: string[];
   skillsToActivate?: string[];
+  /**
+   * Model call settings (both defaults and overrides).
+   * On dispatch, contains the agent's computed defaults (e.g. maxRetries, abortSignal).
+   * Extensions can return a partial override; the final values are `{...defaults, ...overrides}`.
+   */
+  modelCallSettings?: ModelCallSettings;
 }
 
 /** Event payload for agent finished events */

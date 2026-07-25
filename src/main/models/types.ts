@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -75,9 +75,14 @@ export interface LlmProviderStrategy {
   getCacheControl?: (provider: LlmProvider, model: Model) => CacheControl | undefined;
 
   /**
-   * Returns provider-specific options for model instantiation
+   * Returns provider-specific options for model instantiation.
+   * When `reasoning` is set (not undefined or 'provider-default'), the implementation
+   * should omit reasoning-effort/budget fields so the top-level AI SDK `reasoning`
+   * parameter takes effect. When `reasoning` is 'none', implementations should
+   * explicitly disable thinking where the provider supports an on/off toggle.
+   * See https://ai-sdk.dev/docs/ai-sdk-core/reasoning for precedence rules.
    */
-  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV4ProviderOptions | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model, reasoning?: Reasoning) => SharedV4ProviderOptions | undefined;
 
   /**
    * Returns provider-specific tools that should be available to the agent
@@ -85,9 +90,9 @@ export interface LlmProviderStrategy {
   getProviderTools?: (provider: LlmProvider, model: Model) => ToolSet | Promise<ToolSet>;
 
   /**
-   * Returns provider-specific parameters for the given model
+   * Returns provider-specific parameters for the given model and effective reasoning override
    */
-  getProviderParameters?: (provider: LlmProvider, model: Model) => Record<string, unknown>;
+  getProviderParameters?: (provider: LlmProvider, model: Model, reasoning?: Reasoning) => Record<string, unknown>;
 
   /**
    * Returns model info for a specific model ID

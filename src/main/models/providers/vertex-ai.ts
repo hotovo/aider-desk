@@ -1,6 +1,6 @@
 import { v1beta1 } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData } from '@common/types';
 import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
 import { createVertex } from '@ai-sdk/google-vertex';
 
@@ -197,13 +197,28 @@ const getVertexAiUsageReport = (
   };
 };
 
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isVertexAiProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<VertexAiProvider> | undefined;
 
     // Use model-specific overrides, falling back to provider defaults
     const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
     const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
+
+    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+    // omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
+    // Keep includeThoughts if set so reasoning output is still returned.
+    if (reasoning && reasoning !== 'provider-default') {
+      return {
+        vertex: {
+          ...(includeThoughts && {
+            thinkingConfig: {
+              includeThoughts: true,
+            },
+          }),
+        },
+      };
+    }
 
     return {
       vertex: {

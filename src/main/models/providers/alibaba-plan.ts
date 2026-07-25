@@ -1,4 +1,4 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
 
@@ -100,9 +100,13 @@ const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: 
   return alibabaPlanProvider(model.id);
 };
 
-const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isAlibabaPlanProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<AlibabaPlanProvider> | undefined;
+
+    if (reasoning && reasoning !== 'provider-default') {
+      return undefined;
+    }
 
     const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
     const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget ?? 8192;

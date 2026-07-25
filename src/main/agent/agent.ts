@@ -4,16 +4,17 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
-  ContextCompactionType,
   ContextAssistantMessage,
-  ContextToolMessage,
+  ContextCompactionType,
   ContextFile,
   ContextMessage,
+  ContextToolMessage,
   ContextUserMessage,
   DefaultTaskState,
   McpTool,
   McpToolInputSchema,
   Mode,
+  ModelCallSettings,
   PromptContext,
   ProviderProfile,
   ToolApprovalState,
@@ -21,13 +22,14 @@ import {
 } from '@common/types';
 import {
   APICallError,
+  type FilePart,
   type FinishReason,
   generateText,
-  type FilePart,
   InvalidToolInputError,
   jsonSchema,
   type ModelMessage,
   NoSuchToolError,
+  Output,
   smoothStream,
   type StepResult,
   streamText,
@@ -37,7 +39,6 @@ import {
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
-  Output,
 } from 'ai';
 import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
@@ -781,6 +782,10 @@ export class Agent {
 
     let provider = providers.find((p) => p.id === profile.provider);
     let modelName = profile.model;
+    let modelCallSettings: ModelCallSettings = {
+      maxRetries: MAX_RETRIES,
+      abortSignal,
+    };
 
     if (provider) {
       const extensionResult = await this.extensionManager.dispatchEvent(
@@ -797,6 +802,7 @@ export class Agent {
           systemPrompt,
           images,
           skillsToActivate,
+          modelCallSettings,
         },
         task.project,
         task,
@@ -815,6 +821,10 @@ export class Agent {
       systemPrompt = extensionResult.systemPrompt;
       images = extensionResult.images ?? images;
       skillsToActivate = extensionResult.skillsToActivate;
+      modelCallSettings = {
+        ...modelCallSettings,
+        ...extensionResult.modelCallSettings,
+      };
     }
 
     const userRequestMessage: ContextUserMessage | null = prompt
@@ -902,8 +912,7 @@ export class Agent {
       systemPrompt: systemPrompt?.substring(0, 100),
     });
 
-    // Create new abort controller for this run only if abortSignal is not provided
-    const shouldCreateAbortController = !abortSignal;
+    const shouldCreateAbortController = !modelCallSettings.abortSignal;
     let controllerId: string | null = null;
 
     if (shouldCreateAbortController) {
@@ -915,11 +924,10 @@ export class Agent {
       const newController = new AbortController();
       this.abortControllers.set(controllerId, newController);
     }
-    const effectiveAbortSignal = abortSignal || (controllerId ? this.abortControllers.get(controllerId)?.signal : undefined);
-
+    const effectiveAbortSignal = modelCallSettings.abortSignal || (controllerId ? this.abortControllers.get(controllerId)?.signal : undefined);
     const cacheControl = this.modelManager.getCacheControl(provider, modelName);
-    const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
-    const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
+    const providerParameters = this.modelManager.getProviderParameters(provider, modelName, modelCallSettings.reasoning);
+    const providerOptions = this.modelManager.getProviderOptions(provider, modelName, modelCallSettings?.reasoning);
 
     const firstUserMessage = contextMessages.length > 0 ? contextMessages[0] : null;
     let messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
@@ -1151,12 +1159,13 @@ export class Agent {
           instructions: systemPrompt,
           messages: optimizedMessages,
           tools: toolSet,
-          abortSignal: effectiveAbortSignal,
           maxOutputTokens: effectiveMaxOutputTokens,
-          maxRetries: 5,
+          maxRetries: MAX_RETRIES,
           temperature: effectiveTemperature,
           telemetry: this.getTelemetrySettings(),
+          ...modelCallSettings,
           ...providerParameters,
+          abortSignal: effectiveAbortSignal,
         };
       };
 
@@ -1196,7 +1205,7 @@ export class Agent {
             return;
           }
 
-          currentStepMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, abortSignal);
+          currentStepMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, effectiveAbortSignal);
           const extensionResult = await this.extensionManager.dispatchEvent(
             'onAgentStepFinished',
             {

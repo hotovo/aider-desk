@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
+import { Reasoning, Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
 
 import type { LanguageModel, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -122,12 +122,23 @@ export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings
 };
 
 // === Configuration Helper Functions ===
-export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (!isOpenAiProvider(provider)) {
     return undefined;
   }
 
   const openAiProvider = provider as OpenAiProvider;
+
+  // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+  // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+  // Keep reasoningSummary so reasoning output is still returned.
+  if (reasoning && reasoning !== 'provider-default') {
+    return {
+      openai: {
+        reasoningSummary: 'auto',
+      },
+    };
+  }
 
   // Extract reasoningEffort from model overrides or provider config
   const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;

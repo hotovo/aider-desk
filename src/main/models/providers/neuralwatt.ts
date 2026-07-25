@@ -1,4 +1,4 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isNeuralwattProvider, LlmProvider, NeuralwattProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
@@ -159,8 +159,14 @@ const createNeuralwattLlm = (profile: ProviderProfile, model: Model, settings: S
   return compatibleProvider(model.id);
 };
 
-const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (!isNeuralwattProvider(llmProvider)) {
+    return undefined;
+  }
+
+  // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+  // omit reasoningEffort so the AI SDK's portable reasoning takes effect.
+  if (reasoning && reasoning !== 'provider-default') {
     return undefined;
   }
 

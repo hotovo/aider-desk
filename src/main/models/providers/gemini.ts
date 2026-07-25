@@ -1,4 +1,4 @@
-import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession, Reasoning } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogle, google, type GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
@@ -151,13 +151,28 @@ const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Mode
   };
 };
 
-const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isGeminiProvider(llmProvider)) {
     const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
 
     // Use model-specific overrides, falling back to provider defaults
     const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
     const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
+
+    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+    // omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
+    // Keep includeThoughts if set so reasoning output is still returned.
+    if (reasoning && reasoning !== 'provider-default') {
+      return {
+        google: {
+          ...(includeThoughts && {
+            thinkingConfig: {
+              includeThoughts: true,
+            },
+          }),
+        } satisfies GoogleLanguageModelOptions,
+      };
+    }
 
     return {
       google: {

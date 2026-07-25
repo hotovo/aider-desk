@@ -1,5 +1,5 @@
 import { createAzure } from '@ai-sdk/azure';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
 import { AzureProvider, isAzureProvider, LlmProvider } from '@common/agent';
 import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 
@@ -90,8 +90,19 @@ export const createAzureLlm = (profile: ProviderProfile, model: Model, settings:
   return azureProvider.responses(model.id);
 };
 
-export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined => {
+export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isAzureProvider(llmProvider)) {
+    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+    // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+    // Keep reasoningSummary so reasoning output is still returned.
+    if (reasoning && reasoning !== 'provider-default') {
+      return {
+        openai: {
+          reasoningSummary: 'auto',
+        } satisfies OpenAIResponsesProviderOptions,
+      };
+    }
+
     // Extract reasoningEffort from model overrides or provider config
     const providerOverrides = model.providerOverrides as Partial<AzureProvider> | undefined;
     const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort;
@@ -122,14 +133,15 @@ export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model):
   return undefined;
 };
 
-export const getAzureProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> => {
+export const getAzureProviderParameters = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): Record<string, unknown> => {
   if (isAzureProvider(llmProvider)) {
-    // Extract reasoningEffort from model overrides or provider config
     const providerOverrides = model.providerOverrides as Partial<AzureProvider> | undefined;
     const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort;
+    const reasoningEnabled =
+      reasoning && reasoning !== 'provider-default' ? reasoning !== 'none' : !!reasoningEffort && reasoningEffort !== ReasoningEffort.None;
 
-    if (reasoningEffort && reasoningEffort !== ReasoningEffort.None) {
-      logger.debug('Clearing temperature and maxOutputTokens for Azure with reasoning effort:', { reasoningEffort });
+    if (reasoningEnabled) {
+      logger.debug('Clearing temperature and maxOutputTokens for Azure with reasoning:', { reasoning: reasoning ?? reasoningEffort });
       return {
         // not supported by Azure with reasoning models
         maxOutputTokens: undefined,

@@ -147,6 +147,69 @@ export enum ReasoningEffort {
   None = 'none',
 }
 
+/**
+ * Portable reasoning level for AI SDK v7's top-level `reasoning` parameter.
+ * See https://ai-sdk.dev/docs/ai-sdk-core/reasoning
+ */
+export type Reasoning = 'provider-default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
+
+/**
+ * Timeout configuration for model calls.
+ * See https://ai-sdk.dev/docs/ai-sdk-core/settings#timeout
+ */
+export interface ModelCallTimeout {
+  /** Total timeout for the entire call including all steps. */
+  totalMs?: number;
+  /** Timeout for each individual step (LLM call). */
+  stepMs?: number;
+  /** Timeout between stream chunks (streaming only). Aborts if no chunk received in time. */
+  chunkMs?: number;
+  /** Default timeout for all tool executions. */
+  toolMs?: number;
+  /** Per-tool timeout overrides (e.g. `{ weatherMs: 3000 }`). Takes precedence over `toolMs`. */
+  tools?: Record<string, number>;
+}
+
+/**
+ * Model call settings that map to AI SDK Language Model Call Options and Request Options.
+ * These override provider-derived defaults when set via extension events.
+ *
+ * See https://ai-sdk.dev/docs/ai-sdk-core/settings for details.
+ */
+export interface ModelCallSettings {
+  // Language Model Call Options
+
+  /** Maximum number of tokens to generate. */
+  maxOutputTokens?: number;
+  /** Temperature setting (0 = deterministic, higher = more random). */
+  temperature?: number;
+  /** Nucleus sampling. Recommended instead of temperature, not alongside. */
+  topP?: number;
+  /** Only sample from top K options for each subsequent token. */
+  topK?: number;
+  /** Penalty for tokens already present in the prompt. */
+  presencePenalty?: number;
+  /** Penalty for repeatedly using the same words/phrases. */
+  frequencyPenalty?: number;
+  /** Stop sequences for text generation. */
+  stopSequences?: string[];
+  /** Random seed for deterministic results. */
+  seed?: number;
+  /** Controls reasoning/thinking behavior. See https://ai-sdk.dev/docs/ai-sdk-core/reasoning */
+  reasoning?: Reasoning;
+
+  // Request Options
+
+  /** Maximum number of retries. Set to 0 to disable retries. Default: 2. */
+  maxRetries?: number;
+  /** Abort signal that can be used to cancel the call. */
+  abortSignal?: AbortSignal;
+  /** Timeout for the call. Can be a number (ms) or a detailed timeout configuration. */
+  timeout?: number | ModelCallTimeout;
+  /** Additional HTTP headers to send with the request. */
+  headers?: Record<string, string>;
+}
+
 export interface ResponseChunkData {
   messageId: string;
   baseDir: string;
