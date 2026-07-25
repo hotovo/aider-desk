@@ -1,0 +1,9 @@
+{
+  "name": "binary-files-extension",
+  "version": "1.0.0",
+  "description": "Attach local binary files to multimodal model requests",
+  "main": "index.ts",
+  "keywords": ["aiderdesk", "extension", "tools", "multimodal", "files"],
+  "author": "AiderDesk",
+  "license": "MIT"
+}

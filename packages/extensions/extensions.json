@@ -1,6 +1,15 @@
 {
   "extensions": [
     {
+      "id": "binary-files",
+      "name": "Binary Files",
+      "description": "Attaches local binary files to multimodal model requests",
+      "folder": "binary-files",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["tools"]
+    },
+    {
       "id": "wakatime",
       "name": "WakaTime",
       "description": "Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli",
