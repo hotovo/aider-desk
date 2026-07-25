@@ -4836,6 +4836,12 @@ import { DatabaseSync } from 'node:sqlite';
 import { SystemLogEntry, SystemLogsResponse, SystemLogLevel } from '@common/types';
 ⋮----
 /**
+ * JSON.stringify replacement that handles circular references.
+ * Returns a string representation with "[Circular]" markers instead of throwing.
+ */
+const safeStringify = (obj: unknown): string =>
+⋮----
+/**
  * SQLite-backed storage for system logs.
  * This is session-only storage that clears on app startup.
  */
