@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-
 import { SystemLogEntry } from '@common/types';
 
 import { LogBuffer } from '../log-buffer';

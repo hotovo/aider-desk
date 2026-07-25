@@ -52,7 +52,15 @@ import {
   WorktreeUncommittedFiles,
 } from '@common/types';
 import { parsePartialJson } from 'ai';
-import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import {
+  extractImagesFromContent,
+  extractProviderModel,
+  extractServerNameToolName,
+  extractTextContent,
+  fileExists,
+  parseCommandArgs,
+  parseUsageReport,
+} from '@common/utils';
 import {
   COMPACT_CONVERSATION_AGENT_PROFILE,
   CONFLICT_RESOLUTION_PROFILE,
@@ -3069,6 +3077,11 @@ export class Task {
     const originalText = extractTextContent(originalUserMessage.content);
     const promptToRun = updatedPrompt ?? originalText;
     const imagesToRun = updatedImages ?? (updatedPrompt !== undefined ? undefined : extractImagesFromContent(originalUserMessage.content));
+    if (this.tryCustomCommand(promptToRun, mode)) {
+      this.sendTaskMessageRemoved(removedMessages.map((msg) => msg.id));
+      await this.updateContextInfo();
+      return;
+    }
 
     if (promptToRun) {
       logger.info('Found message content to run, reloading and re-running prompt.', {
@@ -3093,6 +3106,14 @@ export class Task {
     });
 
     const mode = this.getCurrentMode();
+    const contextMessages = await this.contextManager.getContextMessages();
+    const lastMessage = contextMessages[contextMessages.length - 1];
+
+    if (lastMessage?.role === MessageRole.User && this.tryCustomCommand(extractTextContent(lastMessage.content), mode)) {
+      const removedMessageIds = this.contextManager.removeMessageById(lastMessage.id);
+      this.sendTaskMessageRemoved(removedMessageIds);
+      return;
+    }
 
     if (!AIDER_MODES.includes(mode)) {
       const profile = await this.getTaskAgentProfile();
@@ -3112,9 +3133,6 @@ export class Task {
       void this.runPromptInAgent(profile, mode, null);
     } else {
       // In other modes, check if last message is user
-      const contextMessages = await this.contextManager.getContextMessages();
-      const lastMessage = contextMessages[contextMessages.length - 1];
-
       if (lastMessage && lastMessage.role === MessageRole.User) {
         // Last message is from user, redo it
         logger.info('Last message is from user, redoing prompt');
@@ -3126,6 +3144,27 @@ export class Task {
         void this.runPrompt('Continue', mode, false);
       }
     }
+  }
+
+  private tryCustomCommand(prompt: string, mode: Mode): boolean {
+    if (!prompt.startsWith('/')) {
+      return false;
+    }
+
+    const [name, ...args] = parseCommandArgs(prompt.slice(1));
+    if (!name) {
+      return false;
+    }
+
+    const isExtensionCommand = this.extensionManager.getCommands(this.project).some(({ command }) => command.name === name);
+    const isCustomCommand = !!this.customCommandManager.getCommand(name);
+    if (!isExtensionCommand && !isCustomCommand) {
+      return false;
+    }
+
+    logger.info('Executing custom command from user prompt', { name, args });
+    void this.runCustomCommand(name, args, mode);
+    return true;
   }
 
   private getCurrentMode() {

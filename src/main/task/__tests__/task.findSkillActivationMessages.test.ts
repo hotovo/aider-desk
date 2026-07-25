@@ -119,6 +119,7 @@ import { SKILLS_TOOL_ACTIVATE_SKILL, SKILLS_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEP
 import { Task } from '../task';
 
 import type { ContextMessage, ToolCallPart, ToolResultPart } from '@common/types';
+import { MessageRole } from '@common/types';
 
 describe('Task - findSkillActivationMessages', () => {
   let task: Task;
@@ -164,7 +165,9 @@ describe('Task - findSkillActivationMessages', () => {
     };
 
     mockMcpManager = {};
-    mockCustomCommandManager = {};
+    mockCustomCommandManager = {
+      getCommand: vi.fn(),
+    };
     mockAgentProfileManager = {
       getProfile: vi.fn(() => null),
     };
@@ -174,6 +177,7 @@ describe('Task - findSkillActivationMessages', () => {
       sendTaskUpdated: vi.fn(),
       sendTaskCreated: vi.fn(),
       sendTaskDeleted: vi.fn(),
+      sendTaskMessageRemoved: vi.fn(),
     };
     mockModelManager = {};
     mockWorktreeManager = {};
@@ -181,6 +185,7 @@ describe('Task - findSkillActivationMessages', () => {
     mockPromptsManager = {};
     mockExtensionManager = {
       isInitialized: vi.fn(() => false),
+      getCommands: vi.fn(() => []),
     };
 
     // Create Task instance
@@ -548,6 +553,69 @@ describe('Task - findSkillActivationMessages', () => {
 
       const toolResult = (toolMsg?.content as ToolResultPart[])[0] as ToolResultPart;
       expect(toolResult.toolCallId).toBe('call-1');
+    });
+  });
+
+  describe('resumeTask', () => {
+    const getContextManager = () => {
+      return task as unknown as {
+        contextManager: {
+          addContextMessage: (message: ContextMessage) => void;
+          getContextMessages: () => Promise<ContextMessage[]>;
+        };
+      };
+    };
+
+    it('executes a saved file-based custom command and removes the original prompt', async () => {
+      mockCustomCommandManager.getCommand.mockReturnValue({ name: 'commit' });
+      const runCustomCommand = vi.spyOn(task, 'runCustomCommand').mockResolvedValue();
+      const contextManager = getContextManager();
+      contextManager.contextManager.addContextMessage({
+        id: 'saved-command',
+        role: MessageRole.User,
+        content: '/commit "release message"',
+      });
+
+      await task.resumeTask();
+
+      expect(runCustomCommand).toHaveBeenCalledWith('commit', ['release message'], 'agent');
+      expect(await contextManager.contextManager.getContextMessages()).toEqual([]);
+      expect(mockEventManager.sendTaskMessageRemoved).toHaveBeenCalledWith(baseDir, taskId, ['saved-command']);
+    });
+
+    it('executes a saved extension command and removes the original prompt', async () => {
+      mockExtensionManager.getCommands.mockReturnValue([{ command: { name: 'commit' } }]);
+      const runCustomCommand = vi.spyOn(task, 'runCustomCommand').mockResolvedValue();
+      const contextManager = getContextManager();
+      contextManager.contextManager.addContextMessage({
+        id: 'saved-command',
+        role: MessageRole.User,
+        content: '/commit this is a message',
+      });
+
+      await task.resumeTask();
+
+      expect(runCustomCommand).toHaveBeenCalledWith('commit', ['this', 'is', 'a', 'message'], 'agent');
+      expect(await contextManager.contextManager.getContextMessages()).toEqual([]);
+      expect(mockEventManager.sendTaskMessageRemoved).toHaveBeenCalledWith(baseDir, taskId, ['saved-command']);
+    });
+
+    it('executes a custom command when redoing a saved command prompt', async () => {
+      mockCustomCommandManager.getCommand.mockReturnValue({ name: 'commit' });
+      const runCustomCommand = vi.spyOn(task, 'runCustomCommand').mockResolvedValue();
+      vi.spyOn(task, 'updateContextInfo').mockResolvedValue();
+      const contextManager = getContextManager();
+      contextManager.contextManager.addContextMessage({
+        id: 'saved-command',
+        role: MessageRole.User,
+        content: '/commit release message',
+      });
+
+      await task.redoUserPrompt('saved-command', 'agent');
+
+      expect(runCustomCommand).toHaveBeenCalledWith('commit', ['release', 'message'], 'agent');
+      expect(await contextManager.contextManager.getContextMessages()).toEqual([]);
+      expect(mockEventManager.sendTaskMessageRemoved).toHaveBeenCalledWith(baseDir, taskId, ['saved-command']);
     });
   });
 
