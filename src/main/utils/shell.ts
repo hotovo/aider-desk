@@ -506,7 +506,7 @@ export const getShellPath = (): string => {
       }
     }
 
-    const combinedPaths = new Set([...shellPath.split(pathSep), ...currentPath.split(pathSep)]);
+    const combinedPaths = new Set([...shellPath.split(pathSep), ...currentPath.split(pathSep), ...additionalPaths]);
 
     cachedPath = Array.from(combinedPaths)
       .filter((p) => p)
