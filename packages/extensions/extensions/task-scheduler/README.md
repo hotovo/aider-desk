@@ -2,6 +2,8 @@
 
 Schedule tasks to run automatically on a cron or periodic basis.
 
+![Task Scheduler screenshot](https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/task-scheduler/screenshot.png)
+
 ## Features
 
 - **Cron schedules**: Use standard 5-field cron expressions (e.g., `*/5 * * * *` for every 5 minutes)
