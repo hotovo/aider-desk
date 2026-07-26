@@ -284,6 +284,7 @@ export class AiderManager {
 
     const error = new Error(`Aider process exited before the connector became ready (code ${code ?? 'unknown'})`);
     this.aiderStartError = error;
+    this.eventManager.sendAiderConnectorStatus({ state: 'failed', error: error.message }, this.task.getProjectDir(), this.task.taskId);
     this.aiderStartReject?.(error);
     this.aiderStartReject = null;
     this.aiderStartResolve = null;
