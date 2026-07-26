@@ -418,6 +418,15 @@
       "type": "folder",
       "hasDependencies": true,
       "capabilities": ["ui", "commands", "events"]
+    },
+    {
+      "id": "reasoning-selector",
+      "name": "Reasoning Selector",
+      "description": "Adds a reasoning effort selector dropdown next to the model selector in agent mode",
+      "folder": "reasoning-selector",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": ["ui"]
     }
   ]
 }
