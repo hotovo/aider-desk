@@ -20,6 +20,7 @@
 - correctly handling multiple reasoning message parts
 - falling back to default agent profile when opening new project with agent profile that does not exist
 - clear exited aider process state
+- prevent project tab close button from overlapping scroll arrow
 
 ## [0.75.0]
 
