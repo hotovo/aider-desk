@@ -33,6 +33,7 @@ interface SkillSource {
 const DEFAULT_SOURCES: SkillSource[] = [
   { id: 'anthropics', name: 'Anthropic Official', url: 'https://github.com/anthropics/skills.git', subPath: 'skills' },
   { id: 'ecc', name: 'ECC', url: 'https://github.com/affaan-m/ECC.git', subPath: '.agents/skills' },
+  { id: 'superpowers', name: 'Superpowers', url: 'https://github.com/obra/superpowers.git', subPath: 'skills' },
   { id: 'awesome-claude-skills', name: 'Awesome Claude Skills', url: 'https://github.com/ComposioHQ/awesome-claude-skills.git', subPath: '' },
   { id: 'agentic-awesome-skills', name: 'Agentic Awesome Skills', url: 'https://github.com/sickn33/agentic-awesome-skills.git', subPath: 'skills' },
   { id: 'mattpocock-engineering', name: 'Matt Pocock: Engineering', url: 'https://github.com/mattpocock/skills.git', subPath: 'skills/engineering' },
@@ -80,7 +81,7 @@ function getSkillsDirForTarget(target: string): string {
 export default class SkillGalleryExtension implements Extension {
   static metadata = {
     name: 'Skill Gallery',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Browse and install Claude Skills from popular skill repositories',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
