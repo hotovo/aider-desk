@@ -2236,16 +2236,17 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import {
   AgentProfile,
-  ContextCompactionType,
   ContextAssistantMessage,
-  ContextToolMessage,
+  ContextCompactionType,
   ContextFile,
   ContextMessage,
+  ContextToolMessage,
   ContextUserMessage,
   DefaultTaskState,
   McpTool,
   McpToolInputSchema,
   Mode,
+  ModelCallSettings,
   PromptContext,
   ProviderProfile,
   ToolApprovalState,
@@ -2253,13 +2254,14 @@ import {
 } from '@common/types';
 import {
   APICallError,
+  type FilePart,
   type FinishReason,
   generateText,
-  type FilePart,
   InvalidToolInputError,
   jsonSchema,
   type ModelMessage,
   NoSuchToolError,
+  Output,
   smoothStream,
   type StepResult,
   streamText,
@@ -2269,7 +2271,6 @@ import {
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
-  Output,
 } from 'ai';
 import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 import { LlmProviderName } from '@common/agent';
@@ -2476,8 +2477,6 @@ async runAgent(
 ⋮----
 // Store resolved provider for use in retry logic
 ⋮----
-// Create new abort controller for this run only if abortSignal is not provided
-⋮----
 // add user message and skill activation messages (skills right after the
 // user message so the agent sees them already active and doesn't
 // re-activate them itself)
@@ -2629,8 +2628,6 @@ const processToolResult = (toolResult: TypedToolResult<TOOLS>, isLast: boolean) 
 ⋮----
 // Update the existing tool message with the result
 // Only attach usage report to the last tool message when there is no assistant message
-⋮----
-// move to the next one right away
 ⋮----
 // Process successful tool results *after* sending text/reasoning and handling errors
 ⋮----
@@ -5020,7 +5017,7 @@ setMemoryEnabled(enabled: boolean): void
 ================
 File: src/main/models/providers/alibaba-plan.ts
 ================
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
 ⋮----
@@ -5040,12 +5037,12 @@ const getAlibabaPlanAiderMapping = (provider: ProviderProfile, modelId: string, 
 ⋮----
 const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 
 ================
 File: src/main/models/providers/anthropic-compatible.ts
 ================
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
@@ -5074,7 +5071,7 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
 // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
 // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
 ⋮----
-export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+export const getAnthropicCompatibleProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Explicitly request adaptive thinking with summarized display so reasoning/thinking
 // text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
@@ -5093,7 +5090,7 @@ File: src/main/models/providers/anthropic.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { AnthropicProvider, isAnthropicProvider, LlmProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 ⋮----
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -5116,7 +5113,7 @@ export const createAnthropicLlm = (profile: ProviderProfile, model: Model, setti
 // === Configuration Helper Functions ===
 export const getAnthropicCacheControl = (): CacheControl | undefined =>
 ⋮----
-export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Explicitly request adaptive thinking with summarized display so reasoning/thinking
 // text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
@@ -5134,7 +5131,7 @@ export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Mo
 File: src/main/models/providers/azure.ts
 ================
 import { createAzure } from '@ai-sdk/azure';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
 import { AzureProvider, isAzureProvider, LlmProvider } from '@common/agent';
 import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 ⋮----
@@ -5157,15 +5154,17 @@ export const getAzureAiderMapping = (provider: ProviderProfile, modelId: string)
 // === LLM Creation Functions ===
 export const createAzureLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+// Keep reasoningSummary so reasoning output is still returned.
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
 // Map ReasoningEffort enum to AI SDK format
 ⋮----
-export const getAzureProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> =>
-⋮----
-// Extract reasoningEffort from model overrides or provider config
+export const getAzureProviderParameters = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): Record<string, unknown> =>
 ⋮----
 // not supported by Azure with reasoning models
 ⋮----
@@ -5350,7 +5349,7 @@ export const createClinePassLlm = (profile: ProviderProfile, model: Model, setti
 ================
 File: src/main/models/providers/deepseek.ts
 ================
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 ⋮----
@@ -5371,9 +5370,12 @@ export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: stri
 // === LLM Creation Functions ===
 export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
-const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model): Record<string, unknown> =>
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// let the AI SDK handle it. For 'none', explicitly disable thinking.
+⋮----
+const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): Record<string, unknown> =>
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5405,7 +5407,7 @@ export const getDefaultUsageReport = (task: Task, provider: ProviderProfile, mod
 ================
 File: src/main/models/providers/gemini.ts
 ================
-import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession, Reasoning } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
 import { createGoogle, google, type GoogleLanguageModelOptions } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
@@ -5445,9 +5447,13 @@ const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Mode
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
-const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Use model-specific overrides, falling back to provider defaults
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
+// Keep includeThoughts if set so reasoning output is still returned.
 ⋮----
 // === Provider Tools Functions ===
 const getGeminiProviderTools = (provider: LlmProvider, model: Model): ToolSet =>
@@ -5716,7 +5722,7 @@ File: src/main/models/providers/minimax.ts
 ================
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { isMinimaxProvider, MinimaxProvider, LlmProvider } from '@common/agent';
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 ⋮----
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -5781,7 +5787,7 @@ export const createMinimaxLlm = (profile: ProviderProfile, model: Model, setting
 // === Configuration Helper Functions ===
 export const getMinimaxCacheControl = (): CacheControl | undefined =>
 ⋮----
-export const getMinimaxProviderOptions = (llmProvider: LlmProvider, _model: Model): SharedV4ProviderOptions | undefined =>
+export const getMinimaxProviderOptions = (llmProvider: LlmProvider, _model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Explicitly request adaptive thinking with summarized display so reasoning/thinking
 // text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
@@ -5835,7 +5841,7 @@ export const createMistralLlm = (profile: ProviderProfile, model: Model, setting
 ================
 File: src/main/models/providers/neuralwatt.ts
 ================
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import { isNeuralwattProvider, LlmProvider, NeuralwattProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
@@ -5901,7 +5907,10 @@ const getNeuralwattAiderMapping = (provider: ProviderProfile, modelId: string): 
 ⋮----
 const createNeuralwattLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
-const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getNeuralwattProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit reasoningEffort so the AI SDK's portable reasoning takes effect.
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -5944,7 +5953,7 @@ let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
 ================
 File: src/main/models/providers/openai-compatible.ts
 ================
-import { Model, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
@@ -5970,11 +5979,13 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
 // Use createOpenAICompatible to get a provider instance, then get the model
 ⋮----
 // === Configuration Helper Functions ===
-const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
-// Map ReasoningEffort enum to AI SDK format
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+// Still apply extraBody since it may contain unrelated provider settings.
 ⋮----
 // === Complete Strategy Implementation ===
 ⋮----
@@ -5989,7 +6000,7 @@ File: src/main/models/providers/openai.ts
 ================
 import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
+import { Reasoning, Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
 ⋮----
 import type { LanguageModel, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -6011,7 +6022,11 @@ export const getOpenAiAiderMapping = (provider: ProviderProfile, modelId: string
 export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
 ⋮----
 // === Configuration Helper Functions ===
-export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
+// Keep reasoningSummary so reasoning output is still returned.
 ⋮----
 // Extract reasoningEffort from model overrides or provider config
 ⋮----
@@ -6307,7 +6322,7 @@ File: src/main/models/providers/vertex-ai.ts
 ================
 import { v1beta1 } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData } from '@common/types';
 import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
 import { createVertex } from '@ai-sdk/google-vertex';
 ⋮----
@@ -6362,9 +6377,13 @@ const getVertexAiUsageReport = (
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
-export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
 ⋮----
 // Use model-specific overrides, falling back to provider defaults
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
+// Keep includeThoughts if set so reasoning output is still returned.
 ⋮----
 const getVertexAiModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
@@ -6379,7 +6398,7 @@ const getVertexAiModelInfo = (_provider: ProviderProfile, modelId: string, allMo
 ================
 File: src/main/models/providers/zai-plan.ts
 ================
-import { Model, ModelInfo, ProviderProfile, ReasoningEffort, SettingsData } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, ReasoningEffort, SettingsData } from '@common/types';
 import { isZaiPlanProvider, LlmProvider, ZaiPlanProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
@@ -6414,7 +6433,11 @@ const createZaiPlanLlm = (profile: ProviderProfile, model: Model, settings: Sett
 ⋮----
 const getZaiPlanModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
-const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model): SharedV4ProviderOptions | undefined =>
+const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
+⋮----
+// When the top-level reasoning parameter is set (not undefined or 'provider-default'),
+// omit thinking and reasoningEffort so the AI SDK's portable reasoning takes effect.
+// For 'none', explicitly disable thinking. Keep tool_stream if set.
 ⋮----
 // Only disable thinking if explicitly set to false
 ⋮----
@@ -6437,7 +6460,7 @@ import path from 'path';
 ⋮----
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderDefinition } from '@common/extensions';
-import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { extractProviderModel } from '@common/utils';
 ⋮----
 import { anthropicProviderStrategy } from './providers/anthropic';
@@ -6627,11 +6650,11 @@ isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
 ⋮----
 isToolCallStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
 ⋮----
-getProviderOptions(provider: ProviderProfile, modelId: string): SharedV4ProviderOptions | undefined
+getProviderOptions(provider: ProviderProfile, modelId: string, reasoning?: Reasoning): SharedV4ProviderOptions | undefined
 ⋮----
 // Look up the actual Model object from providerModels
 ⋮----
-getProviderParameters(provider: ProviderProfile, modelId: string): Record<string, unknown>
+getProviderParameters(provider: ProviderProfile, modelId: string, reasoning?: Reasoning): Record<string, unknown>
 ⋮----
 // Look up the actual Model object from providerModels
 ⋮----
@@ -6673,7 +6696,7 @@ getExtensionProviderProfiles(): ProviderProfile[]
 ================
 File: src/main/models/types.ts
 ================
-import { Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 ⋮----
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -6750,9 +6773,14 @@ export interface LlmProviderStrategy {
   getCacheControl?: (provider: LlmProvider, model: Model) => CacheControl | undefined;
 
   /**
-   * Returns provider-specific options for model instantiation
+   * Returns provider-specific options for model instantiation.
+   * When `reasoning` is set (not undefined or 'provider-default'), the implementation
+   * should omit reasoning-effort/budget fields so the top-level AI SDK `reasoning`
+   * parameter takes effect. When `reasoning` is 'none', implementations should
+   * explicitly disable thinking where the provider supports an on/off toggle.
+   * See https://ai-sdk.dev/docs/ai-sdk-core/reasoning for precedence rules.
    */
-  getProviderOptions?: (provider: LlmProvider, model: Model) => SharedV4ProviderOptions | undefined;
+  getProviderOptions?: (provider: LlmProvider, model: Model, reasoning?: Reasoning) => SharedV4ProviderOptions | undefined;
 
   /**
    * Returns provider-specific tools that should be available to the agent
@@ -6760,9 +6788,9 @@ export interface LlmProviderStrategy {
   getProviderTools?: (provider: LlmProvider, model: Model) => ToolSet | Promise<ToolSet>;
 
   /**
-   * Returns provider-specific parameters for the given model
+   * Returns provider-specific parameters for the given model and effective reasoning override
    */
-  getProviderParameters?: (provider: LlmProvider, model: Model) => Record<string, unknown>;
+  getProviderParameters?: (provider: LlmProvider, model: Model, reasoning?: Reasoning) => Record<string, unknown>;
 
   /**
    * Returns model info for a specific model ID
@@ -6816,7 +6844,12 @@ export interface LlmProviderStrategy {
    */
 ⋮----
 /**
-   * Returns provider-specific options for model instantiation
+   * Returns provider-specific options for model instantiation.
+   * When `reasoning` is set (not undefined or 'provider-default'), the implementation
+   * should omit reasoning-effort/budget fields so the top-level AI SDK `reasoning`
+   * parameter takes effect. When `reasoning` is 'none', implementations should
+   * explicitly disable thinking where the provider supports an on/off toggle.
+   * See https://ai-sdk.dev/docs/ai-sdk-core/reasoning for precedence rules.
    */
 ⋮----
 /**
@@ -6824,7 +6857,7 @@ export interface LlmProviderStrategy {
    */
 ⋮----
 /**
-   * Returns provider-specific parameters for the given model
+   * Returns provider-specific parameters for the given model and effective reasoning override
    */
 ⋮----
 /**
@@ -9035,7 +9068,15 @@ import {
   WorktreeUncommittedFiles,
 } from '@common/types';
 import { parsePartialJson } from 'ai';
-import { extractImagesFromContent, extractProviderModel, extractServerNameToolName, extractTextContent, fileExists, parseUsageReport } from '@common/utils';
+import {
+  extractImagesFromContent,
+  extractProviderModel,
+  extractServerNameToolName,
+  extractTextContent,
+  fileExists,
+  parseCommandArgs,
+  parseUsageReport,
+} from '@common/utils';
 import {
   COMPACT_CONVERSATION_AGENT_PROFILE,
   CONFLICT_RESOLUTION_PROFILE,
@@ -9624,6 +9665,8 @@ public async resumeTask()
 // Last message is from user, redo it
 ⋮----
 // Last message is not from user, send "Continue" to aider
+⋮----
+private tryCustomCommand(prompt: string, mode: Mode): boolean
 ⋮----
 private getCurrentMode()
 ⋮----
@@ -29018,7 +29061,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "7.0.32",
+    "ai": "7.0.37",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^1.0.0",
