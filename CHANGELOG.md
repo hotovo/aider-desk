@@ -21,6 +21,7 @@
 - falling back to default agent profile when opening new project with agent profile that does not exist
 - clear exited aider process state
 - prevent project tab close button from overlapping scroll arrow
+- correctly resolving base branch on worktree tasks after additional commits on base branch
 
 ## [0.75.0]
 

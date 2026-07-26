@@ -353,17 +353,13 @@ export class Task {
   }
 
   /**
-   * @deprecated This migration ensures older task data has the `branch` field
-   * and `baseBranch` stores the branch the worktree was created from.
-   * Can be removed once all users have migrated past v0.64.0.
+   * Resolves missing `baseBranch` for worktrees created while the main repo
+   * was in detached HEAD state, where `baseBranch` was never stored.
    */
-  private async migrateWorktreeData(): Promise<void> {
-    if (!this.task.worktree || this.task.worktree.branch) {
-      return;
+  private async resolveMissingWorktreeBaseBranch(): Promise<boolean> {
+    if (!this.task.worktree || this.task.worktree.baseBranch) {
+      return false;
     }
-
-    const currentBranch = this.task.worktree.baseBranch;
-    this.task.worktree.branch = currentBranch;
 
     let resolvedBase = '';
     if (this.task.worktree.baseCommit) {
@@ -379,9 +375,11 @@ export class Task {
         resolvedBase = '';
       }
     }
-    this.task.worktree.baseBranch = resolvedBase || undefined;
 
-    await this.saveTask({ worktree: this.task.worktree });
+    this.task.worktree.baseBranch = resolvedBase || undefined;
+    await this.saveTask({ worktree: this.task.worktree }, false);
+
+    return true;
   }
 
   private isInternal() {
@@ -508,7 +506,11 @@ export class Task {
       }
     }
 
-    await this.migrateWorktreeData();
+    const worktreeBaseBranchResolved = await this.resolveMissingWorktreeBaseBranch();
+
+    if (worktreeBaseBranchResolved && this.task.worktree) {
+      void this.sendWorktreeIntegrationStatusUpdated();
+    }
 
     if (await fileExists(this.getTaskDir())) {
       this.git = simpleGit(this.getTaskDir());
