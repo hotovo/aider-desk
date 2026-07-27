@@ -22,7 +22,7 @@ const selectorJsx = readFileSync(join(__dirname, './ReasoningSelector.jsx'), 'ut
 export default class ReasoningSelectorExtension implements Extension {
   static metadata = {
     name: 'Reasoning Selector',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Adds a reasoning effort selector dropdown next to the model selector in agent mode',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/reasoning-selector/icon.png',
@@ -44,8 +44,21 @@ export default class ReasoningSelectorExtension implements Extension {
       return undefined;
     }
 
-    const mostRecentTask = context.getProjectContext().getMostRecentTask();
-    const reasoningEffort = mostRecentTask?.data.metadata?.[METADATA_KEY];
+    const projectContext = context.getProjectContext();
+    const profileId = event.task.agentProfileId ?? projectContext.getProjectSettings().agentProfileId;
+    const profile = projectContext.getAgentProfiles().find((agentProfile) => agentProfile.id === profileId);
+    const hasTaskModelOverride = !!event.task.provider && !!event.task.model;
+    const provider = hasTaskModelOverride ? event.task.provider : profile?.provider;
+    const model = hasTaskModelOverride ? event.task.model : profile?.model;
+    if (!provider || !model) {
+      return undefined;
+    }
+
+    const matchingTask = (await projectContext.getTasks())
+      .sort((a, b) => (b.updatedAt ?? '').localeCompare(a.updatedAt ?? ''))
+      .slice(0, 10)
+      .find((task) => task.provider === provider && task.model === model);
+    const reasoningEffort = matchingTask?.metadata?.[METADATA_KEY];
     if (typeof reasoningEffort !== 'string' || !reasoningEffort) {
       return undefined;
     }

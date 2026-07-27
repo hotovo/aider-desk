@@ -12,4 +12,4 @@ Adds a reasoning-effort selector next to the model selector in Agent Mode.
 
 Choose **Use default** to leave the model's default reasoning behavior unchanged.
 
-New tasks inherit the selected reasoning effort from the most recently updated task in the same project.
+New tasks inherit the selected reasoning effort from the most recently updated task using the same provider and model in the project. The extension checks up to the 10 most recently updated tasks.
