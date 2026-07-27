@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- skip adding Todo tool messages when streaming the tools
+
 ## [0.76.0]
 
 - added shell initialization to bash tool for loading environment configs

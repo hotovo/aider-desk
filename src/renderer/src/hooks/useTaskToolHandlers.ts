@@ -55,6 +55,10 @@ export const useTaskToolHandlers = (baseDir: string, taskId: string) => {
 
   const handleToolInputChunk = useCallback(
     ({ toolCallId, serverName, toolName, partialArgs, isComplete, promptContext }: ToolInputChunkData) => {
+      if (serverName === TODO_TOOL_GROUP_NAME) {
+        return;
+      }
+
       touchTaskActivity(taskId);
       setMessages(taskId, (prevMessages) => {
         const existingIndex = prevMessages.findIndex((m) => m.id === toolCallId);
