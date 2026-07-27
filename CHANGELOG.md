@@ -4,6 +4,7 @@
 
 - skip adding Todo tool messages when streaming the tools
 - inherit agent profile and selected model as defaults when using create task tool
+- optimized default system prompt and init prompt for latest models and to save tokens
 
 ## [0.76.0]
 
