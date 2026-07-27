@@ -155,6 +155,7 @@
   },
   "home": {
     "title": "Home",
+    "loadingProjects": "Loading projects...",
     "noProjectsOpen": "No Projects Open",
     "openProject": "Open Project",
     "addFile": "Add File",

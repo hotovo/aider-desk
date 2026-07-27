@@ -114,6 +114,7 @@ describe('Home', () => {
     mockApi.setActiveProject.mockReset();
     mockApi.addOpenProject.mockReset();
     mockApi.getOpenProjects.mockReset();
+    mockApi.getOpenProjects.mockResolvedValue([]);
     mockApi.setActiveProject.mockImplementation(() => Promise.resolve([]));
   });
 
@@ -129,6 +130,33 @@ describe('Home', () => {
     await waitFor(() => {
       expect(screen.getByTestId('no-projects')).toBeInTheDocument();
     });
+  });
+
+  it('shows a loading overlay until projects are loaded', async () => {
+    let resolveProjects: (projects: ProjectData[]) => void = () => undefined;
+    mockApi.getOpenProjects.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveProjects = resolve;
+        }),
+    );
+
+    render(
+      <MemoryRouter initialEntries={['/home']}>
+        <HotkeysProvider initiallyActiveScopes={['home']}>
+          <Home />
+        </HotkeysProvider>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText('home.loadingProjects')).toBeInTheDocument();
+    expect(screen.queryByTestId('no-projects')).not.toBeInTheDocument();
+
+    await act(async () => {
+      resolveProjects([]);
+    });
+
+    expect(screen.getByTestId('no-projects')).toBeInTheDocument();
   });
 
   it('opens Model Library when icon is clicked', async () => {

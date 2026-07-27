@@ -155,6 +155,7 @@
   },
   "home": {
     "title": "Главная",
+    "loadingProjects": "Загрузка проектов...",
     "noProjectsOpen": "Нет открытых проектов",
     "openProject": "Открыть проект",
     "addFile": "Добавить файл",

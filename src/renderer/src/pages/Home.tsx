@@ -102,10 +102,11 @@ export const Home = () => {
       try {
         const openProjects = await api.getOpenProjects();
         setOpenProjects(openProjects);
-        setProjectsLoaded(true);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Error loading projects:', error);
+      } finally {
+        setProjectsLoaded(true);
       }
     };
 
@@ -625,7 +626,9 @@ export const Home = () => {
         )}
         {!releaseNotesContent && <TelemetryInfoDialog />}
         <div className="flex-1 overflow-hidden relative z-10">
-          {optimisticOpenProjects.length > 0 ? (
+          {!projectsLoaded ? (
+            <LoadingOverlay message={t('home.loadingProjects')} />
+          ) : optimisticOpenProjects.length > 0 ? (
             <div className="relative w-full h-full">
               <AnimatePresence>
                 {isProjectSwitching && activeProject && (

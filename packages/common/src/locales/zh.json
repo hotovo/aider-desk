@@ -155,6 +155,7 @@
   },
   "home": {
     "title": "首页",
+    "loadingProjects": "正在加载项目...",
     "noProjectsOpen": "没有打开的项目",
     "openProject": "打开项目",
     "addFile": "添加文件",
