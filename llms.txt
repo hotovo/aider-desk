@@ -8708,6 +8708,11 @@ public async kill(): Promise<void>
 ⋮----
 public isStarted(): boolean
 ⋮----
+private handleAiderProcessExit(process: ChildProcessWithoutNullStreams, code: number | null): void
+⋮----
+// A forced restart can spawn a replacement before the old close event is
+// delivered. Never let that stale event clear the replacement process.
+⋮----
 private createAiderStartPromise(): Promise<void>
 ⋮----
 public async waitForStart(): Promise<void>
@@ -9195,11 +9200,10 @@ private generateBranchName(): string
 private async renameWorktreeBranchIfNeeded(): Promise<void>
 ⋮----
 /**
-   * @deprecated This migration ensures older task data has the `branch` field
-   * and `baseBranch` stores the branch the worktree was created from.
-   * Can be removed once all users have migrated past v0.64.0.
+   * Resolves missing `baseBranch` for worktrees created while the main repo
+   * was in detached HEAD state, where `baseBranch` was never stored.
    */
-private async migrateWorktreeData(): Promise<void>
+private async resolveMissingWorktreeBaseBranch(): Promise<boolean>
 ⋮----
 private isInternal()
 ⋮----
