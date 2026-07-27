@@ -5,8 +5,7 @@ import { Agent, Cursor } from '@cursor/sdk';
 import type {
   ConversationStep,
   InteractionUpdate,
-  ModelListItem,
-  ModelParameterValue,
+  ModelSelection,
   Run,
   SDKAgent,
   SDKImage,
@@ -38,6 +37,8 @@ import type {
 } from '@aiderdesk/extensions';
 import type { SettingSource } from '@cursor/sdk';
 
+import { createModelAliases, resolveModelSelection } from './model-selection';
+
 interface CursorConfig {
   apiKey: string;
 }
@@ -47,8 +48,6 @@ const AGENT_ID_METADATA_KEY = 'cursorAgentId';
 const POWER_TOOL_SERVER_NAME = 'power';
 const CURSOR_SERVER_NAME = 'cursor';
 const TOOL_SEPARATOR = '---';
-const FAST_PARAM_ID = 'fast';
-const FAST_MODEL_SUFFIX = '-fast';
 
 const powerToolName = (name: string) => `${POWER_TOOL_SERVER_NAME}${TOOL_SEPARATOR}${name}`;
 const cursorToolId = (name: string) => `${CURSOR_SERVER_NAME}${TOOL_SEPARATOR}${name}`;
@@ -478,31 +477,12 @@ function transformCursorResult(
   }
 }
 
-function modelSupportsFast(model: ModelListItem): boolean {
-  const hasFastParam = model.parameters?.some((p) => p.id === FAST_PARAM_ID);
-  if (hasFastParam) return true;
-  const hasFastVariant = model.variants?.some((v) =>
-    v.params.some((p) => p.id === FAST_PARAM_ID),
-  );
-  return !!hasFastVariant;
-}
-
-function resolveFastParams(modelId: string, fastCapableModels: Set<string>): ModelParameterValue[] | undefined {
-  if (modelId.endsWith(FAST_MODEL_SUFFIX)) {
-    return [{ id: FAST_PARAM_ID, value: 'true' }];
-  }
-  if (fastCapableModels.has(modelId)) {
-    return [{ id: FAST_PARAM_ID, value: 'false' }];
-  }
-  return undefined;
-}
-
 const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8');
 
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.2.0',
+    version: '4.3.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -511,7 +491,7 @@ export default class CursorSdkExtension implements Extension {
 
   private configPath = join(__dirname, 'config.json');
   private activeRuns = new Map<string, Run>();
-  private fastCapableModels = new Set<string>();
+  private modelSelections = new Map<string, ModelSelection>();
 
   private loadConfig(): CursorConfig {
     try {
@@ -538,7 +518,7 @@ export default class CursorSdkExtension implements Extension {
     this.activeRuns.clear();
   }
 
-  getProviders(_context: ExtensionContext): ProviderDefinition[] {
+  getProviders(context: ExtensionContext): ProviderDefinition[] {
     return [
       {
         id: CURSOR_PROVIDER_ID,
@@ -554,24 +534,22 @@ export default class CursorSdkExtension implements Extension {
             }
             try {
               const cursorModels = await Cursor.models.list({ apiKey });
-              const models: Model[] = [];
-              for (const m of cursorModels) {
-                if (modelSupportsFast(m)) {
-                  this.fastCapableModels.add(m.id);
+              this.modelSelections.clear();
+              const models: Model[] = cursorModels.flatMap((cursorModel) => {
+                const aliases = createModelAliases(cursorModel);
+                if (aliases.length > 1) {
+                  context.log(
+                    `Cursor model variants for ${cursorModel.id}: ${aliases
+                      .map(({ id, selection }) => `${id} (${JSON.stringify(selection.params ?? [])})`)
+                      .join('; ')}`,
+                    'info',
+                  );
                 }
-
-                models.push({
-                  id: m.id,
-                  providerId: profile.id,
+                return aliases.map((alias) => {
+                  this.modelSelections.set(alias.id, alias.selection);
+                  return { id: alias.id, providerId: profile.id };
                 });
-
-                if (modelSupportsFast(m)) {
-                  models.push({
-                    id: `${m.id}${FAST_MODEL_SUFFIX}`,
-                    providerId: profile.id,
-                  });
-                }
-              }
+              });
               return { models, success: true };
             } catch (err) {
               return {
@@ -635,13 +613,25 @@ export default class CursorSdkExtension implements Extension {
       context.log(`Passing ${Object.keys(mcpServers).length} MCP server(s) to Cursor agent: ${Object.keys(mcpServers).join(', ')}`, 'info');
     }
 
-    const isFastModel = rawModelId.endsWith(FAST_MODEL_SUFFIX);
-    const baseModelId = isFastModel ? rawModelId.slice(0, -FAST_MODEL_SUFFIX.length) : rawModelId;
-    const fastParams = resolveFastParams(rawModelId, this.fastCapableModels);
+    if (!this.modelSelections.has(rawModelId)) {
+      try {
+        const cursorModels = await Cursor.models.list({ apiKey });
+        this.modelSelections.clear();
+        for (const cursorModel of cursorModels) {
+          for (const alias of createModelAliases(cursorModel)) {
+            this.modelSelections.set(alias.id, alias.selection);
+          }
+        }
+      } catch (err) {
+        context.log(`Failed to refresh Cursor models: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+      }
+    }
+
+    const modelSelection = resolveModelSelection(rawModelId, this.modelSelections);
 
     const agentOptions = {
       apiKey,
-      model: { id: baseModelId, ...(fastParams ? { params: fastParams } : {}) },
+      model: modelSelection,
       local: { cwd: projectDir, settingSources: ['project', 'user'] as SettingSource[] },
     };
 
@@ -667,7 +657,7 @@ export default class CursorSdkExtension implements Extension {
         context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
       }
 
-      const streamProcessor = createStreamProcessor(taskContext, context, baseModelId);
+      const streamProcessor = createStreamProcessor(taskContext, context, rawModelId);
 
       const sendOptions = {
         ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),

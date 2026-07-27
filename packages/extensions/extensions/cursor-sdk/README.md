@@ -44,9 +44,9 @@ Cursor SDK tools are translated to AiderDesk's built-in power tools where possib
 
 ## Supported Models
 
-Models are loaded dynamically from `Cursor.models.list()` at runtime. Available models depend on your Cursor API key and account. Example models include:
+Models are loaded dynamically from `Cursor.models.list()` at runtime. Available models depend on your Cursor API key and account. Parameterized variants are shown with readable aliases based on their effort and context, such as `cursor-sdk/claude-fable-5-high[1m]`. The `[1m]` suffix appears only for variants with 1M context.
 
-- `cursor-sdk/composer-2`
+Variants with an effort setting are listed only when Cursor enables thinking for them. The extension retains the exact Cursor parameter set internally when the selected alias is executed.
 
 ## Configuration
 
