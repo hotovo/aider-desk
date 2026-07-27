@@ -432,6 +432,89 @@ describe('Tasks Tools - search_task', () => {
     });
   });
 
+  describe('create task tool', () => {
+    const createTaskToolKey = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}create_task`;
+
+    it('inherits the calling task agent profile and model when they are not specified', async () => {
+      const taskInstance = {
+        init: vi.fn().mockResolvedValue(undefined),
+        saveTask: vi.fn().mockResolvedValue(undefined),
+        savePromptOnly: vi.fn().mockResolvedValue(undefined),
+        getContextMessages: vi.fn().mockResolvedValue([]),
+      };
+      Object.assign(mockProfile, {
+        id: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+      });
+
+      mockProject.createNewTask = vi.fn().mockResolvedValue({ id: 'new-task-id', name: 'New task' });
+      mockProject.getTask.mockReturnValue(taskInstance);
+
+      const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
+      const createTaskTool = tools[createTaskToolKey];
+
+      await createTaskTool.execute({ prompt: 'Create a task', name: 'New task' }, { toolCallId: 'tool-call-123' });
+
+      expect(mockProject.createNewTask).toHaveBeenCalledWith({
+        parentId: null,
+        name: 'New task',
+        autonomyMode: undefined,
+        workingMode: 'local',
+        agentProfileId: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+        mainModel: 'anthropic/claude-sonnet',
+      });
+      expect(taskInstance.saveTask).toHaveBeenCalledWith({
+        agentProfileId: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+        mainModel: 'anthropic/claude-sonnet',
+      });
+    });
+
+    it('uses explicitly requested agent profile and model overrides', async () => {
+      const taskInstance = {
+        init: vi.fn().mockResolvedValue(undefined),
+        saveTask: vi.fn().mockResolvedValue(undefined),
+        savePromptOnly: vi.fn().mockResolvedValue(undefined),
+        getContextMessages: vi.fn().mockResolvedValue([]),
+      };
+      Object.assign(mockProfile, {
+        id: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+      });
+
+      mockProject.resolveAgentProfile = vi.fn().mockReturnValue({ id: 'requested-profile' });
+      mockProject.createNewTask = vi.fn().mockResolvedValue({ id: 'new-task-id', name: 'New task' });
+      mockProject.getTask.mockReturnValue(taskInstance);
+
+      const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
+      const createTaskTool = tools[createTaskToolKey];
+
+      await createTaskTool.execute(
+        {
+          prompt: 'Create a task',
+          name: 'New task',
+          agentProfileId: 'requested-profile',
+          modelId: 'openai/gpt-5',
+        },
+        { toolCallId: 'tool-call-123' },
+      );
+
+      expect(mockProject.createNewTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agentProfileId: 'requested-profile',
+          provider: 'openai',
+          model: 'gpt-5',
+          mainModel: 'openai/gpt-5',
+        }),
+      );
+    });
+  });
+
   describe('search task tool approval flow', () => {
     it('should call approval manager with correct parameters', async () => {
       const targetTaskId = 'task-123';

@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - skip adding Todo tool messages when streaming the tools
+- inherit agent profile and selected model as defaults when using create task tool
 
 ## [0.76.0]
 

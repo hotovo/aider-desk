@@ -279,12 +279,27 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         : 'parentTaskId' in input
           ? (input.parentTaskId as string | null)
           : undefined;
+      const resolvedProfile = agentProfileId ? task.getProject().resolveAgentProfile(agentProfileId) : profile;
+
+      if (!resolvedProfile) {
+        const availableProfiles = task
+          .getProject()
+          .getAgentProfiles()
+          .map((p) => `"${p.name}"`)
+          .join(', ');
+        return `Agent profile '${agentProfileId}' not found. Available profiles: ${availableProfiles}`;
+      }
+
+      const effectiveModelId = modelId || `${profile.provider}/${profile.model}`;
+      const [provider, ...modelParts] = effectiveModelId.split('/');
+      const model = modelParts.join('/');
+
       task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_CREATE_TASK, input, undefined, undefined, promptContext);
 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
       const questionKey = toolName;
       const questionText = 'Approve creating a new task?';
-      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${agentProfileId || 'default'}\nModel: ${modelId || 'default'}${
+      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${resolvedProfile.id}\nModel: ${effectiveModelId}${
         executeAndWait ? '\nExecute and wait: true' : executeInBackground ? '\nExecute in background: true' : ''
       }${parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''}`;
 
@@ -295,39 +310,19 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       }
 
       try {
+        const updates: Partial<TaskData> = {
+          agentProfileId: resolvedProfile.id,
+          provider,
+          model,
+          mainModel: effectiveModelId,
+        };
         const newTask = await task.getProject().createNewTask({
           parentId: parentTaskId || null,
           name: name || '',
           autonomyMode,
           workingMode: worktree ? 'worktree' : 'local',
+          ...updates,
         });
-        const updates: Partial<TaskData> = {};
-
-        if (agentProfileId) {
-          const resolvedProfile = task.getProject().resolveAgentProfile(agentProfileId);
-          if (resolvedProfile) {
-            updates.agentProfileId = resolvedProfile.id;
-          } else {
-            const availableProfiles = task
-              .getProject()
-              .getAgentProfiles()
-              .map((p) => `"${p.name}"`)
-              .join(', ');
-            return `Agent profile '${agentProfileId}' not found. Available profiles: ${availableProfiles}`;
-          }
-        }
-
-        if (modelId) {
-          // Parse modelId to extract provider and model
-          const [provider, ...modelParts] = modelId.split('/');
-          updates.provider = provider;
-          updates.model = modelParts.join('/');
-          updates.mainModel = modelId;
-        } else {
-          // Clear inherited provider/model so the profile's own defaults are used
-          updates.provider = undefined;
-          updates.model = undefined;
-        }
 
         // createNewTask returns TaskData, not Task instance
         // We need to get the actual Task instance to call methods on it
