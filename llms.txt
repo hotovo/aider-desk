@@ -1920,10 +1920,6 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
 ⋮----
 actualIndex = contextMessages.length + messageIndex; // e.g., -1 becomes length-1
 ⋮----
-// Parse modelId to extract provider and model
-⋮----
-// Clear inherited provider/model so the profile's own defaults are used
-⋮----
 // createNewTask returns TaskData, not Task instance
 // We need to get the actual Task instance to call methods on it
 ⋮----
@@ -28961,7 +28957,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.76.0-dev",
+  "version": "0.77.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
