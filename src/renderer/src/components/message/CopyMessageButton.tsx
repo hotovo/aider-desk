@@ -18,7 +18,11 @@ export const CopyMessageButton = ({ content, className, alwaysShow = false }: Pr
   const api = useApi();
   const copyToClipboard = async () => {
     try {
-      await api.writeToClipboard(content);
+      if (api) {
+        await api.writeToClipboard(content);
+      } else {
+        await navigator.clipboard.writeText(content);
+      }
       showInfoNotification(t('messages.copied'));
     } catch (error) {
       // eslint-disable-next-line no-console

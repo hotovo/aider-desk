@@ -25,10 +25,10 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
-  removeMessage: (message: Message) => void;
+  removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
-  redoUserPrompt: (messageId: string) => void;
-  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
+  redoUserPrompt?: (messageId: string) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;

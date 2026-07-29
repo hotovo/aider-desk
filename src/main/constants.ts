@@ -45,6 +45,7 @@ export const POSTHOG_PUBLIC_API_KEY = process.env.POSTHOG_PUBLIC_API_KEY ?? '';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
 
 export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
+export const READONLY_MODE = process.env.AIDER_DESK_READONLY === 'true';
 export const APP_TYPE = process.env.AIDER_DESK_APP_TYPE || (HEADLESS_MODE ? 'docker' : 'electron');
 export const DISABLE_MENU = process.env.AIDER_DESK_DISABLE_MENU === 'true';
 export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;

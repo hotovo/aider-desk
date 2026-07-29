@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo } from 'react';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 import { UIComponentProps } from '@common/extensions';
 import { ExtensionUIComponent } from '@common/types';
 
@@ -17,7 +17,7 @@ type Props = {
   currentTaskId?: string;
   currentActionProjectDir?: string;
   currentActionTaskId?: string;
-  api: ApplicationAPI;
+  api: ExtensionDisplayAPI;
 };
 
 const ExtensionComponentRendererInner = ({

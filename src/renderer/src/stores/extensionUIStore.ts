@@ -3,7 +3,7 @@ import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { devtools } from 'zustand/middleware';
 import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 
 const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string =>
   `${placement || 'default'}:${projectDir || 'global'}:${taskId || ''}`;
@@ -21,16 +21,16 @@ interface ExtensionUIState {
 }
 
 interface ExtensionUIActions {
-  loadComponents: (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
+  loadComponents: (api: ExtensionDisplayAPI, placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   loadComponentData: (
-    api: ApplicationAPI,
+    api: ExtensionDisplayAPI,
     extensionId: string,
     componentId: string,
     projectDir?: string,
     taskId?: string,
     forceRefresh?: boolean,
   ) => Promise<unknown>;
-  handleRefreshEvent: (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
+  handleRefreshEvent: (api: ExtensionDisplayAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
   invalidateComponents: (placement?: string, projectDir?: string, taskId?: string) => void;
   invalidateData: (extensionId?: string, componentId?: string, projectDir?: string, taskId?: string) => void;
   getComponents: (placement?: string, projectDir?: string, taskId?: string) => ExtensionUIComponent[] | undefined;
@@ -356,11 +356,11 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>()(
 );
 
 // Module-level action functions (no hook subscription required)
-export const loadExtensionUIComponents = (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string) =>
+export const loadExtensionUIComponents = (api: ExtensionDisplayAPI, placement?: string, projectDir?: string, taskId?: string) =>
   useExtensionUIStore.getState().loadComponents(api, placement, projectDir, taskId);
 
 export const loadExtensionComponentData = (
-  api: ApplicationAPI,
+  api: ExtensionDisplayAPI,
   extensionId: string,
   componentId: string,
   projectDir?: string,
@@ -368,7 +368,7 @@ export const loadExtensionComponentData = (
   forceRefresh?: boolean,
 ) => useExtensionUIStore.getState().loadComponentData(api, extensionId, componentId, projectDir, taskId, forceRefresh);
 
-export const handleExtensionUIRefreshEvent = (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) =>
+export const handleExtensionUIRefreshEvent = (api: ExtensionDisplayAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) =>
   useExtensionUIStore.getState().handleRefreshEvent(api, data, projectDir, taskId);
 
 export const isExtensionUIDataLoaded = (extensionId: string, componentId: string, projectDir?: string, taskId?: string) =>

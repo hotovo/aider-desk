@@ -22,12 +22,37 @@ import {
   isAddMessageMessage,
   isSubscribeEventsMessage,
   isUnsubscribeEventsMessage,
+  isReadonlySubscribeEventsMessage,
+  isReadonlyUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { EventManager } from '@/events';
 import { Store } from '@/store';
 import { createCorsOriginValidator } from '@/server/cors';
+import { READONLY_MODE } from '@/constants';
+import { CONNECTOR_TOKEN } from '@/connector/connector-auth';
+
+export const READONLY_EVENT_TYPES = [
+  'task-created',
+  'task-updated',
+  'task-started',
+  'task-completed',
+  'task-cancelled',
+  'task-deleted',
+  'user-message',
+  'response-chunk',
+  'response-completed',
+  'tool',
+  'tool-input-chunk',
+  'log',
+  'command-output',
+  'clear-task',
+  'message-removed',
+  'extension-ui-refresh',
+] as const;
+
+const readonlyEventTypes = new Set<string>(READONLY_EVENT_TYPES);
 
 export class ConnectorManager {
   private io: Server | null = null;
@@ -42,6 +67,10 @@ export class ConnectorManager {
     this.init(httpServer);
   }
 
+  private get isReadonlyMode(): boolean {
+    return READONLY_MODE || this.store.getSettings().server.readonly === true;
+  }
+
   public init(httpServer: HttpServer): void {
     this.io = new Server(httpServer, {
       cors: {
@@ -51,6 +80,23 @@ export class ConnectorManager {
       pingTimeout: 600_000, // 10 minutes
       maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
     });
+
+    if (this.isReadonlyMode) {
+      this.io.use((socket, next) => {
+        const connectorToken = socket.handshake.auth.connectorToken;
+        if (typeof connectorToken === 'string' && connectorToken === CONNECTOR_TOKEN) {
+          socket.data.clientRole = 'connector';
+          next();
+          return;
+        }
+        if (socket.handshake.auth.readonly === true) {
+          socket.data.clientRole = 'readonly';
+          next();
+          return;
+        }
+        next(new Error('Unauthorized Socket.IO client'));
+      });
+    }
 
     // Log when Socket.IO server is ready to accept connections
     // The 'connection' event fires after the namespace handshake is complete
@@ -68,7 +114,13 @@ export class ConnectorManager {
       });
 
       socket.on('message', (message) => this.processMessage(socket, message));
-      socket.on('log', (message) => this.processLogMessage(socket, message));
+      socket.on('log', (message) => {
+        if (this.isReadonlyMode && socket.data.clientRole !== 'connector') {
+          socket.disconnect(true);
+          return;
+        }
+        this.processLogMessage(socket, message);
+      });
 
       socket.on('disconnect', (reason) => {
         const connector = this.findConnectorBySocket(socket);
@@ -95,6 +147,29 @@ export class ConnectorManager {
 
   private processMessage = (socket: Socket, message: Message) => {
     try {
+      if (this.isReadonlyMode && socket.data.clientRole === 'readonly') {
+        if (isReadonlySubscribeEventsMessage(message)) {
+          const project = this.projectManager.getOpenProject(message.projectDir);
+          const validEventTypes = message.eventTypes.every((eventType) => readonlyEventTypes.has(eventType));
+          if (!project || project.baseDir !== message.projectDir || !validEventTypes) {
+            socket.disconnect(true);
+            return;
+          }
+          this.eventManager.subscribe(socket, {
+            eventTypes: message.eventTypes,
+            baseDirs: [message.projectDir],
+            readonly: true,
+          });
+          return;
+        }
+        if (isReadonlyUnsubscribeEventsMessage(message)) {
+          this.eventManager.unsubscribe(socket);
+          return;
+        }
+        socket.disconnect(true);
+        return;
+      }
+
       logger.debug('Message:', {
         message: JSON.stringify(message).slice(0, 1000),
       });
@@ -293,6 +368,10 @@ export class ConnectorManager {
   };
 
   private processLogMessage = (socket: Socket, message: LogMessage) => {
+    if (this.isReadonlyMode && socket.data.clientRole !== 'connector') {
+      socket.disconnect(true);
+      return;
+    }
     logger.debug('Received log message from connector', { message });
     const connector = this.findConnectorBySocket(socket);
     if (!connector) {

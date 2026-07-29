@@ -897,6 +897,8 @@
       "running": "실행 중",
       "enableBasicAuth": "기본 인증 사용",
       "enableBasicAuthDescription": "브라우저 접근 및 API 호출에 사용자 이름과 비밀번호를 요구합니다",
+      "enableReadonly": "읽기 전용 모드",
+      "enableReadonlyDescription": "브라우저 클라이언트를 작업 및 대화의 읽기 전용 보기로 제한합니다. Electron 데스크톱 앱은 전체 액세스 권한을 유지합니다. 적용하려면 서버를 다시 시작해야 합니다.",
       "username": "사용자 이름",
       "password": "비밀번호",
       "controlServer": "REST API 서버",
@@ -1888,5 +1890,20 @@
       "confirm": "지우기",
       "cancel": "취소"
     }
+  },
+  "readonly": {
+    "noTasks": "작업 없음",
+    "unnamedTask": "이름 없는 작업",
+    "archived": "보관됨",
+    "loading": "읽기 전용 프로젝트 로드 중…",
+    "selectTask": "추적을 확인할 작업을 선택하세요.",
+    "noProjects": "구성된 프로젝트가 없습니다.",
+    "label": "읽기 전용",
+    "searchTasks": "작업 검색",
+    "allStates": "모든 상태",
+    "bootstrapError": "브라우저 애플리케이션을 불러올 수 없습니다.",
+    "projectError": "이 프로젝트를 불러올 수 없습니다.",
+    "projects": "프로젝트",
+    "openTasks": "작업 열기"
   }
 }

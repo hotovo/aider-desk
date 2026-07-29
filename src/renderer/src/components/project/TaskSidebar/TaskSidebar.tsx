@@ -34,6 +34,7 @@ export const MAX_WIDTH = 600;
 type Props = {
   loading: boolean;
   tasks: TaskData[];
+  readonly?: boolean;
   activeTaskId: string | null;
   onTaskSelect: (taskId: string) => void;
   createNewTask?: (parentId?: string) => void;
@@ -56,6 +57,7 @@ type Props = {
 const TaskSidebarComponent = ({
   loading,
   tasks,
+  readonly = false,
   activeTaskId,
   onTaskSelect,
   createNewTask,
@@ -606,7 +608,12 @@ const TaskSidebarComponent = ({
 
   const handleTaskClick = useCallback(
     (e: MouseEvent, taskId: string) => {
-      if (e.ctrlKey || e.metaKey) {
+      if (readonly) {
+        startTransition(() => {
+          setOptimisticActiveTaskId(taskId);
+          onTaskSelect(taskId);
+        });
+      } else if (e.ctrlKey || e.metaKey) {
         handleTaskCtrlClick(e, taskId);
       } else if (e.shiftKey && isMultiselectMode) {
         handleTaskShiftClick(taskId);
@@ -619,7 +626,7 @@ const TaskSidebarComponent = ({
         });
       }
     },
-    [isMultiselectMode, handleTaskCtrlClick, handleTaskShiftClick, handleTaskClickInMultiselect, onTaskSelect, setOptimisticActiveTaskId],
+    [readonly, isMultiselectMode, handleTaskCtrlClick, handleTaskShiftClick, handleTaskClickInMultiselect, onTaskSelect, setOptimisticActiveTaskId],
   );
 
   const handleBulkDelete = async () => {
@@ -713,7 +720,7 @@ const TaskSidebarComponent = ({
                           <MdOutlineSearch className="w-5 h-5 text-text-primary" />
                         </button>
                       </Tooltip>
-                      {createNewTask && (
+                      {!readonly && createNewTask && (
                         <Tooltip content={t('taskSidebar.createTask')}>
                           <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={handleCreateTask} data-testid="create-task-button">
                             <HiPlus className="w-5 h-5 text-text-primary" />
@@ -899,6 +906,7 @@ const TaskSidebarComponent = ({
                         <TaskItem
                           task={task}
                           tasks={tasks}
+                          readonly={readonly}
                           level={item.level}
                           selectedTasks={selectedTasks}
                           deleteConfirmTaskId={deleteConfirmTaskId}
@@ -1038,6 +1046,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
   // Compare primitive props
   if (
     prevProps.loading !== nextProps.loading ||
+    prevProps.readonly !== nextProps.readonly ||
     prevProps.activeTaskId !== nextProps.activeTaskId ||
     prevProps.isCollapsed !== nextProps.isCollapsed ||
     prevProps.className !== nextProps.className

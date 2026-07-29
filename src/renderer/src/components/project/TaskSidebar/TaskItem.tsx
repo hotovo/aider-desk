@@ -22,6 +22,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 type Props = {
   task: TaskData;
   tasks: TaskData[];
+  readonly?: boolean;
   level: number;
   selectedTasks: Set<string>;
   deleteConfirmTaskId: string | null;
@@ -82,6 +83,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
 
   // Compare primitive props
   if (
+    prevProps.readonly !== nextProps.readonly ||
     prevProps.level !== nextProps.level ||
     prevProps.isMultiselectMode !== nextProps.isMultiselectMode ||
     prevProps.activeTaskId !== nextProps.activeTaskId ||
@@ -149,6 +151,7 @@ export const TaskItem = memo(
   ({
     task,
     tasks,
+    readonly = false,
     level,
     selectedTasks,
     deleteConfirmTaskId,
@@ -196,7 +199,7 @@ export const TaskItem = memo(
 
     const longPressProps = useLongPress(
       () => {
-        if (isDraggingRef.current) {
+        if (readonly || isDraggingRef.current) {
           return;
         }
         setIsMultiselectMode(true);
@@ -270,12 +273,12 @@ export const TaskItem = memo(
       <div className="relative">
         <div
           {...longPressProps}
-          draggable
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
+          draggable={!readonly && !isEditing && deleteConfirmTaskId !== task.id}
+          onDragStart={readonly ? undefined : handleDragStart}
+          onDragEnd={readonly ? undefined : handleDragEnd}
+          onDragOver={readonly ? undefined : handleDragOver}
+          onDragLeave={readonly ? undefined : handleDragLeave}
+          onDrop={readonly ? undefined : handleDrop}
           className={clsx(
             'group relative flex items-center justify-between py-1 pl-2 px-1 cursor-pointer transition-colors border select-none',
             isSubtask && 'ml-2',
@@ -373,7 +376,7 @@ export const TaskItem = memo(
 
           {!isMultiselectMode && (
             <div className="flex items-center">
-              {level === 0 && (
+              {!readonly && level === 0 && (
                 <Tooltip content={t('taskSidebar.createSubtask')}>
                   <button
                     data-testid={`create-subtask-${task.id}`}
@@ -384,21 +387,23 @@ export const TaskItem = memo(
                   </button>
                 </Tooltip>
               )}
-              <TaskMenuButton
-                task={task}
-                onEdit={handleOnEdit}
-                onDelete={task.createdAt ? () => onDeleteClick(task.id) : undefined}
-                onCopyAsMarkdown={onCopyAsMarkdown && task.createdAt ? () => onCopyAsMarkdown(task.id) : undefined}
-                onExportToMarkdown={onExportToMarkdown && task.createdAt ? () => onExportToMarkdown(task.id) : undefined}
-                onExportToImage={onExportToImage && task.createdAt ? () => onExportToImage(task.id) : undefined}
-                onDuplicateTask={onDuplicateTask && task.createdAt ? () => onDuplicateTask(task.id) : undefined}
-                onArchiveTask={task.archived || !task.createdAt ? undefined : () => onArchiveTask(task.id)}
-                onUnarchiveTask={task.archived ? () => onUnarchiveTask(task.id) : undefined}
-                onTogglePin={() => onTogglePin(task.id)}
-                onChangeState={(newState) => onChangeState(task.id, newState)}
-                onMoveToTop={onMoveToTop && task.createdAt ? () => onMoveToTop(task.id) : undefined}
-                isPinned={task.pinned || false}
-              />
+              {!readonly && (
+                <TaskMenuButton
+                  task={task}
+                  onEdit={handleOnEdit}
+                  onDelete={task.createdAt ? () => onDeleteClick(task.id) : undefined}
+                  onCopyAsMarkdown={onCopyAsMarkdown && task.createdAt ? () => onCopyAsMarkdown(task.id) : undefined}
+                  onExportToMarkdown={onExportToMarkdown && task.createdAt ? () => onExportToMarkdown(task.id) : undefined}
+                  onExportToImage={onExportToImage && task.createdAt ? () => onExportToImage(task.id) : undefined}
+                  onDuplicateTask={onDuplicateTask && task.createdAt ? () => onDuplicateTask(task.id) : undefined}
+                  onArchiveTask={task.archived || !task.createdAt ? undefined : () => onArchiveTask(task.id)}
+                  onUnarchiveTask={task.archived ? () => onUnarchiveTask(task.id) : undefined}
+                  onTogglePin={() => onTogglePin(task.id)}
+                  onChangeState={(newState) => onChangeState(task.id, newState)}
+                  onMoveToTop={onMoveToTop && task.createdAt ? () => onMoveToTop(task.id) : undefined}
+                  isPinned={task.pinned || false}
+                />
+              )}
             </div>
           )}
         </div>

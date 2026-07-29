@@ -31,6 +31,7 @@ export interface ManagersResult {
   agentProfileManager: AgentProfileManager;
   extensionManager: ExtensionManager;
   pythonInstaller: PythonDependenciesInstaller;
+  projectManager: ProjectManager;
 }
 
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
@@ -202,5 +203,6 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     agentProfileManager,
     extensionManager,
     pythonInstaller,
+    projectManager,
   };
 };

@@ -71,6 +71,10 @@ export class ProjectManager {
     return project;
   }
 
+  public getOpenProject(baseDir: string): Project | undefined {
+    return this.findProject(baseDir);
+  }
+
   public async startProject(baseDir: string) {
     logger.info('Starting project', { baseDir });
     const project = this.getProject(baseDir);

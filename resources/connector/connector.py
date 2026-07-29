@@ -1097,7 +1097,9 @@ class Connector:
 
         # Connect with explicit timeout. The default is 5 seconds which can
         # be too short if the server is still initializing.
-        await self.sio.connect(self.server_url)
+        connector_token = os.getenv("AIDER_DESK_CONNECTOR_TOKEN")
+        auth = {"connectorToken": connector_token} if connector_token else None
+        await self.sio.connect(self.server_url, auth=auth)
 
         # Explicitly call on_connect after successful connection
         # This ensures init message is sent even if the event handler doesn't fire

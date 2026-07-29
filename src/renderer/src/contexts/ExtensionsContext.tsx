@@ -3,7 +3,7 @@ import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 
 import { iconPackStubs, useReactIcons } from '@/utils/extension-icons';
-import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { useOptionalModelProviders } from '@/contexts/ModelProviderContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
@@ -98,21 +98,21 @@ type ExtensionsHookResult = {
 
 export const useExtensions = (): ExtensionsHookResult => {
   const { projectDir, task, agentProfile, activateTask } = useExtensionsContext();
-  const { models, providers } = useModelProviders();
+  const modelProviders = useOptionalModelProviders();
   const icons = useReactIcons();
   const componentProps = useMemo<UIComponentProps>(
     () => ({
       projectDir,
       task,
       agentProfile,
-      models,
-      providers,
+      models: modelProviders?.models ?? [],
+      providers: modelProviders?.providers ?? [],
       ui: uiComponents,
       icons: icons ?? reactIcons,
       libraries: EMPTY_LIBRARIES,
       activateTask,
     }),
-    [projectDir, task, agentProfile, models, providers, icons, activateTask],
+    [projectDir, task, agentProfile, modelProviders, icons, activateTask],
   );
 
   return { componentProps };

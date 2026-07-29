@@ -1,6 +1,6 @@
 import { ExtensionUIComponent, Mode, TaskData } from '@common/types';
 import { UIComponentProps } from '@common/extensions';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 
 import { DefaultTaskStateActions } from '@/components/message/DefaultTaskStateActions';
 import { ExtensionComponentRenderer } from '@/components/extensions/ExtensionComponentRenderer';
@@ -34,7 +34,7 @@ type ChainProps = {
   currentTaskId?: string;
   currentActionProjectDir?: string;
   currentActionTaskId?: string;
-  api: ApplicationAPI;
+  api: ExtensionDisplayAPI;
 };
 
 const TaskActionsChain = ({

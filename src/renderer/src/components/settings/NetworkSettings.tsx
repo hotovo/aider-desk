@@ -119,6 +119,16 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
     }
   };
 
+  const handleReadonlyChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      server: {
+        ...settings.server,
+        readonly: checked,
+      },
+    });
+  };
+
   const handleBasicAuthEnabledChange = (checked: boolean) => {
     setSettings({
       ...settings,
@@ -324,8 +334,8 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
       {renderProxySection()}
 
       <Section id="network-server" title={t('settings.tabs.server')}>
-        <div className="p-4 space-y-6">
-          <div className="space-y-4">
+        <div className="p-4 space-y-3">
+          <div className="space-y-3">
             <div className="flex items-center">
               <Checkbox
                 label={t('settings.server.enableBasicAuth')}
@@ -336,7 +346,7 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
               <InfoIcon tooltip={t('settings.server.enableBasicAuthDescription')} />
             </div>
             {settings.server.basicAuth.enabled && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 pb-3">
                 <Input
                   label={<div className="text-xs">{t('settings.server.username')}</div>}
                   value={settings.server.basicAuth.username}
@@ -353,6 +363,16 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
                 />
               </div>
             )}
+          </div>
+
+          <div className="flex items-center">
+            <Checkbox
+              label={t('settings.server.enableReadonly')}
+              checked={settings.server.readonly}
+              onChange={handleReadonlyChange}
+              disabled={isServerRunning}
+            />
+            <InfoIcon tooltip={t('settings.server.enableReadonlyDescription')} />
           </div>
 
           <div className="space-y-2">

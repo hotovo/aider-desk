@@ -9,6 +9,7 @@
 - added additional search options to List Tasks tool
 - added option to autostart AiderDesk server on run command
 - correctly calculating cached tokens for Requesty provider models
+- added readonly server mode
 
 ## [0.76.0]
 

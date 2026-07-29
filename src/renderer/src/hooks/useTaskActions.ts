@@ -1,9 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { TODO_TOOL_GROUP_NAME } from '@common/tools';
-import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 
 import { updateTaskState, clearSession, setMessages } from '@/stores/taskStore';
+import { convertTaskStateMessages } from '@/utils/task-messages';
 import { setTaskAllFiles } from '@/stores/taskFilesStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { getTaskDir } from '@/utils/task-utils';
@@ -23,64 +21,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
 
         const { messages: stateMessages, files, todoItems, question, queuedPrompts } = await api.loadTask(baseDir, taskId);
 
-        const messages: Message[] = stateMessages.flatMap((message): Message[] => {
-          if (message.type === 'response-completed') {
-            const result: Message[] = [];
-            if (message.reflectedMessage) {
-              result.push({
-                id: uuidv4(),
-                type: 'reflected-message',
-                content: message.reflectedMessage,
-                responseMessageId: message.messageId,
-                promptContext: message.promptContext,
-                timestamp: message.timestamp,
-              } as ReflectedMessage);
-            }
-            result.push({
-              id: message.messageId,
-              type: 'response',
-              content: message.content,
-              reasoning: message.reasoning,
-              usageReport: message.usageReport,
-              promptContext: message.promptContext,
-              finished: true,
-              timestamp: message.timestamp,
-            } as ResponseMessage);
-            return result;
-          }
-          if (message.type === 'user') {
-            return [
-              {
-                id: message.id,
-                type: 'user',
-                content: message.content,
-                images: message.images,
-                promptContext: message.promptContext,
-                timestamp: message.timestamp,
-              } as UserMessage,
-            ];
-          }
-          if (message.type === 'tool') {
-            if (message.serverName === TODO_TOOL_GROUP_NAME) {
-              return [];
-            }
-            return [
-              {
-                type: 'tool',
-                id: message.id,
-                serverName: message.serverName,
-                toolName: message.toolName,
-                args: (message.args as Record<string, unknown> | undefined) || {},
-                content: message.response || '',
-                promptContext: message.promptContext,
-                usageReport: message.usageReport,
-                timestamp: message.timestamp,
-                finished: message.finished,
-              } as ToolMessage,
-            ];
-          }
-          return [];
-        });
+        const messages = convertTaskStateMessages(stateMessages);
 
         setMessages(taskId, (existingMessages) => [
           ...messages,

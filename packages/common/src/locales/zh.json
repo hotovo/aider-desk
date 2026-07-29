@@ -1639,6 +1639,8 @@
     "running": "运行中",
     "enableBasicAuth": "启用基本身份验证",
     "enableBasicAuthDescription": "需要用户名和密码用于浏览器访问和 API 调用",
+    "enableReadonly": "只读模式",
+    "enableReadonlyDescription": "限制浏览器客户端只能查看任务和对话的只读视图。Electron 桌面应用保留完全访问权限。需要重启服务器才能生效。",
     "username": "用户名",
     "password": "密码",
     "controlServer": "REST API 服务器",
@@ -1918,5 +1920,20 @@
       "confirm": "清除",
       "cancel": "取消"
     }
+  },
+  "readonly": {
+    "noTasks": "没有任务",
+    "unnamedTask": "未命名任务",
+    "archived": "已归档",
+    "loading": "正在加载只读项目…",
+    "selectTask": "选择任务以查看其完整记录。",
+    "noProjects": "未配置项目。",
+    "label": "只读",
+    "searchTasks": "搜索任务",
+    "allStates": "所有状态",
+    "bootstrapError": "无法加载浏览器应用程序。",
+    "projectError": "无法加载此项目。",
+    "projects": "项目",
+    "openTasks": "打开任务"
   }
 }

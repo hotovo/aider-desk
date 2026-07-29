@@ -11,6 +11,7 @@ import { DEFAULT_AIDER_MAIN_MODEL } from '@common/agent';
 
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TASKS_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { Connector } from '@/connector';
+import { CONNECTOR_TOKEN } from '@/connector/connector-auth';
 import logger from '@/logger';
 import { Store } from '@/store';
 import { ModelManager } from '@/models';
@@ -172,6 +173,7 @@ export class AiderManager {
       TASK_ID: this.task.task.id,
       TASK_DIR: this.task.getTaskDir(),
       CONNECTOR_SERVER_URL: `http://localhost:${SERVER_PORT}`,
+      AIDER_DESK_CONNECTOR_TOKEN: CONNECTOR_TOKEN,
       CONNECTOR_CONFIRM_BEFORE_EDIT: settings.aider.confirmBeforeEdit ? '1' : '0',
     };
 

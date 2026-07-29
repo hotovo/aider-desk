@@ -132,6 +132,26 @@ describe('TaskSidebar', () => {
     expect(createNewTask).toHaveBeenCalled();
   });
 
+  it('uses read-only single selection and hides task creation controls', () => {
+    const onTaskSelect = vi.fn();
+    render(
+      <TaskSidebar
+        loading={false}
+        tasks={mockTasks}
+        readonly={true}
+        activeTaskId="task-1"
+        onTaskSelect={onTaskSelect}
+        createNewTask={vi.fn()}
+        isCollapsed={false}
+        onToggleCollapse={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByTestId('create-task-button')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Task 2'), { ctrlKey: true });
+    expect(onTaskSelect).toHaveBeenCalledWith('task-2');
+  });
+
   it('filters tasks based on search query', async () => {
     render(<TaskSidebar loading={false} tasks={mockTasks} activeTaskId="task-1" onTaskSelect={vi.fn()} isCollapsed={false} onToggleCollapse={vi.fn()} />);
 

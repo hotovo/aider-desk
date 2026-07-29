@@ -112,6 +112,7 @@ describe('Project - createNewTask', () => {
             },
             server: {
               enabled: false,
+              readonly: false,
               basicAuth: {
                 enabled: false,
                 username: '',

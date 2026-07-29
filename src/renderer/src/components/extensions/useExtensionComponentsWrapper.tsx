@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { ExtensionComponentRenderer } from './ExtensionComponentRenderer';
 
-import { useApi } from '@/contexts/ApiContext';
+import { useExtensionApi } from '@/contexts/ExtensionApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import {
   handleExtensionUIRefreshEvent,
@@ -32,7 +32,7 @@ export const useExtensionComponentsWrapper = ({
   actionTaskId,
 }: UseExtensionComponentsWrapperProps) => {
   const { componentProps } = useExtensions();
-  const api = useApi();
+  const api = useExtensionApi();
   const icons = useReactIcons();
   const currentProjectDir = projectDir ?? componentProps.projectDir;
   const currentTaskId = taskId ?? componentProps.task?.id;

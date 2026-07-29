@@ -51,6 +51,7 @@ import logger from '@/logger';
 export interface EventsConnectorConfig {
   eventTypes?: string[];
   baseDirs?: string[];
+  readonly?: boolean;
 }
 
 export interface EventsConnector extends EventsConnectorConfig {
@@ -394,11 +395,13 @@ export class EventManager {
     logger.info('Subscribing to events', {
       eventTypes: config.eventTypes,
       baseDirs: config.baseDirs,
+      readonly: config.readonly,
     });
     this.eventsConnectors.push({
       socket,
       eventTypes: config.eventTypes,
       baseDirs: config.baseDirs,
+      readonly: config.readonly,
     });
   }
 
@@ -449,10 +452,13 @@ export class EventManager {
       }
 
       // Filter by base directories if specified
-      const baseDir = (data as { baseDir?: string })?.baseDir;
-      if (connector.baseDirs && baseDir && !connector.baseDirs.includes(baseDir)) {
+      const eventProjectDir =
+        data && typeof data === 'object'
+          ? ((data as { baseDir?: string; projectDir?: string }).baseDir ?? (data as { projectDir?: string }).projectDir)
+          : undefined;
+      if (connector.baseDirs && (!eventProjectDir || !connector.baseDirs.includes(eventProjectDir))) {
         if (log) {
-          logger.debug('Skipping event broadcast to connector, base dir not included:', { baseDir, connectorBaseDirs: connector.baseDirs });
+          logger.debug('Skipping event broadcast to connector, base dir not included:', { baseDir: eventProjectDir, connectorBaseDirs: connector.baseDirs });
         }
         return;
       }
@@ -461,7 +467,7 @@ export class EventManager {
         if (log) {
           logger.debug('Broadcasting event to connector:', {
             eventType,
-            baseDir,
+            baseDir: eventProjectDir,
           });
         }
         connector.socket.emit('event', { type: eventType, data });

@@ -14,3 +14,4 @@ export * from './voice-api';
 export * from './terminal-api';
 export * from './extensions-api';
 export * from './skills-api';
+export * from './readonly-api';

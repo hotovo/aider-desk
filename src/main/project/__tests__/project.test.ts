@@ -91,6 +91,7 @@ describe('Project - createNewTask', () => {
             },
             server: {
               enabled: false,
+              readonly: false,
               basicAuth: {
                 enabled: false,
                 username: '',
@@ -465,6 +466,7 @@ describe('Project - deleteTask', () => {
             },
             server: {
               enabled: false,
+              readonly: false,
               basicAuth: {
                 enabled: false,
                 username: '',

@@ -222,8 +222,37 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
   return <ModelProviderContext.Provider value={value}>{children}</ModelProviderContext.Provider>;
 };
 
+const unsupportedReadonlyOperation = async (): Promise<void> => {
+  throw new Error('READ_ONLY_MODE');
+};
+
+export const ReadonlyModelProvider = ({ children }: { children: ReactNode }) => {
+  const value = useMemo<ModelProviderContextType>(
+    () => ({
+      refresh: () => {},
+      models: [],
+      providers: [],
+      saveProvider: unsupportedReadonlyOperation,
+      deleteProvider: unsupportedReadonlyOperation,
+      upsertModel: unsupportedReadonlyOperation,
+      deleteModel: unsupportedReadonlyOperation,
+      updateModels: unsupportedReadonlyOperation,
+      modelsLoading: false,
+      providersLoading: false,
+      errors: {},
+    }),
+    [],
+  );
+
+  return <ModelProviderContext.Provider value={value}>{children}</ModelProviderContext.Provider>;
+};
+
+export const useOptionalModelProviders = (): ModelProviderContextType | null => {
+  return useContext(ModelProviderContext);
+};
+
 export const useModelProviders = (): ModelProviderContextType => {
-  const context = useContext(ModelProviderContext);
+  const context = useOptionalModelProviders();
   if (!context) {
     throw new Error('useModelProviders must be used within a ModelProviderProvider');
   }

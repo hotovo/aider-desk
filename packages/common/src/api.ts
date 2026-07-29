@@ -79,6 +79,11 @@ import {
   ExtensionOperationResult,
 } from '@common/types';
 
+export type ExtensionDisplayAPI = Pick<
+  ApplicationAPI,
+  'getExtensionUIComponents' | 'getUIExtensionData' | 'executeUIExtensionAction' | 'onExtensionUIRefresh' | 'loadExtensionLibrary'
+>;
+
 export interface ApplicationAPI {
   isOpenLogsDirectorySupported: () => boolean;
   openLogsDirectory: () => Promise<boolean>;

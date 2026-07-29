@@ -5,7 +5,7 @@ import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { performStartUp } from '@/start-up';
 import { Store } from '@/store';
-import { AIDER_DESK_DATA_DIR, SERVER_PORT } from '@/constants';
+import { AIDER_DESK_DATA_DIR, READONLY_MODE, SERVER_PORT } from '@/constants';
 import { getDefaultProjectSettings } from '@/utils';
 import { ModelManager } from '@/models';
 import { AgentProfileManager } from '@/agent';
@@ -13,6 +13,9 @@ import { AgentProfileManager } from '@/agent';
 export const addProjectsFromEnv = async (store: Store, modelManager: ModelManager, agentProfileManager: AgentProfileManager): Promise<void> => {
   const aiderDeskProjectsEnv = process.env.AIDER_DESK_PROJECTS;
   if (!aiderDeskProjectsEnv) {
+    if (READONLY_MODE) {
+      throw new Error('AIDER_DESK_PROJECTS must contain at least one project when readonly mode is enabled.');
+    }
     return;
   }
 
@@ -22,6 +25,9 @@ export const addProjectsFromEnv = async (store: Store, modelManager: ModelManage
     .filter((p) => p.length > 0);
 
   if (projectPaths.length === 0) {
+    if (READONLY_MODE) {
+      throw new Error('AIDER_DESK_PROJECTS must contain at least one project when readonly mode is enabled.');
+    }
     return;
   }
 
@@ -88,7 +94,7 @@ const main = async (): Promise<void> => {
   await store.init(AIDER_DESK_DATA_DIR);
 
   // Initialize managers first (creates pythonInstaller)
-  const { modelManager, agentProfileManager, pythonInstaller } = await initManagers(store);
+  const { modelManager, agentProfileManager, pythonInstaller, projectManager, serverController } = await initManagers(store);
 
   try {
     await performStartUp(pythonInstaller, updateProgress);
@@ -96,6 +102,19 @@ const main = async (): Promise<void> => {
 
     // Check for AIDER_DESK_PROJECTS environment variable and add projects
     await addProjectsFromEnv(store, modelManager, agentProfileManager);
+
+    if (READONLY_MODE) {
+      const configuredProjects =
+        process.env.AIDER_DESK_PROJECTS?.split(',')
+          .map((project) => project.trim())
+          .filter(Boolean) ?? [];
+      if (configuredProjects.length === 0) {
+        throw new Error('AIDER_DESK_PROJECTS must contain at least one project in readonly mode');
+      }
+      const projects = store.getOpenProjects();
+      await Promise.all(projects.map((project) => projectManager.startProject(project.baseDir)));
+      serverController.setReadonlyReady();
+    }
 
     logger.info(`AiderDesk Runner is ready and running on port ${SERVER_PORT}. You can now open http://localhost:${SERVER_PORT} in your browser.`);
   } catch (error) {

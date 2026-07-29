@@ -913,6 +913,8 @@
       "running": "Running",
       "enableBasicAuth": "Enable Basic Authentication",
       "enableBasicAuthDescription": "Require username and password for browser access and API calls",
+      "enableReadonly": "Readonly Mode",
+      "enableReadonlyDescription": "Restrict browser clients to a read-only view of tasks and conversations. The Electron desktop app retains full access. Requires server restart to take effect.",
       "username": "Username",
       "password": "Password",
       "controlServer": "REST API Server",
@@ -1910,5 +1912,20 @@
       "confirm": "Clear",
       "cancel": "Cancel"
     }
+  },
+  "readonly": {
+    "noTasks": "No tasks",
+    "unnamedTask": "Unnamed task",
+    "archived": "Archived",
+    "loading": "Loading readonly project…",
+    "selectTask": "Select a task to inspect its trace.",
+    "noProjects": "No projects are configured.",
+    "label": "Readonly",
+    "searchTasks": "Search tasks",
+    "allStates": "All states",
+    "bootstrapError": "Unable to load the browser application.",
+    "projectError": "Unable to load this project.",
+    "projects": "Projects",
+    "openTasks": "Open tasks"
   }
 }

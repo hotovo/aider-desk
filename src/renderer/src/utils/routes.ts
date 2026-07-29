@@ -3,6 +3,7 @@ export const ROUTES = {
   Home: '/home',
   Logs: '/logs',
   Diff: '/diff',
+  Readonly: '/readonly',
 } as const;
 
 // URL parameter utilities for direct project/task navigation
