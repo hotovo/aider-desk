@@ -6,6 +6,7 @@
 - inherit agent profile and selected model as defaults when using create task tool
 - optimized default system prompt and init prompt for latest models and to save tokens
 - added loading projects overlay instead of showing Open Project page while loading projects
+- added additional search options to List Tasks tool
 
 ## [0.76.0]
 

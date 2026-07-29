@@ -17,6 +17,7 @@ describe('Tasks Tools - search_task', () => {
 
   const TASKS_TOOL_GROUP_NAME = 'tasks';
   const TOOL_GROUP_NAME_SEPARATOR = '---';
+  const TASKS_TOOL_LIST_TASKS = 'list_tasks';
   const TASKS_TOOL_SEARCH_TASK = 'search_task';
   const AIDER_DESK_TASKS_DIR = '.aider-desk/tasks';
 
@@ -57,6 +58,114 @@ describe('Tasks Tools - search_task', () => {
 
     const tasksModule = await import('../tasks');
     createTasksToolset = tasksModule.createTasksToolset;
+  });
+
+  describe('list tasks tool', () => {
+    const getListTasksTool = () => {
+      const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
+      return tools[`${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_LIST_TASKS}`];
+    };
+
+    it('should accept date, working mode, and metadata filters', () => {
+      const listTasksTool = getListTasksTool();
+
+      expect(() =>
+        listTasksTool.inputSchema.parse({
+          offset: 0,
+          limit: 10,
+          state: 'DONE',
+          createdAfter: '2026-01-01T00:00:00Z',
+          createdBefore: '2026-01-31T23:59:59Z',
+          updatedAfter: '2026-01-01T00:00:00Z',
+          updatedBefore: '2026-01-31T23:59:59Z',
+          workingMode: 'worktree',
+          archived: false,
+          pinned: true,
+          parentId: null,
+          nameQuery: 'release',
+          agentProfileId: 'profile-id',
+          provider: 'anthropic',
+          model: 'claude-sonnet',
+        }),
+      ).not.toThrow();
+    });
+
+    it('should reject invalid date ranges', () => {
+      const listTasksTool = getListTasksTool();
+
+      expect(() =>
+        listTasksTool.inputSchema.parse({
+          createdAfter: '2026-02-01T00:00:00Z',
+          createdBefore: '2026-01-01T00:00:00Z',
+        }),
+      ).toThrow('createdBefore must be greater than or equal to createdAfter');
+    });
+
+    it('should filter before sorting and pagination and return working mode', async () => {
+      const { ApprovalManager } = await import('../approval-manager');
+      vi.spyOn(ApprovalManager.prototype, 'handleToolApproval').mockResolvedValue([true, undefined] as never);
+
+      mockProject.getTasks.mockResolvedValue([
+        {
+          id: 'local-task',
+          name: 'Release local',
+          createdAt: '2026-01-02T00:00:00Z',
+          updatedAt: '2026-01-04T00:00:00Z',
+          workingMode: 'local',
+          archived: false,
+          pinned: false,
+          state: 'DONE',
+          parentId: null,
+        },
+        {
+          id: 'worktree-old',
+          name: 'Release worktree old',
+          createdAt: '2026-01-03T00:00:00Z',
+          updatedAt: '2026-01-05T00:00:00Z',
+          workingMode: 'worktree',
+          archived: false,
+          pinned: false,
+          state: 'DONE',
+          parentId: null,
+        },
+        {
+          id: 'worktree-new',
+          name: 'Release worktree new',
+          createdAt: '2026-01-04T00:00:00Z',
+          updatedAt: '2026-01-06T00:00:00Z',
+          workingMode: 'worktree',
+          archived: false,
+          pinned: false,
+          state: 'DONE',
+          parentId: null,
+        },
+      ]);
+
+      const result = await getListTasksTool().execute(
+        {
+          createdAfter: '2026-01-02T00:00:00Z',
+          createdBefore: '2026-01-04T00:00:00Z',
+          workingMode: 'worktree',
+          nameQuery: 'RELEASE',
+          offset: 1,
+          limit: 1,
+        },
+        { toolCallId: 'call-1' },
+      );
+
+      expect(result).toEqual([
+        {
+          id: 'worktree-old',
+          name: 'Release worktree old',
+          createdAt: '2026-01-03T00:00:00Z',
+          updatedAt: '2026-01-05T00:00:00Z',
+          archived: false,
+          pinned: false,
+          workingMode: 'worktree',
+          state: 'DONE',
+        },
+      ]);
+    });
   });
 
   describe('search task tool', () => {

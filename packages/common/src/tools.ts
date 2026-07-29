@@ -127,7 +127,7 @@ export const TASKS_TOOL_SEARCH_PARENT_TASK = 'search_parent_task';
 
 export const TASKS_TOOL_DESCRIPTIONS = {
   [TASKS_TOOL_LIST_TASKS]:
-    'List all tasks in the current project. Returns basic information for each task including id, name, and creation/update timestamps. Use this to get an overview of all available tasks before performing specific task operations.',
+    'List tasks in the current project. Supports pagination and filtering by state, created/updated date ranges, working mode (local or worktree), archived/pinned status, parent task, name, agent profile, provider, and model. Returns basic information for each matching task including id, name, dates, state, and working mode.',
   [TASKS_TOOL_GET_TASK]:
     "Get comprehensive details about a specific task by its ID. Returns task metadata, current state, list of context files with their read-only status, and the total count of context messages. Use this to understand a task's configuration and context before working with it or its messages.",
   [TASKS_TOOL_GET_TASK_MESSAGE]:

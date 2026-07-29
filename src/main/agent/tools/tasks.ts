@@ -28,24 +28,90 @@ import { isAbortError } from '@/utils/errors';
 import { deriveDirName } from '@/utils';
 import { Task } from '@/task';
 
+const taskDateSchema = z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'Must be a valid date or ISO 8601 timestamp');
+
+const listTasksInputSchema = z
+  .object({
+    offset: z.coerce.number().optional().describe('The number of tasks to skip (for pagination)'),
+    limit: z.coerce.number().optional().describe('The maximum number of tasks to return'),
+    state: z
+      .string()
+      .optional()
+      .describe(
+        'Filter tasks by state. Built-in states: TODO, READY_FOR_IMPLEMENTATION, IN_PROGRESS, INTERRUPTED, DELEGATED, MORE_INFO_NEEDED, READY_FOR_REVIEW, DONE.',
+      ),
+    createdAfter: taskDateSchema.optional().describe('Include tasks created at or after this date or ISO 8601 timestamp'),
+    createdBefore: taskDateSchema.optional().describe('Include tasks created at or before this date or ISO 8601 timestamp'),
+    updatedAfter: taskDateSchema.optional().describe('Include tasks updated at or after this date or ISO 8601 timestamp'),
+    updatedBefore: taskDateSchema.optional().describe('Include tasks updated at or before this date or ISO 8601 timestamp'),
+    workingMode: z.enum(['local', 'worktree']).optional().describe('Filter tasks by working mode'),
+    archived: z.boolean().optional().describe('Filter tasks by archived status'),
+    pinned: z.boolean().optional().describe('Filter tasks by pinned status'),
+    parentId: z.string().nullable().optional().describe('Filter by parent task ID; use null for top-level tasks'),
+    nameQuery: z.string().optional().describe('Case-insensitive substring to match in task names'),
+    agentProfileId: z.string().optional().describe('Filter tasks by agent profile ID'),
+    provider: z.string().optional().describe('Filter tasks by model provider'),
+    model: z.string().optional().describe('Filter tasks by model'),
+  })
+  .superRefine((input, context) => {
+    const dateRanges = [
+      ['createdAfter', input.createdAfter, 'createdBefore', input.createdBefore],
+      ['updatedAfter', input.updatedAfter, 'updatedBefore', input.updatedBefore],
+    ] as const;
+
+    for (const [lowerName, lowerValue, upperName, upperValue] of dateRanges) {
+      if (lowerValue && upperValue && Date.parse(lowerValue) > Date.parse(upperValue)) {
+        context.addIssue({
+          code: 'custom',
+          path: [upperName],
+          message: `${upperName} must be greater than or equal to ${lowerName}`,
+        });
+      }
+    }
+  });
+
 export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(task, profile);
 
   const listTasksTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_LIST_TASKS],
-    inputSchema: z.object({
-      offset: z.coerce.number().optional().describe('The number of tasks to skip (for pagination)'),
-      limit: z.coerce.number().optional().describe('The maximum number of tasks to return'),
-      state: z.string().optional().describe('Filter tasks by state (e.g., TODO, IN_PROGRESS, DONE)'),
-    }),
+    inputSchema: listTasksInputSchema,
     execute: async (input, { toolCallId }) => {
-      const { offset = 0, limit, state } = input;
-      task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_LIST_TASKS, { offset, limit, state }, undefined, undefined, promptContext);
+      const {
+        offset = 0,
+        limit,
+        state,
+        createdAfter,
+        createdBefore,
+        updatedAfter,
+        updatedBefore,
+        workingMode,
+        archived,
+        pinned,
+        parentId,
+        nameQuery,
+        agentProfileId,
+        provider,
+        model,
+      } = input;
+      const toolInput = { ...input, offset, limit, state };
+      task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_LIST_TASKS, toolInput, undefined, undefined, promptContext);
 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_LIST_TASKS}`;
       const questionKey = toolName;
       const questionText = 'Approve listing tasks?';
-      const questionSubject = `Offset: ${offset}, Limit: ${limit}, State: ${state || 'all'}`;
+      const questionSubject = [
+        `Offset: ${offset}`,
+        `Limit: ${limit ?? 'all'}`,
+        `State: ${state || 'all'}`,
+        `Created: ${createdAfter || '*'} to ${createdBefore || '*'}`,
+        `Updated: ${updatedAfter || '*'} to ${updatedBefore || '*'}`,
+        `Working mode: ${workingMode || 'all'}`,
+        `Archived: ${archived === undefined ? 'all' : archived}`,
+        `Pinned: ${pinned === undefined ? 'all' : pinned}`,
+        ...(parentId !== undefined ? [`Parent ID: ${parentId || 'none'}`] : []),
+        ...(nameQuery ? [`Name: ${nameQuery}`] : []),
+      ].join(', ');
 
       const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
@@ -55,26 +121,44 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
 
       try {
         let allTasks = await task.getProject().getTasks();
+        const createdAfterTime = createdAfter ? Date.parse(createdAfter) : undefined;
+        const createdBeforeTime = createdBefore ? Date.parse(createdBefore) : undefined;
+        const updatedAfterTime = updatedAfter ? Date.parse(updatedAfter) : undefined;
+        const updatedBeforeTime = updatedBefore ? Date.parse(updatedBefore) : undefined;
+        const normalizedNameQuery = nameQuery?.toLocaleLowerCase();
 
-        // Filter by state if provided
-        if (state) {
-          allTasks = allTasks.filter((t) => t.state === state);
-        }
+        allTasks = allTasks.filter((taskData) => {
+          const createdAt = taskData.createdAt ? Date.parse(taskData.createdAt) : undefined;
+          const updatedAt = taskData.updatedAt ? Date.parse(taskData.updatedAt) : undefined;
 
-        // Sort by updatedAt descending (most recently updated first)
+          return (
+            (!state || taskData.state === state) &&
+            (createdAfterTime === undefined || (createdAt !== undefined && createdAt >= createdAfterTime)) &&
+            (createdBeforeTime === undefined || (createdAt !== undefined && createdAt <= createdBeforeTime)) &&
+            (updatedAfterTime === undefined || (updatedAt !== undefined && updatedAt >= updatedAfterTime)) &&
+            (updatedBeforeTime === undefined || (updatedAt !== undefined && updatedAt <= updatedBeforeTime)) &&
+            (!workingMode || taskData.workingMode === workingMode) &&
+            (archived === undefined || Boolean(taskData.archived) === archived) &&
+            (pinned === undefined || Boolean(taskData.pinned) === pinned) &&
+            (parentId === undefined || (parentId === null ? taskData.parentId == null : taskData.parentId === parentId)) &&
+            (!normalizedNameQuery || taskData.name.toLocaleLowerCase().includes(normalizedNameQuery)) &&
+            (!agentProfileId || taskData.agentProfileId === agentProfileId) &&
+            (!provider || taskData.provider === provider) &&
+            (!model || taskData.model === model)
+          );
+        });
+
         allTasks.sort((a, b) => {
           const dateA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
           const dateB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
           return dateB - dateA;
         });
 
-        // Apply pagination
         const startIndex = Math.max(0, offset);
-        const endIndex = startIndex + Math.max(0, limit || allTasks.length);
+        const endIndex = startIndex + (limit === undefined ? allTasks.length : Math.max(0, limit));
         const paginatedTasks = allTasks.slice(startIndex, endIndex);
 
         return paginatedTasks.map((t) => {
-          // Count subtasks for this task
           const subtaskIds = allTasks.filter((subtask) => subtask.parentId === t.id).map((s) => s.id);
 
           return {
@@ -83,6 +167,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
             createdAt: t.createdAt,
             updatedAt: t.updatedAt,
             archived: t.archived,
+            pinned: t.pinned,
+            workingMode: t.workingMode,
             state: t.state,
             ...(t.parentId && { parentId: t.parentId }),
             ...(subtaskIds.length > 0 && { subtaskIds }),
