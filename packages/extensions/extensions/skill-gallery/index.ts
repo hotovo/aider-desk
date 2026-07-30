@@ -38,6 +38,7 @@ const DEFAULT_SOURCES: SkillSource[] = [
   { id: 'agentic-awesome-skills', name: 'Agentic Awesome Skills', url: 'https://github.com/sickn33/agentic-awesome-skills.git', subPath: 'skills' },
   { id: 'mattpocock-engineering', name: 'Matt Pocock: Engineering', url: 'https://github.com/mattpocock/skills.git', subPath: 'skills/engineering' },
   { id: 'mattpocock-productivity', name: 'Matt Pocock: Productivity', url: 'https://github.com/mattpocock/skills.git', subPath: 'skills/productivity' },
+  { id: 'addyosmani-agent-skills', name: 'Addy Osmani: Agent Skills', url: 'https://github.com/addyosmani/agent-skills.git', subPath: 'skills' },
 ];
 
 interface GallerySkill {
