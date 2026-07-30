@@ -1906,14 +1906,6 @@ import { Task } from '@/task';
 ⋮----
 export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
 ⋮----
-// Filter by state if provided
-⋮----
-// Sort by updatedAt descending (most recently updated first)
-⋮----
-// Apply pagination
-⋮----
-// Count subtasks for this task
-⋮----
 // Find subtasks of this task
 ⋮----
 // Handle negative indexing
@@ -29039,12 +29031,12 @@ File: package.json
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
-    "@legendapp/list": "^3.3.0",
+    "@legendapp/list": "^3.3.3",
     "@openrouter/ai-sdk-provider": "3.0.0",
     "@opentelemetry/auto-instrumentations-node": "^0.77.0",
     "@opentelemetry/sdk-node": "^0.219.0",
     "@opentelemetry/sdk-trace-base": "^2.8.0",
-    "@pierre/diffs": "^1.1.22",
+    "@pierre/diffs": "^1.2.12",
     "@posthog/ai": "^8.3.0",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
