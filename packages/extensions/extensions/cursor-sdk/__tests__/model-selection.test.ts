@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import type { ModelListItem, ModelSelection } from '@cursor/sdk';
 
 import { createModelAliases, resolveModelSelection } from '../model-selection';

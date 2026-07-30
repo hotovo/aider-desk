@@ -2,17 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
-import type {
-  ConversationStep,
-  InteractionUpdate,
-  ModelSelection,
-  Run,
-  SDKAgent,
-  SDKImage,
-  SDKUserMessage,
-  SendOptions,
-  ToolCall,
-} from '@cursor/sdk';
+import type { ConversationStep, InteractionUpdate, ModelSelection, Run, SDKAgent, SDKImage, SDKUserMessage, SendOptions, ToolCall } from '@cursor/sdk';
 
 import type {
   AgentStartedEvent,
@@ -27,17 +17,29 @@ import type {
   LoadModelsResponse,
   McpServerConfig as AiderDeskMcpServerConfig,
   Model,
+  PromptContext,
   ProviderDefinition,
   ReasoningPart,
   TaskContext,
   TextPart,
   ToolCallPart,
   ToolResultOutput,
-  UsageReportData,
 } from '@aiderdesk/extensions';
 import type { SettingSource } from '@cursor/sdk';
 
 import { createModelAliases, resolveModelSelection } from './model-selection';
+import {
+  completeCursorTaskPromptContext,
+  createCursorTaskPromptContext,
+  CURSOR_SUBAGENT_SERVER_NAME,
+  CURSOR_SUBAGENT_TOOL_NAME,
+  getCursorTaskConversationSteps,
+  getCursorTaskError,
+  mapCursorTaskInput,
+  mapCursorTaskResult,
+  type CursorTaskArgs,
+} from './task';
+import { mapTokenUsage, type TurnUsage } from './usage';
 
 interface CursorConfig {
   apiKey: string;
@@ -193,12 +195,20 @@ function toCursorMcpServers(
 function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, unknown>): TransformedTool {
   switch (cursorToolName) {
     case 'shell': {
-      const args = cursorArgs as { command: string; workingDirectory?: string; timeout?: number };
+      const args = cursorArgs as {
+        command: string;
+        workingDirectory?: string;
+        timeout?: number;
+      };
       return {
         serverName: POWER_TOOL_SERVER_NAME,
         toolName: 'bash',
         fullToolName: powerToolName('bash'),
-        input: { command: args.command, cwd: args.workingDirectory, timeout: args.timeout },
+        input: {
+          command: args.command,
+          cwd: args.workingDirectory,
+          timeout: args.timeout,
+        },
       };
     }
     case 'read': {
@@ -211,12 +221,20 @@ function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, 
       };
     }
     case 'write': {
-      const args = cursorArgs as { path: string; fileText: string; returnFileContentAfterWrite?: boolean };
+      const args = cursorArgs as {
+        path: string;
+        fileText: string;
+        returnFileContentAfterWrite?: boolean;
+      };
       return {
         serverName: POWER_TOOL_SERVER_NAME,
         toolName: 'file_write',
         fullToolName: powerToolName('file_write'),
-        input: { filePath: args.path, content: args.fileText, mode: 'overwrite' },
+        input: {
+          filePath: args.path,
+          content: args.fileText,
+          mode: 'overwrite',
+        },
       };
     }
     case 'edit': {
@@ -229,7 +247,10 @@ function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, 
       };
     }
     case 'glob': {
-      const args = cursorArgs as { globPattern: string; targetDirectory?: string };
+      const args = cursorArgs as {
+        globPattern: string;
+        targetDirectory?: string;
+      };
       return {
         serverName: POWER_TOOL_SERVER_NAME,
         toolName: 'glob',
@@ -260,12 +281,25 @@ function transformCursorTool(cursorToolName: string, cursorArgs: Record<string, 
       };
     }
     case 'mcp': {
-      const args = cursorArgs as { providerIdentifier: string; toolName: string; args?: Record<string, unknown> };
+      const args = cursorArgs as {
+        providerIdentifier: string;
+        toolName: string;
+        args?: Record<string, unknown>;
+      };
       return {
         serverName: args.providerIdentifier,
         toolName: args.toolName,
         fullToolName: `${args.providerIdentifier}${TOOL_SEPARATOR}${args.toolName}`,
         input: args.args ?? {},
+      };
+    }
+    case 'task': {
+      const input = mapCursorTaskInput(cursorArgs as CursorTaskArgs);
+      return {
+        serverName: CURSOR_SUBAGENT_SERVER_NAME,
+        toolName: CURSOR_SUBAGENT_TOOL_NAME,
+        fullToolName: `${CURSOR_SUBAGENT_SERVER_NAME}${TOOL_SEPARATOR}${CURSOR_SUBAGENT_TOOL_NAME}`,
+        input,
       };
     }
     default:
@@ -285,24 +319,8 @@ function extractResultValue(cursorResult: unknown): unknown {
   return cursorResult;
 }
 
-interface TurnUsage {
-  inputTokens: number;
-  outputTokens: number;
-  cacheReadTokens: number;
-  cacheWriteTokens: number;
-  totalTokens?: number;
-  reasoningTokens?: number;
-}
-
-function mapTokenUsage(usage: TurnUsage, modelName: string): UsageReportData {
-  return {
-    model: modelName,
-    sentTokens: usage.inputTokens - usage.cacheReadTokens,
-    receivedTokens: usage.outputTokens,
-    messageCost: 0,
-    cacheWriteTokens: usage.cacheWriteTokens || undefined,
-    cacheReadTokens: usage.cacheReadTokens || undefined,
-  };
+function isBinaryBuffer(buffer: Buffer): boolean {
+  return buffer.includes(0);
 }
 
 function transformCursorResult(
@@ -310,66 +328,119 @@ function transformCursorResult(
   cursorResult: unknown,
   status: string,
   cursorArgs?: Record<string, unknown>,
+  taskDir?: string,
 ): TransformedResult {
   if (status === 'error') {
-    const errorStr = cursorResult && typeof cursorResult === 'object' && 'error' in cursorResult
-      ? String((cursorResult as { error: unknown }).error)
-      : String(cursorResult ?? '');
-    return { resultStr: errorStr, output: { type: 'error-text', value: errorStr } };
+    const errorStr =
+      cursorResult && typeof cursorResult === 'object' && 'error' in cursorResult
+        ? String((cursorResult as { error: unknown }).error)
+        : String(cursorResult ?? '');
+    return {
+      resultStr: errorStr,
+      output: { type: 'error-text', value: errorStr },
+    };
   }
 
   const value = extractResultValue(cursorResult);
 
   switch (cursorToolName) {
     case 'shell': {
-      const v = value as { stdout: string; stderr: string; exitCode: number; executionTime: number };
-      const transformed = { stdout: v?.stdout ?? '', stderr: v?.stderr ?? '', exitCode: v?.exitCode ?? 0 };
+      const v = value as {
+        stdout: string;
+        stderr: string;
+        exitCode: number;
+        executionTime: number;
+      };
+      const transformed = {
+        stdout: v?.stdout ?? '',
+        stderr: v?.stderr ?? '',
+        exitCode: v?.exitCode ?? 0,
+      };
       const str = JSON.stringify(transformed);
       return { resultStr: str, output: { type: 'json', value: str } };
     }
     case 'read': {
       const v = value as { content: string; totalLines: number; fileSize: number } | undefined;
-      const content = typeof v === 'string' ? v : (v?.content ?? '');
-      return { resultStr: JSON.stringify(content), output: { type: 'text', value: content } };
+      let content = typeof v === 'string' ? v : (v?.content ?? '');
+      // Cursor returns empty content for files it cannot access (e.g. gitignored); read the file ourselves as a fallback
+      if (!content && typeof v === 'object' && (v?.totalLines ?? 0) > 0) {
+        const readPath = cursorArgs?.path;
+        if (typeof readPath === 'string' && readPath) {
+          try {
+            const buffer = readFileSync(resolve(taskDir ?? '.', readPath));
+            if (!isBinaryBuffer(buffer)) {
+              content = buffer.toString('utf-8');
+            }
+          } catch {
+            // Ignore read errors and keep the empty content
+          }
+        }
+      }
+      return {
+        resultStr: JSON.stringify(content),
+        output: { type: 'text', value: content },
+      };
     }
     case 'write': {
-      const v = value as { path: string; linesCreated: number; fileSize: number };
+      const v = value as {
+        path: string;
+        linesCreated: number;
+        fileSize: number;
+      };
       const str = v ? `Successfully wrote to '${v.path}' (${v.linesCreated} lines, ${v.fileSize} bytes)` : 'Write completed';
-      return { resultStr: JSON.stringify(str), output: { type: 'text', value: str } };
+      return {
+        resultStr: JSON.stringify(str),
+        output: { type: 'text', value: str },
+      };
     }
     case 'edit': {
-      const v = value as { linesAdded?: number; linesRemoved?: number; diffString?: string };
+      const v = value as {
+        linesAdded?: number;
+        linesRemoved?: number;
+        diffString?: string;
+      };
       const str = v?.diffString ?? JSON.stringify(v ?? {});
       return { resultStr: str, output: { type: 'text', value: str } };
     }
     case 'glob': {
       const v = value as { files: string[]; totalFiles: number };
       const files = v?.files ?? [];
-      return { resultStr: JSON.stringify(files), output: { type: 'json', value: files } };
+      return {
+        resultStr: JSON.stringify(files),
+        output: { type: 'json', value: files },
+      };
     }
     case 'grep': {
       const v = value as {
-        workspaceResults?: Record<string, {
-          type: 'content' | 'files';
-          output?: {
-            matches?: Array<{
-              file: string;
-              line?: string;
-              lineNumber?: number;
-              beforeContext?: string[];
-              afterContext?: string[];
-            }> | Array<{ file: string }>;
-            totalMatches?: number;
-            files?: string[];
-            count?: number;
-          };
-        }>;
+        workspaceResults?: Record<
+          string,
+          {
+            type: 'content' | 'files';
+            output?: {
+              matches?:
+                | Array<{
+                    file: string;
+                    line?: string;
+                    lineNumber?: number;
+                    beforeContext?: string[];
+                    afterContext?: string[];
+                  }>
+                | Array<{ file: string }>;
+              totalMatches?: number;
+              files?: string[];
+              count?: number;
+            };
+          }
+        >;
       };
 
       const workspaceResults = v?.workspaceResults;
       if (!workspaceResults || Object.keys(workspaceResults).length === 0) {
         const noResults = 'No matches found.';
-        return { resultStr: JSON.stringify(noResults), output: { type: 'text', value: noResults } };
+        return {
+          resultStr: JSON.stringify(noResults),
+          output: { type: 'text', value: noResults },
+        };
       }
 
       const grepPattern = (cursorArgs?.pattern as string) ?? '';
@@ -409,7 +480,11 @@ function transformCursorResult(
                 context: context.length > 1 ? context : undefined,
               });
             } else {
-              allMatches.push({ filePath: match.file, lineNumber: 0, lineContent: '' });
+              allMatches.push({
+                filePath: match.file,
+                lineNumber: 0,
+                lineContent: '',
+              });
             }
           }
         }
@@ -417,7 +492,10 @@ function transformCursorResult(
 
       if (allMatches.length === 0) {
         const noResults = 'No matches found.';
-        return { resultStr: JSON.stringify(noResults), output: { type: 'text', value: noResults } };
+        return {
+          resultStr: JSON.stringify(noResults),
+          output: { type: 'text', value: noResults },
+        };
       }
 
       const grouped: Record<string, typeof allMatches> = {};
@@ -453,22 +531,21 @@ function transformCursorResult(
       }
 
       const str = lines.join('\n');
-      return { resultStr: JSON.stringify(str), output: { type: 'text', value: str } };
+      return {
+        resultStr: JSON.stringify(str),
+        output: { type: 'text', value: str },
+      };
     }
     case 'mcp': {
       const rawValue = extractResultValue(cursorResult);
-      const str = rawValue !== undefined
-        ? typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue)
-        : undefined;
+      const str = rawValue !== undefined ? (typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue)) : undefined;
       return {
         resultStr: str,
         output: str ? { type: 'text', value: str } : { type: 'text', value: '' },
       };
     }
     default: {
-      const str = cursorResult !== undefined
-        ? typeof cursorResult === 'string' ? cursorResult : JSON.stringify(cursorResult)
-        : undefined;
+      const str = cursorResult !== undefined ? (typeof cursorResult === 'string' ? cursorResult : JSON.stringify(cursorResult)) : undefined;
       return {
         resultStr: str,
         output: str ? { type: 'text', value: str } : { type: 'text', value: '' },
@@ -482,7 +559,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.3.0',
+    version: '4.4.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -530,7 +607,11 @@ export default class CursorSdkExtension implements Extension {
             const config = this.loadConfig();
             const apiKey = config.apiKey || process.env.CURSOR_API_KEY;
             if (!apiKey) {
-              return { models: [], success: false, error: 'CURSOR_API_KEY not configured' };
+              return {
+                models: [],
+                success: false,
+                error: 'CURSOR_API_KEY not configured',
+              };
             }
             try {
               const cursorModels = await Cursor.models.list({ apiKey });
@@ -542,7 +623,7 @@ export default class CursorSdkExtension implements Extension {
                     `Cursor model variants for ${cursorModel.id}: ${aliases
                       .map(({ id, selection }) => `${id} (${JSON.stringify(selection.params ?? [])})`)
                       .join('; ')}`,
-                    'info',
+                    'debug',
                   );
                 }
                 return aliases.map((alias) => {
@@ -564,10 +645,7 @@ export default class CursorSdkExtension implements Extension {
     ];
   }
 
-  async onAgentStarted(
-    event: AgentStartedEvent,
-    context: ExtensionContext,
-  ): Promise<void | Partial<AgentStartedEvent>> {
+  async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<void | Partial<AgentStartedEvent>> {
     if (!event.providerProfile.id.startsWith(CURSOR_PROVIDER_ID)) {
       return undefined;
     }
@@ -587,9 +665,7 @@ export default class CursorSdkExtension implements Extension {
       const { data, mimeType } = parseDataUrl(dataUrl);
       return { data, mimeType };
     });
-    const sendMessage: string | SDKUserMessage = sdkImages.length > 0
-      ? { text: prompt, images: sdkImages }
-      : prompt;
+    const sendMessage: string | SDKUserMessage = sdkImages.length > 0 ? { text: prompt, images: sdkImages } : prompt;
     if (sdkImages.length > 0) {
       context.log(`Sending ${sdkImages.length} image(s) to Cursor agent`, 'info');
     }
@@ -597,10 +673,7 @@ export default class CursorSdkExtension implements Extension {
     const config = this.loadConfig();
     const apiKey = config.apiKey || process.env.CURSOR_API_KEY;
     if (!apiKey) {
-      taskContext.addLogMessage(
-        'error',
-        'Cursor SDK: CURSOR_API_KEY not configured. Set it in extension settings or environment.',
-      );
+      taskContext.addLogMessage('error', 'Cursor SDK: CURSOR_API_KEY not configured. Set it in extension settings or environment.');
       return { blocked: true };
     }
 
@@ -628,11 +701,19 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const modelSelection = resolveModelSelection(rawModelId, this.modelSelections);
+    const modelConfig = (await context.getModelConfigs()).find((model) => model.providerId === event.providerProfile.id && model.id === rawModelId);
+
+    if (!modelConfig) {
+      context.log(`No model configuration found for ${event.providerProfile.id}/${rawModelId}; usage cost will be zero`, 'debug');
+    }
 
     const agentOptions = {
       apiKey,
       model: modelSelection,
-      local: { cwd: projectDir, settingSources: ['project', 'user'] as SettingSource[] },
+      local: {
+        cwd: projectDir,
+        settingSources: ['project', 'user'] as SettingSource[],
+      },
     };
 
     let agent: SDKAgent | undefined;
@@ -647,7 +728,10 @@ export default class CursorSdkExtension implements Extension {
         agent = await Agent.create(agentOptions);
 
         await taskContext.updateTask({
-          metadata: { ...taskContext.data.metadata, [AGENT_ID_METADATA_KEY]: agent.agentId },
+          metadata: {
+            ...taskContext.data.metadata,
+            [AGENT_ID_METADATA_KEY]: agent.agentId,
+          },
         });
       }
 
@@ -657,7 +741,7 @@ export default class CursorSdkExtension implements Extension {
         context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
       }
 
-      const streamProcessor = createStreamProcessor(taskContext, context, rawModelId);
+      const streamProcessor = createStreamProcessor(taskContext, context, rawModelId, modelConfig);
 
       const sendOptions = {
         ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
@@ -682,19 +766,20 @@ export default class CursorSdkExtension implements Extension {
         const userMessage: ContextUserMessage = {
           id: `user-${run.id}`,
           role: 'user',
-          content: images.length > 0
-            ? [
-                { type: 'text' as const, text: prompt },
-                ...images.map((dataUrl) => {
-                  const { data, mimeType } = parseDataUrl(dataUrl);
-                  return {
-                    type: 'file' as const,
-                    data,
-                    mediaType: mimeType,
-                  } satisfies FilePart;
-                }),
-              ]
-            : prompt,
+          content:
+            images.length > 0
+              ? [
+                  { type: 'text' as const, text: prompt },
+                  ...images.map((dataUrl) => {
+                    const { data, mimeType } = parseDataUrl(dataUrl);
+                    return {
+                      type: 'file' as const,
+                      data,
+                      mediaType: mimeType,
+                    } satisfies FilePart;
+                  }),
+                ]
+              : prompt,
         };
         await taskContext.addContextMessage(userMessage);
       }
@@ -722,10 +807,7 @@ export default class CursorSdkExtension implements Extension {
     return { blocked: true };
   }
 
-  async onInterrupted(
-    event: InterruptedEvent,
-    context: ExtensionContext,
-  ): Promise<void | Partial<InterruptedEvent>> {
+  async onInterrupted(event: InterruptedEvent, context: ExtensionContext): Promise<void | Partial<InterruptedEvent>> {
     const taskContext = context.getTaskContext();
     if (!taskContext) {
       return undefined;
@@ -743,7 +825,10 @@ export default class CursorSdkExtension implements Extension {
       await taskContext.updateTask({
         state: 'INTERRUPTED',
         interruptedAt: new Date().toISOString(),
-        metadata: { ...taskContext.data.metadata, [AGENT_ID_METADATA_KEY]: undefined },
+        metadata: {
+          ...taskContext.data.metadata,
+          [AGENT_ID_METADATA_KEY]: undefined,
+        },
       });
 
       return { blocked: true };
@@ -760,7 +845,7 @@ export default class CursorSdkExtension implements Extension {
     if (enabledServers.length === 0) return null;
 
     try {
-      const allMcpServers = await context.getSetting('mcpServers') as Record<string, AiderDeskMcpServerConfig> | undefined;
+      const allMcpServers = (await context.getSetting('mcpServers')) as Record<string, AiderDeskMcpServerConfig> | undefined;
       if (!allMcpServers || Object.keys(allMcpServers).length === 0) return null;
 
       return toCursorMcpServers(allMcpServers, enabledServers, projectDir);
@@ -788,10 +873,39 @@ export default class CursorSdkExtension implements Extension {
 
 type AssistantContentPart = ReasoningPart | TextPart | ToolCallPart;
 
+type TaskStepRender =
+  | {
+      type: 'response';
+      message: ContextAssistantMessage;
+      content: string;
+      reasoning?: string;
+    }
+  | {
+      type: 'tool';
+      assistantMessage: ContextAssistantMessage;
+      toolMessage: ContextToolMessage;
+      callId: string;
+      transformed: TransformedTool;
+      result: TransformedResult;
+      preToolContent?: string;
+      preToolReasoning?: string;
+    };
+
+type PendingCursorTask = {
+  args: CursorTaskArgs;
+  promptContext: PromptContext;
+  contextMessages: ContextMessage[];
+  toolMessage?: ContextToolMessage;
+  resultSent: boolean;
+  stepsRendered: boolean;
+  completed: boolean;
+};
+
 function createStreamProcessor(
   taskContext: TaskContext,
   context: ExtensionContext,
   modelName: string,
+  model?: Model,
 ): {
   onDelta: (update: InteractionUpdate) => Promise<void>;
   onStep: (step: ConversationStep) => Promise<void>;
@@ -803,15 +917,15 @@ function createStreamProcessor(
   let hasActiveReasoning = false;
   let responseCounter = 0;
   let accumulatedUsage: TurnUsage | null = null;
+  const cursorTaskPromptContexts = new Map<string, PromptContext>();
+  const pendingCursorTasks = new Map<string, PendingCursorTask>();
 
   const streamId = `cursor-${Date.now()}`;
   const generateResponseId = () => `${streamId}-${responseCounter++}`;
 
-  const getParts = (msg: ContextAssistantMessage): AssistantContentPart[] =>
-    msg.content as AssistantContentPart[];
+  const getParts = (msg: ContextAssistantMessage): AssistantContentPart[] => msg.content as AssistantContentPart[];
 
-  const hasToolCallParts = (msg: ContextAssistantMessage): boolean =>
-    getParts(msg).some((p): p is ToolCallPart => p.type === 'tool-call');
+  const hasToolCallParts = (msg: ContextAssistantMessage): boolean => getParts(msg).some((p): p is ToolCallPart => p.type === 'tool-call');
 
   const hasToolCallPart = (msg: ContextAssistantMessage, callId: string): boolean =>
     getParts(msg).some((p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId);
@@ -837,10 +951,227 @@ function createStreamProcessor(
   };
 
   const extractReasoningText = (parts: AssistantContentPart[]): string =>
-    parts.filter((p): p is ReasoningPart => p.type === 'reasoning').map((p) => p.text).join('');
+    parts
+      .filter((p): p is ReasoningPart => p.type === 'reasoning')
+      .map((p) => p.text)
+      .join('');
 
   const extractText = (parts: AssistantContentPart[]): string =>
-    parts.filter((p): p is TextPart => p.type === 'text').map((p) => p.text).join('');
+    parts
+      .filter((p): p is TextPart => p.type === 'text')
+      .map((p) => p.text)
+      .join('');
+
+  const getTaskPromptContext = (callId: string, toolArgs: Record<string, unknown>): PromptContext => {
+    const existing = cursorTaskPromptContexts.get(callId);
+    if (existing) {
+      const pendingTask = pendingCursorTasks.get(callId);
+      if (pendingTask) {
+        pendingTask.args = { ...pendingTask.args, ...(toolArgs as CursorTaskArgs) };
+      }
+      return existing;
+    }
+
+    const args = toolArgs as CursorTaskArgs;
+    const promptContext = createCursorTaskPromptContext(args);
+    cursorTaskPromptContexts.set(callId, promptContext);
+    pendingCursorTasks.set(callId, {
+      args,
+      promptContext,
+      contextMessages: [],
+      resultSent: false,
+      stepsRendered: false,
+      completed: false,
+    });
+    return promptContext;
+  };
+
+  const getTaskArgsSignature = (args: CursorTaskArgs): string =>
+    JSON.stringify({
+      description: args.description,
+      prompt: args.prompt,
+      subagentType: args.subagentType,
+      model: args.model,
+      resume: (args as CursorTaskArgs & { resume?: string }).resume,
+      agentId: (args as CursorTaskArgs & { agentId?: string }).agentId,
+    });
+
+  const findPendingTask = (toolCall: ToolCall): [string, PendingCursorTask] | undefined => {
+    const args = (toolCall.args ?? {}) as CursorTaskArgs;
+    const pendingTasks = [...pendingCursorTasks.entries()].filter(([, pending]) => !pending.stepsRendered);
+    const signature = getTaskArgsSignature(args);
+    return (
+      pendingTasks.find(([, pending]) => getTaskArgsSignature(pending.args) === signature) ??
+      pendingTasks.find(([, pending]) => pending.args.prompt === args.prompt && pending.args.description === args.description)
+    );
+  };
+
+  const mapTaskConversationSteps = (callId: string, taskArgs: CursorTaskArgs, steps: ConversationStep[], promptContext: PromptContext): TaskStepRender[] => {
+    const lastIndex = steps.length - 1;
+    const result: TaskStepRender[] = [];
+
+    let batchId: string | null = null;
+    let batchParts: AssistantContentPart[] = [];
+    let batchReasoning = '';
+    let batchText = '';
+    let batchPromptContext: PromptContext | null = null;
+
+    const flushBatchAsResponse = () => {
+      if (batchParts.length === 0 || (!batchReasoning.trim() && !batchText.trim())) {
+        resetBatch();
+        return;
+      }
+      result.push({
+        type: 'response',
+        message: {
+          id: batchId!,
+          role: 'assistant',
+          content: [...batchParts],
+          promptContext: batchPromptContext!,
+        },
+        content: batchText,
+        reasoning: batchReasoning || undefined,
+      });
+      resetBatch();
+    };
+
+    const resetBatch = () => {
+      batchId = null;
+      batchParts = [];
+      batchReasoning = '';
+      batchText = '';
+      batchPromptContext = null;
+    };
+
+    for (let index = 0; index < steps.length; index++) {
+      const step = steps[index];
+      const stepPromptContext = index === lastIndex ? completeCursorTaskPromptContext(taskArgs, promptContext) : promptContext;
+
+      switch (step.type) {
+        case 'assistantMessage': {
+          if (!batchId) batchId = `${callId}-step-${index}`;
+          batchPromptContext = stepPromptContext;
+          const text = step.message.text;
+          batchParts.push({ type: 'text', text });
+          batchText += text;
+          break;
+        }
+        case 'thinkingMessage': {
+          if (!batchId) batchId = `${callId}-step-${index}`;
+          batchPromptContext = stepPromptContext;
+          const text = step.message.text;
+          batchParts.push({ type: 'reasoning', text });
+          batchReasoning += text;
+          break;
+        }
+        case 'toolCall': {
+          const toolCall = step.message;
+          const toolName = toolCall.type as string;
+          const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+          const toolResult = toolCall.result as unknown;
+          const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
+          const transformed = transformCursorTool(toolName, toolArgs);
+          const transformedResult =
+            toolName === 'task'
+              ? mapCursorTaskResult([], stepPromptContext, status, getCursorTaskError(toolResult))
+              : transformCursorResult(toolName, toolResult, status, toolArgs, taskContext.getTaskDir());
+
+          const stepId = batchId ?? `${callId}-step-${index}`;
+          const nestedCallId = `${stepId}-call`;
+
+          const toolCallPart: ToolCallPart = {
+            type: 'tool-call',
+            toolCallId: nestedCallId,
+            toolName: transformed.fullToolName,
+            input: transformed.input,
+          };
+
+          const hasPreToolContent = batchReasoning.trim() !== '' || batchText.trim() !== '';
+
+          batchParts.push(toolCallPart);
+
+          result.push({
+            type: 'tool',
+            assistantMessage: {
+              id: stepId,
+              role: 'assistant',
+              content: [...batchParts],
+              promptContext: stepPromptContext,
+            },
+            toolMessage: {
+              id: nestedCallId,
+              role: 'tool',
+              content: [
+                {
+                  type: 'tool-result',
+                  toolCallId: nestedCallId,
+                  toolName: transformed.fullToolName,
+                  output: transformedResult.output,
+                },
+              ],
+              promptContext: stepPromptContext,
+            },
+            callId: nestedCallId,
+            transformed,
+            result: transformedResult,
+            ...(hasPreToolContent ? { preToolContent: batchText, preToolReasoning: batchReasoning || undefined } : {}),
+          });
+
+          resetBatch();
+          break;
+        }
+        default:
+          break;
+      }
+    }
+
+    flushBatchAsResponse();
+
+    return result;
+  };
+
+  const renderTaskStepMessages = async (steps: TaskStepRender[]) => {
+    for (const step of steps) {
+      if (step.type === 'response') {
+        await taskContext.addResponseMessage(
+          {
+            id: step.message.id,
+            content: step.content,
+            reasoning: step.reasoning,
+            finished: true,
+            promptContext: step.message.promptContext,
+          },
+          true,
+        );
+        continue;
+      }
+
+      if (step.preToolContent !== undefined || step.preToolReasoning !== undefined) {
+        await taskContext.addResponseMessage(
+          {
+            id: step.assistantMessage.id,
+            content: step.preToolContent ?? '',
+            reasoning: step.preToolReasoning,
+            finished: true,
+            promptContext: step.assistantMessage.promptContext,
+          },
+          true,
+        );
+      }
+
+      taskContext.addToolMessage(
+        step.callId,
+        step.transformed.serverName,
+        step.transformed.toolName,
+        step.transformed.input,
+        step.result.resultStr,
+        undefined,
+        step.toolMessage.promptContext,
+        true,
+        true,
+      );
+    }
+  };
 
   const ensureAssistantMessage = (): ContextAssistantMessage => {
     if (!currentAssistantMessage) {
@@ -852,6 +1183,31 @@ function createStreamProcessor(
       contextMessages.push(currentAssistantMessage);
     }
     return currentAssistantMessage;
+  };
+
+  const ensureTaskAssistantMessage = async (
+    callId: string,
+    toolArgs: Record<string, unknown>,
+    promptContext: PromptContext,
+  ): Promise<ContextAssistantMessage> => {
+    if (currentAssistantMessage && !hasToolCallPart(currentAssistantMessage, callId) && getParts(currentAssistantMessage).length > 0) {
+      await finishCurrentMessage();
+    }
+
+    const message = ensureAssistantMessage();
+    message.promptContext = promptContext;
+
+    if (!hasToolCallPart(message, callId)) {
+      const transformed = transformCursorTool('task', toolArgs);
+      getParts(message).push({
+        type: 'tool-call',
+        toolCallId: callId,
+        toolName: transformed.fullToolName,
+        input: transformed.input,
+      });
+    }
+
+    return message;
   };
 
   const finishCurrentMessage = async () => {
@@ -870,25 +1226,122 @@ function createStreamProcessor(
     const text = extractText(parts).trim();
 
     if (reasoning || text) {
-      await taskContext.addResponseMessage({
-        id: currentAssistantMessage.id,
-        content: text,
-        reasoning: reasoning || undefined,
-        finished: true,
-      }, true);
+      await taskContext.addResponseMessage(
+        {
+          id: currentAssistantMessage.id,
+          content: text,
+          reasoning: reasoning || undefined,
+          finished: true,
+        },
+        true,
+      );
     }
 
     currentAssistantMessage = null;
     hasActiveReasoning = false;
   };
 
-  const handleToolCompletion = async (callId: string, toolCall: ToolCall) => {
-    const msg = ensureAssistantMessage();
+  const handleTaskCompletion = async (callId: string, toolCall: ToolCall, fromStep = false) => {
+    const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+    const toolResult = toolCall.result as unknown;
+    const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
+    const promptContext = getTaskPromptContext(callId, toolArgs);
+    const pendingTask = pendingCursorTasks.get(callId);
 
+    if (pendingTask?.completed) return;
+
+    const conversationSteps = getCursorTaskConversationSteps(toolResult);
+    if (conversationSteps.length === 0 && !fromStep) return;
+
+    const taskSteps = pendingTask?.stepsRendered
+      ? []
+      : mapTaskConversationSteps(callId, toolArgs as CursorTaskArgs, conversationSteps, promptContext);
+    const taskContextMessages = taskSteps.flatMap((step): ContextMessage[] =>
+      step.type === 'response' ? [step.message] : [step.assistantMessage, step.toolMessage],
+    );
+
+    if (pendingTask && taskContextMessages.length > 0) {
+      pendingTask.contextMessages = taskContextMessages;
+      pendingTask.stepsRendered = true;
+    }
+
+    const completed = fromStep || status === 'error' || taskSteps.length > 0;
+    const resultPromptContext = completed ? completeCursorTaskPromptContext(toolArgs as CursorTaskArgs, promptContext) : promptContext;
+    const transformed = transformCursorTool('task', toolArgs);
+    const transformedResult = mapCursorTaskResult(
+      pendingTask?.contextMessages ?? taskContextMessages,
+      resultPromptContext,
+      status,
+      getCursorTaskError(toolResult),
+    );
+    const taskToolMessage =
+      pendingTask?.toolMessage ?? contextMessages.find((message): message is ContextToolMessage => message.role === 'tool' && message.id === callId);
+
+    if (taskToolMessage) {
+      taskToolMessage.content = [
+        {
+          type: 'tool-result',
+          toolCallId: callId,
+          toolName: transformed.fullToolName,
+          output: transformedResult.output,
+        },
+      ];
+      taskToolMessage.promptContext = resultPromptContext;
+    } else {
+      const newToolMessage: ContextToolMessage = {
+        id: callId,
+        role: 'tool',
+        content: [
+          {
+            type: 'tool-result',
+            toolCallId: callId,
+            toolName: transformed.fullToolName,
+            output: transformedResult.output,
+          },
+        ],
+        promptContext: resultPromptContext,
+      };
+      contextMessages.push(newToolMessage);
+      if (pendingTask) {
+        pendingTask.toolMessage = newToolMessage;
+      }
+    }
+
+    taskContext.addToolMessage(
+      callId,
+      transformed.serverName,
+      transformed.toolName,
+      transformed.input,
+      transformedResult.resultStr,
+      undefined,
+      resultPromptContext,
+      true,
+      true,
+    );
+
+    if (taskSteps.length > 0) {
+      await renderTaskStepMessages(taskSteps);
+    }
+
+    if (pendingTask) {
+      pendingTask.resultSent = true;
+      pendingTask.completed = completed;
+    }
+  };
+
+  const handleToolCompletion = async (callId: string, toolCall: ToolCall) => {
     const toolName = toolCall.type as string;
     const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
     const toolResult = toolCall.result as unknown;
     const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
+
+    if (toolName === 'task') {
+      await ensureTaskAssistantMessage(callId, toolArgs, getTaskPromptContext(callId, toolArgs));
+      await handleTaskCompletion(callId, toolCall);
+      return;
+    }
+
+    const msg = ensureAssistantMessage();
 
     if (toolName === 'edit') {
       const diffString = (toolResult as { value?: { diffString?: string } } | undefined)?.value?.diffString;
@@ -899,9 +1352,7 @@ function createStreamProcessor(
 
         if (edits.length > 0) {
           const parts = getParts(msg);
-          const originalIdx = parts.findIndex(
-            (p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId,
-          );
+          const originalIdx = parts.findIndex((p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId);
           if (originalIdx !== -1) {
             parts.splice(originalIdx, 1);
           }
@@ -911,7 +1362,11 @@ function createStreamProcessor(
           for (let i = 0; i < edits.length; i++) {
             const edit = edits[i];
             const editId = edits.length === 1 ? callId : `${callId}-${i}`;
-            const editInput = { filePath: edit.filePath, searchTerm: edit.searchTerm, replacementText: edit.replacementText };
+            const editInput = {
+              filePath: edit.filePath,
+              searchTerm: edit.searchTerm,
+              replacementText: edit.replacementText,
+            };
             const resultStr = `Successfully edited '${edit.filePath}'.`;
 
             parts.push({
@@ -921,17 +1376,7 @@ function createStreamProcessor(
               input: editInput,
             });
 
-            taskContext.addToolMessage(
-              editId,
-              POWER_TOOL_SERVER_NAME,
-              'file_edit',
-              editInput,
-              JSON.stringify(resultStr),
-              undefined,
-              undefined,
-              true,
-              true,
-            );
+            taskContext.addToolMessage(editId, POWER_TOOL_SERVER_NAME, 'file_edit', editInput, JSON.stringify(resultStr), undefined, undefined, true, true);
 
             contextMessages.push({
               id: editId,
@@ -965,7 +1410,7 @@ function createStreamProcessor(
       });
     }
 
-    const transformedResult = transformCursorResult(toolName, toolResult, status, toolArgs);
+    const transformedResult = transformCursorResult(toolName, toolResult, status, toolArgs, taskContext.getTaskDir());
 
     taskContext.addToolMessage(
       callId,
@@ -1001,6 +1446,8 @@ function createStreamProcessor(
   };
 
   const onDelta = async (update: InteractionUpdate) => {
+    context.log(`onDelta: ${JSON.stringify(update)}`, 'debug');
+
     switch (update.type) {
       case 'thinking-delta': {
         if (currentAssistantMessage) {
@@ -1043,13 +1490,12 @@ function createStreamProcessor(
 
       case 'tool-call-started': {
         const { callId, toolCall } = update;
-        const msg = ensureAssistantMessage();
-        const transformed = transformCursorTool(
-          toolCall.type as string,
-          (toolCall.args ?? {}) as Record<string, unknown>,
-        );
+        const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+        const taskPromptContext = toolCall.type === 'task' ? getTaskPromptContext(callId, toolArgs) : undefined;
+        const msg = taskPromptContext ? await ensureTaskAssistantMessage(callId, toolArgs, taskPromptContext) : ensureAssistantMessage();
+        const transformed = transformCursorTool(toolCall.type as string, toolArgs);
 
-        if (!hasToolCallPart(msg, callId)) {
+        if (!taskPromptContext && !hasToolCallPart(msg, callId)) {
           getParts(msg).push({
             type: 'tool-call',
             toolCallId: callId,
@@ -1065,7 +1511,7 @@ function createStreamProcessor(
           transformed.input,
           undefined,
           undefined,
-          undefined,
+          taskPromptContext,
           false,
           false,
         );
@@ -1077,14 +1523,11 @@ function createStreamProcessor(
         if (!currentAssistantMessage) break;
 
         const parts = getParts(currentAssistantMessage);
-        const existingIdx = parts.findIndex(
-          (p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId,
-        );
+        const existingIdx = parts.findIndex((p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId);
         if (existingIdx !== -1) {
-          const transformed = transformCursorTool(
-            toolCall.type as string,
-            (toolCall.args ?? {}) as Record<string, unknown>,
-          );
+          const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
+          const transformed = transformCursorTool(toolCall.type as string, toolArgs);
+          const taskPromptContext = toolCall.type === 'task' ? getTaskPromptContext(callId, toolArgs) : undefined;
           const part = parts[existingIdx] as ToolCallPart;
           part.input = transformed.input;
           part.toolName = transformed.fullToolName;
@@ -1096,7 +1539,7 @@ function createStreamProcessor(
             transformed.input,
             undefined,
             undefined,
-            undefined,
+            taskPromptContext,
             false,
             false,
           );
@@ -1146,13 +1589,23 @@ function createStreamProcessor(
         break;
 
       case 'thinkingMessage':
-        context.log(`[cursor-sdk] Step finished. Type: thinkingMessage, text: ${step.message.text.substring(0, 100)}, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`, 'info');
+        context.log(
+          `[cursor-sdk] Step finished. Type: thinkingMessage, text: ${step.message.text.substring(0, 100)}, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`,
+          'info',
+        );
         break;
 
       case 'toolCall': {
         const tc = step.message;
         const resultStatus = tc.result?.status ?? 'pending';
-        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}`, 'info');
+        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}, ${JSON.stringify(tc.result)}`, 'info');
+
+        if (tc.type === 'task') {
+          const pendingTask = findPendingTask(tc as ToolCall);
+          if (pendingTask) {
+            await handleTaskCompletion(pendingTask[0], tc as ToolCall, true);
+          }
+        }
         break;
       }
     }
@@ -1161,11 +1614,34 @@ function createStreamProcessor(
   const finish = async (runUsage?: TurnUsage): Promise<ContextMessage[]> => {
     await finishCurrentMessage();
 
-    context.log(`[cursor-sdk] finish() called, runUsage: ${runUsage ? JSON.stringify(runUsage) : 'undefined'}, accumulatedUsage: ${accumulatedUsage ? JSON.stringify(accumulatedUsage) : 'undefined'}`, 'debug');
+    for (const [callId, pendingTask] of pendingCursorTasks) {
+      if (!pendingTask.completed) {
+        await handleTaskCompletion(
+          callId,
+          {
+            type: 'task',
+            args: pendingTask.args,
+            result: {
+              status: 'success',
+              value: {
+                isBackground: false,
+                backgroundReason: 'unspecified',
+              },
+            },
+          } as ToolCall,
+          true,
+        );
+      }
+    }
+
+    context.log(
+      `[cursor-sdk] finish() called, runUsage: ${runUsage ? JSON.stringify(runUsage) : 'undefined'}, accumulatedUsage: ${accumulatedUsage ? JSON.stringify(accumulatedUsage) : 'undefined'}`,
+      'debug',
+    );
 
     const usage = runUsage ?? accumulatedUsage;
     if (usage) {
-      const usageReport = mapTokenUsage(usage, modelName);
+      const usageReport = mapTokenUsage(usage, modelName, model, taskContext.data.agentTotalCost ?? 0);
       context.log(`[cursor-sdk] Attaching usageReport to last assistant message: ${JSON.stringify(usageReport)}`, 'debug');
 
       for (let i = contextMessages.length - 1; i >= 0; i--) {
@@ -1177,13 +1653,16 @@ function createStreamProcessor(
           const text = extractText(parts).trim();
           const reasoning = extractReasoningText(parts).trim();
 
-          await taskContext.addResponseMessage({
-            id: msg.id,
-            content: text,
-            reasoning: reasoning || undefined,
-            finished: true,
-            usageReport,
-          }, true);
+          await taskContext.addResponseMessage(
+            {
+              id: msg.id,
+              content: text,
+              reasoning: reasoning || undefined,
+              finished: true,
+              usageReport,
+            },
+            true,
+          );
           context.log(`[cursor-sdk] Usage attached to message ${msg.id}`, 'debug');
           break;
         }
