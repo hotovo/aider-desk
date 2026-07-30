@@ -512,6 +512,12 @@ export class ExtensionManager {
     return this.initialized;
   }
 
+  async waitForInit(): Promise<void> {
+    while (!this.initialized) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+  }
+
   /**
    * @deprecated Migration helper: converts old name-based disabled list to filePath-based.
    * Will be removed in a future version.

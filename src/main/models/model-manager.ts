@@ -158,6 +158,10 @@ export class ModelManager {
     }
   }
 
+  async waitForInit(): Promise<void> {
+    await this.initPromise;
+  }
+
   private async loadModelsInfo(): Promise<void> {
     const cacheFile = path.join(AIDER_DESK_CACHE_DIR, 'models-meta.json');
     let cacheLoaded = false;

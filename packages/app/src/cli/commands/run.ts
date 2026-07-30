@@ -1,9 +1,11 @@
 import { request } from 'http';
+import { type ChildProcess } from 'child_process';
 
 import { TUI, ProcessTerminal, matchesKey as piMatchesKey, Key } from '@earendil-works/pi-tui';
 import { Command } from 'commander';
 
 import { DEFAULT_HOST, resolvePort } from '../constants';
+import { spawnRunnerProcess } from '../runner';
 import { RunStreamModel, RunStreamView } from './run-stream-view';
 
 type EventData = {
@@ -276,6 +278,36 @@ const formatJSONLine = (type: string, raw: Record<string, unknown>): string => {
   return JSON.stringify({ type, taskId: taskId as string | undefined, projectDir: baseDir as string | undefined, data }) + '\n';
 };
 
+const waitForServerReady = async (host: string, port: number, timeoutMs: number): Promise<boolean> => {
+  const startTime = Date.now();
+  const pollInterval = 100;
+
+  while (Date.now() - startTime < timeoutMs) {
+    try {
+      const health = await fetchJSON(host, port, '/api/health', 'GET');
+      if (health.status === 200 && (health.data as { status?: string }).status === 'ok') {
+        return true;
+      }
+    } catch {
+      // Server not ready yet, continue polling
+    }
+    await new Promise((resolve) => setTimeout(resolve, pollInterval));
+  }
+
+  return false;
+};
+
+const killProcess = (child: ChildProcess): void => {
+  if (!child.killed) {
+    child.kill('SIGTERM');
+    setTimeout(() => {
+      if (!child.killed) {
+        child.kill('SIGKILL');
+      }
+    }, 5000);
+  }
+};
+
 const runPrompt = async (
   messages: string[],
   opts: {
@@ -286,6 +318,7 @@ const runPrompt = async (
     model?: string;
     agentProfile?: string;
     taskId?: string;
+    autostart?: boolean;
   },
 ): Promise<void> => {
   const port = resolvePort(opts.port ? parseInt(opts.port) : undefined);
@@ -307,18 +340,48 @@ const runPrompt = async (
     process.exit(1);
   }
 
+  let spawnedProcess: ChildProcess | null = null;
+
   // 1. Health check
+  let serverHealthy = false;
   try {
     const health = await fetchJSON(host, port, '/api/health', 'GET');
-    if (health.status !== 200 || (health.data as { status?: string }).status !== 'ok') {
-      process.stderr.write('Error: AiderDesk server is not healthy.\n');
+    serverHealthy = health.status === 200 && (health.data as { status?: string }).status === 'ok';
+  } catch {
+    // Server not running
+  }
+
+  if (!serverHealthy) {
+    if (opts.autostart) {
+      process.stderr.write(`Starting AiderDesk server on port ${port}...\n`);
+      try {
+        spawnedProcess = spawnRunnerProcess(port, ['ignore', 'ignore', 'ignore']);
+
+        spawnedProcess.on('error', (err) => {
+          process.stderr.write(`Error: Failed to start server: ${err.message}\n`);
+          process.exit(1);
+        });
+
+        // Wait for server to be ready (30 second timeout)
+        const ready = await waitForServerReady(host, port, 30000);
+        if (!ready) {
+          process.stderr.write('Error: Server failed to start within 30 seconds.\n');
+          if (spawnedProcess) {
+            killProcess(spawnedProcess);
+          }
+          process.exit(1);
+        }
+        process.stderr.write('Server is ready.\n');
+      } catch (err) {
+        process.stderr.write(`Error: Failed to start server: ${(err as Error).message}\n`);
+        process.exit(1);
+      }
+    } else {
+      process.stderr.write(
+        `Error: AiderDesk server is not running on ${host}:${port}. Start it first with 'aiderdesk' or 'aiderdesk start', or use --autostart.\n`,
+      );
       process.exit(1);
     }
-  } catch {
-    process.stderr.write(
-      `Error: AiderDesk server is not running on ${host}:${port}. Start it first with 'aiderdesk' or 'aiderdesk start'.\n`,
-    );
-    process.exit(1);
   }
 
   // 2. Send prompt with Accept: text/event-stream — single request, streaming response
@@ -345,6 +408,9 @@ const runPrompt = async (
   let interrupted = false;
   const handleInterrupt = (tui?: TUI) => {
     if (interrupted) {
+      if (spawnedProcess) {
+        killProcess(spawnedProcess);
+      }
       process.exit(130);
     }
     interrupted = true;
@@ -355,8 +421,18 @@ const runPrompt = async (
     if (!reqClosed) {
       sseResponse.stream.destroy();
     }
-    void callInterrupt(host, port, projectDir, taskId).then(() => process.exit(130));
-    setTimeout(() => process.exit(130), 2000);
+    void callInterrupt(host, port, projectDir, taskId).then(() => {
+      if (spawnedProcess) {
+        killProcess(spawnedProcess);
+      }
+      process.exit(130);
+    });
+    setTimeout(() => {
+      if (spawnedProcess) {
+        killProcess(spawnedProcess);
+      }
+      process.exit(130);
+    }, 2000);
   };
 
   process.on('SIGINT', () => handleInterrupt());
@@ -379,6 +455,9 @@ const runPrompt = async (
       onInterrupt: (tui: TUI) => handleInterrupt(tui),
       onDone: (success: boolean) => {
         reqClosed = true;
+        if (spawnedProcess) {
+          killProcess(spawnedProcess);
+        }
         process.exit(success ? 0 : 1);
       },
     });
@@ -391,9 +470,31 @@ const runPrompt = async (
   let lastResponseCompleted: Record<string, unknown> | null = null;
   const seenToolStarts = new Set<string>();
   const seenToolEnds = new Set<string>();
+  let showingThinking = false;
+  let responseStarted = false;
+
+  const clearThinking = () => {
+    if (showingThinking) {
+      process.stdout.write('\r\x1b[K');
+      showingThinking = false;
+    }
+  };
+
+  const showThinking = () => {
+    if (!showingThinking) {
+      process.stdout.write('\x1b[33mThinking...\x1b[0m');
+      showingThinking = true;
+      // Force flush to ensure it's displayed immediately
+      if (process.stdout.isTTY) {
+        process.stdout.write('');
+      }
+    }
+  };
 
   if (format === 'text' && !quiet) {
-    process.stderr.write(`Running prompt in ${projectDir}\n`);
+    process.stdout.write(`Running prompt in ${projectDir}\n`);
+    process.stdout.write(`\x1b[36m🧑 ${prompt}\x1b[0m\n\n`);
+    showThinking();
   }
 
   for await (const event of eventStream) {
@@ -407,6 +508,8 @@ const runPrompt = async (
         } else if (format === 'text' && !quiet) {
           const text = eventData.chunk || '';
           if (text) {
+            clearThinking();
+            responseStarted = true;
             process.stdout.write(text);
             currentResponseText += text;
           }
@@ -415,6 +518,7 @@ const runPrompt = async (
       }
 
       case 'response-completed': {
+        clearThinking();
         if (format === 'json' && !quiet) {
           process.stdout.write(formatJSONLine('response-completed', eventData));
         } else if (quiet) {
@@ -439,6 +543,7 @@ const runPrompt = async (
       }
 
       case 'stream-end': {
+        clearThinking();
         if (quiet && lastResponseCompleted) {
           if (format === 'json') {
             process.stdout.write(formatJSONLine('response-completed', lastResponseCompleted));
@@ -468,7 +573,7 @@ const runPrompt = async (
               process.stdout.write(formatJSONLine('tool-start', eventData));
             } else if (format === 'text' && !quiet) {
               const argsSummary = formatToolArgs(eventData.args);
-              process.stderr.write(`  \x1b[2m⚙ ${eventData.toolName}${argsSummary}\x1b[0m\n`);
+              process.stdout.write(`  \x1b[2m⚙ ${eventData.toolName}${argsSummary}\x1b[0m\n`);
             }
           } else {
             if (seenToolEnds.has(toolId)) {
@@ -480,7 +585,7 @@ const runPrompt = async (
             } else if (format === 'text' && !quiet) {
               const hasError = eventData.response === 'error';
               const symbol = hasError ? '✗' : '✓';
-              process.stderr.write(`  \x1b[2m${symbol} ${eventData.toolName}\x1b[0m\n`);
+              process.stdout.write(`  \x1b[2m${symbol} ${eventData.toolName}\x1b[0m\n`);
             }
           }
         }
@@ -490,8 +595,18 @@ const runPrompt = async (
       case 'log': {
         if (format === 'json' && !quiet) {
           process.stdout.write(formatJSONLine('log', eventData));
-        } else if (format === 'text' && eventData.level === 'error' && eventData.message) {
-          process.stderr.write(`\x1b[31mError: ${eventData.message}\x1b[0m\n`);
+        } else if (format === 'text' && !quiet) {
+          if (eventData.level === 'error' && eventData.message) {
+            clearThinking();
+            process.stderr.write(`\x1b[31mError: ${eventData.message}\x1b[0m\n`);
+          } else if (eventData.level === 'loading') {
+            if (eventData.message) {
+              clearThinking();
+              process.stdout.write(`\x1b[33m${eventData.message}\x1b[0m\n`);
+            } else if (!responseStarted) {
+              showThinking();
+            }
+          }
         }
         break;
       }
@@ -500,7 +615,7 @@ const runPrompt = async (
         if (format === 'json' && !quiet) {
           process.stdout.write(formatJSONLine('ask-question', eventData));
         } else if (format === 'text' && eventData.question) {
-          process.stderr.write(`\n? ${eventData.question}\n`);
+          process.stdout.write(`\n? ${eventData.question}\n`);
         }
         break;
       }
@@ -519,6 +634,9 @@ const runPrompt = async (
   }
 
   reqClosed = true;
+  if (spawnedProcess) {
+    killProcess(spawnedProcess);
+  }
   process.exit(finished ? 0 : 1);
 };
 
@@ -647,6 +765,7 @@ export function registerRunCommand(program: Command): void {
     .option('-m, --model <model>', 'model to use (format: provider/model, e.g. openai/gpt-4o)')
     .option('-a, --agent-profile <id>', 'agent profile ID to use')
     .option('-t, --task-id <id>', 'run on an existing task instead of creating a new one')
+    .option('--autostart', 'automatically start the server if not running and stop it when done')
     .action((messages, opts) => {
       runPrompt(messages, opts);
     });

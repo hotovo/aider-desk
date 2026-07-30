@@ -407,6 +407,7 @@ export class EventsHandler {
   }
 
   async runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): Promise<ResponseCompletedData[]> {
+    await Promise.all([this.modelManager.waitForInit(), this.extensionManager.waitForInit()]);
     return this.projectManager.getProject(baseDir).getTask(taskId)?.runPrompt(prompt, mode, true, undefined, true, images) || [];
   }
 
@@ -420,6 +421,8 @@ export class EventsHandler {
   }
 
   async ensureProjectAndCreateTask(projectDir: string, params?: CreateTaskParams): Promise<{ taskId: string; projectDir: string }> {
+    await Promise.all([this.modelManager.waitForInit(), this.extensionManager.waitForInit()]);
+
     const projects = this.store.getOpenProjects();
     const baseDir = projectDir.endsWith('/') ? projectDir.slice(0, -1) : projectDir;
 
