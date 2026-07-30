@@ -196,17 +196,17 @@ export const getRequestyUsageReport = (
   const totalSentTokens = usage.inputTokens || 0;
   const receivedTokens = usage.outputTokens || 0;
 
-  // Extract cache tokens from provider metadata
+  // Extract cache tokens from usage details, falling back to Requesty provider metadata
   const { requesty } = providerMetadata ? (providerMetadata as RequestyProviderMetadata) : {};
-  logger.info('Requesty usage report', {
+  logger.debug('Requesty usage report', {
     requesty,
     usage,
   });
-  const cacheWriteTokens = requesty?.usage?.cachingTokens ?? 0;
-  const cacheReadTokens = requesty?.usage?.cachedTokens ?? 0;
+  const cacheWriteTokens = usage.inputTokenDetails?.cacheWriteTokens ?? requesty?.usage?.cachingTokens ?? 0;
+  const cacheReadTokens = usage.inputTokenDetails?.cacheReadTokens ?? requesty?.usage?.cachedTokens ?? 0;
 
-  // Calculate sentTokens after deducting cached tokens
-  const sentTokens = totalSentTokens - cacheReadTokens;
+  // Prefer non-cached token count from usage details to avoid double counting cached tokens
+  const sentTokens = usage.inputTokenDetails?.noCacheTokens ?? totalSentTokens - cacheReadTokens;
 
   // Calculate cost internally with already deducted sentTokens
   const messageCost = calculateRequestyCost(model, sentTokens, receivedTokens, cacheWriteTokens, cacheReadTokens);
