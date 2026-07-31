@@ -212,11 +212,12 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
   try {
     // Generate ephemeral token for OpenAI Realtime API
     // This creates a short-lived token specifically for Realtime API usage
-    const model = provider.voice?.model ?? OpenAiVoiceModel.GptRealtimeWhisper;
+    const model = provider.voice?.model ?? OpenAiVoiceModel.GptLiveTranscribe;
     const language = provider.voice?.language ?? 'en';
     const prompt = provider.voice?.systemInstructions ?? DEFAULT_VOICE_SYSTEM_INSTRUCTIONS;
     const idleTimeoutMs = provider.voice?.idleTimeoutMs ?? 5000;
-    const supportsTranscriptionParams = model !== OpenAiVoiceModel.GptRealtimeWhisper;
+    const supportsTranscriptionParams = model !== OpenAiVoiceModel.GptRealtimeWhisper && model !== OpenAiVoiceModel.GptLiveTranscribe;
+    const usesLanguageHints = model === OpenAiVoiceModel.GptLiveTranscribe;
     const response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
       method: 'POST',
       headers: {
@@ -229,8 +230,8 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
           audio: {
             input: {
               transcription: {
-                language,
                 model,
+                ...(usesLanguageHints ? { languages: [language] } : { language }),
                 ...(supportsTranscriptionParams && { prompt }),
               },
               ...(supportsTranscriptionParams && {

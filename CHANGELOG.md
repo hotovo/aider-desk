@@ -11,6 +11,7 @@
 - correctly calculating cached tokens for Requesty provider models
 - added readonly server mode
 - better auto scrolling control while streaming
+- added gpt-live-transcribe model to the OpenAI voice provider
 
 ## [0.76.0]
 

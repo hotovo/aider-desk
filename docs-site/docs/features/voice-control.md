@@ -175,7 +175,7 @@ The voice control system includes several configurable parameters:
 Each provider has specific configuration options (available in **Settings → Voice**):
 
 #### OpenAI
-- **Model**: `gpt-4o-transcribe` or `gpt-4o-mini-transcribe`
+- **Model**: `gpt-live-transcribe`, `gpt-4o-transcribe`, or `gpt-4o-mini-transcribe`
 - **Language**: Selectable (default: `en`)
 - **System instructions**: Customizable
 - **Idle timeout**: Customizable
