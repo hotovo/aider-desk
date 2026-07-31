@@ -45,6 +45,16 @@ Configure the built-in long-term Memory system.
 - **View and delete stored memories**
 See [Memory](../features/memory.md) for details.
 
+### Network
+
+Configure the built-in web server and network connectivity.
+- **Server**: Start/stop the HTTP server that powers the [REST API](../features/rest-api.md), [Browser API](../features/browser-api.md), and remote access. When the server is running, it is accessible on port `24337` (configurable via `AIDER_DESK_PORT`).
+- **Basic Auth**: Protect the server with a username and password.
+- **Readonly View Mode**: Toggle [Readonly View Mode](../features/readonly-view.md) to expose a server-enforced, read-only browser UI. A nested option controls whether extension UI components render in the readonly view.
+- **CORS**: Restrict which origins can access the server.
+- **Cloudflare Tunnel**: Expose the server securely to the internet via a Cloudflare Tunnel without port forwarding.
+- **Proxy**: Configure HTTP/HTTPS proxy settings for outbound requests.
+
 ### About
 
 View version information for AiderDesk and the integrated Aider library.
