@@ -110,6 +110,7 @@ export class ReadonlyApi extends BaseApi {
             fontSize: settings.fontSize ?? 16,
             renderMarkdown: settings.renderMarkdown,
             fullMessageRendering: settings.fullMessageRendering,
+            messageViewMode: settings.messageViewMode,
           },
         };
         res.status(200).json(bootstrap);

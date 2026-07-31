@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TaskData, TaskStateData } from '@common/types';
+import { Message, TaskData, TaskStateData } from '@common/types';
 
 import { ReadonlyTaskSidebar } from '@/components/readonly/ReadonlyTaskSidebar';
 import { ReadonlyTaskView } from '@/components/readonly/ReadonlyTaskView';
@@ -10,7 +10,7 @@ import { useReadonlyApi } from '@/contexts/ReadonlyApiContext';
 import { convertTaskStateMessages } from '@/utils/task-messages';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
-import { applyReadonlyEvent, applyReadonlyTaskListEvent, isReadonlyTaskListEvent } from '@/utils/readonly-events';
+import { applyReadonlyEvent, applyReadonlyLogEvent, applyReadonlyTaskListEvent, isReadonlyTaskListEvent } from '@/utils/readonly-events';
 
 type Props = {
   projectDir: string;
@@ -25,6 +25,7 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
   const [isTaskSidebarOpen, showTaskSidebar, hideTaskSidebar] = useBooleanState();
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [taskState, setTaskState] = useState<TaskStateData | null>(null);
+  const [logMessages, setLogMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
@@ -57,11 +58,13 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
   useEffect(() => {
     if (!selectedTaskId) {
       setTaskState(null);
+      setLogMessages([]);
       return;
     }
 
     const load = async () => {
       try {
+        setLogMessages([]);
         await loadSelectedTask(selectedTaskId);
         setError(false);
       } catch {
@@ -84,6 +87,7 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
       }
       if (selectedTaskId) {
         setTaskState((current) => (current ? applyReadonlyEvent(current, event, selectedTaskId) : current));
+        setLogMessages((current) => applyReadonlyLogEvent(current, event, selectedTaskId, t('messages.thinking')));
       }
     });
   }, [api, selectedTaskId]);
@@ -116,7 +120,13 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
           />
         )}
         {selectedTask && taskState ? (
-          <ReadonlyTaskView projectDir={projectDir} task={selectedTask} state={taskState} onToggleTaskSidebar={isMobile ? showTaskSidebar : undefined} />
+          <ReadonlyTaskView
+            projectDir={projectDir}
+            task={selectedTask}
+            state={taskState}
+            logMessages={logMessages}
+            onToggleTaskSidebar={isMobile ? showTaskSidebar : undefined}
+          />
         ) : (
           <main className="flex-1 flex items-center justify-center text-text-muted text-xs">{t('readonly.selectTask')}</main>
         )}

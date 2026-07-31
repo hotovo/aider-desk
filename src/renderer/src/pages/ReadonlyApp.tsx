@@ -1,4 +1,4 @@
-import { ReadonlyBootstrap, THEMES } from '@common/types';
+import { ReadonlyBootstrap, SettingsData, THEMES } from '@common/types';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
@@ -11,6 +11,7 @@ import { ReadonlyApiProvider } from '@/contexts/ReadonlyApiContext';
 import { TooltipProvider } from '@/components/ui/Tooltip';
 import { ReadonlyModelProvider } from '@/contexts/ModelProviderContext';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { decodeBaseDir, encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
 import i18n from '@/i18n';
 
@@ -84,6 +85,20 @@ export const ReadonlyApp = ({ bootstrap }: Props) => {
     document.documentElement.style.setProperty('--font-family', `"${bootstrap.display.font}", monospace`);
     document.documentElement.style.setProperty('font-size', `${bootstrap.display.fontSize}px`);
     void i18n.changeLanguage(bootstrap.display.language);
+  }, [bootstrap]);
+
+  useEffect(() => {
+    const { display } = bootstrap;
+    const settings: Partial<SettingsData> = {
+      language: display.language,
+      theme: display.theme,
+      font: display.font,
+      fontSize: display.fontSize,
+      renderMarkdown: display.renderMarkdown,
+      fullMessageRendering: display.fullMessageRendering,
+      messageViewMode: display.messageViewMode,
+    };
+    useSettingsStore.getState().setSettingsState(settings as SettingsData);
   }, [bootstrap]);
 
   const readonlyRoute = useMemo(() => <ReadonlyRoute bootstrap={bootstrap} />, [bootstrap]);

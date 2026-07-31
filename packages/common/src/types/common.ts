@@ -440,6 +440,7 @@ export interface ReadonlyDisplaySettings {
   fontSize: number;
   renderMarkdown: boolean;
   fullMessageRendering: boolean;
+  messageViewMode?: MessageViewMode;
 }
 
 export interface ReadonlyBootstrap {

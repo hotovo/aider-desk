@@ -1,4 +1,17 @@
-import { ResponseChunkData, ResponseCompletedData, TaskCreatedData, TaskData, TaskStateData, ToolData, UserMessageData } from '@common/types';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  LoadingMessage,
+  LogData,
+  LogMessage,
+  Message,
+  ResponseChunkData,
+  ResponseCompletedData,
+  TaskCreatedData,
+  TaskData,
+  TaskStateData,
+  ToolData,
+  UserMessageData,
+} from '@common/types';
 
 import type { ReadonlyEvent } from '@/api/readonly-browser-api';
 
@@ -87,4 +100,51 @@ export const applyReadonlyEvent = (state: TaskStateData, event: ReadonlyEvent, t
   }
 
   return state;
+};
+
+const isLogEvent = (event: ReadonlyEvent): boolean => event.type === 'log';
+
+const isForTask = (event: ReadonlyEvent, taskId: string): boolean => {
+  const eventData = event.data as { taskId?: string };
+  return eventData.taskId === taskId;
+};
+
+export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent, taskId: string, defaultLoadingText: string): Message[] => {
+  if (!isLogEvent(event) || !isForTask(event, taskId)) {
+    return messages;
+  }
+
+  const { level, message: text, finished, promptContext, actionIds, timestamp } = event.data as LogData;
+
+  if (level === 'loading') {
+    if (finished) {
+      return messages.filter((msg) => msg.type !== 'loading');
+    }
+    const loadingMessage: LoadingMessage = {
+      id: uuidv4(),
+      type: 'loading',
+      content: text || defaultLoadingText,
+      promptContext,
+      actionIds,
+      timestamp,
+    };
+    const existingIndex = messages.findIndex((msg) => msg.type === 'loading');
+    if (existingIndex !== -1) {
+      const updated = [...messages];
+      updated[existingIndex] = { ...updated[existingIndex], content: loadingMessage.content, promptContext };
+      return updated;
+    }
+    return [...messages, loadingMessage];
+  }
+
+  const logMessage: LogMessage = {
+    id: uuidv4(),
+    type: 'log',
+    level,
+    content: text ?? '',
+    promptContext,
+    actionIds,
+    timestamp,
+  };
+  return [...messages.filter((msg) => msg.type !== 'loading'), logMessage];
 };
