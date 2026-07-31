@@ -129,6 +129,16 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleReadonlyExtensionUiChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      server: {
+        ...settings.server,
+        readonlyExtensionUi: checked,
+      },
+    });
+  };
+
   const handleBasicAuthEnabledChange = (checked: boolean) => {
     setSettings({
       ...settings,
@@ -374,6 +384,17 @@ export const NetworkSettings = ({ settings, setSettings }: Props) => {
             />
             <InfoIcon tooltip={t('settings.server.enableReadonlyDescription')} />
           </div>
+
+          {settings.server.readonly && (
+            <div className="flex items-center pl-6">
+              <Checkbox
+                label={t('settings.server.enableReadonlyExtensionUi')}
+                checked={settings.server.readonlyExtensionUi ?? true}
+                onChange={handleReadonlyExtensionUiChange}
+              />
+              <InfoIcon tooltip={t('settings.server.enableReadonlyExtensionUiDescription')} />
+            </div>
+          )}
 
           <div className="space-y-2">
             <div className="flex items-center justify-between p-3 bg-bg-secondary rounded-md">

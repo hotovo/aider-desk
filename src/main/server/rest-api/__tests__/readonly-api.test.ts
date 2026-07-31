@@ -30,7 +30,15 @@ describe('ReadonlyApi', () => {
     loadExtensionLibrary: vi.fn(async () => 'export default {};'),
   };
   const store = {
-    getSettings: vi.fn(() => ({ language: 'en', theme: 'dark', font: 'Sono', fontSize: 16, renderMarkdown: true, fullMessageRendering: true })),
+    getSettings: vi.fn(() => ({
+      language: 'en',
+      theme: 'dark',
+      font: 'Sono',
+      fontSize: 16,
+      renderMarkdown: true,
+      fullMessageRendering: true,
+      server: { readonlyExtensionUi: true },
+    })),
     getOpenProjects: vi.fn(() => [{ baseDir: projectDir, active: true }]),
   };
 

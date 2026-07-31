@@ -99,6 +99,7 @@ export const ReadonlyApp = ({ bootstrap }: Props) => {
       messageViewMode: display.messageViewMode,
     };
     useSettingsStore.getState().setSettingsState(settings as SettingsData);
+    useSettingsStore.setState({ readonlyExtensionUi: display.enableExtensionUi });
   }, [bootstrap]);
 
   const readonlyRoute = useMemo(() => <ReadonlyRoute bootstrap={bootstrap} />, [bootstrap]);

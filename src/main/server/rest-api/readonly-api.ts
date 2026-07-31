@@ -111,6 +111,7 @@ export class ReadonlyApi extends BaseApi {
             renderMarkdown: settings.renderMarkdown,
             fullMessageRendering: settings.fullMessageRendering,
             messageViewMode: settings.messageViewMode,
+            enableExtensionUi: settings.server?.readonlyExtensionUi ?? true,
           },
         };
         res.status(200).json(bootstrap);

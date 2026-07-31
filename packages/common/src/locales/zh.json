@@ -1641,6 +1641,8 @@
     "enableBasicAuthDescription": "需要用户名和密码用于浏览器访问和 API 调用",
     "enableReadonly": "只读模式",
     "enableReadonlyDescription": "限制浏览器客户端只能查看任务和对话的只读视图。Electron 桌面应用保留完全访问权限。需要重启服务器才能生效。",
+    "enableReadonlyExtensionUi": "启用扩展 UI 组件",
+    "enableReadonlyExtensionUiDescription": "在只读视图中渲染扩展 UI 组件。刷新浏览器后生效。",
     "username": "用户名",
     "password": "密码",
     "controlServer": "REST API 服务器",

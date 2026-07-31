@@ -915,6 +915,8 @@
       "enableBasicAuthDescription": "Require username and password for browser access and API calls",
       "enableReadonly": "Readonly Mode",
       "enableReadonlyDescription": "Restrict browser clients to a read-only view of tasks and conversations. The Electron desktop app retains full access. Requires server restart to take effect.",
+      "enableReadonlyExtensionUi": "Enable extension UI components",
+      "enableReadonlyExtensionUiDescription": "Render extension UI components in the readonly view. Takes effect on browser refresh.",
       "username": "Username",
       "password": "Password",
       "controlServer": "REST API Server",

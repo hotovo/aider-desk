@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { twMerge } from 'tailwind-merge';
 
 import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
+import { useSettingsStore } from '@/stores/settingsStore';
 
 type Props = {
   placement: string;
@@ -26,7 +27,13 @@ const ExtensionComponentWrapperInner = ({
   actionProjectDir,
   actionTaskId,
 }: Props) => {
+  const readonlyExtensionUi = useSettingsStore((store) => store.readonlyExtensionUi);
+
   const { isEmpty, renderComponents } = useExtensionComponentsWrapper({ placement, additionalProps, projectDir, taskId, actionProjectDir, actionTaskId });
+
+  if (readonlyExtensionUi === false) {
+    return renderNullOnEmpty ? null : <div></div>;
+  }
 
   if (isEmpty) {
     return renderNullOnEmpty ? null : <div></div>;

@@ -441,6 +441,7 @@ export interface ReadonlyDisplaySettings {
   renderMarkdown: boolean;
   fullMessageRendering: boolean;
   messageViewMode?: MessageViewMode;
+  enableExtensionUi: boolean;
 }
 
 export interface ReadonlyBootstrap {
@@ -779,6 +780,7 @@ export interface SettingsData {
   server: {
     enabled: boolean;
     readonly: boolean;
+    readonlyExtensionUi?: boolean;
     basicAuth: {
       enabled: boolean;
       username: string;

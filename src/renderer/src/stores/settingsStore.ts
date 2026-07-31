@@ -11,6 +11,7 @@ interface SettingsState {
   theme: Theme | null;
   font: Font | null;
   fontSize: number | null;
+  readonlyExtensionUi: boolean | null;
 }
 
 interface SettingsActions {
@@ -40,6 +41,7 @@ export const useSettingsStore = createWithEqualityFn<SettingsStore>()(
       theme: null,
       font: null,
       fontSize: null,
+      readonlyExtensionUi: null,
       setSettingsState: (newSettings) =>
         set({
           settings: newSettings,
