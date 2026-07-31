@@ -4233,6 +4233,8 @@ getExtensions(projectDir?: string): LoadedExtension[]
 ⋮----
 isInitialized(): boolean
 ⋮----
+async waitForInit(): Promise<void>
+⋮----
 /**
    * @deprecated Migration helper: converts old name-based disabled list to filePath-based.
    * Will be removed in a future version.
@@ -6256,9 +6258,9 @@ export const getRequestyUsageReport = (
   providerMetadata?: unknown,
 ): UsageReportData =>
 ⋮----
-// Extract cache tokens from provider metadata
+// Extract cache tokens from usage details, falling back to Requesty provider metadata
 ⋮----
-// Calculate sentTokens after deducting cached tokens
+// Prefer non-cached token count from usage details to avoid double counting cached tokens
 ⋮----
 // Calculate cost internally with already deducted sentTokens
 ⋮----
@@ -6529,6 +6531,8 @@ constructor(
 )
 ⋮----
 private async init(): Promise<void>
+⋮----
+async waitForInit(): Promise<void>
 ⋮----
 private async loadModelsInfo(): Promise<void>
 ⋮----
