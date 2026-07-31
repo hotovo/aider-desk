@@ -71,7 +71,13 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
     }
 
     const [scrollingPaused, setScrollingPaused] = useState(false);
+    const scrollingPausedRef = useRef(false);
     const isProgrammaticScrollRef = useRef(false);
+
+    const updateScrollingPaused = useCallback((paused: boolean) => {
+      scrollingPausedRef.current = paused;
+      setScrollingPaused(paused);
+    }, []);
 
     const handleListRef = useCallback((node: LegendListRef | null) => {
       listRef.current = node;
@@ -90,7 +96,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       const handleWheel = (e: WheelEvent) => {
         e.stopPropagation();
         if (e.deltaY < 0) {
-          setScrollingPaused(true);
+          updateScrollingPaused(true);
         }
       };
 
@@ -105,7 +111,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
           ? parseFloat((element as HTMLElement & { dataset: DOMStringMap }).dataset.touchStartY!)
           : touch.clientY;
         if (touch.clientY < touchStartY - 10) {
-          setScrollingPaused(true);
+          updateScrollingPaused(true);
         }
       };
 
@@ -118,6 +124,28 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         element.removeEventListener('touchstart', handleTouchStart);
         element.removeEventListener('touchmove', handleTouchMove);
       };
+    }, [scrollContainer, updateScrollingPaused]);
+
+    useEffect(() => {
+      const element = scrollContainer;
+      const content = element?.querySelector('.legend-list-content-container');
+      if (!element || !content) {
+        return;
+      }
+
+      const scrollToEndIfFollowing = () => {
+        if (!scrollingPausedRef.current) {
+          void listRef.current?.scrollToEnd({ animated: false });
+        }
+      };
+
+      const observer = new ResizeObserver(scrollToEndIfFollowing);
+      observer.observe(content);
+      observer.observe(element);
+
+      return () => {
+        observer.disconnect();
+      };
     }, [scrollContainer]);
 
     const handleScrollState = useCallback(() => {
@@ -126,16 +154,16 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         if (isProgrammaticScrollRef.current) {
           return;
         }
-        setScrollingPaused(false);
+        updateScrollingPaused(false);
       } else {
         isProgrammaticScrollRef.current = false;
       }
-    }, []);
+    }, [updateScrollingPaused]);
 
     const scrollToBottom = useCallback(() => {
-      setScrollingPaused(false);
-      listRef.current?.scrollToEnd({ animated: false });
-    }, []);
+      updateScrollingPaused(false);
+      void listRef.current?.scrollToEnd({ animated: false });
+    }, [updateScrollingPaused]);
 
     const userMessageIds = useMemo(() => {
       return processedMessages.filter(isUserMessage).map((message) => message.id);
@@ -148,8 +176,8 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         const index = processedMessages.findIndex((msg) => msg.id === id);
         if (index !== -1) {
           isProgrammaticScrollRef.current = true;
-          setScrollingPaused(true);
-          listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+          updateScrollingPaused(true);
+          void listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
         }
       },
       buttonClassName: 'hidden group-hover:block',
@@ -259,8 +287,6 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
           renderItem={renderItem}
           extraData={extraData}
           estimatedItemSize={100}
-          maintainScrollAtEnd={!scrollingPaused}
-          maintainScrollAtEndThreshold={100}
           onScroll={handleScrollState}
           initialScrollAtEnd
           alwaysRender={{ keys: userMessageIds }}

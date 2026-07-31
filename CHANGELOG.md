@@ -10,6 +10,7 @@
 - added option to autostart AiderDesk server on run command
 - correctly calculating cached tokens for Requesty provider models
 - added readonly server mode
+- better auto scrolling control while streaming
 
 ## [0.76.0]
 
