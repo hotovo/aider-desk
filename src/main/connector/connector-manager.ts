@@ -81,22 +81,24 @@ export class ConnectorManager {
       maxHttpBufferSize: 1e8, // Increase payload size to 100 MB
     });
 
-    if (this.isReadonlyMode) {
-      this.io.use((socket, next) => {
-        const connectorToken = socket.handshake.auth.connectorToken;
-        if (typeof connectorToken === 'string' && connectorToken === CONNECTOR_TOKEN) {
-          socket.data.clientRole = 'connector';
-          next();
-          return;
-        }
-        if (socket.handshake.auth.readonly === true) {
-          socket.data.clientRole = 'readonly';
-          next();
-          return;
-        }
-        next(new Error('Unauthorized Socket.IO client'));
-      });
-    }
+    this.io.use((socket, next) => {
+      if (!this.isReadonlyMode) {
+        next();
+        return;
+      }
+      const connectorToken = socket.handshake.auth.connectorToken;
+      if (typeof connectorToken === 'string' && connectorToken === CONNECTOR_TOKEN) {
+        socket.data.clientRole = 'connector';
+        next();
+        return;
+      }
+      if (socket.handshake.auth.readonly === true) {
+        socket.data.clientRole = 'readonly';
+        next();
+        return;
+      }
+      next(new Error('Unauthorized Socket.IO client'));
+    });
 
     // Log when Socket.IO server is ready to accept connections
     // The 'connection' event fires after the namespace handshake is complete
