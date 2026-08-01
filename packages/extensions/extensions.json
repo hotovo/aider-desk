@@ -7,7 +7,9 @@
       "folder": "binary-files",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["tools"]
+      "capabilities": [
+        "tools"
+      ]
     },
     {
       "id": "wakatime",
@@ -15,7 +17,9 @@
       "description": "Tracks coding activity by sending heartbeats to WakaTime via wakatime-cli",
       "file": "wakatime.ts",
       "type": "single",
-      "capabilities": ["tracking"]
+      "capabilities": [
+        "tracking"
+      ]
     },
     {
       "id": "pirate",
@@ -23,7 +27,10 @@
       "description": "Adds a Pirate agent that speaks like a swashbuckling sea dog",
       "file": "pirate.ts",
       "type": "single",
-      "capabilities": ["agents", "example"]
+      "capabilities": [
+        "agents",
+        "example"
+      ]
     },
     {
       "id": "generate-tests",
@@ -31,7 +38,10 @@
       "description": "Adds /generate-tests command to generate unit tests for files",
       "file": "generate-tests.ts",
       "type": "single",
-      "capabilities": ["commands", "example"]
+      "capabilities": [
+        "commands",
+        "example"
+      ]
     },
     {
       "id": "questions",
@@ -40,7 +50,10 @@
       "folder": "questions",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["commands", "ui"]
+      "capabilities": [
+        "commands",
+        "ui"
+      ]
     },
     {
       "id": "theme",
@@ -48,7 +61,9 @@
       "description": "Adds /theme command to switch AiderDesk themes",
       "file": "theme.ts",
       "type": "single",
-      "capabilities": ["commands"]
+      "capabilities": [
+        "commands"
+      ]
     },
     {
       "id": "plan-mode",
@@ -56,7 +71,9 @@
       "description": "Adds a Plan mode that enforces planning before coding",
       "file": "plan-mode.ts",
       "type": "single",
-      "capabilities": ["modes"]
+      "capabilities": [
+        "modes"
+      ]
     },
     {
       "id": "protected-paths",
@@ -65,7 +82,9 @@
       "folder": "protected-paths",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["security"]
+      "capabilities": [
+        "security"
+      ]
     },
     {
       "id": "permission-gate",
@@ -73,7 +92,9 @@
       "description": "Prompts for confirmation before running dangerous bash commands",
       "file": "permission-gate.ts",
       "type": "single",
-      "capabilities": ["security"]
+      "capabilities": [
+        "security"
+      ]
     },
     {
       "id": "ultrathink",
@@ -81,7 +102,9 @@
       "description": "Detects 'ultrathink' / 'think hard' and increases reasoning effort",
       "file": "ultrathink.ts",
       "type": "single",
-      "capabilities": ["optimization"]
+      "capabilities": [
+        "optimization"
+      ]
     },
     {
       "id": "external-rules",
@@ -90,7 +113,9 @@
       "folder": "external-rules",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["context"]
+      "capabilities": [
+        "context"
+      ]
     },
     {
       "id": "external-skills",
@@ -99,7 +124,20 @@
       "folder": "external-skills",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["context"]
+      "capabilities": [
+        "context"
+      ]
+    },
+    {
+      "id": "legacy-system-prompt",
+      "name": "Legacy System Prompt",
+      "description": "Restores the verbose pre-optimization system prompt and workflow — ideal for less capable models",
+      "folder": "legacy-system-prompt",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": [
+        "context"
+      ]
     },
     {
       "id": "sound-notification",
@@ -108,7 +146,9 @@
       "folder": "sound-notification",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["notifications"]
+      "capabilities": [
+        "notifications"
+      ]
     },
     {
       "id": "sandbox",
@@ -117,8 +157,13 @@
       "folder": "sandbox",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["security"],
-      "supportedOS": ["linux", "macos"]
+      "capabilities": [
+        "security"
+      ],
+      "supportedOS": [
+        "linux",
+        "macos"
+      ]
     },
     {
       "id": "rtk",
@@ -127,8 +172,14 @@
       "folder": "rtk",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["optimization", "commands"],
-      "supportedOS": ["linux", "macos"]
+      "capabilities": [
+        "optimization",
+        "commands"
+      ],
+      "supportedOS": [
+        "linux",
+        "macos"
+      ]
     },
     {
       "id": "redact-secrets",
@@ -137,7 +188,9 @@
       "folder": "redact-secrets",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["security"]
+      "capabilities": [
+        "security"
+      ]
     },
     {
       "id": "chunkhound-search",
@@ -146,7 +199,9 @@
       "folder": "chunkhound-search",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["search"]
+      "capabilities": [
+        "search"
+      ]
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -155,7 +210,9 @@
       "folder": "chunkhound-on-semantic-search-tool",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["search"]
+      "capabilities": [
+        "search"
+      ]
     },
     {
       "id": "tree-sitter-repo-map",
@@ -164,7 +221,10 @@
       "folder": "tree-sitter-repo-map",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["context", "commands"]
+      "capabilities": [
+        "context",
+        "commands"
+      ]
     },
     {
       "id": "context-autocompletion-words",
@@ -173,7 +233,9 @@
       "folder": "context-autocompletion-words",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["context"]
+      "capabilities": [
+        "context"
+      ]
     },
     {
       "id": "lsp",
@@ -182,7 +244,10 @@
       "folder": "lsp",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "code-intelligence"]
+      "capabilities": [
+        "tools",
+        "code-intelligence"
+      ]
     },
     {
       "id": "plannotator",
@@ -191,7 +256,12 @@
       "folder": "plannotator",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["modes", "tools", "commands", "workflows"]
+      "capabilities": [
+        "modes",
+        "tools",
+        "commands",
+        "workflows"
+      ]
     },
     {
       "id": "programmatic-tool-calls",
@@ -200,7 +270,9 @@
       "folder": "programmatic-tool-calls",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools"]
+      "capabilities": [
+        "tools"
+      ]
     },
     {
       "id": "ui-placement-demo",
@@ -208,7 +280,10 @@
       "description": "Demonstrates all available UI component placement locations in AiderDesk",
       "file": "ui-placement-demo.ts",
       "type": "single",
-      "capabilities": ["ui", "example"]
+      "capabilities": [
+        "ui",
+        "example"
+      ]
     },
     {
       "id": "multi-model-run",
@@ -217,7 +292,10 @@
       "folder": "multi-model-run",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["ui", "workflows"]
+      "capabilities": [
+        "ui",
+        "workflows"
+      ]
     },
     {
       "id": "providers-quota-extension",
@@ -226,7 +304,9 @@
       "folder": "providers-quota-extension",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["ui"]
+      "capabilities": [
+        "ui"
+      ]
     },
     {
       "id": "openai-codex",
@@ -235,7 +315,9 @@
       "folder": "openai-codex",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers"]
+      "capabilities": [
+        "providers"
+      ]
     },
     {
       "id": "fff",
@@ -244,8 +326,14 @@
       "folder": "fff",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"],
-      "supportedOS": ["linux", "macos"]
+      "capabilities": [
+        "tools",
+        "search"
+      ],
+      "supportedOS": [
+        "linux",
+        "macos"
+      ]
     },
     {
       "id": "searxng-search",
@@ -254,7 +342,10 @@
       "folder": "searxng-search",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"]
+      "capabilities": [
+        "tools",
+        "search"
+      ]
     },
     {
       "id": "seek",
@@ -263,8 +354,14 @@
       "folder": "seek",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"],
-      "supportedOS": ["linux", "macos"]
+      "capabilities": [
+        "tools",
+        "search"
+      ],
+      "supportedOS": [
+        "linux",
+        "macos"
+      ]
     },
     {
       "id": "tps-counter",
@@ -273,7 +370,9 @@
       "folder": "tps-counter",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["metrics"]
+      "capabilities": [
+        "metrics"
+      ]
     },
     {
       "id": "verifier",
@@ -282,7 +381,10 @@
       "folder": "verifier",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["workflows", "ui"]
+      "capabilities": [
+        "workflows",
+        "ui"
+      ]
     },
     {
       "id": "bmad",
@@ -291,7 +393,10 @@
       "folder": "bmad",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["modes", "ui"]
+      "capabilities": [
+        "modes",
+        "ui"
+      ]
     },
     {
       "id": "claude-agent-sdk",
@@ -300,7 +405,10 @@
       "folder": "claude-agent-sdk",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers", "agent-loop"]
+      "capabilities": [
+        "providers",
+        "agent-loop"
+      ]
     },
     {
       "id": "auggie-sdk",
@@ -309,7 +417,9 @@
       "folder": "auggie-sdk",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers"]
+      "capabilities": [
+        "providers"
+      ]
     },
     {
       "id": "cursor",
@@ -318,7 +428,9 @@
       "folder": "cursor",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers"]
+      "capabilities": [
+        "providers"
+      ]
     },
     {
       "id": "cursor-sdk",
@@ -327,7 +439,10 @@
       "folder": "cursor-sdk",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers", "agent-loop"]
+      "capabilities": [
+        "providers",
+        "agent-loop"
+      ]
     },
     {
       "id": "github-copilot",
@@ -336,7 +451,10 @@
       "folder": "github-copilot",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["providers", "agent-loop"]
+      "capabilities": [
+        "providers",
+        "agent-loop"
+      ]
     },
     {
       "id": "checkpoints",
@@ -345,7 +463,10 @@
       "folder": "checkpoints",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["events", "ui"]
+      "capabilities": [
+        "events",
+        "ui"
+      ]
     },
     {
       "id": "codegraph",
@@ -354,7 +475,10 @@
       "folder": "codegraph",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"]
+      "capabilities": [
+        "tools",
+        "search"
+      ]
     },
     {
       "id": "kanban",
@@ -363,7 +487,9 @@
       "folder": "kanban",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["ui"]
+      "capabilities": [
+        "ui"
+      ]
     },
     {
       "id": "doom",
@@ -372,7 +498,9 @@
       "folder": "doom",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["ui"]
+      "capabilities": [
+        "ui"
+      ]
     },
     {
       "id": "my-minions",
@@ -381,7 +509,10 @@
       "folder": "my-minions",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["agents", "example"]
+      "capabilities": [
+        "agents",
+        "example"
+      ]
     },
     {
       "id": "wigolo",
@@ -390,7 +521,10 @@
       "folder": "wigolo",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["tools", "search"]
+      "capabilities": [
+        "tools",
+        "search"
+      ]
     },
     {
       "id": "destructive-command-guard",
@@ -399,7 +533,10 @@
       "folder": "destructive-command-guard",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["security", "commands"]
+      "capabilities": [
+        "security",
+        "commands"
+      ]
     },
     {
       "id": "skill-gallery",
@@ -408,7 +545,9 @@
       "folder": "skill-gallery",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["ui"]
+      "capabilities": [
+        "ui"
+      ]
     },
     {
       "id": "task-scheduler",
@@ -417,7 +556,11 @@
       "folder": "task-scheduler",
       "type": "folder",
       "hasDependencies": true,
-      "capabilities": ["ui", "commands", "events"]
+      "capabilities": [
+        "ui",
+        "commands",
+        "events"
+      ]
     },
     {
       "id": "reasoning-selector",
@@ -426,7 +569,9 @@
       "folder": "reasoning-selector",
       "type": "folder",
       "hasDependencies": false,
-      "capabilities": ["ui"]
+      "capabilities": [
+        "ui"
+      ]
     }
   ]
 }

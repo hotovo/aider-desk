@@ -1,0 +1,12 @@
+{
+  "name": "legacy-system-prompt",
+  "version": "1.0.0",
+  "description": "Restores the verbose pre-optimization system prompt and workflow",
+  "main": "index.ts",
+  "author": "wladimiiir",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "handlebars": "^4.7.8"
+  }
+}
