@@ -1216,6 +1216,13 @@ export interface ProjectContext {
   getTasks(): Promise<TaskData[]>;
 
   /**
+   * Reload task data and context from the task folders on disk.
+   * Tasks currently in progress are left unchanged.
+   * @returns Array of all current task data objects after reloading
+   */
+  reloadTasks(): Promise<TaskData[]>;
+
+  /**
    * Get the TaskContext for the most recently updated task.
    * Determined by the updatedAt timestamp, excluding the internal task.
    * @returns A TaskContext for the most recent task, or null if no tasks exist

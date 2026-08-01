@@ -24,6 +24,10 @@ export class ProjectContextImpl implements ProjectContext {
     return this.project.getTasks();
   }
 
+  async reloadTasks(): Promise<TaskData[]> {
+    return this.project.reloadTasks();
+  }
+
   getMostRecentTask(): TaskContext | null {
     const task = this.project.getMostRecentTask();
     return task ? new TaskContextImpl(task) : null;

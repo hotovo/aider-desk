@@ -13,6 +13,7 @@
 - better auto scrolling control while streaming
 - added gpt-live-transcribe model to the OpenAI voice provider
 - added option to toggle extension UI components in readonly server mode
+- added reloadTasks function to Extension API for reloading tasks from disk
 
 ## [0.76.0]
 

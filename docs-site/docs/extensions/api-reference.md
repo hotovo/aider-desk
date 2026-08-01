@@ -236,6 +236,7 @@ interface ProjectContext {
   createTask(params: CreateTaskParams): Promise<TaskData>;
   getTask(taskId: string): TaskContext | null;
   getTasks(): Promise<TaskData[]>;
+  reloadTasks(): Promise<TaskData[]>;
   getMostRecentTask(): TaskContext | null;
   forkTask(taskId: string, messageId: string): Promise<TaskData>;
   duplicateTask(taskId: string): Promise<TaskData>;

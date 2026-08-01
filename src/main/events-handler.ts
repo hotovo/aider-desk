@@ -858,6 +858,10 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTasks();
   }
 
+  async reloadTasks(baseDir: string): Promise<TaskData[]> {
+    return this.projectManager.getProject(baseDir).reloadTasks();
+  }
+
   async loadTask(baseDir: string, taskId: string): Promise<TaskStateData> {
     return (
       this.projectManager.getProject(baseDir).getTask(taskId)?.load() || {

@@ -182,6 +182,7 @@ export class Task {
   private smartCompactionLevel = CompactionLevel.One;
 
   private readonly taskDataPath: string;
+  private readonly taskDataLoadPromise: Promise<void>;
   private readonly contextManager: ContextManager;
   private readonly agent: Agent;
   private readonly aiderManager: AiderManager;
@@ -237,7 +238,11 @@ export class Task {
     };
     this.aiderManager = new AiderManager(this, this.store, this.modelManager, this.eventManager, () => this.connectors, this.pythonInstaller);
 
-    void this.loadTaskData();
+    this.taskDataLoadPromise = this.loadTaskData();
+  }
+
+  public async waitForTaskDataLoad(): Promise<void> {
+    await this.taskDataLoadPromise;
   }
 
   public async getTaskAgentProfile(): Promise<AgentProfile | null> {
@@ -285,22 +290,72 @@ export class Task {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
-    if (await fileExists(this.taskDataPath)) {
-      const content = await fs.readFile(this.taskDataPath, 'utf8');
-      const data = JSON.parse(content) as TaskData;
-
-      logger.debug('Loaded task data', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        data,
-      });
-
-      for (const key of Object.keys(data)) {
-        this.task[key] = data[key];
-      }
-      // make sure we always have the most recent project baseDir, in case the task was migrated from another path
-      this.task.baseDir = this.project.baseDir;
+    const data = await this.readTaskDataFromDisk();
+    if (data) {
+      this.applyTaskData(data);
     }
+  }
+
+  private async readTaskDataFromDisk(): Promise<Partial<TaskData> | null> {
+    if (!(await fileExists(this.taskDataPath))) {
+      return null;
+    }
+
+    const content = await fs.readFile(this.taskDataPath, 'utf8');
+    const data = JSON.parse(content) as Partial<TaskData>;
+
+    logger.debug('Loaded task data', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      data,
+    });
+
+    return data;
+  }
+
+  private applyTaskData(data: Partial<TaskData>) {
+    const nextTaskData = {
+      ...EMPTY_TASK_DATA,
+      ...data,
+      id: this.taskId,
+      baseDir: this.project.baseDir,
+    };
+
+    for (const key of Object.keys(this.task) as Array<keyof TaskData>) {
+      delete (this.task as Partial<TaskData>)[key];
+    }
+
+    Object.assign(this.task, nextTaskData);
+  }
+
+  public async reloadFromDisk(): Promise<{ taskDataChanged: boolean; contextChanged: boolean }> {
+    await this.waitForTaskDataLoad();
+
+    const previousTaskData = { ...this.task };
+    const data = await this.readTaskDataFromDisk();
+    const nextTaskData = {
+      ...EMPTY_TASK_DATA,
+      ...(data || {}),
+      id: this.taskId,
+      baseDir: this.project.baseDir,
+    };
+    const taskDataChanged = !isEqual(previousTaskData, nextTaskData);
+
+    if (taskDataChanged) {
+      this.applyTaskData(data || {});
+    }
+
+    const contextChanged = await this.contextManager.reloadFromDisk();
+    if (contextChanged && this.initialized) {
+      this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
+      this.reloadGroupMessages(await this.contextManager.getContextMessages());
+      await this.reloadConnectorMessages();
+      await this.sendContextFilesUpdated();
+      await this.updateContextInfo();
+      void this.sendSkillsUpdated();
+    }
+
+    return { taskDataChanged, contextChanged };
   }
 
   /**

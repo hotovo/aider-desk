@@ -275,6 +275,7 @@ After completing this skill, verify:
 - Execute commands in subtask: `await subtaskContext?.runCustomCommand('scope:start')`
 - Read subtask conversation: `const messages = await subtaskContext?.getContextMessages()`
 - List all tasks: `const allTasks = await projectContext.getTasks()`
+- Reload tasks from disk after external task-folder changes: `const allTasks = await projectContext.reloadTasks()`
 - Fork at specific message: `await projectContext.forkTask(taskId, messageId)`
 - Duplicate a task: `await projectContext.duplicateTask(taskId)`
 - Delete a task: `await projectContext.deleteTask(taskId)`

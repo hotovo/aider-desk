@@ -626,6 +626,21 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    // Reload tasks from disk
+    router.post(
+      '/project/tasks/reload',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ListTasksSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir } = parsed;
+        const tasks = await this.eventsHandler.reloadTasks(projectDir);
+        res.status(200).json(tasks);
+      }),
+    );
+
     // Delete session
     router.post(
       '/project/tasks/delete',

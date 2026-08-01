@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
+import { isEqual } from 'lodash';
 import {
   ToolResultPart,
   ConnectorMessage,
@@ -787,30 +788,70 @@ export class ContextManager {
     }
   }
 
-  private async loadInternal(): Promise<void> {
+  async reloadFromDisk(): Promise<boolean> {
+    if (!this.loaded) {
+      return false;
+    }
+
+    if (this.loadPromise) {
+      await this.loadPromise;
+    }
+
+    const previousContext = {
+      messages: this.messages,
+      files: this.files,
+    };
+
+    this.disableAutosave();
+    this.debouncedAutosave.cancel();
+    try {
+      const contextData = await this.readContextFromDisk();
+      const messages = contextData?.contextMessages || [];
+      const files = contextData?.contextFiles || [];
+      const changed = !isEqual(previousContext.messages, messages) || !isEqual(previousContext.files, files);
+
+      if (changed) {
+        this.messages = messages;
+        this.files = files;
+        this.undoSnapshot = null;
+        await this.cleanupContext();
+      }
+
+      return changed;
+    } finally {
+      this.enableAutosave();
+    }
+  }
+
+  private async readContextFromDisk(): Promise<TaskContext | null> {
     if (!(await fileExists(this.storagePath))) {
       logger.debug('No existing task context found:', {
         taskId: this.taskId,
       });
-      this.loaded = true;
-      return;
+      return null;
     }
-
-    this.disableAutosave();
 
     const content = await fs.readFile(this.storagePath, 'utf8');
     const contextData = content ? JSON.parse(content) : null;
 
     if (!contextData) {
       logger.debug('Empty task context found:', { taskId: this.taskId });
-      this.loaded = true;
-      return;
+      return {
+        contextMessages: [],
+        contextFiles: [],
+      };
     }
 
-    const migratedData = await this.migrateContext(contextData);
+    return this.migrateContext(contextData);
+  }
 
-    this.messages = migratedData.contextMessages || [];
-    this.files = migratedData.contextFiles || [];
+  private async loadInternal(): Promise<void> {
+    const contextData = await this.readContextFromDisk();
+
+    if (contextData) {
+      this.messages = contextData.contextMessages || [];
+      this.files = contextData.contextFiles || [];
+    }
     this.loaded = true;
 
     await this.cleanupContext();
