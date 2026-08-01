@@ -20,7 +20,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
-import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
+import { AIDER_DESK_TASKS_DIR, AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
 
@@ -206,7 +206,7 @@ export class Project {
   }
 
   private async getTaskIdsFromDisk(): Promise<string[]> {
-    const tasksDir = path.join(this.baseDir, '.aider-desk', 'tasks');
+    const tasksDir = path.join(this.baseDir, AIDER_DESK_TASKS_DIR);
     if (!(await fileExists(tasksDir))) {
       return [];
     }
@@ -224,7 +224,7 @@ export class Project {
     // Migrate sessions to tasks before starting
     await migrateSessionsToTasks(this);
 
-    const tasksDir = path.join(this.baseDir, '.aider-desk', 'tasks');
+    const tasksDir = path.join(this.baseDir, AIDER_DESK_TASKS_DIR);
 
     try {
       const taskDirs = await this.getTaskIdsFromDisk();
@@ -420,23 +420,25 @@ export class Project {
   }
 
   private async deleteTaskInternal(taskId: string): Promise<void> {
+    const taskDir = path.join(this.baseDir, AIDER_DESK_TASKS_DIR, taskId);
     const task = this.tasks.get(taskId);
+    const taskData = task?.task;
+
     if (!task) {
+      await fs.rm(taskDir, { recursive: true, force: true });
       return;
     }
 
-    const extResult = await this.extensionManager.dispatchEvent('onTaskDeleted', { task: task.task }, this);
+    const extResult = await this.extensionManager.dispatchEvent('onTaskDeleted', { task: task.task }, this, task);
     if (extResult.blocked) {
       throw new Error(`Task ${taskId} deletion was blocked by an extension`);
     }
-
-    const taskDir = path.join(this.baseDir, '.aider-desk', 'tasks', taskId);
 
     await task.close();
     this.tasks.delete(taskId);
     this.eventManager.sendTaskDeleted(task.task);
 
-    await this.removeTaskWorktree(taskId, task.task);
+    await this.removeTaskWorktree(taskId, taskData);
 
     await fs.rm(taskDir, { recursive: true, force: true });
   }

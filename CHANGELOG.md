@@ -18,6 +18,7 @@
 - added onTaskDeleted extension hook
 - added --clear flag to uv venv creation
 - added commit progress visibility and cancel action
+- properly using AIDER_DESK_TASKS_DIR constant when loading tasks in project
 
 ## [0.76.0]
 
