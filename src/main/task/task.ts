@@ -947,6 +947,21 @@ export class Task {
     });
   }
 
+  public async saveEditedPrompt(messageId: string, prompt: string): Promise<void> {
+    const contextMessages = await this.contextManager.getContextMessages();
+    const savedPrompt = contextMessages[0];
+
+    if (contextMessages.length !== 1 || savedPrompt?.id !== messageId || savedPrompt.role !== MessageRole.User) {
+      throw new Error('Only a task with a single saved prompt can be edited and saved.');
+    }
+
+    await this.project.addToInputHistory(prompt);
+    this.contextManager.setContextMessages([{ ...savedPrompt, content: prompt }]);
+    this.addUserMessage(savedPrompt.id, prompt, savedPrompt.promptContext);
+
+    await this.saveTask({ state: DefaultTaskState.Todo });
+  }
+
   private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]> {
     if (this.queuedPrompts.length > 0) {
       const nextPrompt = this.queuedPrompts.shift();

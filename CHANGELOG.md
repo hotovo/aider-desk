@@ -14,6 +14,7 @@
 - added gpt-live-transcribe model to the OpenAI voice provider
 - added option to toggle extension UI components in readonly server mode
 - added reloadTasks function to Extension API for reloading tasks from disk
+- added support for saving edited prompts
 
 ## [0.76.0]
 

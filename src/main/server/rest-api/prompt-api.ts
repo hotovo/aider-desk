@@ -53,6 +53,10 @@ const SavePromptSchema = z.object({
   prompt: z.string().min(1, 'Prompt is required'),
 });
 
+const SaveEditedPromptSchema = SavePromptSchema.extend({
+  messageId: z.string().min(1, 'Message ID is required'),
+});
+
 const SSE_ALLOWED_EVENT_TYPES = new Set([
   'response-chunk',
   'response-completed',
@@ -109,6 +113,22 @@ export class PromptApi extends BaseApi {
         await this.eventsHandler.savePrompt(projectDir, taskId, prompt);
 
         res.status(200).json({ message: 'Prompt saved successfully' });
+      }),
+    );
+
+    router.post(
+      '/save-edited-prompt',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SaveEditedPromptSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, messageId, prompt } = parsed;
+
+        await this.eventsHandler.saveEditedPrompt(projectDir, taskId, messageId, prompt);
+
+        res.status(200).json({ message: 'Edited prompt saved successfully' });
       }),
     );
   }

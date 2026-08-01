@@ -138,10 +138,22 @@ vi.mock('../../message/VirtualizedMessages', () => ({
 }));
 
 vi.mock('../../PromptField', () => ({
-  PromptField: ({ runPrompt, addFiles }: { runPrompt: (prompt: string) => void; addFiles: (files: string[], readOnly: boolean) => void }) => (
+  PromptField: ({
+    runPrompt,
+    addFiles,
+    editUserMessage,
+    savePrompt,
+  }: {
+    runPrompt: (prompt: string) => void;
+    addFiles: (files: string[], readOnly: boolean) => void;
+    editUserMessage: () => void;
+    savePrompt: (prompt: string) => Promise<void>;
+  }) => (
     <div data-testid="prompt-field">
       <button onClick={() => runPrompt('hello')}>Run Prompt</button>
       <button onClick={() => addFiles(['file1.ts'], false)}>Add File</button>
+      <button onClick={editUserMessage}>Edit Last Prompt</button>
+      <button onClick={() => void savePrompt('edited prompt')}>Save Prompt</button>
     </div>
   ),
 }));
@@ -283,6 +295,36 @@ describe('TaskView', () => {
       fireEvent.click(screen.getByText('Run Prompt'));
     });
     expect(mockApi.runPrompt).toHaveBeenCalledWith(projectDir, mockTask.id, 'hello', 'code', undefined);
+  });
+
+  it('saves an edited sole saved prompt without running it', async () => {
+    const savedPrompt: Message = { id: 'saved-prompt', type: 'user', content: 'original prompt' };
+    mockStoreGetState.mockReturnValue({
+      taskStateMap: new Map([['task-1', mockTaskState]]),
+      taskMessagesMap: new Map([['task-1', [savedPrompt]]]),
+    });
+    vi.mocked(useTaskMessages).mockReturnValue([savedPrompt]);
+
+    render(
+      <TaskView
+        projectDir={projectDir}
+        task={mockTask}
+        updateTask={mockUpdateTask}
+        updateOptimisticTaskState={mockUpdateOptimisticTaskState}
+        inputHistory={[]}
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit Last Prompt'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save Prompt'));
+    });
+
+    expect(mockApi.saveEditedPrompt).toHaveBeenCalledWith(projectDir, mockTask.id, savedPrompt.id, 'edited prompt');
+    expect(mockApi.runPrompt).not.toHaveBeenCalled();
   });
 
   it('calls api.addFile when files are added', async () => {

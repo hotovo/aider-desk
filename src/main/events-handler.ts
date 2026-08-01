@@ -445,6 +445,10 @@ export class EventsHandler {
     return this.projectManager.getProject(baseDir).getTask(taskId)?.savePromptOnly(prompt);
   }
 
+  async saveEditedPrompt(baseDir: string, taskId: string, messageId: string, prompt: string): Promise<void> {
+    return this.projectManager.getProject(baseDir).getTask(taskId)?.saveEditedPrompt(messageId, prompt);
+  }
+
   async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void> {
     await this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
   }

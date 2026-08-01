@@ -67,6 +67,7 @@ const api: ApplicationAPI = {
   restartAiderConnector: (baseDir, taskId) => ipcRenderer.send('restart-aider-connector', baseDir, taskId),
   runPrompt: (baseDir, taskId, prompt, mode, images) => ipcRenderer.send('run-prompt', baseDir, taskId, prompt, mode, images),
   savePrompt: (baseDir, taskId, prompt) => ipcRenderer.invoke('save-prompt', baseDir, taskId, prompt),
+  saveEditedPrompt: (baseDir, taskId, messageId, prompt) => ipcRenderer.invoke('save-edited-prompt', baseDir, taskId, messageId, prompt),
   redoUserPrompt: (baseDir, taskId, messageId, mode, updatedPrompt?, updatedImages?) =>
     ipcRenderer.send('redo-user-prompt', baseDir, taskId, messageId, mode, updatedPrompt, updatedImages),
   resumeTask: (baseDir, taskId) => ipcRenderer.send('resume-task', baseDir, taskId),

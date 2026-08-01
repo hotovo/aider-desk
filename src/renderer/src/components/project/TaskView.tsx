@@ -143,6 +143,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
+    const editedMessage = editingMessageIndex !== null ? displayedMessages[editingMessageIndex] : undefined;
+    const canSaveEditedPrompt = messages.length === 1 && isUserMessage(messages[0]) && messages[0]?.id === editedMessage?.id;
     const [searchContainer, setSearchContainer] = useState<HTMLElement | null>(null);
     const [terminalVisible, setTerminalVisible] = useState(false);
     const [showTaskInfoPanel, setShowTaskInfoPanel] = useState(false);
@@ -356,9 +358,16 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const handleSavePrompt = useCallback(
       async (prompt: string) => {
+        if (canSaveEditedPrompt && editedMessage) {
+          await api.saveEditedPrompt(projectDir, task.id, editedMessage.id, prompt);
+          setEditingMessageIndex(null);
+          setMessages(task.id, (prevMessages) => prevMessages.map((message) => (message.id === editedMessage.id ? { ...message, content: prompt } : message)));
+          return;
+        }
+
         await api.savePrompt(projectDir, task.id, prompt);
       },
-      [api, projectDir, task.id],
+      [api, canSaveEditedPrompt, editedMessage, projectDir, setMessages, task.id],
     );
 
     const handleEditUserMessage = useCallback(
@@ -901,6 +910,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   savePrompt={handleSavePrompt}
                   editUserMessage={handleEditLastUserMessage}
                   isEditingLastMessage={editingMessageIndex !== null}
+                  canSaveEditedPrompt={canSaveEditedPrompt}
                   isActive={isActive}
                   allFiles={allFiles}
                   words={autocompletionWords}

@@ -102,6 +102,7 @@ export interface ApplicationAPI {
   restartAiderConnector: (baseDir: string, taskId: string) => void;
   runPrompt: (baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]) => void;
   savePrompt: (baseDir: string, taskId: string, prompt: string) => Promise<void>;
+  saveEditedPrompt: (baseDir: string, taskId: string, messageId: string, prompt: string) => Promise<void>;
   redoUserPrompt: (baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]) => void;
   resumeTask: (baseDir: string, taskId: string) => void;
   answerQuestion: (baseDir: string, taskId: string, answer: string) => void;
