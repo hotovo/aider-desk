@@ -102,7 +102,7 @@ docker run -d \
   ghcr.io/hotovo/aider-desk:latest
 ```
 
-The setting is immutable for the process lifetime. Readonly mode requires at least one configured project, rejects the normal REST API and direct Socket.IO mutations, and automatically redirects browser routes to `/#/readonly`. Optional `AIDER_DESK_USERNAME` and `AIDER_DESK_PASSWORD` credentials continue to protect the deployment. Installed extension UI actions remain enabled and trusted; they can modify state by design.
+The setting is immutable for the process lifetime. Readonly mode requires at least one configured project, rejects the normal REST API and direct Socket.IO mutations, and automatically redirects browser routes to `/#/readonly`. Optional `AIDER_DESK_USERNAME` and `AIDER_DESK_PASSWORD` credentials continue to protect the deployment. Installed extension UI actions remain enabled and trusted; they can modify state by design. Set `AIDER_DESK_READONLY_EXTENSION_UI=false` to disable extension UI components and block their readonly API endpoints entirely.
 
 :::info Learn More
 See the [Readonly View Mode](../features/readonly-view.md) documentation for a complete guide covering use cases, extension-powered interactions, security considerations, and the full readonly API reference.
@@ -370,6 +370,7 @@ docker exec -it aiderdesk /bin/bash
 | `AIDER_DESK_PASSWORD` | Basic auth password | - | No |
 | `AIDER_DESK_PROJECTS` | Comma-separated list of project paths | - | Required in readonly mode |
 | `AIDER_DESK_READONLY` | Set to `true` for the server-enforced readonly browser UI | `false` | No |
+| `AIDER_DESK_READONLY_EXTENSION_UI` | Set to `false` to disable extension UI components and block their readonly API endpoints. Overrides the in-app setting when set | - | No |
 | `AIDER_DESK_CORS_ALLOWED_ORIGINS` | Comma-separated list of allowed CORS origins. Overrides CORS settings and implicitly enables CORS. | - | No |
 
 ## Troubleshooting

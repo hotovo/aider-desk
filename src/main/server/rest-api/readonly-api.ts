@@ -5,6 +5,7 @@ import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 
 import { BaseApi } from '@/server/rest-api/base-api';
+import { isReadonlyExtensionUiEnabled } from '@/server/readonly';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
@@ -81,6 +82,17 @@ export class ReadonlyApi extends BaseApi {
   }
 
   registerRoutes(router: Router): void {
+    router.use('/extensions', (_req, res, next) => {
+      if (isReadonlyExtensionUiEnabled(this.store)) {
+        next();
+        return;
+      }
+      res.status(403).json({
+        error: 'Extension UI is disabled in readonly mode.',
+        code: 'EXTENSION_UI_DISABLED',
+      });
+    });
+
     router.get(
       '/bootstrap',
       this.handleRequest(async (_req: Request, res: Response) => {
@@ -111,7 +123,7 @@ export class ReadonlyApi extends BaseApi {
             renderMarkdown: settings.renderMarkdown,
             fullMessageRendering: settings.fullMessageRendering,
             messageViewMode: settings.messageViewMode,
-            enableExtensionUi: settings.server?.readonlyExtensionUi ?? true,
+            enableExtensionUi: isReadonlyExtensionUiEnabled(this.store),
           },
         };
         res.status(200).json(bootstrap);
@@ -149,7 +161,7 @@ export class ReadonlyApi extends BaseApi {
           res.status(404).json({ error: 'Task not found' });
           return;
         }
-        res.status(200).json(await task.load());
+        res.status(200).json(await task.load(READONLY_MODE));
       }),
     );
 

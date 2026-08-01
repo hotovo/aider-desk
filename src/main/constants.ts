@@ -51,6 +51,7 @@ export const DISABLE_MENU = process.env.AIDER_DESK_DISABLE_MENU === 'true';
 export const AUTH_USERNAME = process.env.AIDER_DESK_USERNAME;
 export const AUTH_PASSWORD = process.env.AIDER_DESK_PASSWORD;
 export const CORS_ALLOWED_ORIGINS = process.env.AIDER_DESK_CORS_ALLOWED_ORIGINS;
+export const READONLY_EXTENSION_UI = process.env.AIDER_DESK_READONLY_EXTENSION_UI;
 
 export const PROBE_BINARY_PATH = path.join(
   RESOURCES_DIR,

@@ -42,6 +42,8 @@ This mode is **immutable** for the process lifetime — it cannot be toggled at 
 
 Optional Basic Auth (`AIDER_DESK_USERNAME` / `AIDER_DESK_PASSWORD`) or the in-app Basic Auth settings continue to protect the deployment.
 
+To disable extension UI components immutably for a public deployment, set `AIDER_DESK_READONLY_EXTENSION_UI=false`. This overrides the in-app **Extension UI in Readonly View** checkbox and also blocks the readonly extension API endpoints server-side.
+
 ## What's Available vs. What's Blocked
 
 | Capability | Readonly Mode | Normal Mode |

@@ -490,13 +490,16 @@ export class Task {
     return this.task;
   }
 
-  public async init() {
+  public async init(readonly = false) {
     if (this.initialized) {
       logger.debug('Task already initialized, skipping', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
       });
       this.eventManager.sendTaskInitialized(this.task);
+      if (readonly) {
+        return;
+      }
       this.aiderManager.sendUpdateAiderModels();
       await this.updateAutocompletionData(undefined, true);
       await this.updateContextInfo();
@@ -508,12 +511,26 @@ export class Task {
       return;
     }
 
-    this.initPromise = this.initInternal();
+    this.initPromise = this.initInternal(readonly);
     await this.initPromise;
     this.initPromise = null;
   }
 
-  private async initInternal() {
+  private async initInternal(readonly: boolean) {
+    if (readonly) {
+      // Readonly init must not mutate worktrees, spawn connectors, or run expensive scans
+      if (await fileExists(this.getTaskDir())) {
+        this.git = simpleGit(this.getTaskDir());
+      }
+
+      await this.loadContext();
+      this.eventManager.sendTaskInitialized(this.task);
+
+      this.initialized = true;
+      await this.extensionManager.dispatchEvent('onTaskInitialized', { task: this.task }, this.project, this);
+      return;
+    }
+
     // Check if worktree is enabled for this task
     const workingMode = this.task.workingMode;
     const existingWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
@@ -584,13 +601,13 @@ export class Task {
     await this.extensionManager.dispatchEvent('onTaskInitialized', { task: this.task }, this.project, this);
   }
 
-  public async load(): Promise<TaskStateData> {
+  public async load(readonly = false): Promise<TaskStateData> {
     logger.info('Loading task', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
 
-    await this.init();
+    await this.init(readonly);
 
     const mode = this.getCurrentMode();
     return {
