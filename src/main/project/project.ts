@@ -32,6 +32,7 @@ export class Project {
 
   private connectors: Connector[] = [];
   private inputHistoryFile = '.aider.input.history';
+  private startPromise: Promise<void> | null = null;
 
   constructor(
     public readonly baseDir: string,
@@ -52,15 +53,20 @@ export class Project {
     this.tasksLoadingPromise = this.loadTasks();
   }
 
-  public async start() {
-    await this.customCommandManager.start();
-    await this.promptsManager.watchProject(this.baseDir);
-    await this.agentProfileManager.initializeForProject(this.baseDir);
-    await this.extensionManager.reloadProjectExtensions(this);
-    await this.sendInputHistoryUpdatedEvent();
+  public start(): Promise<void> {
+    if (!this.startPromise) {
+      this.startPromise = (async () => {
+        await this.customCommandManager.start();
+        await this.promptsManager.watchProject(this.baseDir);
+        await this.agentProfileManager.initializeForProject(this.baseDir);
+        await this.extensionManager.reloadProjectExtensions(this);
+        await this.sendInputHistoryUpdatedEvent();
 
-    await this.extensionManager.dispatchEvent('onProjectStarted', { baseDir: this.baseDir }, this);
-    this.eventManager.sendProjectStarted(this.baseDir);
+        await this.extensionManager.dispatchEvent('onProjectStarted', { baseDir: this.baseDir }, this);
+        this.eventManager.sendProjectStarted(this.baseDir);
+      })();
+    }
+    return this.startPromise;
   }
 
   private async prepareInternalTask() {
@@ -587,6 +593,9 @@ export class Project {
   }
 
   async close() {
+    await this.startPromise;
+    this.startPromise = null;
+
     await this.extensionManager.dispatchEvent('onProjectStopped', { baseDir: this.baseDir }, this);
 
     this.customCommandManager.dispose();
