@@ -80,6 +80,7 @@ src/
       subagent.ts
       utils.ts
     connector/
+      connector-auth.ts
       connector-manager.ts
       connector.ts
       index.ts
@@ -170,6 +171,7 @@ src/
         project-api.ts
         prompt-api.ts
         providers-api.ts
+        readonly-api.ts
         settings-api.ts
         skills-api.ts
         system-api.ts
@@ -272,6 +274,7 @@ src/
     src/
       api/
         browser-api.ts
+        readonly-browser-api.ts
       components/
         AgentSelector/
           AgentSelector.tsx
@@ -485,6 +488,7 @@ src/
           MobileSidebar.tsx
           NoProjectsOpen.tsx
           OpenProjectDialog.tsx
+          ProjectTabContent.tsx
           ProjectTabs.tsx
           ProjectView.tsx
           TaskBar.tsx
@@ -511,6 +515,11 @@ src/
           QueuedPromptsList.tsx
           TaskWorkingMode.tsx
           usePromptFieldText.ts
+        readonly/
+          ReadonlyHeader.tsx
+          ReadonlyProjectView.tsx
+          ReadonlyTaskSidebar.tsx
+          ReadonlyTaskView.tsx
         settings/
           agent/
             sections/
@@ -594,9 +603,11 @@ src/
         ApiContext.tsx
         ContextMenuContext.tsx
         DiffsWorkerPoolContext.tsx
+        ExtensionApiContext.tsx
         ExtensionsContext.tsx
         ModelProviderContext.tsx
         ProjectSettingsContext.tsx
+        ReadonlyApiContext.tsx
         TasksContext.tsx
       fonts/
         Enriqueta.ttf
@@ -688,6 +699,7 @@ src/
         Home.tsx
         Logs.tsx
         Onboarding.tsx
+        ReadonlyApp.tsx
         Settings.tsx
         UpdatedFilesDiff.tsx
       stores/
@@ -726,9 +738,11 @@ src/
         indexedDB.ts
         notifications.ts
         path-utils.ts
+        readonly-events.ts
         refractor-languages.ts
         routes.ts
         string-utils.ts
+        task-messages.ts
         task-utils.ts
       voice/
         gemini.ts
@@ -1241,6 +1255,8 @@ max_delay = 5.0   # Maximum delay in seconds
 ⋮----
 # Connect with explicit timeout. The default is 5 seconds which can
 # be too short if the server is still initializing.
+connector_token = os.getenv("AIDER_DESK_CONNECTOR_TOKEN")
+auth = {"connectorToken": connector_token} if connector_token else None
 ⋮----
 # Explicitly call on_connect after successful connection
 # This ensures init message is sent even if the event handler doesn't fire
@@ -3229,6 +3245,11 @@ const extractToolResultText = (output: unknown): string =>
 export const estimateMessageTokens = (messages: CountableMessage[]): number =>
 
 ================
+File: src/main/connector/connector-auth.ts
+================
+import { randomBytes } from 'crypto';
+
+================
 File: src/main/connector/connector-manager.ts
 ================
 import { Server as HttpServer } from 'http';
@@ -3255,12 +3276,16 @@ import {
   isAddMessageMessage,
   isSubscribeEventsMessage,
   isUnsubscribeEventsMessage,
+  isReadonlySubscribeEventsMessage,
+  isReadonlyUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { EventManager } from '@/events';
 import { Store } from '@/store';
 import { createCorsOriginValidator } from '@/server/cors';
+import { READONLY_MODE } from '@/constants';
+import { CONNECTOR_TOKEN } from '@/connector/connector-auth';
 ⋮----
 export class ConnectorManager
 ⋮----
@@ -3270,6 +3295,8 @@ constructor(
     private readonly eventManager: EventManager,
     private readonly store: Store,
 )
+⋮----
+private get isReadonlyMode(): boolean
 ⋮----
 public init(httpServer: HttpServer): void
 ⋮----
@@ -3581,6 +3608,7 @@ import logger from '@/logger';
 export interface EventsConnectorConfig {
   eventTypes?: string[];
   baseDirs?: string[];
+  readonly?: boolean;
 }
 ⋮----
 export interface EventsConnector extends EventsConnectorConfig {
@@ -6985,6 +7013,8 @@ private createProject(baseDir: string)
 ⋮----
 public getProject(baseDir: string)
 ⋮----
+public getOpenProject(baseDir: string): Project | undefined
+⋮----
 public async startProject(baseDir: string)
 ⋮----
 public async closeProject(baseDir: string)
@@ -7874,6 +7904,40 @@ registerRoutes(router: Router): void
 // Delete a model
 
 ================
+File: src/main/server/rest-api/readonly-api.ts
+================
+import path from 'path';
+⋮----
+import { BrowserBootstrap } from '@common/types';
+import { Request, Response, Router } from 'express';
+import { z } from 'zod';
+⋮----
+import { BaseApi } from '@/server/rest-api/base-api';
+import { ProjectManager } from '@/project';
+import { EventsHandler } from '@/events-handler';
+import { Store } from '@/store';
+import { READONLY_MODE } from '@/constants';
+⋮----
+export class ReadonlyApi extends BaseApi
+⋮----
+constructor(
+    private readonly projectManager: ProjectManager,
+    private readonly eventsHandler: EventsHandler,
+    private readonly store: Store,
+    private readonly isReady: () => boolean,
+)
+⋮----
+private get isReadonlyMode(): boolean
+⋮----
+private resolveProject(projectDir: string, res: Response)
+⋮----
+private validateTask(projectDir: string, taskId: string | undefined, res: Response): boolean
+⋮----
+private findComponent(projectDir: string, extensionId: string, componentId: string, taskId: string | undefined)
+⋮----
+registerRoutes(router: Router): void
+
+================
 File: src/main/server/rest-api/settings-api.ts
 ================
 import { Router } from 'express';
@@ -8094,7 +8158,7 @@ import logger from '@/logger';
 import { initManagers } from '@/managers';
 import { performStartUp } from '@/start-up';
 import { Store } from '@/store';
-import { AIDER_DESK_DATA_DIR, SERVER_PORT } from '@/constants';
+import { AIDER_DESK_DATA_DIR, READONLY_MODE, SERVER_PORT } from '@/constants';
 import { getDefaultProjectSettings } from '@/utils';
 import { ModelManager } from '@/models';
 import { AgentProfileManager } from '@/agent';
@@ -8147,8 +8211,9 @@ import {
   TerminalApi,
   ExtensionsApi,
   SkillsApi,
+  ReadonlyApi,
 } from '@/server/rest-api';
-import { AUTH_PASSWORD, AUTH_USERNAME, SERVER_PORT } from '@/constants';
+import { AUTH_PASSWORD, AUTH_USERNAME, READONLY_MODE, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
@@ -8160,6 +8225,8 @@ import { createCorsOriginValidator } from '@/server/cors';
 const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 ⋮----
 export class ServerController
+⋮----
+private get isReadonlyMode(): boolean
 ⋮----
 constructor(
     private readonly server: Server,
@@ -8204,6 +8271,8 @@ private init()
 // Serve static renderer files in production (for browser access)
 ⋮----
 // Handle SPA routing: serve index.html for non-API routes
+⋮----
+setReadonlyReady(): void
 ⋮----
 async close()
 ⋮----
@@ -8673,6 +8742,7 @@ import { DEFAULT_AIDER_MAIN_MODEL } from '@common/agent';
 ⋮----
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_PROJECT_RULES_DIR, AIDER_DESK_TASKS_DIR, PID_FILES_DIR, PYTHON_COMMAND, SERVER_PORT } from '@/constants';
 import { Connector } from '@/connector';
+import { CONNECTOR_TOKEN } from '@/connector/connector-auth';
 import logger from '@/logger';
 import { Store } from '@/store';
 import { ModelManager } from '@/models';
@@ -12257,6 +12327,7 @@ export interface ManagersResult {
   agentProfileManager: AgentProfileManager;
   extensionManager: ExtensionManager;
   pythonInstaller: PythonDependenciesInstaller;
+  projectManager: ProjectManager;
 }
 ⋮----
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
@@ -12350,6 +12421,8 @@ export type MessageAction =
   | 'request-context-info'
   | 'subscribe-events'
   | 'unsubscribe-events'
+  | 'readonly-subscribe-events'
+  | 'readonly-unsubscribe-events'
   | 'update-models-info';
 ⋮----
 export interface Message {
@@ -12565,6 +12638,20 @@ export interface UnsubscribeEventsMessage extends Message {
 }
 ⋮----
 export const isUnsubscribeEventsMessage = (message: Message): message is UnsubscribeEventsMessage =>
+⋮----
+export interface ReadonlySubscribeEventsMessage extends Message {
+  action: 'readonly-subscribe-events';
+  projectDir: string;
+  eventTypes: string[];
+}
+⋮----
+export const isReadonlySubscribeEventsMessage = (message: Message): message is ReadonlySubscribeEventsMessage =>
+⋮----
+export interface ReadonlyUnsubscribeEventsMessage extends Message {
+  action: 'readonly-unsubscribe-events';
+}
+⋮----
+export const isReadonlyUnsubscribeEventsMessage = (message: Message): message is ReadonlyUnsubscribeEventsMessage =>
 
 ================
 File: src/main/paths.ts
@@ -13466,6 +13553,54 @@ addAiderConnectorStatusListener(
 ): () => void
 ⋮----
 async getAiderConnectorStatus(): Promise<AiderConnectorStatus>
+
+================
+File: src/renderer/src/api/readonly-browser-api.ts
+================
+import { ExtensionDisplayAPI } from '@common/api';
+import { BrowserBootstrap, ExtensionUIComponent, ExtensionUIRefreshData, TaskData, TaskStateData } from '@common/types';
+import { type AxiosInstance, create } from 'axios';
+import { io, Socket } from 'socket.io-client';
+⋮----
+export type ReadonlyEvent = {
+  type: string;
+  data: unknown;
+};
+⋮----
+type EventListener = (event: ReadonlyEvent) => void;
+⋮----
+const getBaseUrl = (): string =>
+⋮----
+export const loadBrowserBootstrap = async (): Promise<BrowserBootstrap> =>
+⋮----
+export class ReadonlyBrowserApi implements ExtensionDisplayAPI
+⋮----
+constructor(private readonly projectDir: string)
+⋮----
+destroy(): void
+⋮----
+onEvent(callback: EventListener): () => void
+⋮----
+async getTasks(): Promise<TaskData[]>
+⋮----
+async loadTask(taskId: string): Promise<TaskStateData>
+⋮----
+async getExtensionUIComponents(placement?: string, projectDir?: string, taskId?: string): Promise<ExtensionUIComponent[]>
+⋮----
+async getUIExtensionData(extensionId: string, componentId: string, projectDir?: string, taskId?: string): Promise<unknown>
+⋮----
+async executeUIExtensionAction(
+    extensionId: string,
+    componentId: string,
+    action: string,
+    args: unknown[],
+    projectDir?: string,
+    taskId?: string,
+): Promise<unknown>
+⋮----
+onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void
+⋮----
+async loadExtensionLibrary(librarySpec: string): Promise<string>
 
 ================
 File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
@@ -15015,7 +15150,7 @@ className=
 File: src/renderer/src/components/extensions/ExtensionComponentRenderer.tsx
 ================
 import { memo, useCallback, useMemo } from 'react';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 import { UIComponentProps } from '@common/extensions';
 import { ExtensionUIComponent } from '@common/types';
 ⋮----
@@ -15033,7 +15168,7 @@ type Props = {
   currentTaskId?: string;
   currentActionProjectDir?: string;
   currentActionTaskId?: string;
-  api: ApplicationAPI;
+  api: ExtensionDisplayAPI;
 };
 ⋮----
 const ExtensionComponentRendererInner = ({
@@ -15055,6 +15190,7 @@ import { memo } from 'react';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
+import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 type Props = {
   placement: string;
@@ -15163,7 +15299,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 ⋮----
 import { ExtensionComponentRenderer } from './ExtensionComponentRenderer';
 ⋮----
-import { useApi } from '@/contexts/ApiContext';
+import { useExtensionApi } from '@/contexts/ExtensionApiContext';
 import { useExtensions } from '@/contexts/ExtensionsContext';
 import {
   handleExtensionUIRefreshEvent,
@@ -16147,7 +16283,7 @@ import { MdUndo } from 'react-icons/md';
 ⋮----
 import { Button } from '../common/Button';
 ⋮----
-import { useApi } from '@/contexts/ApiContext';
+import { useApi, useIsReadonlyView } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
 ⋮----
 type Props = {
@@ -16431,10 +16567,10 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
-  removeMessage: (message: Message) => void;
+  removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
-  redoUserPrompt: (messageId: string) => void;
-  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
+  redoUserPrompt?: (messageId: string) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -16788,7 +16924,7 @@ File: src/renderer/src/components/message/TaskStateActions.tsx
 ================
 import { ExtensionUIComponent, Mode, TaskData } from '@common/types';
 import { UIComponentProps } from '@common/extensions';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 ⋮----
 import { DefaultTaskStateActions } from '@/components/message/DefaultTaskStateActions';
 import { ExtensionComponentRenderer } from '@/components/extensions/ExtensionComponentRenderer';
@@ -16822,7 +16958,7 @@ type ChainProps = {
   currentTaskId?: string;
   currentActionProjectDir?: string;
   currentActionTaskId?: string;
-  api: ApplicationAPI;
+  api: ExtensionDisplayAPI;
 };
 
 ================
@@ -17242,10 +17378,10 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
-  removeMessage: (message: Message) => void;
+  removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
-  redoUserPrompt: (messageId: string) => void;
-  editUserMessage: (messageId: string, content: string, images?: string[]) => void;
+  redoUserPrompt?: (messageId: string) => void;
+  editUserMessage?: (messageId: string, content: string, images?: string[]) => void;
   onInterrupt?: () => void;
   onForkFromMessage?: (message: Message) => void;
   onRemoveUpToMessage?: (message: Message) => void;
@@ -17256,6 +17392,8 @@ const handleWheel = (e: WheelEvent) =>
 const handleTouchStart = (e: TouchEvent) =>
 ⋮----
 const handleTouchMove = (e: TouchEvent) =>
+⋮----
+const scrollToEndIfFollowing = () =>
 ⋮----
 const exportToImage = async () =>
 ⋮----
@@ -19152,6 +19290,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 type Props = {
   task: TaskData;
   tasks: TaskData[];
+  readonly?: boolean;
   level: number;
   selectedTasks: Set<string>;
   deleteConfirmTaskId: string | null;
@@ -19223,7 +19362,6 @@ label=
 ⋮----
 onDelete=
 ⋮----
-onTogglePin=
 onChangeState=
 
 ================
@@ -19345,6 +19483,7 @@ import { getTaskStateLabel, getStateTextClass } from '@/components/common/TaskSt
 type Props = {
   loading: boolean;
   tasks: TaskData[];
+  readonly?: boolean;
   activeTaskId: string | null;
   onTaskSelect: (taskId: string) => void;
   createNewTask?: (parentId?: string) => void;
@@ -19754,6 +19893,27 @@ onAddProject(path);
 onClose();
 
 ================
+File: src/renderer/src/components/project/ProjectTabContent.tsx
+================
+import { MouseEvent } from 'react';
+import { CgSpinner } from 'react-icons/cg';
+import { MdClose } from 'react-icons/md';
+import { clsx } from 'clsx';
+⋮----
+export const getProjectTabClassName = (selected: boolean): string
+⋮----
+type Props = {
+  baseDir: string;
+  isActive: boolean;
+  isProcessing?: boolean;
+  onClose?: () => void;
+};
+⋮----
+const handleClose = (event: MouseEvent<HTMLDivElement>) =>
+⋮----
+className=
+
+================
 File: src/renderer/src/components/project/ProjectTabs.tsx
 ================
 import { ProjectData } from '@common/types';
@@ -19762,7 +19922,7 @@ import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { CgSpinner } from 'react-icons/cg';
-import { MdAdd, MdClose, MdChevronLeft, MdChevronRight } from 'react-icons/md';
+import { MdAdd, MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, arrayMove, useSortable, horizontalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslation } from 'react-i18next';
@@ -19774,6 +19934,7 @@ import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { getProjectTabClassName, ProjectTabContent } from '@/components/project/ProjectTabContent';
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type Props = {
@@ -19800,15 +19961,6 @@ const handleDragEnd = (event: DragEndEvent) =>
 // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
 ⋮----
 onChange=
-⋮----
-className={clsx(
-            'flex items-center justify-center rounded-full p-1 transition-colors duration-200 z-10',
-            isActive ? 'hover:bg-bg-fourth' : 'hover:bg-bg-tertiary-strong',
-            isProcessing ? 'cursor-default' : '',
-          )}
-onClick=
-⋮----
-e.stopPropagation(); // Prevent tab selection/drag initiation
 
 ================
 File: src/renderer/src/components/project/ProjectView.tsx
@@ -20911,6 +21063,95 @@ import { useCallback } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 ⋮----
 export const usePromptFieldText = (baseDir: string, taskId: string, onLoad?: (value: string) => void) =>
+
+================
+File: src/renderer/src/components/readonly/ReadonlyHeader.tsx
+================
+import { ReadonlyProjectData } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+// @ts-expect-error TypeScript is not aware of asset import
+import icon from '../../../../../resources/icon.png?asset';
+⋮----
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { getProjectTabClassName, ProjectTabContent } from '@/components/project/ProjectTabContent';
+⋮----
+type Props = {
+  projects: ReadonlyProjectData[];
+  projectDir: string;
+  onSelectProject: (projectDir: string) => void;
+};
+⋮----
+className=
+
+================
+File: src/renderer/src/components/readonly/ReadonlyProjectView.tsx
+================
+import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Message, TaskData, TaskStateData } from '@common/types';
+⋮----
+import { ReadonlyTaskSidebar } from '@/components/readonly/ReadonlyTaskSidebar';
+import { ReadonlyTaskView } from '@/components/readonly/ReadonlyTaskView';
+import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { useReadonlyApi } from '@/contexts/ReadonlyApiContext';
+import { convertTaskStateMessages } from '@/utils/task-messages';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useBooleanState } from '@/hooks/useBooleanState';
+import { applyReadonlyEvent, applyReadonlyLogEvent, applyReadonlyTaskListEvent, isReadonlyTaskListEvent } from '@/utils/readonly-events';
+⋮----
+type Props = {
+  projectDir: string;
+  selectedTaskId?: string;
+  onSelectTask: (taskId: string) => void;
+};
+⋮----
+const load = async () =>
+⋮----
+const handleSelectTask = (taskId: string) =>
+
+================
+File: src/renderer/src/components/readonly/ReadonlyTaskSidebar.tsx
+================
+import { useState } from 'react';
+import { TaskData } from '@common/types';
+⋮----
+import { TaskSidebar } from '@/components/project/TaskSidebar/TaskSidebar';
+⋮----
+type Props = {
+  tasks: TaskData[];
+  selectedTaskId?: string;
+  projectDir: string;
+  onSelectTask: (taskId: string) => void;
+  isMobile?: boolean;
+  onClose?: () => void;
+};
+⋮----
+const handleToggleCollapse = ()
+
+================
+File: src/renderer/src/components/readonly/ReadonlyTaskView.tsx
+================
+import { DefaultTaskState, Message, TaskData, TaskStateData } from '@common/types';
+import { useTranslation } from 'react-i18next';
+import { MdMenu } from 'react-icons/md';
+⋮----
+import { Messages } from '@/components/message/Messages';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { convertTaskStateMessages } from '@/utils/task-messages';
+import { useSettingsStore } from '@/stores/settingsStore';
+⋮----
+type Props = {
+  projectDir: string;
+  task: TaskData;
+  state: TaskStateData;
+  logMessages?: Message[];
+  onToggleTaskSidebar?: () => void;
+};
+⋮----
+<button type="button" className="p-1 text-text-muted hover:text-text-primary" onClick=
 
 ================
 File: src/renderer/src/components/settings/agent/sections/ProfileGeneralSection.tsx
@@ -22085,6 +22326,10 @@ const handleServerToggle = async () =>
 // Handle failure (could add toast notification here)
 ⋮----
 // Handle error (could add toast notification here)
+⋮----
+const handleReadonlyChange = (checked: boolean) =>
+⋮----
+const handleReadonlyExtensionUiChange = (checked: boolean) =>
 ⋮----
 const handleBasicAuthEnabledChange = (checked: boolean) =>
 ⋮----
@@ -23891,6 +24136,8 @@ import { HotkeysProvider } from 'react-hotkeys-hook';
 ⋮----
 import { BrowserApi } from '@/api/browser-api';
 ⋮----
+export const useOptionalApi = (): ApplicationAPI | undefined
+⋮----
 export const useApi = (): ApplicationAPI =>
 
 ================
@@ -23967,6 +24214,21 @@ const getDiffsTheme = (theme: Theme | null)
 const DiffsThemeSync = () =>
 
 ================
+File: src/renderer/src/contexts/ExtensionApiContext.tsx
+================
+import { ExtensionDisplayAPI } from '@common/api';
+import { createContext, ReactNode, useContext } from 'react';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  api: ExtensionDisplayAPI;
+  children: ReactNode;
+};
+⋮----
+export const useExtensionApi = (): ExtensionDisplayAPI =>
+
+================
 File: src/renderer/src/contexts/ExtensionsContext.tsx
 ================
 import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
@@ -23974,7 +24236,7 @@ import { UIComponentProps, UIComponents } from '@common/extensions';
 import { AgentProfile, TaskData, Message } from '@common/types';
 ⋮----
 import { iconPackStubs, useReactIcons } from '@/utils/extension-icons';
-import { useModelProviders } from '@/contexts/ModelProviderContext';
+import { useOptionalModelProviders } from '@/contexts/ModelProviderContext';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
 import { ModelSelectorWrapper } from '@/components/common/ModelSelectorWrapper';
@@ -24045,6 +24307,10 @@ export type ModelProviderContextType = {
 ⋮----
 // Create optimistic updates
 ⋮----
+const unsupportedReadonlyOperation = async (): Promise<void> =>
+⋮----
+export const useOptionalModelProviders = (): ModelProviderContextType | null =>
+⋮----
 export const useModelProviders = (): ModelProviderContextType =>
 
 ================
@@ -24076,6 +24342,25 @@ const loadSettings = async () =>
 // eslint-disable-next-line no-console
 ⋮----
 export const useProjectSettings = () =>
+
+================
+File: src/renderer/src/contexts/ReadonlyApiContext.tsx
+================
+import { ApplicationAPI } from '@common/api';
+import { createContext, ReactNode, useContext, useEffect, useMemo } from 'react';
+⋮----
+import { ReadonlyBrowserApi } from '@/api/readonly-browser-api';
+import { ExtensionApiProvider } from '@/contexts/ExtensionApiContext';
+import { ApiContext, ReadonlyViewContext } from '@/contexts/ApiContext';
+⋮----
+type Props = {
+  projectDir: string;
+  children: ReactNode;
+};
+⋮----
+export const ReadonlyApiProvider = (
+⋮----
+export const useReadonlyApi = (): ReadonlyBrowserApi =>
 
 ================
 File: src/renderer/src/contexts/TasksContext.tsx
@@ -24511,11 +24796,9 @@ navigateToElement(0); // Navigate to the first result
 File: src/renderer/src/hooks/useTaskActions.ts
 ================
 import { useCallback, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { TODO_TOOL_GROUP_NAME } from '@common/tools';
-import { Message, ReflectedMessage, ResponseMessage, ToolMessage, UserMessage } from '@common/types';
 ⋮----
 import { updateTaskState, clearSession, setMessages } from '@/stores/taskStore';
+import { convertTaskStateMessages } from '@/utils/task-messages';
 import { setTaskAllFiles } from '@/stores/taskFilesStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { getTaskDir } from '@/utils/task-utils';
@@ -25653,6 +25936,32 @@ const handleFinish = async () =>
 {/* Navigation Buttons */}
 
 ================
+File: src/renderer/src/pages/ReadonlyApp.tsx
+================
+import { ReadonlyBootstrap, SettingsData, THEMES } from '@common/types';
+import { useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
+import { IconContext } from 'react-icons';
+⋮----
+import { ReadonlyProjectView } from '@/components/readonly/ReadonlyProjectView';
+import { ReadonlyHeader } from '@/components/readonly/ReadonlyHeader';
+import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { ReadonlyApiProvider } from '@/contexts/ReadonlyApiContext';
+import { TooltipProvider } from '@/components/ui/Tooltip';
+import { ReadonlyModelProvider } from '@/contexts/ModelProviderContext';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { useSettingsStore } from '@/stores/settingsStore';
+import { decodeBaseDir, encodeBaseDir, ROUTES, URL_PARAMS } from '@/utils/routes';
+import i18n from '@/i18n';
+⋮----
+type Props = {
+  bootstrap: ReadonlyBootstrap;
+};
+⋮----
+export const ReadonlyApp = (
+
+================
 File: src/renderer/src/pages/Settings.tsx
 ================
 import { AgentProfile, Font, ProjectData, ProviderProfile, SettingsData, Theme } from '@common/types';
@@ -25773,7 +26082,7 @@ import { createWithEqualityFn } from 'zustand/traditional';
 import { shallow } from 'zustand/vanilla/shallow';
 import { devtools } from 'zustand/middleware';
 import { ExtensionUIComponent, ExtensionUIRefreshData } from '@common/types';
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 ⋮----
 const getComponentsCacheKey = (placement?: string, projectDir?: string, taskId?: string): string
 ⋮----
@@ -25789,16 +26098,16 @@ interface ExtensionUIState {
 }
 ⋮----
 interface ExtensionUIActions {
-  loadComponents: (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
+  loadComponents: (api: ExtensionDisplayAPI, placement?: string, projectDir?: string, taskId?: string) => Promise<ExtensionUIComponent[]>;
   loadComponentData: (
-    api: ApplicationAPI,
+    api: ExtensionDisplayAPI,
     extensionId: string,
     componentId: string,
     projectDir?: string,
     taskId?: string,
     forceRefresh?: boolean,
   ) => Promise<unknown>;
-  handleRefreshEvent: (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
+  handleRefreshEvent: (api: ExtensionDisplayAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string) => void;
   invalidateComponents: (placement?: string, projectDir?: string, taskId?: string) => void;
   invalidateData: (extensionId?: string, componentId?: string, projectDir?: string, taskId?: string) => void;
   getComponents: (placement?: string, projectDir?: string, taskId?: string) => ExtensionUIComponent[] | undefined;
@@ -25854,10 +26163,10 @@ const checkLoaded = () =>
 // If partial key, find all matching
 ⋮----
 // Module-level action functions (no hook subscription required)
-export const loadExtensionUIComponents = (api: ApplicationAPI, placement?: string, projectDir?: string, taskId?: string)
+export const loadExtensionUIComponents = (api: ExtensionDisplayAPI, placement?: string, projectDir?: string, taskId?: string)
 ⋮----
 export const loadExtensionComponentData = (
-  api: ApplicationAPI,
+  api: ExtensionDisplayAPI,
   extensionId: string,
   componentId: string,
   projectDir?: string,
@@ -25865,7 +26174,7 @@ export const loadExtensionComponentData = (
   forceRefresh?: boolean,
 )
 ⋮----
-export const handleExtensionUIRefreshEvent = (api: ApplicationAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string)
+export const handleExtensionUIRefreshEvent = (api: ExtensionDisplayAPI, data: ExtensionUIRefreshData, projectDir?: string, taskId?: string)
 ⋮----
 export const isExtensionUIDataLoaded = (extensionId: string, componentId: string, projectDir?: string, taskId?: string)
 ⋮----
@@ -25934,6 +26243,7 @@ interface SettingsState {
   theme: Theme | null;
   font: Font | null;
   fontSize: number | null;
+  readonlyExtensionUi: boolean | null;
 }
 ⋮----
 interface SettingsActions {
@@ -28089,7 +28399,7 @@ export const useReactIcons = (): ReactIconsMap | null =>
 ================
 File: src/renderer/src/utils/extension-library-loader.ts
 ================
-import { ApplicationAPI } from '@common/api';
+import { ExtensionDisplayAPI } from '@common/api';
 ⋮----
 const convertAsAliases = (exports: string): string =>
 ⋮----
@@ -28099,11 +28409,11 @@ const rewriteImports = (source: string): string =>
 ⋮----
 export const initExtensionLibraryLoader = async (): Promise<void> =>
 ⋮----
-export const loadExtensionLibrary = async (api: ApplicationAPI, librarySpec: string): Promise<Record<string, unknown>> =>
+export const loadExtensionLibrary = async (api: ExtensionDisplayAPI, librarySpec: string): Promise<Record<string, unknown>> =>
 ⋮----
 const module = await import(/* @vite-ignore */ url);
 ⋮----
-export const loadAllLibraries = async (api: ApplicationAPI, libraries: Record<string, string>): Promise<Record<string, Record<string, unknown>>> =>
+export const loadAllLibraries = async (api: ExtensionDisplayAPI, libraries: Record<string, string>): Promise<Record<string, Record<string, unknown>>> =>
 ⋮----
 // eslint-disable-next-line no-console
 
@@ -28235,6 +28545,42 @@ File: src/renderer/src/utils/path-utils.ts
 export const getPathBasename = (inputPath: string): string =>
 
 ================
+File: src/renderer/src/utils/readonly-events.ts
+================
+import { v4 as uuidv4 } from 'uuid';
+import {
+  LoadingMessage,
+  LogData,
+  LogMessage,
+  Message,
+  ResponseChunkData,
+  ResponseCompletedData,
+  TaskCreatedData,
+  TaskData,
+  TaskStateData,
+  ToolData,
+  UserMessageData,
+} from '@common/types';
+⋮----
+import type { ReadonlyEvent } from '@/api/readonly-browser-api';
+⋮----
+const upsertMessage = (state: TaskStateData, id: string, message: TaskStateData['messages'][number]): TaskStateData =>
+⋮----
+const upsertTask = (tasks: TaskData[], task: TaskData): TaskData[] =>
+⋮----
+export const isReadonlyTaskListEvent = (event: ReadonlyEvent): boolean
+⋮----
+export const applyReadonlyTaskListEvent = (tasks: TaskData[], event: ReadonlyEvent): TaskData[] =>
+⋮----
+export const applyReadonlyEvent = (state: TaskStateData, event: ReadonlyEvent, taskId: string): TaskStateData =>
+⋮----
+const isLogEvent = (event: ReadonlyEvent): boolean
+⋮----
+const isForTask = (event: ReadonlyEvent, taskId: string): boolean =>
+⋮----
+export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent, taskId: string, defaultLoadingText: string): Message[] =>
+
+================
 File: src/renderer/src/utils/refractor-languages.ts
 ================
 // Auto-generated map of lazy-loadable refractor language grammars
@@ -28270,6 +28616,31 @@ File: src/renderer/src/utils/string-utils.ts
 import type { TFunction } from 'i18next';
 ⋮----
 export const formatHumanReadable = (t: TFunction, value: number): string =>
+
+================
+File: src/renderer/src/utils/task-messages.ts
+================
+import { v4 as uuidv4 } from 'uuid';
+import { TODO_TOOL_GROUP_NAME } from '@common/tools';
+import {
+  Message,
+  ReflectedMessage,
+  ResponseCompletedData,
+  ResponseMessage,
+  TaskStateData,
+  ToolData,
+  ToolMessage,
+  UserMessage,
+  UserMessageData,
+} from '@common/types';
+⋮----
+const convertUserMessage = (data: UserMessageData): UserMessage => (
+⋮----
+const convertResponse = (data: ResponseCompletedData): Message[] =>
+⋮----
+const convertTool = (data: ToolData): ToolMessage => (
+⋮----
+export const convertTaskStateMessages = (messages: TaskStateData['messages']): Message[] =>
 
 ================
 File: src/renderer/src/utils/task-utils.ts
@@ -28469,7 +28840,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
-import { THEMES } from '@common/types';
+import { BrowserBootstrap, THEMES } from '@common/types';
 import { IconContext } from 'react-icons';
 ⋮----
 import { Home } from '@/pages/Home';
@@ -28487,6 +28858,8 @@ import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { ReadonlyApp } from '@/pages/ReadonlyApp';
+import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
 ⋮----
 const ModalOverlayUrlHandler = () =>
 ⋮----
@@ -28498,7 +28871,7 @@ const ThemeAndFontManager = () =>
 ⋮----
 // Add the current theme class, default to dark
 ⋮----
-const App = () =>
+const NormalApp = () =>
 
 ================
 File: src/renderer/src/env.d.ts
