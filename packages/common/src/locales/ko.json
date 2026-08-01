@@ -1151,6 +1151,8 @@
     "commit": "커밋",
     "generatingMessage": "생성하는 중...",
     "committing": "커밋하는 중...",
+    "cancelCommit": "커밋 취소",
+    "commitSuccess": "변경 사항이 커밋되었습니다",
     "commitError": "커밋 오류",
     "groupByCommit": "커밋별 그룹 보기로 전환",
     "flatView": "평면 보기로 전환 (기준 브랜치와의 diff)",

@@ -713,6 +713,15 @@ export class EventsHandler {
     await task.commitChanges(message, amend);
   }
 
+  cancelCommitChanges(baseDir: string, taskId: string): void {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    task.cancelCommitChanges();
+  }
+
   async listBranches(projectDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     return await this.projectManager.worktreeManager.listBranches(projectDir);
   }

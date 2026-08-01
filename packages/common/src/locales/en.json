@@ -1169,6 +1169,8 @@
     "commit": "Commit",
     "generatingMessage": "Generating...",
     "committing": "Committing...",
+    "cancelCommit": "Cancel commit",
+    "commitSuccess": "Changes committed successfully",
     "commitError": "Commit Error",
     "groupByCommit": "Switch to group by commit view",
     "flatView": "Switch to flat view (diff from base)",

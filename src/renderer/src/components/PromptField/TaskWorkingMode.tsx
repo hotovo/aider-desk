@@ -2,9 +2,12 @@ import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, W
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
+import { MdClose } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
@@ -13,6 +16,7 @@ import { RadioButton } from '@/components/common/RadioButton';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
 
 enum LocalSwitchOption {
@@ -69,6 +73,7 @@ export const TaskWorkingMode = ({
   const [localUncommittedFiles, setLocalUncommittedFiles] = useState<WorktreeUncommittedFiles | null>(null);
   const isWorktree = task.workingMode === 'worktree';
   const { worktreeStatus, refreshStatus: handleRefresh } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
+  const { isCommitting, cancelCommit } = useCommitChanges(task.baseDir, task.id);
 
   const isWorktreeShared = useMemo(() => {
     if (!task.worktree?.path) {
@@ -248,9 +253,24 @@ export const TaskWorkingMode = ({
     handleWorkingModeChanged('worktree');
   };
 
+  const handleCancelCommit = () => {
+    cancelCommit();
+  };
+
   return (
     <div className="flex items-center gap-1 max-h-5">
-      {isSwitching ? (
+      {isCommitting ? (
+        <span className="flex items-center gap-1 text-2xs text-text-secondary">
+          <CgSpinner className="w-3 h-3 animate-spin mb-[2px] mr-0.5" />
+          {t('contextFiles.committing')}
+          <IconButton
+            icon={<MdClose className="w-3 h-3" />}
+            onClick={handleCancelCommit}
+            tooltip={t('contextFiles.cancelCommit')}
+            className="p-1 rounded-md transition-colors hover:bg-bg-tertiary hover:text-error text-text-muted"
+          />
+        </span>
+      ) : isSwitching ? (
         <span className="text-2xs">{t('workingMode.switching')}</span>
       ) : (
         <>

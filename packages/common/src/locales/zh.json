@@ -1102,6 +1102,8 @@
     "commit": "提交",
     "generatingMessage": "生成中...",
     "committing": "提交中...",
+    "cancelCommit": "取消提交",
+    "commitSuccess": "提交成功",
     "commitError": "提交错误",
     "groupByCommit": "按提交分组",
     "flatView": "平铺视图（与基线的差异）",

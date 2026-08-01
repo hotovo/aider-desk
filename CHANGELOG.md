@@ -17,6 +17,7 @@
 - added support for saving edited prompts
 - added onTaskDeleted extension hook
 - added --clear flag to uv venv creation
+- added commit progress visibility and cancel action
 
 ## [0.76.0]
 

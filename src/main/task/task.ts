@@ -4675,11 +4675,20 @@ ${error.stderr}`,
     amend = beforeResult.amend;
 
     const taskDir = this.getTaskDir();
-    await this.worktreeManager.commitChanges(taskDir, message, amend);
+    const committed = await this.worktreeManager.commitChanges(taskDir, message, amend);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
 
-    await this.extensionManager.dispatchEvent('onAfterCommit', { message, amend }, this.project, this);
+    if (committed) {
+      await this.extensionManager.dispatchEvent('onAfterCommit', { message, amend }, this.project, this);
+    } else {
+      logger.info('Commit cancelled by user', { baseDir: this.project.baseDir, taskId: this.taskId });
+    }
+  }
+
+  public cancelCommitChanges(): void {
+    const taskDir = this.getTaskDir();
+    this.worktreeManager.cancelCommitChanges(taskDir);
   }
 
   public async getWorktreeIntegrationStatus(targetBranch?: string) {

@@ -105,6 +105,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     restoreFile: vi.fn((): Promise<void> => Promise.resolve()),
     generateCommitMessage: vi.fn((): Promise<string> => Promise.resolve('')),
     commitChanges: vi.fn((): Promise<void> => Promise.resolve()),
+    cancelCommitChanges: vi.fn((): Promise<void> => Promise.resolve()),
     addFile: vi.fn((): void => undefined),
     isValidPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     isProjectPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),

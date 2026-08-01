@@ -536,6 +536,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.commitChanges(baseDir, taskId, message, amend);
   });
 
+  ipcMain.handle('cancel-commit-changes', async (_, baseDir: string, taskId: string) => {
+    eventsHandler.cancelCommitChanges(baseDir, taskId);
+  });
+
   ipcMain.handle('list-branches', async (_, baseDir: string) => {
     return await eventsHandler.listBranches(baseDir);
   });

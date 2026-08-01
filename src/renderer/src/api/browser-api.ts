@@ -536,6 +536,12 @@ export class BrowserApi implements ApplicationAPI {
       amend,
     });
   }
+  async cancelCommitChanges(baseDir: string, taskId: string): Promise<void> {
+    await this.post('/project/worktree/cancel-commit-changes', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
   addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void {
     this.post('/add-context-file', {
       projectDir: baseDir,

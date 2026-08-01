@@ -732,7 +732,7 @@ export const initPath = (): void => {
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,
-  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number; signal?: AbortSignal; killSignal?: NodeJS.Signals | number },
 ): Promise<{ stdout: string; stderr: string }> => {
   logger.debug(`Executing command with shell path: ${command}`);
   const shellPath = getShellPath();

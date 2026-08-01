@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { MdClose, MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLocalStorage } from '@reactuses/core';
@@ -20,6 +21,7 @@ import { DiffFileItem } from '@/components/Workspace/DiffFileItem';
 import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
+import { useCommitChanges } from '@/hooks/useCommitChanges';
 
 type PendingComment = {
   id: string;
@@ -64,7 +66,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   const [commitMessage, setCommitMessage] = useState('');
   const [amend, setAmend] = useState(false);
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
-  const [isCommitting, setIsCommitting] = useState(false);
+  const { isCommitting, commit, cancelCommit } = useCommitChanges(baseDir, taskId);
   const [commitError, setCommitError] = useState<string | null>(null);
   const [isAllFilesView, setIsAllFilesView] = useLocalStorage('diff-modal-all-files-view', false);
   const [pendingComments, setPendingComments] = useState<PendingComment[]>([]);
@@ -286,10 +288,9 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
       return;
     }
 
-    setIsCommitting(true);
     setCommitError(null);
     try {
-      await api.commitChanges(baseDir, taskId, commitMessage, amend);
+      await commit(commitMessage, amend);
       setCommitMessage('');
       setAmend(false);
       onClose();
@@ -297,10 +298,12 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
       // eslint-disable-next-line no-console
       console.error('Failed to commit changes:', error);
       setCommitError(error instanceof Error ? error.message : String(error));
-    } finally {
-      setIsCommitting(false);
     }
-  }, [api, baseDir, taskId, commitMessage, amend, onClose]);
+  }, [commit, commitMessage, amend, onClose]);
+
+  const handleCancelCommit = useCallback(() => {
+    cancelCommit();
+  }, [cancelCommit]);
 
   const handleToggleViewMode = useCallback(() => {
     setIsAllFilesView((prev) => !prev);
@@ -697,9 +700,26 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                 color="primary"
                 size="sm"
               >
-                <MdOutlineCommit className="h-4 w-4 mr-1" />
-                {isCommitting ? t('contextFiles.committing') : t('contextFiles.commit')}
+                {isCommitting ? (
+                  <>
+                    <CgSpinner className="h-4 w-4 mr-1 animate-spin" />
+                    {t('contextFiles.committing')}
+                  </>
+                ) : (
+                  <>
+                    <MdOutlineCommit className="h-4 w-4 mr-1" />
+                    {t('contextFiles.commit')}
+                  </>
+                )}
               </Button>
+              {isCommitting && (
+                <IconButton
+                  icon={<MdClose className="h-4 w-4" />}
+                  onClick={handleCancelCommit}
+                  tooltip={t('contextFiles.cancelCommit')}
+                  className="p-1.5 rounded-md transition-colors hover:bg-bg-tertiary text-text-muted"
+                />
+              )}
             </div>
           </div>
         </div>

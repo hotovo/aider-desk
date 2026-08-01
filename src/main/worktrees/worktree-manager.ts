@@ -64,7 +64,13 @@ interface RawCommitData {
   filesChanged?: number;
 }
 
+const isAbortError = (error: unknown): boolean => {
+  return error instanceof Error && (error.name === 'AbortError' || (error as NodeJS.ErrnoException).code === 'ABORT_ERR');
+};
+
 export class WorktreeManager {
+  private commitCancelControllers = new Map<string, AbortController>();
+
   private getWorktreePath(projectPath: string, taskId: string): string {
     return join(projectPath, AIDER_DESK_TASKS_DIR, taskId, 'worktree');
   }
@@ -2203,7 +2209,20 @@ export class WorktreeManager {
     }
   }
 
-  async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<void> {
+  cancelCommitChanges(worktreePath: string): boolean {
+    const controller = this.commitCancelControllers.get(worktreePath);
+    if (!controller) {
+      return false;
+    }
+    controller.abort();
+    return true;
+  }
+
+  async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<boolean> {
+    const cancelController = new AbortController();
+    this.commitCancelControllers.set(worktreePath, cancelController);
+    const options = { cwd: worktreePath, signal: cancelController.signal, killSignal: 'SIGINT' as const };
+
     try {
       logger.info(`Committing changes${amend ? ' (amend)' : ''}`, { worktreePath });
 
@@ -2212,18 +2231,25 @@ export class WorktreeManager {
 
       if (updatedFiles.length === 0 && !amend) {
         logger.info('No updated files to commit');
-        return;
+        return true;
       }
 
       // Stage all updated files before committing
       if (updatedFiles.length > 0) {
         for (const file of updatedFiles) {
+          if (cancelController.signal.aborted) {
+            logger.info('Commit cancelled while staging files', { worktreePath });
+            return false;
+          }
           const escapedPath = file.path.replace(/"/g, '\\"');
-          await execWithShellPath(`git add -- "${escapedPath}"`, {
-            cwd: worktreePath,
-          });
+          await execWithShellPath(`git add -- "${escapedPath}"`, options);
         }
         logger.info(`Staged ${updatedFiles.length} file(s) for commit`);
+      }
+
+      if (cancelController.signal.aborted) {
+        logger.info('Commit cancelled before committing', { worktreePath });
+        return false;
       }
 
       // Escape the commit message for shell
@@ -2231,14 +2257,19 @@ export class WorktreeManager {
       const amendFlag = amend ? ' --amend' : '';
       // If amending and message is empty, use --no-edit to keep previous message
       const commitCommand = amend && !message.trim() ? 'git commit --amend --no-edit' : `git commit${amendFlag} -m "${escapedMessage}"`;
-      await execWithShellPath(commitCommand, {
-        cwd: worktreePath,
-      });
+      await execWithShellPath(commitCommand, options);
 
       logger.info(`Successfully committed changes${amend ? ' (amended)' : ''}`);
+      return true;
     } catch (error) {
+      if (isAbortError(error)) {
+        logger.info(`Commit changes cancelled${amend ? ' (amend)' : ''}`, { worktreePath });
+        return false;
+      }
       logger.debug('Failed to commit changes:', error);
       throw error;
+    } finally {
+      this.commitCancelControllers.delete(worktreePath);
     }
   }
 

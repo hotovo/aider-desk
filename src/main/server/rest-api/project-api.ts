@@ -356,6 +356,11 @@ const CommitChangesSchema = z
   })
   .refine((data) => data.amend || data.message.trim().length > 0, { message: 'Commit message is required', path: ['message'] });
 
+const CancelCommitChangesSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
 const ListBranchesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
 });
@@ -1040,6 +1045,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, message, amend } = parsed;
         await this.eventsHandler.commitChanges(projectDir, taskId, message, amend);
         res.status(200).json({ message: 'Changes committed' });
+      }),
+    );
+
+    // Cancel commit changes
+    router.post(
+      '/project/worktree/cancel-commit-changes',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(CancelCommitChangesSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        this.eventsHandler.cancelCommitChanges(projectDir, taskId);
+        res.status(200).json({ message: 'Commit cancellation requested' });
       }),
     );
 
