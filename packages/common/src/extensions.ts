@@ -388,6 +388,12 @@ export interface TaskUpdatedEvent {
   task: TaskData;
 }
 
+/** Event payload for task deleted events */
+export interface TaskDeletedEvent {
+  readonly task: TaskData;
+  blocked?: boolean;
+}
+
 /** Event payload for project opened events */
 export interface ProjectStartedEvent {
   readonly baseDir: string;
@@ -1802,6 +1808,13 @@ export interface Extension {
    * @returns void or partial event to modify task data
    */
   onTaskUpdated?(event: TaskUpdatedEvent, context: ExtensionContext): Promise<void | Partial<TaskUpdatedEvent>>;
+
+  /**
+   * Called when a task is about to be deleted
+   * Set `blocked: true` in the returned partial event to prevent deletion
+   * @returns void or partial event to block deletion
+   */
+  onTaskDeleted?(event: TaskDeletedEvent, context: ExtensionContext): Promise<void | Partial<TaskDeletedEvent>>;
 
   // Project Events
 

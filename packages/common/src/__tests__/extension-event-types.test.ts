@@ -1,6 +1,6 @@
 import { describe, expect, expectTypeOf, it } from 'vitest';
-
 import { AutonomyMode } from '@common/types';
+
 import type { AgentProfile, ContextFile, Mode, PromptContext, ProviderProfile, QuestionData, ResponseCompletedData, TaskData } from '@common/types';
 import type {
   AgentFinishedEvent,
@@ -461,6 +461,32 @@ describe('Extension Interface Event Handlers', () => {
       const extension: Extension = {};
       expect(extension.onTaskClosed).toBeUndefined();
     });
+
+    it('should have optional onTaskDeleted handler', () => {
+      const extension: Extension = {};
+      expect(extension.onTaskDeleted).toBeUndefined();
+    });
+
+    it('onTaskDeleted should accept TaskDeletedEvent and return Promise', async () => {
+      const extension: Extension = {
+        async onTaskDeleted(event, context) {
+          expect(event.task).toBeDefined();
+          expect(context).toBe(mockContext);
+        },
+      };
+      await extension.onTaskDeleted!({ task: {} as TaskData }, mockContext);
+    });
+
+    it('onTaskDeleted should support blocking deletion', async () => {
+      const extension: Extension = {
+        async onTaskDeleted(event) {
+          expect(event.task).toBeDefined();
+          return { blocked: true };
+        },
+      };
+      const result = await extension.onTaskDeleted!({ task: {} as TaskData }, mockContext);
+      expect(result?.blocked).toBe(true);
+    });
   });
 
   describe('Prompt Events', () => {
@@ -629,7 +655,10 @@ describe('Event Modification Pattern', () => {
         return { output: 'modified result' };
       },
     };
-    const result = await extension.onToolFinished!({ toolCallId: 'test-call-id', toolName: 'test', agentProfile: {} as AgentProfile, input: {}, output: 'original' }, mockContext);
+    const result = await extension.onToolFinished!(
+      { toolCallId: 'test-call-id', toolName: 'test', agentProfile: {} as AgentProfile, input: {}, output: 'original' },
+      mockContext,
+    );
     expect(result?.output).toBe('modified result');
   });
 });

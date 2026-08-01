@@ -59,6 +59,7 @@ import type {
   SubagentStartedEvent,
   TaskClosedEvent,
   TaskCreatedEvent,
+  TaskDeletedEvent,
   TaskInitializedEvent,
   TaskPreparedEvent,
   TaskUpdatedEvent,
@@ -133,6 +134,7 @@ export type ExtensionEventMap = {
   onTaskInitialized: TaskInitializedEvent;
   onTaskClosed: TaskClosedEvent;
   onTaskUpdated: TaskUpdatedEvent;
+  onTaskDeleted: TaskDeletedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
   onPromptTemplate: PromptTemplateEvent;

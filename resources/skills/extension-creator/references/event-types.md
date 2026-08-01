@@ -17,6 +17,7 @@ Every Extension interface method dispatches a specific event type. All handlers 
 | `onTaskInitialized` | `TaskInitializedEvent` | — |
 | `onTaskClosed` | `TaskClosedEvent` | — |
 | `onTaskUpdated` | `TaskUpdatedEvent` | — |
+| `onTaskDeleted` | `TaskDeletedEvent` | ✅ Yes |
 | `onProjectStarted` | `ProjectStartedEvent` | — |
 | `onProjectStopped` | `ProjectStoppedEvent` | — |
 | `onPromptStarted` | `PromptStartedEvent` | ✅ Yes |
@@ -57,7 +58,7 @@ Events with a `blocked?: boolean` field allow extensions to **block** the operat
 
 | Capability | Events |
 |---|---|
-| **Can Block** (have `blocked?` field) | `PromptStartedEvent`, `AgentStartedEvent`, `InterruptedEvent`, `ToolApprovalEvent`, `ToolCalledEvent`, `HandleApprovalEvent`, `SubagentStartedEvent`, `CommandExecutedEvent`, `CustomCommandExecutedEvent`, `AiderPromptStartedEvent`, `BeforeCommitEvent` |
+| **Can Block** (have `blocked?` field) | `PromptStartedEvent`, `AgentStartedEvent`, `InterruptedEvent`, `ToolApprovalEvent`, `ToolCalledEvent`, `HandleApprovalEvent`, `SubagentStartedEvent`, `CommandExecutedEvent`, `CustomCommandExecutedEvent`, `AiderPromptStartedEvent`, `BeforeCommitEvent`, `TaskDeletedEvent` |
 | **Read-Only** (all fields `readonly`) | `TaskInitializedEvent`, `TaskClosedEvent`, `ProjectStartedEvent`, `ProjectStoppedEvent`, `AfterCommitEvent` |
 
 ---
@@ -111,6 +112,17 @@ Dispatched whenever task data is updated.
 ```typescript
 interface TaskUpdatedEvent {
   task: TaskData;
+}
+```
+
+### TaskDeletedEvent (Can Block)
+
+Dispatched when a task is about to be deleted. Set `blocked: true` to prevent deletion.
+
+```typescript
+interface TaskDeletedEvent {
+  readonly task: TaskData;
+  blocked?: boolean;
 }
 ```
 

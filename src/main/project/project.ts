@@ -420,20 +420,24 @@ export class Project {
   }
 
   private async deleteTaskInternal(taskId: string): Promise<void> {
-    const taskDir = path.join(this.baseDir, '.aider-desk', 'tasks', taskId);
-
-    // Close the task if it's loaded
     const task = this.tasks.get(taskId);
-    const taskData = task?.task;
-    if (task) {
-      await task.close();
-      this.tasks.delete(taskId);
-      this.eventManager.sendTaskDeleted(task.task);
+    if (!task) {
+      return;
     }
 
-    await this.removeTaskWorktree(taskId, taskData);
+    const extResult = await this.extensionManager.dispatchEvent('onTaskDeleted', { task: task.task }, this);
+    if (extResult.blocked) {
+      throw new Error(`Task ${taskId} deletion was blocked by an extension`);
+    }
 
-    // Delete the task directory
+    const taskDir = path.join(this.baseDir, '.aider-desk', 'tasks', taskId);
+
+    await task.close();
+    this.tasks.delete(taskId);
+    this.eventManager.sendTaskDeleted(task.task);
+
+    await this.removeTaskWorktree(taskId, task.task);
+
     await fs.rm(taskDir, { recursive: true, force: true });
   }
 
