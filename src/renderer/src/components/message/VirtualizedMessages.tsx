@@ -1,4 +1,4 @@
-import { forwardRef, memo, RefObject, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, RefObject, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -134,8 +134,15 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       }
 
       const scrollToEndIfFollowing = () => {
+        // when content no longer overflows the container (e.g. messages cleared), unpause follow-scroll
+        if (element.scrollHeight <= element.clientHeight) {
+          updateScrollingPaused(false);
+        }
         if (!scrollingPausedRef.current) {
-          void listRef.current?.scrollToEnd({ animated: false });
+          const target = element.scrollHeight - element.clientHeight;
+          if (Math.abs(element.scrollTop - target) > 2) {
+            element.scrollTop = target;
+          }
         }
       };
 
@@ -146,7 +153,18 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       return () => {
         observer.disconnect();
       };
-    }, [scrollContainer]);
+    }, [scrollContainer, updateScrollingPaused]);
+
+    useLayoutEffect(() => {
+      const element = listRef.current?.getScrollableNode();
+      if (!element || scrollingPausedRef.current) {
+        return;
+      }
+      const target = element.scrollHeight - element.clientHeight;
+      if (Math.abs(element.scrollTop - target) > 2) {
+        element.scrollTop = target;
+      }
+    }, [processedMessages]);
 
     const handleScrollState = useCallback(() => {
       const state = listRef.current?.getState();
