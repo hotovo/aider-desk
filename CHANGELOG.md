@@ -16,6 +16,7 @@
 - added reloadTasks function to Extension API for reloading tasks from disk
 - added support for saving edited prompts
 - added onTaskDeleted extension hook
+- added --clear flag to uv venv creation
 
 ## [0.76.0]
 

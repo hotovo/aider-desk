@@ -203,7 +203,7 @@ export class PythonDependenciesInstaller {
 
   private async createVirtualEnvInternal(): Promise<void> {
     this.setStatus({ state: 'creating-venv' });
-    const command = `"${await getResolvedUvPath()}" venv "${PYTHON_VENV_DIR}" --python 3.12`;
+    const command = `"${await getResolvedUvPath()}" venv "${PYTHON_VENV_DIR}" --python 3.12 --clear`;
     logger.info(`Creating virtual environment with uv: ${command}`, {
       virtualEnv: PYTHON_VENV_DIR,
     });
