@@ -27,6 +27,7 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
   const [taskState, setTaskState] = useState<TaskStateData | null>(null);
   const [logMessages, setLogMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [taskLoading, setTaskLoading] = useState(false);
   const [error, setError] = useState(false);
   const selectedTask = tasks.find((task) => task.id === selectedTaskId);
 
@@ -64,11 +65,14 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
 
     const load = async () => {
       try {
+        setTaskLoading(true);
         setLogMessages([]);
         await loadSelectedTask(selectedTaskId);
         setError(false);
       } catch {
         setError(true);
+      } finally {
+        setTaskLoading(false);
       }
     };
     void load();
@@ -119,17 +123,20 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
             onClose={hideTaskSidebar}
           />
         )}
-        {selectedTask && taskState ? (
-          <ReadonlyTaskView
-            projectDir={projectDir}
-            task={selectedTask}
-            state={taskState}
-            logMessages={logMessages}
-            onToggleTaskSidebar={isMobile ? showTaskSidebar : undefined}
-          />
-        ) : (
-          <main className="flex-1 flex items-center justify-center text-text-muted text-xs">{t('readonly.selectTask')}</main>
-        )}
+        <div className="flex-1 relative min-w-0 flex">
+          {taskLoading && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
+          {selectedTask && taskState ? (
+            <ReadonlyTaskView
+              projectDir={projectDir}
+              task={selectedTask}
+              state={taskState}
+              logMessages={logMessages}
+              onToggleTaskSidebar={isMobile ? showTaskSidebar : undefined}
+            />
+          ) : (
+            <main className="flex-1 flex items-center justify-center text-text-muted text-xs">{t('readonly.selectTask')}</main>
+          )}
+        </div>
       </div>
     </ExtensionsProvider>
   );
