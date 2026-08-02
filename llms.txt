@@ -182,6 +182,7 @@ src/
       cloudflare-tunnel-manager.ts
       cors.ts
       index.ts
+      readonly.ts
       runner.ts
       server-controller.ts
     skills/
@@ -635,6 +636,7 @@ src/
         useBooleanState.ts
         useClickOutside.ts
         useCommands.ts
+        useCommitChanges.ts
         useConfiguredHotkeys.ts
         useCustomModes.ts
         useDropdownState.ts
@@ -703,6 +705,7 @@ src/
         Settings.tsx
         UpdatedFilesDiff.tsx
       stores/
+        commitStore.ts
         extensionUIStore.ts
         projectStore.ts
         settingsStore.ts
@@ -4075,6 +4078,7 @@ import type {
   SubagentStartedEvent,
   TaskClosedEvent,
   TaskCreatedEvent,
+  TaskDeletedEvent,
   TaskInitializedEvent,
   TaskPreparedEvent,
   TaskUpdatedEvent,
@@ -4147,6 +4151,7 @@ export type ExtensionEventMap = {
   onTaskInitialized: TaskInitializedEvent;
   onTaskClosed: TaskClosedEvent;
   onTaskUpdated: TaskUpdatedEvent;
+  onTaskDeleted: TaskDeletedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
   onPromptTemplate: PromptTemplateEvent;
@@ -4585,6 +4590,8 @@ async createTask(params: CreateTaskParams): Promise<TaskData>
 getTask(taskId: string): TaskContext | null
 ⋮----
 async getTasks(): Promise<TaskData[]>
+⋮----
+async reloadTasks(): Promise<TaskData[]>
 ⋮----
 getMostRecentTask(): TaskContext | null
 ⋮----
@@ -7062,7 +7069,7 @@ import { WorktreeManager } from '@/worktrees';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
-import { AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
+import { AIDER_DESK_TASKS_DIR, AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
 ⋮----
@@ -7084,7 +7091,7 @@ constructor(
     private readonly pythonInstaller: PythonDependenciesInstaller,
 )
 ⋮----
-public async start()
+public start(): Promise<void>
 ⋮----
 private async prepareInternalTask()
 ⋮----
@@ -7107,6 +7114,8 @@ private async prepareTask(taskId: string = this.generateShortTaskId(), initialTa
 // Allow extensions to modify task data after preparation
 ⋮----
 // Apply modifications from extension
+⋮----
+private async getTaskIdsFromDisk(): Promise<string[]>
 ⋮----
 private async loadTasks()
 ⋮----
@@ -7145,13 +7154,9 @@ public resolveAgentProfile(id: string): AgentProfile | null
    */
 public isWorktreeSharedWithOtherTasks(worktreePath: string, excludeTaskId: string): boolean
 ⋮----
+private async removeTaskWorktree(taskId: string, taskData: TaskData | undefined): Promise<void>
+⋮----
 private async deleteTaskInternal(taskId: string): Promise<void>
-⋮----
-// Close the task if it's loaded
-⋮----
-// Remove worktree if the task has one and no other task shares it
-⋮----
-// Delete the task directory
 ⋮----
 public async deleteTask(taskId: string): Promise<void>
 ⋮----
@@ -7167,6 +7172,10 @@ public async duplicateTask(taskId: string): Promise<TaskData>
 public async forkTask(taskId: string, messageId: string): Promise<TaskData>
 ⋮----
 async getTasks(): Promise<TaskData[]>
+⋮----
+async reloadTasks(): Promise<TaskData[]>
+⋮----
+private async reloadTasksInternal(): Promise<TaskData[]>
 ⋮----
 forEachTask(callback: (task: Task) => void, initializedOnly = true)
 ⋮----
@@ -7706,6 +7715,8 @@ registerRoutes(router: Router): void
 ⋮----
 // List tasks
 ⋮----
+// Reload tasks from disk
+⋮----
 // Delete session
 ⋮----
 // Duplicate task
@@ -7755,6 +7766,8 @@ registerRoutes(router: Router): void
 // Generate commit message
 ⋮----
 // Commit changes
+⋮----
+// Cancel commit changes
 ⋮----
 // List branches
 ⋮----
@@ -7913,6 +7926,7 @@ import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 ⋮----
 import { BaseApi } from '@/server/rest-api/base-api';
+import { isReadonlyExtensionUiEnabled } from '@/server/readonly';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
@@ -8147,6 +8161,14 @@ export const createCorsOriginValidator =
 File: src/main/server/index.ts
 ================
 // Export main controller
+
+================
+File: src/main/server/readonly.ts
+================
+import { READONLY_EXTENSION_UI } from '@/constants';
+import { Store } from '@/store';
+⋮----
+export const isReadonlyExtensionUiEnabled = (store: Store): boolean =>
 
 ================
 File: src/main/server/runner.ts
@@ -8831,6 +8853,7 @@ import { promises as fs } from 'fs';
 ⋮----
 import { v4 as uuidv4 } from 'uuid';
 import debounce from 'lodash/debounce';
+import { isEqual } from 'lodash';
 import {
   ToolResultPart,
   ConnectorMessage,
@@ -8971,6 +8994,10 @@ private async migrateContext(contextData: unknown): Promise<TaskContext>
 // }
 ⋮----
 async load(): Promise<void>
+⋮----
+async reloadFromDisk(): Promise<boolean>
+⋮----
+private async readContextFromDisk(): Promise<TaskContext | null>
 ⋮----
 private async loadInternal(): Promise<void>
 ⋮----
@@ -9224,6 +9251,8 @@ constructor(
     initialTaskData?: Partial<TaskData>,
 )
 ⋮----
+public async waitForTaskDataLoad(): Promise<void>
+⋮----
 public async getTaskAgentProfile(): Promise<AgentProfile | null>
 ⋮----
 // Check task-level agent profile first
@@ -9238,7 +9267,11 @@ private getAuxiliaryModelId(baseProfile: AgentProfile, auxiliaryModelId: string 
 ⋮----
 private async loadTaskData()
 ⋮----
-// make sure we always have the most recent project baseDir, in case the task was migrated from another path
+private async readTaskDataFromDisk(): Promise<Partial<TaskData> | null>
+⋮----
+private applyTaskData(data: Partial<TaskData>)
+⋮----
+public async reloadFromDisk(): Promise<
 ⋮----
 /**
    * Generate a branch name from task name (first 7 words, separated by '-')
@@ -9277,9 +9310,11 @@ public async saveTask(updates?: Partial<TaskData>, updateTimestamps = true): Pro
 ⋮----
 // only save if task is not new
 ⋮----
-public async init()
+public async init(readonly = false)
 ⋮----
-private async initInternal()
+private async initInternal(readonly: boolean)
+⋮----
+// Readonly init must not mutate worktrees, spawn connectors, or run expensive scans
 ⋮----
 // Check if worktree is enabled for this task
 ⋮----
@@ -9291,7 +9326,7 @@ private async initInternal()
 ⋮----
 // Only remove the worktree if no other tasks share it
 ⋮----
-public async load(): Promise<TaskStateData>
+public async load(readonly = false): Promise<TaskStateData>
 ⋮----
 private async loadContext()
 ⋮----
@@ -9366,6 +9401,8 @@ public async savePromptOnly(prompt: string, addInputHistory = true): Promise<voi
 // Add to context manager
 ⋮----
 // Add user message to context
+⋮----
+public async saveEditedPrompt(messageId: string, prompt: string): Promise<void>
 ⋮----
 private async runNextQueuedPrompt(): Promise<ResponseCompletedData[]>
 ⋮----
@@ -9967,6 +10004,8 @@ public async generateCommitMessage(): Promise<string>
 // Continue without commit history
 ⋮----
 public async commitChanges(message: string, amend: boolean): Promise<void>
+⋮----
+public cancelCommitChanges(): void
 ⋮----
 public async getWorktreeIntegrationStatus(targetBranch?: string)
 ⋮----
@@ -10863,7 +10902,7 @@ export const initPath = (): void =>
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
   command: string,
-  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number },
+  options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number; signal?: AbortSignal; killSignal?: NodeJS.Signals | number },
 ): Promise<
 
 ================
@@ -11064,6 +11103,8 @@ interface RawCommitData {
   deletions?: number;
   filesChanged?: number;
 }
+⋮----
+const isAbortError = (error: unknown): boolean =>
 ⋮----
 export class WorktreeManager
 ⋮----
@@ -11570,7 +11611,9 @@ async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
 async getUncommittedDiff(worktreePath: string): Promise<string | null>
 ⋮----
-async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<void>
+cancelCommitChanges(worktreePath: string): boolean
+⋮----
+async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<boolean>
 ⋮----
 // Get the list of updated files (unstaged changes that are shown in the UI)
 ⋮----
@@ -11864,6 +11907,8 @@ async ensureProjectAndCreateTask(projectDir: string, params?: CreateTaskParams):
 ⋮----
 async savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
 ⋮----
+async saveEditedPrompt(baseDir: string, taskId: string, messageId: string, prompt: string): Promise<void>
+⋮----
 async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void>
 ⋮----
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
@@ -11938,6 +11983,8 @@ async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 ⋮----
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
 ⋮----
+cancelCommitChanges(baseDir: string, taskId: string): void
+⋮----
 async listBranches(projectDir: string): Promise<Array<
 ⋮----
 async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
@@ -11973,6 +12020,8 @@ async duplicateTask(baseDir: string, taskId: string): Promise<TaskData>
 async forkTask(baseDir: string, taskId: string, messageId: string): Promise<TaskData>
 ⋮----
 async getTasks(baseDir: string): Promise<TaskData[]>
+⋮----
+async reloadTasks(baseDir: string): Promise<TaskData[]>
 ⋮----
 async loadTask(baseDir: string, taskId: string): Promise<TaskStateData>
 ⋮----
@@ -13251,6 +13300,7 @@ resetTask(baseDir: string, taskId: string): void
 restartAiderConnector(baseDir: string, taskId: string): void
 runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void
 savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void>
+saveEditedPrompt(baseDir: string, taskId: string, messageId: string, prompt: string): Promise<void>
 redoUserPrompt(baseDir: string, taskId: string, messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[]): void
 resumeTask(baseDir: string, taskId: string): void
 answerQuestion(baseDir: string, taskId: string, answer: string): void
@@ -13288,6 +13338,7 @@ refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
+async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
 addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void
 async isValidPath(baseDir: string, path: string): Promise<boolean>
 async isProjectPath(path: string): Promise<boolean>
@@ -15005,12 +15056,25 @@ export const TaskStateChip = (
 File: src/renderer/src/components/common/TextArea.tsx
 ================
 import { forwardRef, ReactNode, TextareaHTMLAttributes } from 'react';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 export type Props = TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: ReactNode;
   wrapperClassName?: string;
   error?: string | null;
 };
+⋮----
+className={twMerge(
+          `w-full p-2 bg-bg-secondary-light border-2 ${error ? 'border-error-emphasis' : 'border-border-default'} rounded focus:outline-none ${error ? 'focus:border-error-emphasis' : 'focus:border-border-light'} text-text-primary text-sm placeholder-text-muted
+          scrollbar-thin
+          scrollbar-track-bg-secondary-light
+          scrollbar-thumb-bg-fourth`,
+          className,
+        )}
+      />
+      {error && <p className="text-xs text-error mt-1">{error}</p>}
+    </div>
+  );
 
 ================
 File: src/renderer/src/components/common/Toggle.tsx
@@ -17350,7 +17414,7 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 ================
 File: src/renderer/src/components/message/VirtualizedMessages.tsx
 ================
-import { forwardRef, memo, RefObject, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, RefObject, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -17394,6 +17458,8 @@ const handleTouchStart = (e: TouchEvent) =>
 const handleTouchMove = (e: TouchEvent) =>
 ⋮----
 const scrollToEndIfFollowing = () =>
+⋮----
+// when content no longer overflows the container (e.g. messages cleared), unpause follow-scroll
 ⋮----
 const exportToImage = async () =>
 ⋮----
@@ -20868,6 +20934,7 @@ type Props = {
   redoLastUserPrompt: () => void;
   editUserMessage: () => void;
   isEditingLastMessage?: boolean;
+  canSaveEditedPrompt?: boolean;
   disabled?: boolean;
   promptBehavior: PromptBehavior;
   clearLogMessages: () => void;
@@ -20977,9 +21044,12 @@ import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, W
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
+import { MdClose } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { useResponsive } from '@/hooks/useResponsive';
 import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
@@ -20988,6 +21058,7 @@ import { RadioButton } from '@/components/common/RadioButton';
 import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
 ⋮----
 enum LocalSwitchOption {
@@ -21043,6 +21114,8 @@ const getWarningMessage = () =>
 const handleSwitchToLocal = () =>
 ⋮----
 const handleSwitchToWorktree = () =>
+⋮----
+const handleCancelCommit = () =>
 ⋮----
 <Button size="xs" variant="text" color="tertiary" onClick=
 ⋮----
@@ -23608,7 +23681,8 @@ File: src/renderer/src/components/Workspace/UpdatedFilesDiffModal.tsx
 ================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { MdClose, MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLocalStorage } from '@reactuses/core';
@@ -23628,6 +23702,7 @@ import { DiffFileItem } from '@/components/Workspace/DiffFileItem';
 import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
+import { useCommitChanges } from '@/hooks/useCommitChanges';
 ⋮----
 type PendingComment = {
   id: string;
@@ -23708,6 +23783,7 @@ comments=
 {/* Commit section */}
 ⋮----
 isGeneratingMessage
+⋮----
 
 ================
 File: src/renderer/src/components/Workspace/UpdatedFilesSection.tsx
@@ -24515,6 +24591,26 @@ export const useCommands = (baseDir: string) =>
 // Load initial commands
 ⋮----
 // Listen for commands updates
+
+================
+File: src/renderer/src/hooks/useCommitChanges.ts
+================
+import { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { useIsCommitting, useCommitStore } from '@/stores/commitStore';
+import { useApi } from '@/contexts/ApiContext';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
+⋮----
+type UseCommitChanges = {
+  isCommitting: boolean;
+  commit: (message: string, amend: boolean) => Promise<void>;
+  cancelCommit: () => void;
+};
+⋮----
+export const useCommitChanges = (baseDir: string, taskId: string): UseCommitChanges =>
+⋮----
+// eslint-disable-next-line no-console
 
 ================
 File: src/renderer/src/hooks/useConfiguredHotkeys.ts
@@ -26073,6 +26169,23 @@ import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
 const loadFiles = async () =>
 ⋮----
 // eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/stores/commitStore.ts
+================
+import { createWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
+⋮----
+interface CommitStore {
+  committingMap: Map<string, boolean>;
+
+  setCommitting: (baseDir: string, taskId: string, isCommitting: boolean) => void;
+}
+⋮----
+const getCommitKey = (baseDir: string, taskId: string) => `$
+⋮----
+export const useIsCommitting = (baseDir: string, taskId: string)
 
 ================
 File: src/renderer/src/stores/extensionUIStore.ts
