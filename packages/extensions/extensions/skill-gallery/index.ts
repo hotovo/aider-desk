@@ -83,7 +83,7 @@ function getSkillsDirForTarget(target: string): string {
 export default class SkillGalleryExtension implements Extension {
   static metadata = {
     name: 'Skill Gallery',
-    version: '1.3.0',
+    version: '1.4.0',
     description: 'Browse and install skills from popular skill repositories, including reverse engineering and security workflows',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',

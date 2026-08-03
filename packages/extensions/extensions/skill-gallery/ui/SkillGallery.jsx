@@ -19,6 +19,8 @@
   const data = props.data || {};
 
   const GLOBAL_TARGET = 'global';
+  const PAGE_SIZE = 100;
+  const SCROLL_THRESHOLD = 200;
 
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +41,7 @@
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [newSourceSubPath, setNewSourceSubPath] = useState('');
   const [isSavingSources, setIsSavingSources] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
     if (data.skills) {
@@ -61,6 +64,10 @@
     }, 250);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [filterSource, filterStatus, debouncedSearchQuery]);
 
   const handleOpen = useCallback(() => {
     setShowModal(true);
@@ -194,6 +201,21 @@
     return result;
   }, [skills, filterSource, filterStatus, debouncedSearchQuery]);
 
+  const visibleSkills = useMemo(() => filteredSkills.slice(0, visibleCount), [filteredSkills, visibleCount]);
+
+  const hasMoreSkills = visibleCount < filteredSkills.length;
+
+  const handleContentScroll = useCallback(
+    (e) => {
+      if (!hasMoreSkills) return;
+      const { scrollTop, clientHeight, scrollHeight } = e.currentTarget;
+      if (scrollTop + clientHeight >= scrollHeight - SCROLL_THRESHOLD) {
+        setVisibleCount((prev) => prev + PAGE_SIZE);
+      }
+    },
+    [hasMoreSkills],
+  );
+
   const sourceOptions = useMemo(() => {
     const map = new Map();
     skills.forEach((s) => {
@@ -295,7 +317,10 @@
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
+        <div
+          className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth"
+          onScroll={handleContentScroll}
+        >
           {isRefreshing && skills.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <div className="flex items-center gap-2">
@@ -331,7 +356,7 @@
                 </tr>
               </thead>
               <tbody>
-                {filteredSkills.map((skill) => (
+                {visibleSkills.map((skill) => (
                 <tr key={skill.id} className="border-b border-border-default hover:bg-bg-tertiary transition-colors">
                   <td className="px-3 py-2 align-top">
                     <div className="flex items-center gap-2">
@@ -385,12 +410,18 @@
               </tbody>
             </table>
           )}
+          {hasMoreSkills && filteredSkills.length > 0 && (
+            <div className="flex items-center justify-center gap-2 py-3">
+              <div className="animate-spin h-3.5 w-3.5 border-2 border-accent-primary border-t-transparent rounded-full"></div>
+              <span className="text-text-muted text-2xs">Scroll to load more...</span>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2 border-t border-border-default flex-shrink-0">
           <span className="text-2xs text-text-muted">
-            {filteredSkills.length} of {skills.length} skills{installedCount > 0 ? ` · ${installedCount} installed` : ''}
+            Showing {visibleSkills.length} of {filteredSkills.length} skills{filteredSkills.length !== skills.length ? ` (${skills.length} total)` : ''}{installedCount > 0 ? ` · ${installedCount} installed` : ''}
           </span>
           <span className="text-2xs text-text-muted">
             Installing to: <span className="text-text-secondary font-medium">{targetLabel}</span>
