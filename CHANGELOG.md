@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- correctly loading input history for all the opened projects not just active one
+
 ## [0.77.0]
 
 - skip adding Todo tool messages when streaming the tools

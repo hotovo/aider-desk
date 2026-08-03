@@ -257,6 +257,10 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
         await api.startProject(projectDir);
         setStarting(false);
 
+        // Load input history (may have been emitted before listener was registered)
+        const history = await api.loadInputHistory(projectDir);
+        setInputHistory(history);
+
         // Load tasks
         setTasksLoading(true);
         const tasks = await api.getTasks(projectDir);
