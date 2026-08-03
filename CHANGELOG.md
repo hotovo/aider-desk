@@ -4,6 +4,7 @@
 
 - correctly loading input history for all the opened projects not just active one
 - renamed worktree rebase button label to better describe the action
+- improved conflict detection during worktree merge and rebase operations
 
 ## [0.77.0]
 

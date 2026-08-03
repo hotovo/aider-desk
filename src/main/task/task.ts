@@ -4281,11 +4281,7 @@ ${error.stderr}`,
     } catch (error) {
       logger.error('Failed to merge worktree:', { error });
 
-      const isConflict =
-        error instanceof GitError &&
-        (error.gitOutput?.toLowerCase().includes('resolve all conflicts') ||
-          error.message?.toLowerCase().includes('conflicts must be resolved first') ||
-          error.gitOutput?.toLowerCase().includes('conflicts must be resolved first'));
+      const isConflict = this.isConflictError(error);
 
       this.addLogMessage(
         'error',
@@ -4342,11 +4338,7 @@ ${error.stderr}`,
       } catch (error) {
         logger.error('Failed to merge worktree and switch to local:', { error });
 
-        const isConflict =
-          error instanceof GitError &&
-          (error.gitOutput?.toLowerCase().includes('resolve all conflicts') ||
-            error.message?.toLowerCase().includes('conflicts must be resolved first') ||
-            error.gitOutput?.toLowerCase().includes('conflicts must be resolved first'));
+        const isConflict = this.isConflictError(error);
 
         this.addLogMessage(
           'error',
@@ -4513,12 +4505,7 @@ ${error.stderr}`,
     } catch (error) {
       logger.error('Failed to apply uncommitted changes:', error);
 
-      const isConflict =
-        error instanceof GitError &&
-        (error.gitOutput?.toLowerCase().includes('conflict') ||
-          error.message?.toLowerCase().includes('conflict') ||
-          error.gitOutput?.toLowerCase().includes('conflicts must be resolved first') ||
-          error.message?.toLowerCase().includes('conflicts must be resolved first'));
+      const isConflict = this.isConflictError(error);
 
       this.addLogMessage(
         'error',
@@ -4956,6 +4943,15 @@ ${error.stderr}`,
     }
 
     await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
+  private isConflictError(error: unknown): boolean {
+    if (error instanceof GitError) {
+      const output = (error.gitOutput || '').toLowerCase();
+      const message = (error.message || '').toLowerCase();
+      return output.includes('conflict') || message.includes('conflict');
+    }
+    return false;
   }
 
   public async resolveConflictsWithAgent(): Promise<void> {

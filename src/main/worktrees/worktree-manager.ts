@@ -1414,6 +1414,19 @@ export class WorktreeManager {
       logger.info(`Applied stash: ${stashRef}`);
     } catch (error) {
       logger.error(`Failed to apply stash ${stashId}:`, error);
+
+      const err = error as Error & { stdout?: string; stderr?: string };
+      const output = err.stdout || err.stderr || err.message || '';
+      const hasConflicts = output.includes('CONFLICT') || output.includes('both modified');
+
+      if (hasConflicts) {
+        const gitError = new GitError('Failed to apply stash with conflicts. Resolve all conflicts manually.');
+        gitError.gitOutput = output;
+        gitError.workingDirectory = path;
+        gitError.originalError = error instanceof Error ? error : undefined;
+        throw gitError;
+      }
+
       throw new Error(`Failed to apply stash: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
@@ -1536,7 +1549,25 @@ export class WorktreeManager {
       } catch (error) {
         logger.error('Merge operation failed:', { error });
 
-        // Recovery: try to restore stashes
+        // Recovery: revert main repo to pre-merge state before restoring stashes
+        try {
+          // Abort any in-progress merge (in case merge itself failed)
+          await execWithShellPath('git merge --abort', { cwd: projectPath });
+        } catch {
+          // Ignore - no merge in progress
+        }
+
+        // Hard reset main to undo merge commit and clean conflict markers from failed stash apply
+        if (beforeMergeCommitHash) {
+          try {
+            await execWithShellPath(`git reset --hard ${beforeMergeCommitHash}`, { cwd: projectPath });
+            logger.info('Reverted main repo to pre-merge state');
+          } catch (recoveryError) {
+            logger.error('Failed to reset main repo to pre-merge state:', { error: recoveryError });
+          }
+        }
+
+        // Restore worktree stash
         if (worktreeStashId) {
           try {
             await this.applyStash(worktreePath, worktreeStashId);
@@ -1548,6 +1579,7 @@ export class WorktreeManager {
           }
         }
 
+        // Restore main's original uncommitted changes on the clean working tree
         if (mainOriginalStashId) {
           try {
             await this.applyStash(projectPath, mainOriginalStashId);
@@ -2460,7 +2492,15 @@ export class WorktreeManager {
       } catch (error) {
         logger.error('Failed to apply uncommitted changes:', error);
 
-        // Recovery: try to restore stash to worktree
+        // Recovery: clean up main repo from failed stash apply
+        try {
+          await execWithShellPath('git checkout -- .', { cwd: projectPath });
+          logger.info('Cleaned up main repo after failed stash apply');
+        } catch (recoveryError) {
+          logger.error('Failed to clean up main repo:', { error: recoveryError });
+        }
+
+        // Restore stash to worktree
         if (worktreeStashId) {
           try {
             await this.applyStash(worktreePath, worktreeStashId);
