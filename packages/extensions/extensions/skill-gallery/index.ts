@@ -39,6 +39,7 @@ const DEFAULT_SOURCES: SkillSource[] = [
   { id: 'mattpocock-engineering', name: 'Matt Pocock: Engineering', url: 'https://github.com/mattpocock/skills.git', subPath: 'skills/engineering' },
   { id: 'mattpocock-productivity', name: 'Matt Pocock: Productivity', url: 'https://github.com/mattpocock/skills.git', subPath: 'skills/productivity' },
   { id: 'addyosmani-agent-skills', name: 'Addy Osmani: Agent Skills', url: 'https://github.com/addyosmani/agent-skills.git', subPath: 'skills' },
+  { id: 'reverse-skill', name: 'Reverse Skill', url: 'https://github.com/zhaoxuya520/reverse-skill.git', subPath: 'skills' },
 ];
 
 interface GallerySkill {
@@ -82,8 +83,8 @@ function getSkillsDirForTarget(target: string): string {
 export default class SkillGalleryExtension implements Extension {
   static metadata = {
     name: 'Skill Gallery',
-    version: '1.2.0',
-    description: 'Browse and install Claude Skills from popular skill repositories',
+    version: '1.3.0',
+    description: 'Browse and install skills from popular skill repositories, including reverse engineering and security workflows',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
     capabilities: ['ui'],
