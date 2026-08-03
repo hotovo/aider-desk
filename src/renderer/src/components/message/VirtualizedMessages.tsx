@@ -93,9 +93,13 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         return;
       }
 
+      const isMoreThanThresholdFromBottom = () => {
+        return element.scrollHeight - element.scrollTop - element.clientHeight > 30;
+      };
+
       const handleWheel = (e: WheelEvent) => {
         e.stopPropagation();
-        if (e.deltaY < 0) {
+        if (e.deltaY < 0 && isMoreThanThresholdFromBottom()) {
           updateScrollingPaused(true);
         }
       };
@@ -110,7 +114,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         const touchStartY = (element as HTMLElement & { dataset: DOMStringMap }).dataset.touchStartY
           ? parseFloat((element as HTMLElement & { dataset: DOMStringMap }).dataset.touchStartY!)
           : touch.clientY;
-        if (touch.clientY < touchStartY - 10) {
+        if (Math.abs(touch.clientY - touchStartY) > 10 && isMoreThanThresholdFromBottom()) {
           updateScrollingPaused(true);
         }
       };
