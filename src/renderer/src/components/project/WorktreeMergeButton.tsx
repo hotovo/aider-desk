@@ -339,7 +339,7 @@ export const WorktreeMergeButton = ({
           baseDir={baseDir}
           title={t('worktree.confirmRebaseTitle')}
           message={t('worktree.confirmRebaseMessage')}
-          confirmButtonText={t('worktree.rebaseFromBranch')}
+          confirmButtonText={t('worktree.rebase')}
           defaultBranch={defaultBranch}
           onCancel={() => setShowRebaseDialog(false)}
           onConfirm={(branch) => {

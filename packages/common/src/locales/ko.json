@@ -1799,6 +1799,7 @@
     "squash": "스쿼시 후 병합",
     "onlyUncommitted": "커밋되지 않은 것만",
     "rebaseFromBranch": "브랜치에서 리베이스...",
+    "rebase": "리베이스",
     "abortRebase": "리베이스 중단",
     "continueRebase": "리베이스 계속",
     "rebaseConflictsDescription": "다음 파일에서 리베이스 충돌이 감지되었습니다. 직접 해결하고 계속하거나 AI 에이전트의 도움을 받으세요.",

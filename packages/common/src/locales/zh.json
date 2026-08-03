@@ -1831,6 +1831,7 @@
     "squash": "压缩合并",
     "onlyUncommitted": "仅未提交的更改",
     "rebaseFromBranch": "从分支变基...",
+    "rebase": "变基",
     "abortRebase": "中止变基",
     "continueRebase": "继续变基",
     "rebaseConflictsDescription": "在以下文件中检测到变基冲突。请手动解决后继续，或使用 AI 代理协助。",

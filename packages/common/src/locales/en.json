@@ -1823,6 +1823,7 @@
     "squash": "Squash & Merge",
     "onlyUncommitted": "Only uncommitted",
     "rebaseFromBranch": "Rebase from branch...",
+    "rebase": "Rebase",
     "abortRebase": "Abort rebase",
     "continueRebase": "Continue rebase",
     "rebaseConflictsDescription": "Rebase conflicts detected in the following files. Resolve them manually and continue, or use the AI agent to help.",
