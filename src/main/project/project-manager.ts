@@ -76,8 +76,11 @@ export class ProjectManager {
   }
 
   public async startProject(baseDir: string) {
-    logger.info('Starting project', { baseDir });
     const project = this.getProject(baseDir);
+    if (project.isStarted()) {
+      return;
+    }
+    logger.info('Starting project', { baseDir });
 
     await project.start();
   }

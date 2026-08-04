@@ -53,6 +53,10 @@ export class Project {
     this.tasksLoadingPromise = this.loadTasks();
   }
 
+  public isStarted(): boolean {
+    return this.startPromise !== null;
+  }
+
   public start(): Promise<void> {
     if (!this.startPromise) {
       this.startPromise = (async () => {

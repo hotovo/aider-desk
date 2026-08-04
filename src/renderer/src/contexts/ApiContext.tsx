@@ -1,4 +1,4 @@
-import { createContext, useMemo, ReactNode, useContext } from 'react';
+import { createContext, useEffect, useMemo, ReactNode, useContext } from 'react';
 import { ApplicationAPI } from '@common/api';
 import { HotkeysProvider } from 'react-hotkeys-hook';
 
@@ -14,6 +14,14 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
     }
     return new BrowserApi();
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (api instanceof BrowserApi) {
+        api.destroy();
+      }
+    };
+  }, [api]);
 
   return (
     <ApiContext.Provider value={api}>

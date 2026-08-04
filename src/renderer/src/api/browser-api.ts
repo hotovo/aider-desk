@@ -272,7 +272,17 @@ export class BrowserApi implements ApplicationAPI {
     }
 
     return new Promise((resolve) => {
+      const cleanup = () => {
+        this.socket.off('connect', onConnect);
+        this.socket.off('disconnect', onDisconnect);
+      };
+
       const onConnect = () => {
+        cleanup();
+        resolve();
+      };
+
+      const onDisconnect = () => {
         cleanup();
         resolve();
       };
@@ -282,10 +292,7 @@ export class BrowserApi implements ApplicationAPI {
       }
 
       this.socket.once('connect', onConnect);
-
-      const cleanup = () => {
-        this.socket.off('connect', onConnect);
-      };
+      this.socket.once('disconnect', onDisconnect);
     });
   }
 
@@ -1385,5 +1392,10 @@ export class BrowserApi implements ApplicationAPI {
 
   async getAiderConnectorStatus(): Promise<AiderConnectorStatus> {
     return this.get('/system/aider-connector-status');
+  }
+
+  destroy(): void {
+    this.socket.removeAllListeners();
+    this.socket.disconnect();
   }
 }

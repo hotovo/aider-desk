@@ -6,6 +6,7 @@
 - renamed worktree rebase button label to better describe the action
 - improved conflict detection during worktree merge and rebase operations
 - preventing auto-scroll pause on touch scroll up
+- preventing duplicate project/task initialization and improve socket connection handling when connecting from browser
 
 ## [0.77.0]
 

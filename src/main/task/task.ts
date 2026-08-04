@@ -602,10 +602,12 @@ export class Task {
   }
 
   public async load(readonly = false): Promise<TaskStateData> {
-    logger.info('Loading task', {
-      baseDir: this.project.baseDir,
-      taskId: this.taskId,
-    });
+    if (!this.initialized) {
+      logger.info('Loading task', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+      });
+    }
 
     await this.init(readonly);
 
