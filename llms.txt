@@ -10034,6 +10034,8 @@ private async executeConflictResolution(directoryPath: string, directoryName: st
 ⋮----
 // Clean up abort controller
 ⋮----
+private isConflictError(error: unknown): boolean
+⋮----
 public async resolveConflictsWithAgent(): Promise<void>
 ⋮----
 // Check worktree first
@@ -11480,7 +11482,17 @@ async mergeWorktreeToMainWithUncommitted(
 ⋮----
 // Return merge state for potential revert
 ⋮----
-// Recovery: try to restore stashes
+// Recovery: revert main repo to pre-merge state before restoring stashes
+⋮----
+// Abort any in-progress merge (in case merge itself failed)
+⋮----
+// Ignore - no merge in progress
+⋮----
+// Hard reset main to undo merge commit and clean conflict markers from failed stash apply
+⋮----
+// Restore worktree stash
+⋮----
+// Restore main's original uncommitted changes on the clean working tree
 ⋮----
 /**
    * Check if worktree has uncommitted changes or unmerged commits
@@ -11677,7 +11689,9 @@ async applyUncommittedChangesToMain(
 ⋮----
 // 6. Clean up stash
 ⋮----
-// Recovery: try to restore stash to worktree
+// Recovery: clean up main repo from failed stash apply
+⋮----
+// Restore stash to worktree
 ⋮----
 /**
    * Revert a merge operation using the stored MergeState
@@ -20105,6 +20119,8 @@ const handleInputHistoryUpdate = (data: InputHistoryData) =>
 const initProject = async () =>
 ⋮----
 // Start project
+⋮----
+// Load input history (may have been emitted before listener was registered)
 ⋮----
 // Load tasks
 ⋮----
@@ -29439,7 +29455,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.77.0-dev",
+  "version": "0.78.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
