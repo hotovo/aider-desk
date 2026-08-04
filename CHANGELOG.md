@@ -7,6 +7,7 @@
 - improved conflict detection during worktree merge and rebase operations
 - preventing auto-scroll pause on touch scroll up
 - preventing duplicate project/task initialization and improve socket connection handling when connecting from browser
+- added missing context files to subagent runs
 
 ## [0.77.0]
 

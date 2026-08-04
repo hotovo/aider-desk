@@ -258,7 +258,7 @@ Make sure to reuse the previous conversation if possible.`
       subagentProfile,
       effectivePrompt,
       subagentContextMessages,
-      [],
+      undefined,
       subagentSystemPrompt,
       subagentAbortController,
       promptContext,
