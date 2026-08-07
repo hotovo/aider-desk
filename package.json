@@ -58,11 +58,12 @@
     "@ai-sdk/google": "4.0.19",
     "@ai-sdk/google-vertex": "5.0.23",
     "@ai-sdk/groq": "4.0.12",
+    "@ai-sdk/mcp": "2.0.28",
     "@ai-sdk/mistral": "4.0.13",
     "@ai-sdk/openai": "4.0.16",
     "@ai-sdk/openai-compatible": "3.0.13",
     "@ai-sdk/otel": "1.0.32",
-    "@ai-sdk/provider": "4.0.3",
+    "@ai-sdk/provider": "4.0.6",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-bedrock": "^3.1059.0",
@@ -243,8 +244,8 @@
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "@ai-sdk/provider": "4.0.3",
-    "@ai-sdk/provider-utils": "5.0.10",
+    "@ai-sdk/provider": "4.0.6",
+    "@ai-sdk/provider-utils": "5.0.24",
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },

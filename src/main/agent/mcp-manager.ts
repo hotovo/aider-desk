@@ -2,14 +2,21 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import { v4 as uuidv4 } from 'uuid';
-import { McpServerConfig, McpTool } from '@common/types';
-import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
+import { createMCPClient, type CallToolResult, type ListToolsResult, type MCPClient } from '@ai-sdk/mcp';
+import { type JSONValue } from '@ai-sdk/provider';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
+import { type Tool, type ToolExecutionOptions, type ToolSet } from 'ai';
+import { AgentProfile, McpServerConfig, McpTool, McpToolInputSchema, PromptContext, ToolApprovalState } from '@common/types';
+import { LlmProviderName } from '@common/agent';
+import { delay } from '@common/utils';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+
+import { ApprovalManager } from './tools/approval-manager';
+import { truncateToolResult } from './utils';
 
 import logger from '@/logger';
 import { AIDER_DESK_CACHE_DIR } from '@/constants';
+import { Task } from '@/task';
 
 const MCP_TOOLS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'mcp-tools-cache.json');
 const MCP_TOOLS_CACHE_VERSION = 1;
@@ -24,13 +31,13 @@ export interface McpToolsCache {
   servers: Record<string, McpToolsCacheEntry>;
 }
 
-// increasing timeout for MCP client requests
-export const MCP_CLIENT_TIMEOUT = 600_000;
+const MCP_CLIENT_TIMEOUT = 600_000;
 
-export interface McpConnector {
-  client: McpSdkClient;
+interface McpConnector {
+  client: MCPClient;
   serverName: string;
   tools: McpTool[];
+  toolDefinitions: ListToolsResult;
   serverConfig: McpServerConfig;
 }
 
@@ -38,12 +45,281 @@ export class McpManager {
   private mcpConnectors: Map<string, Promise<McpConnector>> = new Map();
   private currentInitId: string | null = null;
   private toolsCache: McpToolsCache = { version: MCP_TOOLS_CACHE_VERSION, servers: {} };
-
   async init() {
     await this.loadToolsCache();
   }
 
-  async initMcpConnectors(
+  async createToolset(
+    task: Task,
+    profile: AgentProfile,
+    providerName: LlmProviderName,
+    mcpServers: Record<string, McpServerConfig>,
+    approvalManager: ApprovalManager,
+    promptContext?: PromptContext,
+  ): Promise<ToolSet> {
+    let connectors: McpConnector[] = [];
+    try {
+      const initStartTime = Date.now();
+      let loadingMessageShown = false;
+
+      const loadingTimeout = setTimeout(() => {
+        loadingMessageShown = true;
+        task.addLogMessage('loading', 'Initializing MCP servers...', false, promptContext);
+      }, 3000);
+
+      try {
+        connectors = await this.initMcpConnectors(mcpServers, task.getProjectDir(), task.getTaskDir(), false, profile.enabledServers);
+      } finally {
+        clearTimeout(loadingTimeout);
+        if (loadingMessageShown) {
+          task.addLogMessage('loading', undefined, false, promptContext);
+        }
+      }
+
+      const initTime = Date.now() - initStartTime;
+      logger.debug(`MCP servers initialized in ${initTime}ms`);
+    } catch (error) {
+      logger.error('Error initializing MCP clients:', error);
+      task.addLogMessage('error', `Error initializing MCP clients: ${error}`, false, promptContext);
+    }
+
+    const toolSet: ToolSet = {};
+    const lastToolCallTimeRef = { value: 0 };
+
+    for (const mcpConnector of connectors) {
+      if (!profile.enabledServers.includes(mcpConnector.serverName)) {
+        continue;
+      }
+
+      const toolDefinitions = {
+        ...mcpConnector.toolDefinitions,
+        tools: mcpConnector.toolDefinitions.tools.map((toolDefinition) => ({
+          ...toolDefinition,
+          inputSchema: this.fixInputSchema(providerName, toolDefinition.inputSchema),
+        })),
+      } satisfies ListToolsResult;
+      const mcpTools = mcpConnector.client.toolsFromDefinitions(toolDefinitions);
+
+      for (const toolDefinition of toolDefinitions.tools) {
+        const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDefinition.name}`;
+        const normalizedToolId = toolId.toLowerCase().replaceAll(/\s+/g, '_');
+
+        const approvalState = profile.toolApprovals[toolId];
+        if (approvalState === ToolApprovalState.Never) {
+          logger.debug(`Skipping tool due to 'Never' approval state: ${toolId}`);
+          continue;
+        }
+
+        const mcpTool = mcpTools[toolDefinition.name];
+        if (!mcpTool) {
+          logger.warn(`AI SDK did not create MCP tool: ${toolId}`);
+          continue;
+        }
+
+        toolSet[normalizedToolId] = this.wrapMcpTool(
+          mcpConnector.serverName,
+          toolDefinition.name,
+          task,
+          profile,
+          mcpTool,
+          approvalManager,
+          lastToolCallTimeRef,
+          promptContext,
+        );
+      }
+    }
+
+    return toolSet;
+  }
+
+  private wrapMcpTool(
+    serverName: string,
+    toolName: string,
+    task: Task,
+    profile: AgentProfile,
+    toolDef: Tool,
+    approvalManager: ApprovalManager,
+    lastToolCallTimeRef: { value: number },
+    promptContext?: PromptContext,
+  ): Tool {
+    const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolName}`;
+    const originalExecute = toolDef.execute;
+    if (!originalExecute) {
+      throw new Error(`AI SDK MCP tool ${toolId} does not have an execute function`);
+    }
+
+    const execute = async (args: unknown, options: ToolExecutionOptions<unknown>) => {
+      const input = args as Record<string, unknown> | undefined;
+      task.addToolMessage(options.toolCallId, serverName, toolName, input, undefined, undefined, promptContext);
+
+      const questionText = `Approve tool ${toolName} from ${serverName} MCP server?`;
+      const questionSubject = input ? JSON.stringify(input) : undefined;
+      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolId, input, toolId, questionText, questionSubject);
+
+      if (!isApproved) {
+        logger.warn(`Tool execution denied by user: ${toolId}`);
+        return this.createMcpErrorResult(`Tool execution denied by user.${userInput ? ` User input: ${userInput}` : ''}`);
+      }
+      logger.debug(`Tool execution approved: ${toolId}`);
+
+      const timeSinceLastCall = Date.now() - lastToolCallTimeRef.value;
+      const currentMinTime = profile.minTimeBetweenToolCalls;
+      const remainingDelay = currentMinTime - timeSinceLastCall;
+
+      if (remainingDelay > 0) {
+        logger.debug(`Delaying tool call by ${remainingDelay}ms to respect minTimeBetweenToolCalls (${currentMinTime}ms)`);
+        await delay(remainingDelay);
+      }
+
+      try {
+        const timeoutSignal = AbortSignal.timeout(MCP_CLIENT_TIMEOUT);
+        const abortSignal = options.abortSignal ? AbortSignal.any([options.abortSignal, timeoutSignal]) : timeoutSignal;
+        const response = await originalExecute(args, { ...options, abortSignal });
+
+        logger.debug(`Tool ${toolName} returned response`, { response });
+
+        if (response && typeof response === 'object' && 'content' in response && Array.isArray(response.content)) {
+          for (const part of response.content) {
+            if (part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string') {
+              part.text = await truncateToolResult(part.text);
+            }
+          }
+        }
+
+        lastToolCallTimeRef.value = Date.now();
+        return response;
+      } catch (error) {
+        lastToolCallTimeRef.value = Date.now();
+        if (options.abortSignal?.aborted) {
+          throw error;
+        }
+
+        logger.error(`Error calling tool ${toolId}:`, error);
+        return this.createMcpErrorResult(`Error executing tool ${toolName}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    };
+
+    const originalToModelOutput = toolDef.toModelOutput;
+    const toModelOutput: Tool['toModelOutput'] = originalToModelOutput
+      ? (options) => {
+          if (this.isMcpCallToolResult(options.output)) {
+            return originalToModelOutput(options);
+          }
+          return { type: 'json', value: options.output as JSONValue };
+        }
+      : undefined;
+
+    logger.debug(`Wrapping AI SDK MCP tool: ${toolName}`, toolDef);
+    return {
+      ...toolDef,
+      execute,
+      ...(toModelOutput ? { toModelOutput } : {}),
+    };
+  }
+
+  private createMcpErrorResult(message: string): CallToolResult {
+    return {
+      content: [{ type: 'text', text: message }],
+      isError: true,
+    };
+  }
+
+  private isMcpCallToolResult(value: unknown): value is CallToolResult {
+    return typeof value === 'object' && value !== null && 'content' in value && Array.isArray(value.content);
+  }
+
+  private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown> {
+    const unsupportedKeywords = [
+      'propertyNames',
+      'unevaluatedProperties',
+      'dependentSchemas',
+      'dependentRequired',
+      'contains',
+      'contentMediaType',
+      'contentEncoding',
+      'examples',
+      '$defs',
+      '$anchor',
+      '$recursiveRef',
+      '$recursiveAnchor',
+    ];
+
+    const processObject = (obj: Record<string, unknown>): Record<string, unknown> => {
+      const result: Record<string, unknown> = {};
+
+      for (const [key, value] of Object.entries(obj)) {
+        if (unsupportedKeywords.includes(key)) {
+          continue;
+        }
+
+        if (value !== null && typeof value === 'object') {
+          if (Array.isArray(value)) {
+            result[key] = value.map((item) => (item !== null && typeof item === 'object' ? processObject(item as Record<string, unknown>) : item));
+          } else {
+            result[key] = processObject(value as Record<string, unknown>);
+          }
+        } else {
+          result[key] = value;
+        }
+      }
+
+      return result;
+    };
+
+    return processObject(schema);
+  }
+
+  private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema {
+    if (provider === 'gemini') {
+      const fixedSchema = JSON.parse(JSON.stringify(inputSchema));
+
+      const strippedSchema = this.stripUnsupportedSchemaKeywords(fixedSchema) as unknown as McpToolInputSchema;
+
+      if (strippedSchema.properties) {
+        for (const key of Object.keys(strippedSchema.properties)) {
+          let property = strippedSchema.properties[key] as Record<string, unknown>;
+
+          if (property.anyOf) {
+            property = { any_of: property.anyOf };
+            strippedSchema.properties[key] = property as import('json-schema').JSONSchema7Definition;
+          } else if (property.oneOf) {
+            property = { one_of: property.oneOf };
+            strippedSchema.properties[key] = property as import('json-schema').JSONSchema7Definition;
+          } else if (property.allOf) {
+            property = { all_of: property.allOf };
+            strippedSchema.properties[key] = property as import('json-schema').JSONSchema7Definition;
+          } else {
+            if (property.default !== undefined) {
+              delete property.default;
+            }
+
+            if (property.type === 'string' && property.format && !['enum', 'date-time'].includes(property.format as string)) {
+              logger.debug(`Removing unsupported format '${property.format}' for property '${key}' in Gemini schema`);
+              delete property.format;
+            }
+
+            if (!property.type || property.type === 'null') {
+              property.type = 'string';
+            }
+          }
+        }
+        if (Object.keys(strippedSchema.properties).length === 0) {
+          strippedSchema.properties = {
+            placeholder: {
+              type: 'string',
+              description: 'Placeholder property to satisfy Gemini schema requirements',
+            },
+          };
+        }
+      }
+
+      return strippedSchema;
+    }
+
+    return inputSchema;
+  }
+
+  private async initMcpConnectors(
     mcpServers: Record<string, McpServerConfig>,
     projectDir: string | null,
     taskDir: string | null,
@@ -75,7 +351,6 @@ export class McpManager {
         connectorsToInitialize.push(connectorPromise);
 
         if (existingConnector) {
-          // close old connector
           try {
             const oldConnector = await existingConnector;
             await oldConnector.client.close();
@@ -87,7 +362,6 @@ export class McpManager {
       }
     }
 
-    // Wait for initialization and update cache
     const initializedConnectors: McpConnector[] = [];
     for (const connectorPromise of connectorsToInitialize) {
       try {
@@ -99,7 +373,6 @@ export class McpManager {
       }
     }
 
-    // Save cache to disk after initialization
     if (initializedConnectors.length > 0) {
       await this.saveToolsCache();
     }
@@ -125,8 +398,8 @@ export class McpManager {
       if (result.status === 'fulfilled') {
         successfullyResolvedConnectors.push(result.value);
       } else {
-        const serverNames = Object.keys(allConnectors);
         // Ensure index is within bounds for serverNames, though it should be if Object.values and Object.keys maintain order
+        const serverNames = Object.keys(allConnectors);
         const failedServerName = serverNames[index] || 'unknown server';
         logger.warn(`Connector promise for server '${failedServerName}' was rejected when trying to get all connectors:`, result.reason);
       }
@@ -164,7 +437,7 @@ export class McpManager {
         try {
           await oldConnector.client.close();
           logger.info(`Closed old MCP connector for server: ${serverName}`);
-          oldConnector = null; // Clear the old client reference
+          oldConnector = null;
         } catch (closeError) {
           logger.error(`Error closing old MCP connector for server ${serverName}:`, closeError);
         }
@@ -191,9 +464,7 @@ export class McpManager {
     const config = JSON.parse(JSON.stringify(serverConfig)) as McpServerConfig;
 
     const interpolateValue = (value: string): string => {
-      // Replace ${projectDir} with the project root directory
       let result = value.replace(/\${projectDir}/g, projectDir || '.');
-      // Replace ${taskDir} with the task directory (worktree dir or project root)
       result = result.replace(/\${taskDir}/g, taskDir || projectDir || '.');
       return result;
     };
@@ -285,15 +556,7 @@ export class McpManager {
     logger.info(`Initializing MCP client for server: ${serverName}`);
     logger.debug(`Server configuration: ${JSON.stringify(config)}`);
 
-    const client = new McpSdkClient(
-      {
-        name: 'aider-desk-client',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {},
-      },
-    );
+    let client: MCPClient;
 
     if (config.command) {
       const env = { ...config.env };
@@ -304,7 +567,6 @@ export class McpManager {
         env.HOME = process.env.HOME;
       }
 
-      // Handle npx command on Windows
       let command = config.command;
       let args = config.args || [];
       if (process.platform === 'win32' && command === 'npx') {
@@ -329,16 +591,11 @@ export class McpManager {
         }
 
         if (runSubcommandIndex !== -1) {
-          // Check if '--init' already exists anywhere in the arguments
-          // (Docker might tolerate duplicates, but it's cleaner not to add it if present)
           if (!args.includes('--init')) {
-            // Insert '--init' immediately after the 'run' subcommand
             args.splice(runSubcommandIndex + 1, 0, '--init');
             logger.debug(`Added '--init' flag after 'run' for server ${serverName} docker command.`);
           }
         } else {
-          // Log a warning if we couldn't confidently find the 'run' command
-          // This might happen with unusual docker commands defined in the config
           logger.warn(`Could not find 'run' subcommand at the expected position in docker args for server ${serverName} from config.`);
         }
       }
@@ -351,55 +608,60 @@ export class McpManager {
       });
 
       logger.debug(`Connecting to MCP server using STDIO: ${serverName}`);
-      await client.connect(transport);
+      client = await createMCPClient({
+        transport,
+        clientName: 'aider-desk-client',
+        version: '1.0.0',
+      });
       logger.debug(`Connected to MCP server: ${serverName}`);
     } else if (config.url) {
-      const baseUrl = new URL(config.url);
+      const headers = config.headers ? { ...config.headers } : undefined;
+
       try {
-        const transport = new StreamableHTTPClientTransport(new URL(baseUrl), {
-          requestInit: {
-            headers: config.headers,
-          },
-        });
         logger.debug(`Connecting to MCP server using Streamable HTTP: ${serverName}`);
-        await client.connect(transport);
+        client = await createMCPClient({
+          transport: { type: 'http', url: config.url, headers },
+          clientName: 'aider-desk-client',
+          version: '1.0.0',
+        });
         logger.debug(`Connected to MCP server: ${serverName}`);
       } catch (error) {
         logger.debug(`Failed to connect to MCP server using Streamable HTTP: ${serverName}`, { message: (error as Error).message });
 
-        const sseTransport = new SSEClientTransport(baseUrl, {
-          requestInit: {
-            headers: config.headers,
-          },
-        });
         logger.debug(`Connecting to MCP server using SSE: ${serverName}`);
-        await client.connect(sseTransport);
+        client = await createMCPClient({
+          transport: { type: 'sse', url: config.url, headers },
+          clientName: 'aider-desk-client',
+          version: '1.0.0',
+        });
         logger.debug(`Connected to MCP server: ${serverName}`);
       }
     } else {
       throw new Error(`MCP server ${serverName} has invalid configuration: missing command or url`);
     }
 
-    // Get tools from this server using the SDK client
     logger.debug(`Fetching tools for MCP server: ${serverName}`);
-    const toolsResponse = (await client.listTools(undefined, {
-      timeout: MCP_CLIENT_TIMEOUT,
-    })) as unknown as { tools: McpTool[] }; // Cast back to expected structure
+    const toolsResponse = await client.listTools({
+      options: { timeout: MCP_CLIENT_TIMEOUT },
+    });
     const toolsList = toolsResponse.tools;
     logger.debug(`Found ${toolsList.length} tools for MCP server: ${serverName}`);
 
-    const clientHolder: McpConnector = {
+    const connector: McpConnector = {
       client,
       serverName,
       serverConfig: config,
+      toolDefinitions: toolsResponse,
       tools: toolsList.map((tool) => ({
-        ...tool,
         serverName,
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
       })),
     };
 
     logger.info(`MCP client initialized successfully for server: ${serverName}`);
-    return clientHolder;
+    return connector;
   }
 
   async getMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | null> {
@@ -476,7 +738,6 @@ export class McpManager {
     logger.debug(`Updated cache for server: ${serverName}`);
   }
 
-  // Pool methods
   private getPoolKey(scope: string, serverName: string): string {
     return `${scope}:${serverName}`;
   }

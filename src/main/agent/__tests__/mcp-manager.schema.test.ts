@@ -1,73 +1,21 @@
 /**
- * Tests for Agent class - schema manipulation functions (fixInputSchema, stripUnsupportedSchemaKeywords)
+ * Tests for McpManager - schema manipulation functions (fixInputSchema, stripUnsupportedSchemaKeywords)
  */
 
-// Mock dependencies
 vi.mock('@/logger');
-vi.mock('uuid', () => ({
-  v4: vi.fn(),
-}));
 
-// Import dependencies
 import { vi, describe, expect, it, beforeEach } from 'vitest';
-import { v4 as uuidv4 } from 'uuid';
+
+import { McpManager } from '../mcp-manager';
 
 import type { McpToolInputSchema } from '@common/types';
 
-// We need to import Agent after mocks are set up
-const AgentModule = await import('../agent');
-const { Agent: AgentClass } = AgentModule;
+describe('McpManager - Schema Manipulation', () => {
+  let manager: McpManager;
 
-// Add Agent type since we're using it
-type Agent = InstanceType<typeof AgentClass>;
-
-describe('Agent - Schema Manipulation', () => {
-  let agent: Agent;
-  let mockUuidv4: ReturnType<typeof vi.mocked<typeof uuidv4>>;
-
-  beforeEach(async () => {
+  beforeEach(() => {
     vi.clearAllMocks();
-
-    // Setup uuid mock
-    mockUuidv4 = vi.mocked(uuidv4);
-    mockUuidv4.mockImplementation(() => 'uuid-1' as any);
-
-    // Create minimal mocks for Agent constructor dependencies
-    const mockStore = {
-      getSettings: vi.fn(() => ({})),
-    };
-    const mockAgentProfileManager = {};
-    const mockMcpManager = {
-      getConnectors: vi.fn(() => []),
-    };
-    const mockModelManager = {
-      createLlm: vi.fn(),
-      getProviderOptions: vi.fn(() => ({})),
-      getProviderParameters: vi.fn(() => ({})),
-      getCacheControl: vi.fn(() => ({})),
-      getModelSettings: vi.fn(() => undefined),
-      getProviderTools: vi.fn(() => Promise.resolve({})),
-      isStreamingDisabled: vi.fn(() => false),
-    };
-    const mockTelemetryManager = {
-      captureAgentRun: vi.fn(),
-    };
-    const mockMemoryManager = {};
-    const mockPromptsManager = {};
-    const mockExtensionManager = {
-      isInitialized: vi.fn(() => false),
-    };
-
-    agent = new AgentClass(
-      mockStore as any,
-      mockAgentProfileManager as any,
-      mockMcpManager as any,
-      mockModelManager as any,
-      mockTelemetryManager as any,
-      mockMemoryManager as any,
-      mockPromptsManager as any,
-      mockExtensionManager as any,
-    );
+    manager = new McpManager();
   });
 
   describe('stripUnsupportedSchemaKeywords', () => {
@@ -91,9 +39,8 @@ describe('Agent - Schema Manipulation', () => {
         $recursiveAnchor: true,
       };
 
-      const result = agent['stripUnsupportedSchemaKeywords'](inputSchema);
+      const result = manager['stripUnsupportedSchemaKeywords'](inputSchema);
 
-      // Check that unsupported keywords are removed
       expect(result).not.toHaveProperty('propertyNames');
       expect(result).not.toHaveProperty('unevaluatedProperties');
       expect(result).not.toHaveProperty('dependentSchemas');
@@ -107,7 +54,6 @@ describe('Agent - Schema Manipulation', () => {
       expect(result).not.toHaveProperty('$recursiveRef');
       expect(result).not.toHaveProperty('$recursiveAnchor');
 
-      // Check that supported keywords are preserved
       expect(result).toHaveProperty('type', 'object');
       expect(result).toHaveProperty('properties');
     });
@@ -131,14 +77,12 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['stripUnsupportedSchemaKeywords'](inputSchema);
+      const result = manager['stripUnsupportedSchemaKeywords'](inputSchema);
 
-      // Check nested objects
       expect((result.properties as any).nested).not.toHaveProperty('propertyNames');
       expect((result.properties as any).nested).not.toHaveProperty('$defs');
       expect(((result.properties as any).nested as any).properties.field).not.toHaveProperty('examples');
 
-      // Check items
       expect((result as any).items).not.toHaveProperty('contains');
     });
 
@@ -153,18 +97,15 @@ describe('Agent - Schema Manipulation', () => {
         allOf: [{ type: 'null', contentMediaType: 'text/plain' }],
       };
 
-      const result = agent['stripUnsupportedSchemaKeywords'](inputSchema);
+      const result = manager['stripUnsupportedSchemaKeywords'](inputSchema);
 
-      // Check anyOf items
       expect((result as any).anyOf).toHaveLength(2);
       expect((result as any).anyOf[0]).not.toHaveProperty('propertyNames');
       expect((result as any).anyOf[1]).not.toHaveProperty('$defs');
 
-      // Check oneOf items
       expect((result as any).oneOf).toHaveLength(1);
       expect((result as any).oneOf[0]).not.toHaveProperty('examples');
 
-      // Check allOf items
       expect((result as any).allOf).toHaveLength(1);
       expect((result as any).allOf[0]).not.toHaveProperty('contentMediaType');
     });
@@ -192,9 +133,8 @@ describe('Agent - Schema Manipulation', () => {
         const: 'fixed-value',
       };
 
-      const result = agent['stripUnsupportedSchemaKeywords'](inputSchema);
+      const result = manager['stripUnsupportedSchemaKeywords'](inputSchema);
 
-      // All standard keywords should be preserved
       expect(result).toEqual(inputSchema);
     });
   });
@@ -216,7 +156,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('status');
       const status = (result.properties as any).status;
@@ -242,7 +182,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('type');
       const petType = (result.properties as any).type;
@@ -278,23 +218,17 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
-      // The current implementation only processes top-level properties,
-      // not nested schemas. So nested anyOf is preserved (not converted to any_of).
-      // This test verifies the current behavior.
       const user = (result.properties as any).user;
       expect(user).toHaveProperty('properties');
       const role = (user.properties as any).role;
-      // Note: nested anyOf is NOT processed at deeper levels
       expect(role).toHaveProperty('anyOf');
       expect(role).not.toHaveProperty('any_of');
 
-      // For nested properties, the format removal is NOT applied
-      // (only top-level properties are processed for format removal)
       const email = (user.properties as any).email;
       expect(email).toHaveProperty('type', 'string');
-      expect(email).toHaveProperty('format', 'email'); // format is preserved at nested level
+      expect(email).toHaveProperty('format', 'email');
       expect(email).toHaveProperty('description', 'User email');
     });
 
@@ -314,7 +248,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).name).not.toHaveProperty('default');
       expect((result.properties as any).name).toHaveProperty('description');
@@ -353,9 +287,8 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
-      // Only 'enum' and 'date-time' formats are preserved, others are removed
       expect((result.properties as any).email).not.toHaveProperty('format');
       expect((result.properties as any).uri).not.toHaveProperty('format');
       expect((result.properties as any).dateTime).toHaveProperty('format', 'date-time');
@@ -364,15 +297,13 @@ describe('Agent - Schema Manipulation', () => {
     });
 
     it('should add placeholder property when properties object is empty', () => {
-      // To test the placeholder, we need to pass a schema with an empty properties object
       const inputSchema: McpToolInputSchema = {
         type: 'object',
         properties: {},
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
-      // Placeholder should be added when there are no properties
       expect(result.properties).toHaveProperty('placeholder');
       expect((result.properties as any).placeholder).toHaveProperty('type', 'string');
       expect((result.properties as any).placeholder).toHaveProperty('description');
@@ -390,9 +321,8 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('openai', inputSchema);
+      const result = manager['fixInputSchema']('openai', inputSchema);
 
-      // Should return original schema unchanged
       expect(result).toEqual(inputSchema);
     });
 
@@ -411,7 +341,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect(result.properties).toHaveProperty('config');
       const config = (result.properties as any).config;
@@ -432,7 +362,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).value).toHaveProperty('type', 'string');
     });
@@ -447,7 +377,7 @@ describe('Agent - Schema Manipulation', () => {
         },
       };
 
-      const result = agent['fixInputSchema']('gemini', inputSchema);
+      const result = manager['fixInputSchema']('gemini', inputSchema);
 
       expect((result.properties as any).value).toHaveProperty('type', 'string');
     });

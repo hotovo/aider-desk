@@ -11,8 +11,6 @@ import {
   ContextToolMessage,
   ContextUserMessage,
   DefaultTaskState,
-  McpTool,
-  McpToolInputSchema,
   Mode,
   ModelCallSettings,
   PromptContext,
@@ -26,7 +24,6 @@ import {
   type FinishReason,
   generateText,
   InvalidToolInputError,
-  jsonSchema,
   type ModelMessage,
   NoSuchToolError,
   Output,
@@ -34,15 +31,12 @@ import {
   type StepResult,
   streamText,
   type TelemetryOptions,
-  type Tool,
   type ToolExecutionOptions,
   type ToolSet,
   type TypedToolResult,
   wrapLanguageModel,
 } from 'ai';
-import { delay, extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
-import { LlmProviderName } from '@common/agent';
-import { Client as McpSdkClient } from '@modelcontextprotocol/sdk/client/index.js';
+import { extractProviderModel, extractServerNameToolName, extractTextContent } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { fileTypeFromBuffer } from 'file-type';
@@ -62,15 +56,15 @@ import { createAiderToolset } from './tools/aider';
 import { createHelpersToolset } from './tools/helpers';
 import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
-import { MCP_CLIENT_TIMEOUT, McpConnector, McpManager } from './mcp-manager';
+import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, truncateToolResult } from './utils';
+import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
 import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
-import type { JSONSchema7Definition, LanguageModelV4 } from '@ai-sdk/provider';
+import type { LanguageModelV4 } from '@ai-sdk/provider';
 
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
@@ -90,7 +84,6 @@ const MAX_RETRIES = 3;
 
 export class Agent {
   private abortControllers: Map<string, AbortController> = new Map();
-  private lastToolCallTime: number = 0;
 
   constructor(
     private readonly store: Store,
@@ -390,7 +383,6 @@ export class Agent {
     profile: AgentProfile,
     provider: ProviderProfile,
     model: string,
-    mcpConnectors: McpConnector[] = [],
     messages?: ContextMessage[],
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
@@ -403,41 +395,18 @@ export class Agent {
 
     const approvalManager = new ApprovalManager(task, profile);
 
-    // Build the toolSet directly from enabled clients and tools
-    const toolSet: ToolSet = mcpConnectors.reduce((acc, mcpConnector) => {
-      // Skip if serverName is not in the profile's enabledServers
-      if (!profile.enabledServers.includes(mcpConnector.serverName)) {
-        return acc;
-      }
+    const toolSet: ToolSet = {};
 
-      // Process tools for this enabled server
-      mcpConnector.tools.forEach((tool) => {
-        const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`;
-        const normalizedToolId = toolId.toLowerCase().replaceAll(/\s+/g, '_');
-
-        // Check approval state first from the profile
-        const approvalState = profile.toolApprovals[toolId];
-
-        // Skip tools marked as 'Never' approved
-        if (approvalState === ToolApprovalState.Never) {
-          logger.debug(`Skipping tool due to 'Never' approval state: ${toolId}`);
-          return; // Do not add the tool if it's never approved
-        }
-
-        acc[normalizedToolId] = this.convertMpcToolToAiSdkTool(
-          provider.provider.name,
-          mcpConnector.serverName,
-          task,
-          profile,
-          mcpConnector.client,
-          tool,
-          approvalManager,
-          promptContext,
-        );
-      });
-
-      return acc;
-    }, {} as ToolSet);
+    // MCP tools
+    const mcpTools = await this.mcpManager.createToolset(
+      task,
+      profile,
+      provider.provider.name,
+      this.store.getSettings().mcpServers,
+      approvalManager,
+      promptContext,
+    );
+    Object.assign(toolSet, mcpTools);
 
     if (profile.useAiderTools) {
       const aiderTools = createAiderToolset(task, profile, promptContext);
@@ -556,203 +525,6 @@ export class Agent {
     }
 
     return wrappedToolSet;
-  }
-
-  private convertMpcToolToAiSdkTool(
-    providerName: LlmProviderName,
-    serverName: string,
-    task: Task,
-    profile: AgentProfile,
-    mcpClient: McpSdkClient,
-    toolDef: McpTool,
-    approvalManager: ApprovalManager,
-    promptContext?: PromptContext,
-  ): Tool {
-    const toolId = `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}`;
-
-    const execute = async (args: { [x: string]: unknown } | undefined, { toolCallId }: ToolExecutionOptions<unknown>) => {
-      task.addToolMessage(toolCallId, serverName, toolDef.name, args, undefined, undefined, promptContext);
-
-      // --- Tool Approval Logic ---
-      const toolName = toolId;
-      const questionKey = toolId;
-      const questionText = `Approve tool ${toolDef.name} from ${serverName} MCP server?`;
-      const questionSubject = args ? JSON.stringify(args) : undefined;
-
-      const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, args, questionKey, questionText, questionSubject);
-
-      if (!isApproved) {
-        logger.warn(`Tool execution denied by user: ${toolId}`);
-        return `Tool execution denied by user.${userInput ? ` User input: ${userInput}` : ''}`;
-      }
-      logger.debug(`Tool execution approved: ${toolId}`);
-      // --- End Tool Approval Logic ---
-
-      // Enforce minimum time between tool calls
-      const timeSinceLastCall = Date.now() - this.lastToolCallTime;
-      const currentMinTime = profile.minTimeBetweenToolCalls;
-      const remainingDelay = currentMinTime - timeSinceLastCall;
-
-      if (remainingDelay > 0) {
-        logger.debug(`Delaying tool call by ${remainingDelay}ms to respect minTimeBetweenToolCalls (${currentMinTime}ms)`);
-        await delay(remainingDelay);
-      }
-
-      try {
-        const response = await mcpClient.callTool(
-          {
-            name: toolDef.name,
-            arguments: args,
-          },
-          undefined,
-          {
-            timeout: MCP_CLIENT_TIMEOUT,
-          },
-        );
-
-        logger.debug(`Tool ${toolDef.name} returned response`, { response });
-
-        // Truncate large text content in the response
-        if (response && typeof response === 'object' && 'content' in response && Array.isArray(response.content)) {
-          for (let i = 0; i < response.content.length; i++) {
-            const part = response.content[i];
-            if (part && typeof part === 'object' && part.type === 'text' && typeof part.text === 'string') {
-              part.text = await truncateToolResult(part.text);
-            }
-          }
-        }
-
-        // Update last tool call time
-        this.lastToolCallTime = Date.now();
-        return response;
-      } catch (error) {
-        logger.error(`Error calling tool ${serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDef.name}:`, error);
-        // Update last tool call time even if there's an error
-        this.lastToolCallTime = Date.now();
-        // Return an error message string to the agent
-        return `Error executing tool ${toolDef.name}: ${error instanceof Error ? error.message : String(error)}`;
-      }
-    };
-
-    logger.debug(`Converting MCP tool to AI SDK tool: ${toolDef.name}`, toolDef);
-    const inputSchema = this.fixInputSchema(providerName, toolDef.inputSchema);
-
-    return {
-      description: toolDef.description ?? '',
-      inputSchema: jsonSchema({
-        ...inputSchema,
-        properties: inputSchema.properties ? inputSchema.properties : {},
-        additionalProperties: false,
-      }),
-      execute,
-    };
-  }
-
-  /**
-   * Recursively strips unsupported JSON Schema 2019-09 keywords that are not
-   * recognized by some MCP servers.
-   */
-  private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown> {
-    // JSON Schema 2019-09 keywords to remove
-    const unsupportedKeywords = [
-      'propertyNames',
-      'unevaluatedProperties',
-      'dependentSchemas',
-      'dependentRequired',
-      'contains',
-      'contentMediaType',
-      'contentEncoding',
-      'examples',
-      '$defs',
-      '$anchor',
-      '$recursiveRef',
-      '$recursiveAnchor',
-    ];
-
-    // Recursive helper to process schema objects
-    const processObject = (obj: Record<string, unknown>): Record<string, unknown> => {
-      const result: Record<string, unknown> = {};
-
-      for (const [key, value] of Object.entries(obj)) {
-        // Skip unsupported keywords
-        if (unsupportedKeywords.includes(key)) {
-          continue;
-        }
-
-        // Recursively process objects
-        if (value !== null && typeof value === 'object') {
-          if (Array.isArray(value)) {
-            // Process arrays (e.g., anyOf, oneOf, allOf, enum items)
-            result[key] = value.map((item) => (item !== null && typeof item === 'object' ? processObject(item as Record<string, unknown>) : item));
-          } else {
-            // Process nested objects (e.g., properties, items, additionalProperties)
-            result[key] = processObject(value as Record<string, unknown>);
-          }
-        } else {
-          result[key] = value;
-        }
-      }
-
-      return result;
-    };
-
-    return processObject(schema);
-  }
-
-  private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema {
-    if (provider === 'gemini') {
-      // Deep clone to avoid modifying the original schema
-      const fixedSchema = JSON.parse(JSON.stringify(inputSchema));
-
-      // First, strip JSON Schema 2019-09 keywords that are not supported
-      const strippedSchema = this.stripUnsupportedSchemaKeywords(fixedSchema) as unknown as McpToolInputSchema;
-
-      if (strippedSchema.properties) {
-        for (const key of Object.keys(strippedSchema.properties)) {
-          let property = strippedSchema.properties[key] as Record<string, unknown>;
-
-          // Gemini requires that when any_of/one_of/all_of is present,
-          // it must be the ONLY field in the property
-          if (property.anyOf) {
-            property = { any_of: property.anyOf };
-            strippedSchema.properties[key] = property as JSONSchema7Definition;
-          } else if (property.oneOf) {
-            property = { one_of: property.oneOf };
-            strippedSchema.properties[key] = property as JSONSchema7Definition;
-          } else if (property.allOf) {
-            property = { all_of: property.allOf };
-            strippedSchema.properties[key] = property as JSONSchema7Definition;
-          } else {
-            // gemini does not like "default" in the schema
-            if (property.default !== undefined) {
-              delete property.default;
-            }
-
-            if (property.type === 'string' && property.format && !['enum', 'date-time'].includes(property.format as string)) {
-              logger.debug(`Removing unsupported format '${property.format}' for property '${key}' in Gemini schema`);
-              delete property.format;
-            }
-
-            if (!property.type || property.type === 'null') {
-              property.type = 'string';
-            }
-          }
-        }
-        if (Object.keys(strippedSchema.properties).length === 0) {
-          // gemini requires at least one property in the schema
-          strippedSchema.properties = {
-            placeholder: {
-              type: 'string',
-              description: 'Placeholder property to satisfy Gemini schema requirements',
-            },
-          };
-        }
-      }
-
-      return strippedSchema;
-    }
-
-    return inputSchema;
   }
 
   async runAgent(
@@ -943,33 +715,6 @@ export class Agent {
     // Normalize messages for provider-specific requirements
     messages = this.modelManager.normalizeMessages(provider, modelName, messages);
 
-    let mcpConnectors: McpConnector[] = [];
-    try {
-      // Lazily initialize MCP clients for the current task
-      const initStartTime = Date.now();
-      let loadingMessageShown = false;
-
-      const loadingTimeout = setTimeout(() => {
-        loadingMessageShown = true;
-        task.addLogMessage('loading', 'Initializing MCP servers...', false, promptContext);
-      }, 3000);
-
-      try {
-        mcpConnectors = await this.mcpManager.initMcpConnectors(settings.mcpServers, task.getProjectDir(), task.getTaskDir(), false, profile.enabledServers);
-      } finally {
-        clearTimeout(loadingTimeout);
-        if (loadingMessageShown) {
-          task.addLogMessage('loading', undefined, false, promptContext);
-        }
-      }
-
-      const initTime = Date.now() - initStartTime;
-      logger.debug(`MCP servers initialized in ${initTime}ms`);
-    } catch (error) {
-      logger.error('Error initializing MCP clients:', error);
-      task.addLogMessage('error', `Error initializing MCP clients: ${error}`, false, promptContext);
-    }
-
     if (effectiveAbortSignal?.aborted) {
       logger.debug('Prompt aborted by user (before Agent run)');
       return resultMessages;
@@ -981,7 +726,6 @@ export class Agent {
       profile,
       provider,
       modelName,
-      mcpConnectors,
       contextMessages,
       resultMessages,
       effectiveAbortSignal,

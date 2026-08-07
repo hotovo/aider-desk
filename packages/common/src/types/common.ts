@@ -20,8 +20,6 @@ import { z } from 'zod';
 
 import { ContextFile, ContextMemoryMode, ContextMessage, PromptContext, UsageReportData } from './context';
 
-import type { JSONSchema7Definition } from '@ai-sdk/provider';
-
 // Worktree schema definition
 export const WorktreeSchema = z.object({
   path: z.string(),
@@ -894,9 +892,9 @@ export interface GenericTool {
   description: string;
 }
 
-export interface McpToolInputSchema {
+export interface McpToolInputSchema extends Record<string, unknown> {
   type: 'object';
-  properties: Record<string, JSONSchema7Definition>;
+  properties?: Record<string, unknown>;
 }
 
 export interface McpTool {
