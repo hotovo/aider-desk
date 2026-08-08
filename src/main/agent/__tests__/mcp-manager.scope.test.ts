@@ -50,6 +50,16 @@ describe('McpManager - scope calculation', () => {
     expect(scope).toBe('global');
   });
 
+  it('should calculate global scope for a remote server without interpolation', () => {
+    const manager = new McpManager();
+    const config: McpServerConfig = {
+      url: 'http://localhost:8080/sse',
+    };
+
+    const scope = (manager as any).calculateServerScope(config, '/project', '/project/worktree', 'test-server');
+    expect(scope).toBe('global');
+  });
+
   it('should calculate scope with projectDir interpolation only', () => {
     const manager = new McpManager();
     const config: McpServerConfig = {

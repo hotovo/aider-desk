@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createMCPClient, type CallToolResult, type ListToolsResult, type MCPClient } from '@ai-sdk/mcp';
 import { type JSONValue } from '@ai-sdk/provider';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { type Tool, type ToolExecutionOptions, type ToolSet } from 'ai';
 import { AgentProfile, McpServerConfig, McpTool, McpToolInputSchema, PromptContext, ToolApprovalState } from '@common/types';
 import { LlmProviderName } from '@common/agent';
@@ -531,8 +532,7 @@ export class McpManager {
 
     let scope: string;
     if (!hasProjectDirInterpolation && !hasTaskDirInterpolation) {
-      // No interpolation: scope = ${taskDir || projectDir || 'global'}
-      scope = taskDir || projectDir || 'global';
+      scope = !serverConfig.command && serverConfig.url ? 'global' : taskDir || projectDir || 'global';
     } else if (hasProjectDirInterpolation && !hasTaskDirInterpolation) {
       // Has ${projectDir} only: scope = ${projectDir || 'global'}
       scope = projectDir || 'global';
@@ -618,9 +618,12 @@ export class McpManager {
       const headers = config.headers ? { ...config.headers } : undefined;
 
       try {
+        const transport = new StreamableHTTPClientTransport(new URL(config.url), {
+          requestInit: { headers },
+        });
         logger.debug(`Connecting to MCP server using Streamable HTTP: ${serverName}`);
         client = await createMCPClient({
-          transport: { type: 'http', url: config.url, headers },
+          transport,
           clientName: 'aider-desk-client',
           version: '1.0.0',
         });
