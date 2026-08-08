@@ -94,10 +94,14 @@ export const parseUsageReport = (model: string, report: string): UsageReportData
   };
 };
 
-export const normalizeBaseDir = (
-  baseDir: string,
-  os: OS = process.platform === 'win32' ? OS.Windows : process.platform === 'darwin' ? OS.MacOS : OS.Linux,
-): string => {
+const detectOS = (): OS => {
+  if (typeof process !== 'undefined' && process.platform) {
+    return process.platform === 'win32' ? OS.Windows : process.platform === 'darwin' ? OS.MacOS : OS.Linux;
+  }
+  return OS.Linux;
+};
+
+export const normalizeBaseDir = (baseDir: string, os: OS = detectOS()): string => {
   if (os === OS.Windows) {
     // On Windows, paths are case-insensitive so we normalize to lowercase
     return baseDir.toLowerCase().replace(/\\+$/, '');

@@ -9,6 +9,7 @@
 - preventing duplicate project/task initialization and improve socket connection handling when connecting from browser
 - added missing context files to subagent runs
 - added OAuth authentication support for MCP servers
+- improved OS detection for browser compatibility
 
 ## [0.77.0]
 
