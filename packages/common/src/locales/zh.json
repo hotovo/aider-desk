@@ -1186,7 +1186,18 @@
       "always": "总是",
       "ask": "询问"
     },
-    "tools": "工具"
+    "tools": "工具",
+    "oauth": {
+      "connect": "连接",
+      "reopen": "重新打开",
+      "connected": "已通过 OAuth 连接",
+      "disconnect": "断开连接",
+      "authorizing": "请在打开的浏览器窗口中完成身份验证。",
+      "authenticationRequired": "需要 OAuth 身份验证。",
+      "windowTitle": "MCP 身份验证",
+      "connectError": "无法启动 MCP 身份验证。",
+      "disconnectError": "无法断开 MCP 身份验证。"
+    }
   },
   "todo": {
     "title": "任务",

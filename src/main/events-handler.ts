@@ -12,6 +12,7 @@ import {
   FileEdit,
   InstalledExtension,
   ExtensionToolInfo,
+  McpOAuthStatusData,
   McpServerConfig,
   McpTool,
   MemoryEntry,
@@ -562,6 +563,38 @@ export class EventsHandler {
     return await this.mcpManager.reloadSingleServer(serverName, config);
   }
 
+  async getMcpOAuthStatus(serverName: string, config?: McpServerConfig): Promise<McpOAuthStatusData> {
+    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+    if (!serverConfig) {
+      throw new Error(`MCP server '${serverName}' is not configured`);
+    }
+    return this.mcpManager.getOAuthStatus(serverConfig);
+  }
+
+  async startMcpOAuth(serverName: string, config?: McpServerConfig): Promise<string> {
+    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+    if (!serverConfig) {
+      throw new Error(`MCP server '${serverName}' is not configured`);
+    }
+    return this.mcpManager.startOAuth(serverName, serverConfig);
+  }
+
+  async disconnectMcpOAuth(serverName: string, config?: McpServerConfig): Promise<void> {
+    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+    if (!serverConfig) {
+      throw new Error(`MCP server '${serverName}' is not configured`);
+    }
+    await this.mcpManager.disconnectOAuth(serverConfig);
+  }
+
+  async completeMcpOAuth(code: string, state: string): Promise<void> {
+    await this.mcpManager.completeOAuth(code, state);
+  }
+
+  async cancelMcpOAuth(state: string): Promise<void> {
+    await this.mcpManager.cancelOAuth(state);
+  }
+
   async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {
     try {
       const task = this.projectManager.getProject(baseDir).getTask(taskId);
@@ -1071,6 +1104,10 @@ export class EventsHandler {
       });
       return false;
     }
+  }
+
+  async openUrlExternally(url: string): Promise<void> {
+    await openUrl(url, 'external');
   }
 
   async openUrlInWindow(url: string, title?: string): Promise<void> {

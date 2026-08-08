@@ -23,7 +23,7 @@ import {
   SkillsApi,
   ReadonlyApi,
 } from '@/server/rest-api';
-import { AUTH_PASSWORD, AUTH_USERNAME, READONLY_MODE, SERVER_PORT } from '@/constants';
+import { AUTH_PASSWORD, AUTH_USERNAME, MCP_OAUTH_CALLBACK_PATH, READONLY_MODE, SERVER_PORT } from '@/constants';
 import logger from '@/logger';
 import { ProjectManager } from '@/project';
 import { EventsHandler } from '@/events-handler';
@@ -54,8 +54,8 @@ export class ServerController {
   }
 
   private serverGuardMiddleware(req: Request, res: Response, next: NextFunction): void {
-    // Always allow health check regardless of server.enabled setting
-    if (req.path === '/api/health') {
+    // Always allow health check and OAuth callback regardless of server.enabled setting
+    if (req.path === '/api/health' || req.path === MCP_OAUTH_CALLBACK_PATH) {
       next();
       return;
     }
@@ -86,6 +86,11 @@ export class ServerController {
   }
 
   private basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
+    if (req.path === MCP_OAUTH_CALLBACK_PATH) {
+      next();
+      return;
+    }
+
     const settings = this.store.getSettings().server;
 
     // Check if environment variables for auth are provided, which overrides settings
@@ -124,7 +129,7 @@ export class ServerController {
     this.app.use('/api/readonly', readonlyRouter);
 
     this.app.use('/api', (req, res, next) => {
-      if (req.path === '/health' || req.path.startsWith('/readonly')) {
+      if (req.path === '/health' || req.path === '/mcp/oauth/callback' || req.path.startsWith('/readonly')) {
         next();
         return;
       }

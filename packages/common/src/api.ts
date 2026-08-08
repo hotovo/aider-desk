@@ -19,6 +19,7 @@ import {
   SystemLogData,
   SystemLogLevel,
   SystemLogsResponse,
+  McpOAuthStatusData,
   McpServerConfig,
   McpTool,
   MemoryEmbeddingProgress,
@@ -161,6 +162,9 @@ export interface ApplicationAPI {
   loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
   reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
   reloadMcpServer: (serverName: string, config: McpServerConfig) => Promise<McpTool[]>;
+  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig) => Promise<McpOAuthStatusData>;
+  startMcpOAuth: (serverName: string, config?: McpServerConfig) => Promise<string>;
+  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig) => Promise<void>;
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => Promise<InstalledExtension[]>;
@@ -320,6 +324,7 @@ export interface ApplicationAPI {
   writeToClipboard: (text: string) => Promise<void>;
   openPath: (path: string) => Promise<boolean>;
   openUrlInWindow: (url: string, title?: string) => Promise<void>;
+  openUrlExternally: (url: string) => Promise<void>;
 
   addNotificationListener: (baseDir: string, callback: (data: NotificationData) => void) => () => void;
 

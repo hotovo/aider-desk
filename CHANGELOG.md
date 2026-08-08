@@ -8,6 +8,7 @@
 - preventing auto-scroll pause on touch scroll up
 - preventing duplicate project/task initialization and improve socket connection handling when connecting from browser
 - added missing context files to subagent runs
+- added OAuth authentication support for MCP servers
 
 ## [0.77.0]
 

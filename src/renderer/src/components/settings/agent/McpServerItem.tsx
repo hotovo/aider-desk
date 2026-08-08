@@ -1,11 +1,12 @@
-import { McpServerConfig, McpTool, ToolApprovalState } from '@common/types';
+import { McpOAuthStatus, McpServerConfig, McpTool, ToolApprovalState } from '@common/types';
 import { extractIpcErrorMessage } from '@common/utils';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaPencilAlt, FaTrash } from 'react-icons/fa';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { McpToolItem } from './McpToolItem';
+import { McpOAuthControls } from './McpOAuthControls';
 
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
@@ -38,29 +39,67 @@ export const McpServerItem = ({
 }: Props) => {
   const { t } = useTranslation();
   const [tools, setTools] = useState<McpTool[] | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [oauthStatus, setOAuthStatus] = useState(McpOAuthStatus.NotRequired);
+  const [oauthRefreshTrigger, setOAuthRefreshTrigger] = useState(0);
   const api = useApi();
 
-  useEffect(() => {
-    const loadTools = async () => {
-      try {
-        const loadedTools = await api.loadMcpServerTools(serverName, config);
-        setTools(loadedTools);
-        setError(null);
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Failed to load MCP server tools:', error);
-        setTools(null);
-        setError(extractIpcErrorMessage(error));
-      } finally {
-        setLoading(false);
+  const loadTools = useCallback(async () => {
+    try {
+      const loadedTools = await api.loadMcpServerTools(serverName, config);
+      setTools(loadedTools);
+      setError(null);
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to load MCP server tools:', error);
+      const errorMessage = extractIpcErrorMessage(error);
+      setTools(null);
+      setError(errorMessage);
+      if (errorMessage.includes('McpAuthenticationRequiredError') || errorMessage.includes('requires OAuth authentication')) {
+        setOAuthStatus(McpOAuthStatus.AuthenticationRequired);
+        setIsOpen(true);
       }
-    };
+    } finally {
+      setLoading(false);
+      setOAuthRefreshTrigger((value) => value + 1);
+    }
+  }, [api, config, serverName]);
 
+  useEffect(() => {
     setLoading(true);
     void loadTools();
-  }, [serverName, config, reloadTrigger, api]);
+  }, [loadTools, reloadTrigger]);
+
+  const handleOAuthAuthenticated = useCallback(() => {
+    setLoading(true);
+    void api
+      .reloadMcpServer(serverName, config)
+      .then((loadedTools) => {
+        setTools(loadedTools);
+        setError(null);
+      })
+      .catch((error) => {
+        setError(extractIpcErrorMessage(error));
+      })
+      .finally(() => {
+        setLoading(false);
+        setOAuthRefreshTrigger((value) => value + 1);
+      });
+  }, [api, config, serverName]);
+
+  const handleOAuthDisconnected = useCallback(() => {
+    setTools(null);
+    setError(t('mcp.oauth.authenticationRequired'));
+  }, [t]);
+
+  const handleOAuthStatusChange = useCallback((status: McpOAuthStatus) => {
+    setOAuthStatus(status);
+    if (status === McpOAuthStatus.AuthenticationRequired || status === McpOAuthStatus.Authorizing) {
+      setIsOpen(true);
+    }
+  }, []);
 
   const renderTitle = () => {
     const enabledCount =
@@ -120,10 +159,18 @@ export const McpServerItem = ({
 
   return (
     <div className="border border-border-default-dark rounded mb-1">
-      <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right">
+      <Accordion title={renderTitle()} buttonClassName="px-2" chevronPosition="right" isOpen={isOpen} onOpenChange={setIsOpen}>
+        <McpOAuthControls
+          serverName={serverName}
+          config={config}
+          refreshTrigger={oauthRefreshTrigger}
+          onAuthenticated={handleOAuthAuthenticated}
+          onDisconnected={handleOAuthDisconnected}
+          onStatusChange={handleOAuthStatusChange}
+        />
         {loading ? (
           <div className="text-xs text-text-muted p-2">{t('common.loading')}</div>
-        ) : error ? (
+        ) : oauthStatus === McpOAuthStatus.AuthenticationRequired || oauthStatus === McpOAuthStatus.Authorizing ? null : error ? (
           <div className="text-xs text-error-light p-4">{error}</div>
         ) : tools && tools.length > 0 ? (
           <div>

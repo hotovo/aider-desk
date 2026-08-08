@@ -17,6 +17,7 @@ import {
   SystemLogData,
   SystemLogLevel,
   SystemLogsResponse,
+  McpOAuthStatusData,
   McpServerConfig,
   McpTool,
   MessageRemovedData,
@@ -643,6 +644,19 @@ export class BrowserApi implements ApplicationAPI {
   reloadMcpServer(serverName: string, config: McpServerConfig): Promise<McpTool[]> {
     return this.post('/mcp/reload-single', { serverName, config });
   }
+  getMcpOAuthStatus(serverName: string, config?: McpServerConfig): Promise<McpOAuthStatusData> {
+    return this.post('/mcp/oauth/status', { serverName, config });
+  }
+  async startMcpOAuth(serverName: string, config?: McpServerConfig): Promise<string> {
+    const response = await this.post<{ serverName: string; config?: McpServerConfig }, { authorizationUrl: string }>('/mcp/oauth/connect', {
+      serverName,
+      config,
+    });
+    return response.authorizationUrl;
+  }
+  disconnectMcpOAuth(serverName: string, config?: McpServerConfig): Promise<void> {
+    return this.post('/mcp/oauth/disconnect', { serverName, config });
+  }
   createNewTask(baseDir: string, params?: CreateTaskParams): Promise<TaskData> {
     return this.post('/project/tasks/new', { projectDir: baseDir, ...params });
   }
@@ -1224,6 +1238,10 @@ export class BrowserApi implements ApplicationAPI {
 
   async openUrlInWindow(_url: string, _title?: string): Promise<void> {
     window.open(_url, '_blank');
+  }
+
+  async openUrlExternally(url: string): Promise<void> {
+    window.open(url, '_blank');
   }
 
   // Agent profile operations

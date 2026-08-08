@@ -307,6 +307,18 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.reloadMcpServer(serverName, config);
   });
 
+  ipcMain.handle('get-mcp-oauth-status', async (_, serverName: string, config?: McpServerConfig) => {
+    return await eventsHandler.getMcpOAuthStatus(serverName, config);
+  });
+
+  ipcMain.handle('start-mcp-oauth', async (_, serverName: string, config?: McpServerConfig) => {
+    return await eventsHandler.startMcpOAuth(serverName, config);
+  });
+
+  ipcMain.handle('disconnect-mcp-oauth', async (_, serverName: string, config?: McpServerConfig) => {
+    await eventsHandler.disconnectMcpOAuth(serverName, config);
+  });
+
   // Extension handlers
   ipcMain.handle('get-installed-extensions', (_, projectDir?: string) => {
     return eventsHandler.getInstalledExtensions(projectDir);
@@ -450,6 +462,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
 
   ipcMain.handle('open-url-in-window', async (_, url: string, title?: string) => {
     return eventsHandler.openUrlInWindow(url, title);
+  });
+
+  ipcMain.handle('open-url-externally', async (_, url: string) => {
+    return eventsHandler.openUrlExternally(url);
   });
 
   ipcMain.handle('get-commands', async (_, baseDir: string) => {

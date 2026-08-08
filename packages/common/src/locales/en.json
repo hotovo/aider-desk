@@ -1232,7 +1232,18 @@
     "loadToolsError": "Failed to load MCP server tools",
     "noToolsFound": "No tools could be found. Check your configuration.",
     "servers": "MCP servers",
-    "tools": "Tools"
+    "tools": "Tools",
+    "oauth": {
+      "connect": "Connect",
+      "reopen": "Reopen",
+      "connected": "Connected with OAuth",
+      "disconnect": "Disconnect",
+      "authorizing": "Complete authentication in the opened browser window.",
+      "authenticationRequired": "OAuth authentication is required.",
+      "windowTitle": "MCP authentication",
+      "connectError": "Failed to start MCP authentication.",
+      "disconnectError": "Failed to disconnect MCP authentication."
+    }
   },
   "todo": {
     "title": "Todos",

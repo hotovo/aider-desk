@@ -125,6 +125,9 @@ const api: ApplicationAPI = {
   loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
   reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
   reloadMcpServer: (serverName: string, config: McpServerConfig) => ipcRenderer.invoke('reload-mcp-server', serverName, config),
+  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('get-mcp-oauth-status', serverName, config),
+  startMcpOAuth: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('start-mcp-oauth', serverName, config),
+  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('disconnect-mcp-oauth', serverName, config),
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => ipcRenderer.invoke('get-installed-extensions', projectDir),
@@ -741,6 +744,7 @@ const api: ApplicationAPI = {
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
   openUrlInWindow: (url: string, title?: string) => ipcRenderer.invoke('open-url-in-window', url, title),
+  openUrlExternally: (url: string) => ipcRenderer.invoke('open-url-externally', url),
 
   // System logs
   getSystemLogs: (fromId?: number, limit?: number, levels?: SystemLogLevel[]) => ipcRenderer.invoke('get-system-logs', fromId, limit, levels),

@@ -912,6 +912,17 @@ export interface McpServerConfig {
   headers?: Readonly<Record<string, string>>;
 }
 
+export enum McpOAuthStatus {
+  NotRequired = 'not-required',
+  AuthenticationRequired = 'authentication-required',
+  Authorizing = 'authorizing',
+  Authenticated = 'authenticated',
+}
+
+export interface McpOAuthStatusData {
+  status: McpOAuthStatus;
+}
+
 export interface VersionsInfo {
   aiderDeskCurrentVersion?: string | null;
   aiderCurrentVersion?: string | null;

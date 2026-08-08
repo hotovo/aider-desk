@@ -2,17 +2,28 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import { v4 as uuidv4 } from 'uuid';
-import { createMCPClient, type CallToolResult, type ListToolsResult, type MCPClient } from '@ai-sdk/mcp';
+import { createMCPClient, UnauthorizedError as AiSdkUnauthorizedError, type CallToolResult, type ListToolsResult, type MCPClient } from '@ai-sdk/mcp';
 import { type JSONValue } from '@ai-sdk/provider';
+import { UnauthorizedError as McpSdkUnauthorizedError } from '@modelcontextprotocol/sdk/client/auth.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { type Tool, type ToolExecutionOptions, type ToolSet } from 'ai';
-import { AgentProfile, McpServerConfig, McpTool, McpToolInputSchema, PromptContext, ToolApprovalState } from '@common/types';
+import {
+  AgentProfile,
+  McpOAuthStatus,
+  McpServerConfig,
+  McpTool,
+  McpToolInputSchema,
+  PromptContext,
+  ToolApprovalState,
+  type McpOAuthStatusData,
+} from '@common/types';
 import { LlmProviderName } from '@common/agent';
 import { delay } from '@common/utils';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { ApprovalManager } from './tools/approval-manager';
+import { McpOAuthManager } from './mcp-oauth-manager';
 import { truncateToolResult } from './utils';
 
 import logger from '@/logger';
@@ -34,6 +45,13 @@ export interface McpToolsCache {
 
 const MCP_CLIENT_TIMEOUT = 600_000;
 
+export class McpAuthenticationRequiredError extends Error {
+  constructor(serverName: string) {
+    super(`MCP server '${serverName}' requires OAuth authentication. Connect it in Settings → Agents → Tools → MCP Servers.`);
+    this.name = 'McpAuthenticationRequiredError';
+  }
+}
+
 interface McpConnector {
   client: MCPClient;
   serverName: string;
@@ -42,12 +60,18 @@ interface McpConnector {
   serverConfig: McpServerConfig;
 }
 
+type McpClientTransport = Parameters<typeof createMCPClient>[0]['transport'];
+
 export class McpManager {
   private mcpConnectors: Map<string, Promise<McpConnector>> = new Map();
+  private connectorServerUrls: Map<string, string> = new Map();
   private currentInitId: string | null = null;
   private toolsCache: McpToolsCache = { version: MCP_TOOLS_CACHE_VERSION, servers: {} };
+
+  constructor(private readonly oauthManager = new McpOAuthManager()) {}
+
   async init() {
-    await this.loadToolsCache();
+    await Promise.all([this.loadToolsCache(), this.oauthManager.init()]);
   }
 
   async createToolset(
@@ -74,6 +98,22 @@ export class McpManager {
         clearTimeout(loadingTimeout);
         if (loadingMessageShown) {
           task.addLogMessage('loading', undefined, false, promptContext);
+        }
+      }
+
+      for (const serverName of profile.enabledServers) {
+        const config = mcpServers[serverName];
+        if (!config?.url) {
+          continue;
+        }
+        const oauthStatus = await this.oauthManager.getStatus(config.url);
+        if (oauthStatus.status === McpOAuthStatus.AuthenticationRequired || oauthStatus.status === McpOAuthStatus.Authorizing) {
+          task.addLogMessage(
+            'error',
+            `MCP server '${serverName}' requires OAuth authentication. Connect it in Settings → Agents → Tools → MCP Servers.`,
+            false,
+            promptContext,
+          );
         }
       }
 
@@ -348,7 +388,7 @@ export class McpManager {
       const existingConnector = this.getPooledConnector(scope, serverName);
       if (!existingConnector || forceReload) {
         const connectorPromise = this.initMcpConnector(projectDir, taskDir, serverName, serverConfig, forceReload, initId, scope);
-        this.setPooledConnector(scope, serverName, connectorPromise);
+        this.setPooledConnector(scope, serverName, connectorPromise, serverConfig);
         connectorsToInitialize.push(connectorPromise);
 
         if (existingConnector) {
@@ -552,6 +592,14 @@ export class McpManager {
     return scope;
   }
 
+  private createClient(transport: McpClientTransport): Promise<MCPClient> {
+    return createMCPClient({
+      transport,
+      clientName: 'aider-desk-client',
+      version: '1.0.0',
+    });
+  }
+
   private async createMcpConnector(serverName: string, config: McpServerConfig, projectDir: string | null, taskDir: string | null): Promise<McpConnector> {
     logger.info(`Initializing MCP client for server: ${serverName}`);
     logger.debug(`Server configuration: ${JSON.stringify(config)}`);
@@ -608,36 +656,46 @@ export class McpManager {
       });
 
       logger.debug(`Connecting to MCP server using STDIO: ${serverName}`);
-      client = await createMCPClient({
-        transport,
-        clientName: 'aider-desk-client',
-        version: '1.0.0',
-      });
+      client = await this.createClient(transport);
       logger.debug(`Connected to MCP server: ${serverName}`);
     } else if (config.url) {
       const headers = config.headers ? { ...config.headers } : undefined;
+      const oauthProvider = await this.oauthManager.getProvider(config.url);
+      const mcpSdkOAuthProvider = await this.oauthManager.getMcpSdkProvider(config.url);
+      const validatedFetch = this.oauthManager.createValidatedFetch(config.url);
+      const transport = new StreamableHTTPClientTransport(new URL(config.url), {
+        requestInit: { headers, redirect: 'error' },
+        authProvider: mcpSdkOAuthProvider,
+        fetch: validatedFetch,
+      });
 
       try {
-        const transport = new StreamableHTTPClientTransport(new URL(config.url), {
-          requestInit: { headers },
-        });
         logger.debug(`Connecting to MCP server using Streamable HTTP: ${serverName}`);
-        client = await createMCPClient({
-          transport,
-          clientName: 'aider-desk-client',
-          version: '1.0.0',
-        });
+        client = await this.createClient(transport);
         logger.debug(`Connected to MCP server: ${serverName}`);
       } catch (error) {
-        logger.debug(`Failed to connect to MCP server using Streamable HTTP: ${serverName}`, { message: (error as Error).message });
+        if (error instanceof McpSdkUnauthorizedError) {
+          throw new McpAuthenticationRequiredError(serverName);
+        }
 
+        logger.debug(`Failed to connect to MCP server using Streamable HTTP: ${serverName}`, { message: (error as Error).message });
         logger.debug(`Connecting to MCP server using SSE: ${serverName}`);
-        client = await createMCPClient({
-          transport: { type: 'sse', url: config.url, headers },
-          clientName: 'aider-desk-client',
-          version: '1.0.0',
-        });
-        logger.debug(`Connected to MCP server: ${serverName}`);
+        try {
+          client = await this.createClient({
+            type: 'sse',
+            url: config.url,
+            headers,
+            authProvider: oauthProvider,
+            redirect: 'error',
+            fetch: validatedFetch,
+          });
+          logger.debug(`Connected to MCP server: ${serverName}`);
+        } catch (sseError) {
+          if (sseError instanceof AiSdkUnauthorizedError) {
+            throw new McpAuthenticationRequiredError(serverName);
+          }
+          throw sseError;
+        }
       }
     } else {
       throw new Error(`MCP server ${serverName} has invalid configuration: missing command or url`);
@@ -676,7 +734,7 @@ export class McpManager {
     let connectorPromise = this.getPooledConnector('global', serverName);
     if (!connectorPromise && config) {
       connectorPromise = this.initMcpConnector(null, null, serverName, config!);
-      this.setPooledConnector('global', serverName, connectorPromise);
+      this.setPooledConnector('global', serverName, connectorPromise, config);
     }
     if (connectorPromise) {
       try {
@@ -689,6 +747,76 @@ export class McpManager {
     }
     logger.warn(`No MCP client promise found for server: ${serverName}`);
     return null;
+  }
+
+  async getOAuthStatus(config: McpServerConfig): Promise<McpOAuthStatusData> {
+    if (!config.url) {
+      return { status: McpOAuthStatus.NotRequired };
+    }
+    return this.oauthManager.getStatus(config.url);
+  }
+
+  async startOAuth(serverName: string, config: McpServerConfig): Promise<string> {
+    if (!config.url) {
+      throw new Error(`MCP server '${serverName}' does not use a remote URL`);
+    }
+
+    let authorizationUrl = await this.oauthManager.startAuthorization(config.url);
+    if (!authorizationUrl) {
+      try {
+        await this.reloadSingleServer(serverName, config);
+      } catch (error) {
+        if (!(error instanceof McpAuthenticationRequiredError)) {
+          throw error;
+        }
+      }
+      authorizationUrl = await this.oauthManager.startAuthorization(config.url);
+    }
+    if (!authorizationUrl) {
+      throw new Error(`MCP server '${serverName}' did not provide an OAuth authorization URL`);
+    }
+    return authorizationUrl;
+  }
+
+  async completeOAuth(code: string, state: string): Promise<void> {
+    const serverUrl = await this.oauthManager.completeAuthorization(code, state);
+    await this.invalidateConnectorsForUrl(serverUrl);
+  }
+
+  async cancelOAuth(state: string): Promise<void> {
+    await this.oauthManager.cancelAuthorization(state);
+  }
+
+  async disconnectOAuth(config: McpServerConfig): Promise<void> {
+    if (!config.url) {
+      return;
+    }
+    await this.oauthManager.disconnect(config.url);
+    await this.invalidateConnectorsForUrl(config.url);
+  }
+
+  private async invalidateConnectorsForUrl(serverUrl: string): Promise<void> {
+    const normalizedUrl = new URL(serverUrl).toString();
+    const matchingKeys = Array.from(this.connectorServerUrls.entries())
+      .filter(([, connectorUrl]) => connectorUrl === normalizedUrl)
+      .map(([poolKey]) => poolKey);
+
+    for (const poolKey of matchingKeys) {
+      const connectorPromise = this.mcpConnectors.get(poolKey);
+      if (connectorPromise) {
+        try {
+          const connector = await connectorPromise;
+          await connector.client.close();
+          delete this.toolsCache.servers[connector.serverName];
+        } catch {
+          const serverName = poolKey.slice(poolKey.indexOf(':') + 1);
+          delete this.toolsCache.servers[serverName];
+        }
+      }
+      this.mcpConnectors.delete(poolKey);
+      this.connectorServerUrls.delete(poolKey);
+    }
+    await this.saveToolsCache();
   }
 
   private compareServerConfig(config: McpServerConfig, otherConfig: McpServerConfig) {
@@ -749,8 +877,14 @@ export class McpManager {
     return this.mcpConnectors.get(this.getPoolKey(scope, serverName));
   }
 
-  private setPooledConnector(scope: string, serverName: string, connector: Promise<McpConnector>): void {
-    this.mcpConnectors.set(this.getPoolKey(scope, serverName), connector);
+  private setPooledConnector(scope: string, serverName: string, connector: Promise<McpConnector>, config: McpServerConfig): void {
+    const poolKey = this.getPoolKey(scope, serverName);
+    this.mcpConnectors.set(poolKey, connector);
+    if (config.url) {
+      this.connectorServerUrls.set(poolKey, new URL(config.url).toString());
+    } else {
+      this.connectorServerUrls.delete(poolKey);
+    }
   }
 
   private async closeAllPooledConnectors(): Promise<void> {
@@ -770,6 +904,7 @@ export class McpManager {
     }
     await Promise.all(closePromises);
     this.mcpConnectors.clear();
+    this.connectorServerUrls.clear();
     logger.debug('All pooled connectors closed');
   }
 
@@ -796,12 +931,13 @@ export class McpManager {
         logger.error(`Error closing connector for server ${serverName}:`, error);
       }
       this.mcpConnectors.delete(poolKey);
+      this.connectorServerUrls.delete(poolKey);
     }
 
     delete this.toolsCache.servers[serverName];
 
     const newConnectorPromise = this.initMcpConnector(null, null, serverName, config);
-    this.setPooledConnector(scope, serverName, newConnectorPromise);
+    this.setPooledConnector(scope, serverName, newConnectorPromise, config);
 
     try {
       const connector = await newConnectorPromise;
