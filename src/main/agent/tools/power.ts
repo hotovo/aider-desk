@@ -304,7 +304,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
               flag: 'wx',
               signal: abortSignal,
             });
-            await task.addToGit(absolutePath, promptContext);
+            await task.addToGit(absolutePath);
 
             return `Successfully created '${filePath}'.`;
           } catch (e) {
@@ -321,7 +321,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             encoding: 'utf8',
             signal: abortSignal,
           });
-          await task.addToGit(absolutePath, promptContext);
+          await task.addToGit(absolutePath);
           return `Successfully written to '${filePath}' (overwritten).`;
         }
       } catch (error) {

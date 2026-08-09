@@ -107,7 +107,7 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
               task.addLogMessage('info', `Created new file: ${filePath}`);
               fileExists = true;
 
-              await task.addToGit(absolutePath, promptContext);
+              await task.addToGit(absolutePath);
               results.push(`Created and added file: ${filePath}`);
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : String(error);

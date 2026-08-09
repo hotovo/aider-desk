@@ -124,6 +124,8 @@ import { Task } from '../task';
 
 import type { SimpleGit } from 'simple-git';
 
+import logger from '@/logger';
+
 describe('Task - addToGit', () => {
   let mockGit: Partial<SimpleGit>;
   let task: Task;
@@ -245,7 +247,7 @@ describe('Task - addToGit', () => {
       expect(mockUpdate).toHaveBeenCalledWith(undefined, true);
     });
 
-    it('should handle git add errors gracefully', async () => {
+    it('should log git add errors without sending them to the UI', async () => {
       const filePath = '/test/project/src/new-file.ts';
       const mockAddLogMessage = vi.fn();
       (task as any).addLogMessage = mockAddLogMessage;
@@ -255,7 +257,8 @@ describe('Task - addToGit', () => {
 
       await task.addToGit(filePath);
 
-      expect(mockAddLogMessage).toHaveBeenCalledWith('warning', expect.stringContaining('Failed to add new file'), false, undefined);
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Failed to add new file'), expect.objectContaining({ baseDir, taskId }));
+      expect(mockAddLogMessage).not.toHaveBeenCalled();
     });
   });
 

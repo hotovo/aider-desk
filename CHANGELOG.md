@@ -12,6 +12,7 @@
 - improved OS detection for browser compatibility
 - added file-based MCP server configuration
 - moved MCP Servers configuration into separate Settings tab
+- removed unnecesary log message when file is git added outside or repo or ignored
 
 ## [0.77.0]
 
