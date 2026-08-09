@@ -16,10 +16,11 @@ const McpServerConfigSchema = z.object({
 const LoadMcpServerToolsSchema = z.object({
   serverName: z.string().min(1, 'Server name is required'),
   config: McpServerConfigSchema.optional(),
+  projectDir: z.string().optional(),
 });
 
 const ReloadMcpServersSchema = z.object({
-  mcpServers: z.record(z.string(), McpServerConfigSchema),
+  projectDir: z.string().optional(),
   force: z.boolean().optional(),
 });
 
@@ -39,6 +40,29 @@ const OAUTH_SUCCESS_HTML =
 const OAUTH_ERROR_HTML =
   '<!doctype html><html><head><meta charset="utf-8"><title>AiderDesk</title></head><body><h1>Authentication failed</h1><p>Return to AiderDesk and try connecting the MCP server again.</p></body></html>';
 
+const AddMcpServerSchema = z.object({
+  name: z.string().min(1, 'Server name is required'),
+  config: McpServerConfigSchema,
+  projectDir: z.string().optional(),
+});
+
+const UpdateMcpServerSchema = z.object({
+  oldName: z.string().min(1, 'Old server name is required'),
+  name: z.string().min(1, 'Server name is required'),
+  config: McpServerConfigSchema,
+  projectDir: z.string().optional(),
+});
+
+const RemoveMcpServerSchema = z.object({
+  name: z.string().min(1, 'Server name is required'),
+  projectDir: z.string().optional(),
+});
+
+const ReplaceMcpServersSchema = z.object({
+  servers: z.record(z.string(), McpServerConfigSchema),
+  projectDir: z.string().optional(),
+});
+
 export class McpApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
@@ -54,8 +78,8 @@ export class McpApi extends BaseApi {
           return;
         }
 
-        const { serverName, config } = parsed;
-        const tools = await this.eventsHandler.loadMcpServerTools(serverName, config);
+        const { serverName, config, projectDir } = parsed;
+        const tools = await this.eventsHandler.loadMcpServerTools(serverName, config, projectDir);
         res.status(200).json(tools);
       }),
     );
@@ -67,7 +91,7 @@ export class McpApi extends BaseApi {
         if (!parsed) {
           return;
         }
-        const status = await this.eventsHandler.getMcpOAuthStatus(parsed.serverName, parsed.config);
+        const status = await this.eventsHandler.getMcpOAuthStatus(parsed.serverName, parsed.config, parsed.projectDir);
         res.status(200).json(status);
       }),
     );
@@ -79,7 +103,7 @@ export class McpApi extends BaseApi {
         if (!parsed) {
           return;
         }
-        const authorizationUrl = await this.eventsHandler.startMcpOAuth(parsed.serverName, parsed.config);
+        const authorizationUrl = await this.eventsHandler.startMcpOAuth(parsed.serverName, parsed.config, parsed.projectDir);
         res.status(200).json({ authorizationUrl });
       }),
     );
@@ -91,7 +115,7 @@ export class McpApi extends BaseApi {
         if (!parsed) {
           return;
         }
-        await this.eventsHandler.disconnectMcpOAuth(parsed.serverName, parsed.config);
+        await this.eventsHandler.disconnectMcpOAuth(parsed.serverName, parsed.config, parsed.projectDir);
         res.status(204).send();
       }),
     );
@@ -136,8 +160,8 @@ export class McpApi extends BaseApi {
           return;
         }
 
-        const { mcpServers, force } = parsed;
-        await this.eventsHandler.reloadMcpServers(mcpServers, force);
+        const { projectDir, force } = parsed;
+        await this.eventsHandler.reloadMcpServers(projectDir, force);
         res.status(200).json({ message: 'MCP servers reloaded' });
       }),
     );
@@ -154,6 +178,75 @@ export class McpApi extends BaseApi {
         const { serverName, config } = parsed;
         const tools = await this.eventsHandler.reloadMcpServer(serverName, config);
         res.status(200).json(tools);
+      }),
+    );
+
+    // GET /mcp/servers
+    router.get(
+      '/mcp/servers',
+      this.handleRequest(async (_req, res) => {
+        const servers = await this.eventsHandler.getMcpServers();
+        res.status(200).json(servers);
+      }),
+    );
+
+    // POST /mcp/server/add
+    router.post(
+      '/mcp/server/add',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(AddMcpServerSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { name, config, projectDir } = parsed;
+        await this.eventsHandler.addMcpServer(name, config, projectDir);
+        res.status(200).json(await this.eventsHandler.getMcpServers());
+      }),
+    );
+
+    // POST /mcp/server/update
+    router.post(
+      '/mcp/server/update',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(UpdateMcpServerSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { oldName, name, config, projectDir } = parsed;
+        await this.eventsHandler.updateMcpServer(oldName, name, config, projectDir);
+        res.status(200).json(await this.eventsHandler.getMcpServers());
+      }),
+    );
+
+    // POST /mcp/server/remove
+    router.post(
+      '/mcp/server/remove',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RemoveMcpServerSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { name, projectDir } = parsed;
+        await this.eventsHandler.removeMcpServer(name, projectDir);
+        res.status(200).json(await this.eventsHandler.getMcpServers());
+      }),
+    );
+
+    // POST /mcp/servers/replace
+    router.post(
+      '/mcp/servers/replace',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ReplaceMcpServersSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { servers, projectDir } = parsed;
+        await this.eventsHandler.replaceMcpServers(servers, projectDir);
+        res.status(200).json(await this.eventsHandler.getMcpServers());
       }),
     );
   }

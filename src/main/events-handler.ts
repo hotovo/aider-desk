@@ -14,6 +14,7 @@ import {
   ExtensionToolInfo,
   McpOAuthStatusData,
   McpServerConfig,
+  McpServersData,
   McpTool,
   MemoryEntry,
   Mode,
@@ -46,7 +47,7 @@ import { isBinary } from 'istextorbinary';
 import type { ModeDefinition, ExtensionConfigComponent, ExtensionOperationResult, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
 
-import { McpManager, AgentProfileManager } from '@/agent';
+import { McpManager, McpConfigManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { Project, ProjectManager } from '@/project';
@@ -71,6 +72,7 @@ export class EventsHandler {
     private readonly projectManager: ProjectManager,
     private readonly store: Store,
     private readonly mcpManager: McpManager,
+    private readonly mcpConfigManager: McpConfigManager,
     private readonly versionsManager: VersionsManager,
     private readonly modelManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
@@ -106,6 +108,7 @@ export class EventsHandler {
     void this.memoryManager.settingsChanged(oldSettings, newSettings);
     this.extensionManager.settingsChanged(oldSettings, newSettings);
     void this.agentProfileManager.settingsChanged(oldSettings, newSettings);
+    void this.mcpConfigManager.settingsChanged(oldSettings, newSettings);
     void this.promptsManager.settingsChanged(oldSettings, newSettings);
     this.eventManager.sendSettingsUpdated(newSettings);
 
@@ -547,15 +550,16 @@ export class EventsHandler {
       .forEachTask((task) => task.updateModels(task.task.mainModel, task.task.weakModel || null, projectSettings.modelEditFormats[task.task.mainModel]));
   }
 
-  async loadMcpServerTools(serverName: string, config?: McpServerConfig): Promise<McpTool[] | string | null> {
-    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+  async loadMcpServerTools(serverName: string, config?: McpServerConfig, projectDir?: string): Promise<McpTool[] | string | null> {
+    const serverConfig = config ?? this.mcpConfigManager.getMergedServers(projectDir)[serverName];
     if (!serverConfig) {
       return null;
     }
     return await this.mcpManager.getMcpServerTools(serverName, serverConfig);
   }
 
-  async reloadMcpServers(mcpServers: Record<string, McpServerConfig>, force = false): Promise<void> {
+  async reloadMcpServers(projectDir?: string, force = false): Promise<void> {
+    const mcpServers = this.mcpConfigManager.getMergedServers(projectDir);
     await this.mcpManager.reloadAllServers(mcpServers, force);
   }
 
@@ -563,24 +567,24 @@ export class EventsHandler {
     return await this.mcpManager.reloadSingleServer(serverName, config);
   }
 
-  async getMcpOAuthStatus(serverName: string, config?: McpServerConfig): Promise<McpOAuthStatusData> {
-    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+  async getMcpOAuthStatus(serverName: string, config?: McpServerConfig, projectDir?: string): Promise<McpOAuthStatusData> {
+    const serverConfig = config ?? this.mcpConfigManager.getMergedServers(projectDir)[serverName];
     if (!serverConfig) {
       throw new Error(`MCP server '${serverName}' is not configured`);
     }
     return this.mcpManager.getOAuthStatus(serverConfig);
   }
 
-  async startMcpOAuth(serverName: string, config?: McpServerConfig): Promise<string> {
-    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+  async startMcpOAuth(serverName: string, config?: McpServerConfig, projectDir?: string): Promise<string> {
+    const serverConfig = config ?? this.mcpConfigManager.getMergedServers(projectDir)[serverName];
     if (!serverConfig) {
       throw new Error(`MCP server '${serverName}' is not configured`);
     }
     return this.mcpManager.startOAuth(serverName, serverConfig);
   }
 
-  async disconnectMcpOAuth(serverName: string, config?: McpServerConfig): Promise<void> {
-    const serverConfig = config ?? this.store.getSettings().mcpServers[serverName];
+  async disconnectMcpOAuth(serverName: string, config?: McpServerConfig, projectDir?: string): Promise<void> {
+    const serverConfig = config ?? this.mcpConfigManager.getMergedServers(projectDir)[serverName];
     if (!serverConfig) {
       throw new Error(`MCP server '${serverName}' is not configured`);
     }
@@ -593,6 +597,30 @@ export class EventsHandler {
 
   async cancelMcpOAuth(state: string): Promise<void> {
     await this.mcpManager.cancelOAuth(state);
+  }
+
+  async getMcpServers(): Promise<McpServersData> {
+    return this.mcpConfigManager.getState();
+  }
+
+  async addMcpServer(name: string, config: McpServerConfig, projectDir?: string): Promise<void> {
+    await this.mcpConfigManager.addServer(projectDir, name, config);
+    await this.mcpManager.reloadSingleServer(name, this.mcpConfigManager.getMergedServers(projectDir)[name]);
+  }
+
+  async updateMcpServer(oldName: string, name: string, config: McpServerConfig, projectDir?: string): Promise<void> {
+    await this.mcpConfigManager.updateServer(projectDir, oldName, name, config);
+    await this.mcpManager.reloadSingleServer(name, this.mcpConfigManager.getMergedServers(projectDir)[name]);
+  }
+
+  async removeMcpServer(name: string, projectDir?: string): Promise<void> {
+    await this.mcpConfigManager.removeServer(projectDir, name);
+  }
+
+  async replaceMcpServers(servers: Record<string, McpServerConfig>, projectDir?: string): Promise<void> {
+    await this.mcpConfigManager.replaceServers(projectDir, servers);
+    const mergedServers = this.mcpConfigManager.getMergedServers(projectDir);
+    await this.mcpManager.reloadAllServers(mergedServers, true);
   }
 
   async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string> {

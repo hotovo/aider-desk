@@ -12,6 +12,7 @@ import {
   InputHistoryData,
   LogData,
   McpServerConfig,
+  McpServersData,
   MessageRemovedData,
   ModalOverlayUrlData,
   ModelsData,
@@ -122,12 +123,21 @@ const api: ApplicationAPI = {
   deleteTodo: (baseDir, taskId, name) => ipcRenderer.invoke('delete-todo', baseDir, taskId, name),
   clearAllTodos: (baseDir, taskId) => ipcRenderer.invoke('clear-all-todos', baseDir, taskId),
 
-  loadMcpServerTools: (serverName, config?: McpServerConfig) => ipcRenderer.invoke('load-mcp-server-tools', serverName, config),
-  reloadMcpServers: (mcpServers, force = false) => ipcRenderer.invoke('reload-mcp-servers', mcpServers, force),
+  loadMcpServerTools: (serverName, config?: McpServerConfig, projectDir?: string) =>
+    ipcRenderer.invoke('load-mcp-server-tools', serverName, config, projectDir),
+  reloadMcpServers: (projectDir?: string, force = false) => ipcRenderer.invoke('reload-mcp-servers', projectDir, force),
   reloadMcpServer: (serverName: string, config: McpServerConfig) => ipcRenderer.invoke('reload-mcp-server', serverName, config),
-  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('get-mcp-oauth-status', serverName, config),
-  startMcpOAuth: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('start-mcp-oauth', serverName, config),
-  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig) => ipcRenderer.invoke('disconnect-mcp-oauth', serverName, config),
+  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig, projectDir?: string) =>
+    ipcRenderer.invoke('get-mcp-oauth-status', serverName, config, projectDir),
+  startMcpOAuth: (serverName: string, config?: McpServerConfig, projectDir?: string) => ipcRenderer.invoke('start-mcp-oauth', serverName, config, projectDir),
+  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig, projectDir?: string) =>
+    ipcRenderer.invoke('disconnect-mcp-oauth', serverName, config, projectDir),
+  getMcpServers: () => ipcRenderer.invoke('get-mcp-servers'),
+  addMcpServer: (name: string, config: McpServerConfig, projectDir?: string) => ipcRenderer.invoke('add-mcp-server', name, config, projectDir),
+  updateMcpServer: (oldName: string, name: string, config: McpServerConfig, projectDir?: string) =>
+    ipcRenderer.invoke('update-mcp-server', oldName, name, config, projectDir),
+  removeMcpServer: (name: string, projectDir?: string) => ipcRenderer.invoke('remove-mcp-server', name, projectDir),
+  replaceMcpServers: (servers: Record<string, McpServerConfig>, projectDir?: string) => ipcRenderer.invoke('replace-mcp-servers', servers, projectDir),
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => ipcRenderer.invoke('get-installed-extensions', projectDir),
@@ -759,6 +769,12 @@ const api: ApplicationAPI = {
     const listener = (_, data) => callback(data);
     ipcRenderer.on('agent-profiles-updated', listener);
     return () => ipcRenderer.off('agent-profiles-updated', listener);
+  },
+
+  addMcpServersUpdatedListener: (callback: (data: McpServersData) => void) => {
+    const listener = (_, data) => callback(data);
+    ipcRenderer.on('mcp-servers-updated', listener);
+    return () => ipcRenderer.off('mcp-servers-updated', listener);
   },
 
   addNotificationListener: () => {

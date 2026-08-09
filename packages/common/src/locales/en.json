@@ -442,10 +442,13 @@
   },
   "settings": {
     "title": "Settings",
+    "savedSuccessfully": "Settings saved successfully",
+    "saveError": "Failed to save settings",
     "tabs": {
       "general": "General",
       "aider": "Aider",
       "agents": "Agents",
+      "mcpServers": "MCP Servers",
       "tasks": "Tasks",
       "memory": "Memory",
       "voice": "Voice",
@@ -681,6 +684,7 @@
       "rulesInfo": "You can use Rules to add specific instructions for specific MCP servers or to control flow of the agent.",
       "ruleFilesInfo": "Any file in your project's <file>.aider-desk/rules</file> directory is automatically included in the Rules. See example <a>here</a>.",
       "noServersConfigured": "No MCP servers configured.",
+      "configureMcpServers": "Configure MCP Servers",
       "computationalResources": "Maximum number of iterations for the agent per run. Helps control computational resources.",
       "rateLimiting": "Sets the minimum time between tool calls to prevent rate limiting (e.g. for Brave or other API-constrained services).",
       "temperatureTooltip": "Controls randomness in responses. Lower values (0.0-0.3) make responses more focused and deterministic, higher values (0.7-1.0) make them more creative and varied. When not set, uses the model's Temperature.",
@@ -1232,6 +1236,9 @@
     "loadToolsError": "Failed to load MCP server tools",
     "noToolsFound": "No tools could be found. Check your configuration.",
     "servers": "MCP servers",
+    "selectServer": "Select an MCP server from the list to view its tools",
+    "reloadServer": "Reload server",
+    "reload": "Reload",
     "tools": "Tools",
     "oauth": {
       "connect": "Connect",
@@ -1240,6 +1247,7 @@
       "disconnect": "Disconnect",
       "authorizing": "Complete authentication in the opened browser window.",
       "authenticationRequired": "OAuth authentication is required.",
+      "authenticationRequiredMessage": "MCP server '{{serverName}}' requires OAuth authentication. Connect it in Settings → MCP Servers.",
       "windowTitle": "MCP authentication",
       "connectError": "Failed to start MCP authentication.",
       "disconnectError": "Failed to disconnect MCP authentication."

@@ -28,6 +28,7 @@ import { truncateToolResult } from './utils';
 
 import logger from '@/logger';
 import { AIDER_DESK_CACHE_DIR } from '@/constants';
+import { translate } from '@/utils/i18n';
 import { Task } from '@/task';
 
 const MCP_TOOLS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'mcp-tools-cache.json');
@@ -46,8 +47,8 @@ export interface McpToolsCache {
 const MCP_CLIENT_TIMEOUT = 600_000;
 
 export class McpAuthenticationRequiredError extends Error {
-  constructor(serverName: string) {
-    super(`MCP server '${serverName}' requires OAuth authentication. Connect it in Settings → Agents → Tools → MCP Servers.`);
+  constructor(serverName: string, language?: string) {
+    super(translate(language, 'mcp.oauth.authenticationRequiredMessage', { serverName }));
     this.name = 'McpAuthenticationRequiredError';
   }
 }
@@ -68,7 +69,10 @@ export class McpManager {
   private currentInitId: string | null = null;
   private toolsCache: McpToolsCache = { version: MCP_TOOLS_CACHE_VERSION, servers: {} };
 
-  constructor(private readonly oauthManager = new McpOAuthManager()) {}
+  constructor(
+    private readonly oauthManager = new McpOAuthManager(),
+    private readonly getLanguage: () => string = () => 'en',
+  ) {}
 
   async init() {
     await Promise.all([this.loadToolsCache(), this.oauthManager.init()]);
@@ -108,12 +112,7 @@ export class McpManager {
         }
         const oauthStatus = await this.oauthManager.getStatus(config.url);
         if (oauthStatus.status === McpOAuthStatus.AuthenticationRequired || oauthStatus.status === McpOAuthStatus.Authorizing) {
-          task.addLogMessage(
-            'error',
-            `MCP server '${serverName}' requires OAuth authentication. Connect it in Settings → Agents → Tools → MCP Servers.`,
-            false,
-            promptContext,
-          );
+          task.addLogMessage('error', translate(this.getLanguage(), 'mcp.oauth.authenticationRequiredMessage', { serverName }), false, promptContext);
         }
       }
 
@@ -675,7 +674,7 @@ export class McpManager {
         logger.debug(`Connected to MCP server: ${serverName}`);
       } catch (error) {
         if (error instanceof McpSdkUnauthorizedError) {
-          throw new McpAuthenticationRequiredError(serverName);
+          throw new McpAuthenticationRequiredError(serverName, this.getLanguage());
         }
 
         logger.debug(`Failed to connect to MCP server using Streamable HTTP: ${serverName}`, { message: (error as Error).message });
@@ -692,7 +691,7 @@ export class McpManager {
           logger.debug(`Connected to MCP server: ${serverName}`);
         } catch (sseError) {
           if (sseError instanceof AiSdkUnauthorizedError) {
-            throw new McpAuthenticationRequiredError(serverName);
+            throw new McpAuthenticationRequiredError(serverName, this.getLanguage());
           }
           throw sseError;
         }

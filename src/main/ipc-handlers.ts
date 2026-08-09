@@ -295,28 +295,53 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.loadTask(baseDir, taskId);
   });
 
-  ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config?: McpServerConfig) => {
-    return await eventsHandler.loadMcpServerTools(serverName, config);
+  ipcMain.handle('load-mcp-server-tools', async (_, serverName: string, config?: McpServerConfig, projectDir?: string) => {
+    return await eventsHandler.loadMcpServerTools(serverName, config, projectDir);
   });
 
-  ipcMain.handle('reload-mcp-servers', async (_, mcpServers: Record<string, McpServerConfig>, force = false) => {
-    await eventsHandler.reloadMcpServers(mcpServers, force);
+  ipcMain.handle('reload-mcp-servers', async (_, projectDir?: string, force = false) => {
+    await eventsHandler.reloadMcpServers(projectDir, force);
   });
 
   ipcMain.handle('reload-mcp-server', async (_, serverName: string, config: McpServerConfig) => {
     return await eventsHandler.reloadMcpServer(serverName, config);
   });
 
-  ipcMain.handle('get-mcp-oauth-status', async (_, serverName: string, config?: McpServerConfig) => {
-    return await eventsHandler.getMcpOAuthStatus(serverName, config);
+  ipcMain.handle('get-mcp-oauth-status', async (_, serverName: string, config?: McpServerConfig, projectDir?: string) => {
+    return await eventsHandler.getMcpOAuthStatus(serverName, config, projectDir);
   });
 
-  ipcMain.handle('start-mcp-oauth', async (_, serverName: string, config?: McpServerConfig) => {
-    return await eventsHandler.startMcpOAuth(serverName, config);
+  ipcMain.handle('start-mcp-oauth', async (_, serverName: string, config?: McpServerConfig, projectDir?: string) => {
+    return await eventsHandler.startMcpOAuth(serverName, config, projectDir);
   });
 
-  ipcMain.handle('disconnect-mcp-oauth', async (_, serverName: string, config?: McpServerConfig) => {
-    await eventsHandler.disconnectMcpOAuth(serverName, config);
+  ipcMain.handle('disconnect-mcp-oauth', async (_, serverName: string, config?: McpServerConfig, projectDir?: string) => {
+    await eventsHandler.disconnectMcpOAuth(serverName, config, projectDir);
+  });
+
+  // MCP server config handlers (file-based, global + per-project)
+  ipcMain.handle('get-mcp-servers', async () => {
+    return await eventsHandler.getMcpServers();
+  });
+
+  ipcMain.handle('add-mcp-server', async (_, name: string, config: McpServerConfig, projectDir?: string) => {
+    await eventsHandler.addMcpServer(name, config, projectDir);
+    return await eventsHandler.getMcpServers();
+  });
+
+  ipcMain.handle('update-mcp-server', async (_, oldName: string, name: string, config: McpServerConfig, projectDir?: string) => {
+    await eventsHandler.updateMcpServer(oldName, name, config, projectDir);
+    return await eventsHandler.getMcpServers();
+  });
+
+  ipcMain.handle('remove-mcp-server', async (_, name: string, projectDir?: string) => {
+    await eventsHandler.removeMcpServer(name, projectDir);
+    return await eventsHandler.getMcpServers();
+  });
+
+  ipcMain.handle('replace-mcp-servers', async (_, servers: Record<string, McpServerConfig>, projectDir?: string) => {
+    await eventsHandler.replaceMcpServers(servers, projectDir);
+    return await eventsHandler.getMcpServers();
   });
 
   // Extension handlers

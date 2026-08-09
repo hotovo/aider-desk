@@ -1,7 +1,6 @@
 import { AgentProfile, ExtensionToolInfo, GenericTool, McpServerConfig, ToolApprovalState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
-import { clsx } from 'clsx';
+import { FaPlug } from 'react-icons/fa';
 import {
   AIDER_TOOL_ADD_CONTEXT_FILES,
   AIDER_TOOL_DESCRIPTIONS,
@@ -43,8 +42,7 @@ import {
   SKILLS_TOOL_GROUP_NAME,
 } from '@common/tools';
 
-import { McpServer } from '../McpServerForm';
-import { McpServerItem } from '../McpServerItem';
+import { McpServerItem } from '../../mcp/McpServerItem';
 import { GenericToolGroupItem } from '../GenericToolGroupItem';
 
 import { Button } from '@/components/common/Button';
@@ -208,30 +206,20 @@ type Props = {
   profile: AgentProfile;
   mcpServers: Record<string, McpServerConfig>;
   extensionToolsInfo: ExtensionToolInfo[];
-  mcpServersReloadTrigger: number;
   onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
   onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
   onToggleServerEnabled: (serverKey: string, checked: boolean) => void;
-  onMcpServerRemove: (serverName: string) => void;
-  onMcpServerEdit: (server: McpServer) => void;
-  onAddMcpServer: () => void;
-  onEditMcpServersConfig: () => void;
-  onReloadMcpServers: () => void;
+  onOpenMcpServers?: () => void;
 };
 
 export const ProfileToolsSection = ({
   profile,
   mcpServers,
   extensionToolsInfo,
-  mcpServersReloadTrigger,
   onSettingChange,
   onApprovalChange,
   onToggleServerEnabled,
-  onMcpServerRemove,
-  onMcpServerEdit,
-  onAddMcpServer,
-  onEditMcpServersConfig,
-  onReloadMcpServers,
+  onOpenMcpServers,
 }: Props) => {
   const { t } = useTranslation();
 
@@ -319,18 +307,11 @@ export const ProfileToolsSection = ({
                 <McpServerItem
                   serverName={serverName}
                   config={serverConfig}
+                  projectDir={profile.projectDir}
                   toolApprovals={profile.toolApprovals || {}}
                   onApprovalChange={onApprovalChange}
                   enabled={isServerEnabled}
                   onEnabledChange={(checked) => onToggleServerEnabled(serverName, checked)}
-                  onRemove={() => onMcpServerRemove(serverName)}
-                  onEdit={() =>
-                    onMcpServerEdit({
-                      name: serverName,
-                      config: serverConfig,
-                    })
-                  }
-                  reloadTrigger={mcpServersReloadTrigger}
                 />
               </div>
             );
@@ -339,21 +320,13 @@ export const ProfileToolsSection = ({
         {Object.keys(mcpServers).length === 0 && (
           <div className="text-xs text-text-muted-light my-4 text-center">{t('settings.agent.noServersConfigured')}</div>
         )}
-        <div className={clsx('flex flex-1 items-center justify-end mt-4', Object.keys(mcpServers).length === 0 && 'justify-center')}>
-          {Object.keys(mcpServers).length > 0 && (
-            <>
-              <Button variant="text" className="ml-2 text-xs" onClick={onEditMcpServersConfig}>
-                <FaPencilAlt className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.editConfig')}
-              </Button>
-              <Button variant="text" className="ml-2 text-xs" onClick={onReloadMcpServers}>
-                <FaSyncAlt className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.reloadServers')}
-              </Button>
-            </>
-          )}
-          <Button onClick={onAddMcpServer} variant="text" className="ml-2 text-xs">
-            <FaPlus className="mr-1.5 w-2.5 h-2.5" /> {t('settings.agent.addMcpServer')}
-          </Button>
-        </div>
+        {onOpenMcpServers && (
+          <div className="flex justify-center mt-4">
+            <Button variant="outline" size="xs" onClick={onOpenMcpServers}>
+              <FaPlug className="w-3.5 h-3.5 mr-2" /> {t('settings.agent.configureMcpServers')}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

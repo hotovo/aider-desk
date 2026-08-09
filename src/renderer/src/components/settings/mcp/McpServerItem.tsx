@@ -19,11 +19,12 @@ type Props = {
   config: McpServerConfig;
   onRemove?: () => void;
   onEdit?: () => void;
-  toolApprovals: Record<string, ToolApprovalState>;
-  onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
+  toolApprovals?: Record<string, ToolApprovalState>;
+  onApprovalChange?: (toolId: string, approval: ToolApprovalState) => void;
   reloadTrigger?: number;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
+  projectDir?: string;
 };
 
 export const McpServerItem = ({
@@ -36,6 +37,7 @@ export const McpServerItem = ({
   reloadTrigger = 0,
   enabled,
   onEnabledChange,
+  projectDir,
 }: Props) => {
   const { t } = useTranslation();
   const [tools, setTools] = useState<McpTool[] | null>(null);
@@ -48,7 +50,7 @@ export const McpServerItem = ({
 
   const loadTools = useCallback(async () => {
     try {
-      const loadedTools = await api.loadMcpServerTools(serverName, config);
+      const loadedTools = await api.loadMcpServerTools(serverName, config, projectDir);
       setTools(loadedTools);
       setError(null);
     } catch (error) {
@@ -65,7 +67,7 @@ export const McpServerItem = ({
       setLoading(false);
       setOAuthRefreshTrigger((value) => value + 1);
     }
-  }, [api, config, serverName]);
+  }, [api, config, serverName, projectDir]);
 
   useEffect(() => {
     setLoading(true);
@@ -103,7 +105,8 @@ export const McpServerItem = ({
 
   const renderTitle = () => {
     const enabledCount =
-      tools && tools.length - tools.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length;
+      tools &&
+      tools.length - tools.filter((tool) => toolApprovals?.[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length;
 
     return (
       <div className="flex items-center justify-between w-full">

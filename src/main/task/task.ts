@@ -94,7 +94,7 @@ import {
   AIDER_DESK_TODOS_FILE,
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
-import { Agent, AgentProfileManager, McpManager } from '@/agent';
+import { Agent, AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
 import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -195,6 +195,7 @@ export class Task {
     public readonly taskId: string,
     private readonly store: Store,
     private readonly mcpManager: McpManager,
+    private readonly mcpConfigManager: McpConfigManager,
     private readonly customCommandManager: CustomCommandManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly telemetryManager: TelemetryManager,
@@ -221,6 +222,7 @@ export class Task {
       this.store,
       this.agentProfileManager,
       this.mcpManager,
+      this.mcpConfigManager,
       this.modelManager,
       this.telemetryManager,
       this.memoryManager,

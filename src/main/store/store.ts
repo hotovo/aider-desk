@@ -40,6 +40,7 @@ import { migrateSettingsV17toV18 } from '@/store/migrations/v17-to-v18';
 import { migrateSettingsV18toV19 } from '@/store/migrations/v18-to-v19';
 import { migrateSettingsV19toV20 } from '@/store/migrations/v19-to-v20';
 import { migrateProvidersV20toV21 } from '@/store/migrations/v20-to-v21';
+import { migrateSettingsV21toV22 } from '@/store/migrations/v21-to-v22';
 
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
@@ -63,7 +64,6 @@ export const DEFAULT_SETTINGS: SettingsData = {
     confirmBeforeEdit: false,
   },
   preferredModels: [],
-  mcpServers: {},
   llmProviders: {},
   telemetryEnabled: true,
   windowTitleTemplate: 'AiderDesk - {project}',
@@ -136,7 +136,7 @@ interface StoreSchema {
   userId?: string;
 }
 
-const CURRENT_SETTINGS_VERSION = 21;
+const CURRENT_SETTINGS_VERSION = 22;
 
 export class Store {
   // @ts-expect-error expected to be initialized
@@ -194,7 +194,6 @@ export class Store {
           ...settings?.promptBehavior?.requireCommandConfirmation,
         },
       },
-      mcpServers: settings.mcpServers || DEFAULT_SETTINGS.mcpServers,
       server: {
         ...DEFAULT_SETTINGS.server,
         ...settings.server,
@@ -326,6 +325,11 @@ export class Store {
       if (settingsVersion === 20) {
         providers = migrateProvidersV20toV21(providers || []);
         settingsVersion = 21;
+      }
+
+      if (settingsVersion === 21) {
+        settings = await migrateSettingsV21toV22(settings);
+        settingsVersion = 22;
       }
 
       this.store.set('settings', settings as SettingsData);

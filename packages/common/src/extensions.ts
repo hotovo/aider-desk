@@ -12,6 +12,7 @@ import {
   CustomCommand,
   InvocationMode,
   JSONValue,
+  McpServerConfig,
   MemoryEntry,
   MemoryEntryType,
   Mode,
@@ -1451,6 +1452,15 @@ export interface ExtensionContext {
    * @throws Error if the Store is not available
    */
   getSetting(key: string): Promise<unknown>;
+
+  /**
+   * Get the merged MCP server configurations (global servers overridden by project-specific ones)
+   * available for the current project context. Returns an empty object if no project context is
+   * available or the MCP config manager is not wired up.
+   * @param projectDir - Optional project directory override; defaults to the current project context
+   * @returns Promise resolving to a map of server name to McpServerConfig
+   */
+  getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>>;
 
   /**
    * Update global settings by merging the provided partial updates into the current settings,

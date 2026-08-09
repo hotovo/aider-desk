@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { McpOAuthStatus, ToolApprovalState } from '@common/types';
 
-import { McpServerItem } from '../McpServerItem';
+import { McpServerItem } from '../../mcp/McpServerItem';
 
 import { createMockApi } from '@/__tests__/mocks/api';
 import { useApi } from '@/contexts/ApiContext';

@@ -10,6 +10,8 @@
 - added missing context files to subagent runs
 - added OAuth authentication support for MCP servers
 - improved OS detection for browser compatibility
+- added file-based MCP server configuration
+- moved MCP Servers configuration into separate Settings tab
 
 ## [0.77.0]
 

@@ -36,6 +36,7 @@ describe('EventsHandler', () => {
       store,
       {} as never,
       {} as never,
+      {} as never,
       modelManager,
       telemetryManager,
       {} as never,

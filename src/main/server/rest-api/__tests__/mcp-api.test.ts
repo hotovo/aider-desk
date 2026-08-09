@@ -44,7 +44,7 @@ describe('McpApi OAuth routes', () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ authorizationUrl: 'https://mcp.example.com/oauth/authorize' });
-    expect(eventsHandler.startMcpOAuth).toHaveBeenCalledWith('sentry', { url: 'https://mcp.sentry.dev/mcp' });
+    expect(eventsHandler.startMcpOAuth).toHaveBeenCalledWith('sentry', { url: 'https://mcp.sentry.dev/mcp' }, undefined);
   });
 
   it('completes the callback without exposing callback values in the response', async () => {

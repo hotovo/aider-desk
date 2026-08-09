@@ -17,6 +17,7 @@ import { TooltipProvider } from '@/components/ui/Tooltip';
 import { ApiProvider, useApi } from '@/contexts/ApiContext';
 import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
+import { McpServersProvider } from '@/contexts/McpServersContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
@@ -152,16 +153,18 @@ const NormalApp = () => {
               <ModelProviderProvider>
                 <SettingsInitializer />
                 <AgentsProvider>
-                  <ContextMenuProvider>
-                    <ExtensionsProvider>
-                      <DiffsWorkerPoolProvider>
-                        <ThemeAndFontManager />
-                        <AnimatedRoutes />
-                        <ToastContainer />
-                        <ModalOverlayUrlHandler />
-                      </DiffsWorkerPoolProvider>
-                    </ExtensionsProvider>
-                  </ContextMenuProvider>
+                  <McpServersProvider>
+                    <ContextMenuProvider>
+                      <ExtensionsProvider>
+                        <DiffsWorkerPoolProvider>
+                          <ThemeAndFontManager />
+                          <AnimatedRoutes />
+                          <ToastContainer />
+                          <ModalOverlayUrlHandler />
+                        </DiffsWorkerPoolProvider>
+                      </ExtensionsProvider>
+                    </ContextMenuProvider>
+                  </McpServersProvider>
                 </AgentsProvider>
               </ModelProviderProvider>
             </IconContext.Provider>

@@ -78,6 +78,7 @@ import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
 import { createSubagentsToolset } from '@/agent/tools/subagents';
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
+import { McpConfigManager } from '@/agent/mcp-config-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 
 const MAX_RETRIES = 3;
@@ -89,6 +90,7 @@ export class Agent {
     private readonly store: Store,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly mcpManager: McpManager,
+    private readonly mcpConfigManager: McpConfigManager,
     private readonly modelManager: ModelManager,
     private readonly telemetryManager: TelemetryManager,
     private readonly memoryManager: MemoryManager,
@@ -402,7 +404,7 @@ export class Agent {
       task,
       profile,
       provider.provider.name,
-      this.store.getSettings().mcpServers,
+      this.mcpConfigManager.getMergedServers(task.getProjectDir()),
       approvalManager,
       promptContext,
     );
@@ -672,7 +674,7 @@ export class Agent {
     // Store resolved provider for use in retry logic
     const resolvedProvider = provider;
 
-    this.telemetryManager.captureAgentRun(profile, task.task);
+    this.telemetryManager.captureAgentRun(profile, task.task, Object.keys(this.mcpConfigManager.getMergedServers(task.getProjectDir())).length);
 
     logger.debug('runAgent', {
       taskId: task.taskId,

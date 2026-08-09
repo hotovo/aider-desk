@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ZaiPlanProvider } from '@common/agent';
-import { SettingsData, McpServerConfig } from '@common/types';
+import { McpServerConfig } from '@common/types';
 import { FaCheck, FaPlus, FaInfoCircle, FaExternalLinkAlt } from 'react-icons/fa';
 
 import { ZaiPlanThinkingSetting } from './ZaiPlanThinkingSetting';
 
-import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
+import { useMcpServers } from '@/contexts/McpServersContext';
 import { Button } from '@/components/common/Button';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -25,16 +25,10 @@ type McpServerInfo = {
 
 export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
   const { t } = useTranslation();
-  const storedMcpServers = useSettingsStore((state) => state.settings?.mcpServers);
-  const saveSettings = useSaveSettings();
-  const [existingMcpServers, setExistingMcpServers] = useState<Record<string, McpServerConfig>>({});
+  const { globalServers, addServer } = useMcpServers();
   const [addingServers, setAddingServers] = useState<Record<string, boolean>>({});
 
   const { apiKey } = provider;
-
-  useEffect(() => {
-    setExistingMcpServers(storedMcpServers ?? {});
-  }, [storedMcpServers]);
 
   const mcpServers: McpServerInfo[] = [
     {
@@ -90,7 +84,7 @@ export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
   ];
 
   const isServerConfigured = (serverKey: string): boolean => {
-    return serverKey in existingMcpServers;
+    return serverKey in globalServers;
   };
 
   const handleAddServer = async (serverInfo: McpServerInfo) => {
@@ -101,15 +95,7 @@ export const ZaiPlanAdvancedSettings = ({ provider, onChange }: Props) => {
     setAddingServers((prev) => ({ ...prev, [serverInfo.key]: true }));
 
     try {
-      const currentSettings = useSettingsStore.getState().settings;
-      const updatedMcpServers = {
-        ...(currentSettings?.mcpServers || {}),
-        [serverInfo.key]: serverInfo.config,
-      };
-
-      const updatedSettings = { ...currentSettings, mcpServers: updatedMcpServers } as SettingsData;
-      await saveSettings(updatedSettings);
-      setExistingMcpServers(updatedMcpServers);
+      await addServer(serverInfo.key, serverInfo.config);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to add MCP server:', error);

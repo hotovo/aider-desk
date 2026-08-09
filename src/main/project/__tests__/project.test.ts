@@ -129,7 +129,6 @@ describe('Project - createNewTask', () => {
               confirmBeforeEdit: false,
             },
             preferredModels: [],
-            mcpServers: {},
             llmProviders: {},
             telemetryEnabled: true,
             proxy: {
@@ -223,6 +222,7 @@ describe('Project - createNewTask', () => {
       baseDir,
       mockStore as Store,
       mockMcpManager as McpManager,
+      { initializeForProject: vi.fn(), removeProject: vi.fn() } as any,
       mockTelemetryManager as TelemetryManager,
       mockDataManager as DataManager,
       mockEventManager as EventManager,
@@ -504,7 +504,6 @@ describe('Project - deleteTask', () => {
               confirmBeforeEdit: false,
             },
             preferredModels: [],
-            mcpServers: {},
             llmProviders: {},
             telemetryEnabled: true,
             proxy: {
@@ -590,6 +589,7 @@ describe('Project - deleteTask', () => {
       '/test/project',
       mockStore,
       mockMcpManager,
+      { initializeForProject: vi.fn(), removeProject: vi.fn() } as any,
       mockTelemetryManager,
       mockDataManager,
       mockEventManager,

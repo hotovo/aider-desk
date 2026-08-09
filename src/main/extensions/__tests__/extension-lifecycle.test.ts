@@ -79,6 +79,7 @@ describe('Extension Lifecycle', () => {
       mockDeps.eventManager,
       mockDeps.telemetryManager,
       mockDeps.memoryManager,
+      undefined,
       mockDeps.registry,
     );
   });

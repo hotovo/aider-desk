@@ -70,6 +70,7 @@ import type {
 } from '@common/extensions';
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
+import type { McpConfigManager } from '@/agent/mcp-config-manager';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
@@ -183,6 +184,7 @@ export class ExtensionManager {
     private readonly eventManager: EventManager,
     private readonly telemetryManager: TelemetryManager,
     private readonly memoryManager: MemoryManager,
+    private readonly mcpConfigManager?: McpConfigManager,
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
   ) {
     this.loader = new ExtensionLoader();
@@ -2189,7 +2191,17 @@ export class ExtensionManager {
       logger.debug(`[Extensions] Dispatching event '${String(eventName)}' to extension '${metadata.name}'`);
       try {
         // Create ExtensionContext for this extension
-        const context = new ExtensionContextImpl(loaded.id, metadata.name, this.store, this.modelManager, this.eventManager, this.memoryManager, project, task);
+        const context = new ExtensionContextImpl(
+          loaded.id,
+          metadata.name,
+          this.store,
+          this.modelManager,
+          this.eventManager,
+          this.memoryManager,
+          project,
+          task,
+          this.mcpConfigManager,
+        );
 
         // Call the extension handler
         // Using type assertion to handle dynamic dispatch across different event types

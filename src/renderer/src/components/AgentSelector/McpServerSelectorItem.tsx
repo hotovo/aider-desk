@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
-import { ToolApprovalState } from '@common/types';
+import { McpServerConfig, ToolApprovalState } from '@common/types';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { useTranslation } from 'react-i18next';
 
@@ -10,12 +10,14 @@ import { useApi } from '@/contexts/ApiContext';
 
 type Props = {
   serverName: string;
+  config?: McpServerConfig;
+  projectDir?: string;
   disabled: boolean;
   toolApprovals: Record<string, ToolApprovalState>;
   onToggle: (serverName: string) => void;
 };
 
-export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onToggle }: Props) => {
+export const McpServerSelectorItem = ({ serverName, config, projectDir, disabled, toolApprovals, onToggle }: Props) => {
   const { t } = useTranslation();
   const [toolsCount, setToolsCount] = useState<number | null>(null);
   const api = useApi();
@@ -24,7 +26,7 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
     const loadTools = async () => {
       const timeoutId = setTimeout(() => setToolsCount(null), 500);
       try {
-        const tools = await api.loadMcpServerTools(serverName);
+        const tools = await api.loadMcpServerTools(serverName, config, projectDir);
         const totalTools = tools?.length ?? 0;
         const disabledCount =
           tools?.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length ?? 0;
@@ -39,7 +41,7 @@ export const McpServerSelectorItem = ({ serverName, disabled, toolApprovals, onT
     };
 
     void loadTools();
-  }, [toolApprovals, serverName, api]);
+  }, [toolApprovals, serverName, config, projectDir, api]);
 
   return (
     <div className="flex items-center justify-between px-3 py-1 hover:bg-bg-secondary-light cursor-pointer text-xs" onClick={() => onToggle(serverName)}>

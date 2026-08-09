@@ -19,7 +19,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 import { IconButton } from '@/components/common/IconButton';
 import { Accordion } from '@/components/common/Accordion';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { useMcpServers } from '@/contexts/McpServersContext';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
@@ -36,7 +36,8 @@ type Props = {
 export const AgentSelector = memo(
   ({ projectDir, task, isActive, showSettingsPage }: Props) => {
     const { t } = useTranslation();
-    const mcpServers = useSettingsStore((state) => state.settings?.mcpServers);
+    const { getMergedServers } = useMcpServers();
+    const mcpServers = useMemo(() => getMergedServers(projectDir), [getMergedServers, projectDir]);
     const { projectSettings, saveProjectSettings } = useProjectSettings();
     const { getProfiles, updateProfile } = useAgents();
     const [selectorVisible, setSelectorVisible] = useState(false);
@@ -130,7 +131,7 @@ export const AgentSelector = memo(
                 return 0;
               }
               try {
-                const tools = await api.loadMcpServerTools(serverName, mcpServers![serverName]);
+                const tools = await api.loadMcpServerTools(serverName, mcpServers![serverName], projectDir);
                 const serverTotalTools = tools?.length ?? 0;
                 const serverDisabledTools =
                   tools?.filter((tool) => toolApprovals[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] === ToolApprovalState.Never).length ?? 0;
@@ -153,7 +154,7 @@ export const AgentSelector = memo(
       };
 
       void calculateEnabledTools();
-    }, [enabledServers, mcpServers, toolApprovals, api]);
+    }, [enabledServers, mcpServers, toolApprovals, api, projectDir]);
 
     if (!activeTaskProfile && profiles.length === 0) {
       return <div className="text-xs text-text-muted-light">{t('common.loading')}</div>;
@@ -362,6 +363,8 @@ export const AgentSelector = memo(
                         <McpServerSelectorItem
                           key={serverName}
                           serverName={serverName}
+                          config={mcpServers?.[serverName]}
+                          projectDir={projectDir}
                           disabled={!enabledServers.includes(serverName)}
                           toolApprovals={activeTaskProfile?.toolApprovals || {}}
                           onToggle={handleToggleServer}

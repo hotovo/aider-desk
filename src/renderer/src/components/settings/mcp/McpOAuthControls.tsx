@@ -1,4 +1,5 @@
 import { McpOAuthStatus, type McpServerConfig } from '@common/types';
+import { clsx } from 'clsx';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -12,9 +13,10 @@ type Props = {
   onAuthenticated: () => void;
   onDisconnected: () => void;
   onStatusChange: (status: McpOAuthStatus) => void;
+  borderless?: boolean;
 };
 
-export const McpOAuthControls = ({ serverName, config, refreshTrigger, onAuthenticated, onDisconnected, onStatusChange }: Props) => {
+export const McpOAuthControls = ({ serverName, config, refreshTrigger, onAuthenticated, onDisconnected, onStatusChange, borderless }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const [status, setStatus] = useState(McpOAuthStatus.NotRequired);
@@ -101,7 +103,7 @@ export const McpOAuthControls = ({ serverName, config, refreshTrigger, onAuthent
   }
 
   return (
-    <div className="flex flex-col gap-2 border-b border-border-default-dark p-3 text-xs">
+    <div className={clsx('flex flex-col gap-2 p-3 text-xs', !borderless && 'border-b border-border-default-dark')}>
       <div className="flex items-center justify-between gap-3">
         <span className="text-text-secondary">
           {status === McpOAuthStatus.Authenticated

@@ -1,6 +1,7 @@
 import {
   AgentProfile,
   AgentProfilesUpdatedData,
+  McpServersData,
   AutocompletionData,
   BranchInfo,
   ClearTaskData,
@@ -159,12 +160,19 @@ export interface ApplicationAPI {
   deleteTodo: (baseDir: string, taskId: string, name: string) => Promise<TodoItem[]>;
   clearAllTodos: (baseDir: string, taskId: string) => Promise<TodoItem[]>;
 
-  loadMcpServerTools: (serverName: string, config?: McpServerConfig) => Promise<McpTool[] | null>;
-  reloadMcpServers: (mcpServers: Record<string, McpServerConfig>, force?: boolean) => Promise<void>;
+  loadMcpServerTools: (serverName: string, config?: McpServerConfig, projectDir?: string) => Promise<McpTool[] | null>;
+  reloadMcpServers: (projectDir?: string, force?: boolean) => Promise<void>;
   reloadMcpServer: (serverName: string, config: McpServerConfig) => Promise<McpTool[]>;
-  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig) => Promise<McpOAuthStatusData>;
-  startMcpOAuth: (serverName: string, config?: McpServerConfig) => Promise<string>;
-  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig) => Promise<void>;
+  getMcpOAuthStatus: (serverName: string, config?: McpServerConfig, projectDir?: string) => Promise<McpOAuthStatusData>;
+  startMcpOAuth: (serverName: string, config?: McpServerConfig, projectDir?: string) => Promise<string>;
+  disconnectMcpOAuth: (serverName: string, config?: McpServerConfig, projectDir?: string) => Promise<void>;
+
+  // MCP server config operations (file-based, global + per-project)
+  getMcpServers: () => Promise<McpServersData>;
+  addMcpServer: (name: string, config: McpServerConfig, projectDir?: string) => Promise<McpServersData>;
+  updateMcpServer: (oldName: string, name: string, config: McpServerConfig, projectDir?: string) => Promise<McpServersData>;
+  removeMcpServer: (name: string, projectDir?: string) => Promise<McpServersData>;
+  replaceMcpServers: (servers: Record<string, McpServerConfig>, projectDir?: string) => Promise<McpServersData>;
 
   // Extension operations
   getInstalledExtensions: (projectDir?: string) => Promise<InstalledExtension[]>;
@@ -263,6 +271,7 @@ export interface ApplicationAPI {
   addProviderModelsUpdatedListener: (callback: (data: ProviderModelsData) => void) => () => void;
   addProvidersUpdatedListener: (callback: (data: ProvidersUpdatedData) => void) => () => void;
   addAgentProfilesUpdatedListener: (callback: (data: AgentProfilesUpdatedData) => void) => () => void;
+  addMcpServersUpdatedListener: (callback: (data: McpServersData) => void) => () => void;
   addProjectSettingsUpdatedListener: (baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void) => () => void;
   addWorktreeIntegrationStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;

@@ -94,7 +94,7 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
         setLogMessages((current) => applyReadonlyLogEvent(current, event, selectedTaskId, t('messages.thinking')));
       }
     });
-  }, [api, selectedTaskId]);
+  }, [api, selectedTaskId, t]);
 
   const handleSelectTask = (taskId: string) => {
     onSelectTask(taskId);

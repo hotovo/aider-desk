@@ -180,6 +180,7 @@ describe('Task - readonly init', () => {
       mockStore as any,
       {} as any,
       {} as any,
+      {} as any,
       { getProfile: vi.fn(() => null) } as any,
       {} as any,
       {} as any,

@@ -2,7 +2,8 @@ import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
 import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
-import type { Model, ProviderProfile, SettingsData } from '@common/types';
+import type { McpServerConfig, Model, ProviderProfile, SettingsData } from '@common/types';
+import type { McpConfigManager } from '@/agent/mcp-config-manager';
 import type { EventManager } from '@/events';
 import type { MemoryManager } from '@/memory/memory-manager';
 import type { ModelManager } from '@/models';
@@ -27,6 +28,7 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly memoryManager?: MemoryManager,
     private readonly project?: Project,
     private readonly task?: Task,
+    private readonly mcpConfigManager?: McpConfigManager,
   ) {
     this.taskContext = this.task ? new TaskContextImpl(this.task) : null;
     this.projectContext = this.project ? new ProjectContextImpl(this.project) : null;
@@ -88,6 +90,19 @@ export class ExtensionContextImpl implements ExtensionContext {
     } catch (error) {
       this.log(`Failed to get providers: ${error}`, 'error');
       return [];
+    }
+  }
+
+  async getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>> {
+    if (!this.mcpConfigManager) {
+      this.log('McpConfigManager not available, returning empty MCP servers', 'warn');
+      return {};
+    }
+    try {
+      return this.mcpConfigManager.getMergedServers(projectDir ?? this.project?.baseDir);
+    } catch (error) {
+      this.log(`Failed to get MCP servers: ${error}`, 'error');
+      return {};
     }
   }
 

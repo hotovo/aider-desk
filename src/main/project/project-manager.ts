@@ -2,7 +2,7 @@ import { normalizeBaseDir } from '@common/utils';
 import { AgentProfile, ProjectSettings, SettingsData, ModeDefinition } from '@common/types';
 
 import { TelemetryManager } from '@/telemetry';
-import { AgentProfileManager, McpManager } from '@/agent';
+import { AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';
 import { Project } from '@/project';
@@ -22,6 +22,7 @@ export class ProjectManager {
   constructor(
     private readonly store: Store,
     private readonly mcpManager: McpManager,
+    private readonly mcpConfigManager: McpConfigManager,
     private readonly telemetryManager: TelemetryManager,
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
@@ -46,6 +47,7 @@ export class ProjectManager {
       baseDir,
       this.store,
       this.mcpManager,
+      this.mcpConfigManager,
       this.telemetryManager,
       this.dataManager,
       this.eventManager,

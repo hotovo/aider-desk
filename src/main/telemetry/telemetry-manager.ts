@@ -111,7 +111,7 @@ export class TelemetryManager {
     });
   }
 
-  captureAgentRun(profile: AgentProfile, task?: TaskData) {
+  captureAgentRun(profile: AgentProfile, task?: TaskData, totalMcpServersCount = 0) {
     if (!this.store.getSettings().telemetryEnabled) {
       return;
     }
@@ -128,7 +128,7 @@ export class TelemetryManager {
         includeRepoMap: profile.includeRepoMap,
         autonomyMode: task?.autonomyMode ?? 'guided',
         enabledMcpServersCount: profile.enabledServers.length,
-        totalMcpServersCount: Object.keys(this.store.getSettings().mcpServers).length,
+        totalMcpServersCount,
       },
     });
   }

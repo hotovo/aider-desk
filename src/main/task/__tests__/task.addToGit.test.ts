@@ -200,6 +200,7 @@ describe('Task - addToGit', () => {
       taskId,
       mockStore,
       mockMcpManager,
+      {} as any,
       mockCustomCommandManager,
       mockAgentProfileManager,
       mockTelemetryManager,

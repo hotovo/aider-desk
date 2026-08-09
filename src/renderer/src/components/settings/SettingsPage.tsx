@@ -1,4 +1,4 @@
-import { ProjectData, ProviderProfile, SettingsData } from '@common/types';
+import { McpServersData, ProjectData, ProviderProfile, SettingsData } from '@common/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { isEqual } from 'lodash';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useAgents } from '@/contexts/AgentsContext';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useApi } from '@/contexts/ApiContext';
 import { Button } from '@/components/common/Button';
+import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 
 type Props = {
   onClose: () => void;
@@ -31,6 +32,9 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
 
   const [providers, setProviders] = useState<ProviderProfile[]>([]);
   const [originalProviders, setOriginalProviders] = useState<ProviderProfile[]>([]);
+
+  const [mcpServers, setMcpServers] = useState<McpServersData>({ global: {}, projectServers: {} });
+  const [originalMcpServers, setOriginalMcpServers] = useState<McpServersData>({ global: {}, projectServers: {} });
 
   useEffect(() => {
     if (originalSettings) {
@@ -54,6 +58,21 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
   }, [api]);
 
   useEffect(() => {
+    const loadMcpServers = async () => {
+      try {
+        const data = await api.getMcpServers();
+        setMcpServers(data);
+        setOriginalMcpServers(data);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to load MCP servers:', error);
+      }
+    };
+
+    void loadMcpServers();
+  }, [api]);
+
+  useEffect(() => {
     setAgentProfiles(originalAgentProfiles);
   }, [originalAgentProfiles]);
 
@@ -61,8 +80,9 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
     const settingsChanged = localSettings && originalSettings && !isEqual(localSettings, originalSettings);
     const agentProfilesChanged = !isEqual(agentProfiles, originalAgentProfiles);
     const providersChanged = !isEqual(providers, originalProviders);
-    return settingsChanged || agentProfilesChanged || providersChanged;
-  }, [localSettings, originalSettings, agentProfiles, originalAgentProfiles, providers, originalProviders]);
+    const mcpServersChanged = !isEqual(mcpServers, originalMcpServers);
+    return settingsChanged || agentProfilesChanged || providersChanged || mcpServersChanged;
+  }, [localSettings, originalSettings, agentProfiles, originalAgentProfiles, providers, originalProviders, mcpServers, originalMcpServers]);
 
   const handleCancel = useCallback(() => {
     if (originalSettings && localSettings?.language !== originalSettings.language) {
@@ -83,74 +103,108 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
       setFontSize(originalSettings.fontSize);
     }
 
-    // Updated to use settings.mcpServers directly
-    if (originalSettings && localSettings && !isEqual(localSettings.mcpServers, originalSettings.mcpServers)) {
-      void api.reloadMcpServers(originalSettings.mcpServers || {});
-    }
-
     setAgentProfiles(originalAgentProfiles);
     setProviders(originalProviders);
+    setMcpServers(originalMcpServers);
     onClose();
-  }, [originalSettings, localSettings, i18n, api, originalAgentProfiles, originalProviders, onClose]);
+  }, [originalSettings, localSettings, i18n, api, originalAgentProfiles, originalProviders, originalMcpServers, onClose]);
 
-  const handleSave = async () => {
-    if (localSettings) {
-      await saveSettings(localSettings);
-    }
-
+  const performSave = async (): Promise<boolean> => {
     try {
-      if (!isEqual(providers, originalProviders)) {
-        const updatedProviders = await api.updateProviders(providers);
-        setProviders(updatedProviders);
-        setOriginalProviders(updatedProviders);
+      if (localSettings) {
+        await saveSettings(localSettings);
       }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to save providers:', error);
-    }
 
-    // Save agent profile changes
-    try {
-      // Find profiles that were added, updated, or deleted
-      const originalProfileIds = new Set(originalAgentProfiles.map((p) => p.id));
-      const currentProfileIds = new Set(agentProfiles.map((p) => p.id));
-
-      // Handle deleted profiles
-      for (const profileId of originalProfileIds) {
-        if (!currentProfileIds.has(profileId)) {
-          await deleteProfile(profileId, originalAgentProfiles.find((p) => p.id === profileId)?.projectDir);
+      try {
+        if (!isEqual(providers, originalProviders)) {
+          const updatedProviders = await api.updateProviders(providers);
+          setProviders(updatedProviders);
+          setOriginalProviders(updatedProviders);
         }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save providers:', error);
+        return false;
       }
 
-      // Handle added and updated profiles
-      for (const profile of agentProfiles) {
-        if (!originalProfileIds.has(profile.id)) {
-          // New profile
-          await createProfile(profile, profile.projectDir);
-        } else {
-          // Updated profile - check if it actually changed
-          const originalProfile = originalAgentProfiles.find((p) => p.id === profile.id);
-          if (originalProfile && !isEqual(originalProfile, profile)) {
-            await updateProfile(profile, profile.projectDir);
+      // Save MCP server changes
+      try {
+        if (!isEqual(mcpServers, originalMcpServers)) {
+          const scopes = new Set<string | undefined>([undefined, ...Object.keys(originalMcpServers.projectServers), ...Object.keys(mcpServers.projectServers)]);
+          for (const projectDir of scopes) {
+            const originalScope = projectDir ? originalMcpServers.projectServers[projectDir] || {} : originalMcpServers.global;
+            const draftScope = projectDir ? mcpServers.projectServers[projectDir] || {} : mcpServers.global;
+            if (!isEqual(originalScope, draftScope)) {
+              await api.replaceMcpServers(draftScope, projectDir);
+            }
+          }
+          setOriginalMcpServers(mcpServers);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save MCP servers:', error);
+        return false;
+      }
+
+      // Save agent profile changes
+      try {
+        // Find profiles that were added, updated, or deleted
+        const originalProfileIds = new Set(originalAgentProfiles.map((p) => p.id));
+        const currentProfileIds = new Set(agentProfiles.map((p) => p.id));
+
+        // Handle deleted profiles
+        for (const profileId of originalProfileIds) {
+          if (!currentProfileIds.has(profileId)) {
+            await deleteProfile(profileId, originalAgentProfiles.find((p) => p.id === profileId)?.projectDir);
           }
         }
+
+        // Handle added and updated profiles
+        for (const profile of agentProfiles) {
+          if (!originalProfileIds.has(profile.id)) {
+            // New profile
+            await createProfile(profile, profile.projectDir);
+          } else {
+            // Updated profile - check if it actually changed
+            const originalProfile = originalAgentProfiles.find((p) => p.id === profile.id);
+            if (originalProfile && !isEqual(originalProfile, profile)) {
+              await updateProfile(profile, profile.projectDir);
+            }
+          }
+        }
+
+        // Update profile order if needed
+        if (
+          !isEqual(
+            agentProfiles.map((p) => p.id),
+            originalAgentProfiles.map((p) => p.id),
+          )
+        ) {
+          await updateProfilesOrder(agentProfiles);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to save agent profiles:', error);
+        return false;
       }
 
-      // Update profile order if needed
-      if (
-        !isEqual(
-          agentProfiles.map((p) => p.id),
-          originalAgentProfiles.map((p) => p.id),
-        )
-      ) {
-        await updateProfilesOrder(agentProfiles);
-      }
+      return true;
     } catch (error) {
       // eslint-disable-next-line no-console
-      console.error('Failed to save agent profiles:', error);
+      console.error('Failed to save settings:', error);
+      return false;
     }
+  };
 
+  const handleSave = () => {
     onClose();
+    void performSave().then((success) => {
+      if (success) {
+        showSuccessNotification(t('settings.savedSuccessfully'));
+      } else {
+        showErrorNotification(t('settings.saveError'));
+      }
+    });
   };
 
   useHotkeys(
@@ -200,6 +254,8 @@ export const SettingsPage = ({ onClose, initialPageId, initialOptions, openProje
             initialOptions={initialOptions}
             agentProfiles={agentProfiles}
             setAgentProfiles={setAgentProfiles}
+            mcpServers={mcpServers}
+            setMcpServers={setMcpServers}
             openProjects={openProjects}
             providers={providers}
             setProviders={setProviders}

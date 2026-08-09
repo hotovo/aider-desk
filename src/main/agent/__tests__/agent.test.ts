@@ -91,6 +91,9 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
     const mockMcpManager = {
       getConnectors: vi.fn(() => []),
     };
+    const mockMcpConfigManager = {
+      getMergedServers: vi.fn(() => ({})),
+    };
     const mockModelManager = {
       createLlm: vi.fn(),
       getProviderOptions: vi.fn(() => ({})),
@@ -114,6 +117,7 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       mockStore as any,
       mockAgentProfileManager as any,
       mockMcpManager as any,
+      mockMcpConfigManager as any,
       mockModelManager as any,
       mockTelemetryManager as any,
       mockMemoryManager as any,

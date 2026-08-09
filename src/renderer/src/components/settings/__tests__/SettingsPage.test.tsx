@@ -9,6 +9,7 @@ import { SettingsPage } from '../SettingsPage';
 import { useSettingsStore, useSaveSettings } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useApi } from '@/contexts/ApiContext';
+import { showSuccessNotification, showErrorNotification } from '@/utils/notifications';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -35,6 +36,11 @@ vi.mock('@/contexts/ApiContext', () => ({
   useApi: vi.fn(),
 }));
 
+vi.mock('@/utils/notifications', () => ({
+  showSuccessNotification: vi.fn(),
+  showErrorNotification: vi.fn(),
+}));
+
 // Mock components
 vi.mock('../../common/ModalOverlayLayout', () => ({
   ModalOverlayLayout: ({ children, title }: { children: ReactNode; title: string }) => (
@@ -54,17 +60,20 @@ vi.mock('../../../pages/Settings', () => ({
 }));
 
 describe('SettingsPage', () => {
-  const mockSettings = { language: 'en', theme: 'dark', mcpServers: {} } as SettingsData;
+  const mockSettings = { language: 'en', theme: 'dark' } as SettingsData;
   const mockSaveSettings = vi.fn();
   const mockApi = {
     getProviders: vi.fn(() => Promise.resolve([])),
     updateProviders: vi.fn(() => Promise.resolve([])),
+    getMcpServers: vi.fn(() => Promise.resolve({ global: {}, projectServers: {} })),
+    replaceMcpServers: vi.fn(() => Promise.resolve({ global: {}, projectServers: {} })),
     setZoomLevel: vi.fn(),
-    reloadMcpServers: vi.fn(),
   };
 
   beforeEach(() => {
     mockSaveSettings.mockClear();
+    vi.mocked(showSuccessNotification).mockClear();
+    vi.mocked(showErrorNotification).mockClear();
     vi.mocked(useSaveSettings).mockReturnValue(mockSaveSettings);
     vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
       selector({
@@ -101,9 +110,10 @@ describe('SettingsPage', () => {
     expect(mockApi.getProviders).toHaveBeenCalled();
   });
 
-  it('calls saveSettings when Save is clicked after changes', async () => {
+  it('closes the dialog immediately and saves in the background on Save', async () => {
+    const onClose = vi.fn();
     await act(async () => {
-      render(<SettingsPage onClose={vi.fn()} />);
+      render(<SettingsPage onClose={onClose} />);
     });
 
     fireEvent.click(screen.getByText('Change Language'));
@@ -114,9 +124,34 @@ describe('SettingsPage', () => {
 
     fireEvent.click(saveButton);
 
+    // Dialog closes immediately, before the background save completes
+    expect(onClose).toHaveBeenCalledTimes(1);
+
     await waitFor(() => {
       expect(mockSaveSettings).toHaveBeenCalledWith(expect.objectContaining({ language: 'zh' }));
     });
+
+    await waitFor(() => {
+      expect(showSuccessNotification).toHaveBeenCalledWith('settings.savedSuccessfully');
+    });
+  });
+
+  it('shows an error notification when the background save fails', async () => {
+    mockSaveSettings.mockRejectedValueOnce(new Error('boom'));
+    const onClose = vi.fn();
+    await act(async () => {
+      render(<SettingsPage onClose={onClose} />);
+    });
+
+    fireEvent.click(screen.getByText('Change Language'));
+    fireEvent.click(screen.getByText('common.save'));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(showErrorNotification).toHaveBeenCalledWith('settings.saveError');
+    });
+    expect(showSuccessNotification).not.toHaveBeenCalled();
   });
 
   it('calls onClose when Cancel is clicked', async () => {

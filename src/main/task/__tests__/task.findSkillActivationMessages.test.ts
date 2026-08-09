@@ -194,6 +194,7 @@ describe('Task - findSkillActivationMessages', () => {
       taskId,
       mockStore,
       mockMcpManager,
+      {} as any,
       mockCustomCommandManager,
       mockAgentProfileManager,
       mockTelemetryManager,

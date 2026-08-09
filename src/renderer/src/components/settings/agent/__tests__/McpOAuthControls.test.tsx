@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { McpOAuthStatus } from '@common/types';
 
-import { McpOAuthControls } from '../McpOAuthControls';
+import { McpOAuthControls } from '../../mcp/McpOAuthControls';
 
 import { createMockApi } from '@/__tests__/mocks/api';
 import { useApi } from '@/contexts/ApiContext';

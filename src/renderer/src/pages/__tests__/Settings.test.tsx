@@ -60,6 +60,8 @@ describe('Settings', () => {
         onThemeChange={vi.fn()}
         onFontChange={vi.fn()}
         onFontSizeChange={vi.fn()}
+        mcpServers={{ global: {}, projectServers: {} }}
+        setMcpServers={vi.fn()}
       />,
     );
 
@@ -76,6 +78,8 @@ describe('Settings', () => {
         onThemeChange={vi.fn()}
         onFontChange={vi.fn()}
         onFontSizeChange={vi.fn()}
+        mcpServers={{ global: {}, projectServers: {} }}
+        setMcpServers={vi.fn()}
       />,
     );
 
@@ -93,6 +97,8 @@ describe('Settings', () => {
         onThemeChange={vi.fn()}
         onFontChange={vi.fn()}
         onFontSizeChange={vi.fn()}
+        mcpServers={{ global: {}, projectServers: {} }}
+        setMcpServers={vi.fn()}
         initialPageId="about"
       />,
     );

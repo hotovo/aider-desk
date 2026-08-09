@@ -2,7 +2,7 @@ import { createServer } from 'http';
 
 import type { WindowManager } from '@/window-manager';
 
-import { AgentProfileManager, McpManager } from '@/agent';
+import { AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
 import { CloudflareTunnelManager, ServerController } from '@/server';
 import { ConnectorManager } from '@/connector';
 import { ProjectManager } from '@/project';
@@ -46,13 +46,19 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   });
 
   // Initialize MCP manager
-  const mcpManager = new McpManager();
+  const mcpManager = new McpManager(undefined, () => store.getSettings().language);
   mcpManager.init().catch((error) => {
     logger.error('[MCP] MCP manager initialization failed, continuing without MCP:', error);
   });
 
   // Initialize event manager with window manager
   const eventManager = new EventManager(windowManager);
+
+  // Initialize MCP config manager (file-based global + per-project server configuration)
+  const mcpConfigManager = new McpConfigManager(eventManager, store);
+  await mcpConfigManager.init().catch((error) => {
+    logger.error('[MCP] MCP config manager initialization failed, continuing without file-based MCP config:', error);
+  });
 
   // Initialize event-based logging (adds transport to logger)
   initEventLogging(eventManager);
@@ -74,7 +80,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   });
 
   // Initialize extension manager (non-blocking - errors should not crash app)
-  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager, memoryManager);
+  const extensionManager = new ExtensionManager(store, modelManager, eventManager, telemetryManager, memoryManager, mcpConfigManager);
   extensionManager.init().catch((error) => {
     logger.error('[Extensions] Extension system initialization failed, continuing without extensions:', error);
   });
@@ -97,6 +103,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   const projectManager = new ProjectManager(
     store,
     mcpManager,
+    mcpConfigManager,
     telemetryManager,
     dataManager,
     eventManager,
@@ -126,6 +133,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     projectManager,
     store,
     mcpManager,
+    mcpConfigManager,
     versionsManager,
     modelManager,
     telemetryManager,
@@ -168,6 +176,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
         serverController.close(),
         projectManager.close(),
         mcpManager.close(),
+        mcpConfigManager.dispose(),
         telemetryManager.destroy(),
         agentProfileManager.dispose(),
         promptsManager.dispose(),

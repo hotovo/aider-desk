@@ -29,6 +29,7 @@ import {
   ProjectSettings,
   AgentProfile,
   AgentProfilesUpdatedData,
+  McpServersData,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
@@ -327,6 +328,12 @@ export class EventManager {
     };
     this.sendToWindows('agent-profiles-updated', data);
     this.broadcastToEventConnectors('agent-profiles-updated', data);
+  }
+
+  // MCP servers events
+  sendMcpServersUpdated(data: McpServersData): void {
+    this.sendToWindows('mcp-servers-updated', data);
+    this.broadcastToEventConnectors('mcp-servers-updated', data);
   }
 
   // Task lifecycle events

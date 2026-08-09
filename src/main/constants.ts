@@ -36,6 +36,7 @@ export const AIDER_DESK_BUILTIN_PROMPTS_DIR = path.join(RESOURCES_DIR, 'prompts'
 export const AIDER_DESK_BUILTIN_SKILLS_DIR = path.join(RESOURCES_DIR, 'skills');
 export const AIDER_DESK_GLOBAL_PROMPTS_DIR = path.join(AIDER_DESK_HOME_DIR, 'prompts');
 export const AIDER_DESK_AGENTS_DIR = path.join(AIDER_DESK_DIR, 'agents');
+export const AIDER_DESK_MCP_SERVERS_FILE = 'mcp-servers.json';
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const AIDER_DESK_WATCH_FILES_LOCK = path.join(AIDER_DESK_DIR, 'watch-files.lock');
 export const WORKTREE_BRANCH_PREFIX = 'aider-desk/task/';

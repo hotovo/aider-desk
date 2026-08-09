@@ -70,6 +70,7 @@ describe('Project Duplicate Subtask Prevention', () => {
       '/test/dir',
       mockStore as any,
       {} as any,
+      { initializeForProject: vi.fn(), removeProject: vi.fn() } as any,
       {} as any,
       {} as any,
       mockEventManager as any,

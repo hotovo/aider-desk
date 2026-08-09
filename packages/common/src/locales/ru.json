@@ -436,6 +436,8 @@
   },
   "settings": {
     "title": "Настройки",
+    "savedSuccessfully": "Настройки сохранены",
+    "saveError": "Не удалось сохранить настройки",
     "tabs": {
       "general": "Общие",
       "aider": "Aider",
@@ -1226,7 +1228,22 @@
     "loadToolsError": "Не удалось загрузить инструменты MCP-сервера",
     "noToolsFound": "Инструменты не найдены. Проверьте вашу конфигурацию.",
     "servers": "MCP-серверы",
-    "tools": "Инструменты"
+    "selectServer": "Выберите MCP-сервер из списка, чтобы просмотреть его инструменты",
+    "reloadServer": "Перезагрузить сервер",
+    "reload": "Перезагрузить",
+    "tools": "Инструменты",
+    "oauth": {
+      "connect": "Подключить",
+      "reopen": "Переоткрыть",
+      "connected": "Подключено через OAuth",
+      "disconnect": "Отключить",
+      "authorizing": "Завершите аутентификацию в открывшемся окне браузера.",
+      "authenticationRequired": "Требуется аутентификация OAuth.",
+      "authenticationRequiredMessage": "MCP-сервер '{{serverName}}' требует аутентификацию OAuth. Подключите его в разделе «Настройки → MCP-серверы».",
+      "windowTitle": "Аутентификация MCP",
+      "connectError": "Не удалось запустить аутентификацию MCP.",
+      "disconnectError": "Не удалось отключить аутентификацию MCP."
+    }
   },
   "todo": {
     "title": "Задачи",
