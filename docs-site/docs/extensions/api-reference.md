@@ -112,6 +112,9 @@ interface ExtensionContext {
   getSetting(key: string): Promise<unknown>;
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
+  // MCP Servers
+  getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>>;
+
   // UI refresh
   triggerUIDataRefresh(componentId?: string, taskId?: string): void;
   triggerUIComponentsReload(): void;
@@ -135,6 +138,7 @@ interface ExtensionContext {
 | `getModelConfigs()` | Get all available model configurations |
 | `getSetting(key)` | Get a setting value (supports dot-notation) |
 | `updateSettings(updates)` | Update multiple settings at once |
+| `getMcpServers(projectDir?)` | Get merged MCP server configurations (global overridden by project-specific) |
 | `triggerUIDataRefresh(componentId?, taskId?)` | Trigger UI component data refresh |
 | `triggerUIComponentsReload()` | Reload all UI component definitions for this extension |
 | `openUrl(url, target?)` | Open URL in external browser, new window, or modal overlay |

@@ -323,6 +323,9 @@ interface ExtensionContext {
   /** Update global settings by merging the provided partial updates. */
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
+  /** Get the merged MCP server configurations (global overridden by project-specific). Returns empty object if no project context or manager is unavailable. */
+  getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>>;
+
   /** Trigger a data refresh for UI components. Optionally target a specific component and/or task. */
   triggerUIDataRefresh(componentId?: string, taskId?: string): void;
 

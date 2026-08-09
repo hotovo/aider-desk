@@ -10,6 +10,7 @@
 - added missing context files to subagent runs
 - added OAuth authentication support for MCP servers
 - improved OS detection for browser compatibility
+- added getMcpServers method to Extension API
 - added file-based MCP server configuration
 - moved MCP Servers configuration into separate Settings tab
 - removed unnecesary log message when file is git added outside or repo or ignored
