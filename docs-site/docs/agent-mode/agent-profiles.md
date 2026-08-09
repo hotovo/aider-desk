@@ -108,7 +108,7 @@ Agent profiles can include custom rules and instructions from multiple sources:
 
 You can extend the agent's capabilities by connecting to external tools via the Model Context Protocol (MCP). By adding an MCP server, you can grant your agent entirely new skills like web browsing, database access, or integration with custom services.
 
-Learn more about configuring MCP servers in the [MCP Servers](./mcp-servers.md) section.
+Configure your MCP servers in **Settings > MCP Servers** and then enable them for each profile below. Learn more about configuring MCP servers in the [MCP Servers](./mcp-servers.md) section.
 
 ### Tool Control & Approvals
 

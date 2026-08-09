@@ -33,9 +33,15 @@ For more details, see [Aider Configuration](./aider-configuration.md).
 
 Configure the powerful Agent Mode.
 - **Agent Profiles**: Create and manage different profiles for the agent, each with its own model, tools, and behaviors.
-- **MCP Servers**: Add and manage external tools via MCP servers.
 - **Tool Approvals**: Set permissions for each tool on a per-profile basis.
-See [Agent Mode](../agent-mode/agent-mode.md) and [MCP Servers](../agent-mode/mcp-servers.md) for more information.
+See [Agent Mode](../agent-mode/agent-mode.md) for more information.
+
+### MCP Servers
+
+Add and manage external tools via [MCP servers](../agent-mode/mcp-servers.md).
+- **Global vs. Project Scope**: Use the context switcher to configure servers globally (available to all projects) or per project.
+- **File-Based Storage**: Configurations are stored in `mcp-servers.json` files (global: `~/.aider-desk/mcp-servers.json`, project: `<projectDir>/.aider-desk/mcp-servers.json`) and are watched for external changes.
+- **Tools & OAuth**: Inspect each server's tools, reload them, and connect OAuth-authorized remote servers.
 
 ### Memory
 

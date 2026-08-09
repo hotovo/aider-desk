@@ -609,6 +609,25 @@ Retrieves the effective value of an environment variable.
 
 ### MCP Integration
 
+#### Get MCP Servers
+Returns the configured MCP servers, split into global and per-project scopes.
+
+- **Endpoint**: `GET /api/mcp/servers`
+- **Response**: `200 OK`
+  ```json
+  {
+    "global": {
+      "filesystem": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+      }
+    },
+    "projectServers": {
+      "/path/to/project": {}
+    }
+  }
+  ```
+
 #### Load MCP Server Tools
 Loads tools from an MCP server.
 
@@ -620,9 +639,16 @@ Loads tools from an MCP server.
     "config": {
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
-    }
+    },
+    "projectDir": "/path/to/project"
   }
   ```
+- **Request Body Fields**:
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `serverName` | string | Yes | Name of the MCP server |
+  | `config` | object | No | Server configuration; when omitted the configured config is used |
+  | `projectDir` | string | No | Project directory for project-scoped servers |
 - **Response**: `200 OK` (returns tools array)
 
 #### Reload MCP Servers
@@ -632,21 +658,92 @@ Reloads all MCP servers with new configuration.
 - **Request Body**:
   ```json
   {
-    "mcpServers": {
-      "filesystem": {
-        "command": "npx",
-        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
-      }
-    },
+    "projectDir": "/path/to/project",
     "force": true
   }
   ```
+- **Request Body Fields**:
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `projectDir` | string | No | When provided, reloads only the project's servers; otherwise reloads global servers |
+  | `force` | boolean | No | Force restart of the servers |
 - **Response**: `200 OK`
   ```json
   {
     "message": "MCP servers reloaded"
   }
   ```
+
+#### Add MCP Server
+Adds a new MCP server to the given scope.
+
+- **Endpoint**: `POST /api/mcp/server/add`
+- **Request Body**:
+  ```json
+  {
+    "name": "filesystem",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    },
+    "projectDir": "/path/to/project"
+  }
+  ```
+- **Response**: `200 OK` (returns the updated MCP servers state, same shape as `GET /api/mcp/servers`)
+
+#### Update MCP Server
+Updates an existing MCP server, optionally renaming it.
+
+- **Endpoint**: `POST /api/mcp/server/update`
+- **Request Body**:
+  ```json
+  {
+    "oldName": "filesystem",
+    "name": "filesystem-2",
+    "config": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    },
+    "projectDir": "/path/to/project"
+  }
+  ```
+- **Response**: `200 OK` (returns the updated MCP servers state, same shape as `GET /api/mcp/servers`)
+
+#### Remove MCP Server
+Removes an MCP server from the given scope.
+
+- **Endpoint**: `POST /api/mcp/server/remove`
+- **Request Body**:
+  ```json
+  {
+    "name": "filesystem",
+    "projectDir": "/path/to/project"
+  }
+  ```
+- **Response**: `200 OK` (returns the updated MCP servers state, same shape as `GET /api/mcp/servers`)
+
+#### Replace MCP Servers
+Replaces the entire server configuration of the given scope.
+
+- **Endpoint**: `POST /api/mcp/servers/replace`
+- **Request Body**:
+  ```json
+  {
+    "servers": {
+      "filesystem": {
+        "command": "npx",
+        "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+      }
+    },
+    "projectDir": "/path/to/project"
+  }
+  ```
+- **Request Body Fields**:
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `servers` | object | Yes | Map of server name to configuration; replaces the entire scope |
+  | `projectDir` | string | No | Project directory for project-scoped servers; omit for global servers |
+- **Response**: `200 OK` (returns the updated MCP servers state, same shape as `GET /api/mcp/servers`)
 
 ### Worktree Operations
 

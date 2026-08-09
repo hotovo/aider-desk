@@ -13,14 +13,39 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 
 ## Configuring MCP Servers
 
-You can manage your MCP servers in **Settings > Agent**.
+You can manage your MCP servers in the dedicated **MCP Servers** tab in **Settings**.
 
 ### Adding a New Server
 
-1.  Navigate to the **Agent** tab in Settings.
-2.  Find the **MCP Servers** section.
+1.  Open **Settings** and navigate to the **MCP Servers** tab.
+2.  Use the context switcher in the top-left corner to select where the server should live: **Global** (applies to all projects) or an open project (project-scoped server).
 3.  Click the **Add** button.
-4.  A form will appear where you can paste your server configuration.
+4.  A form will appear where you can paste your server configuration as JSON.
+5.  Use the context switcher or select a server in the list to view its tools. Each entry offers **Reload**, **Edit**, and **Remove** actions.
+
+You can also edit the entire server configuration of the current context in raw JSON (pencil icon) or reload all servers at once (refresh icon).
+
+### Configuration Storage
+
+MCP server configurations are stored in **JSON files** on disk rather than in the application settings:
+
+- **Global servers** — stored in `mcp-servers.json` inside the AiderDesk home directory (default: `~/.aider-desk/mcp-servers.json`, configurable via `AIDER_DESK_HOME_DIR`).
+- **Project servers** — stored in `<projectDir>/.aider-desk/mcp-servers.json`.
+
+The file format is:
+
+```json
+{
+  "mcpServers": {
+    "server-name": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    }
+  }
+}
+```
+
+Global servers are available to every project, while project servers are scoped to their project and take precedence over global servers with the same name (the two are merged). The files are watched, so any changes made externally (for example, editing the file directly or committing one to the repository) are picked up automatically.
 
 ### Configuration Format
 
@@ -106,16 +131,24 @@ You can use placeholders in your server's `args` or `env` configuration:
 
 ## Enabling Servers and Tools in Agent Profiles
 
-Once a server is configured globally, you must enable it within a specific **Agent Profile** to make its tools available to the agent.
+Configuring a server only defines its configuration — you must also enable it within a specific **Agent Profile** to make its tools available to the agent.
 
 1.  In the **Agent** settings tab, select the profile you wish to edit.
-2.  In the **MCP Servers** section, you will see a list of all configured servers.
+2.  In the profile's tools section, you will see a list of all configured servers (global and project servers merged for the current project).
 3.  Use the checkbox next to each server name to enable or disable it for the selected profile.
 4.  You can further refine tool access by expanding a server's entry and setting the approval state for each individual tool (`Always`, `Never`, `Ask`).
 
 ## Authorization for Remote MCP Servers
 
-AiderDesk's MCP client does not currently support OAuth authorization for remote MCP servers. If your server requires authorization (e.g., Sentry), you can use [mcp-remote](https://github.com/geelen/mcp-remote) as a workaround.
+AiderDesk supports **OAuth authorization** for remote MCP servers that require it (e.g., Sentry).
+
+### Authorize a Server
+
+1.  Open **Settings** and navigate to the **MCP Servers** tab.
+2.  Select the server that requires authentication.
+3.  Click **Connect** — the authorization flow opens in your browser. Once you complete it, the connection is stored and the server's tools become available.
+
+If your server requires an authorization flow that the built-in OAuth support does not cover, you can fall back to [mcp-remote](https://github.com/geelen/mcp-remote) as a stdio-based proxy.
 
 ### Step 1: Authorize in Your Terminal
 

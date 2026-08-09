@@ -581,7 +581,6 @@ Emitted when application settings are updated.
   },
   "preferredModels": ["gpt-4", "claude-3-sonnet"],
   "agentProfiles": [],
-  "mcpServers": {},
   "llmProviders": {},
   "telemetryEnabled": true,
   "telemetryInformed": true,
@@ -655,6 +654,24 @@ Emitted when provider models are updated.
   ],
   "loading": false,
   "errors": {}
+}
+```
+
+#### `mcp-servers-updated`
+Emitted when MCP server configurations change (added, updated, removed, or reloaded from file).
+
+**Data Structure:**
+```json
+{
+  "global": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+    }
+  },
+  "projectServers": {
+    "/path/to/project": {}
+  }
 }
 ```
 
