@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- optimized task state determination when 'proceed (y/n)' is present
+
 ## [0.78.0]
 
 - correctly loading input history for all the opened projects not just active one

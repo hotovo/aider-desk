@@ -1159,7 +1159,9 @@ export class Task {
       const settings = this.store.getSettings();
       let state: string | null = DefaultTaskState.ReadyForReview;
 
-      if (settings.taskSettings.smartTaskState) {
+      if (this.isWaitingForApproval(agentMessages)) {
+        state = DefaultTaskState.ReadyForImplementation;
+      } else if (settings.taskSettings.smartTaskState) {
         state = await this.determineTaskState(agentMessages);
 
         // check once again after determining task state which can task some time
@@ -1226,6 +1228,23 @@ export class Task {
     }
 
     return null;
+  }
+
+  private isWaitingForApproval(resultMessages: ContextMessage[]): boolean {
+    const lastAssistantMessage = [...resultMessages].reverse().find((msg) => msg.role === MessageRole.Assistant) as ContextAssistantMessage | undefined;
+
+    if (!lastAssistantMessage) {
+      return false;
+    }
+
+    const contentText = extractTextContent(lastAssistantMessage.content);
+    const lastLine = contentText.trim().split('\n').pop();
+    if (!lastLine) {
+      return false;
+    }
+
+    const lower = lastLine.toLowerCase();
+    return lower.includes('proceed') && lower.includes('(y/n)');
   }
 
   private async determineTaskState(resultMessages: ContextMessage[]): Promise<string | null> {
