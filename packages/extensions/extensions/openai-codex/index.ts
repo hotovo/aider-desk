@@ -64,6 +64,13 @@ interface CachedData<T> {
 
 const quotaCache: CachedData<CodexQuotaData> = { data: null, lastFetchTime: 0 };
 
+// Per-task session ID used for prompt caching (set in onAgentStarted)
+const PROMPT_CACHE_KEY_MAX_LENGTH = 64;
+let currentSessionId: string | undefined;
+
+const clampCacheKey = (key: string): string =>
+  key.length <= PROMPT_CACHE_KEY_MAX_LENGTH ? key : Array.from(key).slice(0, PROMPT_CACHE_KEY_MAX_LENGTH).join('');
+
 // Token storage
 const TOKEN_FILE = join(__dirname, 'auth-token.json');
 
@@ -466,7 +473,7 @@ const PROVIDER_ID = 'openai-codex';
 export default class OpenAICodexAuthExtension implements Extension {
   static metadata = {
     name: 'OpenAI Codex Auth',
-    version: '1.3.1',
+    version: '1.4.0',
     description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with quota display',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/openai-codex/icon.png',
     author: 'wladimiiir',
@@ -483,10 +490,12 @@ export default class OpenAICodexAuthExtension implements Extension {
     }
   }
 
-  async onAgentStarted(event: AgentStartedEvent) {
+  async onAgentStarted(event: AgentStartedEvent, context: ExtensionContext): Promise<void> {
     if (event.providerProfile.provider.name !== PROVIDER_ID) {
       return undefined;
     }
+    const taskContext = context.getTaskContext();
+    currentSessionId = taskContext?.data.id;
   }
 
   async onPromptFinished(_event: PromptFinishedEvent, context: ExtensionContext): Promise<void> {
@@ -527,15 +536,22 @@ export default class OpenAICodexAuthExtension implements Extension {
 
       const { accessToken, accountId } = await getValidAccessToken(context);
 
+      const sessionId = currentSessionId ?? '';
+      const headers: Record<string, string> = {
+        'chatgpt-account-id': accountId,
+        'OpenAI-Beta': 'responses=experimental',
+        originator: 'aiderdesk',
+        'User-Agent': `aiderdesk (${platform()} ${release()}; ${arch()})`,
+      };
+      if (sessionId) {
+        headers['session-id'] = sessionId;
+        headers['x-client-request-id'] = sessionId;
+      }
+
       const provider = createOpenAI({
         baseURL: CODEX_BASE_URL,
         apiKey: accessToken,
-        headers: {
-          'chatgpt-account-id': accountId,
-          'OpenAI-Beta': 'responses=experimental',
-          originator: 'aiderdesk',
-          'User-Agent': `aiderdesk (${platform()} ${release()}; ${arch()})`,
-        },
+        headers,
       });
 
       return provider.responses(model.id);
@@ -551,10 +567,13 @@ export default class OpenAICodexAuthExtension implements Extension {
     };
 
     const getProviderOptions = () => {
+      const cacheKey = currentSessionId ? clampCacheKey(currentSessionId) : undefined;
       return {
         openai: {
           store: false,
           reasoningSummary: 'detailed',
+          parallelToolCalls: true,
+          ...(cacheKey && { promptCacheKey: cacheKey }),
         },
       };
     };
