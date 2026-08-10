@@ -1139,6 +1139,7 @@
     "useGitEnabled": "Git 사용 중 - 클릭하면 파일 시스템 사용",
     "useGitDisabled": "파일 시스템 사용 중 - 클릭하면 Git 사용",
     "revertFile": "변경 사항 되돌리기",
+    "addFileToGit": "Git에 파일 추가",
     "fileHasConflicts": "파일에 병합 충돌이 있습니다",
     "confirmRevertTitle": "파일 변경 사항을 되돌리시겠습니까?",
     "confirmRevertMessage": "이 파일의 모든 변경 사항이 취소됩니다. 이 작업은 되돌릴 수 없습니다.",

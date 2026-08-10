@@ -4610,6 +4610,18 @@ ${error.stderr}`,
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
+  public async addFileToGit(filePath: string): Promise<void> {
+    logger.info('Adding file to Git', {
+      baseDir: this.project.baseDir,
+      taskId: this.taskId,
+      filePath,
+    });
+
+    await this.worktreeManager.addFileToGit(this.getTaskDir(), filePath);
+    await this.sendUpdatedFilesUpdated();
+    await this.sendWorktreeIntegrationStatusUpdated();
+  }
+
   public async restoreFile(filePath: string): Promise<void> {
     logger.info('Restoring file', {
       baseDir: this.project.baseDir,

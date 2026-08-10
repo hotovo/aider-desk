@@ -138,6 +138,7 @@ export const UpdatedFilesSection = ({
   const [diffModalSelectedFile, setDiffModalSelectedFile] = useState<UpdatedFile | null>(null);
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
   const [isRevertingFile, setIsRevertingFile] = useState(false);
+  const [addingFilesToGit, setAddingFilesToGit] = useState<Set<string>>(new Set());
 
   const groupMode = projectSettings?.updatedFilesGroupMode ?? UpdatedFilesGroupMode.Flat;
   const isGrouped = groupMode === UpdatedFilesGroupMode.Grouped;
@@ -295,6 +296,26 @@ export const UpdatedFilesSection = ({
     setDiffModalOpen(true);
   }, []);
 
+  const handleAddFileToGit = useCallback(
+    async (filePath: string) => {
+      setAddingFilesToGit((prev) => new Set(prev).add(filePath));
+      try {
+        await api.addFileToGit(baseDir, taskId, filePath);
+        await fetchUpdatedFiles();
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to add file to Git:', error);
+      } finally {
+        setAddingFilesToGit((prev) => {
+          const next = new Set(prev);
+          next.delete(filePath);
+          return next;
+        });
+      }
+    },
+    [api, baseDir, taskId, fetchUpdatedFiles],
+  );
+
   const handleRevertFile = useCallback((filePath: string) => {
     setFileToRevert(filePath);
   }, []);
@@ -451,6 +472,8 @@ export const UpdatedFilesSection = ({
                               fileTokensInfo={fileTokensInfo}
                               os={os}
                               onFileDiffClick={handleFileDiffClick}
+                              onAddFileToGit={isUncommitted ? handleAddFileToGit : undefined}
+                              addingFilesToGit={addingFilesToGit}
                               onRevertFile={(filePath) => {
                                 if (isUncommitted) {
                                   handleRevertFile(filePath);
@@ -474,6 +497,8 @@ export const UpdatedFilesSection = ({
                         fileTokensInfo={fileTokensInfo}
                         os={os}
                         onFileDiffClick={handleFileDiffClick}
+                        onAddFileToGit={handleAddFileToGit}
+                        addingFilesToGit={addingFilesToGit}
                         onRevertFile={handleRevertFile}
                         onDropFile={dropFile}
                         onAddFile={addFile}

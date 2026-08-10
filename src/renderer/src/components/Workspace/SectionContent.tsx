@@ -23,6 +23,8 @@ type Props = {
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
+  onAddFileToGit?: (filePath: string) => void;
+  addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -43,6 +45,8 @@ export const SectionContent = ({
   onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
+  onAddFileToGit,
+  addingFilesToGit,
   onRevertFile,
   onDropFile,
   onAddFile,
@@ -67,6 +71,8 @@ export const SectionContent = ({
         onToggleRuleFile={onToggleRuleFile}
         onFileDiffClick={onFileDiffClick}
         onFilePreviewClick={onFilePreviewClick}
+        onAddFileToGit={onAddFileToGit}
+        addingFilesToGit={addingFilesToGit}
         onRevertFile={onRevertFile}
         onDropFile={onDropFile}
         onAddFile={onAddFile}
@@ -87,6 +93,8 @@ export const SectionContent = ({
       onToggleRuleFile,
       onFileDiffClick,
       onFilePreviewClick,
+      onAddFileToGit,
+      addingFilesToGit,
       onRevertFile,
       onDropFile,
       onAddFile,

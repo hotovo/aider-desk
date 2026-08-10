@@ -318,6 +318,7 @@ export interface UpdatedFile {
   commitHash?: string;
   commitMessage?: string;
   hasConflicts?: boolean;
+  isUntracked?: boolean;
 }
 
 export interface UpdatedFilesUpdatedData {

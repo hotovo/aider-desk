@@ -169,6 +169,90 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
   });
 });
 
+describe('WorktreeManager - untracked files', () => {
+  let worktreeManager: WorktreeManager;
+  const testPath = '/test/worktree';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    worktreeManager = new WorktreeManager();
+    (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false, isDirectory: () => false });
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('updated'));
+  });
+
+  it('should preserve tracked files with unstaged changes', async () => {
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git diff --numstat -z HEAD') {
+        return { stdout: '1\t1\tsrc/modified.ts\0', stderr: '' };
+      }
+      if (command.startsWith('git diff --unified=3 HEAD')) {
+        return { stdout: 'diff content', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ path: 'src/modified.ts' });
+    expect(result[0].isUntracked).toBeUndefined();
+  });
+
+  it('should include untracked text files with stats and a diff', async () => {
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('first line\nsecond line'));
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git ls-files --others --exclude-standard -z') {
+        return { stdout: 'src/new file.ts\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      path: 'src/new file.ts',
+      additions: 2,
+      deletions: 0,
+      isUntracked: true,
+    });
+    expect(result[0].diff).toContain('new file mode 100644');
+    expect(result[0].diff).toContain('+second line');
+  });
+
+  it('should skip untracked directory entries', async () => {
+    (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false, isDirectory: () => true });
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git ls-files --others --exclude-standard -z') {
+        return { stdout: 'wican-fw/\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    const result = await worktreeManager.getUpdatedFiles(testPath);
+
+    expect(result).toHaveLength(0);
+    expect(fs.default.readFile).not.toHaveBeenCalled();
+  });
+
+  it('should add a file to Git in the requested worktree', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    await worktreeManager.addFileToGit(testPath, 'src/new file.ts');
+
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/new file.ts"', { cwd: testPath });
+  });
+
+  it('should escape shell substitutions when adding a file to Git', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    await worktreeManager.addFileToGit(testPath, 'src/$HOME-`command`-"quoted".ts');
+
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/\\$HOME-\\`command\\`-\\"quoted\\".ts"', { cwd: testPath });
+  });
+});
+
 describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
   let worktreeManager: WorktreeManager;
   const testPath = '/test/worktree';

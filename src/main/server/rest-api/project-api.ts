@@ -330,6 +330,12 @@ const RevertLastMergeSchema = z.object({
   taskId: z.string().min(1, 'Task id is required'),
 });
 
+const AddFileToGitSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  filePath: z.string().min(1, 'File path is required'),
+});
+
 const RestoreFileSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -985,6 +991,20 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         await this.eventsHandler.revertLastMerge(projectDir, taskId);
         res.status(200).json({ message: 'Last merge reverted' });
+      }),
+    );
+
+    router.post(
+      '/project/worktree/add-file-to-git',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(AddFileToGitSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, filePath } = parsed;
+        await this.eventsHandler.addFileToGit(projectDir, taskId, filePath);
+        res.status(200).json({ message: 'File added to Git' });
       }),
     );
 

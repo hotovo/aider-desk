@@ -51,6 +51,8 @@ type Props = {
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
+  onAddFileToGit?: (filePath: string) => void;
+  addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -71,6 +73,8 @@ export const TreeItemRenderer = ({
   onToggleRuleFile,
   onFileDiffClick,
   onFilePreviewClick,
+  onAddFileToGit,
+  addingFilesToGit,
   onRevertFile,
   onDropFile,
   onAddFile,
@@ -125,8 +129,10 @@ export const TreeItemRenderer = ({
 
   const showAdd = type === 'project' && !isContextFile && !isRuleFile;
   const showRemove = (type === 'context' || (type === 'project' && isContextFile)) && !isRuleFile;
-  const showRevert = type === 'updated' && updatedFile && !item.isFolder && !updatedFile.commitHash;
+  const showAddToGit = type === 'updated' && updatedFile?.isUntracked && !item.isFolder && !updatedFile.commitHash && onAddFileToGit;
+  const showRevert = type === 'updated' && updatedFile && !item.isFolder && !updatedFile.commitHash && !updatedFile.isUntracked;
   const showConflictWarning = type === 'updated' && updatedFile?.hasConflicts && !item.isFolder;
+  const isAddingToGit = updatedFile ? addingFilesToGit?.has(updatedFile.path) : false;
 
   const fileTokenInfo = fileTokensInfo?.[item.index];
   const fileTokenTooltip = fileTokenInfo ? `${fileTokenInfo.tokens || 0} ${t('usageDashboard.charts.tokens')}, $${(fileTokenInfo.cost || 0).toFixed(5)}` : '';
@@ -162,6 +168,16 @@ export const TreeItemRenderer = ({
     }
   }, [updatedFile, onFileDiffClick]);
 
+  const handleAddToGitClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (updatedFile && onAddFileToGit) {
+        onAddFileToGit(updatedFile.path);
+      }
+    },
+    [updatedFile, onAddFileToGit],
+  );
+
   const handleRevertClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -190,7 +206,13 @@ export const TreeItemRenderer = ({
   const renderTitle = () => {
     const className = twMerge(
       'select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis',
-      item.isFolder ? 'context-dimmed' : type === 'project' && !isContextFile ? 'context-dimmed' : 'text-text-primary',
+      item.isFolder
+        ? 'context-dimmed'
+        : type === 'updated' && updatedFile?.isUntracked
+          ? 'text-text-muted-light'
+          : type === 'project' && !isContextFile
+            ? 'context-dimmed'
+            : 'text-text-primary',
       type === 'updated' && !item.isFolder && 'cursor-pointer hover:text-text-tertiary',
     );
 
@@ -280,6 +302,17 @@ export const TreeItemRenderer = ({
           {showAdd && (
             <Tooltip content={t('contextFiles.addFileTooltip.cmd')}>
               <button onClick={onAddFile(item)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
+                <HiPlus className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          )}
+          {showAddToGit && (
+            <Tooltip content={t('contextFiles.addFileToGit')}>
+              <button
+                onClick={handleAddToGitClick}
+                disabled={isAddingToGit}
+                className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted-light hover:text-text-primary disabled:opacity-50"
+              >
                 <HiPlus className="w-4 h-4" />
               </button>
             </Tooltip>

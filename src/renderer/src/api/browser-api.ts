@@ -1144,6 +1144,14 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void> {
+    return this.post('/project/worktree/add-file-to-git', {
+      projectDir: baseDir,
+      taskId,
+      filePath,
+    });
+  }
+
   restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
     return this.post('/project/worktree/restore-file', {
       projectDir: baseDir,

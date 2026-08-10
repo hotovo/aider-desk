@@ -730,6 +730,15 @@ export class EventsHandler {
     await task.revertLastMerge();
   }
 
+  async addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      throw new Error(`Task ${taskId} not found`);
+    }
+
+    await task.addFileToGit(filePath);
+  }
+
   async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {

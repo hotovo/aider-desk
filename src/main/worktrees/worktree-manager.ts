@@ -1711,6 +1711,16 @@ export class WorktreeManager {
     }
   }
 
+  private isDirectoryPath(cwd: string, filePath: string): boolean {
+    try {
+      const fullPath = join(cwd, filePath);
+      const stat = lstatSync(fullPath);
+      return stat.isDirectory();
+    } catch {
+      return false;
+    }
+  }
+
   /**
    * Get updated files with per-commit and uncommitted diffs.
    *
@@ -1738,11 +1748,79 @@ export class WorktreeManager {
         files = await this.getNonWorktreeUpdatedFiles(worktreePath);
       }
 
-      return await this.markConflictingFiles(worktreePath, files);
+      const filesWithUntrackedFiles = await this.includeUntrackedFiles(worktreePath, files);
+      return await this.markConflictingFiles(worktreePath, filesWithUntrackedFiles);
     } catch (error) {
       logger.warn('Failed to get updated files:', error);
       return [];
     }
+  }
+
+  private async includeUntrackedFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]> {
+    try {
+      const { stdout } = await execWithShellPath('git ls-files --others --exclude-standard -z', { cwd: worktreePath });
+      const untrackedPaths = stdout.split('\0').filter((filePath) => filePath.length > 0);
+      const updatedFiles = [...files];
+      const existingPaths = new Set(files.filter((file) => !file.commitHash).map((file) => file.path));
+
+      for (const filePath of untrackedPaths) {
+        if (existingPaths.has(filePath) || this.isSymlinkPath(worktreePath, filePath) || this.isDirectoryPath(worktreePath, filePath)) {
+          continue;
+        }
+
+        try {
+          const untrackedFile = await this.createUntrackedUpdatedFile(worktreePath, filePath);
+          updatedFiles.push(untrackedFile);
+        } catch (error) {
+          logger.warn(`Failed to get untracked file ${filePath}:`, error);
+        }
+      }
+
+      return updatedFiles;
+    } catch (error) {
+      logger.warn('Failed to get untracked files:', error);
+      return files;
+    }
+  }
+
+  private async createUntrackedUpdatedFile(worktreePath: string, filePath: string): Promise<UpdatedFile> {
+    const fileContentBuffer = await fs.readFile(join(worktreePath, filePath));
+    if (isBinary(filePath, fileContentBuffer)) {
+      return { path: filePath, additions: 0, deletions: 0, diff: '', isUntracked: true };
+    }
+
+    const content = fileContentBuffer.toString('utf8');
+    const lines = content.split('\n');
+    if (content.endsWith('\n')) {
+      lines.pop();
+    }
+
+    const additions = content.length === 0 ? 0 : lines.length;
+    if (additions === 0) {
+      return { path: filePath, additions, deletions: 0, diff: '', isUntracked: true };
+    }
+
+    const oldPath = this.formatDiffPath(`a/${filePath}`);
+    const newPath = this.formatDiffPath(`b/${filePath}`);
+    const range = additions === 1 ? '1' : `1,${additions}`;
+    const diffLines = [
+      `diff --git ${oldPath} ${newPath}`,
+      'new file mode 100644',
+      '--- /dev/null',
+      `+++ ${newPath}`,
+      `@@ -0,0 +${range} @@`,
+      ...lines.map((line) => `+${line}`),
+    ];
+
+    if (!content.endsWith('\n')) {
+      diffLines.push('\\ No newline at end of file');
+    }
+
+    return { path: filePath, additions, deletions: 0, diff: diffLines.join('\n'), isUntracked: true };
+  }
+
+  private formatDiffPath(filePath: string): string {
+    return /[\s"\\]/.test(filePath) ? JSON.stringify(filePath) : filePath;
   }
 
   /**
@@ -2180,6 +2258,11 @@ export class WorktreeManager {
     } catch {
       return files;
     }
+  }
+
+  async addFileToGit(worktreePath: string, filePath: string): Promise<void> {
+    const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
+    await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
   }
 
   async restoreFile(worktreePath: string, filePath: string): Promise<void> {
