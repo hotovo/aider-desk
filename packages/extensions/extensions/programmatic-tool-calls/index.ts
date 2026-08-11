@@ -1,15 +1,17 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { z } from 'zod';
 import Sandbox from '@nyariv/sandboxjs';
 
-import type { Extension, ExtensionContext, ToolDefinition, Tool } from '../../extensions.d.ts';
+import type { Extension, ExtensionContext, ToolDefinition, Tool, UIComponentDefinition } from '../../extensions.d.ts';
 
 const metadata = {
   name: 'Programmatic Tool Calls',
-  version: '1.2.1',
+  version: '1.3.0',
   description: 'Execute JavaScript code in a sandbox with access to all tools as async functions',
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
-  capabilities: ['tools'],
+  capabilities: ['tools', 'ui'],
 };
 
 const inputSchema = z.object({
@@ -30,7 +32,22 @@ const sanitizeToolName = (toolName: string): string => {
 class ProgrammaticToolCallsExtension implements Extension {
   static metadata = metadata;
 
-  getTools(_context: ExtensionContext): ToolDefinition[] {
+  getUIComponents(): UIComponentDefinition[] {
+    return [
+      {
+        id: 'programmatic-tool-call-message',
+        placement: 'task-message',
+        jsx: readFileSync(join(__dirname, 'ProgrammaticToolCallMessage.jsx'), 'utf-8'),
+        messageFilter: {
+          types: ['tool'],
+          serverName: 'extensions',
+          toolName: 'programmatic_tool_calls',
+        },
+      },
+    ];
+  }
+
+  getTools(): ToolDefinition[] {
     return [
       {
         name: 'programmatic_tool_calls',
