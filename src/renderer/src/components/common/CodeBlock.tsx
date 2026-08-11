@@ -1,6 +1,7 @@
 import 'prismjs/themes/prism-tomorrow.css';
 import { startTransition, useMemo, useOptimistic, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { MdKeyboardArrowDown, MdUndo } from 'react-icons/md';
 import { VscCode } from 'react-icons/vsc';
@@ -69,9 +70,10 @@ type Props = {
   isComplete?: boolean;
   oldValue?: string;
   newValue?: string;
+  className?: string;
 };
 
-export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplete = true, oldValue, newValue }: Props) => {
+export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplete = true, oldValue, newValue, className }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
@@ -176,7 +178,12 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
 
   return (
     <div className="mt-1 max-w-full">
-      <div className="bg-bg-code-block border border-border-dark-light text-text-primary rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary">
+      <div
+        className={twMerge(
+          'bg-bg-code-block border border-border-dark-light text-text-primary rounded-md px-3 py-2 mb-4 overflow-x-auto text-xs scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary',
+          className,
+        )}
+      >
         {file ? (
           <>
             <div className="text-text-primary text-xs py-1 w-full cursor-pointer flex items-center justify-between" onClick={() => setIsExpanded(!isExpanded)}>

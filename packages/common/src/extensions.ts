@@ -304,6 +304,8 @@ export interface UIComponents {
   LoadingOverlay: UIComponent;
   ConfirmDialog: UIComponent;
   ModalOverlayLayout: UIComponent;
+  CodeBlock: UIComponent;
+  ExpandableMessageBlock: UIComponent;
 }
 
 export interface UIComponentProps {

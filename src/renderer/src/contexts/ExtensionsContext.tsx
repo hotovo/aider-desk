@@ -21,6 +21,8 @@ import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
 import { initExtensionLibraryLoader } from '@/utils/extension-library-loader';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 
 type ExtensionsContextValue = {
   projectDir?: string;
@@ -88,6 +90,8 @@ export const uiComponents: UIComponents = {
   LoadingOverlay,
   ConfirmDialog,
   ModalOverlayLayout,
+  CodeBlock,
+  ExpandableMessageBlock,
 };
 
 export const reactIcons = iconPackStubs;

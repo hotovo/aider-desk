@@ -336,6 +336,7 @@ After completing this skill, verify:
 - Then: Implement getUIComponents() method
 - Return: Array of UIComponentDefinition objects
 - Use: JSX strings or external .jsx files
+- Built-ins: Use `props.ui.CodeBlock` for syntax-highlighted code, JSON, and diffs; use `props.ui.ExpandableMessageBlock` for collapsible tool-style message renderers
 - Load data: Implement getUIExtensionData() if component needs data
 - Handle actions: Implement executeUIExtensionAction() for user interactions
 
@@ -391,6 +392,7 @@ After completing this skill, verify:
 - Must: Set `messageFilter.types` to the message types to match (e.g. `'user'`, `'response'`, `'assistant-group'`, `'tool'`, `'log'`, `'loading'`)
 - Must: For tool-specific filters, set `messageFilter.serverName` and/or `messageFilter.toolName`
 - Props: Component receives `message` prop — for `assistant-group` type, access `message.responseMessage` and `message.toolMessages`
+- Style: Prefer `props.ui.ExpandableMessageBlock` for the standard collapsible tool-message layout and `props.ui.CodeBlock` for code or structured results
 - Reference: [ui-components.md](references/ui-components.md) for full details, `MessageFilter` type, and JSX examples
 
 **Situation:** Extension needs a floating panel

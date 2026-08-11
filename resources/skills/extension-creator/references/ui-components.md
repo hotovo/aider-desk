@@ -446,6 +446,41 @@ The `ui` prop provides pre-built AiderDesk components:
 </ui.ModalOverlayLayout>
 ```
 
+### CodeBlock
+
+Use `CodeBlock` for syntax-highlighted source code, JSON, or diff content. The optional `className` is merged with the component's default Tailwind classes.
+
+```jsx
+<ui.CodeBlock
+  baseDir={projectDir || ''}
+  taskId={task?.id}
+  language="json"
+  isComplete={true}
+  className="max-h-48 overflow-y-auto text-2xs"
+>
+  {JSON.stringify(data, null, 2)}
+</ui.CodeBlock>
+```
+
+Available props: `baseDir`, `taskId`, `language`, `children`, `file`, `isComplete`, `oldValue`, `newValue`, and `className`.
+
+### ExpandableMessageBlock
+
+Use `ExpandableMessageBlock` to match AiderDesk's collapsible tool-message style. It is especially useful with the `task-message` placement.
+
+```jsx
+<ui.ExpandableMessageBlock
+  message={message}
+  title={<div className="text-xs text-text-primary">My tool</div>}
+  content={<div className="px-3 pb-3">Tool result</div>}
+  usageReport={message.usageReport}
+  initialExpanded={true}
+  hideMessageBar={true}
+/>
+```
+
+Available props: `message`, `title`, `content`, `copyContent`, `usageReport`, `initialExpanded`, `onOpenChange`, `onFork`, `onRemoveUpTo`, and `hideMessageBar`.
+
 ## Using React
 
 The `React` object is globally available in all components (provided by `string-to-react-component`):

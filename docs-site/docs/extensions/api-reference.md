@@ -541,21 +541,24 @@ Pre-built UI components available via `props.ui`:
 
 ```typescript
 interface UIComponents {
-  Button: UIComponent;            // Standard button with variants
-  IconButton: UIComponent;        // Button with icon only
-  Checkbox: UIComponent;          // Checkbox input with label
-  Input: UIComponent;             // Text input field
-  Select: UIComponent;            // Dropdown select
-  MultiSelect: UIComponent;       // Multi-value select
-  TextArea: UIComponent;          // Multi-line text input
-  RadioButton: UIComponent;       // Radio button input
-  Slider: UIComponent;            // Range slider
-  DatePicker: UIComponent;        // Date picker
-  Chip: UIComponent;              // Tag/chip component
-  ModelSelector: UIComponent;     // AiderDesk model selector
-  Tooltip: UIComponent;           // Tooltip wrapper
-  LoadingOverlay: UIComponent;    // Loading spinner with message
-  ConfirmDialog: UIComponent;     // Confirmation dialog modal
+  Button: UIComponent;                 // Standard button with variants
+  IconButton: UIComponent;             // Button with icon only
+  Checkbox: UIComponent;               // Checkbox input with label
+  Input: UIComponent;                  // Text input field
+  Select: UIComponent;                 // Dropdown select
+  MultiSelect: UIComponent;            // Multi-value select
+  TextArea: UIComponent;               // Multi-line text input
+  RadioButton: UIComponent;            // Radio button input
+  Slider: UIComponent;                 // Range slider
+  DatePicker: UIComponent;             // Date picker
+  Chip: UIComponent;                   // Tag/chip component
+  ModelSelector: UIComponent;          // AiderDesk model selector
+  Tooltip: UIComponent;                // Tooltip wrapper
+  LoadingOverlay: UIComponent;         // Loading spinner with message
+  ConfirmDialog: UIComponent;          // Confirmation dialog modal
+  ModalOverlayLayout: UIComponent;     // Modal layout and title bar
+  CodeBlock: UIComponent;              // Syntax-highlighted code and diffs
+  ExpandableMessageBlock: UIComponent; // Collapsible tool-style message block
 }
 ```
 
