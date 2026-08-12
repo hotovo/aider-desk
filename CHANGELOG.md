@@ -5,6 +5,7 @@
 - optimized task state determination when 'proceed (y/n)' is present
 - added support for showing untracked files in Updated Files and add to git action
 - added CodeBlock and ExpandableMessageBlock components to extension UI components API
+- replaced File Viewer with File Editor
 
 ## [0.78.0]
 

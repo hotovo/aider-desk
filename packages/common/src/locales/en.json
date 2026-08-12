@@ -1104,9 +1104,19 @@
   "fileChip": {
     "removeFileTooltip": "Remove file"
   },
-  "filePreview": {
-    "title": "File Viewer",
-    "errorLoading": "Failed to load file"
+  "fileEditor": {
+    "title": "File Editor",
+    "errorLoading": "Failed to load file",
+    "requestChangeOnLine": "Request a change on this line",
+    "saved": "File saved",
+    "errorSaving": "Failed to save file: {{error}}",
+    "errorSubmitting": "Failed to submit change requests: {{error}}",
+    "saveBeforeSubmitting": "Save the file before submitting change requests.",
+    "unsavedChanges": "Unsaved changes",
+    "saveShortcut": "Save (Ctrl+S)",
+    "discardTitle": "Discard unsaved changes?",
+    "discard": "Discard",
+    "discardMessage": "Your unsaved file changes will be lost."
   },
   "contextFiles": {
     "workspaceTitle": "Workspace",

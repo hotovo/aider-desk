@@ -1096,9 +1096,19 @@
   "fileChip": {
     "removeFileTooltip": "Удалить файл"
   },
-  "filePreview": {
-    "title": "Просмотр файла",
-    "errorLoading": "Не удалось загрузить файл"
+  "fileEditor": {
+    "title": "Редактор файла",
+    "errorLoading": "Не удалось загрузить файл",
+    "requestChangeOnLine": "Запросить изменение этой строки",
+    "saved": "Файл сохранён",
+    "errorSaving": "Не удалось сохранить файл: {{error}}",
+    "errorSubmitting": "Не удалось отправить запросы на изменение: {{error}}",
+    "saveBeforeSubmitting": "Сохраните файл перед отправкой запросов на изменение.",
+    "unsavedChanges": "Есть несохранённые изменения",
+    "saveShortcut": "Сохранить (Ctrl+S)",
+    "discardTitle": "Отменить несохранённые изменения?",
+    "discard": "Отменить",
+    "discardMessage": "Несохранённые изменения файла будут потеряны."
   },
   "contextFiles": {
     "workspaceTitle": "Рабочая область",

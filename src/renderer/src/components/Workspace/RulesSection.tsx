@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
-import { FileViewerModal } from './FileViewerModal';
+import { FileEditorModal } from './FileEditorModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
@@ -180,7 +180,7 @@ export const RulesSection = ({
         </motion.div>
       </Activity>
 
-      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
+      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </motion.div>
   );
 };

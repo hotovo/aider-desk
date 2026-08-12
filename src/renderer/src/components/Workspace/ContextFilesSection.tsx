@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
-import { FileViewerModal } from './FileViewerModal';
+import { FileEditorModal } from './FileEditorModal';
 import { createFileTree } from './types';
 
 import type { TreeItem } from './types';
@@ -152,7 +152,7 @@ export const ContextFilesSection = ({
         showBorderTop={showBorderTop}
       />
 
-      {previewFilePath && <FileViewerModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
+      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </>
   );
 };

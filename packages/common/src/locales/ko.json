@@ -1084,9 +1084,19 @@
   "fileChip": {
     "removeFileTooltip": "파일 제거"
   },
-  "filePreview": {
-    "title": "파일 뷰어",
-    "errorLoading": "파일을 불러오지 못했습니다"
+  "fileEditor": {
+    "title": "파일 편집기",
+    "errorLoading": "파일을 불러오지 못했습니다",
+    "requestChangeOnLine": "이 줄의 변경 요청",
+    "saved": "파일이 저장되었습니다",
+    "errorSaving": "파일을 저장하지 못했습니다: {{error}}",
+    "errorSubmitting": "변경 요청을 제출하지 못했습니다: {{error}}",
+    "saveBeforeSubmitting": "변경 요청을 제출하기 전에 파일을 저장하세요.",
+    "unsavedChanges": "저장되지 않은 변경 사항",
+    "saveShortcut": "저장 (Ctrl+S)",
+    "discardTitle": "저장되지 않은 변경 사항을 취소하시겠습니까?",
+    "discard": "취소",
+    "discardMessage": "저장되지 않은 파일 변경 사항이 손실됩니다."
   },
   "contextFiles": {
     "workspaceTitle": "워크스페이스",

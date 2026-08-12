@@ -1037,9 +1037,19 @@
   "fileChip": {
     "removeFileTooltip": "移除文件"
   },
-  "filePreview": {
-    "title": "文件查看器",
-    "errorLoading": "加载文件失败"
+  "fileEditor": {
+    "title": "文件编辑器",
+    "errorLoading": "加载文件失败",
+    "requestChangeOnLine": "请求更改此行",
+    "saved": "文件已保存",
+    "errorSaving": "保存文件失败：{{error}}",
+    "errorSubmitting": "提交更改请求失败：{{error}}",
+    "saveBeforeSubmitting": "请先保存文件，再提交更改请求。",
+    "unsavedChanges": "有未保存的更改",
+    "saveShortcut": "保存 (Ctrl+S)",
+    "discardTitle": "放弃未保存的更改？",
+    "discard": "放弃",
+    "discardMessage": "未保存的文件更改将丢失。"
   },
   "contextFiles": {
     "workspaceTitle": "工作区",
