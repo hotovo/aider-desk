@@ -666,6 +666,7 @@ export interface HotkeyConfig {
   };
   dialogHotkeys: {
     browseFolder: string;
+    commandPalette: string;
   };
 }
 

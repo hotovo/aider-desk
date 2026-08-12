@@ -5,6 +5,19 @@
     "ru": "Русский",
     "ko": "한국어"
   },
+  "commandPalette": {
+    "title": "명령 팔레트",
+    "placeholder": "검색어를 입력하세요...",
+    "noResults": "일치하는 결과가 없습니다",
+    "scrollForMore": "더 많은 결과를 보려면 스크롤하세요",
+    "tabs": {
+      "all": "전체",
+      "file": "파일",
+      "action": "작업",
+      "task": "태스크",
+      "project": "프로젝트"
+    }
+  },
   "common": {
     "settings": "설정",
     "cancel": "취소",
@@ -540,6 +553,7 @@
       "newTask": "새 작업",
       "closeTask": "작업 닫기",
       "browseFolder": "폴더 찾아보기",
+      "commandPalette": "명령 팔레트",
       "enterHotkey": "단축키 입력...",
       "resetToDefaults": "기본값으로 재설정",
       "hotkeyFormat": "단축키 형식:",

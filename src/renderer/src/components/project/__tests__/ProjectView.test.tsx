@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskData, TaskStateData } from '@common/types';
 
@@ -8,6 +8,43 @@ import { useApi } from '@/contexts/ApiContext';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { createMockApi } from '@/__tests__/mocks/api';
+
+const commandPaletteStoreMock = vi.hoisted(() => {
+  type MockPaletteItem = {
+    id: string;
+    action: () => void;
+  };
+
+  const items = new Map<string, MockPaletteItem>();
+  const itemIdsByScope = new Map<string, Set<string>>();
+
+  const replaceItems = vi.fn((scope: string, nextItems: MockPaletteItem[]) => {
+    const nextItemIds = new Set(nextItems.map((item) => item.id));
+    const previousItemIds = itemIdsByScope.get(scope) ?? new Set<string>();
+
+    previousItemIds.forEach((itemId) => {
+      if (!nextItemIds.has(itemId)) {
+        items.delete(itemId);
+      }
+    });
+    nextItems.forEach((item) => items.set(item.id, item));
+    itemIdsByScope.set(scope, nextItemIds);
+  });
+
+  const clearItems = vi.fn((scope: string) => {
+    itemIdsByScope.get(scope)?.forEach((itemId) => items.delete(itemId));
+    itemIdsByScope.delete(scope);
+  });
+
+  const reset = () => {
+    items.clear();
+    itemIdsByScope.clear();
+    replaceItems.mockClear();
+    clearItems.mockClear();
+  };
+
+  return { items, itemIdsByScope, replaceItems, clearItems, reset };
+});
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -29,6 +66,11 @@ vi.mock('@/contexts/ProjectSettingsContext', () => ({
   useProjectSettings: vi.fn(),
 }));
 
+vi.mock('@/stores/taskFilesStore', () => ({
+  releaseTaskFiles: vi.fn(),
+  useTaskAllFiles: vi.fn(() => ['src/file.ts']),
+}));
+
 // Mock useAgents hook
 vi.mock('@/contexts/AgentsContext', () => ({
   useAgents: vi.fn(() => ({
@@ -37,6 +79,22 @@ vi.mock('@/contexts/AgentsContext', () => ({
     setActiveProfile: vi.fn(),
     refreshProfiles: vi.fn(),
   })),
+}));
+
+// Mock command palette store
+vi.mock('@/stores/commandPaletteStore', () => ({
+  useCommandPaletteStore: vi.fn((selector) =>
+    selector({
+      replaceItems: commandPaletteStoreMock.replaceItems,
+      clearItems: commandPaletteStoreMock.clearItems,
+    }),
+  ),
+  PaletteItemType: {
+    Action: 'action',
+    File: 'file',
+    Task: 'task',
+    Project: 'project',
+  },
 }));
 
 interface TaskSidebarMockProps {
@@ -68,6 +126,12 @@ vi.mock('@/components/extensions/FloatingExtensionPanels', () => ({
   FloatingExtensionPanels: () => null,
 }));
 
+vi.mock('@/components/Workspace/FileEditorModal', () => ({
+  FileEditorModal: ({ filePath, taskId }: { filePath: string; taskId: string }) => (
+    <div data-testid="file-editor-modal" data-file-path={filePath} data-task-id={taskId} />
+  ),
+}));
+
 describe('ProjectView', () => {
   const projectDir = '/mock/project';
   const mockApi = createMockApi({
@@ -87,6 +151,9 @@ describe('ProjectView', () => {
   });
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    commandPaletteStoreMock.reset();
+    mockApi.getTasks.mockResolvedValue([{ id: 'task-1', name: 'Task 1' }] as TaskData[]);
     vi.mocked(useApi).mockReturnValue(mockApi);
     vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
       selector({
@@ -124,6 +191,41 @@ describe('ProjectView', () => {
 
     // Task 1 should be in the mocked TaskSidebar (appears twice: once from mock sidebar and once from mock task view)
     expect(screen.getAllByText('Task 1')).toHaveLength(2);
+  });
+
+  it('excludes archived tasks from the command palette metadata', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      { id: 'task-1', name: 'Active Task', baseDir: projectDir, archived: false },
+      { id: 'task-2', name: 'Archived Task', baseDir: projectDir, archived: true },
+    ] as TaskData[]);
+
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => expect(commandPaletteStoreMock.items.get(`task.switch.${projectDir}.task-2`)).toBeDefined());
+
+    expect(commandPaletteStoreMock.items.get(`task.switch.${projectDir}.task-1`)).toMatchObject({ archived: false });
+    expect(commandPaletteStoreMock.items.get(`task.switch.${projectDir}.task-2`)).toMatchObject({ archived: true });
+  });
+
+  it('keeps a command palette file preview bound to its originating task after switching tasks', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      { id: 'task-1', name: 'Task 1', baseDir: projectDir },
+      { id: 'task-2', name: 'Task 2', baseDir: projectDir, worktree: { path: '/mock/worktrees/task-2' } },
+    ] as TaskData[]);
+
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Task 1'));
+    await waitFor(() => expect(commandPaletteStoreMock.items.get(`file.open.${projectDir}.src/file.ts`)).toBeDefined());
+
+    act(() => commandPaletteStoreMock.items.get(`file.open.${projectDir}.src/file.ts`)?.action());
+
+    expect(await screen.findByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
+
+    fireEvent.click(screen.getByTestId('task-task-2'));
+
+    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Task 2'));
+    expect(screen.getByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
   });
 
   it('creates a new task when the active task is deleted', async () => {

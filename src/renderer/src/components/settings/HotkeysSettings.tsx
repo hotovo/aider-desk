@@ -109,7 +109,10 @@ export const HotkeysSettings = ({ settings, setSettings }: Props) => {
         </Section>
 
         <Section id="hotkeys-dialog" title={t('settings.hotkeys.dialogHotkeys')}>
-          <div className="px-5 py-3 space-y-1">{renderHotkeyConfig('dialogHotkeys', 'browseFolder', t('settings.hotkeys.browseFolder'))}</div>
+          <div className="px-5 py-3 space-y-1">
+            {renderHotkeyConfig('dialogHotkeys', 'browseFolder', t('settings.hotkeys.browseFolder'))}
+            {renderHotkeyConfig('dialogHotkeys', 'commandPalette', t('settings.hotkeys.commandPalette'))}
+          </div>
         </Section>
       </div>
 

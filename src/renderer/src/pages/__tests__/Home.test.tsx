@@ -71,6 +71,22 @@ vi.mock('@/components/common/StyledTooltip', () => ({
   StyledTooltip: () => <div data-testid="styled-tooltip" />,
 }));
 
+// Mock command palette store
+vi.mock('@/stores/commandPaletteStore', () => ({
+  useCommandPaletteStore: vi.fn((selector) =>
+    selector({
+      replaceItems: vi.fn(),
+      clearItems: vi.fn(),
+    }),
+  ),
+  PaletteItemType: {
+    Action: 'action',
+    File: 'file',
+    Task: 'task',
+    Project: 'project',
+  },
+}));
+
 // Mock useExtensions hook
 vi.mock('@/contexts/ExtensionsContext', () => ({
   useExtensions: vi.fn(() => ({

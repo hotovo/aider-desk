@@ -27,6 +27,7 @@ import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
 
 const UsageDashboard = lazy(() => import('@/components/usage/UsageDashboard').then((module) => ({ default: module.UsageDashboard })));
 const SettingsPage = lazy(() => import('@/components/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
@@ -45,6 +46,8 @@ export const Home = () => {
   const api = useApi();
   const os = useOS();
   const { PROJECT_HOTKEYS } = useConfiguredHotkeys();
+  const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
+  const clearItems = useCommandPaletteStore((state) => state.clearItems);
   const [searchParams, setSearchParams] = useSearchParams();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
   const [optimisticOpenProjects, setOptimisticOpenProjects] = useOptimistic(openProjects);
@@ -480,6 +483,102 @@ export const Home = () => {
       setShowSettingsInfo(null);
     }
   }, []);
+
+  useEffect(() => {
+    const commands = [
+      {
+        id: 'project.close',
+        label: t('settings.hotkeys.closeProject'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.CLOSE_PROJECT,
+        action: () => {
+          if (activeProject) {
+            void handleCloseProject(activeProject);
+          }
+        },
+      },
+      {
+        id: 'project.new',
+        label: t('settings.hotkeys.newProject'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.NEW_PROJECT,
+        action: () => setIsOpenProjectDialogVisible(true),
+      },
+      {
+        id: 'project.cycleNext',
+        label: t('settings.hotkeys.cycleNextProject'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT,
+        action: () => {
+          if (optimisticOpenProjects.length <= 1) {
+            return;
+          }
+          const currentIndex = optimisticOpenProjects.findIndex((p) => p.baseDir === activeProject);
+          const nextIndex = (currentIndex + 1) % optimisticOpenProjects.length;
+          void setActiveProject(optimisticOpenProjects[nextIndex].baseDir);
+        },
+      },
+      {
+        id: 'project.cyclePrev',
+        label: t('settings.hotkeys.cyclePrevProject'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.CYCLE_PREV_PROJECT,
+        action: () => {
+          if (optimisticOpenProjects.length <= 1) {
+            return;
+          }
+          const currentIndex = optimisticOpenProjects.findIndex((p) => p.baseDir === activeProject);
+          const prevIndex = (currentIndex - 1 + optimisticOpenProjects.length) % optimisticOpenProjects.length;
+          void setActiveProject(optimisticOpenProjects[prevIndex].baseDir);
+        },
+      },
+      {
+        id: 'view.settings',
+        label: t('settings.hotkeys.settings'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.SETTINGS,
+        action: () => setShowSettingsInfo({ pageId: 'general' }),
+      },
+      {
+        id: 'view.usageDashboard',
+        label: t('settings.hotkeys.usageDashboard'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.USAGE_DASHBOARD,
+        action: showUsageDashboard,
+      },
+      {
+        id: 'view.modelLibrary',
+        label: t('settings.hotkeys.modelLibrary'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.MODEL_LIBRARY,
+        action: showModelLibrary,
+      },
+    ];
+
+    const projects = optimisticOpenProjects.map((project) => ({
+      id: `project.switch.${project.baseDir}`,
+      label: project.baseDir.split(/[\\/]/).pop() || project.baseDir,
+      description: project.baseDir,
+      type: PaletteItemType.Project,
+      action: () => setActiveProject(project.baseDir),
+    }));
+
+    replaceItems('home', [...commands, ...projects]);
+    return () => {
+      clearItems('home');
+    };
+  }, [
+    t,
+    replaceItems,
+    clearItems,
+    PROJECT_HOTKEYS,
+    activeProject,
+    handleCloseProject,
+    setActiveProject,
+    optimisticOpenProjects,
+    showUsageDashboard,
+    showModelLibrary,
+  ]);
 
   const renderProjectPanels = () =>
     optimisticOpenProjects.map((project) => (

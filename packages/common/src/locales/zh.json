@@ -5,6 +5,19 @@
     "ru": "俄语",
     "ko": "한국어"
   },
+  "commandPalette": {
+    "title": "命令面板",
+    "placeholder": "输入以搜索...",
+    "noResults": "没有匹配的结果",
+    "scrollForMore": "滚动以查看更多结果",
+    "tabs": {
+      "all": "全部",
+      "file": "文件",
+      "action": "操作",
+      "task": "任务",
+      "project": "项目"
+    }
+  },
   "common": {
     "settings": "设置",
     "cancel": "取消",
@@ -549,6 +562,7 @@
       "newTask": "新建任务",
       "closeTask": "关闭任务",
       "browseFolder": "浏览文件夹",
+      "commandPalette": "命令面板",
       "enterHotkey": "输入快捷键...",
       "resetToDefaults": "重置为默认值",
       "hotkeyFormat": "快捷键格式：",

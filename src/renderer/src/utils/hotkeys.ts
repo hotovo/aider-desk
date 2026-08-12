@@ -35,6 +35,7 @@ export const DEFAULT_HOTKEY_CONFIG: HotkeyConfig = {
   },
   dialogHotkeys: {
     browseFolder: 'mod+b',
+    commandPalette: 'mod+shift+p',
   },
 };
 
@@ -98,6 +99,7 @@ export const getHotkeys = (config?: HotkeyConfig) => {
     },
     DIALOG_HOTKEYS: {
       BROWSE_FOLDER: dk.browseFolder || dkDef.browseFolder,
+      COMMAND_PALETTE: dk.commandPalette || dkDef.commandPalette,
     },
   };
 };

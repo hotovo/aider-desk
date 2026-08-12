@@ -5,6 +5,19 @@
     "ru": "Русский",
     "ko": "한국어"
   },
+  "commandPalette": {
+    "title": "Command Palette",
+    "placeholder": "Type to search...",
+    "noResults": "No matching results",
+    "scrollForMore": "Scroll for more results",
+    "tabs": {
+      "all": "All",
+      "file": "Files",
+      "action": "Actions",
+      "task": "Tasks",
+      "project": "Projects"
+    }
+  },
   "common": {
     "settings": "Settings",
     "cancel": "Cancel",
@@ -550,6 +563,7 @@
       "newTask": "New Task",
       "closeTask": "Close Task",
       "browseFolder": "Browse Folder",
+      "commandPalette": "Command Palette",
       "enterHotkey": "Enter hotkey...",
       "resetToDefaults": "Reset to Defaults",
       "hotkeyFormat": "Hotkey Format:",

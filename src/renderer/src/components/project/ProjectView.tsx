@@ -17,7 +17,7 @@ import {
   useProjectStore,
 } from '@/stores/projectStore';
 import { unloadTasks } from '@/stores/taskStore';
-import { releaseTaskFiles } from '@/stores/taskFilesStore';
+import { releaseTaskFiles, useTaskAllFiles } from '@/stores/taskFilesStore';
 import { getTaskDir, getSortedVisibleTasks } from '@/utils/task-utils';
 import { cleanupProjectCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
@@ -35,12 +35,19 @@ import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useActiveAgentProfile } from '@/utils/agents';
+import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 
 type Props = {
   projectDir: string;
   isProjectActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   initialTaskId?: string;
+};
+
+type PreviewFile = {
+  path: string;
+  taskId: string;
 };
 
 export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage, initialTaskId }: Props) => {
@@ -52,6 +59,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const api = useApi();
   const { TASK_HOTKEYS } = useConfiguredHotkeys();
   const { isMobile } = useResponsive();
+  const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
+  const clearItems = useCommandPaletteStore((state) => state.clearItems);
 
   const tasks = useProjectTasks(projectDir);
   const [optimisticTasks, setOptimisticTasks] = useOptimistic(tasks);
@@ -67,6 +76,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const taskContentRef = useRef<HTMLDivElement>(null);
   const creatingTaskRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
+  const activeTaskFiles = useTaskAllFiles(activeTask ? getTaskDir(activeTask) : undefined);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
   const agentProfile = useActiveAgentProfile(activeTask, projectDir) || undefined;
   const [isActiveTaskSwitching, startActiveTaskTransition] = useTransition();
 
@@ -454,6 +465,71 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     taskViewRef.current?.exportMessagesToImage();
   }, []);
 
+  useEffect(() => {
+    if (!isProjectActive) {
+      clearItems(`project:${projectDir}`);
+      return;
+    }
+
+    const commands = [
+      {
+        id: 'task.new',
+        label: t('settings.hotkeys.newTask'),
+        type: PaletteItemType.Action,
+        shortcut: TASK_HOTKEYS.NEW_TASK,
+        action: () => void createNewTask(),
+      },
+      {
+        id: 'task.focusPrompt',
+        label: t('settings.hotkeys.focusPrompt'),
+        type: PaletteItemType.Action,
+        shortcut: TASK_HOTKEYS.FOCUS_PROMPT,
+        action: focusActiveTaskPrompt,
+      },
+    ];
+
+    const tasks = [...optimisticTasks]
+      .sort((first, second) => (second.updatedAt || second.createdAt || '').localeCompare(first.updatedAt || first.createdAt || ''))
+      .map((task) => ({
+        id: `task.switch.${projectDir}.${task.id}`,
+        label: task.name,
+        state: task.state,
+        archived: task.archived,
+        type: PaletteItemType.Task,
+        action: () => handleTaskSelect(task.id),
+      }));
+    const files = activeTaskFiles.map((filePath) => ({
+      id: `file.open.${projectDir}.${filePath}`,
+      label: filePath.split('/').pop() || filePath,
+      description: filePath,
+      type: PaletteItemType.File,
+      action: () => {
+        if (activeTaskId) {
+          setPreviewFile({ path: filePath, taskId: activeTaskId });
+        }
+      },
+    }));
+    replaceItems(`project:${projectDir}`, [...commands, ...tasks, ...files]);
+  }, [
+    t,
+    isProjectActive,
+    replaceItems,
+    clearItems,
+    TASK_HOTKEYS,
+    activeTaskFiles,
+    activeTaskId,
+    createNewTask,
+    handleDeleteTask,
+    focusActiveTaskPrompt,
+    handleTaskSelect,
+    optimisticTasks,
+    projectDir,
+  ]);
+
+  useEffect(() => {
+    return () => clearItems(`project:${projectDir}`);
+  }, [clearItems, projectDir]);
+
   const handleExportTaskToMarkdown = useCallback(
     async (taskId: string) => {
       try {
@@ -591,6 +667,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               </Activity>
             )}
           </div>
+          {previewFile && <FileEditorModal filePath={previewFile.path} baseDir={projectDir} taskId={previewFile.taskId} onClose={() => setPreviewFile(null)} />}
         </div>
       </ExtensionsProvider>
     </TasksProvider>

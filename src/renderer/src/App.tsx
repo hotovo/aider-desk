@@ -25,6 +25,8 @@ import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { ReadonlyApp } from '@/pages/ReadonlyApp';
 import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
+import { CommandPalette } from '@/components/common/CommandPalette';
+import { useCommandPaletteHotkeys } from '@/hooks/useCommandPaletteHotkeys';
 
 const Onboarding = lazy(() => import('@/pages/Onboarding').then((module) => ({ default: module.Onboarding })));
 
@@ -138,6 +140,8 @@ const AnimatedRoutes = () => {
 const NormalApp = () => {
   const [isVisible, setIsVisible] = useState(false);
 
+  useCommandPaletteHotkeys();
+
   useEffect(() => {
     setTimeout(() => {
       setIsVisible(true);
@@ -161,6 +165,7 @@ const NormalApp = () => {
                           <AnimatedRoutes />
                           <ToastContainer />
                           <ModalOverlayUrlHandler />
+                          <CommandPalette />
                         </DiffsWorkerPoolProvider>
                       </ExtensionsProvider>
                     </ContextMenuProvider>
