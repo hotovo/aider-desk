@@ -286,6 +286,10 @@ src/
           index.ts
           McpServerSelectorItem.tsx
         common/
+          CommandPalette/
+            CommandPalette.tsx
+            CommandPaletteContent.tsx
+            index.ts
           DiffViewer/
             CompactDiffViewer.tsx
             DiffLineCommentPanel.tsx
@@ -587,9 +591,12 @@ src/
           DiffFileItem.tsx
           DiffFilesSidebar.tsx
           EmptyContextInfo.tsx
-          FileViewerModal.tsx
+          fileEditorInlineRequests.tsx
+          FileEditorModal.tsx
+          fileEditorUtils.ts
           group-files.ts
           index.ts
+          InlineChangeRequest.tsx
           ProjectFilesSection.tsx
           RulesSection.tsx
           SectionContent.tsx
@@ -612,6 +619,7 @@ src/
       contexts/
         AgentsContext.tsx
         ApiContext.tsx
+        CommandPaletteContext.tsx
         ContextMenuContext.tsx
         DiffsWorkerPoolContext.tsx
         ExtensionApiContext.tsx
@@ -646,6 +654,7 @@ src/
         useAudioRecorder.ts
         useBooleanState.ts
         useClickOutside.ts
+        useCommandPaletteHotkeys.ts
         useCommands.ts
         useCommitChanges.ts
         useConfiguredHotkeys.ts
@@ -716,6 +725,7 @@ src/
         Settings.tsx
         UpdatedFilesDiff.tsx
       stores/
+        commandPaletteStore.ts
         commitStore.ts
         extensionUIStore.ts
         projectStore.ts
@@ -9625,6 +9635,8 @@ private getTaskNameFromPrompt(prompt: string): string
 ⋮----
 private async generateTaskNameInBackground(prompt: string): Promise<string | null>
 ⋮----
+private isWaitingForApproval(resultMessages: ContextMessage[]): boolean
+⋮----
 private async determineTaskState(resultMessages: ContextMessage[]): Promise<string | null>
 ⋮----
 // Find the last assistant message from result messages
@@ -10179,6 +10191,8 @@ public async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitt
 public async revertLastMerge(): Promise<void>
 ⋮----
 // Clear merge state after successful revert
+⋮----
+public async addFileToGit(filePath: string): Promise<void>
 ⋮----
 public async restoreFile(filePath: string): Promise<void>
 ⋮----
@@ -11724,6 +11738,8 @@ private parseGitStatusEntries(stdout: string): string[]
 ⋮----
 private isSymlinkPath(cwd: string, filePath: string): boolean
 ⋮----
+private isDirectoryPath(cwd: string, filePath: string): boolean
+⋮----
 /**
    * Get updated files with per-commit and uncommitted diffs.
    *
@@ -11739,6 +11755,12 @@ async getUpdatedFiles(
     mainBranch?: string,
     groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
 ): Promise<UpdatedFile[]>
+⋮----
+private async includeUntrackedFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]>
+⋮----
+private async createUntrackedUpdatedFile(worktreePath: string, filePath: string): Promise<UpdatedFile>
+⋮----
+private formatDiffPath(filePath: string): string
 ⋮----
 /**
    * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
@@ -11809,6 +11831,8 @@ private parseCommitDiff(patchOutput: string): Map<string, string>
 // Extract file path from "diff --git a/path b/path"
 ⋮----
 private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]>
+⋮----
+async addFileToGit(worktreePath: string, filePath: string): Promise<void>
 ⋮----
 async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
@@ -12209,6 +12233,8 @@ async getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<
 async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
 ⋮----
 async revertLastMerge(baseDir: string, taskId: string): Promise<void>
+⋮----
+async addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
@@ -13763,6 +13789,8 @@ applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string):
 ⋮----
 revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
+addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void>
+⋮----
 restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
@@ -13995,6 +14023,56 @@ export const McpServerSelectorItem = (
 const loadTools = async () =>
 ⋮----
 // eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/components/common/CommandPalette/CommandPalette.tsx
+================
+import { CommandPaletteContent } from './CommandPaletteContent';
+⋮----
+import { useCommandPaletteStore } from '@/stores/commandPaletteStore';
+⋮----
+export const CommandPalette = () =>
+
+================
+File: src/renderer/src/components/common/CommandPalette/CommandPaletteContent.tsx
+================
+import { ChangeEvent, KeyboardEvent, MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+⋮----
+enum PaletteTab {
+  All = 'all',
+  Files = 'file',
+  Actions = 'action',
+  Tasks = 'task',
+  Projects = 'project',
+}
+⋮----
+const fuzzyMatch = (query: string, text: string):
+⋮----
+const getTabForItem = (item: PaletteItem): PaletteTab =>
+⋮----
+const getMatches = (itemsToSearch: PaletteItem[])
+⋮----
+const handleEscape = (event: globalThis.KeyboardEvent) =>
+⋮----
+const handleListScroll = () =>
+⋮----
+const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleBackdropClick = () =>
+⋮----
+const handleContentClick = (event: MouseEvent<HTMLDivElement>) =>
+⋮----
+onClick=
+
+================
+File: src/renderer/src/components/common/CommandPalette/index.ts
+================
+
 
 ================
 File: src/renderer/src/components/common/DiffViewer/CompactDiffViewer.tsx
@@ -14565,6 +14643,7 @@ File: src/renderer/src/components/common/CodeBlock.tsx
 ================
 import { startTransition, useMemo, useOptimistic, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { MdKeyboardArrowDown, MdUndo } from 'react-icons/md';
 import { VscCode } from 'react-icons/vsc';
@@ -14601,6 +14680,7 @@ type Props = {
   isComplete?: boolean;
   oldValue?: string;
   newValue?: string;
+  className?: string;
 };
 ⋮----
 const handleDiffViewModeChange = (value: string) =>
@@ -14613,6 +14693,8 @@ const parsed = parseDiffContent(children!); // children is non-null and a diff
 // Not a diff, display children as plain code (if it exists)
 ⋮----
 const handleRevertChanges = () =>
+⋮----
+className=
 ⋮----
 <div onClick=
 
@@ -20316,7 +20398,7 @@ import {
   useProjectStore,
 } from '@/stores/projectStore';
 import { unloadTasks } from '@/stores/taskStore';
-import { releaseTaskFiles } from '@/stores/taskFilesStore';
+import { releaseTaskFiles, useTaskAllFiles } from '@/stores/taskFilesStore';
 import { getTaskDir, getSortedVisibleTasks } from '@/utils/task-utils';
 import { cleanupProjectCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
@@ -20334,12 +20416,19 @@ import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useActiveAgentProfile } from '@/utils/agents';
+import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 ⋮----
 type Props = {
   projectDir: string;
   isProjectActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   initialTaskId?: string;
+};
+⋮----
+type PreviewFile = {
+  path: string;
+  taskId: string;
 };
 ⋮----
 // eslint-disable-next-line no-console
@@ -23668,7 +23757,7 @@ import { useTranslation } from 'react-i18next';
 ⋮----
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
-import { FileViewerModal } from './FileViewerModal';
+import { FileEditorModal } from './FileEditorModal';
 import { createFileTree } from './types';
 ⋮----
 import type { TreeItem } from './types';
@@ -23797,32 +23886,112 @@ type Props = {
 };
 
 ================
-File: src/renderer/src/components/Workspace/FileViewerModal.tsx
+File: src/renderer/src/components/Workspace/fileEditorInlineRequests.tsx
 ================
-import { type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { Decoration, EditorView, WidgetType } from '@codemirror/view';
+import { StateField, type Text } from '@codemirror/state';
+⋮----
+import { InlineChangeRequest } from './InlineChangeRequest';
+⋮----
+import type { Extension } from '@uiw/react-codemirror';
+⋮----
+type ChangeRequest = {
+  id: string;
+  position: number;
+  comment: string;
+};
+⋮----
+type Options = {
+  changeRequests: ChangeRequest[];
+  editLabel: string;
+  deleteLabel: string;
+  onEdit: (id: string, rect: DOMRect) => void;
+  onRemove: (id: string) => void;
+};
+⋮----
+class InlineChangeRequestWidget extends WidgetType
+⋮----
+constructor(
+    private readonly changeRequest: ChangeRequest,
+    private readonly editLabel: string,
+    private readonly deleteLabel: string,
+    private readonly onEdit: Options['onEdit'],
+    private readonly onRemove: Options['onRemove'],
+)
+⋮----
+eq(other: WidgetType): boolean
+⋮----
+toDOM(): HTMLElement
+⋮----
+destroy(dom: HTMLElement): void
+⋮----
+ignoreEvent(): boolean
+⋮----
+const createDecorations = (document: Text, options: Options) =>
+⋮----
+export const createInlineChangeRequestsExtension = (options: Options): Extension =>
+
+================
+File: src/renderer/src/components/Workspace/FileEditorModal.tsx
+================
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { HiOutlineExclamation, HiPencil, HiTrash } from 'react-icons/hi';
+import { HiOutlineExclamation } from 'react-icons/hi';
+import { MdSave } from 'react-icons/md';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { File, type FileProps, type LineAnnotation, type LineEventBaseProps } from '@pierre/diffs/react';
+import { LanguageDescription } from '@codemirror/language';
+import { languages } from '@codemirror/language-data';
+import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
+import { githubDarkInit } from '@uiw/codemirror-theme-github';
+import CodeMirror, { type Extension } from '@uiw/react-codemirror';
 ⋮----
-import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { remapLineAnchors } from './fileEditorUtils';
+import { createInlineChangeRequestsExtension } from './fileEditorInlineRequests';
+import { CommentsPanel } from './CommentsPanel';
+⋮----
+import { Button } from '@/components/common/Button';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
-import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
+import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useApi } from '@/contexts/ApiContext';
+import { showErrorNotification, showSuccessNotification, showWarningNotification } from '@/utils/notifications';
 ⋮----
 type PendingComment = {
   id: string;
   filePath: string;
   lineNumber: number;
+  position: number;
   comment: string;
 };
 ⋮----
 type ActiveLineInfo = {
-  lineKey: string;
   lineNumber: number;
+  position: number;
   viewportRect: { top: number; left: number };
 };
+⋮----
+type EditCommentInfo = {
+  commentId: string;
+  viewportRect: { top: number; left: number };
+  initialText: string;
+};
+⋮----
+type LineSelectHandler = (lineNumber: number, position: number, rect: DOMRect) => void;
+⋮----
+class ChangeRequestGutterMarker extends GutterMarker
+⋮----
+constructor(
+    private readonly lineNumber: number,
+    private readonly position: number,
+    private readonly label: string,
+    private readonly onSelect: LineSelectHandler,
+)
+⋮----
+eq(other: GutterMarker): boolean
+⋮----
+toDOM(): HTMLElement
 ⋮----
 type Props = {
   filePath: string;
@@ -23833,12 +24002,8 @@ type Props = {
 ⋮----
 const fetchFileContent = async () =>
 ⋮----
-// eslint-disable-next-line no-console
-⋮----
-const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
-const handleRemove = ()
-⋮----
-onMouseDown=
+const getLineNumber = (position: number)
+const mapPosition = (position: number)
 ⋮----
 const renderLoading = () => (
     <div className="flex items-center justify-center h-full">
@@ -23847,6 +24012,22 @@ const renderLoading = () => (
   );
 ⋮----
 <ModalOverlayLayout title=
+⋮----
+title=
+
+================
+File: src/renderer/src/components/Workspace/fileEditorUtils.ts
+================
+type LineAnchor = {
+  position: number;
+  lineNumber: number;
+};
+⋮----
+export const remapLineAnchors = <T extends LineAnchor>(
+  anchors: T[],
+  mapPosition: (position: number) => number,
+  getLineNumber: (position: number) => number,
+): T[]
 
 ================
 File: src/renderer/src/components/Workspace/group-files.ts
@@ -23865,6 +24046,28 @@ File: src/renderer/src/components/Workspace/index.ts
 
 
 ================
+File: src/renderer/src/components/Workspace/InlineChangeRequest.tsx
+================
+import { type MouseEvent } from 'react';
+import { HiPencil, HiTrash } from 'react-icons/hi';
+⋮----
+type Props = {
+  comment: string;
+  editLabel: string;
+  deleteLabel: string;
+  onEdit: (rect: DOMRect) => void;
+  onRemove: () => void;
+};
+⋮----
+export const InlineChangeRequest = (
+⋮----
+const handleEdit = (event: MouseEvent<HTMLButtonElement>) =>
+⋮----
+const handleRemove = (event: MouseEvent<HTMLButtonElement>) =>
+⋮----
+const handleMouseDown = (event: MouseEvent<HTMLButtonElement>) =>
+
+================
 File: src/renderer/src/components/Workspace/ProjectFilesSection.tsx
 ================
 import { ContextFile, OS, TokensCost } from '@common/types';
@@ -23877,7 +24080,7 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { FileViewerModal } from 'src/renderer/src/components/Workspace/FileViewerModal';
+import { FileEditorModal } from 'src/renderer/src/components/Workspace/FileEditorModal';
 ⋮----
 import { WorkspaceSection } from './WorkspaceSection';
 import { normalizePath, createFileTree } from './types';
@@ -23926,7 +24129,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
-import { FileViewerModal } from './FileViewerModal';
+import { FileEditorModal } from './FileEditorModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
@@ -23966,6 +24169,8 @@ type Props = {
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
+  onAddFileToGit?: (filePath: string) => void;
+  addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -24012,7 +24217,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
-import { FileViewerModal } from './FileViewerModal';
+import { FileEditorModal } from './FileEditorModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
@@ -24062,6 +24267,8 @@ type Props = {
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
+  onAddFileToGit?: (filePath: string) => void;
+  addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
@@ -24257,6 +24464,8 @@ className=
 // Auto-expand folder items in each group's tree when tree data changes
 ⋮----
 // Auto-expand folders in flat tree when tree data changes
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -24639,6 +24848,11 @@ export const useOptionalApi = (): ApplicationAPI | undefined
 export const useApi = (): ApplicationAPI =>
 
 ================
+File: src/renderer/src/contexts/CommandPaletteContext.tsx
+================
+
+
+================
 File: src/renderer/src/contexts/ContextMenuContext.tsx
 ================
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -24752,6 +24966,8 @@ import { Checkbox } from '@/components/common/Checkbox';
 import { Button } from '@/components/common/Button';
 import { initExtensionLibraryLoader } from '@/utils/extension-library-loader';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { CodeBlock } from '@/components/common/CodeBlock';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 ⋮----
 type ExtensionsContextValue = {
   projectDir?: string;
@@ -25028,6 +25244,16 @@ const listener = (event: MouseEvent) =>
 // Check if the click is outside all provided refs
 ⋮----
 // Ignore clicks on null refs or if the ref doesn't contain the target
+
+================
+File: src/renderer/src/hooks/useCommandPaletteHotkeys.ts
+================
+import { useHotkeys } from 'react-hotkeys-hook';
+⋮----
+import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { useCommandPaletteStore } from '@/stores/commandPaletteStore';
+⋮----
+export const useCommandPaletteHotkeys = () =>
 
 ================
 File: src/renderer/src/hooks/useCommands.ts
@@ -26338,6 +26564,7 @@ import { showInfoNotification } from '@/utils/notifications';
 import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
 ⋮----
 type ShowSettingsInfo = {
   pageId: string;
@@ -26641,6 +26868,53 @@ import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
 const loadFiles = async () =>
 ⋮----
 // eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/stores/commandPaletteStore.ts
+================
+import { devtools } from 'zustand/middleware';
+import { createWithEqualityFn } from 'zustand/traditional';
+⋮----
+export enum PaletteItemType {
+  Action = 'action',
+  File = 'file',
+  Task = 'task',
+  Project = 'project',
+}
+⋮----
+export type PaletteItem = {
+  id: string;
+  label: string;
+  description?: string;
+  state?: string;
+  archived?: boolean;
+  type: PaletteItemType;
+  shortcut?: string;
+  action: () => void;
+};
+⋮----
+type CommandPaletteStore = {
+  isOpen: boolean;
+  items: Map<string, PaletteItem>;
+  recentlyUsed: string[];
+  itemIdsByScope: Map<string, Set<string>>;
+  itemsByScope: Map<string, Map<string, PaletteItem>>;
+
+  openPalette: () => void;
+  closePalette: () => void;
+  togglePalette: () => void;
+  replaceItems: (scope: string, items: PaletteItem[]) => void;
+  clearItems: (scope: string) => void;
+  addRecentlyUsed: (itemId: string) => void;
+};
+⋮----
+const loadRecentlyUsed = (): string[] =>
+⋮----
+const saveRecentlyUsed = (ids: string[]) =>
+⋮----
+// Ignore storage errors.
+⋮----
+const hasSameMetadata = (first: PaletteItem, second: PaletteItem)
 
 ================
 File: src/renderer/src/stores/commitStore.ts
@@ -29446,6 +29720,8 @@ import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { ReadonlyApp } from '@/pages/ReadonlyApp';
 import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
+import { CommandPalette } from '@/components/common/CommandPalette';
+import { useCommandPaletteHotkeys } from '@/hooks/useCommandPaletteHotkeys';
 ⋮----
 const ModalOverlayUrlHandler = () =>
 ⋮----
@@ -29912,7 +30188,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.78.0-dev",
+  "version": "0.79.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -29961,21 +30237,21 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "2.0.15",
-    "@ai-sdk/amazon-bedrock": "5.0.25",
-    "@ai-sdk/anthropic": "4.0.16",
-    "@ai-sdk/azure": "4.0.17",
-    "@ai-sdk/cerebras": "3.0.13",
-    "@ai-sdk/deepseek": "3.0.12",
-    "@ai-sdk/google": "4.0.19",
-    "@ai-sdk/google-vertex": "5.0.23",
-    "@ai-sdk/groq": "4.0.12",
-    "@ai-sdk/mcp": "2.0.28",
-    "@ai-sdk/mistral": "4.0.13",
-    "@ai-sdk/openai": "4.0.16",
-    "@ai-sdk/openai-compatible": "3.0.13",
-    "@ai-sdk/otel": "1.0.32",
-    "@ai-sdk/provider": "4.0.6",
+    "@ai-sdk/alibaba": "2.0.30",
+    "@ai-sdk/amazon-bedrock": "5.0.52",
+    "@ai-sdk/anthropic": "4.0.37",
+    "@ai-sdk/azure": "4.0.39",
+    "@ai-sdk/cerebras": "3.0.29",
+    "@ai-sdk/deepseek": "3.0.27",
+    "@ai-sdk/google": "4.0.41",
+    "@ai-sdk/google-vertex": "5.0.50",
+    "@ai-sdk/groq": "4.0.27",
+    "@ai-sdk/mcp": "2.0.30",
+    "@ai-sdk/mistral": "4.0.28",
+    "@ai-sdk/openai": "4.0.38",
+    "@ai-sdk/openai-compatible": "3.0.29",
+    "@ai-sdk/otel": "1.0.60",
+    "@ai-sdk/provider": "4.0.7",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-bedrock": "^3.1059.0",
@@ -29984,6 +30260,7 @@ File: package.json
     "@aws-sdk/types": "^3.973.10",
     "@codemirror/autocomplete": "^6.18.7",
     "@codemirror/language": "^6.12.2",
+    "@codemirror/language-data": "^6.5.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dotenvx/dotenvx": "^1.24.5",
@@ -29997,15 +30274,16 @@ File: package.json
     "@lancedb/lancedb": "^0.22.3",
     "@legendapp/list": "^3.3.3",
     "@openrouter/ai-sdk-provider": "3.0.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.77.0",
-    "@opentelemetry/sdk-node": "^0.219.0",
-    "@opentelemetry/sdk-trace-base": "^2.8.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.79.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/sdk-node": "^0.221.0",
+    "@opentelemetry/sdk-trace-base": "^2.10.0",
     "@pierre/diffs": "^1.2.12",
     "@posthog/ai": "^8.3.0",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@reactuses/core": "^6.0.6",
     "@replit/codemirror-vim": "^6.3.0",
-    "@requesty/ai-sdk": "3.5.0",
+    "@requesty/ai-sdk": "3.6.0",
     "@smithy/eventstream-codec": "^2.0.0",
     "@smithy/protocol-http": "^3.3.0",
     "@smithy/signature-v4": "^2.0.0",
@@ -30017,7 +30295,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "^4.23.12",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "^2.8.0",
-    "ai": "7.0.37",
+    "ai": "7.0.60",
     "apache-arrow": "18.1.0",
     "axios": "^1.8.3",
     "babel-plugin-react-compiler": "^1.0.0",
@@ -30055,7 +30333,6 @@ File: package.json
     "match-sorter": "^8.0.0",
     "mermaid": "^11.14.0",
     "ollama-ai-provider-v2": "4.0.1",
-    "openai": "^6.9.1",
     "os-name": "^6.0.0",
     "patch-package": "^8.0.0",
     "posthog-node": "5.29.1",
@@ -30084,7 +30361,7 @@ File: package.json
     "tmp": "^0.2.3",
     "tree-kill": "^1.2.2",
     "turndown": "^7.2.1",
-    "undici": "8.5.0",
+    "undici": "8.10.0",
     "unidiff": "^1.0.4",
     "unist-util-map": "^4.0.0",
     "use-sync-external-store": "^1.6.0",
@@ -30106,13 +30383,13 @@ File: package.json
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.1",
+    "@testing-library/react": "^16.3.2",
     "@types/handlebars": "^4.0.40",
     "@types/lodash": "^4.17.17",
     "@types/node": "^22.16.5",
     "@types/prismjs": "^1.26.5",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
     "@types/react-resizable": "^3.0.8",
     "@types/refractor": "^3.4.1",
     "@types/socket.io": "^3.0.1",
@@ -30123,10 +30400,10 @@ File: package.json
     "@vitest/ui": "^4.1.8",
     "adm-zip": "^0.6.0",
     "autoprefixer": "^10.4.20",
-    "concurrently": "^10.0.3",
+    "concurrently": "^10.0.4",
     "dts-bundle-generator": "^9.5.1",
-    "electron": "^39.8.5",
-    "electron-builder": "^26.8.1",
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "encoding": "^0.1.13",
     "eslint": "^9.18.0",
@@ -30143,12 +30420,12 @@ File: package.json
     "lint-staged": "^15.4.1",
     "npm-run-all": "^4.1.5",
     "prettier": "^3.3.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "sass-embedded": "^1.89.0",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss": "^3.4.14",
-    "tar": "^7.5.13",
+    "tar": "^7.5.22",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
     "vite": "^7.3.6",
@@ -30156,8 +30433,8 @@ File: package.json
     "vitest": "^4.1.8"
   },
   "overrides": {
-    "@ai-sdk/provider": "4.0.6",
-    "@ai-sdk/provider-utils": "5.0.24",
+    "@ai-sdk/provider": "4.0.7",
+    "@ai-sdk/provider-utils": "5.0.26",
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },
