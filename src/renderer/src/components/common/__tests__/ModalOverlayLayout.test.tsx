@@ -1,9 +1,11 @@
 import { ReactNode } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 
 import { ModalOverlayLayout } from '../ModalOverlayLayout';
 
+import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
+import { useOverlayStore } from '@/stores/overlayStore';
 import { createMockApi } from '@/__tests__/mocks/api';
 import { useApi } from '@/contexts/ApiContext';
 
@@ -35,11 +37,17 @@ vi.mock('../IconButton', () => ({
   ),
 }));
 
+const FocusRestoreConsumer = ({ focus }: { focus: () => void }) => {
+  useOverlayFocusRestore(focus, true);
+  return <div>Prompt field placeholder</div>;
+};
+
 describe('ModalOverlayLayout', () => {
   const mockApi = createMockApi();
 
   beforeEach(() => {
     vi.mocked(useApi).mockReturnValue(mockApi);
+    useOverlayStore.setState({ openOverlays: new Set(), focusRequest: 0 });
   });
 
   it('renders with title and children', () => {
@@ -75,5 +83,50 @@ describe('ModalOverlayLayout', () => {
     );
 
     expect(screen.queryByTestId('close-modal')).not.toBeInTheDocument();
+  });
+
+  it('registers itself while mounted and requests focus restore on unmount', async () => {
+    const focus = vi.fn();
+    render(<FocusRestoreConsumer focus={focus} />);
+    const { unmount } = render(
+      <ModalOverlayLayout title="Overlay">
+        <div>Content</div>
+      </ModalOverlayLayout>,
+    );
+
+    expect(useOverlayStore.getState().openOverlays.size).toBe(1);
+    expect(useOverlayStore.getState().focusRequest).toBe(0);
+
+    unmount();
+
+    expect(useOverlayStore.getState().openOverlays.size).toBe(0);
+    expect(useOverlayStore.getState().focusRequest).toBe(1);
+
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it('does not request focus restore while another overlay remains open', () => {
+    const focus = vi.fn();
+    render(<FocusRestoreConsumer focus={focus} />);
+    render(
+      <ModalOverlayLayout title="Remaining">
+        <div>Remaining content</div>
+      </ModalOverlayLayout>,
+    );
+    const { unmount } = render(
+      <ModalOverlayLayout title="Closing">
+        <div>Closing content</div>
+      </ModalOverlayLayout>,
+    );
+
+    expect(useOverlayStore.getState().openOverlays.size).toBe(2);
+
+    unmount();
+
+    expect(useOverlayStore.getState().openOverlays.size).toBe(1);
+    expect(useOverlayStore.getState().focusRequest).toBe(0);
   });
 });

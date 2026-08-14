@@ -7,6 +7,7 @@
 - added CodeBlock and ExpandableMessageBlock components to extension UI components API
 - replaced File Viewer with File Editor
 - added Command Palette
+- focusing prompt field after closing overlay dialogs
 
 ## [0.78.0]
 

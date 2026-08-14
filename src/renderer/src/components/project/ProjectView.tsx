@@ -28,6 +28,7 @@ import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
@@ -84,6 +85,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const focusActiveTaskPrompt = useCallback(() => {
     taskViewRef.current?.focusPromptField();
   }, []);
+
+  useOverlayFocusRestore(focusActiveTaskPrompt, isProjectActive);
 
   const activateTask = useCallback(
     (taskId: string, shouldFocusActiveTaskPrompt = true, shouldFocusNewTask = false) => {

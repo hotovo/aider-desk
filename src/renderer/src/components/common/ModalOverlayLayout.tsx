@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useId } from 'react';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -6,6 +6,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { IconButton } from './IconButton';
 
 import { useApi } from '@/contexts/ApiContext';
+import { useOverlayStore } from '@/stores/overlayStore';
 
 type Props = {
   title: string;
@@ -18,6 +19,16 @@ type Props = {
 
 export const ModalOverlayLayout = ({ title, onClose, children, closeOnEscape = false, openInWindowUrl, openInWindowTitle }: Props) => {
   const api = useApi();
+  const overlayId = useId();
+  const openOverlay = useOverlayStore((state) => state.openOverlay);
+  const closeOverlay = useOverlayStore((state) => state.closeOverlay);
+
+  useEffect(() => {
+    openOverlay(overlayId);
+    return () => {
+      closeOverlay(overlayId);
+    };
+  }, [overlayId, openOverlay, closeOverlay]);
 
   useHotkeys(
     'escape',
