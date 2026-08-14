@@ -569,7 +569,8 @@
       "recordShortcutDescription": "아래의 기록 버튼을 누른 다음 단축키로 사용할 키 조합을 누르세요.",
       "pressKeysToRecord": "기록할 키를 누르세요...",
       "startRecording": "기록 시작",
-      "stopRecording": "기록 중지"
+      "stopRecording": "기록 중지",
+      "openEditor": "에디터 열기"
     },
     "gui": "모양",
     "voice": {
@@ -1099,7 +1100,6 @@
     "removeFileTooltip": "파일 제거"
   },
   "fileEditor": {
-    "title": "파일 편집기",
     "errorLoading": "파일을 불러오지 못했습니다",
     "requestChangeOnLine": "이 줄의 변경 요청",
     "saved": "파일이 저장되었습니다",
@@ -1108,9 +1108,14 @@
     "saveBeforeSubmitting": "변경 요청을 제출하기 전에 파일을 저장하세요.",
     "unsavedChanges": "저장되지 않은 변경 사항",
     "saveShortcut": "저장 (Ctrl+S)",
+    "saveAll": "모두 저장",
+    "saveAllTooltip": "열려 있는 모든 파일 저장",
+    "savedAll": "{{count}}개 파일 저장됨",
+    "closeTab": "탭 닫기 {{file}}",
     "discardTitle": "저장되지 않은 변경 사항을 취소하시겠습니까?",
     "discard": "취소",
-    "discardMessage": "저장되지 않은 파일 변경 사항이 손실됩니다."
+    "discardMessage": "저장되지 않은 파일 변경 사항이 손실됩니다.",
+    "title": "에디터"
   },
   "contextFiles": {
     "workspaceTitle": "워크스페이스",

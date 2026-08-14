@@ -120,3 +120,5 @@ async openUrlInWindow(): Promise<void> {
   window.open('_blank');
 }
 ```
+
+- prefer Zustand stores over React Context for shared state when possible. Zustand eliminates provider wrappers, avoids "must be used within Provider" errors in tests, enables DevTools via the `devtools` middleware, and allows state access outside React components. Use React Context only for dependency injection of stable instances (e.g., API clients) where the value never changes. Place stores in `src/renderer/src/stores/`, follow the existing patterns (e.g., `createWithEqualityFn`, `devtools` middleware, `shallow` equality), and use selective subscriptions (`useStore((state) => state.field)`) for fine-grained re-renders

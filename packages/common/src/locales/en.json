@@ -579,7 +579,8 @@
       "recordShortcutDescription": "Press the record button below and then press the key combination you want to use as a shortcut.",
       "pressKeysToRecord": "Press keys to record...",
       "startRecording": "Start Recording",
-      "stopRecording": "Stop Recording"
+      "stopRecording": "Stop Recording",
+      "openEditor": "Open Editor"
     },
     "gui": "Appearance",
     "voice": {
@@ -1119,7 +1120,6 @@
     "removeFileTooltip": "Remove file"
   },
   "fileEditor": {
-    "title": "File Editor",
     "errorLoading": "Failed to load file",
     "requestChangeOnLine": "Request a change on this line",
     "saved": "File saved",
@@ -1128,9 +1128,14 @@
     "saveBeforeSubmitting": "Save the file before submitting change requests.",
     "unsavedChanges": "Unsaved changes",
     "saveShortcut": "Save (Ctrl+S)",
+    "saveAll": "Save all",
+    "saveAllTooltip": "Save all open files",
+    "savedAll": "Saved {{count}} files",
+    "closeTab": "Close tab {{file}}",
     "discardTitle": "Discard unsaved changes?",
     "discard": "Discard",
-    "discardMessage": "Your unsaved file changes will be lost."
+    "discardMessage": "Your unsaved file changes will be lost.",
+    "title": "Editor"
   },
   "contextFiles": {
     "workspaceTitle": "Workspace",

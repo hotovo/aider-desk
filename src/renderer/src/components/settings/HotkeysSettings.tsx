@@ -79,6 +79,7 @@ export const HotkeysSettings = ({ settings, setSettings }: Props) => {
             {renderHotkeyConfig('projectHotkeys', 'settings', t('settings.hotkeys.settings'))}
             {renderHotkeyConfig('projectHotkeys', 'cycleNextProject', t('settings.hotkeys.cycleNextProject'))}
             {renderHotkeyConfig('projectHotkeys', 'cyclePrevProject', t('settings.hotkeys.cyclePrevProject'))}
+            {renderHotkeyConfig('projectHotkeys', 'openEditor', t('settings.hotkeys.openEditor'))}
             {renderHotkeyConfig('projectHotkeys', 'switchProject1', t('settings.hotkeys.switchProject', { number: 1 }))}
             {renderHotkeyConfig('projectHotkeys', 'switchProject2', t('settings.hotkeys.switchProject', { number: 2 }))}
             {renderHotkeyConfig('projectHotkeys', 'switchProject3', t('settings.hotkeys.switchProject', { number: 3 }))}

@@ -572,7 +572,8 @@
       "recordShortcutDescription": "Нажмите кнопку записи ниже, а затем нажмите нужную комбинацию клавиш.",
       "pressKeysToRecord": "Нажмите клавиши для записи...",
       "startRecording": "Начать запись",
-      "stopRecording": "Остановить запись"
+      "stopRecording": "Остановить запись",
+      "openEditor": "Открыть редактор"
     },
     "gui": "Внешний вид",
     "voice": {
@@ -1111,7 +1112,6 @@
     "removeFileTooltip": "Удалить файл"
   },
   "fileEditor": {
-    "title": "Редактор файла",
     "errorLoading": "Не удалось загрузить файл",
     "requestChangeOnLine": "Запросить изменение этой строки",
     "saved": "Файл сохранён",
@@ -1120,9 +1120,14 @@
     "saveBeforeSubmitting": "Сохраните файл перед отправкой запросов на изменение.",
     "unsavedChanges": "Есть несохранённые изменения",
     "saveShortcut": "Сохранить (Ctrl+S)",
+    "saveAll": "Сохранить все",
+    "saveAllTooltip": "Сохранить все открытые файлы",
+    "savedAll": "Сохранено файлов: {{count}}",
+    "closeTab": "Закрыть вкладку {{file}}",
     "discardTitle": "Отменить несохранённые изменения?",
     "discard": "Отменить",
-    "discardMessage": "Несохранённые изменения файла будут потеряны."
+    "discardMessage": "Несохранённые изменения файла будут потеряны.",
+    "title": "Редактор"
   },
   "contextFiles": {
     "workspaceTitle": "Рабочая область",

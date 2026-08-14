@@ -5,12 +5,12 @@ import { useTranslation } from 'react-i18next';
 
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
-import { FileEditorModal } from './FileEditorModal';
 import { createFileTree } from './types';
 
 import type { TreeItem } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 
 type Props = {
   mode: Mode;
@@ -54,9 +54,9 @@ export const ContextFilesSection = ({
   showBorderTop,
 }: Props) => {
   const { t } = useTranslation();
+  const openFile = useFileEditorStore((state) => state.openFile);
 
   const [contextExpandedItems, setContextExpandedItems] = useState<string[]>([]);
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
 
   const sortedUserFiles = useMemo(() => {
     return [...userContextFiles].sort((a, b) => a.path.localeCompare(b.path));
@@ -140,7 +140,7 @@ export const ContextFilesSection = ({
           if (onFilePreviewClick) {
             onFilePreviewClick(filePath);
           } else {
-            setPreviewFilePath(filePath);
+            openFile(baseDir, filePath, taskId);
           }
         }}
         onRevertFile={() => {}}
@@ -151,8 +151,6 @@ export const ContextFilesSection = ({
         onToggleHidden={onToggleHidden}
         showBorderTop={showBorderTop}
       />
-
-      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </>
   );
 };

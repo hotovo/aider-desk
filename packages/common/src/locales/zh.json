@@ -578,7 +578,8 @@
       "recordShortcutDescription": "点击下方的录制按钮，然后按下您想要用作快捷键的组合键。",
       "pressKeysToRecord": "按键录制中...",
       "startRecording": "开始录制",
-      "stopRecording": "停止录制"
+      "stopRecording": "停止录制",
+      "openEditor": "打开编辑器"
     },
     "gui": "GUI",
     "voice": {
@@ -1052,7 +1053,6 @@
     "removeFileTooltip": "移除文件"
   },
   "fileEditor": {
-    "title": "文件编辑器",
     "errorLoading": "加载文件失败",
     "requestChangeOnLine": "请求更改此行",
     "saved": "文件已保存",
@@ -1061,9 +1061,14 @@
     "saveBeforeSubmitting": "请先保存文件，再提交更改请求。",
     "unsavedChanges": "有未保存的更改",
     "saveShortcut": "保存 (Ctrl+S)",
+    "saveAll": "全部保存",
+    "saveAllTooltip": "保存所有打开的文件",
+    "savedAll": "已保存 {{count}} 个文件",
+    "closeTab": "关闭标签页 {{file}}",
     "discardTitle": "放弃未保存的更改？",
     "discard": "放弃",
-    "discardMessage": "未保存的文件更改将丢失。"
+    "discardMessage": "未保存的文件更改将丢失。",
+    "title": "编辑器"
   },
   "contextFiles": {
     "workspaceTitle": "工作区",

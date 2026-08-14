@@ -9,10 +9,10 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
-import { FileEditorModal } from './FileEditorModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 
 const getSkillLocationIcon = (location: string, t: (key: string) => string) => {
   if (location === 'global') {
@@ -66,7 +66,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
   const [activating, setActivating] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  const openFile = useFileEditorStore((state) => state.openFile);
 
   const loadSkills = useCallback(async () => {
     try {
@@ -189,7 +189,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
                       )}
                       onClick={() => {
                         if (skill.dirPath) {
-                          setPreviewFilePath(`${skill.dirPath}/SKILL.md`);
+                          openFile(baseDir, `${skill.dirPath}/SKILL.md`, taskId);
                         }
                       }}
                     >
@@ -236,8 +236,6 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
           )}
         </motion.div>
       </Activity>
-
-      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </motion.div>
   );
 };

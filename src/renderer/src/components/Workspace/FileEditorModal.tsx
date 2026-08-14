@@ -2,8 +2,8 @@ import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState 
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { HiOutlineExclamation } from 'react-icons/hi';
-import { MdSave } from 'react-icons/md';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
+import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
@@ -13,11 +13,13 @@ import CodeMirror, { type Extension } from '@uiw/react-codemirror';
 import { remapLineAnchors } from './fileEditorUtils';
 import { createInlineChangeRequestsExtension } from './fileEditorInlineRequests';
 import { CommentsPanel } from './CommentsPanel';
+import { FileEditorTabs } from './FileEditorTabs';
 
 import { Button } from '@/components/common/Button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useApi } from '@/contexts/ApiContext';
 import { showErrorNotification, showSuccessNotification, showWarningNotification } from '@/utils/notifications';
 
@@ -137,7 +139,27 @@ type EditCommentInfo = {
   initialText: string;
 };
 
+type TabState = {
+  savedContent: string | null;
+  editorContent: string | null;
+  isLoading: boolean;
+  error: string | null;
+};
+
+type TabViewState = {
+  anchor: number;
+  head: number;
+  scrollTop: number;
+};
+
 type LineSelectHandler = (lineNumber: number, position: number, rect: DOMRect) => void;
+
+const createInitialTabState = (isLoading: boolean): TabState => ({
+  savedContent: null,
+  editorContent: null,
+  isLoading,
+  error: null,
+});
 
 class ChangeRequestGutterMarker extends GutterMarker {
   constructor(
@@ -177,87 +199,132 @@ class ChangeRequestGutterMarker extends GutterMarker {
 }
 
 type Props = {
-  filePath: string;
   baseDir: string;
-  taskId: string;
   onClose: () => void;
 };
 
-export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) => {
+export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
-  const pendingCommentsRef = useRef<PendingComment[]>([]);
+  const openFiles = useFileEditorStore((state) => state.projectsMap.get(baseDir)?.openFiles ?? []);
+  const activeFilePath = useFileEditorStore((state) => state.projectsMap.get(baseDir)?.activeFilePath ?? null);
+  const closeTab = useFileEditorStore((state) => state.closeTab);
+  const closeTabs = useFileEditorStore((state) => state.closeTabs);
+  const setActiveFile = useFileEditorStore((state) => state.setActiveFile);
 
-  const [savedContent, setSavedContent] = useState<string | null>(null);
-  const [editorContent, setEditorContent] = useState<string | null>(null);
+  const { enableScope, disableScope } = useHotkeysContext();
+  useEffect(() => {
+    disableScope('home');
+    return () => {
+      enableScope('home');
+    };
+  }, [disableScope, enableScope]);
+
+  const [tabsState, setTabsState] = useState<Record<string, TabState>>({});
+  const [pendingComments, setPendingComments] = useState<PendingComment[]>([]);
+  const pendingCommentsRef = useRef<PendingComment[]>([]);
+  const tabsStateRef = useRef<Record<string, TabState>>({});
+  const tabViewStatesRef = useRef<Record<string, TabViewState>>({});
+  const editorViewRef = useRef<EditorView | null>(null);
+
   const [languageSupport, setLanguageSupport] = useState<Extension | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [activeLineInfo, setActiveLineInfo] = useState<ActiveLineInfo | null>(null);
   const [editCommentInfo, setEditCommentInfo] = useState<EditCommentInfo | null>(null);
-  const [pendingComments, setPendingComments] = useState<PendingComment[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createNewTask, setCreateNewTask] = useState(false);
+  const [confirmCloseTabPath, setConfirmCloseTabPath] = useState<string | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
-  const isDirty = savedContent !== null && editorContent !== null && savedContent !== editorContent;
+  const activeFile = openFiles.find((file) => file.path === activeFilePath) ?? openFiles[openFiles.length - 1] ?? null;
+  const activePath = activeFile?.path ?? null;
+  const activePathRef = useRef<string | null>(null);
+  activePathRef.current = activePath;
+  const activeTab = activePath ? (tabsState[activePath] ?? null) : null;
+  const activeFilePendingComments = useMemo(() => pendingComments.filter((c) => c.filePath === activePath), [pendingComments, activePath]);
 
-  const updatePendingComments = useCallback((updater: (comments: PendingComment[]) => PendingComment[]) => {
-    const updatedComments = updater(pendingCommentsRef.current);
-    pendingCommentsRef.current = updatedComments;
-    setPendingComments(updatedComments);
+  const isTabDirty = useCallback(
+    (path: string) => {
+      const tab = tabsState[path];
+      return !!tab && tab.savedContent !== null && tab.editorContent !== null && tab.savedContent !== tab.editorContent;
+    },
+    [tabsState],
+  );
+
+  const dirtyPaths = useMemo(() => new Set(openFiles.filter((file) => isTabDirty(file.path)).map((file) => file.path)), [openFiles, isTabDirty]);
+  const isDirty = activePath ? isTabDirty(activePath) : false;
+
+  const setTabState = useCallback((path: string, tabState: TabState) => {
+    tabsStateRef.current[path] = tabState;
+    setTabsState((prev) => ({ ...prev, [path]: tabState }));
   }, []);
 
   useEffect(() => {
-    const fetchFileContent = async () => {
-      setIsLoading(true);
-      setError(null);
+    const missing = openFiles.filter((file) => !tabsStateRef.current[file.path]);
+    if (missing.length === 0) {
+      return;
+    }
+
+    missing.forEach((file) => {
+      setTabState(file.path, createInitialTabState(true));
+    });
+
+    const unavailablePaths: string[] = [];
+    void Promise.all(
+      missing.map(async (file) => {
+        try {
+          const fileContent = await api.readFile(baseDir, file.taskId, file.path);
+          setTabState(file.path, {
+            savedContent: fileContent,
+            editorContent: fileContent,
+            isLoading: false,
+            error: null,
+          });
+        } catch {
+          unavailablePaths.push(file.path);
+        }
+      }),
+    ).then(() => {
+      if (unavailablePaths.length > 0) {
+        closeTabs(baseDir, unavailablePaths);
+      }
+    });
+  }, [api, baseDir, openFiles, closeTabs, setTabState]);
+
+  useEffect(() => {
+    const fetchLanguageSupport = async () => {
+      if (!activePath) {
+        return;
+      }
+      setLanguageSupport(null);
+
+      const language = LanguageDescription.matchFilename(languages, activePath);
+      if (!language) {
+        return;
+      }
       try {
-        const fileContent = await api.readFile(baseDir, taskId, filePath);
-        setSavedContent(fileContent);
-        setEditorContent(fileContent);
-        pendingCommentsRef.current = [];
-        setPendingComments([]);
-        setActiveLineInfo(null);
-        setEditCommentInfo(null);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage);
-      } finally {
-        setIsLoading(false);
+        const support = await language.load();
+        if (activePathRef.current === activePath) {
+          setLanguageSupport(support);
+        }
+      } catch {
+        if (activePathRef.current === activePath) {
+          setLanguageSupport(null);
+        }
       }
     };
 
-    void fetchFileContent();
-  }, [api, baseDir, filePath, taskId]);
+    void fetchLanguageSupport();
+  }, [activePath]);
 
   useEffect(() => {
-    let cancelled = false;
-    setLanguageSupport(null);
-
-    const language = LanguageDescription.matchFilename(languages, filePath);
-    if (language) {
-      void language
-        .load()
-        .then((support) => {
-          if (!cancelled) {
-            setLanguageSupport(support);
-          }
-        })
-        .catch(() => {
-          if (!cancelled) {
-            setLanguageSupport(null);
-          }
-        });
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [filePath]);
-
-  const resetLineState = useCallback(() => {
     setActiveLineInfo(null);
+    setEditCommentInfo(null);
+  }, [activePath]);
+
+  const updatePendingComments = useCallback((updater: (comments: PendingComment[]) => PendingComment[]) => {
+    const next = updater(pendingCommentsRef.current);
+    pendingCommentsRef.current = next;
+    setPendingComments(next);
   }, []);
 
   const handleLineSelect = useCallback<LineSelectHandler>((lineNumber, position, rect) => {
@@ -285,9 +352,75 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
     [handleLineSelect, t],
   );
 
+  const captureSelection = useMemo(
+    () =>
+      EditorView.updateListener.of((update) => {
+        if (!update.selectionSet && !update.docChanged) {
+          return;
+        }
+        const path = activePathRef.current;
+        if (!path) {
+          return;
+        }
+        const { anchor, head } = update.state.selection.main;
+        const previous = tabViewStatesRef.current[path];
+        tabViewStatesRef.current[path] = { anchor, head, scrollTop: previous?.scrollTop ?? 0 };
+      }),
+    [],
+  );
+
+  const handleCreateEditor = useCallback((view: EditorView) => {
+    editorViewRef.current = view;
+
+    const path = activePathRef.current;
+    if (path) {
+      const savedViewState = tabViewStatesRef.current[path];
+      if (savedViewState) {
+        const docLength = view.state.doc.length;
+        view.dispatch({
+          selection: {
+            anchor: Math.min(savedViewState.anchor, docLength),
+            head: Math.min(savedViewState.head, docLength),
+          },
+        });
+        if (savedViewState.scrollTop > 0) {
+          requestAnimationFrame(() => {
+            view.scrollDOM.scrollTop = savedViewState.scrollTop;
+          });
+        }
+      }
+    }
+
+    view.scrollDOM.addEventListener(
+      'scroll',
+      () => {
+        const scrollPath = activePathRef.current;
+        if (!scrollPath) {
+          return;
+        }
+        const previous = tabViewStatesRef.current[scrollPath];
+        tabViewStatesRef.current[scrollPath] = { ...(previous ?? { anchor: 0, head: 0 }), scrollTop: view.scrollDOM.scrollTop };
+      },
+      { passive: true },
+    );
+
+    view.focus();
+  }, []);
+
   const handleEditorChange = useCallback(
     (value: string, viewUpdate: Parameters<NonNullable<ComponentProps<typeof CodeMirror>['onChange']>>[1]) => {
-      setEditorContent(value);
+      const path = activePathRef.current;
+      if (!path) {
+        return;
+      }
+
+      const currentTab = tabsStateRef.current[path];
+      if (!currentTab) {
+        return;
+      }
+
+      setTabState(path, { ...currentTab, editorContent: value });
+
       if (!viewUpdate.docChanged) {
         return;
       }
@@ -295,7 +428,7 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
       const getLineNumber = (position: number) => viewUpdate.state.doc.lineAt(Math.min(position, viewUpdate.state.doc.length)).number;
       const mapPosition = (position: number) => viewUpdate.changes.mapPos(position, 1);
 
-      updatePendingComments((comments) => remapLineAnchors(comments, mapPosition, getLineNumber));
+      updatePendingComments((comments) => comments.map((c) => (c.filePath !== path ? c : remapLineAnchors([c], mapPosition, getLineNumber)[0])));
       setActiveLineInfo((current) => {
         if (!current) {
           return null;
@@ -303,31 +436,31 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
         return remapLineAnchors([current], mapPosition, getLineNumber)[0];
       });
     },
-    [updatePendingComments],
+    [setTabState, updatePendingComments],
   );
 
   const handleCommentCancel = useCallback(() => {
-    resetLineState();
-  }, [resetLineState]);
+    setActiveLineInfo(null);
+  }, []);
 
   const handleCommentSubmit = useCallback(
     (comment: string) => {
-      if (!activeLineInfo) {
+      if (!activeLineInfo || !activePath) {
         return;
       }
 
       const newComment: PendingComment = {
-        id: `${filePath}-${activeLineInfo.lineNumber}-${Date.now()}`,
-        filePath,
+        id: `${activePath}-${activeLineInfo.lineNumber}-${Date.now()}`,
+        filePath: activePath,
         lineNumber: activeLineInfo.lineNumber,
         position: activeLineInfo.position,
         comment,
       };
 
       updatePendingComments((comments) => [...comments, newComment]);
-      resetLineState();
+      setActiveLineInfo(null);
     },
-    [activeLineInfo, filePath, resetLineState, updatePendingComments],
+    [activeLineInfo, activePath, updatePendingComments],
   );
 
   const handleRemoveComment = useCallback(
@@ -346,6 +479,10 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
   );
 
   const handleInlineCommentEdit = useCallback((id: string, rect: DOMRect) => {
+    const path = activePathRef.current;
+    if (!path) {
+      return;
+    }
     const pendingComment = pendingCommentsRef.current.find((comment) => comment.id === id);
     if (!pendingComment) {
       return;
@@ -381,62 +518,97 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
   const inlineChangeRequests = useMemo(
     () =>
       createInlineChangeRequestsExtension({
-        changeRequests: pendingComments,
+        changeRequests: activeFilePendingComments,
         editLabel: t('common.edit'),
         deleteLabel: t('common.delete'),
         onEdit: handleInlineCommentEdit,
         onRemove: handleRemoveComment,
       }),
-    [handleInlineCommentEdit, handleRemoveComment, pendingComments, t],
+    [handleInlineCommentEdit, handleRemoveComment, activeFilePendingComments, t],
   );
 
   const editorExtensions = useMemo(
-    () => [changeRequestGutter, lineNumbers(), EDITOR_LAYOUT, inlineChangeRequests, ...(languageSupport ? [languageSupport] : [])],
-    [changeRequestGutter, inlineChangeRequests, languageSupport],
+    () => [changeRequestGutter, lineNumbers(), EDITOR_LAYOUT, captureSelection, inlineChangeRequests, ...(languageSupport ? [languageSupport] : [])],
+    [changeRequestGutter, captureSelection, inlineChangeRequests, languageSupport],
+  );
+
+  const saveTab = useCallback(
+    (path: string) => {
+      const file = openFiles.find((openFile) => openFile.path === path);
+      const tab = tabsStateRef.current[path];
+      if (!file || !tab || tab.savedContent === null || tab.editorContent === null || tab.savedContent === tab.editorContent) {
+        return false;
+      }
+
+      try {
+        api.applyEdits(baseDir, file.taskId, [
+          {
+            path,
+            original: tab.savedContent,
+            updated: tab.editorContent,
+          },
+        ]);
+        setTabState(path, { ...tab, savedContent: tab.editorContent });
+        return true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        showErrorNotification(t('fileEditor.errorSaving', { error: message }));
+        return false;
+      }
+    },
+    [api, baseDir, openFiles, setTabState, t],
   );
 
   const handleSave = useCallback(() => {
-    if (savedContent === null || editorContent === null || savedContent === editorContent) {
+    if (!activePath) {
       return;
     }
-
-    try {
-      api.applyEdits(baseDir, taskId, [
-        {
-          path: filePath,
-          original: savedContent,
-          updated: editorContent,
-        },
-      ]);
-      setSavedContent(editorContent);
+    if (saveTab(activePath)) {
       showSuccessNotification(t('fileEditor.saved'));
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      showErrorNotification(t('fileEditor.errorSaving', { error: message }));
     }
-  }, [api, baseDir, editorContent, filePath, savedContent, t, taskId]);
+  }, [activePath, saveTab, t]);
+
+  const handleSaveAll = useCallback(() => {
+    const savedCount = openFiles.filter((file) => saveTab(file.path)).length;
+    if (savedCount > 0) {
+      showSuccessNotification(t('fileEditor.savedAll', { count: savedCount }));
+    }
+  }, [openFiles, saveTab, t]);
 
   const handleSubmitAll = useCallback(async () => {
     if (pendingComments.length === 0 || isSubmitting) {
       return;
     }
-    if (isDirty) {
+    if (dirtyPaths.size > 0) {
       showWarningNotification(t('fileEditor.saveBeforeSubmitting'));
       return;
     }
 
+    const commentsByTask = new Map<string, PendingComment[]>();
+    for (const comment of pendingComments) {
+      const file = openFiles.find((f) => f.path === comment.filePath);
+      if (!file) {
+        continue;
+      }
+      const existing = commentsByTask.get(file.taskId) ?? [];
+      existing.push(comment);
+      commentsByTask.set(file.taskId, existing);
+    }
+
     setIsSubmitting(true);
     try {
-      api.runCodeChangeRequests(
-        baseDir,
-        taskId,
-        pendingComments.map((comment) => ({
-          filename: comment.filePath,
-          lineNumber: comment.lineNumber,
-          userComment: comment.comment,
-        })),
-        createNewTask,
-      );
+      for (const [taskId, comments] of commentsByTask) {
+        api.runCodeChangeRequests(
+          baseDir,
+          taskId,
+          comments.map((comment) => ({
+            filename: comment.filePath,
+            lineNumber: comment.lineNumber,
+            userComment: comment.comment,
+          })),
+          createNewTask,
+        );
+      }
       updatePendingComments(() => []);
       onClose();
     } catch (err) {
@@ -445,30 +617,90 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
     } finally {
       setIsSubmitting(false);
     }
-  }, [api, baseDir, createNewTask, isDirty, isSubmitting, onClose, pendingComments, t, taskId, updatePendingComments]);
+  }, [pendingComments, openFiles, dirtyPaths, api, baseDir, createNewTask, isSubmitting, onClose, t, updatePendingComments]);
+
+  const removeTabBuffers = useCallback(
+    (path: string) => {
+      delete tabsStateRef.current[path];
+      delete tabViewStatesRef.current[path];
+      updatePendingComments((comments) => comments.filter((c) => c.filePath !== path));
+      setTabsState((prev) => {
+        if (!(path in prev)) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[path];
+        return next;
+      });
+    },
+    [updatePendingComments],
+  );
+
+  const closeTabInternal = useCallback(
+    (path: string) => {
+      removeTabBuffers(path);
+      closeTab(baseDir, path);
+    },
+    [baseDir, closeTab, removeTabBuffers],
+  );
+
+  const handleCloseTab = useCallback(
+    (path: string) => {
+      if (isTabDirty(path)) {
+        setConfirmCloseTabPath(path);
+        setShowDiscardConfirm(true);
+        return;
+      }
+      closeTabInternal(path);
+    },
+    [closeTabInternal, isTabDirty],
+  );
 
   const handleClose = useCallback(() => {
-    if (isDirty) {
+    if (dirtyPaths.size > 0) {
+      setConfirmCloseTabPath(null);
       setShowDiscardConfirm(true);
       return;
     }
     onClose();
-  }, [isDirty, onClose]);
+  }, [dirtyPaths.size, onClose]);
 
   const handleDiscardChanges = useCallback(() => {
     setShowDiscardConfirm(false);
+    if (confirmCloseTabPath) {
+      closeTabInternal(confirmCloseTabPath);
+      setConfirmCloseTabPath(null);
+      return;
+    }
     onClose();
-  }, [onClose]);
+  }, [closeTabInternal, confirmCloseTabPath, onClose]);
 
   const handleDiscardCancel = useCallback(() => {
     setShowDiscardConfirm(false);
+    setConfirmCloseTabPath(null);
   }, []);
 
   const handleCreateNewTaskChange = useCallback((value: boolean) => {
     setCreateNewTask(value);
   }, []);
 
-  useHotkeys('escape', resetLineState, {
+  const cycleTab = useCallback(
+    (direction: 1 | -1) => {
+      if (openFiles.length < 2 || !activePath) {
+        return;
+      }
+      const currentIndex = openFiles.findIndex((file) => file.path === activePath);
+      const nextIndex = (currentIndex + direction + openFiles.length) % openFiles.length;
+      setActiveFile(baseDir, openFiles[nextIndex].path);
+    },
+    [activePath, baseDir, openFiles, setActiveFile],
+  );
+
+  const handleEscape = useCallback(() => {
+    setActiveLineInfo(null);
+  }, []);
+
+  useHotkeys('escape', handleEscape, {
     enabled: !!activeLineInfo,
     enableOnFormTags: true,
     enableOnContentEditable: true,
@@ -488,6 +720,32 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
     [handleSave, isDirty],
   );
 
+  useHotkeys(
+    ['ctrl+tab', 'meta+tab'],
+    (event) => {
+      event.preventDefault();
+      cycleTab(1);
+    },
+    {
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [cycleTab],
+  );
+
+  useHotkeys(
+    ['ctrl+shift+tab', 'meta+shift+tab'],
+    (event) => {
+      event.preventDefault();
+      cycleTab(-1);
+    },
+    {
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [cycleTab],
+  );
+
   const renderLoading = () => (
     <div className="flex items-center justify-center h-full">
       <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
@@ -498,26 +756,33 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
     <div className="flex flex-col items-center justify-center h-full gap-3">
       <HiOutlineExclamation className="w-12 h-12 text-error" />
       <p className="text-text-secondary text-sm">{t('fileEditor.errorLoading')}</p>
-      <p className="text-text-muted text-xs font-mono max-w-md text-center">{error}</p>
+      {activeTab?.error && <p className="text-text-muted text-xs font-mono max-w-md text-center">{activeTab.error}</p>}
     </div>
   );
 
   return (
     <ModalOverlayLayout title={t('fileEditor.title')} onClose={handleClose} closeOnEscape={!activeLineInfo && !editCommentInfo && !showDiscardConfirm}>
-      <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary min-h-[44px] px-4">
-        <div className="flex items-center justify-between gap-4 w-full">
-          <span className="text-3xs sm:text-xs font-medium text-text-primary truncate" title={filePath}>
-            {filePath}
-          </span>
-          <div className="flex items-center gap-3 shrink-0">
-            {isDirty && <span className="text-3xs text-warning">{t('fileEditor.unsavedChanges')}</span>}
+      <FileEditorTabs
+        openFiles={openFiles}
+        activeFilePath={activePath}
+        dirtyPaths={dirtyPaths}
+        onSelect={(path) => setActiveFile(baseDir, path)}
+        onClose={handleCloseTab}
+        actions={
+          <>
+            {dirtyPaths.size > 1 && (
+              <Button onClick={handleSaveAll} size="xs" tooltip={t('fileEditor.saveAllTooltip')}>
+                <MdLibraryAddCheck className="w-3.5 h-3.5" />
+                <span>{t('fileEditor.saveAll')}</span>
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={!isDirty} size="xs" tooltip={t('fileEditor.saveShortcut')}>
               <MdSave className="w-3.5 h-3.5" />
               <span>{t('common.save')}</span>
             </Button>
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 overflow-hidden bg-bg-code-block relative">
           {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
@@ -529,12 +794,15 @@ export const FileEditorModal = ({ filePath, baseDir, taskId, onClose }: Props) =
               anchorRect={editCommentInfo.viewportRect}
             />
           )}
-          {isLoading && renderLoading()}
-          {error && renderError()}
-          {!isLoading && !error && editorContent !== null && (
+          {!activeFile && renderLoading()}
+          {activeFile && activeTab?.isLoading && renderLoading()}
+          {activeFile && activeTab && !activeTab.isLoading && activeTab.error && renderError()}
+          {activeFile && activeTab && !activeTab.isLoading && !activeTab.error && activeTab.editorContent !== null && (
             <CodeMirror
-              value={editorContent}
+              key={activePath}
+              value={activeTab.editorContent}
               onChange={handleEditorChange}
+              onCreateEditor={handleCreateEditor}
               theme={EDITOR_THEME}
               basicSetup={BASIC_SETUP}
               extensions={editorExtensions}

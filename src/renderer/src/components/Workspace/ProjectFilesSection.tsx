@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { FileEditorModal } from 'src/renderer/src/components/Workspace/FileEditorModal';
 
 import { WorkspaceSection } from './WorkspaceSection';
 import { normalizePath, createFileTree } from './types';
@@ -17,6 +16,7 @@ import type { TreeItem } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 
 type Props = {
   baseDir: string;
@@ -58,9 +58,9 @@ export const ProjectFilesSection = ({
   showBorderTop,
 }: Props) => {
   const { t } = useTranslation();
+  const openFile = useFileEditorStore((state) => state.openFile);
 
   const [projectExpandedItems, setProjectExpandedItems] = useState<string[]>([]);
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 50);
@@ -225,7 +225,7 @@ export const ProjectFilesSection = ({
         showBorderTop={showBorderTop}
         onToggle={onToggle}
         onFileDiffClick={() => {}}
-        onFilePreviewClick={setPreviewFilePath}
+        onFilePreviewClick={(filePath: string) => openFile(baseDir, filePath, taskId)}
         onRevertFile={() => {}}
         onDropFile={onDropFile}
         onAddFile={onAddFile}
@@ -233,8 +233,6 @@ export const ProjectFilesSection = ({
         isHidden={isHidden}
         onToggleHidden={onToggleHidden}
       />
-
-      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </>
   );
 };

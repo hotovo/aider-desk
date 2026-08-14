@@ -126,11 +126,17 @@ vi.mock('@/components/extensions/FloatingExtensionPanels', () => ({
   FloatingExtensionPanels: () => null,
 }));
 
-vi.mock('@/components/Workspace/FileEditorModal', () => ({
-  FileEditorModal: ({ filePath, taskId }: { filePath: string; taskId: string }) => (
-    <div data-testid="file-editor-modal" data-file-path={filePath} data-task-id={taskId} />
-  ),
-}));
+vi.mock('@/components/Workspace/FileEditorModal', async () => {
+  const { useFileEditorStore } = await import('@/stores/fileEditorStore');
+  return {
+    FileEditorModal: ({ baseDir }: { baseDir: string }) => {
+      const openFiles = useFileEditorStore((state) => state.projectsMap.get(baseDir)?.openFiles ?? []);
+      const activeFilePath = useFileEditorStore((state) => state.projectsMap.get(baseDir)?.activeFilePath ?? null);
+      const activeFile = openFiles.find((file) => file.path === activeFilePath) ?? null;
+      return <div data-testid="file-editor-modal" data-base-dir={baseDir} data-file-path={activeFile?.path} data-task-id={activeFile?.taskId} />;
+    },
+  };
+});
 
 describe('ProjectView', () => {
   const projectDir = '/mock/project';

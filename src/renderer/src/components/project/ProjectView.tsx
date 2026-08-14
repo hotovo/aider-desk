@@ -35,6 +35,7 @@ import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
@@ -46,11 +47,6 @@ type Props = {
   initialTaskId?: string;
 };
 
-type PreviewFile = {
-  path: string;
-  taskId: string;
-};
-
 export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage, initialTaskId }: Props) => {
   const { t } = useTranslation();
   const startupMode = useSettingsStore((state) => state.settings?.startupMode);
@@ -58,7 +54,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const settingsLoaded = useSettingsStore((state) => !!state.settings);
   const { projectSettings } = useProjectSettings();
   const api = useApi();
-  const { TASK_HOTKEYS } = useConfiguredHotkeys();
+  const { TASK_HOTKEYS, PROJECT_HOTKEYS } = useConfiguredHotkeys();
   const { isMobile } = useResponsive();
   const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
   const clearItems = useCommandPaletteStore((state) => state.clearItems);
@@ -78,7 +74,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const creatingTaskRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
   const activeTaskFiles = useTaskAllFiles(activeTask ? getTaskDir(activeTask) : undefined);
-  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
+  const editorOpenFiles = useFileEditorStore((state) => state.projectsMap.get(projectDir)?.openFiles ?? []);
+  const isEditorOpen = useFileEditorStore((state) => state.projectsMap.get(projectDir)?.isEditorOpen ?? false);
+  const openFile = useFileEditorStore((state) => state.openFile);
+  const openEditor = useFileEditorStore((state) => state.openEditor);
+  const closeEditor = useFileEditorStore((state) => state.closeEditor);
   const agentProfile = useActiveAgentProfile(activeTask, projectDir) || undefined;
   const [isActiveTaskSwitching, startActiveTaskTransition] = useTransition();
 
@@ -464,6 +464,25 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     [activeTaskId, handleDeleteTask],
   );
 
+  const handleOpenEditor = useCallback(() => {
+    openEditor(projectDir);
+  }, [openEditor, projectDir]);
+
+  useHotkeys(
+    PROJECT_HOTKEYS.OPEN_EDITOR,
+    (e) => {
+      e.preventDefault();
+      handleOpenEditor();
+    },
+    {
+      enabled: !!activeTaskId,
+      scopes: 'task',
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [handleOpenEditor, PROJECT_HOTKEYS.OPEN_EDITOR],
+  );
+
   const handleExportTaskToImage = useCallback(() => {
     taskViewRef.current?.exportMessagesToImage();
   }, []);
@@ -489,6 +508,13 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
         shortcut: TASK_HOTKEYS.FOCUS_PROMPT,
         action: focusActiveTaskPrompt,
       },
+      {
+        id: 'editor.open',
+        label: t('settings.hotkeys.openEditor'),
+        type: PaletteItemType.Action,
+        shortcut: PROJECT_HOTKEYS.OPEN_EDITOR,
+        action: () => openEditor(projectDir),
+      },
     ];
 
     const tasks = [...optimisticTasks]
@@ -508,7 +534,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       type: PaletteItemType.File,
       action: () => {
         if (activeTaskId) {
-          setPreviewFile({ path: filePath, taskId: activeTaskId });
+          openFile(projectDir, filePath, activeTaskId);
         }
       },
     }));
@@ -519,6 +545,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     replaceItems,
     clearItems,
     TASK_HOTKEYS,
+    PROJECT_HOTKEYS,
     activeTaskFiles,
     activeTaskId,
     createNewTask,
@@ -526,6 +553,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     focusActiveTaskPrompt,
     handleTaskSelect,
     optimisticTasks,
+    openFile,
+    openEditor,
     projectDir,
   ]);
 
@@ -670,7 +699,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               </Activity>
             )}
           </div>
-          {previewFile && <FileEditorModal filePath={previewFile.path} baseDir={projectDir} taskId={previewFile.taskId} onClose={() => setPreviewFile(null)} />}
+          {isEditorOpen && editorOpenFiles.length > 0 && <FileEditorModal baseDir={projectDir} onClose={() => closeEditor(projectDir)} />}
         </div>
       </ExtensionsProvider>
     </TasksProvider>

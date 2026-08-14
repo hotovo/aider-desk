@@ -640,6 +640,7 @@ export interface HotkeyConfig {
     settings: string;
     cycleNextProject: string;
     cyclePrevProject: string;
+    openEditor: string;
     switchProject1: string;
     switchProject2: string;
     switchProject3: string;

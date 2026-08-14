@@ -8,10 +8,10 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
-import { FileEditorModal } from './FileEditorModal';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 
 const getFileName = (filePath: string) => {
@@ -76,7 +76,7 @@ export const RulesSection = ({
   const { t } = useTranslation();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [previewFilePath, setPreviewFilePath] = useState<string | null>(null);
+  const openFile = useFileEditorStore((state) => state.openFile);
 
   const disabledRuleFiles = useMemo(() => projectSettings?.disabledRuleFiles ?? [], [projectSettings?.disabledRuleFiles]);
 
@@ -161,7 +161,7 @@ export const RulesSection = ({
                     <Tooltip content={file.path} delayDuration={1000}>
                       <span
                         className="select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis text-text-primary cursor-pointer hover:text-text-tertiary"
-                        onClick={() => setPreviewFilePath(file.path)}
+                        onClick={() => openFile(baseDir, file.path, taskId)}
                       >
                         {getFileName(file.path)}
                       </span>
@@ -179,8 +179,6 @@ export const RulesSection = ({
           )}
         </motion.div>
       </Activity>
-
-      {previewFilePath && <FileEditorModal filePath={previewFilePath} baseDir={baseDir} taskId={taskId} onClose={() => setPreviewFilePath(null)} />}
     </motion.div>
   );
 };
