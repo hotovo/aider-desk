@@ -666,6 +666,7 @@ src/
         useOllamaModels.ts
         useOpenRouterModels.ts
         useOS.ts
+        useOverlayFocusRestore.ts
         useParsedContent.ts
         usePythonInstallStatus.ts
         useRefractorLanguage.ts
@@ -728,6 +729,7 @@ src/
         commandPaletteStore.ts
         commitStore.ts
         extensionUIStore.ts
+        overlayStore.ts
         projectStore.ts
         settingsStore.ts
         taskFilesStore.ts
@@ -14029,6 +14031,7 @@ File: src/renderer/src/components/common/CommandPalette/CommandPalette.tsx
 ================
 import { CommandPaletteContent } from './CommandPaletteContent';
 ⋮----
+import { useOverlayRegistration } from '@/hooks/useOverlayFocusRestore';
 import { useCommandPaletteStore } from '@/stores/commandPaletteStore';
 ⋮----
 export const CommandPalette = () =>
@@ -15090,7 +15093,7 @@ const renderDiagram = async () =>
 ================
 File: src/renderer/src/components/common/ModalOverlayLayout.tsx
 ================
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useId } from 'react';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { IoMdClose } from 'react-icons/io';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -15098,6 +15101,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { IconButton } from './IconButton';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
+import { useOverlayStore } from '@/stores/overlayStore';
 ⋮----
 type Props = {
   title: string;
@@ -20409,6 +20413,7 @@ import { TaskView, TaskViewRef } from '@/components/project/TaskView';
 import { useApi } from '@/contexts/ApiContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
@@ -25434,6 +25439,17 @@ const fetchOS = async () =>
 setOS(null); // Set to null or a default/unknown state in case of error
 
 ================
+File: src/renderer/src/hooks/useOverlayFocusRestore.ts
+================
+import { useEffect, useRef } from 'react';
+⋮----
+import { useOverlayStore } from '@/stores/overlayStore';
+⋮----
+export const useOverlayRegistration = (id: string, isOpen: boolean) =>
+⋮----
+export const useOverlayFocusRestore = (focus: () => void, enabled: boolean) =>
+
+================
 File: src/renderer/src/hooks/useParsedContent.ts
 ================
 import { useMemo } from 'react';
@@ -27049,6 +27065,20 @@ export const useIsLoadingComponents = (placement?: string, projectDir?: string, 
 export const cleanupTaskCache = (projectDir: string, taskId: string)
 ⋮----
 export const cleanupProjectCache = (projectDir: string)
+
+================
+File: src/renderer/src/stores/overlayStore.ts
+================
+import { devtools } from 'zustand/middleware';
+import { createWithEqualityFn } from 'zustand/traditional';
+⋮----
+type OverlayStore = {
+  openOverlays: Set<string>;
+  focusRequest: number;
+
+  openOverlay: (id: string) => void;
+  closeOverlay: (id: string) => void;
+};
 
 ================
 File: src/renderer/src/stores/projectStore.ts
