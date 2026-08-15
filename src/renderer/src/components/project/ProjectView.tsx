@@ -1,6 +1,6 @@
 import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -80,7 +80,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
   const openEditor = useFileEditorStore((state) => state.openEditor);
   const closeEditor = useFileEditorStore((state) => state.closeEditor);
   const agentProfile = useActiveAgentProfile(activeTask, projectDir) || undefined;
-  const [isActiveTaskSwitching, startActiveTaskTransition] = useTransition();
 
   const focusActiveTaskPrompt = useCallback(() => {
     taskViewRef.current?.focusPromptField();
@@ -90,13 +89,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
 
   const activateTask = useCallback(
     (taskId: string, shouldFocusActiveTaskPrompt = true, shouldFocusNewTask = false) => {
-      startActiveTaskTransition(() => {
-        setActiveTaskId(taskId);
-        setShouldFocusNewTask(shouldFocusNewTask);
-        if (shouldFocusActiveTaskPrompt) {
-          focusActiveTaskPrompt();
-        }
-      });
+      setActiveTaskId(taskId);
+      setShouldFocusNewTask(shouldFocusNewTask);
+      if (shouldFocusActiveTaskPrompt) {
+        focusActiveTaskPrompt();
+      }
     },
     [focusActiveTaskPrompt],
   );
@@ -673,7 +670,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
               left: isMobile ? 0 : isTaskBarCollapsed ? COLLAPSED_WIDTH : (taskSidebarWidth ?? EXPANDED_WIDTH),
             }}
           >
-            {isActiveTaskSwitching && <LoadingOverlay message={t('common.loadingTask')} animateOpacity />}
             {isProjectActive && <FloatingExtensionPanels placement="project-floating" />}
             {activeTask && (
               <Activity mode={isProjectActive ? 'visible' : 'hidden'}>

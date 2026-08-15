@@ -15,7 +15,19 @@ import {
   TodoItem,
   UserMessage,
 } from '@common/types';
-import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
+import {
+  forwardRef,
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -138,6 +150,21 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const deferredMessages = useDeferredValue(messages);
     const [displayedMessages, setDisplayedMessages] = useOptimistic(deferredMessages);
     const messagesPending = task.updatedAt && messages.length !== displayedMessages.length;
+
+    // ProjectView keys TaskView by task.id, so switching tasks remounts this component. Defer the
+    // heavy message list until after the shell has painted: the first commit renders the shell +
+    // LoadingOverlay (renderReady=false), then a rAF flips renderReady inside a transition so the
+    // messages render without blocking the switch.
+    const [renderReady, setRenderReady] = useState(false);
+    const [isRenderPending, startRenderTransition] = useTransition();
+    useEffect(() => {
+      const rafId = requestAnimationFrame(() => {
+        startRenderTransition(() => setRenderReady(true));
+      });
+      return () => cancelAnimationFrame(rafId);
+    }, []);
+    const isSwitchingTask = !renderReady || isRenderPending;
+    const visibleMessages = isSwitchingTask ? [] : displayedMessages;
 
     const currentMode = task.currentMode || 'agent';
 
@@ -766,7 +793,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     return (
       <div className={clsx('h-full bg-gradient-to-b from-bg-primary to-bg-primary-light relative', isMobile ? 'flex flex-col' : 'flex')}>
         {!loaded && <LoadingOverlay message={t('common.loadingTask')} />}
-        {messagesPending && displayedMessages.length === 0 && <LoadingOverlay message={t('common.loadingMessages')} />}
         <div className="flex flex-col flex-grow overflow-hidden">
           <TaskBar
             ref={projectTopBarRef}
@@ -797,7 +823,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
             )}
             <ExtensionComponentWrapper placement="task-messages-top" />
             <div className="overflow-hidden flex-grow relative">
-              {displayedMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
+              {loaded && isSwitchingTask && (messagesPending || displayedMessages.length > 0) && <LoadingOverlay message={t('common.loadingMessages')} />}
+              {!isSwitchingTask && visibleMessages.length === 0 && !loading && !messagesPending && !inProgress ? (
                 <WelcomeMessage onModeChange={handleModeChange} mode={currentMode} projectDir={projectDir} taskId={task.id} />
               ) : (
                 <>
@@ -807,7 +834,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       baseDir={projectDir}
                       taskId={task.id}
                       inProgress={inProgress}
-                      messages={displayedMessages}
+                      messages={visibleMessages}
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
@@ -824,7 +851,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                       baseDir={projectDir}
                       taskId={task.id}
                       inProgress={inProgress}
-                      messages={displayedMessages}
+                      messages={visibleMessages}
                       allFiles={allFiles}
                       renderMarkdown={renderMarkdown!}
                       removeMessage={handleRemoveMessage}
@@ -840,7 +867,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
               )}
             </div>
             <ExtensionComponentWrapper placement="task-messages-bottom" />
-            {showTaskInfoPanel && <TaskInfoPanel task={task} messageCount={displayedMessages.length || 0} onClose={() => setShowTaskInfoPanel(false)} />}
+            {showTaskInfoPanel && <TaskInfoPanel task={task} messageCount={visibleMessages.length || 0} onClose={() => setShowTaskInfoPanel(false)} />}
             {showTaskStateActions && !inProgress && !isLastLoadingMessage && (
               <TaskStateActions
                 state={task.state}

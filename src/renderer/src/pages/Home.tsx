@@ -150,14 +150,13 @@ export const Home = () => {
 
   const setActiveProject = useCallback(
     (baseDir: string) => {
-      startProjectTransition(async () => {
+      startTransition(() => {
         setOptimisticActiveProject(baseDir);
-        // Update URL parameter instead of global store
-        // This allows each window to have its own active project
-        setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(baseDir) });
-        const projects = await api.setActiveProject(baseDir);
-        setOpenProjects(projects);
       });
+      // Update URL parameter instead of global store
+      // This allows each window to have its own active project
+      setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(baseDir) });
+      void api.setActiveProject(baseDir).then(setOpenProjects);
     },
     [api, setOptimisticActiveProject, setSearchParams],
   );
@@ -234,14 +233,16 @@ export const Home = () => {
       if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
         setInitialTaskId(taskId);
       }
-      startProjectTransition(async () => {
-        if (existingProject) {
-          // Project exists, just update optimistic state (URL is already set)
+      if (existingProject) {
+        // Project exists, just update optimistic state synchronously (no overlay needed)
+        startTransition(() => {
           if (!compareBaseDirs(activeProject, projectBaseDir, os ?? undefined)) {
             setOptimisticActiveProject(projectBaseDir);
           }
-        } else {
-          // Project doesn't exist, add it and update optimistic state
+        });
+      } else {
+        // Project doesn't exist, add it and update optimistic state
+        startProjectTransition(async () => {
           try {
             await api.addOpenProject(projectBaseDir);
             const updatedProjects = await api.getOpenProjects();
@@ -251,8 +252,8 @@ export const Home = () => {
             // eslint-disable-next-line no-console
             console.error('Failed to open project from URL:', error);
           }
-        }
-      });
+        });
+      }
     };
 
     void handleUrlNavigation();

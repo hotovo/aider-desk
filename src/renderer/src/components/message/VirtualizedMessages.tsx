@@ -191,17 +191,36 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       return processedMessages.filter(isUserMessage).map((message) => message.id);
     }, [processedMessages]);
 
+    const userMessageIndices = useMemo(() => {
+      const indices: number[] = [];
+      processedMessages.forEach((message, index) => {
+        if (isUserMessage(message)) {
+          indices.push(index);
+        }
+      });
+      return indices;
+    }, [processedMessages]);
+
+    const getVisibleRange = useCallback(() => {
+      const state = listRef.current?.getState();
+      return state ? { startIndex: state.start, endIndex: state.end } : null;
+    }, []);
+
+    const scrollToUserMessageIndex = useCallback(
+      (index: number) => {
+        isProgrammaticScrollRef.current = true;
+        updateScrollingPaused(true);
+        void listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+      },
+      [updateScrollingPaused],
+    );
+
     const { hasPreviousUserMessage, hasNextUserMessage, renderGoToPrevious, renderGoToNext } = useUserMessageNavigation({
       containerRef: scrollContainerRef,
       userMessageIds,
-      scrollToMessageById: (id: string) => {
-        const index = processedMessages.findIndex((msg) => msg.id === id);
-        if (index !== -1) {
-          isProgrammaticScrollRef.current = true;
-          updateScrollingPaused(true);
-          void listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
-        }
-      },
+      userMessageIndices,
+      getVisibleRange,
+      scrollToIndex: scrollToUserMessageIndex,
       buttonClassName: 'hidden group-hover:block',
     });
 
@@ -308,10 +327,9 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           extraData={extraData}
-          estimatedItemSize={100}
+          estimatedItemSize={490}
           onScroll={handleScrollState}
           initialScrollAtEnd
-          alwaysRender={{ keys: userMessageIds }}
           drawDistance={250}
           className="absolute inset-0 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth px-4"
         />

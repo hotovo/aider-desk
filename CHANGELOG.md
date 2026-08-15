@@ -9,6 +9,7 @@
 - added Command Palette
 - focusing prompt field after closing overlay dialogs
 - bound tool outputs and stream large file reads to prevent memory exhaustion
+- optimized project and task switching time
 
 ## [0.78.0]
 

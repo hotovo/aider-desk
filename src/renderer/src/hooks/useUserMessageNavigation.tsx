@@ -10,6 +10,12 @@ interface UseUserMessageNavigationProps {
   userMessageIds: string[];
   scrollToMessageByElement?: (element: HTMLElement) => void;
   scrollToMessageById?: (id: string) => void;
+  // Index-based mode (for virtualized lists where off-screen messages are not in the DOM).
+  // When both are provided, navigation is computed from item indices and the visible range
+  // instead of querying/measuring DOM nodes.
+  userMessageIndices?: number[];
+  getVisibleRange?: () => { startIndex: number; endIndex: number } | null;
+  scrollToIndex?: (index: number) => void;
   alwaysVisible?: boolean;
   buttonClassName?: string;
 }
@@ -29,6 +35,9 @@ export const useUserMessageNavigation = ({
   userMessageIds,
   scrollToMessageByElement,
   scrollToMessageById,
+  userMessageIndices,
+  getVisibleRange,
+  scrollToIndex,
   alwaysVisible = false,
   buttonClassName = '',
 }: UseUserMessageNavigationProps) => {
@@ -36,8 +45,23 @@ export const useUserMessageNavigation = ({
   const [hasPreviousUserMessage, setHasPreviousUserMessage] = useState(false);
   const [hasNextUserMessage, setHasNextUserMessage] = useState(false);
   const userMessagesKey = userMessageIds.join(',');
+  const isIndexMode = !!getVisibleRange && !!userMessageIndices;
+  const userIndicesKey = (userMessageIndices ?? []).join(',');
 
   const updateNavigationButtons = useCallback(() => {
+    if (isIndexMode) {
+      const range = getVisibleRange!();
+      const indices = userIndicesKey ? userIndicesKey.split(',').map(Number) : [];
+      if (!range || indices.length === 0) {
+        setHasPreviousUserMessage(false);
+        setHasNextUserMessage(false);
+        return;
+      }
+      setHasPreviousUserMessage(indices.some((index) => index < range.startIndex));
+      setHasNextUserMessage(indices.some((index) => index > range.endIndex));
+      return;
+    }
+
     const container = containerRef.current;
     const ids = userMessagesKey ? userMessagesKey.split(',') : [];
     if (!container || ids.length === 0) {
@@ -74,9 +98,30 @@ export const useUserMessageNavigation = ({
 
     setHasPreviousUserMessage(hasPrevious);
     setHasNextUserMessage(hasNext);
-  }, [containerRef, userMessagesKey]);
+  }, [isIndexMode, getVisibleRange, userIndicesKey, containerRef, userMessagesKey]);
 
   const handleNavigateToPreviousUserMessage = useCallback(() => {
+    if (isIndexMode) {
+      const range = getVisibleRange!();
+      const indices = userIndicesKey ? userIndicesKey.split(',').map(Number) : [];
+      if (!range) {
+        return;
+      }
+      // indices are ascending; pick the largest one strictly above the visible range
+      let target = -1;
+      for (const index of indices) {
+        if (index < range.startIndex) {
+          target = index;
+        } else {
+          break;
+        }
+      }
+      if (target !== -1) {
+        scrollToIndex?.(target);
+      }
+      return;
+    }
+
     const container = containerRef.current;
     if (!container || (!scrollToMessageByElement && !scrollToMessageById)) {
       return;
@@ -100,9 +145,23 @@ export const useUserMessageNavigation = ({
         break;
       }
     }
-  }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
+  }, [isIndexMode, getVisibleRange, scrollToIndex, userIndicesKey, containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   const handleNavigateToNextUserMessage = useCallback(() => {
+    if (isIndexMode) {
+      const range = getVisibleRange!();
+      const indices = userIndicesKey ? userIndicesKey.split(',').map(Number) : [];
+      if (!range) {
+        return;
+      }
+      // indices are ascending; pick the first one strictly below the visible range
+      const target = indices.find((index) => index > range.endIndex);
+      if (target !== undefined) {
+        scrollToIndex?.(target);
+      }
+      return;
+    }
+
     const container = containerRef.current;
     if (!container || (!scrollToMessageByElement && !scrollToMessageById)) {
       return;
@@ -125,7 +184,7 @@ export const useUserMessageNavigation = ({
         break;
       }
     }
-  }, [containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
+  }, [isIndexMode, getVisibleRange, scrollToIndex, userIndicesKey, containerRef, scrollToMessageByElement, scrollToMessageById, userMessagesKey]);
 
   useEffect(() => {
     const container = containerRef.current;
