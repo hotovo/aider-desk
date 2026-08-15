@@ -158,6 +158,16 @@ describe('Power Tools - grep functionality', () => {
 
       expect(getLastSpawnArgs()).not.toContain('-C');
     });
+
+    it('should cap line length with --max-columns to bound huge lines', async () => {
+      setSpawnOutput([]);
+      await execGrep('*.min.js', 'searchTerm');
+
+      const args = getLastSpawnArgs();
+      expect(args).toContain('--max-columns');
+      expect(args[args.indexOf('--max-columns') + 1]).toBe('2000');
+      expect(args).toContain('--max-columns-preview');
+    });
   });
 
   describe('output parsing and formatting', () => {

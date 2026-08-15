@@ -1,6 +1,9 @@
 import os, { tmpdir } from 'os';
 import fs from 'fs/promises';
 import path from 'path';
+import { createReadStream, createWriteStream } from 'fs';
+import readline from 'readline';
+import { StringDecoder } from 'string_decoder';
 
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
@@ -56,8 +59,229 @@ export const expandTilde = (filePath: string): string => {
   return filePath;
 };
 
+const ACCUMULATOR_HEAD_CHARS = 48 * 1024;
+const ACCUMULATOR_TAIL_CHARS = 48 * 1024;
+const ACCUMULATOR_SPILL_THRESHOLD_CHARS = ACCUMULATOR_HEAD_CHARS + ACCUMULATOR_TAIL_CHARS;
+const ACCUMULATOR_SPILL_MAX_BYTES = 100 * 1024 * 1024;
+
+/**
+ * Accumulates process output with a constant memory footprint.
+ *
+ * Keeps the first/last slices of the output in memory and spills the full
+ * content to a temporary file once it exceeds the in-memory threshold, so
+ * commands producing gigabytes of output cannot exhaust the V8 heap.
+ */
+export class BoundedOutputAccumulator {
+  private decoder = new StringDecoder('utf8');
+  private buffered = '';
+  private head = '';
+  private tail = '';
+  private totalChars = 0;
+  private spillFilePath: string | null = null;
+  private spillStream: ReturnType<typeof createWriteStream> | null = null;
+  private spillBytes = 0;
+  private spillOverflowed = false;
+  private spillFailed = false;
+  private closed = false;
+
+  append(chunk: Buffer | string): void {
+    if (this.closed) {
+      return;
+    }
+    const text = typeof chunk === 'string' ? chunk : this.decoder.write(chunk);
+    this.appendText(text);
+  }
+
+  private appendText(text: string): void {
+    if (!text) {
+      return;
+    }
+    this.totalChars += text.length;
+
+    if (this.spillStream || this.spillFailed) {
+      this.tail = (this.tail + text).slice(-ACCUMULATOR_TAIL_CHARS);
+      this.writeToSpill(text);
+      return;
+    }
+
+    if (this.totalChars <= ACCUMULATOR_SPILL_THRESHOLD_CHARS) {
+      this.buffered += text;
+      return;
+    }
+
+    const fullSoFar = this.buffered + text;
+    this.buffered = '';
+    this.head = fullSoFar.slice(0, ACCUMULATOR_HEAD_CHARS);
+    this.tail = fullSoFar.slice(-ACCUMULATOR_TAIL_CHARS);
+    this.startSpill(fullSoFar);
+  }
+
+  private startSpill(initialContent: string): void {
+    const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
+    const spillPath = path.join(tmpdir(), `aider-desk-tool-output-${id}.log`);
+    try {
+      const stream = createWriteStream(spillPath, { encoding: 'utf8' });
+      stream.on('error', () => {
+        this.spillFailed = true;
+        this.spillStream = null;
+      });
+      this.spillFilePath = spillPath;
+      this.spillStream = stream;
+      this.writeToSpill(initialContent);
+    } catch {
+      this.spillFailed = true;
+      this.spillStream = null;
+      this.spillFilePath = null;
+    }
+  }
+
+  private writeToSpill(text: string): void {
+    const stream = this.spillStream;
+    if (!stream || this.spillOverflowed || this.spillFailed) {
+      return;
+    }
+    this.spillBytes += Buffer.byteLength(text, 'utf8');
+    if (this.spillBytes > ACCUMULATOR_SPILL_MAX_BYTES) {
+      this.spillOverflowed = true;
+      this.spillStream = null;
+      stream.end();
+      return;
+    }
+    stream.write(text);
+  }
+
+  didSpill(): boolean {
+    return this.spillFilePath !== null && !this.spillFailed;
+  }
+
+  getSpillFilePath(): string | null {
+    return this.didSpill() ? this.spillFilePath : null;
+  }
+
+  getTotalChars(): number {
+    return this.totalChars;
+  }
+
+  getPreview(maxChars: number): string {
+    const current = this.buffered || this.tail;
+    if (current.length <= maxChars) {
+      return current;
+    }
+    return `…[${current.length - maxChars} earlier characters omitted]\n${current.slice(-maxChars)}`;
+  }
+
+  async finish(): Promise<string> {
+    this.closed = true;
+    const remaining = this.decoder.end();
+    this.appendText(remaining);
+
+    if (this.spillStream) {
+      const stream = this.spillStream;
+      this.spillStream = null;
+      await new Promise<void>((resolve) => {
+        const failSafe = setTimeout(resolve, 5000);
+        failSafe.unref?.();
+        stream.once('finish', () => resolve());
+        stream.once('close', () => resolve());
+        stream.once('error', () => resolve());
+        stream.end();
+      });
+    }
+
+    return this.composeResult();
+  }
+
+  private composeResult(): string {
+    if (this.totalChars <= ACCUMULATOR_SPILL_THRESHOLD_CHARS) {
+      return this.buffered;
+    }
+
+    const omitted = this.totalChars - this.head.length - this.tail.length;
+    let note = `Output truncated: ${omitted} of ${this.totalChars} characters omitted.`;
+    if (this.didSpill()) {
+      note += ` Full output saved to ${this.spillFilePath}.`;
+      if (this.spillOverflowed) {
+        note += ` (saved output itself capped at ${Math.floor(ACCUMULATOR_SPILL_MAX_BYTES / (1024 * 1024))} MB)`;
+      }
+    } else {
+      note += ' Full output could not be saved.';
+    }
+
+    return this.head + `\n\n[${note}]\n\n` + this.tail;
+  }
+
+  async dispose(): Promise<void> {
+    this.closed = true;
+    const filePath = this.spillFilePath;
+    if (this.spillStream) {
+      const stream = this.spillStream;
+      this.spillStream = null;
+      await new Promise<void>((resolve) => {
+        let settled = false;
+        const done = (): void => {
+          if (!settled) {
+            settled = true;
+            resolve();
+          }
+        };
+        stream.once('close', done);
+        stream.once('error', done);
+        stream.destroy();
+      });
+    }
+    if (filePath) {
+      this.spillFilePath = null;
+      try {
+        await fs.unlink(filePath);
+      } catch {
+        // file may not exist
+      }
+    }
+  }
+}
+
+export const TOOL_RESULT_MAX_JSON_CHARS = 200_000;
+
+/**
+ * Serializes a value to JSON with a hard character budget. When the natural
+ * serialization exceeds the budget, returns a valid-JSON envelope containing
+ * a preview instead of the oversized payload.
+ */
+export const stringifyWithBudget = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): { text: string; truncated: boolean } => {
+  let serialized: string;
+  try {
+    serialized = JSON.stringify(value);
+  } catch {
+    return { text: JSON.stringify({ truncated: true, note: 'Value could not be serialized to JSON.' }), truncated: true };
+  }
+
+  if (serialized === undefined) {
+    return { text: 'undefined', truncated: false };
+  }
+
+  if (serialized.length <= maxChars) {
+    return { text: serialized, truncated: false };
+  }
+
+  return {
+    text: JSON.stringify({
+      truncated: true,
+      note: 'Content truncated due to size.',
+      originalLength: serialized.length,
+      preview: serialized.slice(0, maxChars),
+    }),
+    truncated: true,
+  };
+};
+
+export const safeJsonStringify = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): string => {
+  return stringifyWithBudget(value, maxChars).text;
+};
+
 /**
  * Reads a file and returns its content with optional line numbering and line range.
+ * Files larger than LARGE_FILE_READ_THRESHOLD_BYTES are streamed instead of loaded
+ * into memory in full, keeping the heap footprint bounded.
  * @param absolutePath - The absolute path to the file
  * @param withLines - Whether to return the file content with line numbers in format "lineNumber|content"
  * @param lineOffset - The starting line number (0-based) to begin reading from
@@ -66,6 +290,9 @@ export const expandTilde = (filePath: string): string => {
  * @returns The file content as a string, formatted according to the parameters
  * @throws Error if the file is binary or cannot be read
  */
+export const LARGE_FILE_READ_THRESHOLD_BYTES = 10 * 1024 * 1024;
+const LARGE_FILE_BINARY_SNIFF_BYTES = 8192;
+
 export const readFileContent = async (
   absolutePath: string,
   withLines = false,
@@ -73,6 +300,15 @@ export const readFileContent = async (
   lineLimit = 1000,
   sizeLimit = Math.max(50, 0.05 * lineLimit),
 ): Promise<string> => {
+  try {
+    const stat = await fs.stat(absolutePath);
+    if (stat.size > LARGE_FILE_READ_THRESHOLD_BYTES) {
+      return readLargeFileContent(absolutePath, withLines, lineOffset, lineLimit, sizeLimit);
+    }
+  } catch {
+    // stat failed, fall through to regular readFile path
+  }
+
   const fileContentBuffer = await fs.readFile(absolutePath);
 
   if (isBinary(absolutePath, fileContentBuffer)) {
@@ -115,6 +351,74 @@ export const readFileContent = async (
   return resultLines.join('\n');
 };
 
+const readLargeFileContent = async (absolutePath: string, withLines: boolean, lineOffset: number, lineLimit: number, sizeLimit: number): Promise<string> => {
+  const headBuffer = Buffer.alloc(LARGE_FILE_BINARY_SNIFF_BYTES);
+  const headFd = await fs.open(absolutePath, 'r');
+  try {
+    const { bytesRead } = await headFd.read(headBuffer, 0, LARGE_FILE_BINARY_SNIFF_BYTES, 0);
+    if (isBinary(absolutePath, headBuffer.subarray(0, bytesRead))) {
+      throw new Error('Binary files cannot be read.');
+    }
+  } finally {
+    await headFd.close();
+  }
+
+  const startIndex = Math.max(0, lineOffset);
+  const collected: string[] = [];
+  let moreLinesExist = false;
+  let currentIndex = 0;
+
+  await new Promise<void>((resolve, reject) => {
+    const input = createReadStream(absolutePath, { encoding: 'utf8' });
+    const rl = readline.createInterface({ input, crlfDelay: Infinity });
+
+    const finish = () => resolve();
+
+    input.on('error', reject);
+    rl.on('error', reject);
+    rl.on('line', (line: string) => {
+      if (currentIndex < startIndex) {
+        currentIndex++;
+        return;
+      }
+      if (collected.length >= lineLimit) {
+        moreLinesExist = true;
+        rl.close();
+        input.destroy();
+        finish();
+        return;
+      }
+      collected.push(line);
+      currentIndex++;
+    });
+    rl.on('close', finish);
+  });
+
+  let resultLines: string[];
+
+  if (withLines) {
+    resultLines = collected.map((line, index) => `${startIndex + index + 1}|${line}`);
+  } else {
+    resultLines = collected;
+  }
+
+  if (moreLinesExist) {
+    resultLines = [...resultLines, '...', `Total lines in the file: ${startIndex + collected.length}+ (exact count skipped for large file)`];
+  }
+
+  let result = resultLines.join('\n');
+  const resultSizeKB = Buffer.byteLength(result, 'utf8') / 1024;
+
+  if (resultSizeKB > sizeLimit) {
+    const truncatedBytes = Buffer.from(result, 'utf8').subarray(0, Math.floor(sizeLimit * 1024));
+    result =
+      truncatedBytes.toString('utf8') +
+      `\n\nFile size limit (${sizeLimit.toFixed(1)} KB) exceeded. Use shell commands (e.g., head, tail, grep) to read specific parts.`;
+  }
+
+  return result;
+};
+
 export const truncateToolResult = async (
   content: string,
   maxLines = 1000,
@@ -126,7 +430,12 @@ export const truncateToolResult = async (
   const lines = content.split('\n');
   const sizeBytes = Buffer.byteLength(content, 'utf8');
   const sizeKB = sizeBytes / 1024;
-  const tokenCount = maxTokens === Infinity ? 0 : encode(content).length;
+
+  // skip the expensive tokenizer pass when a cheaper limit is already exceeded
+  let tokenCount = 0;
+  if (lines.length <= maxLines && sizeKB <= maxSizeKB && maxTokens !== Infinity) {
+    tokenCount = encode(content).length;
+  }
 
   if (lines.length <= maxLines && sizeKB <= maxSizeKB && tokenCount <= maxTokens) {
     return content;

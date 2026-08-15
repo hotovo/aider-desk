@@ -4,7 +4,7 @@ import os from 'os';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { readFileContent, truncateToolResult } from '../utils';
+import { BoundedOutputAccumulator, readFileContent, safeJsonStringify, stringifyWithBudget, truncateToolResult } from '../utils';
 
 describe('truncateToolResult', () => {
   it('should return content unchanged when within both limits', async () => {
@@ -410,5 +410,151 @@ describe('readFileContent', () => {
 
       expect(result).toBe(content);
     });
+  });
+});
+
+describe('BoundedOutputAccumulator', () => {
+  it('returns exact content when below the spill threshold', async () => {
+    const acc = new BoundedOutputAccumulator();
+    acc.append(Buffer.from('hello '));
+    acc.append(Buffer.from('world'));
+
+    expect(acc.getTotalChars()).toBe(11);
+    expect(await acc.finish()).toBe('hello world');
+    expect(acc.didSpill()).toBe(false);
+  });
+
+  it('decodes multi-byte characters split across chunks', async () => {
+    const acc = new BoundedOutputAccumulator();
+    const bytes = Buffer.from('héllo 😀 world', 'utf8');
+    const splitAt = bytes.indexOf(0xa9); // byte inside the 'é' sequence
+    acc.append(bytes.subarray(0, splitAt));
+    acc.append(bytes.subarray(splitAt));
+
+    expect(await acc.finish()).toBe('héllo 😀 world');
+  });
+
+  it('keeps bounded head and tail after overflow and spills full output to a file', async () => {
+    const acc = new BoundedOutputAccumulator();
+    const headText = 'A'.repeat(200 * 1024);
+    const middle = 'B'.repeat(200 * 1024);
+    const tailText = 'C'.repeat(200 * 1024);
+    acc.append(Buffer.from(headText + middle + tailText));
+
+    expect(acc.didSpill()).toBe(true);
+    const spillPath = acc.getSpillFilePath();
+    expect(spillPath).toBeTruthy();
+
+    const result = await acc.finish();
+
+    expect(result.length).toBeLessThan(110 * 1024);
+    expect(result.slice(0, 1000)).toBe('A'.repeat(1000));
+    expect(result.slice(-1000)).toBe('C'.repeat(1000));
+    expect(result).toContain('characters omitted');
+    expect(result).toContain('Full output saved to');
+
+    const spilled = await fs.readFile(spillPath as string, 'utf8');
+    expect(spilled).toBe(headText + middle + tailText);
+  });
+
+  it('produces bounded previews while accumulating', () => {
+    const acc = new BoundedOutputAccumulator();
+    acc.append(Buffer.from('x'.repeat(50 * 1024)));
+
+    const preview = acc.getPreview(8 * 1024);
+    expect(preview.length).toBeLessThanOrEqual(9 * 1024);
+    expect(preview).toContain('earlier characters omitted');
+    expect(preview.endsWith('x'.repeat(8 * 1024))).toBe(true);
+  });
+
+  it('removes the spill file on dispose', async () => {
+    const acc = new BoundedOutputAccumulator();
+    acc.append(Buffer.from('z'.repeat(300 * 1024)));
+    const spillPath = acc.getSpillFilePath();
+    expect(spillPath).toBeTruthy();
+
+    await acc.dispose();
+
+    await expect(fs.access(spillPath as string)).rejects.toThrow();
+  });
+});
+
+describe('safeJsonStringify', () => {
+  it('returns natural JSON when within budget', () => {
+    expect(safeJsonStringify({ a: 1 })).toBe('{"a":1}');
+    expect(safeJsonStringify('plain')).toBe('"plain"');
+  });
+
+  it('returns a valid JSON envelope when over budget', () => {
+    const text = safeJsonStringify({ big: 'x'.repeat(300_000) }, 1000);
+
+    const parsed = JSON.parse(text) as { truncated: boolean; preview: string; originalLength: number };
+    expect(parsed.truncated).toBe(true);
+    expect(parsed.originalLength).toBeGreaterThan(300_000);
+    expect(parsed.preview.length).toBeLessThanOrEqual(1000);
+    expect(parsed.preview).toContain('"big"');
+  });
+
+  it('handles circular references', () => {
+    const value: Record<string, unknown> = {};
+    value.self = value;
+
+    const text = safeJsonStringify(value);
+
+    expect(JSON.parse(text)).toEqual({ truncated: true, note: 'Value could not be serialized to JSON.' });
+  });
+
+  it('handles undefined values', () => {
+    expect(safeJsonStringify(undefined)).toBe('undefined');
+  });
+});
+
+describe('stringifyWithBudget', () => {
+  it('reports whether truncation occurred', () => {
+    expect(stringifyWithBudget('short').truncated).toBe(false);
+    expect(stringifyWithBudget('x'.repeat(100), 10).truncated).toBe(true);
+  });
+});
+
+describe('readFileContent large files', () => {
+  const largeTmpDir = path.join(os.tmpdir(), 'aider-desk-test-readFileContent-large');
+
+  afterEach(async () => {
+    await fs.rm(largeTmpDir, { recursive: true, force: true });
+  });
+
+  const createLargeFile = async (): Promise<[string, string[]]> => {
+    await fs.mkdir(largeTmpDir, { recursive: true });
+    const filePath = path.join(largeTmpDir, 'large.txt');
+    const lines = Array.from({ length: 220_000 }, (_, i) => `line ${i} ${'p'.repeat(40)}`);
+    await fs.writeFile(filePath, lines.join('\n'), 'utf8');
+    return [filePath, lines];
+  };
+
+  it('streams large files instead of loading them fully', async () => {
+    const [filePath, lines] = await createLargeFile();
+
+    const result = await readFileContent(filePath, false, 0, 500);
+
+    const resultLines = result.split('\n');
+    expect(resultLines[0]).toBe(lines[0]);
+    expect(resultLines[499]).toBe(lines[499]);
+    expect(result).toContain('exact count skipped for large file');
+  });
+
+  it('applies lineOffset when streaming large files', async () => {
+    const [filePath] = await createLargeFile();
+
+    const result = await readFileContent(filePath, false, 100_000, 5);
+
+    expect(result.split('\n')[0]).toBe(`line 100000 ${'p'.repeat(40)}`);
+  });
+
+  it('throws for large binary files', async () => {
+    await fs.mkdir(largeTmpDir, { recursive: true });
+    const filePath = path.join(largeTmpDir, 'large.bin');
+    await fs.writeFile(filePath, Buffer.alloc(11 * 1024 * 1024, 0));
+
+    await expect(readFileContent(filePath)).rejects.toThrow('Binary files cannot be read.');
   });
 });

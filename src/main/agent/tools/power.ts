@@ -31,7 +31,7 @@ import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellInitCommand, getShellPath } from '@/utils/shell';
-import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
+import { BoundedOutputAccumulator, expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 
 /**
@@ -40,6 +40,9 @@ import { RIPGREP_BINARY_PATH } from '@/constants';
  * New operations on the same file must wait for the previous one to complete.
  */
 const fileLocks = new Map<string, Promise<unknown>>();
+
+const BASH_STREAMING_PREVIEW_CHARS = 8 * 1024;
+const BASH_STREAMING_UPDATE_INTERVAL_MS = 150;
 
 /**
  * Acquires a lock for a file and executes the operation.
@@ -442,7 +445,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       }
 
       try {
-        const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never'];
+        const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never', '--max-columns', '2000', '--max-columns-preview'];
 
         if (!caseSensitive) {
           rgArgs.push('-i');
@@ -766,13 +769,16 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
       };
 
       return await new Promise((resolve) => {
-        let stdout = '';
-        let stderr = '';
+        const stdoutAccumulator = new BoundedOutputAccumulator();
+        const stderrAccumulator = new BoundedOutputAccumulator();
         let exitCode = 0;
+        let stderrOverride: string | null = null;
         let timeoutHandle: NodeJS.Timeout | null = null;
         let isResolved = false;
         let childProcess: ChildProcess | null = null;
         let abortListener: (() => void) | null = null;
+        let lastStreamingUpdateAt = 0;
+        let streamingUpdateQueued = false;
 
         const cleanup = () => {
           if (timeoutHandle) {
@@ -785,6 +791,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           }
         };
 
+        const finishOutput = async (accumulator: BoundedOutputAccumulator): Promise<string> => {
+          const content = await accumulator.finish();
+          const didSpill = accumulator.didSpill();
+          return truncateToolResult(content, 1000, 50, 10000, !didSpill, didSpill ? `Full output saved to ${accumulator.getSpillFilePath()}.` : undefined);
+        };
+
         const resolveWithResult = async () => {
           if (isResolved) {
             return;
@@ -792,10 +804,35 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           isResolved = true;
           cleanup();
 
-          const truncatedStdout = await truncateToolResult(stdout, 1000, 50, 10000);
-          const truncatedStderr = await truncateToolResult(stderr, 1000, 50, 10000);
+          const truncatedStdout = await finishOutput(stdoutAccumulator);
+          const truncatedStderr = stderrOverride ?? (await finishOutput(stderrAccumulator));
 
           resolve({ stdout: truncatedStdout, stderr: truncatedStderr, exitCode });
+        };
+
+        const sendStreamingUpdate = () => {
+          const now = Date.now();
+          if (now - lastStreamingUpdateAt < BASH_STREAMING_UPDATE_INTERVAL_MS) {
+            streamingUpdateQueued = true;
+            return;
+          }
+          lastStreamingUpdateAt = now;
+          streamingUpdateQueued = false;
+          task.addToolMessage(
+            toolCallId,
+            TOOL_GROUP_NAME,
+            TOOL_BASH,
+            { command, cwd, timeout },
+            JSON.stringify({
+              stdout: stdoutAccumulator.getPreview(BASH_STREAMING_PREVIEW_CHARS),
+              stderr: stderrAccumulator.getPreview(BASH_STREAMING_PREVIEW_CHARS),
+              exitCode: null,
+            }),
+            undefined,
+            promptContext,
+            false,
+            false, // not finished yet
+          );
         };
 
         abortListener = () => {
@@ -808,7 +845,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           }
 
           // Use the standard resolution method with proper type
-          stderr = 'Operation was cancelled by user.';
+          stderrOverride = 'Operation was cancelled by user.';
           exitCode = 130; // Standard cancel exit code (128 + SIGINT=2)
           void resolveWithResult();
         };
@@ -837,7 +874,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
             if (childProcess?.pid) {
               killProcess(childProcess.pid);
             }
-            stderr = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
+            stderrOverride = `Error: Command timed out after ${timeout}ms. Consider increasing the timeout parameter.`;
             exitCode = 124;
             void resolveWithResult();
           }, timeout);
@@ -847,21 +884,12 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
               return;
             }
 
-            const chunk = data.toString('utf-8');
-            stdout += chunk;
+            stdoutAccumulator.append(data);
 
-            // Send streaming update
-            task.addToolMessage(
-              toolCallId,
-              TOOL_GROUP_NAME,
-              TOOL_BASH,
-              { command, cwd, timeout },
-              JSON.stringify({ stdout, stderr: '', exitCode: null }),
-              undefined,
-              promptContext,
-              false,
-              false, // not finished yet
-            );
+            // Send throttled bounded streaming update
+            if (streamingUpdateQueued || Date.now() - lastStreamingUpdateAt >= BASH_STREAMING_UPDATE_INTERVAL_MS) {
+              sendStreamingUpdate();
+            }
           });
 
           childProcess.stderr?.on('data', (data: Buffer) => {
@@ -869,26 +897,17 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
               return;
             }
 
-            const chunk = data.toString('utf-8');
-            stderr += chunk;
+            stderrAccumulator.append(data);
 
-            // Send streaming update
-            task.addToolMessage(
-              toolCallId,
-              TOOL_GROUP_NAME,
-              TOOL_BASH,
-              { command, cwd, timeout },
-              JSON.stringify({ stdout, stderr, exitCode: null }),
-              undefined,
-              promptContext,
-              false,
-              false, // not finished yet
-            );
+            // Send throttled bounded streaming update
+            if (streamingUpdateQueued || Date.now() - lastStreamingUpdateAt >= BASH_STREAMING_UPDATE_INTERVAL_MS) {
+              sendStreamingUpdate();
+            }
           });
 
           childProcess.on('error', (error: Error) => {
             if (!isResolved) {
-              stderr = error.message;
+              stderrOverride = error.message;
               exitCode = 1;
               void resolveWithResult();
             }
@@ -908,7 +927,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           });
         } catch (error: unknown) {
           if (!isResolved) {
-            stderr = error instanceof Error ? error.message : String(error);
+            stderrOverride = error instanceof Error ? error.message : String(error);
             exitCode = 1;
             void resolveWithResult();
           }

@@ -216,7 +216,7 @@ export class McpManager {
         const abortSignal = options.abortSignal ? AbortSignal.any([options.abortSignal, timeoutSignal]) : timeoutSignal;
         const response = await originalExecute(args, { ...options, abortSignal });
 
-        logger.debug(`Tool ${toolName} returned response`, { response });
+        logger.debug(`Tool ${toolName} returned response`, this.describeToolResponse(response));
 
         if (response && typeof response === 'object' && 'content' in response && Array.isArray(response.content)) {
           for (const part of response.content) {
@@ -254,6 +254,28 @@ export class McpManager {
       ...toolDef,
       execute,
       ...(toModelOutput ? { toModelOutput } : {}),
+    };
+  }
+
+  private describeToolResponse(response: CallToolResult): Record<string, unknown> {
+    const parts = Array.isArray(response.content) ? response.content : [];
+    let totalTextChars = 0;
+    const previews: string[] = [];
+
+    for (const part of parts) {
+      if (part && typeof part === 'object' && 'text' in part && typeof part.text === 'string') {
+        totalTextChars += part.text.length;
+        if (previews.length < 2) {
+          previews.push(part.text.substring(0, 500));
+        }
+      }
+    }
+
+    return {
+      isError: response.isError ?? false,
+      parts: parts.length,
+      totalTextChars,
+      previews,
     };
   }
 

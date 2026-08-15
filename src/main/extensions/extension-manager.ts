@@ -81,6 +81,7 @@ import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { ApprovalManager } from '@/agent/tools/approval-manager';
+import { stringifyWithBudget, truncateToolResult } from '@/agent/utils';
 import { Project } from '@/project';
 import { Task } from '@/task';
 
@@ -165,6 +166,23 @@ export type ExtensionEventMap = {
   onBeforeCommit: BeforeCommitEvent;
   onAfterCommit: AfterCommitEvent;
   onInterrupted: InterruptedEvent;
+};
+
+const EXTENSION_TOOL_RESULT_MAX_CHARS = 200_000;
+
+const boundExtensionToolResult = async (result: unknown): Promise<unknown> => {
+  if (typeof result === 'string' && result.length > EXTENSION_TOOL_RESULT_MAX_CHARS) {
+    return await truncateToolResult(result, 1000, 200, 20_000);
+  }
+
+  if (result !== null && typeof result === 'object') {
+    const { text, truncated } = stringifyWithBudget(result, EXTENSION_TOOL_RESULT_MAX_CHARS);
+    if (truncated) {
+      return JSON.parse(text);
+    }
+  }
+
+  return result;
 };
 
 export class ExtensionManager {
@@ -1097,7 +1115,7 @@ export class ExtensionManager {
           );
 
           try {
-            return await tool.execute(input, abortSignal || options.abortSignal, context, allToolsInternal);
+            return await boundExtensionToolResult(await tool.execute(input, abortSignal || options.abortSignal, context, allToolsInternal));
           } catch (error) {
             // Error isolation - log and return error message
             const errorMsg = error instanceof Error ? error.message : String(error);

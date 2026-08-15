@@ -8,6 +8,7 @@
 - replaced File Viewer with File Editor
 - added Command Palette
 - focusing prompt field after closing overlay dialogs
+- bound tool outputs and stream large file reads to prevent memory exhaustion
 
 ## [0.78.0]
 

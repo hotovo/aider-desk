@@ -8,6 +8,9 @@ import { isElectron } from '@/app';
 
 type WebScrapeFormat = 'markdown' | 'html' | 'raw';
 
+const MAX_SCRAPE_CONTENT_BYTES = 10 * 1024 * 1024;
+const MAX_SCRAPE_CONTENT_CHARS = 10 * 1024 * 1024;
+
 export class WebScraper {
   async scrape(url: string, timeout: number = 60000, abortSignal?: AbortSignal, format: WebScrapeFormat = 'markdown'): Promise<string> {
     if (format === 'raw') {
@@ -66,7 +69,12 @@ export class WebScraper {
       // Get page content with timeout and abort signal
       const content = await Promise.race([
         window.webContents.executeJavaScript(`
-          document.documentElement.outerHTML;
+          (() => {
+            const html = document.documentElement.outerHTML;
+            return html.length > ${MAX_SCRAPE_CONTENT_CHARS}
+              ? html.substring(0, ${MAX_SCRAPE_CONTENT_CHARS}) + '\\n<!-- content truncated at ${MAX_SCRAPE_CONTENT_CHARS} characters -->'
+              : html;
+          })()
         `),
         timeoutPromise,
         abortPromise,
@@ -158,16 +166,8 @@ export class WebScraper {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      const contentType = response.headers.get('content-type') || '';
-
-      // If it's HTML, return the text content
-      if (contentType.includes('text/html')) {
-        const text = await response.text();
-        return text;
-      }
-
-      // For other content types, return as text
-      return await response.text();
+      // Return the bounded text content for HTML and other content types
+      return await this.readBodyWithLimit(response, MAX_SCRAPE_CONTENT_BYTES);
     } catch (error) {
       clearTimeout(timeoutId);
       if (isAbortError(error)) {
@@ -175,6 +175,42 @@ export class WebScraper {
       }
       return `Error: ${error instanceof Error ? error.message : String(error)}`;
     }
+  }
+
+  private async readBodyWithLimit(response: Response, maxBytes: number): Promise<string> {
+    const reader = (response.body as unknown as ReadableStream<Uint8Array> | null)?.getReader?.();
+    if (!reader) {
+      // no streaming body available - fall back to full text with post-hoc cap
+      const text = await response.text();
+      return text.length > maxBytes ? text.slice(0, maxBytes) + `\n[Content truncated at ${maxBytes} bytes]` : text;
+    }
+
+    const chunks: Buffer[] = [];
+    let received = 0;
+    let truncated = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      const buf = Buffer.from(value);
+      if (received + buf.length > maxBytes) {
+        chunks.push(buf.subarray(0, maxBytes - received));
+        received = maxBytes;
+        truncated = true;
+        await reader.cancel().catch(() => {});
+        break;
+      }
+      chunks.push(buf);
+      received += buf.length;
+    }
+
+    let text = Buffer.concat(chunks).toString('utf8');
+    if (truncated) {
+      text += `\n[Content truncated at ${Math.floor(maxBytes / (1024 * 1024))} MB]`;
+    }
+    return text;
   }
 
   private looksLikeHTML(content: string): boolean {

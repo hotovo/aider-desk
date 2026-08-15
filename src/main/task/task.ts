@@ -95,6 +95,7 @@ import {
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
+import { safeJsonStringify } from '@/agent/utils';
 import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -2045,7 +2046,7 @@ export class Task {
           SUBAGENTS_TOOL_GROUP_NAME,
           SUBAGENTS_TOOL_RUN_TASK,
           toolInput,
-          JSON.stringify(cancelledToolMessage.content[0].output),
+          safeJsonStringify(cancelledToolMessage.content[0].output),
           undefined,
           result.promptContext,
         );
@@ -2061,7 +2062,7 @@ export class Task {
           SUBAGENTS_TOOL_GROUP_NAME,
           SUBAGENTS_TOOL_RUN_TASK,
           toolInput,
-          JSON.stringify({ type: 'error-text', value: result.error }),
+          safeJsonStringify({ type: 'error-text', value: result.error }),
           undefined,
           result.promptContext,
         );
@@ -2111,7 +2112,7 @@ export class Task {
         SUBAGENTS_TOOL_GROUP_NAME,
         SUBAGENTS_TOOL_RUN_TASK,
         toolInput,
-        JSON.stringify(toolResultMessage.content[0].output),
+        safeJsonStringify(toolResultMessage.content[0].output),
         undefined,
         result.promptContext,
       );

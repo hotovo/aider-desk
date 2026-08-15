@@ -233,4 +233,70 @@ describe('Power Tools - bash shell initialization', () => {
       expect(fullCommand.indexOf('direnv export bash')).toBeLessThan(fullCommand.indexOf('direnv status'));
     });
   });
+  describe('output bounding', () => {
+    const emitThenExit = (stdoutChunks: string[]) => {
+      vi.mocked(spawn).mockImplementation(((_shell: string, _args: string[], _options: any) => {
+        const cp = new EventEmitter() as any;
+        cp.stdout = new EventEmitter();
+        cp.stderr = new EventEmitter();
+        cp.pid = 12345;
+        cp.kill = vi.fn();
+
+        setTimeout(() => {
+          for (const chunk of stdoutChunks) {
+            cp.stdout.emit('data', Buffer.from(chunk));
+          }
+          cp.emit('exit', 0, null);
+          cp.emit('close', 0, null);
+        }, 0);
+
+        return cp;
+      }) as any);
+    };
+
+    it('sends bounded streaming updates instead of the full accumulated output', async () => {
+      emitThenExit(Array.from({ length: 20 }, () => 'x'.repeat(2048) + '\n'));
+
+      const result = await execBash('big-output');
+
+      expect(result.exitCode).toBe(0);
+
+      const streamingResponses = mockTask.addToolMessage.mock.calls
+        .map((call: any[]) => call[4])
+        .filter((response: unknown): response is string => typeof response === 'string')
+        .map((response: string) => JSON.parse(response))
+        .filter((parsed: any) => parsed && typeof parsed === 'object' && parsed.exitCode === null);
+
+      expect(streamingResponses.length).toBeGreaterThan(0);
+      for (const parsed of streamingResponses) {
+        expect(parsed.stdout.length).toBeLessThanOrEqual(9 * 1024);
+      }
+    });
+
+    it('bounds the final result for huge outputs and saves the full output to a file', async () => {
+      emitThenExit(Array.from({ length: 2500 }, () => 'y'.repeat(2048) + '\n'));
+
+      const result = await execBash('huge-output');
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout.length).toBeLessThan(60 * 1024);
+      expect(result.stdout).toContain('Full output saved to');
+      expect(result.stdout).toContain('y'.repeat(100));
+
+      const spillMatch = result.stdout.match(/Full output saved to (.+)\./);
+      expect(spillMatch).toBeTruthy();
+      const spillStat = await import('fs/promises').then((fsp) => fsp.stat(spillMatch![1]));
+      expect(spillStat.size).toBeGreaterThan(4 * 1024 * 1024);
+      await import('fs/promises').then((fsp) => fsp.unlink(spillMatch![1]));
+    });
+
+    it('returns small outputs unchanged', async () => {
+      emitThenExit(['hello\n', 'world\n']);
+
+      const result = await execBash('small-output');
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('hello\nworld\n');
+    });
+  });
 });
