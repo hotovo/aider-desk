@@ -348,6 +348,13 @@ const ReadFileSchema = z.object({
   filePath: z.string().min(1, 'File path is required'),
 });
 
+const SaveFileSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+  filePath: z.string().min(1, 'File path is required'),
+  content: z.string(),
+});
+
 const GenerateCommitMessageSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -1035,6 +1042,21 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, filePath } = parsed;
         const content = await this.eventsHandler.readFile(projectDir, taskId, filePath);
         res.status(200).json({ content });
+      }),
+    );
+
+    // Save file
+    router.post(
+      '/project/save-file',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(SaveFileSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, filePath, content } = parsed;
+        await this.eventsHandler.saveFile(projectDir, taskId, filePath, content);
+        res.status(200).json({ message: 'File saved' });
       }),
     );
 

@@ -117,6 +117,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     scrapeWeb: vi.fn((): Promise<void> => Promise.resolve()),
     initProjectRulesFile: vi.fn((_baseDir?: string, _taskId?: string, _args?: string): Promise<void> => Promise.resolve()),
     readFile: vi.fn((): Promise<string> => Promise.resolve('')),
+    saveFile: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Skills operations
     getSkills: vi.fn((): Promise<never[]> => Promise.resolve([])),

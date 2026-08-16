@@ -122,7 +122,7 @@ describe('FileEditorModal', () => {
     useFileEditorStore.setState({ projectsMap: new Map() });
   });
 
-  it('saves edited file content through applyEdits', async () => {
+  it('saves edited file content through saveFile', async () => {
     const api = createMockApi({ readFile: vi.fn(() => Promise.resolve('original')) });
     vi.mocked(useApi).mockReturnValue(api);
 
@@ -133,13 +133,9 @@ describe('FileEditorModal', () => {
     fireEvent.change(editor, { target: { value: 'updated' } });
     fireEvent.click(screen.getByRole('button', { name: 'common.save' }));
 
-    expect(api.applyEdits).toHaveBeenCalledWith('/project', 'task-1', [
-      {
-        path: 'src/file.ts',
-        original: 'original',
-        updated: 'updated',
-      },
-    ]);
+    await waitFor(() => {
+      expect(api.saveFile).toHaveBeenCalledWith('/project', 'task-1', 'src/file.ts', 'updated');
+    });
     expect(showSuccessNotification).toHaveBeenCalledWith('fileEditor.saved');
   });
 

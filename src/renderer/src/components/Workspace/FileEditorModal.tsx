@@ -533,7 +533,7 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   );
 
   const saveTab = useCallback(
-    (path: string) => {
+    async (path: string) => {
       const file = openFiles.find((openFile) => openFile.path === path);
       const tab = tabsStateRef.current[path];
       if (!file || !tab || tab.savedContent === null || tab.editorContent === null || tab.savedContent === tab.editorContent) {
@@ -541,13 +541,7 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
       }
 
       try {
-        api.applyEdits(baseDir, file.taskId, [
-          {
-            path,
-            original: tab.savedContent,
-            updated: tab.editorContent,
-          },
-        ]);
+        await api.saveFile(baseDir, file.taskId, path, tab.editorContent);
         setTabState(path, { ...tab, savedContent: tab.editorContent });
         return true;
       } catch (err) {
@@ -559,17 +553,17 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
     [api, baseDir, openFiles, setTabState, t],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!activePath) {
       return;
     }
-    if (saveTab(activePath)) {
+    if (await saveTab(activePath)) {
       showSuccessNotification(t('fileEditor.saved'));
     }
   }, [activePath, saveTab, t]);
 
-  const handleSaveAll = useCallback(() => {
-    const savedCount = openFiles.filter((file) => saveTab(file.path)).length;
+  const handleSaveAll = useCallback(async () => {
+    const savedCount = (await Promise.all(openFiles.map((file) => saveTab(file.path)))).filter(Boolean).length;
     if (savedCount > 0) {
       showSuccessNotification(t('fileEditor.savedAll', { count: savedCount }));
     }

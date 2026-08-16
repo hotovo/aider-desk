@@ -4160,7 +4160,7 @@ ${error.stderr}`,
     this.eventManager.sendWorktreeIntegrationStatusUpdated(this.project.baseDir, this.taskId, await this.getWorktreeIntegrationStatus());
   }
 
-  private async sendUpdatedFilesUpdated() {
+  public async sendUpdatedFilesUpdated() {
     const updatedFiles = await this.getUpdatedFiles();
     logger.debug('Sending updated files', {
       baseDir: this.project.baseDir,

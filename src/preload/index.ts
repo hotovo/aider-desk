@@ -102,6 +102,7 @@ const api: ApplicationAPI = {
   addFileToGit: (baseDir, taskId, filePath) => ipcRenderer.invoke('add-file-to-git', baseDir, taskId, filePath),
   restoreFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('restore-file', baseDir, taskId, filePath),
   readFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('read-file', baseDir, taskId, filePath),
+  saveFile: (baseDir, taskId, filePath, content) => ipcRenderer.invoke('save-file', baseDir, taskId, filePath, content),
   generateCommitMessage: (baseDir, taskId) => ipcRenderer.invoke('generate-commit-message', baseDir, taskId),
   commitChanges: (baseDir, taskId, message, amend) => ipcRenderer.invoke('commit-changes', baseDir, taskId, message, amend),
   cancelCommitChanges: (baseDir, taskId) => ipcRenderer.invoke('cancel-commit-changes', baseDir, taskId),

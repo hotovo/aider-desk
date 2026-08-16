@@ -1169,6 +1169,15 @@ export class BrowserApi implements ApplicationAPI {
     return response.content;
   }
 
+  async saveFile(baseDir: string, taskId: string, filePath: string, content: string): Promise<void> {
+    await this.post('/project/save-file', {
+      projectDir: baseDir,
+      taskId,
+      filePath,
+      content,
+    });
+  }
+
   listBranches(baseDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
     return this.get('/project/worktree/branches', {
       projectDir: baseDir,
