@@ -1,0 +1,12 @@
+{
+  "name": "git-log",
+  "version": "1.0.0",
+  "description": "Browse the git history of open projects with an IntelliJ IDEA-style log viewer",
+  "main": "index.ts",
+  "author": "AiderDesk",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@aiderdesk/extensions": ">=0.14.0"
+  }
+}
