@@ -589,6 +589,7 @@ export const THEMES = [
   'botanical-garden',
   'botanical-garden-dark',
   'obsidian',
+  'crimson',
 ] as const;
 export type Theme = (typeof THEMES)[number];
 
@@ -606,6 +607,7 @@ export const isCodeEditorDarkTheme = (theme: Theme) =>
     'neopunk',
     'ocean',
     'obsidian',
+    'crimson',
   ].includes(theme);
 
 export const FONTS = [
