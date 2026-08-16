@@ -67,6 +67,7 @@ export const CommandPaletteContent = () => {
   const [canScrollForMore, setCanScrollForMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const shouldScrollSelectionIntoViewRef = useRef(true);
   const allItems = useMemo(() => Array.from(items.values()), [items]);
 
   const visibleItems = useMemo(() => {
@@ -121,6 +122,11 @@ export const CommandPaletteContent = () => {
   }, [closePalette]);
 
   useLayoutEffect(() => {
+    if (!shouldScrollSelectionIntoViewRef.current) {
+      return;
+    }
+
+    shouldScrollSelectionIntoViewRef.current = false;
     const selected = listRef.current?.querySelector('[data-selected="true"]');
     selected?.scrollIntoView({ block: 'nearest' });
   }, [loadedItems, selectedIndex]);
@@ -166,6 +172,7 @@ export const CommandPaletteContent = () => {
 
   const selectTab = useCallback((tab: PaletteTab) => {
     setActiveTab(tab);
+    shouldScrollSelectionIntoViewRef.current = true;
     setSelectedIndex(0);
     setVisibleCount(PAGE_SIZE);
     inputRef.current?.focus();
@@ -173,6 +180,7 @@ export const CommandPaletteContent = () => {
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value);
+    shouldScrollSelectionIntoViewRef.current = true;
     setSelectedIndex(0);
     setVisibleCount(PAGE_SIZE);
   };
@@ -184,6 +192,7 @@ export const CommandPaletteContent = () => {
       }
 
       const nextIndex = (selectedIndex + direction + visibleItems.length) % visibleItems.length;
+      shouldScrollSelectionIntoViewRef.current = true;
       setSelectedIndex(nextIndex);
     },
     [selectedIndex, visibleItems.length],

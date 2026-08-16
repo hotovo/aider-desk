@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology } from 'react-icons/md';
 import { HiUserGroup } from 'react-icons/hi';
@@ -25,16 +25,20 @@ import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useTask } from '@/contexts/TasksContext';
 import { useActiveAgentProfile } from '@/utils/agents';
+import { openSettingsPage } from '@/stores/settingsNavigationStore';
+
+export type AgentSelectorRef = {
+  open: () => void;
+};
 
 type Props = {
   projectDir: string;
   task: TaskData;
   isActive: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
 
 export const AgentSelector = memo(
-  ({ projectDir, task, isActive, showSettingsPage }: Props) => {
+  forwardRef<AgentSelectorRef, Props>(({ projectDir, task, isActive }: Props, ref) => {
     const { t } = useTranslation();
     const { getMergedServers } = useMcpServers();
     const mcpServers = useMemo(() => getMergedServers(projectDir), [getMergedServers, projectDir]);
@@ -43,6 +47,10 @@ export const AgentSelector = memo(
     const [selectorVisible, setSelectorVisible] = useState(false);
     const [enabledToolsCount, setEnabledToolsCount] = useState<number | null>(null);
     const selectorRef = useRef<HTMLDivElement>(null);
+
+    useImperativeHandle(ref, () => ({
+      open: () => setSelectorVisible(true),
+    }));
     const api = useApi();
     const { updateTaskAgentProfile } = useTask();
 
@@ -209,7 +217,7 @@ export const AgentSelector = memo(
     };
 
     const handleOpenAgentProfiles = (profileId: string) => {
-      showSettingsPage?.('agents', { agentProfileId: profileId });
+      openSettingsPage('agents', { agentProfileId: profileId });
       setSelectorVisible(false);
     };
 
@@ -506,14 +514,13 @@ export const AgentSelector = memo(
         )}
       </div>
     );
-  },
+  }),
   (prevProps, nextProps) => {
     return (
       prevProps.projectDir === nextProps.projectDir &&
       prevProps.task.id === nextProps.task.id &&
       prevProps.task.agentProfileId === nextProps.task.agentProfileId &&
-      prevProps.isActive === nextProps.isActive &&
-      prevProps.showSettingsPage === nextProps.showSettingsPage
+      prevProps.isActive === nextProps.isActive
     );
   },
 );

@@ -4,7 +4,7 @@ export * from './agent';
 export * from './tools';
 export * from './utils';
 export * from './system-prompt-placeholders';
-
+export * from './ui-actions';
 
 // extensions.ts re-exports some names that collide with types/ (ResponseMessage, TaskContext).
 // Re-export explicitly to resolve ambiguity — types/ versions take precedence.

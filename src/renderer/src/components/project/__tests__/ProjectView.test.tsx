@@ -178,8 +178,7 @@ describe('ProjectView', () => {
   });
 
   it('initializes project and loads tasks', async () => {
-    const mockShowSettingsPage = vi.fn();
-    render(<ProjectView projectDir={projectDir} isProjectActive={true} showSettingsPage={mockShowSettingsPage} />);
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
 
     await waitFor(() => {
       expect(mockApi.startProject).toHaveBeenCalledWith(projectDir);
@@ -188,8 +187,7 @@ describe('ProjectView', () => {
   });
 
   it('renders task sidebar and active task view', async () => {
-    const mockShowSettingsPage = vi.fn();
-    render(<ProjectView projectDir={projectDir} isProjectActive={true} showSettingsPage={mockShowSettingsPage} />);
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
 
     await waitFor(() => {
       expect(screen.getByTestId('task-view')).toBeInTheDocument();
@@ -246,8 +244,7 @@ describe('ProjectView', () => {
       },
     ] as TaskData[]);
 
-    const mockShowSettingsPage = vi.fn();
-    render(<ProjectView projectDir={projectDir} isProjectActive={true} showSettingsPage={mockShowSettingsPage} />);
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
 
     // Wait for API calls to complete
     await waitFor(() => {

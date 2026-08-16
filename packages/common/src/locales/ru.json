@@ -18,6 +18,27 @@
       "project": "Проекты"
     }
   },
+  "uiActions": {
+    "openModelSelector": "Открыть выбор модели",
+    "changeAgentProfile": "Сменить профиль агента",
+    "setAutonomyMode": "Переключить режим автономности",
+    "openSettingsPage": "Открыть страницу настроек",
+    "showLogs": "Показать логи",
+    "archiveTask": "Архивировать задачу",
+    "unarchiveTask": "Разархивировать задачу",
+    "deleteTask": "Удалить задачу",
+    "duplicateTask": "Дублировать задачу",
+    "exportTaskImage": "Экспортировать задачу как изображение",
+    "exportTaskMarkdown": "Экспортировать задачу как Markdown",
+    "copyTaskMarkdown": "Копировать задачу как Markdown",
+    "interruptResponse": "Прервать ответ",
+    "restartConnector": "Перезапустить коннектор Aider",
+    "togglePin": "Переключить закрепление",
+    "moveToTop": "Переместить наверх",
+    "switchToLocal": "Переключить на локальный режим",
+    "switchToWorktree": "Переключить на режим worktree",
+    "switchWorkingMode": "Переключить рабочий режим"
+  },
   "common": {
     "settings": "Настройки",
     "cancel": "Отмена",
@@ -462,7 +483,8 @@
       "extensions": "Расширения",
       "server": "Сервер",
       "network": "Сеть",
-      "about": "О приложении"
+      "about": "О приложении",
+      "mcpServers": "MCP-серверы"
     },
     "extensions": {
       "loading": "Загрузка расширений...",

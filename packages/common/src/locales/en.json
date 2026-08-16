@@ -18,6 +18,27 @@
       "project": "Projects"
     }
   },
+  "uiActions": {
+    "openModelSelector": "Open Model Selector",
+    "changeAgentProfile": "Change Agent Profile",
+    "setAutonomyMode": "Switch autonomy mode",
+    "openSettingsPage": "Open settings page",
+    "showLogs": "Show Logs",
+    "archiveTask": "Archive Task",
+    "unarchiveTask": "Unarchive Task",
+    "deleteTask": "Delete Task",
+    "duplicateTask": "Duplicate Task",
+    "exportTaskImage": "Export Task as Image",
+    "exportTaskMarkdown": "Export Task as Markdown",
+    "copyTaskMarkdown": "Copy Task as Markdown",
+    "interruptResponse": "Interrupt Response",
+    "restartConnector": "Restart Aider Connector",
+    "togglePin": "Toggle Pin",
+    "moveToTop": "Move Task to Top",
+    "switchToLocal": "Switch to Local Mode",
+    "switchToWorktree": "Switch to Worktree Mode",
+    "switchWorkingMode": "Switch the working mode"
+  },
   "common": {
     "settings": "Settings",
     "cancel": "Cancel",

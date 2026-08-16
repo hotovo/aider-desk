@@ -12,6 +12,7 @@ This file provides guidance to AiderDesk when working with code in this reposito
 - `npm run typecheck` - Run all TypeScript type checks
 - `npm run typecheck:node` - Type check main process files (tsconfig.node.json)
 - `npm run typecheck:web` - Type check renderer process files (tsconfig.web.json)
+
 ### Linting and Formatting
 - `eslint --fix` - Run ESLint with auto-fix and auto-format on specified file(s)
 

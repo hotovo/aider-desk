@@ -28,17 +28,14 @@ import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { closeSettings, openSettingsPage, useSettingsNavigationStore } from '@/stores/settingsNavigationStore';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 
 const UsageDashboard = lazy(() => import('@/components/usage/UsageDashboard').then((module) => ({ default: module.UsageDashboard })));
 const SettingsPage = lazy(() => import('@/components/settings/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 const ModelLibrary = lazy(() => import('@/components/ModelLibrary').then((module) => ({ default: module.ModelLibrary })));
 
 let hasShownUpdateNotification = false;
-
-type ShowSettingsInfo = {
-  pageId: string;
-  options?: Record<string, unknown>;
-};
 
 export const Home = () => {
   const { t } = useTranslation();
@@ -53,7 +50,7 @@ export const Home = () => {
   const [optimisticOpenProjects, setOptimisticOpenProjects] = useOptimistic(openProjects);
   const [previousProjectBaseDir, setPreviousProjectBaseDir] = useState<string | null>(null);
   const [isOpenProjectDialogVisible, setIsOpenProjectDialogVisible] = useState(false);
-  const [showSettingsInfo, setShowSettingsInfo] = useState<ShowSettingsInfo | null>(null);
+  const settingsPage = useSettingsNavigationStore((state) => state.settingsPage);
   const [releaseNotesContent, setReleaseNotesContent] = useState<string | null>(null);
   const [isUsageDashboardVisible, showUsageDashboard, hideUsageDashboard] = useBooleanState(false);
   const [isModelLibraryVisible, showModelLibrary, hideModelLibrary] = useBooleanState(false);
@@ -119,12 +116,10 @@ export const Home = () => {
     const handleShowView = (viewId: string) => {
       if (viewId.startsWith('settings/')) {
         const pageName = viewId.split('/')[1];
-        setShowSettingsInfo({
-          pageId: pageName,
-        });
+        openSettingsPage(pageName);
         hideLogs();
       } else if (viewId === 'logs') {
-        setShowSettingsInfo(null);
+        closeSettings();
         showLogs();
       }
     };
@@ -276,12 +271,10 @@ export const Home = () => {
     PROJECT_HOTKEYS.SETTINGS,
     (e) => {
       e.preventDefault();
-      setShowSettingsInfo({
-        pageId: 'general',
-      });
+      openSettingsPage('general');
     },
     { scopes: 'home', enableOnFormTags: true, enableOnContentEditable: true },
-    [PROJECT_HOTKEYS.SETTINGS, setShowSettingsInfo],
+    [PROJECT_HOTKEYS.SETTINGS],
   );
 
   // Close overlays on Escape
@@ -440,88 +433,46 @@ export const Home = () => {
     }
   }, [handleCloseProject, optimisticOpenProjects]);
 
-  const handleShowSettingsPage = useCallback((pageId?: string, options?: Record<string, unknown>) => {
-    if (pageId) {
-      setShowSettingsInfo({
-        pageId,
-        options,
-      });
-    } else {
-      setShowSettingsInfo(null);
-    }
-  }, []);
+  const cycleProject = useCallback(
+    (offset: number) => {
+      if (optimisticOpenProjects.length <= 1) {
+        return;
+      }
+      const currentIndex = optimisticOpenProjects.findIndex((p) => p.baseDir === activeProject);
+      const nextIndex = (currentIndex + offset + optimisticOpenProjects.length) % optimisticOpenProjects.length;
+      void setActiveProject(optimisticOpenProjects[nextIndex].baseDir);
+    },
+    [optimisticOpenProjects, activeProject, setActiveProject],
+  );
 
   useEffect(() => {
-    const commands = [
-      {
-        id: 'project.close',
-        label: t('settings.hotkeys.closeProject'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.CLOSE_PROJECT,
-        action: () => {
-          if (activeProject) {
-            void handleCloseProject(activeProject);
-          }
-        },
+    const actions: Record<string, () => void> = {
+      'project.close': () => {
+        if (activeProject) {
+          void handleCloseProject(activeProject);
+        }
       },
-      {
-        id: 'project.new',
-        label: t('settings.hotkeys.newProject'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.NEW_PROJECT,
-        action: () => setIsOpenProjectDialogVisible(true),
+      'project.new': () => setIsOpenProjectDialogVisible(true),
+      'project.cycleNext': () => cycleProject(1),
+      'project.cyclePrev': () => cycleProject(-1),
+      'view.usageDashboard': () => showUsageDashboard(),
+      'view.modelLibrary': () => showModelLibrary(),
+      'view.showLogs': () => {
+        closeSettings();
+        showLogs();
       },
-      {
-        id: 'project.cycleNext',
-        label: t('settings.hotkeys.cycleNextProject'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT,
-        action: () => {
-          if (optimisticOpenProjects.length <= 1) {
-            return;
-          }
-          const currentIndex = optimisticOpenProjects.findIndex((p) => p.baseDir === activeProject);
-          const nextIndex = (currentIndex + 1) % optimisticOpenProjects.length;
-          void setActiveProject(optimisticOpenProjects[nextIndex].baseDir);
-        },
-      },
-      {
-        id: 'project.cyclePrev',
-        label: t('settings.hotkeys.cyclePrevProject'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.CYCLE_PREV_PROJECT,
-        action: () => {
-          if (optimisticOpenProjects.length <= 1) {
-            return;
-          }
-          const currentIndex = optimisticOpenProjects.findIndex((p) => p.baseDir === activeProject);
-          const prevIndex = (currentIndex - 1 + optimisticOpenProjects.length) % optimisticOpenProjects.length;
-          void setActiveProject(optimisticOpenProjects[prevIndex].baseDir);
-        },
-      },
-      {
-        id: 'view.settings',
-        label: t('settings.hotkeys.settings'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.SETTINGS,
-        action: () => setShowSettingsInfo({ pageId: 'general' }),
-      },
-      {
-        id: 'view.usageDashboard',
-        label: t('settings.hotkeys.usageDashboard'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.USAGE_DASHBOARD,
-        action: showUsageDashboard,
-      },
-      {
-        id: 'view.modelLibrary',
-        label: t('settings.hotkeys.modelLibrary'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.MODEL_LIBRARY,
-        action: showModelLibrary,
-      },
-    ];
+    };
+    for (const [id, handler] of Object.entries(actions)) {
+      registerAction(id, handler);
+    }
+    return () => {
+      for (const id of Object.keys(actions)) {
+        unregisterAction(id);
+      }
+    };
+  }, [activeProject, handleCloseProject, cycleProject, showUsageDashboard, showModelLibrary, showLogs]);
 
+  useEffect(() => {
     const projects = optimisticOpenProjects.map((project) => ({
       id: `project.switch.${project.baseDir}`,
       label: project.baseDir.split(/[\\/]/).pop() || project.baseDir,
@@ -530,22 +481,11 @@ export const Home = () => {
       action: () => setActiveProject(project.baseDir),
     }));
 
-    replaceItems('home', [...commands, ...projects]);
+    replaceItems('home', projects);
     return () => {
       clearItems('home');
     };
-  }, [
-    t,
-    replaceItems,
-    clearItems,
-    PROJECT_HOTKEYS,
-    activeProject,
-    handleCloseProject,
-    setActiveProject,
-    optimisticOpenProjects,
-    showUsageDashboard,
-    showModelLibrary,
-  ]);
+  }, [replaceItems, clearItems, optimisticOpenProjects, setActiveProject]);
 
   const renderProjectPanels = () =>
     optimisticOpenProjects.map((project) => (
@@ -559,7 +499,6 @@ export const Home = () => {
           <ProjectView
             projectDir={project.baseDir}
             isProjectActive={activeProject === project.baseDir}
-            showSettingsPage={handleShowSettingsPage}
             initialTaskId={activeProject === project.baseDir ? initialTaskId : undefined}
           />
         </div>
@@ -596,19 +535,15 @@ export const Home = () => {
   }, [showUsageDashboard]);
 
   const handleOpenAboutSettings = useCallback(() => {
-    setShowSettingsInfo({
-      pageId: 'about',
-    });
+    openSettingsPage('about');
   }, []);
 
   const handleOpenGeneralSettings = useCallback(() => {
-    setShowSettingsInfo({
-      pageId: 'general',
-    });
+    openSettingsPage('general');
   }, []);
 
   const handleShowLogs = useCallback(() => {
-    setShowSettingsInfo(null);
+    closeSettings();
     showLogs();
   }, [showLogs]);
 
@@ -659,12 +594,12 @@ export const Home = () => {
         {isOpenProjectDialogVisible && (
           <OpenProjectDialog onClose={() => setIsOpenProjectDialogVisible(false)} onAddProject={handleAddProject} openProjects={optimisticOpenProjects} />
         )}
-        <Activity mode={showSettingsInfo !== null ? 'visible' : 'hidden'} key={showSettingsInfo?.pageId || 'general'}>
+        <Activity mode={settingsPage !== null ? 'visible' : 'hidden'} key={settingsPage?.pageId || 'general'}>
           <Suspense fallback={null}>
             <SettingsPage
-              onClose={() => setShowSettingsInfo(null)}
-              initialPageId={showSettingsInfo?.pageId || 'general'}
-              initialOptions={showSettingsInfo?.options}
+              onClose={closeSettings}
+              initialPageId={settingsPage?.pageId || 'general'}
+              initialOptions={settingsPage?.options}
               openProjects={optimisticOpenProjects}
               onShowLogs={handleShowLogs}
             />

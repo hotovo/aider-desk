@@ -1,4 +1,4 @@
-import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
+import { AutonomyMode, InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
@@ -38,16 +38,16 @@ import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensi
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 
 type Props = {
   projectDir: string;
   isProjectActive?: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   initialTaskId?: string;
 };
 
-export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsPage, initialTaskId }: Props) => {
+export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId }: Props) => {
   const { t } = useTranslation();
   const startupMode = useSettingsStore((state) => state.settings?.startupMode);
   const windowTitleTemplate = useSettingsStore((state) => state.settings?.windowTitleTemplate);
@@ -490,30 +490,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
       return;
     }
 
-    const commands = [
-      {
-        id: 'task.new',
-        label: t('settings.hotkeys.newTask'),
-        type: PaletteItemType.Action,
-        shortcut: TASK_HOTKEYS.NEW_TASK,
-        action: () => void createNewTask(),
-      },
-      {
-        id: 'task.focusPrompt',
-        label: t('settings.hotkeys.focusPrompt'),
-        type: PaletteItemType.Action,
-        shortcut: TASK_HOTKEYS.FOCUS_PROMPT,
-        action: focusActiveTaskPrompt,
-      },
-      {
-        id: 'editor.open',
-        label: t('settings.hotkeys.openEditor'),
-        type: PaletteItemType.Action,
-        shortcut: PROJECT_HOTKEYS.OPEN_EDITOR,
-        action: () => openEditor(projectDir),
-      },
-    ];
-
     const tasks = [...optimisticTasks]
       .sort((first, second) => (second.updatedAt || second.createdAt || '').localeCompare(first.updatedAt || first.createdAt || ''))
       .map((task) => ({
@@ -535,25 +511,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
         }
       },
     }));
-    replaceItems(`project:${projectDir}`, [...commands, ...tasks, ...files]);
-  }, [
-    t,
-    isProjectActive,
-    replaceItems,
-    clearItems,
-    TASK_HOTKEYS,
-    PROJECT_HOTKEYS,
-    activeTaskFiles,
-    activeTaskId,
-    createNewTask,
-    handleDeleteTask,
-    focusActiveTaskPrompt,
-    handleTaskSelect,
-    optimisticTasks,
-    openFile,
-    openEditor,
-    projectDir,
-  ]);
+    replaceItems(`project:${projectDir}`, [...tasks, ...files]);
+  }, [isProjectActive, replaceItems, clearItems, activeTaskFiles, activeTaskId, handleTaskSelect, optimisticTasks, openFile, projectDir]);
 
   useEffect(() => {
     return () => clearItems(`project:${projectDir}`);
@@ -618,6 +577,105 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
     },
     [setOptimisticTasks],
   );
+
+  useEffect(() => {
+    if (!isProjectActive) {
+      return;
+    }
+
+    const actions: Record<string, () => void> = {
+      'task.new': () => void createNewTask(),
+      'task.focusPrompt': focusActiveTaskPrompt,
+      'editor.open': () => openEditor(projectDir),
+      'task.modelSelector': () => taskViewRef.current?.openMainModelSelector(),
+      'task.agentProfileSelector': () => taskViewRef.current?.openAgentProfileSelector(),
+      'task.autonomy.manual': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { autonomyMode: AutonomyMode.Manual });
+        }
+      },
+      'task.autonomy.guided': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { autonomyMode: AutonomyMode.Guided });
+        }
+      },
+      'task.autonomy.autonomous': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { autonomyMode: AutonomyMode.Autonomous });
+        }
+      },
+      'task.archive': () => void handleArchiveActiveTask(),
+      'task.unarchive': () => void handleUnarchiveActiveTask(),
+      'task.delete': () => void handleDeleteActiveTask(),
+      'task.duplicate': () => {
+        if (activeTaskId) {
+          void handleDuplicateTask(activeTaskId);
+        }
+      },
+      'task.exportImage': handleExportTaskToImage,
+      'task.exportMarkdown': () => {
+        if (activeTaskId) {
+          void handleExportTaskToMarkdown(activeTaskId);
+        }
+      },
+      'task.copyMarkdown': () => {
+        if (activeTaskId) {
+          void handleCopyTaskAsMarkdown(activeTaskId);
+        }
+      },
+      'task.interrupt': () => {
+        if (activeTaskId) {
+          void api.interruptResponse(projectDir, activeTaskId);
+          handleUpdateOptimisticTaskState(activeTaskId, DefaultTaskState.Interrupted);
+        }
+      },
+      'task.restartConnector': () => {
+        if (activeTaskId) {
+          api.restartAiderConnector(projectDir, activeTaskId);
+        }
+      },
+      'task.togglePin': () => {
+        if (activeTaskId) {
+          const task = optimisticTasks.find((t) => t.id === activeTaskId);
+          if (task) {
+            void handleUpdateTask(activeTaskId, { pinned: !task.pinned });
+          }
+        }
+      },
+      'task.moveToTop': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { updatedAt: new Date().toISOString() });
+        }
+      },
+    };
+
+    for (const [id, handler] of Object.entries(actions)) {
+      registerAction(id, handler);
+    }
+    return () => {
+      for (const id of Object.keys(actions)) {
+        unregisterAction(id);
+      }
+    };
+  }, [
+    isProjectActive,
+    createNewTask,
+    focusActiveTaskPrompt,
+    openEditor,
+    projectDir,
+    activeTaskId,
+    handleUpdateTask,
+    handleArchiveActiveTask,
+    handleUnarchiveActiveTask,
+    handleDeleteActiveTask,
+    handleDuplicateTask,
+    handleExportTaskToImage,
+    handleExportTaskToMarkdown,
+    handleCopyTaskAsMarkdown,
+    api,
+    handleUpdateOptimisticTaskState,
+    optimisticTasks,
+  ]);
 
   if (!projectSettings || !settingsLoaded) {
     return <LoadingOverlay message={t('common.loadingProjectSettings')} />;
@@ -684,7 +742,6 @@ export const ProjectView = ({ projectDir, isProjectActive = false, showSettingsP
                     inputHistory={inputHistory}
                     isActive={activeTaskId === activeTask.id}
                     shouldFocusPrompt={shouldFocusNewTask}
-                    showSettingsPage={showSettingsPage}
                     onArchiveTask={handleArchiveActiveTask}
                     onUnarchiveTask={handleUnarchiveActiveTask}
                     onDeleteTask={handleDeleteActiveTask}

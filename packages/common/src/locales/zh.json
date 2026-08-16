@@ -18,6 +18,27 @@
       "project": "项目"
     }
   },
+  "uiActions": {
+    "openModelSelector": "打开模型选择器",
+    "changeAgentProfile": "更改代理配置",
+    "setAutonomyMode": "切换自主模式",
+    "openSettingsPage": "打开设置页面",
+    "showLogs": "显示日志",
+    "archiveTask": "归档任务",
+    "unarchiveTask": "取消归档任务",
+    "deleteTask": "删除任务",
+    "duplicateTask": "复制任务",
+    "exportTaskImage": "导出任务为图片",
+    "exportTaskMarkdown": "导出任务为Markdown",
+    "copyTaskMarkdown": "复制任务为Markdown",
+    "interruptResponse": "中断响应",
+    "restartConnector": "重启Aider连接器",
+    "togglePin": "切换固定",
+    "moveToTop": "移至顶部",
+    "switchToLocal": "切换到本地模式",
+    "switchToWorktree": "切换到工作树模式",
+    "switchWorkingMode": "切换工作模式"
+  },
   "common": {
     "settings": "设置",
     "cancel": "取消",

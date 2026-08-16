@@ -18,6 +18,27 @@
       "project": "프로젝트"
     }
   },
+  "uiActions": {
+    "openModelSelector": "모델 선택기 열기",
+    "changeAgentProfile": "에이전트 프로필 변경",
+    "setAutonomyMode": "자율 모드 전환",
+    "openSettingsPage": "설정 페이지 열기",
+    "showLogs": "로그 표시",
+    "archiveTask": "작업 보관",
+    "unarchiveTask": "작업 보관 해제",
+    "deleteTask": "작업 삭제",
+    "duplicateTask": "작업 복제",
+    "exportTaskImage": "작업을 이미지로 내보내기",
+    "exportTaskMarkdown": "작업을 Markdown으로 내보내기",
+    "copyTaskMarkdown": "작업을 Markdown으로 복사",
+    "interruptResponse": "응답 중단",
+    "restartConnector": "Aider 커넥터 재시작",
+    "togglePin": "고정 전환",
+    "moveToTop": "맨 위로 이동",
+    "switchToLocal": "로컬 모드로 전환",
+    "switchToWorktree": "워크트리 모드로 전환",
+    "switchWorkingMode": "작업 모드 전환"
+  },
   "common": {
     "settings": "설정",
     "cancel": "취소",
@@ -463,7 +484,8 @@
       "extensions": "확장",
       "server": "서버",
       "network": "네트워크",
-      "about": "정보"
+      "about": "정보",
+      "mcpServers": "MCP 서버"
     },
     "extensions": {
       "loading": "확장을 불러오는 중...",

@@ -111,11 +111,13 @@ describe('CommandPaletteContent keyboard pagination', () => {
       clientHeight: { configurable: true, value: 100 },
       scrollHeight: { configurable: true, value: 200 },
     });
+    scrollIntoView.mockClear();
     fireEvent.scroll(list!);
 
     expect(screen.getByRole('button', { name: 'Item 21' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Item 40' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Item 41' })).not.toBeInTheDocument();
+    expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
   it('shows archived tasks only when no active task matches the search', () => {

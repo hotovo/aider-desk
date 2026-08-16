@@ -27,6 +27,7 @@ import { ReadonlyApp } from '@/pages/ReadonlyApp';
 import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
 import { CommandPalette } from '@/components/common/CommandPalette';
 import { useCommandPaletteHotkeys } from '@/hooks/useCommandPaletteHotkeys';
+import { usePaletteCommands } from '@/hooks/usePaletteCommands';
 
 const Onboarding = lazy(() => import('@/pages/Onboarding').then((module) => ({ default: module.Onboarding })));
 
@@ -141,6 +142,7 @@ const NormalApp = () => {
   const [isVisible, setIsVisible] = useState(false);
 
   useCommandPaletteHotkeys();
+  usePaletteCommands();
 
   useEffect(() => {
     setTimeout(() => {

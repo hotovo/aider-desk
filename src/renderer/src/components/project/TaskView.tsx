@@ -47,8 +47,8 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { TaskBar, TaskBarRef } from '@/components/project/TaskBar';
+import { TaskControlBar, TaskControlBarRef } from '@/components/project/TaskControlBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
-import { TaskControlBar } from '@/components/project/TaskControlBar';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
@@ -70,6 +70,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
 import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -78,6 +79,8 @@ type AddFileDialogOptions = {
 export type TaskViewRef = {
   exportMessagesToImage: () => void;
   focusPromptField: () => void;
+  openMainModelSelector: () => void;
+  openAgentProfileSelector: () => void;
 };
 
 const FILES_COLLAPSED_WIDTH = 36;
@@ -89,7 +92,6 @@ type Props = {
   updateOptimisticTaskState: (taskId: string, taskState: string) => void;
   inputHistory: string[];
   isActive?: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -105,7 +107,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       updateTask,
       inputHistory,
       isActive = false,
-      showSettingsPage,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
       onArchiveTask,
@@ -185,6 +186,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const promptFieldRef = useRef<PromptFieldRef>(null);
     const projectTopBarRef = useRef<TaskBarRef>(null);
+    const taskControlBarRef = useRef<TaskControlBarRef>(null);
     const messagesRef = useRef<MessagesRef | VirtualizedMessagesRef>(null);
     const terminalViewRef = useRef<TerminalViewRef | null>(null);
     const activeAgentProfile = useActiveAgentProfile(task, projectDir);
@@ -204,6 +206,12 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       },
       focusPromptField: () => {
         promptFieldRef.current?.focus();
+      },
+      openMainModelSelector: () => {
+        projectTopBarRef.current?.openMainModelSelector();
+      },
+      openAgentProfileSelector: () => {
+        taskControlBarRef.current?.openAgentProfileSelector();
       },
     }));
 
@@ -306,6 +314,24 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const toggleSidebar = useCallback(() => {
       setShowSidebar((prev) => !prev);
     }, []);
+
+    useEffect(() => {
+      if (!isActive) {
+        return;
+      }
+      const actions: Record<string, () => void> = {
+        'task.modelSelector': () => projectTopBarRef.current?.openMainModelSelector(),
+        'task.agentProfileSelector': () => taskControlBarRef.current?.openAgentProfileSelector(),
+      };
+      for (const [id, handler] of Object.entries(actions)) {
+        registerAction(id, handler);
+      }
+      return () => {
+        for (const id of Object.keys(actions)) {
+          unregisterAction(id);
+        }
+      };
+    }, [isActive]);
 
     const runTests = useCallback(
       (testCmd?: string) => {
@@ -965,6 +991,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   createSubtask={handleCreateSubtask}
                 />
                 <TaskControlBar
+                  ref={taskControlBarRef}
                   baseDir={projectDir}
                   task={task}
                   isActive={isActive}
@@ -976,7 +1003,6 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   showTaskInfoPanel={showTaskInfoPanel}
                   onToggleTaskInfoPanel={handleToggleTaskInfoPanel}
                   onAutonomyModeChanged={handleAutonomyModeChanged}
-                  showSettingsPage={showSettingsPage}
                   canUndoContextChange={canUndoContextChange && messages.length === 0}
                   onUndoContextChange={handleUndoContextChange}
                 />

@@ -4,8 +4,10 @@ import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdClose } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -253,6 +255,41 @@ export const TaskWorkingMode = ({
     handleWorkingModeChanged('worktree');
   };
 
+  useEffect(() => {
+    const actions: Record<string, () => void> = {
+      'task.workingMode.local': () => handleWorkingModeChanged('local'),
+      'task.workingMode.worktree': () => handleWorkingModeChanged('worktree'),
+    };
+    for (const [id, handler] of Object.entries(actions)) {
+      registerAction(id, handler);
+    }
+    return () => {
+      for (const id of Object.keys(actions)) {
+        unregisterAction(id);
+      }
+    };
+  }, [handleWorkingModeChanged]);
+
+  useHotkeys(
+    'enter',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void handleLocalConfirm();
+    },
+    { enabled: showConfirmLocal && !isSwitching, scopes: 'dialog', enableOnFormTags: true, enableOnContentEditable: true },
+  );
+
+  useHotkeys(
+    'enter',
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      void handleWorktreeConfirm();
+    },
+    { enabled: showConfirmWorktree && !isSwitching, scopes: 'dialog', enableOnFormTags: true, enableOnContentEditable: true },
+  );
+
   const handleCancelCommit = () => {
     cancelCommit();
   };
@@ -326,7 +363,7 @@ export const TaskWorkingMode = ({
           title={t('workingMode.confirmLocalTitle')}
           onClose={() => setShowConfirmLocal(false)}
           width={600}
-          closeOnEscape={false}
+          closeOnEscape
           footer={
             <>
               <Button onClick={() => setShowConfirmLocal(false)} variant="text">
@@ -391,7 +428,7 @@ export const TaskWorkingMode = ({
           title={t('workingMode.confirmWorktreeTitle')}
           onClose={() => setShowConfirmWorktree(false)}
           width={600}
-          closeOnEscape={false}
+          closeOnEscape
           footer={
             <>
               <Button onClick={() => setShowConfirmWorktree(false)} variant="text">
