@@ -593,6 +593,7 @@ src/
           EmptyContextInfo.tsx
           fileEditorInlineRequests.tsx
           FileEditorModal.tsx
+          FileEditorTabs.tsx
           fileEditorUtils.ts
           group-files.ts
           index.ts
@@ -624,6 +625,7 @@ src/
         DiffsWorkerPoolContext.tsx
         ExtensionApiContext.tsx
         ExtensionsContext.tsx
+        FileEditorContext.tsx
         McpServersContext.tsx
         ModelProviderContext.tsx
         ProjectSettingsContext.tsx
@@ -729,6 +731,7 @@ src/
         commandPaletteStore.ts
         commitStore.ts
         extensionUIStore.ts
+        fileEditorStore.ts
         overlayStore.ts
         projectStore.ts
         settingsStore.ts
@@ -1763,7 +1766,7 @@ import logger from '@/logger';
 import { ensureRipgrepBinary, filterIgnoredFiles, scrapeWeb } from '@/utils';
 import { isAbortError, isFileNotFoundError } from '@/utils/errors';
 import { getShellCommandArgs, getShellInitCommand, getShellPath } from '@/utils/shell';
-import { expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
+import { BoundedOutputAccumulator, expandTilde, readFileContent, truncateToolResult, coerceBoolean } from '@/agent/utils';
 import { RIPGREP_BINARY_PATH } from '@/constants';
 ⋮----
 /**
@@ -1834,7 +1837,13 @@ const killProcess = (pid: number) =>
 ⋮----
 // Remove abort listener to prevent memory leaks
 ⋮----
+const finishOutput = async (accumulator: BoundedOutputAccumulator): Promise<string> =>
+⋮----
 const resolveWithResult = async () =>
+⋮----
+const sendStreamingUpdate = () =>
+⋮----
+false, // not finished yet
 ⋮----
 // Use the standard resolution method with proper type
 ⋮----
@@ -1846,13 +1855,9 @@ stdio: ['ignore', 'pipe', 'pipe'], // Explicitly pipe stdout and stderr to captu
 ⋮----
 // Set timeout
 ⋮----
-// Send streaming update
+// Send throttled bounded streaming update
 ⋮----
-false, // not finished yet
-⋮----
-// Send streaming update
-⋮----
-false, // not finished yet
+// Send throttled bounded streaming update
 ⋮----
 exitCode = 124; // Timeout exit code
 ⋮----
@@ -2320,7 +2325,7 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent } from './utils';
+import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, safeJsonStringify } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
@@ -2803,6 +2808,8 @@ private wrapMcpTool(
 ): Tool
 ⋮----
 const execute = async (args: unknown, options: ToolExecutionOptions<unknown>) =>
+⋮----
+private describeToolResponse(response: CallToolResult): Record<string, unknown>
 ⋮----
 private createMcpErrorResult(message: string): CallToolResult
 ⋮----
@@ -3324,6 +3331,9 @@ File: src/main/agent/utils.ts
 import os, { tmpdir } from 'os';
 import fs from 'fs/promises';
 import path from 'path';
+import { createReadStream, createWriteStream } from 'fs';
+import readline from 'readline';
+import { StringDecoder } from 'string_decoder';
 ⋮----
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
@@ -3353,7 +3363,53 @@ export const findLastUserMessage = (messages: ContextMessage[]): ContextUserMess
 export const expandTilde = (filePath: string): string =>
 ⋮----
 /**
+ * Accumulates process output with a constant memory footprint.
+ *
+ * Keeps the first/last slices of the output in memory and spills the full
+ * content to a temporary file once it exceeds the in-memory threshold, so
+ * commands producing gigabytes of output cannot exhaust the V8 heap.
+ */
+export class BoundedOutputAccumulator
+⋮----
+append(chunk: Buffer | string): void
+⋮----
+private appendText(text: string): void
+⋮----
+private startSpill(initialContent: string): void
+⋮----
+private writeToSpill(text: string): void
+⋮----
+didSpill(): boolean
+⋮----
+getSpillFilePath(): string | null
+⋮----
+getTotalChars(): number
+⋮----
+getPreview(maxChars: number): string
+⋮----
+async finish(): Promise<string>
+⋮----
+private composeResult(): string
+⋮----
+async dispose(): Promise<void>
+⋮----
+const done = (): void =>
+⋮----
+// file may not exist
+⋮----
+/**
+ * Serializes a value to JSON with a hard character budget. When the natural
+ * serialization exceeds the budget, returns a valid-JSON envelope containing
+ * a preview instead of the oversized payload.
+ */
+export const stringifyWithBudget = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS):
+⋮----
+export const safeJsonStringify = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): string =>
+⋮----
+/**
  * Reads a file and returns its content with optional line numbering and line range.
+ * Files larger than LARGE_FILE_READ_THRESHOLD_BYTES are streamed instead of loaded
+ * into memory in full, keeping the heap footprint bounded.
  * @param absolutePath - The absolute path to the file
  * @param withLines - Whether to return the file content with line numbers in format "lineNumber|content"
  * @param lineOffset - The starting line number (0-based) to begin reading from
@@ -3362,6 +3418,7 @@ export const expandTilde = (filePath: string): string =>
  * @returns The file content as a string, formatted according to the parameters
  * @throws Error if the file is binary or cannot be read
  */
+⋮----
 export const readFileContent = async (
   absolutePath: string,
   withLines = false,
@@ -3369,6 +3426,12 @@ export const readFileContent = async (
   lineLimit = 1000,
   sizeLimit = Math.max(50, 0.05 * lineLimit),
 ): Promise<string> =>
+⋮----
+// stat failed, fall through to regular readFile path
+⋮----
+const readLargeFileContent = async (absolutePath: string, withLines: boolean, lineOffset: number, lineLimit: number, sizeLimit: number): Promise<string> =>
+⋮----
+const finish = ()
 ⋮----
 export const truncateToolResult = async (
   content: string,
@@ -3378,6 +3441,8 @@ export const truncateToolResult = async (
   saveToFile = true,
   truncationSuffix?: string,
 ): Promise<string> =>
+⋮----
+// skip the expensive tokenizer pass when a cheaper limit is already exceeded
 ⋮----
 const getSuffix = () =>
 ⋮----
@@ -4261,6 +4326,7 @@ import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { ApprovalManager } from '@/agent/tools/approval-manager';
+import { stringifyWithBudget, truncateToolResult } from '@/agent/utils';
 import { Project } from '@/project';
 import { Task } from '@/task';
 ⋮----
@@ -4344,6 +4410,8 @@ export type ExtensionEventMap = {
   onAfterCommit: AfterCommitEvent;
   onInterrupted: InterruptedEvent;
 };
+⋮----
+const boundExtensionToolResult = async (result: unknown): Promise<unknown> =>
 ⋮----
 export class ExtensionManager
 ⋮----
@@ -9401,6 +9469,7 @@ import {
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
+import { safeJsonStringify } from '@/agent/utils';
 import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
@@ -11177,9 +11246,11 @@ private async cleanupWindow(window: BrowserWindowType): Promise<void>
 ⋮----
 private async scrapeWithFetch(url: string, timeout: number = 60000, abortSignal?: AbortSignal): Promise<string>
 ⋮----
-// If it's HTML, return the text content
+// Return the bounded text content for HTML and other content types
 ⋮----
-// For other content types, return as text
+private async readBodyWithLimit(response: Response, maxBytes: number): Promise<string>
+⋮----
+// no streaming body available - fall back to full text with post-hoc cap
 ⋮----
 private looksLikeHTML(content: string): boolean
 ⋮----
@@ -14644,7 +14715,7 @@ onRemove=
 ================
 File: src/renderer/src/components/common/CodeBlock.tsx
 ================
-import { startTransition, useMemo, useOptimistic, useState } from 'react';
+import { startTransition, useEffect, useMemo, useOptimistic, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
@@ -14694,6 +14765,11 @@ diffNewValue = newValue!; // Known to be string
 const parsed = parseDiffContent(children!); // children is non-null and a diff
 ⋮----
 // Not a diff, display children as plain code (if it exists)
+⋮----
+// Defer syntax highlighting off the critical render path: the plain-text version renders
+// immediately (cheap) and is upgraded to the highlighted version once the browser is idle.
+// This keeps mounting large conversation histories fast. The result is cached against its
+// source code so a stale highlight from a previous value is never shown.
 ⋮----
 const handleRevertChanges = () =>
 ⋮----
@@ -20385,7 +20461,7 @@ File: src/renderer/src/components/project/ProjectView.tsx
 ================
 import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState, useTransition } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -20420,6 +20496,7 @@ import { showNotification } from '@/utils/browser-notifications';
 import { showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
@@ -20429,11 +20506,6 @@ type Props = {
   isProjectActive?: boolean;
   showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   initialTaskId?: string;
-};
-⋮----
-type PreviewFile = {
-  path: string;
-  taskId: string;
 };
 ⋮----
 // eslint-disable-next-line no-console
@@ -20640,7 +20712,19 @@ import {
   TodoItem,
   UserMessage,
 } from '@common/types';
-import { forwardRef, startTransition, useCallback, useDeferredValue, useEffect, useImperativeHandle, useMemo, useOptimistic, useRef, useState } from 'react';
+import {
+  forwardRef,
+  startTransition,
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useOptimistic,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import { clsx } from 'clsx';
@@ -20707,6 +20791,11 @@ type Props = {
   onDeleteTask?: () => void;
   onToggleTaskSidebar?: () => void;
 };
+⋮----
+// ProjectView keys TaskView by task.id, so switching tasks remounts this component. Defer the
+// heavy message list until after the shell has painted: the first commit renders the shell +
+// LoadingOverlay (renderReady=false), then a rAF flips renderReady inside a transition so the
+// messages render without blocking the switch.
 ⋮----
 // Focus prompt field
 ⋮----
@@ -23762,12 +23851,12 @@ import { useTranslation } from 'react-i18next';
 ⋮----
 import { WorkspaceSection } from './WorkspaceSection';
 import { EmptyContextInfo } from './EmptyContextInfo';
-import { FileEditorModal } from './FileEditorModal';
 import { createFileTree } from './types';
 ⋮----
 import type { TreeItem } from './types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 ⋮----
 type Props = {
   mode: Mode;
@@ -23944,8 +24033,8 @@ import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState 
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { HiOutlineExclamation } from 'react-icons/hi';
-import { MdSave } from 'react-icons/md';
-import { useHotkeys } from 'react-hotkeys-hook';
+import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
+import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
 import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
@@ -23955,11 +24044,13 @@ import CodeMirror, { type Extension } from '@uiw/react-codemirror';
 import { remapLineAnchors } from './fileEditorUtils';
 import { createInlineChangeRequestsExtension } from './fileEditorInlineRequests';
 import { CommentsPanel } from './CommentsPanel';
+import { FileEditorTabs } from './FileEditorTabs';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useApi } from '@/contexts/ApiContext';
 import { showErrorNotification, showSuccessNotification, showWarningNotification } from '@/utils/notifications';
 ⋮----
@@ -23983,7 +24074,22 @@ type EditCommentInfo = {
   initialText: string;
 };
 ⋮----
+type TabState = {
+  savedContent: string | null;
+  editorContent: string | null;
+  isLoading: boolean;
+  error: string | null;
+};
+⋮----
+type TabViewState = {
+  anchor: number;
+  head: number;
+  scrollTop: number;
+};
+⋮----
 type LineSelectHandler = (lineNumber: number, position: number, rect: DOMRect) => void;
+⋮----
+const createInitialTabState = (isLoading: boolean): TabState => (
 ⋮----
 class ChangeRequestGutterMarker extends GutterMarker
 ⋮----
@@ -23999,13 +24105,11 @@ eq(other: GutterMarker): boolean
 toDOM(): HTMLElement
 ⋮----
 type Props = {
-  filePath: string;
   baseDir: string;
-  taskId: string;
   onClose: () => void;
 };
 ⋮----
-const fetchFileContent = async () =>
+const fetchLanguageSupport = async () =>
 ⋮----
 const getLineNumber = (position: number)
 const mapPosition = (position: number)
@@ -24019,6 +24123,39 @@ const renderLoading = () => (
 <ModalOverlayLayout title=
 ⋮----
 title=
+
+================
+File: src/renderer/src/components/Workspace/FileEditorTabs.tsx
+================
+import { type MouseEvent, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { IoMdClose } from 'react-icons/io';
+import { clsx } from 'clsx';
+⋮----
+export type OpenEditorFile = {
+  path: string;
+  taskId: string;
+};
+⋮----
+type Props = {
+  openFiles: OpenEditorFile[];
+  activeFilePath: string | null;
+  dirtyPaths: Set<string>;
+  actions?: ReactNode;
+  onSelect: (path: string) => void;
+  onClose: (path: string) => void;
+};
+⋮----
+const handleSelect = () =>
+⋮----
+const handleCloseClick = (event: MouseEvent<HTMLButtonElement>) =>
+⋮----
+const handleAuxClick = (event: MouseEvent<HTMLDivElement>) =>
+⋮----
+className=
+⋮----
+onMouseDown=
+aria-label=
 
 ================
 File: src/renderer/src/components/Workspace/fileEditorUtils.ts
@@ -24085,7 +24222,6 @@ import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
 import { AnimatePresence, motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { FileEditorModal } from 'src/renderer/src/components/Workspace/FileEditorModal';
 ⋮----
 import { WorkspaceSection } from './WorkspaceSection';
 import { normalizePath, createFileTree } from './types';
@@ -24094,6 +24230,7 @@ import type { TreeItem } from './types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Input } from '@/components/common/Input';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 ⋮----
 type Props = {
   baseDir: string;
@@ -24134,10 +24271,10 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
-import { FileEditorModal } from './FileEditorModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 ⋮----
 const getFileName = (filePath: string) =>
@@ -24222,15 +24359,15 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
-import { FileEditorModal } from './FileEditorModal';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
+import { useFileEditorStore } from '@/stores/fileEditorStore';
 ⋮----
 className=
 ⋮----
 if (skill.dirPath)
-setPreviewFilePath(`$
+openFile(baseDir, `$
 ⋮----
 onClick=
 
@@ -24999,6 +25136,31 @@ type ExtensionsHookResult = {
 export const useExtensions = (): ExtensionsHookResult =>
 
 ================
+File: src/renderer/src/contexts/FileEditorContext.tsx
+================
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { useLocalStorage } from '@reactuses/core';
+⋮----
+export type OpenEditorFile = {
+  path: string;
+  taskId: string;
+};
+⋮----
+type FileEditorContextValue = {
+  openFiles: OpenEditorFile[];
+  activeFilePath: string | null;
+  isEditorOpen: boolean;
+  openFile: (path: string, taskId: string) => void;
+  closeTab: (path: string) => void;
+  closeTabs: (paths: string[]) => void;
+  setActiveFile: (path: string) => void;
+  openEditor: () => void;
+  closeEditor: () => void;
+};
+⋮----
+export const useFileEditor = () =>
+
+================
 File: src/renderer/src/contexts/McpServersContext.tsx
 ================
 import { createContext, useContext, useEffect, useMemo, useCallback, useState, ReactNode } from 'react';
@@ -25740,9 +25902,19 @@ interface UseUserMessageNavigationProps {
   userMessageIds: string[];
   scrollToMessageByElement?: (element: HTMLElement) => void;
   scrollToMessageById?: (id: string) => void;
+  // Index-based mode (for virtualized lists where off-screen messages are not in the DOM).
+  // When both are provided, navigation is computed from item indices and the visible range
+  // instead of querying/measuring DOM nodes.
+  userMessageIndices?: number[];
+  getVisibleRange?: () => { startIndex: number; endIndex: number } | null;
+  scrollToIndex?: (index: number) => void;
   alwaysVisible?: boolean;
   buttonClassName?: string;
 }
+⋮----
+// Index-based mode (for virtualized lists where off-screen messages are not in the DOM).
+// When both are provided, navigation is computed from item indices and the visible range
+// instead of querying/measuring DOM nodes.
 ⋮----
 interface NavigationButton {
   key: string;
@@ -25753,6 +25925,10 @@ interface NavigationButton {
   disabled: boolean;
   className: string;
 }
+⋮----
+// indices are ascending; pick the largest one strictly above the visible range
+⋮----
+// indices are ascending; pick the first one strictly below the visible range
 ⋮----
 const handleScroll = () =>
 
@@ -26614,7 +26790,7 @@ const handleUrlNavigation = async () =>
 ⋮----
 // Only update initial task ID on first navigation or when task changes
 ⋮----
-// Project exists, just update optimistic state (URL is already set)
+// Project exists, just update optimistic state synchronously (no overlay needed)
 ⋮----
 // Project doesn't exist, add it and update optimistic state
 ⋮----
@@ -27065,6 +27241,50 @@ export const useIsLoadingComponents = (placement?: string, projectDir?: string, 
 export const cleanupTaskCache = (projectDir: string, taskId: string)
 ⋮----
 export const cleanupProjectCache = (projectDir: string)
+
+================
+File: src/renderer/src/stores/fileEditorStore.ts
+================
+import { devtools } from 'zustand/middleware';
+import { createWithEqualityFn } from 'zustand/traditional';
+⋮----
+import type { OpenEditorFile } from '@/components/Workspace/FileEditorTabs';
+⋮----
+type ProjectEditorState = {
+  openFiles: OpenEditorFile[];
+  activeFilePath: string | null;
+  isEditorOpen: boolean;
+};
+⋮----
+type FileEditorStore = {
+  projectsMap: Map<string, ProjectEditorState>;
+
+  openFile: (projectDir: string, path: string, taskId: string) => void;
+  openEditor: (projectDir: string) => void;
+  closeTab: (projectDir: string, path: string) => void;
+  closeTabs: (projectDir: string, paths: string[]) => void;
+  setActiveFile: (projectDir: string, path: string) => void;
+  closeEditor: (projectDir: string) => void;
+  cleanupProject: (projectDir: string) => void;
+};
+⋮----
+type PersistedState = Record<string, Pick<ProjectEditorState, 'openFiles' | 'activeFilePath'>>;
+⋮----
+const loadPersistedState = (): PersistedState =>
+⋮----
+const savePersistedState = (state: PersistedState) =>
+⋮----
+// Ignore storage errors.
+⋮----
+const normalizeState = (state: ProjectEditorState): ProjectEditorState =>
+⋮----
+const getProjectState = (projectsMap: Map<string, ProjectEditorState>, projectDir: string): ProjectEditorState
+⋮----
+const withProjectState = (projectsMap: Map<string, ProjectEditorState>, projectDir: string, projectState: ProjectEditorState) =>
+⋮----
+export const useProjectEditorState = (projectDir: string): ProjectEditorState
+⋮----
+export const useFileEditorActions = ()
 
 ================
 File: src/renderer/src/stores/overlayStore.ts
