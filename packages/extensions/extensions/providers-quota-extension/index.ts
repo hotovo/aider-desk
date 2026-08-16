@@ -261,8 +261,8 @@ const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData |
 
     if (data.success && data.data?.limits) {
       // unit 3 = hourly, unit 6 = weekly (based on API response)
-      const hourlyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 3);
-      const weeklyLimit = data.data.limits.find((l) => l.type === 'TOKENS_LIMIT' && l.unit === 6);
+      const hourlyLimit = data.data.limits.find((l) => (l.type === 'TOKENS_LIMIT' || l.type === 'CREDIT_LIMIT') && l.unit === 3);
+      const weeklyLimit = data.data.limits.find((l) => (l.type === 'TOKENS_LIMIT' || l.type === 'CREDIT_LIMIT') && l.unit === 6);
 
       return {
         hourlyPercentage: hourlyLimit?.percentage ?? 0,
@@ -415,7 +415,7 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.5.1',
+    version: '1.5.2',
     description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
