@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.79.0]
 
 - optimized task state determination when 'proceed (y/n)' is present
 - added support for showing untracked files in Updated Files and add to git action
