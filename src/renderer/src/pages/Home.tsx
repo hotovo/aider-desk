@@ -61,15 +61,14 @@ export const Home = () => {
   const [isCtrlTabbing, setIsCtrlTabbing] = useState(false);
   const [isProjectSwitching, startProjectTransition] = useTransition();
   const [projectsLoaded, setProjectsLoaded] = useState(false);
-  const [initialUrlNavigationDone, setInitialUrlNavigationDone] = useState(false);
   const [initialTaskId, setInitialTaskId] = useState<string | undefined>();
 
-  // Derive active project from URL parameter first, then fall back to store
+  // The URL parameter is the source of truth for the active project, falling back to the
+  // backend-tracked selection until the first navigation writes the parameter
   const projectParam = searchParams.get(URL_PARAMS.PROJECT);
   const urlProjectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
   const storeActiveProject = (optimisticOpenProjects.find((project) => project.active) || optimisticOpenProjects[0])?.baseDir;
   const activeProject = urlProjectBaseDir || storeActiveProject;
-  const [optimisticActiveProject, setOptimisticActiveProject] = useOptimistic(activeProject);
   const closingProjectRef = useRef<string | null>(null);
 
   const handleReorderProjects = useCallback(
@@ -150,15 +149,12 @@ export const Home = () => {
 
   const setActiveProject = useCallback(
     (baseDir: string) => {
-      startTransition(() => {
-        setOptimisticActiveProject(baseDir);
-      });
-      // Update URL parameter instead of global store
-      // This allows each window to have its own active project
+      // The URL parameter allows each window to have its own active project;
+      // the backend call is a write-behind mirror
       setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(baseDir) });
       void api.setActiveProject(baseDir).then(setOpenProjects);
     },
-    [api, setOptimisticActiveProject, setSearchParams],
+    [api, setSearchParams],
   );
 
   const handleCloseProject = useCallback(
@@ -170,7 +166,7 @@ export const Home = () => {
           const remaining = optimisticOpenProjects.filter((project) => project.baseDir !== projectBaseDir);
 
           // Only change selection if we're closing the currently active project
-          if (projectBaseDir === optimisticActiveProject && remaining.length > 0) {
+          if (projectBaseDir === activeProject && remaining.length > 0) {
             // Pick adjacent from remaining array (not original!) to avoid re-selecting the closed project
             const nextIndex = removedIndex >= remaining.length ? removedIndex - 1 : removedIndex;
             const nextProject = remaining[nextIndex];
@@ -188,7 +184,7 @@ export const Home = () => {
         }
       });
     },
-    [api, optimisticOpenProjects, optimisticActiveProject, setOptimisticOpenProjects, setSearchParams],
+    [api, optimisticOpenProjects, activeProject, setOptimisticOpenProjects, setSearchParams],
   );
 
   // Close current project tab
@@ -214,63 +210,33 @@ export const Home = () => {
     const taskId = searchParams.get(URL_PARAMS.TASK);
     const projectBaseDir = projectParam ? decodeBaseDir(projectParam) : null;
 
-    if (!projectBaseDir) {
+    // Propagate task deep links to the active project view
+    if (taskId && taskId !== initialTaskId) {
+      setInitialTaskId(taskId);
+    }
+
+    if (!projectBaseDir || closingProjectRef.current === projectBaseDir) {
       return;
     }
 
-    const handleUrlNavigation = async () => {
-      if (!initialUrlNavigationDone) {
-        setInitialUrlNavigationDone(true);
+    const existingProject = optimisticOpenProjects.find((p) => compareBaseDirs(p.baseDir, projectBaseDir, os ?? undefined));
+    if (existingProject) {
+      // Project is already open and activeProject is derived from the URL, nothing to do
+      return;
+    }
+
+    // Project is not open yet (deep link): add it
+    startProjectTransition(async () => {
+      try {
+        await api.addOpenProject(projectBaseDir);
+        const updatedProjects = await api.getOpenProjects();
+        setOpenProjects(updatedProjects);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to open project from URL:', error);
       }
-
-      if (closingProjectRef.current === projectBaseDir) {
-        return;
-      }
-
-      const existingProject = optimisticOpenProjects.find((p) => compareBaseDirs(p.baseDir, projectBaseDir, os ?? undefined));
-
-      // Only update initial task ID on first navigation or when task changes
-      if (taskId && (!initialUrlNavigationDone || taskId !== initialTaskId)) {
-        setInitialTaskId(taskId);
-      }
-      if (existingProject) {
-        // Project exists, just update optimistic state synchronously (no overlay needed)
-        startTransition(() => {
-          if (!compareBaseDirs(activeProject, projectBaseDir, os ?? undefined)) {
-            setOptimisticActiveProject(projectBaseDir);
-          }
-        });
-      } else {
-        // Project doesn't exist, add it and update optimistic state
-        startProjectTransition(async () => {
-          try {
-            await api.addOpenProject(projectBaseDir);
-            const updatedProjects = await api.getOpenProjects();
-            setOpenProjects(updatedProjects);
-            setOptimisticActiveProject(projectBaseDir);
-          } catch (error) {
-            // eslint-disable-next-line no-console
-            console.error('Failed to open project from URL:', error);
-          }
-        });
-      }
-    };
-
-    void handleUrlNavigation();
-  }, [
-    searchParams,
-    projectsLoaded,
-    setActiveProject,
-    initialUrlNavigationDone,
-    api,
-    activeProject,
-    initialTaskId,
-    setOptimisticActiveProject,
-    optimisticOpenProjects,
-    os,
-  ]);
-
-  // Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
+    });
+  }, [searchParams, projectsLoaded, api, initialTaskId, optimisticOpenProjects, os]);
 
   // Open new project dialog
   useHotkeys(
@@ -652,7 +618,7 @@ export const Home = () => {
         <div className="flex border-b-2 border-border-default justify-between bg-gradient-to-b from-bg-primary to-bg-primary-light">
           <ProjectTabs
             openProjects={optimisticOpenProjects}
-            activeProject={optimisticActiveProject}
+            activeProject={activeProject}
             onAddProject={handleOpenAddProjectDialog}
             onSetActiveProject={setActiveProject}
             onCloseProject={handleCloseProject}

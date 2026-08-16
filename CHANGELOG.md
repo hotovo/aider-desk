@@ -11,6 +11,7 @@
 - bound tool outputs and stream large file reads to prevent memory exhaustion
 - optimized project and task switching time
 - added crimson theme
+- simplified active project selection by deriving it from the URL parameter
 
 ## [0.78.0]
 
