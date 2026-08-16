@@ -539,6 +539,17 @@
       ]
     },
     {
+      "id": "git-log",
+      "name": "Git Log",
+      "description": "Browse the git history of open projects with an IntelliJ IDEA-style log viewer",
+      "folder": "git-log",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": [
+        "ui"
+      ]
+    },
+    {
       "id": "skill-gallery",
       "name": "Skill Gallery",
       "description": "Browse and install Claude Skills from popular skill repositories (Anthropic Official, Awesome Claude Skills)",
