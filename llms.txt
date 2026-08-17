@@ -669,6 +669,7 @@ src/
         useOpenRouterModels.ts
         useOS.ts
         useOverlayFocusRestore.ts
+        usePaletteCommands.ts
         useParsedContent.ts
         usePythonInstallStatus.ts
         useRefractorLanguage.ts
@@ -728,12 +729,14 @@ src/
         Settings.tsx
         UpdatedFilesDiff.tsx
       stores/
+        actionsStore.ts
         commandPaletteStore.ts
         commitStore.ts
         extensionUIStore.ts
         fileEditorStore.ts
         overlayStore.ts
         projectStore.ts
+        settingsNavigationStore.ts
         settingsStore.ts
         taskFilesStore.ts
         taskStore.ts
@@ -744,6 +747,7 @@ src/
         theme-bw.scss
         theme-cappuccino.scss
         theme-charcoal.scss
+        theme-crimson.scss
         theme-dark.scss
         theme-forest.scss
         theme-fresh.scss
@@ -8008,6 +8012,8 @@ registerRoutes(router: Router): void
 ⋮----
 // Read file
 ⋮----
+// Save file
+⋮----
 // Generate commit message
 ⋮----
 // Commit changes
@@ -10227,7 +10233,7 @@ public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
 private async sendWorktreeIntegrationStatusUpdated()
 ⋮----
-private async sendUpdatedFilesUpdated()
+public async sendUpdatedFilesUpdated()
 ⋮----
 public async sendSkillsUpdated(): Promise<void>
 ⋮----
@@ -12313,6 +12319,8 @@ async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<vo
 ⋮----
 async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
+async saveFile(baseDir: string, taskId: string, filePath: string, content: string): Promise<void>
+⋮----
 async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
 ⋮----
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
@@ -13868,6 +13876,8 @@ restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
 async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
+async saveFile(baseDir: string, taskId: string, filePath: string, content: string): Promise<void>
+⋮----
 listBranches(baseDir: string): Promise<Array<
 ⋮----
 getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
@@ -14019,7 +14029,7 @@ async loadExtensionLibrary(librarySpec: string): Promise<string>
 ================
 File: src/renderer/src/components/AgentSelector/AgentSelector.tsx
 ================
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MdCheck, MdFlashOn, MdOutlineChecklist, MdOutlineFileCopy, MdOutlineHdrAuto, MdOutlineMap, MdPsychology } from 'react-icons/md';
 import { HiUserGroup } from 'react-icons/hi';
@@ -14046,12 +14056,16 @@ import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { useTask } from '@/contexts/TasksContext';
 import { useActiveAgentProfile } from '@/utils/agents';
+import { openSettingsPage } from '@/stores/settingsNavigationStore';
+⋮----
+export type AgentSelectorRef = {
+  open: () => void;
+};
 ⋮----
 type Props = {
   projectDir: string;
   task: TaskData;
   isActive: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
 };
 ⋮----
 const calculateEnabledTools = async () =>
@@ -20459,7 +20473,7 @@ onChange=
 ================
 File: src/renderer/src/components/project/ProjectView.tsx
 ================
-import { InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
+import { AutonomyMode, InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
@@ -20499,12 +20513,12 @@ import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensi
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 ⋮----
 type Props = {
   projectDir: string;
   isProjectActive?: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   initialTaskId?: string;
 };
 ⋮----
@@ -20660,18 +20674,23 @@ return t('pythonSetup.failed',
 File: src/renderer/src/components/project/TaskControlBar.tsx
 ================
 import { AIDER_MODES, AutonomyMode, DEFAULT_AUTONOMY_MODE, Mode, TaskData } from '@common/types';
+import { forwardRef, useImperativeHandle, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FaInfoCircle } from 'react-icons/fa';
 import { MdPlaylistRemove, MdUndo } from 'react-icons/md';
 import { VscTerminal } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 ⋮----
-import { AgentSelector } from '@/components/AgentSelector';
+import { AgentSelector, AgentSelectorRef } from '@/components/AgentSelector';
 import { ModeSelector } from '@/components/PromptField/ModeSelector';
 import { AutonomySelector } from '@/components/PromptField/AutonomySelector';
 import { Button } from '@/components/common/Button';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+⋮----
+export type TaskControlBarRef = {
+  openAgentProfileSelector: () => void;
+};
 ⋮----
 type Props = {
   baseDir: string;
@@ -20685,7 +20704,6 @@ type Props = {
   showTaskInfoPanel?: boolean;
   onToggleTaskInfoPanel?: () => void;
   onAutonomyModeChanged?: (mode: AutonomyMode) => void;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   canUndoContextChange?: boolean;
   onUndoContextChange?: () => void;
 };
@@ -20744,8 +20762,8 @@ import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useApi } from '@/contexts/ApiContext';
 import { AddFileDialog } from '@/components/project/AddFileDialog';
 import { TaskBar, TaskBarRef } from '@/components/project/TaskBar';
+import { TaskControlBar, TaskControlBarRef } from '@/components/project/TaskControlBar';
 import { PromptField, PromptFieldRef } from '@/components/PromptField';
-import { TaskControlBar } from '@/components/project/TaskControlBar';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Button } from '@/components/common/Button';
 import { TodoWindow } from '@/components/project/TodoWindow';
@@ -20767,6 +20785,7 @@ import { showErrorNotification } from '@/utils/notifications';
 import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
 import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -20775,6 +20794,8 @@ type AddFileDialogOptions = {
 export type TaskViewRef = {
   exportMessagesToImage: () => void;
   focusPromptField: () => void;
+  openMainModelSelector: () => void;
+  openAgentProfileSelector: () => void;
 };
 ⋮----
 type Props = {
@@ -20784,7 +20805,6 @@ type Props = {
   updateOptimisticTaskState: (taskId: string, taskState: string) => void;
   inputHistory: string[];
   isActive?: boolean;
-  showSettingsPage?: (pageId?: string, options?: Record<string, unknown>) => void;
   shouldFocusPrompt?: boolean;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -21497,8 +21517,10 @@ import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
 import { MdClose } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
+import { useHotkeys } from 'react-hotkeys-hook';
 import { useTranslation } from 'react-i18next';
 ⋮----
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { useResponsive } from '@/hooks/useResponsive';
@@ -25612,6 +25634,22 @@ export const useOverlayRegistration = (id: string, isOpen: boolean) =>
 export const useOverlayFocusRestore = (focus: () => void, enabled: boolean) =>
 
 ================
+File: src/renderer/src/hooks/usePaletteCommands.ts
+================
+import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { UI_ACTIONS } from '@common/ui-actions';
+⋮----
+import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
+import { invokeAction, registerAction, unregisterAction } from '@/stores/actionsStore';
+import { openSettingsPage } from '@/stores/settingsNavigationStore';
+import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+⋮----
+const buildShortcuts = (hotkeys: ReturnType<typeof useConfiguredHotkeys>): Record<string, string> => (
+⋮----
+export const usePaletteCommands = () =>
+
+================
 File: src/renderer/src/hooks/useParsedContent.ts
 ================
 import { useMemo } from 'react';
@@ -26757,13 +26795,11 @@ import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, encodeBaseDir, decodeBaseDir, ROUTES } from '@/utils/routes';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { closeSettings, openSettingsPage, useSettingsNavigationStore } from '@/stores/settingsNavigationStore';
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
 ⋮----
-type ShowSettingsInfo = {
-  pageId: string;
-  options?: Record<string, unknown>;
-};
-⋮----
-// Derive active project from URL parameter first, then fall back to store
+// The URL parameter is the source of truth for the active project, falling back to the
+// backend-tracked selection until the first navigation writes the parameter
 ⋮----
 const loadProjects = async () =>
 ⋮----
@@ -26773,8 +26809,8 @@ const handleShowView = (viewId: string) =>
 ⋮----
 const checkReleaseNotes = async () =>
 ⋮----
-// Update URL parameter instead of global store
-// This allows each window to have its own active project
+// The URL parameter allows each window to have its own active project;
+// the backend call is a write-behind mirror
 ⋮----
 // Only change selection if we're closing the currently active project
 ⋮----
@@ -26786,17 +26822,13 @@ const checkReleaseNotes = async () =>
 ⋮----
 // Handle URL parameters for direct project/task navigation
 ⋮----
-const handleUrlNavigation = async () =>
+// Propagate task deep links to the active project view
 ⋮----
-// Only update initial task ID on first navigation or when task changes
+// Project is already open and activeProject is derived from the URL, nothing to do
 ⋮----
-// Project exists, just update optimistic state synchronously (no overlay needed)
-⋮----
-// Project doesn't exist, add it and update optimistic state
+// Project is not open yet (deep link): add it
 ⋮----
 // eslint-disable-next-line no-console
-⋮----
-// Note: We no longer sync activeProject to URL here because setActiveProject now updates the URL directly
 ⋮----
 // Open new project dialog
 ⋮----
@@ -26831,8 +26863,6 @@ const handleCloseReleaseNotes = async () =>
 tooltip=
 ⋮----
 <OpenProjectDialog onClose=
-⋮----
-onClose=
 
 ================
 File: src/renderer/src/pages/Logs.tsx
@@ -27058,6 +27088,22 @@ import { useApi } from '@/contexts/ApiContext';
 import { URL_PARAMS, decodeBaseDir } from '@/utils/routes';
 ⋮----
 const loadFiles = async () =>
+⋮----
+// eslint-disable-next-line no-console
+
+================
+File: src/renderer/src/stores/actionsStore.ts
+================
+export const registerAction = (id: string, handler: () => void) =>
+⋮----
+export const unregisterAction = (id: string) =>
+⋮----
+/**
+ * Invoke a registered UI action by id. Single entry point for all consumers:
+ * command palette, extension system (future), toolbar buttons, hotkeys.
+ * @returns true if the action was found and invoked, false otherwise
+ */
+export const invokeAction = (id: string): boolean =>
 ⋮----
 // eslint-disable-next-line no-console
 
@@ -27335,6 +27381,27 @@ export const useProjectTasks = (projectBaseDir: string)
 export const useProjectProcessingState = (projectBaseDir: string)
 ⋮----
 export const useProjectTaskWorktreePath = (projectBaseDir: string, taskId: string)
+
+================
+File: src/renderer/src/stores/settingsNavigationStore.ts
+================
+import { devtools } from 'zustand/middleware';
+import { create } from 'zustand';
+⋮----
+export type SettingsPageInfo = {
+  pageId: string;
+  options?: Record<string, unknown>;
+};
+⋮----
+type SettingsNavigationStore = {
+  settingsPage: SettingsPageInfo | null;
+  openSettingsPage: (pageId: string, options?: Record<string, unknown>) => void;
+  closeSettings: () => void;
+};
+⋮----
+export const openSettingsPage = (pageId: string, options?: Record<string, unknown>) =>
+⋮----
+export const closeSettings = () =>
 
 ================
 File: src/renderer/src/stores/settingsStore.ts
@@ -28164,6 +28231,119 @@ File: src/renderer/src/themes/theme-charcoal.scss
   --color-agent-repo-map: #93c5fd;
   --color-agent-ai-request: #ef4444;
   --color-agent-sub-agent: #3b82f6;
+}
+
+================
+File: src/renderer/src/themes/theme-crimson.scss
+================
+.theme-crimson {
+
+  --color-bg-primary: #120E0F;
+  --color-bg-primary-light: #1A1516;
+  --color-bg-primary-light-strong: #1A151680;
+  --color-bg-secondary: #231C1E;
+  --color-bg-secondary-light: #2C2326;
+  --color-bg-secondary-light-strongest: #2C2326F2;
+  --color-bg-tertiary: #3A2E31;
+  --color-bg-tertiary-emphasis: #C4505A40;
+  --color-bg-tertiary-strong: #C4505A60;
+  --color-bg-fourth: #463A3D;
+  --color-bg-fourth-muted: #C4505A33;
+  --color-bg-fourth-emphasis: #C4505A4C;
+  --color-bg-fifth: #55474A;
+  --color-bg-selection: #C4505A50;
+  --color-bg-code-block: #0E0A0B;
+
+  --color-bg-diff-viewer-old-primary: #3D1F21;
+  --color-bg-diff-viewer-old-secondary: #2B1517;
+  --color-bg-diff-viewer-new-primary: #1F3D25;
+  --color-bg-diff-viewer-new-secondary: #152B1A;
+
+  --color-text-primary: #F2E9EA;
+  --color-text-secondary: #B0A1A4;
+  --color-text-tertiary: #8F8084;
+  --color-text-muted-light: #726468;
+  --color-text-muted: #55474A;
+  --color-text-muted-dark: #463A3D;
+  --color-text-dark: #2C2326;
+
+  --color-border-dark: #231C1E;
+  --color-border-dark-light: #2C2326;
+  --color-border-dark-light-strong: #2C232680;
+  --color-border-default-dark: #3A2E31;
+  --color-border-default: #463A3D;
+  --color-border-accent: #C4505A;
+  --color-border-light: #726468;
+
+  --color-accent-primary: #C4505A;
+  --color-accent-secondary: #B0A1A4;
+  --color-accent-light: #F2E9EA;
+
+  --color-success: #5DB86C;
+  --color-success-light: #7ECF8A;
+  --color-success-subtle: #5DB86C1a;
+  --color-success-muted: #5DB86C33;
+  --color-success-emphasis: #5DB86C4c;
+
+  --color-warning: #D49A54;
+  --color-warning-subtle: #D49A5419;
+  --color-warning-emphasis: #D49A544c;
+  --color-warning-light: #DEAE6E;
+  --color-warning-text: #120E0F;
+
+  --color-error: #D0575B;
+  --color-error-dark: #9E3A3E;
+  --color-error-subtle: #D0575B1a;
+  --color-error-muted: #D0575B26;
+  --color-error-emphasis: #D0575B4c;
+  --color-error-strong: #D0575B80;
+  --color-error-light: #DE7A7E;
+  --color-error-lighter: #EA9DA0;
+  --color-error-lightest: #F5C0C2;
+
+  --color-info: #5A8FAA;
+  --color-info-light: #74A5BD;
+  --color-info-lighter: #8EBBD0;
+  --color-info-lightest: #A8D1E3;
+  --color-info-subtle: #5A8FAA1a;
+  --color-info-light-muted: #5A8FAA33;
+  --color-info-light-emphasis: #5A8FAA4c;
+
+  // Button-specific colors
+  --color-button-primary: #C4505A;
+  --color-button-primary-light: #D47279;
+  --color-button-primary-subtle: #C4505A19;
+  --color-button-primary-emphasis: #C4505A4c;
+  --color-button-primary-text: #120E0F;
+
+  --color-button-secondary: #5A8FAA;
+  --color-button-secondary-light: #74A5BD;
+  --color-button-secondary-subtle: #5A8FAA1a;
+  --color-button-secondary-emphasis: #5A8FAA4c;
+  --color-button-secondary-text: #F2E9EA;
+
+  --color-button-danger: #D0575B;
+  --color-button-danger-light: #DE7A7E;
+  --color-button-danger-subtle: #D0575B1a;
+  --color-button-danger-emphasis: #D0575B4c;
+  --color-button-danger-text: #F2E9EA;
+
+  --color-input-bg: #1A1516;
+  --color-input-border: #463A3D;
+  --color-input-text: #F2E9EA;
+
+  --color-agent-auto-approve: #5DB86C;
+  --color-agent-aider-tools: #C4505A;
+  --color-agent-power-tools: #B08DC9;
+  --color-agent-todo-tools: #5A8FAA;
+  --color-agent-tasks-tools: #5DB86C;
+  --color-agent-memory-tools: #C97BA0;
+  --color-agent-skills-tools: #8FB85D;
+  --color-agent-subagents-tools: #5AAA85;
+  --color-agent-context-files: #D4C054;
+  --color-agent-repo-map: #74A5BD;
+  --color-agent-ai-request: #AA6B5A;
+  --color-agent-sub-agent: #6B8FAA;
 }
 
 ================
@@ -29436,6 +29616,7 @@ File: src/renderer/src/themes/themes.scss
 @use 'theme-botanical-garden.scss';
 @use 'theme-botanical-garden-dark.scss';
 @use 'theme-obsidian.scss';
+@use 'theme-crimson.scss';
 
 ================
 File: src/renderer/src/utils/agents.ts
@@ -29972,6 +30153,7 @@ import { ReadonlyApp } from '@/pages/ReadonlyApp';
 import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
 import { CommandPalette } from '@/components/common/CommandPalette';
 import { useCommandPaletteHotkeys } from '@/hooks/useCommandPaletteHotkeys';
+import { usePaletteCommands } from '@/hooks/usePaletteCommands';
 ⋮----
 const ModalOverlayUrlHandler = () =>
 ⋮----
