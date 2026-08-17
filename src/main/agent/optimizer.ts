@@ -271,8 +271,39 @@ export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[
 
       for (const toolResultPart of toolContent) {
         try {
-          // Skip content-type outputs — they may already have file parts
-          // from a provider that supports them natively
+          // Handle content-type outputs — extract file/image parts into user messages
+          // since not all providers support file parts in tool results natively
+          if (toolResultPart.output.type === 'content') {
+            if (Array.isArray(toolResultPart.output.value) && toolResultPart.output.value.some((p) => p.type === 'file')) {
+              const fileParts = toolResultPart.output.value.filter((p) => p.type === 'file') as FilePart[];
+              const textParts = toolResultPart.output.value.filter((p) => p.type === 'text') as TextPart[];
+
+              logger.debug(
+                `[convertImageToolResults] Extracting ${fileParts.length} image(s) from content-type tool result "${toolResultPart.toolName}" into user message`,
+              );
+
+              for (const filePart of fileParts) {
+                if ((filePart.data as { type: string }).type === 'data') {
+                  imageParts.push({
+                    type: 'file',
+                    data: filePart.data as { type: 'data'; data: string },
+                    mediaType: filePart.mediaType,
+                  });
+                }
+              }
+
+              const textValue = textParts.length > 0 ? textParts.map((p) => p.text).join('\n\n') : 'Image rendered.';
+
+              updatedToolContent.push({
+                ...toolResultPart,
+                output: { type: 'text', value: textValue },
+              });
+            } else {
+              updatedToolContent.push(toolResultPart);
+            }
+            continue;
+          }
+
           if (toolResultPart.output.type !== 'text' && toolResultPart.output.type !== 'json') {
             updatedToolContent.push(toolResultPart);
             continue;

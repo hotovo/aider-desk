@@ -278,6 +278,66 @@ export const safeJsonStringify = (value: unknown, maxChars = TOOL_RESULT_MAX_JSO
   return stringifyWithBudget(value, maxChars).text;
 };
 
+const TEXT_PART_TYPES = new Set(['text', 'error-text']);
+
+/**
+ * Checks if a content array (e.g. MCP tool result parts) contains any non-text parts
+ * (e.g. media, image, file). These parts carry binary data (base64) that must NOT be
+ * truncated — truncating them corrupts the data and causes the model to receive a
+ * broken text fragment instead of a proper multimodal attachment.
+ */
+export const contentArrayHasNonTextParts = (content: unknown): boolean => {
+  if (!Array.isArray(content)) {
+    return false;
+  }
+  return content.some((part) => part && typeof part === 'object' && 'type' in part && !TEXT_PART_TYPES.has(part.type as string));
+};
+
+/**
+ * Checks if a value contains non-text parts (e.g. media, image, file) in its content array.
+ * Handles multiple formats: direct arrays, { content: [...] }, and { type: 'content', value: [...] }.
+ */
+const hasNonTextContentParts = (value: unknown): boolean => {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+
+  if (Array.isArray(value)) {
+    return contentArrayHasNonTextParts(value);
+  }
+
+  const obj = value as Record<string, unknown>;
+
+  // { content: [...] } (MCP / extension tool result format)
+  if ('content' in obj && contentArrayHasNonTextParts(obj.content)) {
+    return true;
+  }
+
+  // { type: 'content', value: [...] } (wrapped ToolResultOutput)
+  if ('value' in obj && contentArrayHasNonTextParts(obj.value)) {
+    return true;
+  }
+
+  return false;
+};
+
+/**
+ * Safely serializes a tool result output to JSON for storage in context/IPC.
+ * When the output contains non-text parts (media, image, file), the full payload
+ * is preserved via JSON.stringify to avoid corrupting binary data. For text-only
+ * outputs, falls back to stringifyWithBudget for OOM protection.
+ */
+export const safeStringifyToolOutput = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): string => {
+  if (hasNonTextContentParts(value)) {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return JSON.stringify({ truncated: true, note: 'Value could not be serialized to JSON.' });
+    }
+  }
+  return stringifyWithBudget(value, maxChars).text;
+};
+
 /**
  * Reads a file and returns its content with optional line numbering and line range.
  * Files larger than LARGE_FILE_READ_THRESHOLD_BYTES are streamed instead of loaded
@@ -566,9 +626,8 @@ export const isNetworkError = (error: unknown): boolean => {
 export const convertMcpResultToModelOutput = (output: unknown): ToolResultOutput => {
   if (output && typeof output === 'object' && 'content' in output && Array.isArray((output as { content: unknown[] }).content)) {
     const content = (output as { content: Array<Record<string, unknown>> }).content;
-    const hasNonTextParts = content.some((part) => part && typeof part === 'object' && part.type !== 'text');
 
-    if (hasNonTextParts) {
+    if (contentArrayHasNonTextParts(content)) {
       const value: Array<{ type: 'text'; text: string } | { type: 'file'; data: { type: 'data'; data: string }; mediaType: string }> = [];
 
       for (const part of content) {

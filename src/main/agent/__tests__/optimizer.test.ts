@@ -183,7 +183,7 @@ describe('convertImageToolResults', () => {
     expect(result).toEqual([msg]);
   });
 
-  it('should pass through content-type outputs unchanged', () => {
+  it('should extract images from content-type outputs with text + image', () => {
     const msg = makeToolMessage(
       makeContentOutput([
         makeTextItem('Took a screenshot.'),
@@ -194,6 +194,67 @@ describe('convertImageToolResults', () => {
         },
       ]),
     );
+
+    const result = convertImageToolResults([msg]);
+
+    const output = getToolOutput(result);
+    expect(output).toEqual({ type: 'text', value: 'Took a screenshot.' });
+
+    const files = getUserFileParts(result);
+    expect(files).toEqual([{ type: 'file', data: { type: 'data', data: BASE64_IMG_1 }, mediaType: 'image/png' }]);
+  });
+
+  it('should extract image-only content-type outputs with default text', () => {
+    const msg = makeToolMessage(
+      makeContentOutput([
+        {
+          type: 'file',
+          data: { type: 'data', data: BASE64_IMG_1 },
+          mediaType: 'image/png',
+        },
+      ]),
+    );
+
+    const result = convertImageToolResults([msg]);
+
+    const output = getToolOutput(result);
+    expect(output).toEqual({ type: 'text', value: 'Image rendered.' });
+
+    const files = getUserFileParts(result);
+    expect(files).toEqual([{ type: 'file', data: { type: 'data', data: BASE64_IMG_1 }, mediaType: 'image/png' }]);
+  });
+
+  it('should extract multiple images from content-type outputs', () => {
+    const msg = makeToolMessage(
+      makeContentOutput([
+        makeTextItem('Screenshot taken.'),
+        {
+          type: 'file',
+          data: { type: 'data', data: BASE64_IMG_1 },
+          mediaType: 'image/png',
+        },
+        {
+          type: 'file',
+          data: { type: 'data', data: BASE64_IMG_2 },
+          mediaType: 'image/jpeg',
+        },
+      ]),
+    );
+
+    const result = convertImageToolResults([msg]);
+
+    const output = getToolOutput(result);
+    expect(output).toEqual({ type: 'text', value: 'Screenshot taken.' });
+
+    const files = getUserFileParts(result);
+    expect(files).toEqual([
+      { type: 'file', data: { type: 'data', data: BASE64_IMG_1 }, mediaType: 'image/png' },
+      { type: 'file', data: { type: 'data', data: BASE64_IMG_2 }, mediaType: 'image/jpeg' },
+    ]);
+  });
+
+  it('should pass through content-type outputs with no file parts', () => {
+    const msg = makeToolMessage(makeContentOutput([makeTextItem('Just text in content.')]));
 
     const result = convertImageToolResults([msg]);
 

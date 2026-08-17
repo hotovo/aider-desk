@@ -58,7 +58,14 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, safeJsonStringify } from './utils';
+import {
+  estimateMessageTokens,
+  extractPromptContextFromToolResult,
+  findLastUserMessage,
+  isNetworkError,
+  readFileContent,
+  safeStringifyToolOutput,
+} from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
@@ -1124,7 +1131,7 @@ export class Agent {
                 const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
                 const toolPromptContext = extractPromptContextFromToolResult(chunk.output) ?? promptContext;
                 streamingMessageIds.add(chunk.toolCallId);
-                task.addToolMessage(chunk.toolCallId, serverName, toolName, chunk.input, safeJsonStringify(chunk.output), undefined, toolPromptContext);
+                task.addToolMessage(chunk.toolCallId, serverName, toolName, chunk.input, safeStringifyToolOutput(chunk.output), undefined, toolPromptContext);
                 task.addLogMessage('loading', undefined, false, promptContext);
               }
             }
@@ -1814,7 +1821,7 @@ export class Agent {
         serverName,
         toolName,
         toolResult.input,
-        JSON.stringify(toolResult.output),
+        safeStringifyToolOutput(toolResult.output),
         !hasAssistantMessage && isLast ? usageReport : undefined,
         toolPromptContext,
       );

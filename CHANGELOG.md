@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- added extraction of images and safe serialization for non-text data
+
 ## [0.79.0]
 
 - optimized task state determination when 'proceed (y/n)' is present

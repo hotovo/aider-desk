@@ -81,7 +81,7 @@ import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { ApprovalManager } from '@/agent/tools/approval-manager';
-import { stringifyWithBudget, truncateToolResult } from '@/agent/utils';
+import { contentArrayHasNonTextParts, stringifyWithBudget, truncateToolResult } from '@/agent/utils';
 import { Project } from '@/project';
 import { Task } from '@/task';
 
@@ -170,12 +170,26 @@ export type ExtensionEventMap = {
 
 const EXTENSION_TOOL_RESULT_MAX_CHARS = 200_000;
 
+const hasNonTextContentParts = (value: unknown): boolean => {
+  if (value === null || typeof value !== 'object') {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    return contentArrayHasNonTextParts(value);
+  }
+  const obj = value as Record<string, unknown>;
+  return ('content' in obj && contentArrayHasNonTextParts(obj.content)) || ('value' in obj && contentArrayHasNonTextParts(obj.value));
+};
+
 const boundExtensionToolResult = async (result: unknown): Promise<unknown> => {
   if (typeof result === 'string' && result.length > EXTENSION_TOOL_RESULT_MAX_CHARS) {
     return await truncateToolResult(result, 1000, 200, 20_000);
   }
 
   if (result !== null && typeof result === 'object') {
+    if (hasNonTextContentParts(result)) {
+      return result;
+    }
     const { text, truncated } = stringifyWithBudget(result, EXTENSION_TOOL_RESULT_MAX_CHARS);
     if (truncated) {
       return JSON.parse(text);
