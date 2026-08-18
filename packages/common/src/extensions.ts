@@ -36,6 +36,7 @@ import {
   SwitchToWorktreeOptions,
   TodoItem,
   ToolApprovalState,
+  TlsPolicyRegistrar,
   UpdatedFile,
   UsageReportData,
   VoiceSession,
@@ -167,8 +168,9 @@ export interface ExtensionProviderStrategy {
     toolSet?: unknown,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    tlsRegistrar?: TlsPolicyRegistrar,
   ) => unknown | Promise<unknown>;
-  loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
+  loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;

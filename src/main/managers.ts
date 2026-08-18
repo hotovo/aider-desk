@@ -18,7 +18,7 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
-import { ProxyManager } from '@/proxy-manager';
+import { NetworkManager } from '@/network-manager';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
@@ -35,9 +35,9 @@ export interface ManagersResult {
 }
 
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
-  // Initialize proxy manager FIRST — must be before any network calls
-  const proxyManager = new ProxyManager();
-  proxyManager.init(store.getSettings());
+  // Initialize network manager FIRST — must be before any network calls
+  const networkManager = new NetworkManager();
+  networkManager.init(store.getSettings());
 
   // Initialize telemetry manager (non-blocking - analytics not critical for startup)
   const telemetryManager = new TelemetryManager(store);
@@ -67,7 +67,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   const pythonInstaller = new PythonDependenciesInstaller(eventManager);
 
   // Initialize model manager
-  const modelManager = new ModelManager(store, eventManager);
+  const modelManager = new ModelManager(store, eventManager, networkManager);
 
   // Initialize data manager
   const dataManager = new DataManager();
@@ -144,7 +144,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     agentProfileManager,
     memoryManager,
     extensionManager,
-    proxyManager,
+    networkManager,
     promptsManager,
     windowManager,
   );

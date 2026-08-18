@@ -1,16 +1,17 @@
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning, TlsPolicyRegistrar } from '@common/types';
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
 import type { JSONValue, SharedV4ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, ToolSet } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultUsageReport } from '@/models/providers/default';
+import { syncProviderTlsRule } from '@/models/utils';
 
-const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
+const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar): Promise<LoadModelsResponse> => {
   if (!isOpenAiCompatibleProvider(profile.provider)) {
     return { models: [], success: false };
   }
@@ -28,6 +29,8 @@ const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: Se
   if (!effectiveBaseUrl) {
     return { models: [], success: false };
   }
+
+  syncProviderTlsRule(tlsRegistrar, effectiveBaseUrl, provider.sslVerify, provider.caCertPath);
 
   try {
     const response = await fetch(
@@ -102,7 +105,16 @@ const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, modelId: str
 };
 
 // === LLM Creation Functions ===
-const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
+const createOpenAiCompatibleLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): LanguageModel => {
   const provider = profile.provider as OpenAiCompatibleProvider;
   let apiKey = provider.apiKey;
   let baseUrl = provider.baseUrl;
@@ -126,6 +138,8 @@ const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, setti
   if (!baseUrl) {
     throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`);
   }
+
+  syncProviderTlsRule(tlsRegistrar, baseUrl, provider.sslVerify, provider.caCertPath);
 
   const providerOverrides = model.providerOverrides as Partial<OpenAiCompatibleProvider> | undefined;
   const trackTokenUsage = providerOverrides?.trackTokenUsage ?? provider.trackTokenUsage;

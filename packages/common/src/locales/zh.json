@@ -2011,5 +2011,13 @@
     "projectError": "无法加载此项目。",
     "projects": "项目",
     "openTasks": "打开任务"
+  },
+  "providerTls": {
+    "title": "TLS 设置",
+    "disableCertificateVerification": "禁用证书验证",
+    "disableCertificateVerificationInfo": "跳过此提供商端点的 TLS 证书验证。仅用于使用自签名证书的可信服务器（例如本地模型服务器）。",
+    "caCertPath": "CA 证书路径",
+    "caCertPathInfo": "用于验证提供商端点的 CA 证书文件（PEM）的绝对路径。使用自签名或私有 CA 证书时，建议使用此项而非禁用验证。",
+    "caCertPathPlaceholder": "/path/to/ca.pem"
   }
 }

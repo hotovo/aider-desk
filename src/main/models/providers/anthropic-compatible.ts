@@ -1,8 +1,8 @@
-import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -10,12 +10,17 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getAnthropicCacheControl } from '@/models/providers/anthropic';
 import { getDefaultUsageReport } from '@/models/providers/default';
+import { syncProviderTlsRule } from '@/models/utils';
 
 const ensureV1Suffix = (baseUrl: string): string => {
   return baseUrl.endsWith('/v1') ? baseUrl : `${baseUrl}/v1`;
 };
 
-const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
+const loadAnthropicCompatibleModels = async (
+  profile: ProviderProfile,
+  settings: SettingsData,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): Promise<LoadModelsResponse> => {
   if (!isAnthropicCompatibleProvider(profile.provider)) {
     return { models: [], success: false };
   }
@@ -33,6 +38,8 @@ const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings:
   if (!(effectiveApiKey && effectiveBaseUrl)) {
     return { models: [], success: false };
   }
+
+  syncProviderTlsRule(tlsRegistrar, effectiveBaseUrl, provider.sslVerify, provider.caCertPath);
 
   try {
     const response = await fetch(`${ensureV1Suffix(effectiveBaseUrl)}/models`, {
@@ -107,7 +114,16 @@ const getAnthropicCompatibleAiderMapping = (provider: ProviderProfile, modelId: 
 };
 
 // === LLM Creation Functions ===
-const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
+const createAnthropicCompatibleLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): LanguageModel => {
   const provider = profile.provider as AnthropicCompatibleProvider;
   let apiKey = provider.apiKey;
   let baseUrl = provider.baseUrl;
@@ -135,6 +151,8 @@ const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, se
   if (!baseUrl) {
     throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the ANTHROPIC_API_BASE environment variable.`);
   }
+
+  syncProviderTlsRule(tlsRegistrar, baseUrl, provider.sslVerify, provider.caCertPath);
 
   // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
   // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.

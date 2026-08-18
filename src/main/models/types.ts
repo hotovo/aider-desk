@@ -1,4 +1,4 @@
-import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -45,6 +45,7 @@ export interface LlmProviderStrategy {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    tlsRegistrar?: TlsPolicyRegistrar,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**
@@ -56,7 +57,7 @@ export interface LlmProviderStrategy {
   /**
    * Loads available models from the provider's API
    */
-  loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
+  loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 
   /**
    * Checks if required environment variables are available

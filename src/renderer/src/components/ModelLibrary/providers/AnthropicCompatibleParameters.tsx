@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AnthropicCompatibleProvider } from '@common/agent';
 
 import { Input } from '@/components/common/Input';
+import { TlsSettings } from '@/components/ModelLibrary/providers/TlsSettings';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 
 type Props = {
@@ -38,6 +39,7 @@ export const AnthropicCompatibleParameters = ({ provider, onChange }: Props) => 
           anthropicApiBaseEnv ? t('settings.agent.envVarFoundPlaceholder', { source: anthropicApiBaseEnv.source }) : t('anthropic.baseUrlPlaceholder')
         }
       />
+      <TlsSettings provider={provider} onChange={onChange} />
       <Input
         label={t('anthropic.apiKey')}
         type="password"

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 
 import { OpenAiCompatibleAdvancedSettings } from './OpenAiCompatibleAdvancedSettings';
+import { TlsSettings } from './TlsSettings';
 
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
@@ -38,6 +39,7 @@ export const OpenAiCompatibleParameters = ({ provider, onChange }: Props) => {
         onChange={handleBaseUrlChange}
         placeholder={openAiApiBaseEnv ? t('settings.agent.envVarFoundPlaceholder', { source: openAiApiBaseEnv.source }) : t('openai.baseUrlPlaceholder')}
       />
+      <TlsSettings provider={provider} onChange={onChange} />
       <Input
         label={t('openai.apiKey')}
         type="password"

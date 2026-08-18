@@ -2003,5 +2003,13 @@
     "projectError": "Unable to load this project.",
     "projects": "Projects",
     "openTasks": "Open tasks"
+  },
+  "providerTls": {
+    "title": "TLS settings",
+    "disableCertificateVerification": "Disable certificate verification",
+    "disableCertificateVerificationInfo": "Skip TLS certificate validation for this provider endpoint. Use only for trusted servers with self-signed certificates (e.g. local model servers).",
+    "caCertPath": "CA certificate path",
+    "caCertPathInfo": "Absolute path to a CA certificate file (PEM) used to verify the provider endpoint. Prefer this over disabling verification when using self-signed or private CA certificates.",
+    "caCertPathPlaceholder": "/path/to/ca.pem"
   }
 }

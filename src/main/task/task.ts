@@ -116,7 +116,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
-import { getProxyEnvVars } from '@/proxy-manager';
+import { getNetworkEnvVars } from '@/network-manager';
 import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/compaction';
 
 export const INTERNAL_TASK_ID = 'internal';
@@ -3786,7 +3786,7 @@ export class Task {
       logger.debug('Aider environment variables changed, updating connectors.');
       const updatedEnvironmentVariables = {
         ...getEnvironmentVariablesForAider(newSettings, this.project.baseDir),
-        ...getProxyEnvVars(newSettings),
+        ...getNetworkEnvVars(newSettings, this.store.getProviders()),
       };
       this.sendUpdateEnvVars(updatedEnvironmentVariables);
     }

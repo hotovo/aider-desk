@@ -4,6 +4,7 @@
 
 - added extraction of images and safe serialization for non-text data
 - fixed occasional virtualizd messages not showing up
+- added TLS certificate settings for OpenAI and Anthropic Compatible provider endpoints
 
 ## [0.79.0]
 
