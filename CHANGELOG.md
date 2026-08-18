@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - added extraction of images and safe serialization for non-text data
+- fixed occasional virtualizd messages not showing up
 
 ## [0.79.0]
 
