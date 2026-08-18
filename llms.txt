@@ -30620,7 +30620,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.79.0-dev",
+  "version": "0.80.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
