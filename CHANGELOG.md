@@ -5,6 +5,7 @@
 - added extraction of images and safe serialization for non-text data
 - fixed occasional virtualizd messages not showing up
 - added TLS certificate settings for OpenAI and Anthropic Compatible provider endpoints
+- improved message presentation of the multiline bash tool command
 
 ## [0.79.0]
 
