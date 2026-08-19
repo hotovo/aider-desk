@@ -3,6 +3,9 @@
   "version": "2.0.0",
   "main": "index.js",
   "description": "Integrates the Cursor SDK as a provider, running Cursor agents for cursor-sdk/* models",
+  "scripts": {
+    "postinstall": "node patch-cursor-sdk.mjs"
+  },
   "dependencies": {
     "@cursor/sdk": "^1.0.23"
   },

@@ -68,6 +68,12 @@ When the user interrupts a running Cursor agent:
 4. `{ blocked: true }` is returned to prevent AiderDesk's default interrupt handling
 5. The agent ID is cleared from task metadata so the next prompt starts a fresh agent
 
+## SDK Patches
+
+The extension ships `patch-cursor-sdk.mjs`, wired as a `postinstall` hook, which patches the installed `@cursor/sdk` bundle (pinned to `1.0.23`):
+
+- **Shell cwd fallback** — Upstream, shell tool calls without an explicit `workingDirectory` run in the terminal executor's tracked cwd, which is seeded from `process.cwd()` of the AiderDesk process (not the agent workspace). The patch makes `ShellCoreExecutor.getCwd()` fall back to the workspace path first, so such commands run in the project/task directory. Note that a `cd` in one shell call no longer persists to subsequent calls; the model can still use `workingDirectory` or `cd x && cmd` within a single call.
+
 ## Limitations / Known Gaps
 
 - **No tool approval control** — Tool execution happens inside Cursor's CLI subprocess and cannot be intercepted or approved by AiderDesk. Use the [cursor extension](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/cursor) if you need tool approval.
