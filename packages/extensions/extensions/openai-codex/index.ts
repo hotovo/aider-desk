@@ -427,9 +427,41 @@ const getValidAccessToken = async (context: ExtensionContext): Promise<{ accessT
   return { accessToken: newTokens.accessToken, accountId };
 };
 
+// Non-interactive variant for background fetches (quota display): returns null instead of starting the OAuth flow
+const getValidAccessTokenNonInteractive = async (context: ExtensionContext): Promise<{ accessToken: string; accountId: string } | null> => {
+  const tokens = await loadTokens();
+  if (!tokens) {
+    return null;
+  }
+
+  if (Date.now() >= tokens.expiresAt - 60_000) {
+    try {
+      const refreshed = await refreshAccessToken(tokens.refreshToken, context);
+      const accountId = getAccountId(refreshed.accessToken);
+      if (!accountId) {
+        return null;
+      }
+      return { accessToken: refreshed.accessToken, accountId };
+    } catch (error) {
+      context.log(`Token refresh failed: ${error instanceof Error ? error.message : error}`, 'warn');
+      return null;
+    }
+  }
+
+  const accountId = getAccountId(tokens.accessToken);
+  if (!accountId) {
+    return null;
+  }
+  return { accessToken: tokens.accessToken, accountId };
+};
+
 const fetchQuota = async (context: ExtensionContext): Promise<CodexQuotaData | null> => {
   try {
-    const { accessToken, accountId } = await getValidAccessToken(context);
+    const auth = await getValidAccessTokenNonInteractive(context);
+    if (!auth) {
+      return null;
+    }
+    const { accessToken, accountId } = auth;
     const response = await fetch(CODEX_USAGE_URL, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -473,7 +505,7 @@ const PROVIDER_ID = 'openai-codex';
 export default class OpenAICodexAuthExtension implements Extension {
   static metadata = {
     name: 'OpenAI Codex Auth',
-    version: '1.4.0',
+    version: '1.4.1',
     description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with quota display',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/openai-codex/icon.png',
     author: 'wladimiiir',
@@ -487,6 +519,11 @@ export default class OpenAICodexAuthExtension implements Extension {
       context.log('OpenAI Codex Auth loaded (token expired, will refresh on use)', 'info');
     } else {
       context.log('OpenAI Codex Auth loaded (not authenticated — will prompt on first use)', 'info');
+    }
+
+    // Pre-fetch quota data so usage is available immediately when the component first mounts
+    if (tokens) {
+      void getQuota(context);
     }
   }
 
@@ -519,12 +556,6 @@ export default class OpenAICodexAuthExtension implements Extension {
   async getUIExtensionData(componentId: string, context: ExtensionContext): Promise<unknown> {
     if (componentId !== STATUS_BAR_COMPONENT_ID) {
       return undefined;
-    }
-
-    const taskContext = context.getTaskContext();
-    const agentProfile = await taskContext?.getTaskAgentProfile();
-    if (agentProfile?.provider !== PROVIDER_ID) {
-      return null;
     }
 
     return getQuota(context);
