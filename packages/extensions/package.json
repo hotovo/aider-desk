@@ -50,18 +50,18 @@
     "coding-assistant"
   ],
   "dependencies": {
-    "@inquirer/prompts": "^7.3.1",
-    "chalk": "^5.4.1",
-    "commander": "^13.1.0",
-    "execa": "^9.5.2",
-    "ora": "^8.2.0"
+    "@inquirer/prompts": "7.10.1",
+    "chalk": "5.6.2",
+    "commander": "13.1.0",
+    "execa": "9.6.1",
+    "ora": "8.2.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.4",
-    "dts-bundle-generator": "^9.5.1",
-    "esbuild": "^0.28.1",
-    "typescript": "^5.5.4",
-    "zod": "^4.3.6"
+    "@types/node": "22.19.15",
+    "dts-bundle-generator": "9.5.1",
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3",
+    "zod": "4.3.6"
   },
   "peerDependencies": {
     "zod": "^4.0.0"
