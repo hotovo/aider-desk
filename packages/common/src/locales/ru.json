@@ -472,6 +472,7 @@
     "title": "Настройки",
     "savedSuccessfully": "Настройки сохранены",
     "saveError": "Не удалось сохранить настройки",
+    "navigation": "Навигация",
     "tabs": {
       "general": "Общие",
       "aider": "Aider",

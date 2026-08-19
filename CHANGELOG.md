@@ -7,6 +7,7 @@
 - added TLS certificate settings for OpenAI and Anthropic Compatible provider endpoints
 - improved message presentation of the multiline bash tool command
 - added validator script for extension UI component to be used by extension-creator skill
+- added responsive design for Settings
 
 ## [0.79.0]
 

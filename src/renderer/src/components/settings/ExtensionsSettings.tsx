@@ -173,7 +173,11 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     try {
       const success = await api.uninstallExtension(extensionFilePath, projectDir);
       if (success) {
-        showSuccessNotification(t('settings.extensions.success.uninstall', { name: extensionFilePath }));
+        showSuccessNotification(
+          t('settings.extensions.success.uninstall', {
+            name: extensionFilePath,
+          }),
+        );
         await loadInstalledExtensions();
         await loadAvailableExtensions();
       } else {
@@ -621,8 +625,8 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   return (
     <div className="space-y-4">
       {/* Tab Navigation */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 p-1 bg-bg-primary rounded-lg border border-border-default">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex gap-1 p-1 bg-bg-primary rounded-lg border border-border-default flex-shrink-0">
           <button
             onClick={() => setActiveTab(Tab.Installed)}
             className={clsx(
@@ -646,27 +650,29 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             {availableExtensions.length > 0 && <span className="ml-2 text-2xs px-1.5 py-0.5 rounded-full bg-bg-tertiary">{availableExtensions.length}</span>}
           </button>
         </div>
-        <div className="flex items-center justify-between w-[200px]">
-          <IconButton
-            icon={<FaChevronLeft className="w-3 h-3" />}
-            onClick={() => navigateContext('prev')}
-            tooltip={t('settings.extensions.previousContext')}
-            disabled={contexts.length <= 1}
-            className="p-1"
-          />
-          <div className="text-xs text-text-secondary truncate flex-1 text-center">{getContextDisplayName()}</div>
-          <IconButton
-            icon={<FaChevronRight className="w-3 h-3" />}
-            onClick={() => navigateContext('next')}
-            tooltip={t('settings.extensions.nextContext')}
-            disabled={contexts.length <= 1}
-            className="p-1"
-          />
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 ml-auto">
+          <div className="flex items-center justify-between flex-1 min-w-[180px] max-w-[200px]">
+            <IconButton
+              icon={<FaChevronLeft className="w-3 h-3" />}
+              onClick={() => navigateContext('prev')}
+              tooltip={t('settings.extensions.previousContext')}
+              disabled={contexts.length <= 1}
+              className="p-1"
+            />
+            <div className="text-xs text-text-secondary truncate flex-1 text-center">{getContextDisplayName()}</div>
+            <IconButton
+              icon={<FaChevronRight className="w-3 h-3" />}
+              onClick={() => navigateContext('next')}
+              tooltip={t('settings.extensions.nextContext')}
+              disabled={contexts.length <= 1}
+              className="p-1"
+            />
+          </div>
+          <Button onClick={handleRefresh} disabled={isLoading} variant="outline" size="sm">
+            <FaSync className={clsx('mr-1.5 w-3 h-3', isLoading && 'animate-spin')} />
+            {t('common.refresh')}
+          </Button>
         </div>
-        <Button onClick={handleRefresh} disabled={isLoading} variant="outline" size="sm">
-          <FaSync className={clsx('mr-1.5 w-3 h-3', isLoading && 'animate-spin')} />
-          {t('common.refresh')}
-        </Button>
       </div>
 
       {/* Search and Filters */}

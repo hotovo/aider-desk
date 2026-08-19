@@ -7,6 +7,10 @@ import { BiReset, BiTrash } from 'react-icons/bi';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { HiXMark } from 'react-icons/hi2';
 
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
 import { ProfileGeneralSection } from './sections/ProfileGeneralSection';
@@ -14,6 +18,8 @@ import { ProfilePromptsSection } from './sections/ProfilePromptsSection';
 import { ProfileToolsSection } from './sections/ProfileToolsSection';
 import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 
+import { useBooleanState } from '@/hooks/useBooleanState';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useApi } from '@/contexts/ApiContext';
 import { useMcpServers } from '@/contexts/McpServersContext';
 import { getPathBasename } from '@/utils/path-utils';
@@ -56,6 +62,8 @@ export const AgentSettings = ({
   onOpenMcpServers,
 }: Props) => {
   const { t } = useTranslation();
+  const { isMobile } = useResponsive();
+  const [isListSidebarOpen, , hideListSidebar, toggleListSidebar] = useBooleanState();
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(initialProfileId || DEFAULT_AGENT_PROFILE.id);
   const [activeTab, setActiveTab] = useState<ProfileTab>(ProfileTab.General);
 
@@ -123,12 +131,20 @@ export const AgentSettings = ({
 
   const profileNameInputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
-  const [clipboardProfile, setClipboardProfile] = useState<{ profile: AgentProfile; action: 'copy' | 'cut' } | null>(null);
+  const [clipboardProfile, setClipboardProfile] = useState<{
+    profile: AgentProfile;
+    action: 'copy' | 'cut';
+  } | null>(null);
 
   const mcpServers = useMemo(() => {
     const scope = profileContext === 'global' ? undefined : profileContext;
     if (mcpServersData) {
-      return scope ? { ...mcpServersData.global, ...(mcpServersData.projectServers[scope] || {}) } : mcpServersData.global;
+      return scope
+        ? {
+            ...mcpServersData.global,
+            ...(mcpServersData.projectServers[scope] || {}),
+          }
+        : mcpServersData.global;
     }
     return getMergedServers(scope);
   }, [mcpServersData, getMergedServers, profileContext]);
@@ -239,6 +255,9 @@ export const AgentSettings = ({
     };
     setAgentProfiles([...agentProfiles, newProfile]);
     setSelectedProfileId(newProfileId);
+    if (isMobile) {
+      hideListSidebar();
+    }
     setTimeout(() => {
       const profileNameInput = profileNameInputRef.current;
       if (profileNameInput) {
@@ -444,106 +463,146 @@ export const AgentSettings = ({
     setActiveTab(tabId as ProfileTab);
   };
 
-  return (
-    <div className="flex h-full w-full overflow-hidden">
-      {/* Left List Pane */}
-      <div className="w-[260px] flex-shrink-0 border-r border-border-default flex flex-col">
-        {/* Profile Context Header */}
-        <div className="p-3 border-b border-border-default">
-          <div className="flex items-center justify-between">
-            <IconButton
-              icon={<FaChevronLeft className="w-3 h-3" />}
-              onClick={() => navigateContext('prev')}
-              tooltip={t('settings.agent.previousContext')}
-              disabled={contexts.length <= 1}
-              className="p-1"
-            />
-            <div className="text-xs text-text-secondary truncate flex-1 text-center">{getContextDisplayName()}</div>
-            <IconButton
-              icon={<FaChevronRight className="w-3 h-3" />}
-              onClick={() => navigateContext('next')}
-              tooltip={t('settings.agent.nextContext')}
-              disabled={contexts.length <= 1}
-              className="p-1"
-            />
-          </div>
-        </div>
+  const handleSelectProfile = (id: string) => {
+    if (!dragging) {
+      setSelectedProfileId(id);
+      if (isMobile) {
+        hideListSidebar();
+      }
+    }
+  };
 
-        <div className="flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
-          {filteredProfiles.length === 0 ? (
-            <div className="h-full px-8 text-center flex items-center justify-center py-8 text-text-muted-light text-xs">
-              {t('settings.agent.noProfilesInContext')}
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragEnd={handleDragEnd}>
-              <SortableContext items={agentProfileIds} strategy={verticalListSortingStrategy}>
-                {filteredProfiles.map((profile) => (
-                  <SortableAgentProfileItem
-                    key={profile.id}
-                    profile={profile}
-                    isSelected={selectedProfileId === profile.id}
-                    onClick={(id) => {
-                      if (!dragging) {
-                        setSelectedProfileId(id);
-                      }
-                    }}
-                    onCopy={handleCopyProfile}
-                    onCut={handleCutProfile}
-                    isCut={clipboardProfile?.action === 'cut' && clipboardProfile.profile.id === profile.id}
-                    onDelete={(profile) => handleDeleteProfile(profile.id)}
-                    isDefaultProfile={profile.id === DEFAULT_AGENT_PROFILE.id}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
-          )}
-        </div>
-        {/* Missing Default Profiles Section - Only shown in global context */}
-        {profileContext === 'global' && missingDefaultProfiles.length > 0 && (
-          <div className="py-2 border-t border-border-default-dark">
-            {missingDefaultProfiles.map((profile) => (
-              <div
-                key={profile.id}
-                className="px-2 py-1 rounded-sm text-sm transition-colors flex items-center justify-between text-text-muted-light"
-                onClick={() => setSelectedProfileId(profile.id)}
-              >
-                <div className="flex items-center">
-                  {profile.subagent.enabled && (
-                    <div className="w-3 h-3 rounded-full mr-2 border border-border-muted" style={{ backgroundColor: profile.subagent.color }} />
-                  )}
-                  <span className="flex-1 text-sm">{profile.name}</span>
-                </div>
-                <IconButton
-                  icon={<FaPlus className="w-3 h-3" />}
-                  onClick={() => handleRestoreProfile(profile.id)}
-                  tooltip={t('settings.agent.restoreProfileTooltip')}
-                  className="p-1 hover:bg-bg-tertiary rounded text-text-muted-light hover:text-text-primary"
-                />
-              </div>
-            ))}
-          </div>
-        )}
-        <div className="p-2 border-t border-border-default flex items-center justify-center gap-2">
-          <Button onClick={handleCreateNewProfile} className="" variant="text" size="sm" color="primary">
-            <FaPlus className="mr-2 w-3 h-3" /> {t('settings.agent.createNewProfileInContext')}
-          </Button>
-          {clipboardProfile && (
-            <IconButton
-              onClick={handlePasteProfile}
-              icon={<FaPaste className="w-4 h-4 text-button-primary" />}
-              tooltip={t('settings.agent.pasteProfile')}
-              className="p-2 rounded hover:bg-button-primary-subtle"
-            />
-          )}
+  const listPane = (
+    <>
+      {/* Profile Context Header */}
+      <div className="p-3 border-b border-border-default">
+        <div className="flex items-center justify-between">
+          <IconButton
+            icon={<FaChevronLeft className="w-3 h-3" />}
+            onClick={() => navigateContext('prev')}
+            tooltip={t('settings.agent.previousContext')}
+            disabled={contexts.length <= 1}
+            className="p-1"
+          />
+          <div className="text-xs text-text-secondary truncate flex-1 text-center">{getContextDisplayName()}</div>
+          <IconButton
+            icon={<FaChevronRight className="w-3 h-3" />}
+            onClick={() => navigateContext('next')}
+            tooltip={t('settings.agent.nextContext')}
+            disabled={contexts.length <= 1}
+            className="p-1"
+          />
         </div>
       </div>
 
+      <div className="flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
+        {filteredProfiles.length === 0 ? (
+          <div className="h-full px-8 text-center flex items-center justify-center py-8 text-text-muted-light text-xs">
+            {t('settings.agent.noProfilesInContext')}
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={() => setDragging(true)} onDragEnd={handleDragEnd}>
+            <SortableContext items={agentProfileIds} strategy={verticalListSortingStrategy}>
+              {filteredProfiles.map((profile) => (
+                <SortableAgentProfileItem
+                  key={profile.id}
+                  profile={profile}
+                  isSelected={selectedProfileId === profile.id}
+                  onClick={handleSelectProfile}
+                  onCopy={handleCopyProfile}
+                  onCut={handleCutProfile}
+                  isCut={clipboardProfile?.action === 'cut' && clipboardProfile.profile.id === profile.id}
+                  onDelete={(profile) => handleDeleteProfile(profile.id)}
+                  isDefaultProfile={profile.id === DEFAULT_AGENT_PROFILE.id}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
+      {/* Missing Default Profiles Section - Only shown in global context */}
+      {profileContext === 'global' && missingDefaultProfiles.length > 0 && (
+        <div className="py-2 border-t border-border-default-dark">
+          {missingDefaultProfiles.map((profile) => (
+            <div
+              key={profile.id}
+              className="px-2 py-1 rounded-sm text-sm transition-colors flex items-center justify-between text-text-muted-light"
+              onClick={() => setSelectedProfileId(profile.id)}
+            >
+              <div className="flex items-center">
+                {profile.subagent.enabled && (
+                  <div className="w-3 h-3 rounded-full mr-2 border border-border-muted" style={{ backgroundColor: profile.subagent.color }} />
+                )}
+                <span className="flex-1 text-sm">{profile.name}</span>
+              </div>
+              <IconButton
+                icon={<FaPlus className="w-3 h-3" />}
+                onClick={() => handleRestoreProfile(profile.id)}
+                tooltip={t('settings.agent.restoreProfileTooltip')}
+                className="p-1 hover:bg-bg-tertiary rounded text-text-muted-light hover:text-text-primary"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      <div className="p-2 border-t border-border-default flex items-center justify-center gap-2">
+        <Button onClick={handleCreateNewProfile} className="" variant="text" size="sm" color="primary">
+          <FaPlus className="mr-2 w-3 h-3" /> {t('settings.agent.createNewProfileInContext')}
+        </Button>
+        {clipboardProfile && (
+          <IconButton
+            onClick={handlePasteProfile}
+            icon={<FaPaste className="w-4 h-4 text-button-primary" />}
+            tooltip={t('settings.agent.pasteProfile')}
+            className="p-2 rounded hover:bg-button-primary-subtle"
+          />
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <div className="flex h-full w-full overflow-hidden">
+      {/* Left List Pane */}
+      {!isMobile && <div className="w-[260px] flex-shrink-0 border-r border-border-default flex flex-col">{listPane}</div>}
+
+      {/* Mobile list drawer */}
+      {isMobile && (
+        <AnimatePresence>
+          {isListSidebarOpen && (
+            <motion.div
+              initial={{ x: '-100%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '-100%', opacity: 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="fixed inset-y-0 left-0 w-full h-full bg-bg-primary z-[1000] shadow-xl flex flex-col"
+            >
+              <div className="flex items-center justify-between p-2 h-10 bg-bg-primary-light border-b border-border-dark-light flex-shrink-0">
+                <h3 className="text-sm font-semibold uppercase">{t('settings.tabs.agents')}</h3>
+                <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors" onClick={hideListSidebar}>
+                  <HiXMark className="w-5 h-5 text-text-primary" />
+                </button>
+              </div>
+              <div className="flex-1 min-h-0 flex flex-col">{listPane}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+
       {/* Right Details Pane */}
       <div className="flex-1 flex flex-col h-full min-w-0">
+        {isMobile && (
+          <div className="flex items-center px-2 py-1.5 border-b border-border-default-dark bg-bg-primary-light flex-shrink-0">
+            <button className="p-1 rounded-md hover:bg-bg-tertiary transition-colors mr-3" onClick={toggleListSidebar}>
+              <RiMenuUnfold4Line className="w-5 h-5 text-text-primary" />
+            </button>
+            <span className="text-sm font-medium uppercase truncate">{selectedProfile?.name || t('settings.agent.selectOrCreateProfile')}</span>
+          </div>
+        )}
         {selectedProfile ? (
           <>
             {/* Profile Header */}
-            <div className="px-6 pt-5 pb-1">
+            <div className={clsx('pt-5 pb-1', isMobile ? 'px-4' : 'px-6')}>
               <div className="max-w-3xl mx-auto space-y-3">
                 <div className="flex items-end gap-2">
                   <Input
@@ -588,7 +647,7 @@ export const AgentSettings = ({
             </div>
 
             {/* Tab Content */}
-            <div className="flex-1 min-h-0 overflow-hidden px-6 pb-4">
+            <div className={clsx('flex-1 min-h-0 overflow-hidden pb-4', isMobile ? 'px-4' : 'px-6')}>
               <div className="max-w-3xl mx-auto p-3 border border-border-dark-light rounded max-h-full overflow-y-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-bg-tertiary">
                 {activeTab === ProfileTab.General && (
                   <ProfileGeneralSection profile={selectedProfile} settings={settings} onSettingChange={handleProfileSettingChange} />

@@ -476,6 +476,7 @@
     "title": "设置",
     "savedSuccessfully": "设置保存成功",
     "saveError": "设置保存失败",
+    "navigation": "导航",
     "tabs": {
       "general": "通用",
       "providers": "模型提供者",

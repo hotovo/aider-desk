@@ -478,6 +478,7 @@
     "title": "Settings",
     "savedSuccessfully": "Settings saved successfully",
     "saveError": "Failed to save settings",
+    "navigation": "Navigation",
     "tabs": {
       "general": "General",
       "aider": "Aider",
