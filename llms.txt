@@ -146,6 +146,7 @@ src/
       index.ts
       model-manager.ts
       types.ts
+      utils.ts
     project/
       index.ts
       migrations.ts
@@ -263,9 +264,9 @@ src/
     logger.ts
     managers.ts
     messages.ts
+    network-manager.ts
     paths.ts
     progress-window.ts
-    proxy-manager.ts
     python-dependencies-installer.ts
     start-up.ts
     window-manager.ts
@@ -459,6 +460,7 @@ src/
             RequestyModelOverrides.tsx
             RequestyParameters.tsx
             SyntheticParameters.tsx
+            TlsSettings.tsx
             useArrayField.ts
             VertexAiAdvancedSettings.tsx
             VertexAiModelOverrides.tsx
@@ -803,6 +805,23 @@ Files
 File: resources/connector/connector.py
 ================
 #!/usr/bin/env python
+⋮----
+def apply_tls_overrides()
+⋮----
+"""Apply AiderDesk TLS settings before litellm/httpx create their SSL contexts.
+
+  Must run before `import litellm` so module-level HTTP clients pick up the patched
+  `ssl.create_default_context`. Re-applying later only affects newly created contexts.
+  """
+⋮----
+insecure = os.getenv("AIDER_DESK_INSECURE_TLS") == "1"
+ca_bundle = os.getenv("AIDER_DESK_CA_BUNDLE_PATH")
+⋮----
+original_create_default_context = ssl.create_default_context
+⋮----
+def patched_create_default_context(*args, **kwargs)
+⋮----
+context = original_create_default_context(*args, **kwargs)
 ⋮----
 THINKING_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n', re.IGNORECASE)
 ANSWER_MARKER = re.compile(r'[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*\s*\n', re.IGNORECASE)
@@ -1365,6 +1384,8 @@ files = message.get('files')
 async def update_environment_variables(self, environment_variables)
 ⋮----
 """Update environment variables for the Aider process"""
+⋮----
+tls_changed = any(
 ⋮----
 # Update the environment variables in the current process
 ⋮----
@@ -2329,7 +2350,14 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
-import { estimateMessageTokens, extractPromptContextFromToolResult, findLastUserMessage, isNetworkError, readFileContent, safeJsonStringify } from './utils';
+import {
+  estimateMessageTokens,
+  extractPromptContextFromToolResult,
+  findLastUserMessage,
+  isNetworkError,
+  readFileContent,
+  safeStringifyToolOutput,
+} from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
@@ -3091,8 +3119,8 @@ const optimizeSubagentMessages = (messages: ModelMessage[]): ModelMessage[] =>
  */
 export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] =>
 ⋮----
-// Skip content-type outputs — they may already have file parts
-// from a provider that supports them natively
+// Handle content-type outputs — extract file/image parts into user messages
+// since not all providers support file parts in tool results natively
 ⋮----
 // If images were extracted, add a user message with the image parts
 ⋮----
@@ -3409,6 +3437,32 @@ const done = (): void =>
 export const stringifyWithBudget = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS):
 ⋮----
 export const safeJsonStringify = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): string =>
+⋮----
+/**
+ * Checks if a content array (e.g. MCP tool result parts) contains any non-text parts
+ * (e.g. media, image, file). These parts carry binary data (base64) that must NOT be
+ * truncated — truncating them corrupts the data and causes the model to receive a
+ * broken text fragment instead of a proper multimodal attachment.
+ */
+export const contentArrayHasNonTextParts = (content: unknown): boolean =>
+⋮----
+/**
+ * Checks if a value contains non-text parts (e.g. media, image, file) in its content array.
+ * Handles multiple formats: direct arrays, { content: [...] }, and { type: 'content', value: [...] }.
+ */
+const hasNonTextContentParts = (value: unknown): boolean =>
+⋮----
+// { content: [...] } (MCP / extension tool result format)
+⋮----
+// { type: 'content', value: [...] } (wrapped ToolResultOutput)
+⋮----
+/**
+ * Safely serializes a tool result output to JSON for storage in context/IPC.
+ * When the output contains non-text parts (media, image, file), the full payload
+ * is preserved via JSON.stringify to avoid corrupting binary data. For text-only
+ * outputs, falls back to stringifyWithBudget for OOM protection.
+ */
+export const safeStringifyToolOutput = (value: unknown, maxChars = TOOL_RESULT_MAX_JSON_CHARS): string =>
 ⋮----
 /**
  * Reads a file and returns its content with optional line numbering and line range.
@@ -4330,7 +4384,7 @@ import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
 import { ApprovalManager } from '@/agent/tools/approval-manager';
-import { stringifyWithBudget, truncateToolResult } from '@/agent/utils';
+import { contentArrayHasNonTextParts, stringifyWithBudget, truncateToolResult } from '@/agent/utils';
 import { Project } from '@/project';
 import { Task } from '@/task';
 ⋮----
@@ -4414,6 +4468,8 @@ export type ExtensionEventMap = {
   onAfterCommit: AfterCommitEvent;
   onInterrupted: InterruptedEvent;
 };
+⋮----
+const hasNonTextContentParts = (value: unknown): boolean =>
 ⋮----
 const boundExtensionToolResult = async (result: unknown): Promise<unknown> =>
 ⋮----
@@ -5302,11 +5358,11 @@ const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model, r
 ================
 File: src/main/models/providers/anthropic-compatible.ts
 ================
-import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar } from '@common/types';
 import { isAnthropicCompatibleProvider, AnthropicCompatibleProvider, LlmProvider } from '@common/agent';
 import { createAnthropic } from '@ai-sdk/anthropic';
 ⋮----
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
@@ -5314,10 +5370,15 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getAnthropicCacheControl } from '@/models/providers/anthropic';
 import { getDefaultUsageReport } from '@/models/providers/default';
+import { syncProviderTlsRule } from '@/models/utils';
 ⋮----
 const ensureV1Suffix = (baseUrl: string): string =>
 ⋮----
-const loadAnthropicCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+const loadAnthropicCompatibleModels = async (
+  profile: ProviderProfile,
+  settings: SettingsData,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): Promise<LoadModelsResponse> =>
 ⋮----
 const hasAnthropicCompatibleEnvVars = (settings: SettingsData): boolean =>
 ⋮----
@@ -5326,7 +5387,16 @@ const getAnthropicCompatibleAiderMapping = (provider: ProviderProfile, modelId: 
 // Use anthropic prefix for Anthropic-compatible providers
 ⋮----
 // === LLM Creation Functions ===
-const createAnthropicCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
+const createAnthropicCompatibleLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): LanguageModel =>
 ⋮----
 // Use createAnthropic with custom baseURL to get a provider instance, then get the model.
 // The @ai-sdk/anthropic SDK only appends `/messages` to the baseURL, so it must include `/v1`.
@@ -6213,19 +6283,20 @@ let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
 ================
 File: src/main/models/providers/openai-compatible.ts
 ================
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning, TlsPolicyRegistrar } from '@common/types';
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 ⋮----
 import type { JSONValue, SharedV4ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModel } from 'ai';
+import type { LanguageModel, ToolSet } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultUsageReport } from '@/models/providers/default';
+import { syncProviderTlsRule } from '@/models/utils';
 ⋮----
-const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar): Promise<LoadModelsResponse> =>
 ⋮----
 const hasOpenAiCompatibleEnvVars = (settings: SettingsData): boolean =>
 ⋮----
@@ -6234,7 +6305,16 @@ const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, modelId: str
 // Use openai prefix for OpenAI-compatible providers
 ⋮----
 // === LLM Creation Functions ===
-const createOpenAiCompatibleLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
+const createOpenAiCompatibleLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  tlsRegistrar?: TlsPolicyRegistrar,
+): LanguageModel =>
 ⋮----
 // Use createOpenAICompatible to get a provider instance, then get the model
 ⋮----
@@ -6720,7 +6800,18 @@ import path from 'path';
 ⋮----
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderDefinition } from '@common/extensions';
-import { Model, ModelInfo, ModelOverrides, ProviderModelsData, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import {
+  Model,
+  ModelInfo,
+  ModelOverrides,
+  ProviderModelsData,
+  ProviderProfile,
+  Reasoning,
+  SettingsData,
+  TlsPolicyRegistrar,
+  UsageReportData,
+  VoiceSession,
+} from '@common/types';
 import { extractProviderModel } from '@common/utils';
 ⋮----
 import { anthropicProviderStrategy } from './providers/anthropic';
@@ -6798,6 +6889,7 @@ export class ModelManager
 constructor(
     private store: Store,
     private eventManager: EventManager,
+    private readonly tlsRegistrar?: TlsPolicyRegistrar,
 )
 ⋮----
 private async init(): Promise<void>
@@ -6958,7 +7050,7 @@ getExtensionProviderProfiles(): ProviderProfile[]
 ================
 File: src/main/models/types.ts
 ================
-import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData, VoiceSession } from '@common/types';
+import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
 ⋮----
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -7005,6 +7097,7 @@ export interface LlmProviderStrategy {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    tlsRegistrar?: TlsPolicyRegistrar,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**
@@ -7016,7 +7109,7 @@ export interface LlmProviderStrategy {
   /**
    * Loads available models from the provider's API
    */
-  loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
+  loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 
   /**
    * Checks if required environment variables are available
@@ -7141,6 +7234,13 @@ export interface LlmProviderStrategy {
    */
 ⋮----
 export type LlmProviderRegistry = Record<string, LlmProviderStrategy>;
+
+================
+File: src/main/models/utils.ts
+================
+import type { TlsPolicyOptions, TlsPolicyRegistrar } from '@common/types';
+⋮----
+export const syncProviderTlsRule = (registrar: TlsPolicyRegistrar | undefined, baseUrl: string | undefined, sslVerify?: boolean, caCertPath?: string): void =>
 
 ================
 File: src/main/project/index.ts
@@ -9042,7 +9142,7 @@ import { EventManager } from '@/events';
 import { getEnvironmentVariablesForAider } from '@/utils';
 import { Task } from '@/task/task';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
-import { getProxyEnvVars } from '@/proxy-manager';
+import { getNetworkEnvVars } from '@/network-manager';
 ⋮----
 export class AiderManager
 ⋮----
@@ -9496,7 +9596,7 @@ import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
-import { getProxyEnvVars } from '@/proxy-manager';
+import { getNetworkEnvVars } from '@/network-manager';
 import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/compaction';
 ⋮----
 const getTaskFinishedNotificationText = (task: TaskData) =>
@@ -12127,7 +12227,7 @@ import { expandTilde } from '@/agent/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
 import { isElectron } from '@/app';
-import { ProxyManager } from '@/proxy-manager';
+import { NetworkManager } from '@/network-manager';
 ⋮----
 export class EventsHandler
 ⋮----
@@ -12139,7 +12239,7 @@ getEventManager(): EventManager
 ⋮----
 async saveSettings(newSettings: SettingsData): Promise<SettingsData>
 ⋮----
-// Re-initialize proxy if settings changed
+// Re-initialize network settings (proxy/TLS rules) if changed
 ⋮----
 getProjectSettings(baseDir: string): ProjectSettings
 ⋮----
@@ -12709,7 +12809,7 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
 import { SERVER_PORT } from '@/constants';
 import logger, { initEventLogging } from '@/logger';
-import { ProxyManager } from '@/proxy-manager';
+import { NetworkManager } from '@/network-manager';
 import { EventsHandler } from '@/events-handler';
 import { PromptsManager } from '@/prompts';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
@@ -12727,7 +12827,7 @@ export interface ManagersResult {
 ⋮----
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
 ⋮----
-// Initialize proxy manager FIRST — must be before any network calls
+// Initialize network manager FIRST — must be before any network calls
 ⋮----
 // Initialize telemetry manager (non-blocking - analytics not critical for startup)
 ⋮----
@@ -13051,6 +13151,81 @@ export interface ReadonlyUnsubscribeEventsMessage extends Message {
 export const isReadonlyUnsubscribeEventsMessage = (message: Message): message is ReadonlyUnsubscribeEventsMessage =>
 
 ================
+File: src/main/network-manager.ts
+================
+import { readFileSync } from 'fs';
+⋮----
+import { setGlobalDispatcher, EnvHttpProxyAgent, Agent as UndiciAgent, Dispatcher } from 'undici';
+import { bootstrap } from 'global-agent';
+⋮----
+import type { ProviderProfile, SettingsData, TlsPolicyOptions, TlsPolicyRegistrar } from '@common/types';
+⋮----
+import logger from '@/logger';
+⋮----
+const HEADERS_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const BODY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+const CONNECT_TIMEOUT_MS = 30 * 1000; // 30 seconds
+⋮----
+type TlsConnectOptions = {
+  rejectUnauthorized?: false;
+  ca?: string[];
+};
+⋮----
+class TlsRoutingDispatcher extends Dispatcher
+⋮----
+constructor(
+    private readonly resolveDispatcher: (origin: string | undefined) => Dispatcher,
+    private readonly getAllDispatchers: () => Dispatcher[],
+)
+⋮----
+dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler): boolean
+⋮----
+close(): Promise<void>
+⋮----
+destroy(): Promise<void>
+⋮----
+export const getProxyEnvVars = (settings: SettingsData): Record<string, string> =>
+⋮----
+export const getTlsEnvVars = (providers: ProviderProfile[]): Record<string, string> =>
+⋮----
+export const getNetworkEnvVars = (settings: SettingsData, providers: ProviderProfile[]): Record<string, string> => (
+⋮----
+export class NetworkManager implements TlsPolicyRegistrar
+⋮----
+/**
+   * Initialize network settings from settings. Called once during app startup (first in managers init).
+   */
+init(settings: SettingsData): void
+⋮----
+/**
+   * React to settings changes. Called on every saveSettings().
+   * Re-initializes the proxy if the proxy config changed.
+   */
+settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
+⋮----
+setTlsPolicy(origin: string, options: TlsPolicyOptions): void
+⋮----
+hasTlsPolicy(origin: string): boolean
+⋮----
+clearTlsPolicy(origin: string): void
+⋮----
+private resolveDispatcher(origin: string | undefined): Dispatcher
+⋮----
+private getAllDispatchers(): Dispatcher[]
+⋮----
+private applyProxy(url: string, noProxy?: string): void
+⋮----
+// Cover Axios, Got, and legacy HTTP libs via global-agent
+⋮----
+private clearProxy(): void
+⋮----
+private rebuildDispatchers(): void
+⋮----
+private buildDispatcher(connectOptions?: TlsConnectOptions): Dispatcher
+⋮----
+// `connect` applies to plain Agents, `requestTls` to origins tunneled through ProxyAgent CONNECT
+
+================
 File: src/main/paths.ts
 ================
 import path from 'path';
@@ -13085,41 +13260,6 @@ setCompleted(): void
 addLog(message: string): void
 ⋮----
 close(): void
-
-================
-File: src/main/proxy-manager.ts
-================
-import { setGlobalDispatcher, EnvHttpProxyAgent, Agent as UndiciAgent } from 'undici';
-import { bootstrap } from 'global-agent';
-⋮----
-import type { SettingsData } from '@common/types';
-⋮----
-import logger from '@/logger';
-⋮----
-const HEADERS_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const BODY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
-const CONNECT_TIMEOUT_MS = 30 * 1000; // 30 seconds
-⋮----
-export const getProxyEnvVars = (settings: SettingsData): Record<string, string> =>
-⋮----
-export class ProxyManager
-⋮----
-/**
-   * Initialize proxy from settings. Called once during app startup (first in managers init).
-   */
-init(settings: SettingsData): void
-⋮----
-/**
-   * React to settings changes. Called on every saveSettings().
-   * Re-initializes the proxy if the config changed.
-   */
-settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
-⋮----
-private applyProxy(url: string, noProxy?: string): void
-⋮----
-// Cover Axios, Got, and legacy HTTP libs via global-agent
-⋮----
-private clearProxy(): void
 
 ================
 File: src/main/python-dependencies-installer.ts
@@ -17978,6 +18118,7 @@ import { useTranslation } from 'react-i18next';
 import { AnthropicCompatibleProvider } from '@common/agent';
 ⋮----
 import { Input } from '@/components/common/Input';
+import { TlsSettings } from '@/components/ModelLibrary/providers/TlsSettings';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
 ⋮----
 type Props = {
@@ -18654,6 +18795,7 @@ import { useTranslation } from 'react-i18next';
 import { OpenAiCompatibleProvider } from '@common/agent';
 ⋮----
 import { OpenAiCompatibleAdvancedSettings } from './OpenAiCompatibleAdvancedSettings';
+import { TlsSettings } from './TlsSettings';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
@@ -18987,6 +19129,33 @@ type Props = {
 export const SyntheticParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/TlsSettings.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LlmProviderBase } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Accordion } from '@/components/common/Accordion';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type TlsCapableProvider = LlmProviderBase & { sslVerify?: boolean; caCertPath?: string };
+⋮----
+type Props<T extends TlsCapableProvider> = {
+  provider: T;
+  onChange: (updated: T) => void;
+};
+⋮----
+const handleSslVerifyChange = (checked: boolean) =>
+⋮----
+const handleCaCertPathChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+<span>
 ⋮----
 label=
 
@@ -30704,7 +30873,7 @@ File: package.json
     "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
     "@huggingface/transformers": "^3.8.1",
     "@lancedb/lancedb": "^0.22.3",
-    "@legendapp/list": "^3.3.3",
+    "@legendapp/list": "3.3.7",
     "@openrouter/ai-sdk-provider": "3.0.0",
     "@opentelemetry/auto-instrumentations-node": "^0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
