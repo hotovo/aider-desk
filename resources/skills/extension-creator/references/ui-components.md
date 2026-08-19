@@ -998,6 +998,27 @@ class MyExtension implements Extension {
 }
 ```
 
+## Validating Components
+
+Extension UI and config components are JSX strings, so they are not covered by normal TypeScript project checks. The extension-creator skill ships a validator script that checks them statically:
+
+```bash
+node <skill-dir>/assets/scripts/validate-extension-ui.mjs <Component.jsx | extension-dir> [--type=ui|config|auto]
+```
+
+The script runs two checks per file:
+
+1. **Syntax** — applies the exact Sucrase transform the app uses at runtime, so anything that would fail to render is caught
+2. **Types** — compiles the template against the real runtime props contract (`props.ui.*`, `executeExtensionAction`, `config`/`updateConfig`, React API, `message`, etc.), catching typos like `props.updataConfig` or `React.useStat`
+
+Behavior details:
+
+- Files named `Config*.jsx` are treated as config components automatically; use `--type=ui` or `--type=config` to override
+- Directories are scanned recursively for `.jsx`/`.tsx` files (skips `node_modules`)
+- `--no-types` runs the syntax check only
+- Exit code 0 means all files pass; each failure prints `[SYNTAX]`/`[TYPE]` issues with line/column
+- Requires `sucrase`, `typescript`, and `@types/react` to be resolvable (true inside the aider-desk repo); otherwise it degrades to the checks that are possible and prints a warning
+
 ## Best Practices
 
 ### Performance

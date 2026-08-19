@@ -120,6 +120,7 @@ npm install
 ### Step 7: Verify
 
 - Run type checking: `npm run typecheck`
+- Validate UI/config components (.jsx files) if any (see [ui-components.md](ui-components.md) → Validating components): `node <skill-dir>/assets/scripts/validate-extension-ui.mjs <extension-dir>` — all files must pass
 - Run tests if applicable: `npm run test`
 - Verify extension loads without errors
 - Check that extension appears in extensions list

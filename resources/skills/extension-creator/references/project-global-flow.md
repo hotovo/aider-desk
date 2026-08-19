@@ -66,7 +66,8 @@ Reference: [extension-interface.md](extension-interface.md)
 
 ### Step 4: Verify
 
-The extension will be auto-discovered by AiderDesk from the target directory. No restart needed — extensions are watched and loaded dynamically.
+- If the extension has UI or config components (.jsx files), validate them (see [ui-components.md](ui-components.md) → Validating components): `node <skill-dir>/assets/scripts/validate-extension-ui.mjs <extension-dir>` — all files must pass
+- The extension will be auto-discovered by AiderDesk from the target directory. No restart needed — extensions are watched and loaded dynamically.
 
 ## What NOT to do (Project/Global)
 
