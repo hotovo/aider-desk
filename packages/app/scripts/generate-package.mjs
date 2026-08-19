@@ -96,7 +96,9 @@ pkgJson.dependencies = Object.keys(pkgJson.dependencies).sort().reduce((acc, key
   return acc;
 }, {});
 
-pkgJson.version = rootPkg.version;
+if (!process.env.SKIP_VERSION_SYNC) {
+  pkgJson.version = rootPkg.version;
+}
 
 if (rootPkg.overrides) {
   pkgJson.overrides = rootPkg.overrides;

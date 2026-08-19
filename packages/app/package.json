@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.79.0",
+  "version": "0.79.1",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -50,6 +50,7 @@
     "@ai-sdk/mistral": "4.0.28",
     "@ai-sdk/openai": "4.0.38",
     "@ai-sdk/openai-compatible": "3.0.29",
+    "@ai-sdk/otel": "1.0.60",
     "@aiderdesk/extensions": "0.30.0",
     "@aws-sdk/client-bedrock": "^3.1059.0",
     "@aws-sdk/credential-providers": "^3.1059.0",
@@ -62,6 +63,10 @@
     "@lancedb/lancedb": "^0.22.3",
     "@modelcontextprotocol/sdk": "^1.20.0",
     "@openrouter/ai-sdk-provider": "3.0.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.79.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/sdk-node": "^0.221.0",
+    "@opentelemetry/sdk-trace-base": "^2.10.0",
     "@posthog/ai": "^8.3.0",
     "@requesty/ai-sdk": "3.5.0",
     "adm-zip": "^0.6.0",

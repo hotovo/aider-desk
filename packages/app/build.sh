@@ -48,9 +48,9 @@ cp "$ROOT_DIR/scripts/download-probe.mjs" "$SCRIPT_DIR/scripts/download-probe.mj
 echo "Download scripts copied."
 echo ""
 
-# Step 5: Generate package.json
+# Step 5: Generate package.json (keep packages/app version, don't sync from root)
 echo "--- Generating package.json ---"
-node "$SCRIPT_DIR/scripts/generate-package.mjs"
+SKIP_VERSION_SYNC=1 node "$SCRIPT_DIR/scripts/generate-package.mjs"
 echo ""
 
 # Step 6: Install dependencies (rebuilds native deps)
