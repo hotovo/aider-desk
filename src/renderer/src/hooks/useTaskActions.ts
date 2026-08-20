@@ -37,6 +37,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
           lastActiveAt: new Date(),
         });
       } catch (error) {
+        updateTaskState(taskId, { loading: false });
         // eslint-disable-next-line no-console
         console.error('Failed to load task:', error);
       }

@@ -152,7 +152,7 @@ const NormalApp = () => {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
-      <Router>
+      <Router useTransitions={false}>
         <TooltipProvider>
           <ApiProvider>
             <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
@@ -207,7 +207,7 @@ const App = () => {
 
   if (bootstrap?.mode === 'readonly') {
     return (
-      <Router>
+      <Router useTransitions={false}>
         <ReadonlyApp bootstrap={bootstrap} />
       </Router>
     );
