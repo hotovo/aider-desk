@@ -16184,6 +16184,7 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
 ⋮----
+import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -22083,6 +22084,10 @@ import { BiReset, BiTrash } from 'react-icons/bi';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTranslation } from 'react-i18next';
+import { AnimatePresence, motion } from 'framer-motion';
+import { clsx } from 'clsx';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { HiXMark } from 'react-icons/hi2';
 ⋮----
 import { SortableAgentProfileItem } from './SortableAgentProfileItem';
 import { ProfileGeneralSection } from './sections/ProfileGeneralSection';
@@ -22090,6 +22095,8 @@ import { ProfilePromptsSection } from './sections/ProfilePromptsSection';
 import { ProfileToolsSection } from './sections/ProfileToolsSection';
 import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 ⋮----
+import { useBooleanState } from '@/hooks/useBooleanState';
+import { useResponsive } from '@/hooks/useResponsive';
 import { useApi } from '@/contexts/ApiContext';
 import { useMcpServers } from '@/contexts/McpServersContext';
 import { getPathBasename } from '@/utils/path-utils';
@@ -22208,13 +22215,19 @@ const handleToolApprovalChange = (toolId: string, approval: ToolApprovalState) =
 ⋮----
 const handleTabChange = (tabId: string) =>
 ⋮----
-{/* Left List Pane */}
+const handleSelectProfile = (id: string) =>
 ⋮----
 {/* Profile Context Header */}
 ⋮----
 onClick=
 ⋮----
 onDelete=
+⋮----
+{/* Missing Default Profiles Section - Only shown in global context */}
+⋮----
+{/* Left List Pane */}
+⋮----
+{/* Mobile list drawer */}
 ⋮----
 {/* Right Details Pane */}
 ⋮----
@@ -22512,6 +22525,9 @@ import { McpServerConfig, McpServersData, McpTool, ProjectData } from '@common/t
 import { extractIpcErrorMessage } from '@common/utils';
 import { useTranslation } from 'react-i18next';
 import { FaChevronLeft, FaChevronRight, FaPencilAlt, FaPlus, FaSyncAlt } from 'react-icons/fa';
+import { AnimatePresence, motion } from 'framer-motion';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { HiXMark } from 'react-icons/hi2';
 ⋮----
 import { McpServer, McpServerForm } from './McpServerForm';
 import { McpServerSidebarItem } from './McpServerSidebarItem';
@@ -22519,6 +22535,8 @@ import { McpServerToolsPanel } from './McpServerToolsPanel';
 ⋮----
 import { useMcpServers } from '@/contexts/McpServersContext';
 import { useApi } from '@/contexts/ApiContext';
+import { useResponsive } from '@/hooks/useResponsive';
+import { useBooleanState } from '@/hooks/useBooleanState';
 import { getPathBasename } from '@/utils/path-utils';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
@@ -22554,7 +22572,11 @@ const handleSave = (savedServers: Record<string, McpServerConfig>) =>
 ⋮----
 const handleCancel = () =>
 ⋮----
-{/* Left List Pane */}
+isEditingServersConfig
+? Object.entries(servers).map(([name, config]) => (
+⋮----
+setSelectedServerName(name);
+if (isMobile)
 ⋮----
 {/* Context switcher */}
 ⋮----
@@ -22568,9 +22590,11 @@ onEdit=
 ⋮----
 <Button onClick=
 ⋮----
-{/* Right Details Pane */}
+{/* Left List Pane */}
 ⋮----
-onRemove=
+{/* Mobile list drawer */}
+⋮----
+{/* Right Details Pane */}
 
 ================
 File: src/renderer/src/components/settings/mcp/McpToolCard.tsx
@@ -27133,6 +27157,7 @@ import { AgentProfile, Font, McpServersData, ProjectData, ProviderProfile, Setti
 import { Dispatch, ReactNode, SetStateAction, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   FaBrain,
   FaChevronDown,
@@ -27148,7 +27173,11 @@ import {
 } from 'react-icons/fa';
 import { MdTerminal } from 'react-icons/md';
 import { LuClipboardList } from 'react-icons/lu';
+import { RiMenuUnfold4Line } from 'react-icons/ri';
+import { HiXMark } from 'react-icons/hi2';
 ⋮----
+import { useResponsive } from '@/hooks/useResponsive';
+import { useBooleanState } from '@/hooks/useBooleanState';
 import { getPathBasename } from '@/utils/path-utils';
 import { useApi } from '@/contexts/ApiContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
@@ -27231,8 +27260,6 @@ const handleChildClick = (pageId: PageId, sectionId: string) =>
 ⋮----
 const renderContent = () =>
 ⋮----
-{/* Sidebar */}
-⋮----
 className=
 ⋮----
 e.stopPropagation();
@@ -27240,6 +27267,10 @@ e.stopPropagation();
 {!item.children?.length && <span className="w-6" />} {/* Spacer for items without children */}
 ⋮----
 {/* Children */}
+⋮----
+{/* Sidebar */}
+⋮----
+{/* Mobile navigation drawer */}
 ⋮----
 {/* Content */}
 
@@ -30854,184 +30885,184 @@ File: package.json
     "@ai-sdk/otel": "1.0.60",
     "@ai-sdk/provider": "4.0.7",
     "@aiderdesk/extensions": "workspace:*",
-    "@aws-crypto/sha256-js": "^5.2.0",
-    "@aws-sdk/client-bedrock": "^3.1059.0",
-    "@aws-sdk/credential-provider-node": "^3.972.49",
-    "@aws-sdk/credential-providers": "^3.1059.0",
-    "@aws-sdk/types": "^3.973.10",
-    "@codemirror/autocomplete": "^6.18.7",
-    "@codemirror/language": "^6.12.2",
-    "@codemirror/language-data": "^6.5.2",
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dotenvx/dotenvx": "^1.24.5",
-    "@electron-toolkit/preload": "^3.0.2",
-    "@electron-toolkit/utils": "^4.0.0",
-    "@google-cloud/aiplatform": "^5.7.0",
-    "@google/genai": "^1.30.0",
-    "@headlessui/react": "^2.2.0",
-    "@homebridge/node-pty-prebuilt-multiarch": "^0.13.1",
-    "@huggingface/transformers": "^3.8.1",
-    "@lancedb/lancedb": "^0.22.3",
+    "@aws-crypto/sha256-js": "5.2.0",
+    "@aws-sdk/client-bedrock": "3.1059.0",
+    "@aws-sdk/credential-provider-node": "3.972.49",
+    "@aws-sdk/credential-providers": "3.1059.0",
+    "@aws-sdk/types": "3.973.10",
+    "@codemirror/autocomplete": "6.20.0",
+    "@codemirror/language": "6.12.2",
+    "@codemirror/language-data": "6.5.2",
+    "@dnd-kit/core": "6.3.1",
+    "@dnd-kit/sortable": "10.0.0",
+    "@dotenvx/dotenvx": "1.52.0",
+    "@electron-toolkit/preload": "3.0.2",
+    "@electron-toolkit/utils": "4.0.0",
+    "@google-cloud/aiplatform": "5.14.0",
+    "@google/genai": "1.52.0",
+    "@headlessui/react": "2.2.9",
+    "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
+    "@huggingface/transformers": "3.8.1",
+    "@lancedb/lancedb": "0.22.3",
     "@legendapp/list": "3.3.7",
     "@openrouter/ai-sdk-provider": "3.0.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.79.0",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
-    "@opentelemetry/sdk-node": "^0.221.0",
-    "@opentelemetry/sdk-trace-base": "^2.10.0",
-    "@pierre/diffs": "^1.2.12",
-    "@posthog/ai": "^8.3.0",
-    "@radix-ui/react-tooltip": "^1.2.8",
-    "@reactuses/core": "^6.0.6",
-    "@replit/codemirror-vim": "^6.3.0",
+    "@opentelemetry/auto-instrumentations-node": "0.79.0",
+    "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
+    "@opentelemetry/sdk-node": "0.221.0",
+    "@opentelemetry/sdk-trace-base": "2.10.0",
+    "@pierre/diffs": "1.2.12",
+    "@posthog/ai": "8.4.0",
+    "@radix-ui/react-tooltip": "1.2.8",
+    "@reactuses/core": "6.1.11",
+    "@replit/codemirror-vim": "6.3.0",
     "@requesty/ai-sdk": "3.5.0",
-    "@smithy/eventstream-codec": "^2.0.0",
-    "@smithy/protocol-http": "^3.3.0",
-    "@smithy/signature-v4": "^2.0.0",
-    "@smithy/util-utf8": "^2.0.0",
+    "@smithy/eventstream-codec": "2.2.0",
+    "@smithy/protocol-http": "3.3.0",
+    "@smithy/signature-v4": "2.3.0",
+    "@smithy/util-utf8": "2.3.0",
     "@tanstack/react-virtual": "3.13.12",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.25",
-    "@types/hast": "^3.0.4",
-    "@uiw/codemirror-theme-github": "^4.23.12",
+    "@types/cors": "2.8.19",
+    "@types/express": "4.17.25",
+    "@types/hast": "3.0.4",
+    "@uiw/codemirror-theme-github": "4.25.4",
     "@uiw/react-codemirror": "4.25.1",
-    "@uiw/react-color-sketch": "^2.8.0",
+    "@uiw/react-color-sketch": "2.9.5",
     "ai": "7.0.60",
     "apache-arrow": "18.1.0",
-    "axios": "^1.8.3",
-    "babel-plugin-react-compiler": "^1.0.0",
-    "cheerio": "^1.0.0",
-    "chokidar": "^4.0.3",
-    "cloudflared": "^0.7.1",
-    "clsx": "^2.1.1",
-    "conf": "^15.0.2",
-    "cors": "^2.8.5",
-    "diff": "^8.0.4",
-    "electron-updater": "^6.8.3",
-    "env-paths": "^3.0.0",
-    "express": "^4.21.2",
-    "file-type": "^21.0.0",
-    "filenamify": "^7.0.1",
-    "focus-trap-react": "^11.0.3",
-    "framer-motion": "^11.18.2",
-    "ghostty-web": "^0.4.0",
-    "gitdiff-parser": "^0.3.1",
-    "glob": "^11.0.2",
+    "axios": "1.18.1",
+    "babel-plugin-react-compiler": "1.0.0",
+    "cheerio": "1.2.0",
+    "chokidar": "4.0.3",
+    "cloudflared": "0.7.1",
+    "clsx": "2.1.1",
+    "conf": "15.1.0",
+    "cors": "2.8.6",
+    "diff": "8.0.4",
+    "electron-updater": "6.8.9",
+    "env-paths": "3.0.0",
+    "express": "4.22.2",
+    "file-type": "21.3.4",
+    "filenamify": "7.0.1",
+    "focus-trap-react": "11.0.6",
+    "framer-motion": "11.18.2",
+    "ghostty-web": "0.4.0",
+    "gitdiff-parser": "0.3.1",
+    "glob": "11.1.0",
     "global-agent": "4.1.3",
-    "google-auth-library": "^10.6.2",
-    "gpt-tokenizer": "^2.9.0",
-    "handlebars": "^4.7.8",
-    "hast-util-to-jsx-runtime": "^2.3.6",
-    "html-to-image": "^1.11.13",
-    "i18next": "^24.2.3",
-    "i18next-browser-languagedetector": "^8.0.4",
-    "istextorbinary": "^9.5.0",
-    "jiti": "^2.6.1",
-    "langfuse-vercel": "^3.38.4",
-    "lodash": "^4.18.1",
-    "lowlight": "^3.3.0",
-    "mark.js": "^8.11.1",
-    "match-sorter": "^8.0.0",
-    "mermaid": "^11.14.0",
+    "google-auth-library": "10.6.2",
+    "gpt-tokenizer": "2.9.0",
+    "handlebars": "4.7.9",
+    "hast-util-to-jsx-runtime": "2.3.6",
+    "html-to-image": "1.11.13",
+    "i18next": "24.2.3",
+    "i18next-browser-languagedetector": "8.2.1",
+    "istextorbinary": "9.5.0",
+    "jiti": "2.6.1",
+    "langfuse-vercel": "3.38.6",
+    "lodash": "4.18.1",
+    "lowlight": "3.3.0",
+    "mark.js": "8.11.1",
+    "match-sorter": "8.2.0",
+    "mermaid": "11.16.1",
     "ollama-ai-provider-v2": "4.0.1",
-    "os-name": "^6.0.0",
-    "patch-package": "^8.0.0",
+    "os-name": "6.1.0",
+    "patch-package": "8.0.1",
     "posthog-node": "5.29.1",
-    "prismjs": "^1.30.0",
-    "react-complex-tree": "^2.4.5",
-    "react-country-flag": "^3.1.0",
-    "react-datepicker": "^8.4.0",
-    "react-diff-view": "^3.3.2",
-    "react-hotkeys-hook": "^4.6.2",
-    "react-i18next": "^15.4.1",
-    "react-icons": "^5.5.0",
-    "react-markdown": "^10.1.0",
-    "react-resizable": "^3.0.5",
-    "react-rnd": "^10.5.3",
-    "react-router-dom": "^7.0.1",
-    "react-toastify": "^10.0.6",
+    "prismjs": "1.30.0",
+    "react-complex-tree": "2.6.1",
+    "react-country-flag": "3.1.0",
+    "react-datepicker": "8.10.0",
+    "react-diff-view": "3.3.2",
+    "react-hotkeys-hook": "4.6.2",
+    "react-i18next": "15.7.4",
+    "react-icons": "5.5.0",
+    "react-markdown": "10.1.0",
+    "react-resizable": "3.1.3",
+    "react-rnd": "10.5.3",
+    "react-router-dom": "7.18.2",
+    "react-toastify": "10.0.6",
     "recharts": "3.0.2",
-    "refractor": "^5.0.0",
-    "remark-gfm": "^4.0.1",
-    "simple-git": "^3.27.0",
-    "slugify": "^1.6.6",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
-    "sucrase": "^3.35.1",
-    "tailwind-merge": "^3.3.1",
-    "tmp": "^0.2.3",
-    "tree-kill": "^1.2.2",
-    "turndown": "^7.2.1",
+    "refractor": "5.0.0",
+    "remark-gfm": "4.0.1",
+    "simple-git": "3.36.0",
+    "slugify": "1.6.6",
+    "socket.io": "4.8.3",
+    "socket.io-client": "4.8.3",
+    "sucrase": "3.35.1",
+    "tailwind-merge": "3.4.1",
+    "tmp": "0.2.7",
+    "tree-kill": "1.2.2",
+    "turndown": "7.2.2",
     "undici": "8.10.0",
-    "unidiff": "^1.0.4",
-    "unist-util-map": "^4.0.0",
-    "use-sync-external-store": "^1.6.0",
-    "uuid": "^14.0.0",
-    "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0",
-    "winston-transport": "^4.9.0",
-    "ws": "^8.18.0",
-    "yaml": "^2.8.0",
-    "yaml-front-matter": "^4.1.1",
-    "zod": "^4.1.11",
-    "zustand": "^5.0.9"
+    "unidiff": "1.0.4",
+    "unist-util-map": "4.0.0",
+    "use-sync-external-store": "1.6.0",
+    "uuid": "14.0.0",
+    "winston": "3.19.0",
+    "winston-daily-rotate-file": "5.0.0",
+    "winston-transport": "4.9.0",
+    "ws": "8.21.0",
+    "yaml": "2.8.3",
+    "yaml-front-matter": "4.1.1",
+    "zod": "4.3.6",
+    "zustand": "5.0.11"
   },
   "devDependencies": {
-    "@electron-toolkit/tsconfig": "^2.0.0",
-    "@electron/notarize": "^3.1.1",
-    "@eslint/js": "^9.33.0",
-    "@modelcontextprotocol/sdk": "^1.20.0",
-    "@playwright/test": "^1.60.0",
-    "@tailwindcss/typography": "^0.5.16",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@types/handlebars": "^4.0.40",
-    "@types/lodash": "^4.17.17",
-    "@types/node": "^22.16.5",
-    "@types/prismjs": "^1.26.5",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
-    "@types/react-resizable": "^3.0.8",
-    "@types/refractor": "^3.4.1",
-    "@types/socket.io": "^3.0.1",
-    "@types/tmp": "^0.2.6",
-    "@types/yaml-front-matter": "^4.1.3",
-    "@vitejs/plugin-react": "^5.0.4",
-    "@vitest/coverage-v8": "^4.1.8",
-    "@vitest/ui": "^4.1.8",
-    "adm-zip": "^0.6.0",
-    "autoprefixer": "^10.4.20",
-    "concurrently": "^10.0.4",
-    "dts-bundle-generator": "^9.5.1",
-    "electron": "^43.3.0",
-    "electron-builder": "^26.15.3",
-    "electron-vite": "^5.0.0",
-    "encoding": "^0.1.13",
-    "eslint": "^9.18.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-import-resolver-typescript": "^3.7.0",
-    "eslint-plugin-import": "^2.31.0",
-    "eslint-plugin-prettier": "^5.2.1",
-    "eslint-plugin-react": "^7.37.2",
-    "eslint-plugin-react-compiler": "^19.1.0-rc.2",
-    "eslint-plugin-react-hooks": "^7.0.0",
-    "globals": "^15.9.0",
-    "husky": "^9.1.7",
-    "jsdom": "^27.3.0",
-    "lint-staged": "^15.4.1",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^3.3.2",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "sass-embedded": "^1.89.0",
-    "tailwind-scrollbar": "^3.1.0",
-    "tailwindcss": "^3.4.14",
-    "tar": "^7.5.22",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.1",
-    "vite": "^7.3.6",
-    "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.8"
+    "@electron-toolkit/tsconfig": "2.0.0",
+    "@electron/notarize": "3.1.1",
+    "@eslint/js": "9.39.5",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "@playwright/test": "1.60.0",
+    "@tailwindcss/typography": "0.5.19",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/handlebars": "4.0.40",
+    "@types/lodash": "4.17.23",
+    "@types/node": "22.19.15",
+    "@types/prismjs": "1.26.6",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "@types/react-resizable": "3.0.8",
+    "@types/refractor": "3.4.1",
+    "@types/socket.io": "3.0.1",
+    "@types/tmp": "0.2.6",
+    "@types/yaml-front-matter": "4.1.3",
+    "@vitejs/plugin-react": "5.2.0",
+    "@vitest/coverage-v8": "4.1.8",
+    "@vitest/ui": "4.1.8",
+    "adm-zip": "0.6.0",
+    "autoprefixer": "10.4.24",
+    "concurrently": "10.0.4",
+    "dts-bundle-generator": "9.5.1",
+    "electron": "43.3.0",
+    "electron-builder": "26.15.7",
+    "electron-vite": "5.0.0",
+    "encoding": "0.1.13",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "9.1.2",
+    "eslint-import-resolver-typescript": "3.10.1",
+    "eslint-plugin-import": "2.32.0",
+    "eslint-plugin-prettier": "5.5.5",
+    "eslint-plugin-react": "7.37.5",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "globals": "15.15.0",
+    "husky": "9.1.7",
+    "jsdom": "27.4.0",
+    "lint-staged": "15.5.2",
+    "npm-run-all": "4.1.5",
+    "prettier": "3.8.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "sass-embedded": "1.97.3",
+    "tailwind-scrollbar": "3.1.0",
+    "tailwindcss": "3.4.19",
+    "tar": "7.5.22",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.57.2",
+    "vite": "7.3.6",
+    "vite-tsconfig-paths": "5.1.4",
+    "vitest": "4.1.8"
   },
   "overrides": {
     "@ai-sdk/provider": "4.0.7",
