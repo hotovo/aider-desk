@@ -12,6 +12,7 @@
 - fixed task loading state not being reset on error
 - disabled router transitions to prevent UI issues
 - fixed syntax highlighting during tool message streaming
+- added result limits to glob tool to prevent excessive output
 
 ## [0.79.0]
 

@@ -6,7 +6,7 @@ import { ChildProcess } from 'node:child_process';
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { glob } from 'glob';
+import { globIterate } from 'glob';
 import { AgentProfile, BashToolSettings, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
   POWER_TOOL_BASH as TOOL_BASH,
@@ -371,15 +371,27 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         return `Glob search with pattern '${pattern}' denied by user. Reason: ${userInput}`;
       }
 
+      const GLOB_WALK_LIMIT = 5000;
+      const GLOB_MAX_RESULTS = 1000;
+
       const absoluteCwd = expandedCwd ? path.resolve(task.getTaskDir(), expandedCwd) : task.getTaskDir();
       try {
-        const files = await glob(pattern, {
+        const files: string[] = [];
+        let walkTruncated = false;
+
+        for await (const file of globIterate(pattern, {
           cwd: absoluteCwd,
           ignore: ignore,
           nodir: false,
           absolute: false, // Keep paths relative to cwd for easier processing
           signal: abortSignal,
-        });
+        })) {
+          files.push(file);
+          if (files.length >= GLOB_WALK_LIMIT) {
+            walkTruncated = true;
+            break;
+          }
+        }
 
         // Convert to absolute paths for filtering, then back to relative
         const absoluteFiles = files.map((file) => path.resolve(absoluteCwd, file));
@@ -387,6 +399,15 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
         // Ensure paths are relative to task.getTaskDir()
         const result = filteredFiles.map((file) => path.relative(task.getTaskDir(), file));
+
+        const truncated = result.length > GLOB_MAX_RESULTS || walkTruncated;
+        if (truncated) {
+          const trimmed = result.length > GLOB_MAX_RESULTS ? result.slice(0, GLOB_MAX_RESULTS) : result;
+          const reason = walkTruncated
+            ? `walk limit of ${GLOB_WALK_LIMIT} entries reached (results may be incomplete)`
+            : `results truncated at ${GLOB_MAX_RESULTS} entries`;
+          return [...trimmed, `[Glob ${reason}. Refine your pattern for more specific results.]`];
+        }
 
         return result;
       } catch (error) {
