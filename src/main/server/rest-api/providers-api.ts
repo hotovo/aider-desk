@@ -40,7 +40,7 @@ export class ProvidersApi extends BaseApi {
         }
 
         await this.eventsHandler.updateProviders(parsed);
-        res.status(200).json({ message: 'Providers updated' });
+        res.status(200).json(this.eventsHandler.getProviders());
       }),
     );
 

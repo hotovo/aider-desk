@@ -47,7 +47,7 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
       setModelsLoading(true);
       try {
         const { models, errors } = await api.getProviderModels(reload);
-        setModels(models!);
+        setModels(Array.isArray(models) ? models : []);
         setErrors(errors || {});
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -63,7 +63,7 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
     try {
       setProvidersLoading(true);
       const data = await api.getProviders();
-      setProviders(data);
+      setProviders(Array.isArray(data) ? data : []);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to load providers:', error);
@@ -97,7 +97,10 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
 
       startTransition(async () => {
         setOptimisticProviders(updated);
-        setProviders(await api.updateProviders(updated));
+        const result = await api.updateProviders(updated);
+        if (Array.isArray(result)) {
+          setProviders(result);
+        }
       });
     },
     [api, providers, setOptimisticProviders],
@@ -109,7 +112,10 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
 
       startTransition(async () => {
         setOptimisticProviders(updated);
-        setProviders(await api.updateProviders(updated));
+        const result = await api.updateProviders(updated);
+        if (Array.isArray(result)) {
+          setProviders(result);
+        }
       });
     },
     [api, providers, setOptimisticProviders],
@@ -198,7 +204,9 @@ export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ child
 
   useEffect(() => {
     return api.addProvidersUpdatedListener((data) => {
-      setProviders(data.providers);
+      if (Array.isArray(data.providers)) {
+        setProviders(data.providers);
+      }
     });
   }, [api]);
 
