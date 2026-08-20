@@ -132,26 +132,29 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
 
     useEffect(() => {
       const element = scrollContainer;
-      const content = element?.querySelector('.legend-list-content-container');
+      const content = element?.querySelector('.legend-list-content-container') as HTMLElement | null;
       if (!element || !content) {
         return;
       }
 
       const scrollToEndIfFollowing = () => {
-        // when content no longer overflows the container (e.g. messages cleared), unpause follow-scroll
-        if (element.scrollHeight <= element.clientHeight) {
+        const tempPaddingBottom = parseFloat(content.style.paddingBottom) || 0;
+        const effectiveScrollHeight = element.scrollHeight - tempPaddingBottom;
+
+        if (effectiveScrollHeight <= element.clientHeight) {
           updateScrollingPaused(false);
         }
         if (!scrollingPausedRef.current) {
-          const target = element.scrollHeight - element.clientHeight;
+          const target = effectiveScrollHeight - element.clientHeight;
           if (Math.abs(element.scrollTop - target) > 2) {
             element.scrollTop = target;
           }
         }
       };
 
+      const innerContent = content.firstElementChild;
       const observer = new ResizeObserver(scrollToEndIfFollowing);
-      observer.observe(content);
+      observer.observe(innerContent || content);
       observer.observe(element);
 
       return () => {
@@ -164,7 +167,9 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       if (!element || scrollingPausedRef.current) {
         return;
       }
-      const target = element.scrollHeight - element.clientHeight;
+      const content = element.querySelector('.legend-list-content-container') as HTMLElement | null;
+      const tempPaddingBottom = parseFloat(content?.style.paddingBottom ?? '') || 0;
+      const target = element.scrollHeight - element.clientHeight - tempPaddingBottom;
       if (Math.abs(element.scrollTop - target) > 2) {
         element.scrollTop = target;
       }

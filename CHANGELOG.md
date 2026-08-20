@@ -13,6 +13,7 @@
 - disabled router transitions to prevent UI issues
 - fixed syntax highlighting during tool message streaming
 - added result limits to glob tool to prevent excessive output
+- fixed excessive bottom padding causing empty space under messages in virtualized list
 
 ## [0.79.0]
 
