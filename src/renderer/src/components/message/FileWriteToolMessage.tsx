@@ -86,7 +86,7 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFor
           </pre>
         </div>
       ) : (
-        <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
+        <CodeBlock baseDir="" language={language} file={filePath} isComplete={!message.isStreaming}>
           {contentToWrite}
         </CodeBlock>
       )}

@@ -17,7 +17,7 @@ import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/
 import { useApi } from '@/contexts/ApiContext';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useResponsive } from '@/hooks/useResponsive';
-import { highlightWithLowlight, lowlight } from '@/utils/highlighter';
+import { highlightWithLowlight } from '@/utils/highlighter';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
 const DIVIDER_MARKER = /^={5,9}\s*$/m;
@@ -137,8 +137,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
     if (!codeForSyntaxHighlight || !language || language === 'mermaid') {
       return;
     }
-    const shouldHighlight = isComplete || lowlight.registered(language);
-    if (!shouldHighlight) {
+    if (!isComplete) {
       return;
     }
     const code = codeForSyntaxHighlight;

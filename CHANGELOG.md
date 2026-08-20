@@ -11,6 +11,7 @@
 - fixed providers API not returning data after update and added runtime array checks for provider data
 - fixed task loading state not being reset on error
 - disabled router transitions to prevent UI issues
+- fixed syntax highlighting during tool message streaming
 
 ## [0.79.0]
 

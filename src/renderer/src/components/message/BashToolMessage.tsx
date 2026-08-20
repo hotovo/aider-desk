@@ -115,7 +115,7 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
           ))}
       </div>
       {isMultilineCommand && (
-        <CodeBlock baseDir="" language="bash" isComplete={true} className="mb-0 text-2xs py-1 px-2 [&_pre]:!py-0 [&_pre]:!px-1">
+        <CodeBlock baseDir="" language="bash" isComplete={!message.isStreaming} className="mb-0 text-2xs py-1 px-2 [&_pre]:!py-0 [&_pre]:!px-1">
           {command}
         </CodeBlock>
       )}

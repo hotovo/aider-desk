@@ -98,7 +98,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
               </div>
             </div>
           ) : (
-            <CodeBlock baseDir="" language={language} file={filePath} isComplete={true} oldValue={searchTerm} newValue={replacementText} />
+            <CodeBlock baseDir="" language={language} file={filePath} isComplete={!message.isStreaming} oldValue={searchTerm} newValue={replacementText} />
           )}
         </>
       )}
