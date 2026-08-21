@@ -1766,7 +1766,7 @@ import { ChildProcess } from 'node:child_process';
 import treeKill from 'tree-kill';
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { glob } from 'glob';
+import { globIterate } from 'glob';
 import { AgentProfile, BashToolSettings, FileWriteMode, PromptContext, ToolApprovalState } from '@common/types';
 import {
   POWER_TOOL_BASH as TOOL_BASH,
@@ -14887,7 +14887,7 @@ import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/
 import { useApi } from '@/contexts/ApiContext';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useResponsive } from '@/hooks/useResponsive';
-import { highlightWithLowlight, lowlight } from '@/utils/highlighter';
+import { highlightWithLowlight } from '@/utils/highlighter';
 ⋮----
 const isCustomDiffContent = (content: string): boolean =>
 ⋮----
@@ -18041,8 +18041,6 @@ const handleTouchStart = (e: TouchEvent) =>
 const handleTouchMove = (e: TouchEvent) =>
 ⋮----
 const scrollToEndIfFollowing = () =>
-⋮----
-// when content no longer overflows the container (e.g. messages cleared), unpause follow-scroll
 ⋮----
 const exportToImage = async () =>
 ⋮----
