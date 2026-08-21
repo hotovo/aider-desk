@@ -1305,6 +1305,28 @@ export interface ProjectContext {
    * @returns Array of prompt strings in reverse chronological order (most recent first)
    */
   getInputHistory(): Promise<string[]>;
+
+  /**
+   * Register a setup function whose returned cleanup function will be called
+   * automatically when the project is stopped (`onProjectStopped` event).
+   *
+   * Setup runs immediately. The returned cleanup function runs in reverse order
+   * of registration (LIFO) when the project stops, before the `onProjectStopped`
+   * handler is called. The cleanup function may return a Promise; asynchronous
+   * cleanups are awaited and errors are logged without preventing other cleanups.
+   * If setup returns void, no cleanup is registered.
+   *
+   * Can be called from any hook that provides a `ProjectContext`
+   * (e.g., via `context.getProjectContext()`).
+   *
+   * @example
+   * // In onProjectStarted:
+   * context.getProjectContext().addDisposable(() => {
+   *   const watcher = fs.watch(path, () => {});
+   *   return () => watcher.close();  // cleanup right next to setup
+   * });
+   */
+  addDisposable(setup: () => (() => void | Promise<void>) | void): void;
 }
 
 /**
@@ -1399,6 +1421,25 @@ export interface ElectronProcessMetric {
  * ```
  */
 export interface ExtensionContext {
+  /**
+   * Register a setup function whose returned cleanup function will be called
+   * automatically when the extension is unloaded.
+   *
+   * Setup runs immediately. The returned cleanup function runs on unload,
+   * in reverse order of registration (LIFO). The cleanup function may return
+   * a Promise; asynchronous cleanups are awaited during unload, and errors
+   * (thrown or rejected) are logged without preventing other cleanups from
+   * running. If setup returns void, no cleanup is registered.
+   *
+   * @example
+   * // In onLoad or onProjectStarted:
+   * context.addDisposable(() => {
+   *   const timer = setInterval(() => doWork(), 1000);
+   *   return () => clearInterval(timer);  // cleanup right next to setup
+   * });
+   */
+  addDisposable(setup: () => (() => void | Promise<void>) | void): void;
+
   /**
    * Log a message prefixed with the extension name to the AiderDesk logger.
    * Messages appear in the console output and log files at the specified level.

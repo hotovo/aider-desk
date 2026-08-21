@@ -1,11 +1,22 @@
 import { TaskContextImpl } from './task-context';
 
+import type { DisposableStore } from './disposable-store';
 import type { ProjectContext, TaskContext } from '@common/extensions';
 import type { AgentProfile, CommandsData, CreateTaskParams, ProjectSettings, TaskData } from '@common/types';
 import type { Project } from '@/project';
 
 export class ProjectContextImpl implements ProjectContext {
-  constructor(private readonly project: Project) {}
+  constructor(
+    private readonly project: Project,
+    private readonly disposableStore: DisposableStore,
+  ) {}
+
+  addDisposable(setup: () => (() => void | Promise<void>) | void): void {
+    const cleanup = setup();
+    if (typeof cleanup === 'function') {
+      this.disposableStore.addProjectDisposable(this.project.baseDir, cleanup);
+    }
+  }
 
   get baseDir(): string {
     return this.project.baseDir;

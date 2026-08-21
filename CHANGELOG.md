@@ -14,6 +14,10 @@
 - fixed syntax highlighting during tool message streaming
 - added result limits to glob tool to prevent excessive output
 - fixed excessive bottom padding causing empty space under messages in virtualized list
+- added project-scoped disposable cleanup for extensions — addDisposable can be called from any hook, project disposables cleaned up on onProjectStopped
+- added disposable resource management for extensions with automatic cleanup on unload
+- fixed disabled extensions still running their resources; toggling enable/disable now properly calls onUnload/onLoad lifecycle hooks
+- fixed extension cleanup (onUnload and disposables) not being called when uninstalling an extension
 
 ## [0.79.0]
 

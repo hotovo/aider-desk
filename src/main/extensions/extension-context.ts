@@ -1,6 +1,7 @@
 import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
+import type { DisposableStore } from './disposable-store';
 import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
 import type { McpServerConfig, Model, ProviderProfile, SettingsData } from '@common/types';
 import type { McpConfigManager } from '@/agent/mcp-config-manager';
@@ -18,10 +19,12 @@ import { openUrl as openUrlUtil } from '@/utils/open-url';
 export class ExtensionContextImpl implements ExtensionContext {
   private readonly taskContext: TaskContext | null;
   private readonly projectContext: ProjectContext | null;
+  private readonly disposableStore: DisposableStore;
 
   constructor(
     private readonly extensionId: string,
     private readonly extensionName: string,
+    disposableStore: DisposableStore,
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
     private readonly eventManager?: EventManager,
@@ -30,8 +33,17 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly task?: Task,
     private readonly mcpConfigManager?: McpConfigManager,
   ) {
+    this.disposableStore = disposableStore;
     this.taskContext = this.task ? new TaskContextImpl(this.task) : null;
-    this.projectContext = this.project ? new ProjectContextImpl(this.project) : null;
+    this.projectContext = this.project ? new ProjectContextImpl(this.project, disposableStore) : null;
+  }
+
+  addDisposable(setup: () => (() => void | Promise<void>) | void): void {
+    const cleanup = setup();
+    if (typeof cleanup !== 'function') {
+      return;
+    }
+    this.disposableStore.addExtensionDisposable(cleanup);
   }
 
   log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void {

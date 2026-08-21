@@ -3,12 +3,16 @@
  * Verifies onLoad, onUnload, error handling, and initialization state tracking
  */
 
+import { promises as fs } from 'fs';
+
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 import { ExtensionContextImpl } from '../extension-context';
 
+import type { Project } from '@/project';
+import type { SettingsData } from '@common/types';
 import type { Extension, ExtensionContext, ExtensionMetadata } from '@common/extensions';
 
 vi.mock('@/logger', () => ({
@@ -51,13 +55,17 @@ const createMockMetadata = (overrides: Partial<ExtensionMetadata> = {}): Extensi
 });
 
 const createMockDeps = () => ({
-  store: {} as any,
+  store: {
+    getSettings: vi.fn(() => ({})),
+  } as any,
   modelManager: {
     getAllModels: vi.fn().mockResolvedValue([]),
     registerExtensionProviders: vi.fn(),
     unregisterExtensionProviders: vi.fn(),
   } as any,
-  telemetryManager: {} as any,
+  telemetryManager: {
+    captureExtensionUninstalled: vi.fn(),
+  } as any,
   memoryManager: {} as any,
   registry: new ExtensionRegistry(),
   eventManager: {
@@ -325,6 +333,212 @@ describe('Extension Lifecycle', () => {
     });
   });
 
+  describe('disposable cleanup before onUnload', () => {
+    it('should call disposeExtension before onUnload during dispose()', async () => {
+      const callOrder: string[] = [];
+      let capturedContext: ExtensionContext | null = null;
+      const extension: Extension = {
+        onLoad(context) {
+          capturedContext = context;
+          context.addDisposable(() => {
+            callOrder.push('disposable-cleanup');
+            return () => {};
+          });
+        },
+        onUnload() {
+          callOrder.push('onUnload');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      (manager as any).initialized = true;
+      await manager.dispose();
+
+      expect(capturedContext).not.toBeNull();
+      expect(callOrder).toEqual(['disposable-cleanup', 'onUnload']);
+    });
+
+    it('should call disposeExtension before onUnload during unloadExtension()', async () => {
+      const callOrder: string[] = [];
+      let capturedContext: ExtensionContext | null = null;
+      const extension: Extension = {
+        onLoad(context) {
+          capturedContext = context;
+          context.addDisposable(() => {
+            callOrder.push('disposable-cleanup');
+            return () => {};
+          });
+        },
+        onUnload() {
+          callOrder.push('onUnload');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      await manager.unloadExtension('/test/extension.ts');
+
+      expect(capturedContext).not.toBeNull();
+      expect(callOrder).toEqual(['disposable-cleanup', 'onUnload']);
+    });
+
+    it('should call disposeExtension even when extension has no onUnload', async () => {
+      const cleanup = vi.fn();
+      let capturedContext: ExtensionContext | null = null;
+      const extension: Extension = {
+        onLoad(context) {
+          capturedContext = context;
+          context.addDisposable(() => cleanup);
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      (manager as any).initialized = true;
+      await manager.dispose();
+
+      expect(capturedContext).not.toBeNull();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should dispose disposables when onLoad throws after registering them', async () => {
+      const cleanup = vi.fn();
+      const extension: Extension = {
+        onLoad(context) {
+          context.addDisposable(() => cleanup);
+          throw new Error('onLoad failed');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+
+      await expect((manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!)).rejects.toThrow('onLoad failed');
+
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('enable/disable lifecycle', () => {
+    const settingsWithDisabled = (disabled: string[]): SettingsData => ({ extensions: { disabled } }) as unknown as SettingsData;
+
+    it('should dispose disposables and call onUnload when extension becomes disabled', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue(settingsWithDisabled([]));
+      const order: string[] = [];
+      const extension: Extension = {
+        onLoad(context) {
+          context.addDisposable(() => () => {
+            order.push('disposable-cleanup');
+          });
+        },
+        onUnload() {
+          order.push('onUnload');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      await manager.settingsChanged(settingsWithDisabled([]), settingsWithDisabled(['/test/extension.ts']));
+
+      expect(order).toEqual(['disposable-cleanup', 'onUnload']);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
+    });
+
+    it('should re-initialize extension when it becomes enabled again', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue(settingsWithDisabled(['/test/extension.ts']));
+      const extension = createMockExtension();
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
+
+      await manager.settingsChanged(settingsWithDisabled(['/test/extension.ts']), settingsWithDisabled(['other-extension.ts']));
+
+      expect(extension.onLoad).toHaveBeenCalledTimes(1);
+      expect(registry.getExtension('/test/extension.ts')?.initialized).toBe(true);
+    });
+
+    it('should preserve project context when re-initializing a project extension', async () => {
+      const filePath = '/proj/.aider-desk/extensions/ext.ts';
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue(settingsWithDisabled([filePath]));
+      let projectDir = '';
+      const extension: Extension = {
+        onLoad(context) {
+          projectDir = context.getProjectDir();
+        },
+      };
+      const metadata = createMockMetadata();
+      const project = { baseDir: '/proj' } as Project;
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, filePath, project.baseDir);
+      await (manager as any).initializeExtension(registry.getExtension(filePath)!, project);
+      expect(projectDir).toBe('/proj');
+
+      await manager.settingsChanged(settingsWithDisabled([filePath]), settingsWithDisabled([]));
+
+      expect(projectDir).toBe('/proj');
+    });
+
+    it('should skip initialization of disabled extensions during load', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue(settingsWithDisabled(['/test/extension.ts']));
+      const extension = createMockExtension();
+      const metadata = createMockMetadata();
+      const loader = (manager as any).loader;
+      loader.loadExtension.mockResolvedValue({ extension, metadata });
+
+      const result = await (manager as any).loadAndInitializeExtension('/test/extension.ts');
+
+      expect(result.success).toBe(true);
+      expect(extension.onLoad).not.toHaveBeenCalled();
+      expect((manager as any).registry.getExtension('/test/extension.ts')?.initialized).toBe(false);
+    });
+  });
+
+  describe('uninstallExtension', () => {
+    it('should dispose disposables and call onUnload before removing files', async () => {
+      vi.spyOn(fs, 'unlink').mockResolvedValue(undefined);
+      const order: string[] = [];
+      const extension: Extension = {
+        onLoad(context) {
+          context.addDisposable(() => () => {
+            order.push('disposable-cleanup');
+          });
+        },
+        onUnload() {
+          order.push('onUnload');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      const result = await manager.uninstallExtension('/test/extension.ts');
+
+      expect(result).toBe(true);
+      expect(order).toEqual(['disposable-cleanup', 'onUnload']);
+      expect(fs.unlink).toHaveBeenCalledWith('/test/extension.ts');
+      expect(registry.getExtension('/test/extension.ts')).toBeUndefined();
+    });
+  });
+
   describe('unloadExtension', () => {
     it('should call onUnload when unloading an initialized extension', async () => {
       const extension = createMockExtension();
@@ -383,6 +597,103 @@ describe('Extension Lifecycle', () => {
       const registry = new ExtensionRegistry();
 
       expect(() => registry.setInitialized('non-existent', true)).not.toThrow();
+    });
+  });
+
+  describe('Project-scoped disposables', () => {
+    it('should dispose project disposables before onProjectStopped handler', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue({ language: 'en', theme: 'dark' } as SettingsData);
+      const order: string[] = [];
+      const extension: Extension = {
+        async onLoad(context) {
+          context.addDisposable(() => () => {
+            order.push('ext-disposable');
+          });
+        },
+        async onProjectStarted(_event, context) {
+          context.getProjectContext().addDisposable(() => () => {
+            order.push('proj-disposable');
+          });
+        },
+        async onProjectStopped() {
+          order.push('onProjectStopped');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+      const project = { baseDir: '/test-project' } as Project;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project);
+
+      await manager.dispatchEvent('onProjectStopped', {} as any, project);
+
+      expect(order).toEqual(['proj-disposable', 'onProjectStopped']);
+    });
+
+    it('should dispose project disposables for the specific project only', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue({ language: 'en', theme: 'dark' } as SettingsData);
+      const order: string[] = [];
+      const extension: Extension = {
+        async onLoad() {},
+        async onProjectStarted(_event, context) {
+          context.getProjectContext().addDisposable(() => () => {
+            order.push(`proj-${context.getProjectDir()}`);
+          });
+        },
+        async onProjectStopped() {},
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+      const project1 = { baseDir: '/proj1' } as Project;
+      const project2 = { baseDir: '/proj2' } as Project;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project1);
+      await manager.dispatchEvent('onProjectStarted', {} as any, project2);
+
+      await manager.dispatchEvent('onProjectStopped', {} as any, project1);
+
+      expect(order).toEqual(['proj-/proj1']);
+      // Project 2 disposable should not be cleaned up yet
+      await manager.dispatchEvent('onProjectStopped', {} as any, project2);
+      expect(order).toEqual(['proj-/proj1', 'proj-/proj2']);
+    });
+
+    it('should dispose all project disposables when extension is unloaded', async () => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue({ language: 'en', theme: 'dark' } as SettingsData);
+      const order: string[] = [];
+      const extension: Extension = {
+        async onLoad(context) {
+          context.addDisposable(() => () => {
+            order.push('ext-disposable');
+          });
+        },
+        async onProjectStarted(_event, context) {
+          context.getProjectContext().addDisposable(() => () => {
+            order.push('proj-disposable');
+          });
+        },
+        async onUnload() {
+          order.push('onUnload');
+        },
+      };
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+      const project = { baseDir: '/proj' } as Project;
+
+      await registry.register(extension, metadata, '/test/extension.ts');
+      await (manager as any).initializeExtension(registry.getExtension('/test/extension.ts')!);
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project);
+
+      await manager.unloadExtension('/test/extension.ts');
+
+      expect(order).toEqual(['ext-disposable', 'proj-disposable', 'onUnload']);
     });
   });
 });

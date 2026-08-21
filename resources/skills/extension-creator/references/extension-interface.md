@@ -298,6 +298,14 @@ Context object passed to extension methods, providing access to AiderDesk APIs.
 
 ```typescript
 interface ExtensionContext {
+  /** Register a setup function whose returned cleanup function will be called
+   * automatically when the extension is unloaded.
+   * Setup runs immediately. Cleanup runs in reverse order of registration (LIFO).
+   * Cleanup may return a Promise; async cleanups are awaited during unload and
+   * errors are logged without blocking other cleanups.
+   * If setup returns void, no cleanup is registered. */
+  addDisposable(setup: () => (() => void | Promise<void>) | void): void;
+
   /** Log a message prefixed with the extension name. Type defaults to 'info'. */
   log(message: string, type?: 'info' | 'error' | 'warn' | 'debug'): void;
 

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { ExtensionContextImpl } from '../extension-context';
+import { DisposableStore } from '../disposable-store';
 
 import type { Model, ProviderModelsData, ProviderProfile, SettingsData } from '@common/types';
 import type { ModelManager } from '@/models';
@@ -45,12 +46,14 @@ const createMockModelManager = (models: Model[] = []): ModelManager => {
 
 describe('ExtensionContextImpl', () => {
   let context: ExtensionContextImpl;
+  let store: DisposableStore;
   const extensionId = 'test-extension';
   const extensionName = 'Test Extension';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    context = new ExtensionContextImpl(extensionId, extensionName);
+    store = new DisposableStore(extensionName);
+    context = new ExtensionContextImpl(extensionId, extensionName, store);
   });
 
   describe('constructor', () => {
@@ -60,7 +63,16 @@ describe('ExtensionContextImpl', () => {
 
     it('should create context with project', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mockProject,
+      );
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -104,7 +116,16 @@ describe('ExtensionContextImpl', () => {
 
     it('should return project path when set', () => {
       const mockProject = createMockProject();
-      const contextWithProject = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, undefined, mockProject);
+      const contextWithProject = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mockProject,
+      );
       expect(contextWithProject.getProjectDir()).toBe('/project/path');
     });
   });
@@ -112,7 +133,7 @@ describe('ExtensionContextImpl', () => {
   describe('getSetting', () => {
     it('should return setting value when Store is available', async () => {
       const mockStore = createMockStore({ language: 'zh', theme: 'light' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       const result = await contextWithStore.getSetting('language');
       expect(result).toBe('zh');
@@ -130,7 +151,7 @@ describe('ExtensionContextImpl', () => {
           confirmBeforeEdit: false,
         },
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       const result = await contextWithStore.getSetting('aider.options');
       expect(result).toBe('--model gpt-4');
@@ -138,7 +159,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should return undefined for non-existent keys', async () => {
       const mockStore = createMockStore();
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       const result = await contextWithStore.getSetting('nonexistent.key');
       expect(result).toBeUndefined();
@@ -153,7 +174,7 @@ describe('ExtensionContextImpl', () => {
       vi.mocked(mockStore.getSettings).mockImplementation(() => {
         throw new Error('Store error');
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       await expect(contextWithStore.getSetting('theme')).rejects.toThrow('Store error');
       expect(logger.error).toHaveBeenCalled();
@@ -163,7 +184,7 @@ describe('ExtensionContextImpl', () => {
   describe('updateSettings', () => {
     it('should call Store.saveSettings with updated settings', async () => {
       const mockStore = createMockStore({ language: 'en', theme: 'dark' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       await contextWithStore.updateSettings({ theme: 'light' });
 
@@ -172,7 +193,7 @@ describe('ExtensionContextImpl', () => {
 
     it('should merge updates with existing settings', async () => {
       const mockStore = createMockStore({ language: 'en', theme: 'dark' });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       await contextWithStore.updateSettings({ language: 'zh' });
 
@@ -188,7 +209,7 @@ describe('ExtensionContextImpl', () => {
       vi.mocked(mockStore.saveSettings).mockImplementation(() => {
         throw new Error('Save error');
       });
-      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, mockStore);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), mockStore);
 
       await expect(contextWithStore.updateSettings({ theme: 'light' })).rejects.toThrow('Save error');
       expect(logger.error).toHaveBeenCalled();
@@ -200,7 +221,7 @@ describe('ExtensionContextImpl', () => {
       const mockModels: Model[] = [{ id: 'model-1', providerId: 'provider-1' } as Model, { id: 'model-2', providerId: 'provider-2' } as Model];
       const mockModelManager = createMockModelManager(mockModels);
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual(mockModels);
@@ -214,7 +235,7 @@ describe('ExtensionContextImpl', () => {
     it('should return empty array when no models in ModelManager', async () => {
       const mockModelManager = createMockModelManager([]);
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual([]);
@@ -226,7 +247,7 @@ describe('ExtensionContextImpl', () => {
         throw new Error('Model manager error');
       });
 
-      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, undefined, mockModelManager);
+      const contextWithModelManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), undefined, mockModelManager);
 
       const result = await contextWithModelManager.getModelConfigs();
       expect(result).toEqual([]);
@@ -247,6 +268,7 @@ describe('ExtensionContextImpl', () => {
       const contextWithEventManager = new ExtensionContextImpl(
         extensionId,
         extensionName,
+        new DisposableStore(extensionName),
         undefined,
         undefined,
         mockEventManager as any,
@@ -276,6 +298,7 @@ describe('ExtensionContextImpl', () => {
       const contextWithEventManager = new ExtensionContextImpl(
         extensionId,
         extensionName,
+        new DisposableStore(extensionName),
         undefined,
         undefined,
         mockEventManager as any,
@@ -305,6 +328,7 @@ describe('ExtensionContextImpl', () => {
       const contextWithEventManager = new ExtensionContextImpl(
         extensionId,
         extensionName,
+        new DisposableStore(extensionName),
         undefined,
         undefined,
         mockEventManager as any,
@@ -323,7 +347,7 @@ describe('ExtensionContextImpl', () => {
     });
 
     it('should log warning if eventManager is not available', () => {
-      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName);
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName));
 
       expect(() => {
         contextWithoutEventManager.triggerUIDataRefresh();
@@ -346,6 +370,7 @@ describe('ExtensionContextImpl', () => {
       const contextWithEventManager = new ExtensionContextImpl(
         extensionId,
         extensionName,
+        new DisposableStore(extensionName),
         undefined,
         undefined,
         mockEventManager as any,
@@ -363,7 +388,7 @@ describe('ExtensionContextImpl', () => {
     });
 
     it('should log warning if eventManager is not available', () => {
-      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName);
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName));
 
       expect(() => {
         contextWithoutEventManager.triggerUIComponentsReload();
@@ -373,9 +398,243 @@ describe('ExtensionContextImpl', () => {
     });
   });
 
+  describe('addDisposable', () => {
+    it('should run the setup function immediately', () => {
+      const setup = vi.fn(() => () => {});
+      context.addDisposable(setup);
+      expect(setup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should call the returned cleanup function on disposeExtension', async () => {
+      const cleanup = vi.fn();
+      context.addDisposable(() => cleanup);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should run cleanups in LIFO order (reverse of registration)', async () => {
+      const order: string[] = [];
+      context.addDisposable(() => {
+        order.push('cleanup-1');
+        return () => {
+          order.push('cleanup-1');
+        };
+      });
+      context.addDisposable(() => {
+        order.push('cleanup-2');
+        return () => {
+          order.push('cleanup-2');
+        };
+      });
+      await store.disposeExtension();
+      expect(order).toEqual(['cleanup-1', 'cleanup-2', 'cleanup-2', 'cleanup-1']);
+    });
+
+    it('should handle void-returning setup gracefully (no cleanup, no error)', async () => {
+      const setup = vi.fn(() => undefined);
+      context.addDisposable(setup);
+      expect(setup).toHaveBeenCalledTimes(1);
+      await expect(store.disposeExtension()).resolves.not.toThrow();
+    });
+
+    it('should catch errors in cleanup functions so subsequent cleanups still run', async () => {
+      const cleanup1 = vi.fn(() => {
+        throw new Error('cleanup1 failed');
+      });
+      const cleanup2 = vi.fn();
+      context.addDisposable(() => cleanup1);
+      context.addDisposable(() => cleanup2);
+      await store.disposeExtension();
+      expect(cleanup1).toHaveBeenCalledTimes(1);
+      expect(cleanup2).toHaveBeenCalledTimes(1);
+    });
+
+    it('should clear disposables after disposeExtension so calling twice does not re-run cleanup', async () => {
+      const cleanup = vi.fn();
+      context.addDisposable(() => cleanup);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should await async cleanup functions', async () => {
+      let cleaned = false;
+      context.addDisposable(() => async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        cleaned = true;
+      });
+      await store.disposeExtension();
+      expect(cleaned).toBe(true);
+    });
+
+    it('should catch rejected async cleanups so subsequent cleanups still run', async () => {
+      const order: string[] = [];
+      context.addDisposable(() => async () => {
+        order.push('async-cleanup-1');
+        throw new Error('async cleanup failed');
+      });
+      context.addDisposable(() => () => {
+        order.push('cleanup-2');
+      });
+      await store.disposeExtension();
+      expect(order).toEqual(['cleanup-2', 'async-cleanup-1']);
+    });
+  });
+
+  describe('addDisposable with DisposableStore (shared context)', () => {
+    it('should register cleanup on the shared DisposableStore', async () => {
+      const store = new DisposableStore(extensionName);
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, store);
+
+      const cleanup = vi.fn();
+      contextWithStore.addDisposable(() => cleanup);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should register multiple cleanups on the shared store and run them in LIFO order', async () => {
+      const store = new DisposableStore(extensionName);
+      const order: string[] = [];
+
+      const ctx1 = new ExtensionContextImpl(extensionId, extensionName, store);
+      const ctx2 = new ExtensionContextImpl(extensionId, extensionName, store);
+
+      ctx1.addDisposable(() => () => {
+        order.push('cleanup-1');
+      });
+      ctx2.addDisposable(() => () => {
+        order.push('cleanup-2');
+      });
+
+      await store.disposeExtension();
+      expect(order).toEqual(['cleanup-2', 'cleanup-1']);
+    });
+
+    it('should not re-run cleanups when disposeExtension is called on a context with the same store', async () => {
+      const store = new DisposableStore(extensionName);
+      const cleanup = vi.fn();
+
+      const ctx1 = new ExtensionContextImpl(extensionId, extensionName, store);
+
+      ctx1.addDisposable(() => cleanup);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      await store.disposeExtension();
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('project-scoped disposables', () => {
+    it('should register cleanup via ProjectContext.addDisposable on the shared store', async () => {
+      const store = new DisposableStore(extensionName);
+      const mockProject = createMockProject();
+      const contextWithStore = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, mockProject as any);
+
+      const cleanup = vi.fn();
+      contextWithStore.getProjectContext().addDisposable(() => cleanup);
+      await store.disposeProject('/project/path');
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should only dispose project disposables for the specified project', async () => {
+      const store = new DisposableStore(extensionName);
+      const project1 = { baseDir: '/proj1' } as any;
+      const project2 = { baseDir: '/proj2' } as any;
+
+      const ctx1 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project1);
+      const ctx2 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project2);
+
+      const cleanup1 = vi.fn();
+      const cleanup2 = vi.fn();
+      ctx1.getProjectContext().addDisposable(() => cleanup1);
+      ctx2.getProjectContext().addDisposable(() => cleanup2);
+
+      await store.disposeProject('/proj1');
+      expect(cleanup1).toHaveBeenCalledTimes(1);
+      expect(cleanup2).not.toHaveBeenCalled();
+    });
+
+    it('should run project cleanups in LIFO order', async () => {
+      const store = new DisposableStore(extensionName);
+      const project = { baseDir: '/proj' } as any;
+      const order: string[] = [];
+
+      const ctx1 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+      const ctx2 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+
+      ctx1.getProjectContext().addDisposable(() => () => {
+        order.push('cleanup-1');
+      });
+      ctx2.getProjectContext().addDisposable(() => () => {
+        order.push('cleanup-2');
+      });
+
+      await store.disposeProject('/proj');
+      expect(order).toEqual(['cleanup-2', 'cleanup-1']);
+    });
+
+    it('should not re-run project cleanups after disposal (idempotent)', async () => {
+      const store = new DisposableStore(extensionName);
+      const project = { baseDir: '/proj' } as any;
+      const cleanup = vi.fn();
+
+      const ctx = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+      ctx.getProjectContext().addDisposable(() => cleanup);
+
+      await store.disposeProject('/proj');
+      await store.disposeProject('/proj');
+      expect(cleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should dispose project disposables when disposeExtension is called', async () => {
+      const store = new DisposableStore(extensionName);
+      const project = { baseDir: '/proj' } as any;
+      const extCleanup = vi.fn();
+      const projCleanup = vi.fn();
+
+      const ctx = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+      ctx.addDisposable(() => extCleanup);
+      ctx.getProjectContext().addDisposable(() => projCleanup);
+
+      await store.disposeExtension();
+      expect(extCleanup).toHaveBeenCalledTimes(1);
+      expect(projCleanup).toHaveBeenCalledTimes(1);
+    });
+
+    it('should catch errors in project cleanup so subsequent cleanups still run', async () => {
+      const store = new DisposableStore(extensionName);
+      const project = { baseDir: '/proj' } as any;
+
+      const ctx1 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+      const ctx2 = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+
+      ctx1.addDisposable(() => () => {
+        throw new Error('project cleanup failed');
+      });
+      const cleanup2 = vi.fn();
+      ctx2.getProjectContext().addDisposable(() => cleanup2);
+
+      await store.disposeProject('/proj');
+      expect(cleanup2).toHaveBeenCalledTimes(1);
+    });
+
+    it('should report whether a project has disposables', () => {
+      const store = new DisposableStore(extensionName);
+      const project = { baseDir: '/proj' } as any;
+
+      expect(store.hasProjectDisposables('/proj')).toBe(false);
+
+      const ctx = new ExtensionContextImpl(extensionId, extensionName, store, undefined, undefined, undefined, undefined, project);
+      ctx.getProjectContext().addDisposable(() => () => {});
+
+      expect(store.hasProjectDisposables('/proj')).toBe(true);
+    });
+  });
+
   describe('getMemoryContext', () => {
     it('should throw error when memoryManager is not available', () => {
-      const contextWithoutMemory = new ExtensionContextImpl(extensionId, extensionName);
+      const contextWithoutMemory = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName));
 
       expect(() => contextWithoutMemory.getMemoryContext()).toThrow('MemoryManager not available');
     });
@@ -385,7 +644,15 @@ describe('ExtensionContextImpl', () => {
         isMemoryEnabled: vi.fn().mockReturnValue(true),
       };
 
-      const contextWithMemory = new ExtensionContextImpl(extensionId, extensionName, undefined, undefined, undefined, mockMemoryManager as any);
+      const contextWithMemory = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        undefined,
+        undefined,
+        undefined,
+        mockMemoryManager as any,
+      );
 
       const memoryContext = contextWithMemory.getMemoryContext();
       expect(memoryContext).toBe(mockMemoryManager);

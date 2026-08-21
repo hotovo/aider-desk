@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 import { ExtensionContextImpl } from '../extension-context';
+import { DisposableStore } from '../disposable-store';
 
 import type { SettingsData } from '@common/types';
 import type { Store } from '@/store';
@@ -51,7 +52,7 @@ describe('ExtensionContextImpl.getElectronApp', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    context = new ExtensionContextImpl(extensionId, extensionName, createMockStore());
+    context = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName), createMockStore());
   });
 
   it('should return the Electron app when electron module is available', async () => {
@@ -95,7 +96,7 @@ describe('ExtensionContextImpl.getElectronApp', () => {
     });
     vi.resetModules();
     const { ExtensionContextImpl: FreshImpl } = await import('../extension-context');
-    const freshContext = new FreshImpl(extensionId, extensionName, createMockStore());
+    const freshContext = new FreshImpl(extensionId, extensionName, new DisposableStore(extensionName), createMockStore());
 
     const result = await freshContext.getElectronApp();
 

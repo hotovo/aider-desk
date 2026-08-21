@@ -3,6 +3,9 @@ import { promises as fs } from 'fs';
 
 import { Extension, ExtensionMetadata } from '@common/extensions';
 
+import type { Project } from '@/project';
+import type { DisposableStore } from './disposable-store';
+
 import logger from '@/logger';
 
 export interface LoadedExtension {
@@ -13,6 +16,8 @@ export interface LoadedExtension {
   initialized: boolean;
   projectDir?: string;
   readmeContent?: string;
+  project?: Project;
+  disposableStore?: DisposableStore;
 }
 
 export class ExtensionRegistry {

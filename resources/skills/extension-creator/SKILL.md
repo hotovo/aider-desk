@@ -375,6 +375,26 @@ After completing this skill, verify:
 - When ambiguous: If the user says "log", "show", "display", or "report" something, default to `addLogMessage` (user-visible). Use `context.log` only for internal diagnostics.
 - Note: `context.log` is always available; `getTaskContext()` returns `null` outside a task, so always use optional chaining (`?.`)
 
+**Situation:** Extension needs to manage resource cleanup (timers, watchers, child processes)
+
+**Pattern:**
+- When: Extension creates resources in `onLoad`, `onProjectStarted`, or event handlers that need cleanup
+- Then: Use `context.addDisposable()` to co-locate setup and cleanup logic
+- Setup runs immediately; if it returns a function, that function is called on unload (LIFO order). The cleanup may be sync or async (`Promise`) — async cleanups are awaited during unload
+- Disposers run **before** `onUnload` is called, so both patterns work together
+- Example:
+  ```typescript
+  async onLoad(context: ExtensionContext) {
+    // Setup and cleanup are co-located — no need to track in onUnload
+    context.addDisposable(() => {
+      const timer = setInterval(() => doWork(), 1000);
+      return () => clearInterval(timer);
+    });
+  }
+  // onUnload still works as a fallback for anything not registered via addDisposable
+  ```
+- If setup returns `void`, no cleanup is registered — useful for fire-and-forget side effects
+
 **Situation:** Extension needs to store or retrieve memories
 
 **Pattern:**

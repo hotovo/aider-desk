@@ -106,7 +106,7 @@ export class EventsHandler {
     void this.projectManager.settingsChanged(oldSettings, newSettings);
     this.telemetryManager.settingsChanged(oldSettings, newSettings);
     void this.memoryManager.settingsChanged(oldSettings, newSettings);
-    this.extensionManager.settingsChanged(oldSettings, newSettings);
+    void this.extensionManager.settingsChanged(oldSettings, newSettings);
     void this.agentProfileManager.settingsChanged(oldSettings, newSettings);
     void this.mcpConfigManager.settingsChanged(oldSettings, newSettings);
     void this.promptsManager.settingsChanged(oldSettings, newSettings);
