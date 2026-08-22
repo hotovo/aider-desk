@@ -100,6 +100,7 @@ src/
         invalid-syntax.ts
         prohibited-import.ts
         valid-extension.ts
+      disposable-store.ts
       extension-context.ts
       extension-fetcher.ts
       extension-library-loader.ts
@@ -4069,11 +4070,35 @@ File: src/main/extensions/__fixtures__/valid-extension.ts
 
 
 ================
+File: src/main/extensions/disposable-store.ts
+================
+import logger from '@/logger';
+⋮----
+type CleanupFn = () => void | Promise<void>;
+⋮----
+export class DisposableStore
+⋮----
+constructor(private readonly extensionName: string)
+⋮----
+addExtensionDisposable(cleanup: CleanupFn): void
+⋮----
+addProjectDisposable(projectDir: string, cleanup: CleanupFn): void
+⋮----
+async disposeExtension(): Promise<void>
+⋮----
+async disposeProject(projectDir: string): Promise<void>
+⋮----
+hasProjectDisposables(projectDir: string): boolean
+⋮----
+private async disposeAllProjects(): Promise<void>
+
+================
 File: src/main/extensions/extension-context.ts
 ================
 import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 ⋮----
+import type { DisposableStore } from './disposable-store';
 import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
 import type { McpServerConfig, Model, ProviderProfile, SettingsData } from '@common/types';
 import type { McpConfigManager } from '@/agent/mcp-config-manager';
@@ -4093,6 +4118,7 @@ export class ExtensionContextImpl implements ExtensionContext
 constructor(
     private readonly extensionId: string,
     private readonly extensionName: string,
+    disposableStore: DisposableStore,
     private readonly store?: Store,
     private readonly modelManager?: ModelManager,
     private readonly eventManager?: EventManager,
@@ -4101,6 +4127,8 @@ constructor(
     private readonly task?: Task,
     private readonly mcpConfigManager?: McpConfigManager,
 )
+⋮----
+addDisposable(setup: () => (() => void | Promise<void>) | void): void
 ⋮----
 log(message: string, type: 'info' | 'error' | 'warn' | 'debug' = 'info'): void
 ⋮----
@@ -4324,6 +4352,7 @@ import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 import { ExtensionLoader } from './extension-loader';
 import { ExtensionRegistry, LoadedExtension } from './extension-registry';
 import { ExtensionContextImpl } from './extension-context';
+import { DisposableStore } from './disposable-store';
 import { ExtensionFetcher } from './extension-fetcher';
 import { ExtensionLibraryLoader } from './extension-library-loader';
 ⋮----
@@ -4485,6 +4514,8 @@ constructor(
     private readonly registry: ExtensionRegistry = new ExtensionRegistry(),
 )
 ⋮----
+private isExtensionDisabled(filePath: string): boolean
+⋮----
 /**
    * Filter extensions based on disabled list from settings
    * @param extensions - All loaded extensions
@@ -4493,14 +4524,19 @@ constructor(
 private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[]
 ⋮----
 /**
-   * Handle settings changes. Detects when extensions with UI components
-   * are enabled/disabled and triggers UI refresh accordingly.
+   * Handle settings changes. Detects when extensions are enabled/disabled
+   * and triggers lifecycle events accordingly.
    */
-settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): void
+async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData): Promise<void>
 ⋮----
 // Check for disabled extensions changes
 ⋮----
-// Find extensions that changed state
+// newlyEnabled: was disabled before, now enabled (removed from disabled list)
+// newlyDisabled: was enabled before, now disabled (added to disabled list)
+⋮----
+// Unload newly disabled extensions: disposables first, then onUnload
+⋮----
+// Re-initialize newly enabled extensions
 ⋮----
 // Check if any changed extensions have UI components
 ⋮----
@@ -4572,6 +4608,12 @@ async dispose(): Promise<void>
 async unloadExtension(filePath: string): Promise<void>
 ⋮----
 async reloadExtension(filePath: string, project?: Project): Promise<boolean>
+⋮----
+private getOrCreateDisposableStore(loaded: LoadedExtension): DisposableStore
+⋮----
+private findLoadedById(extensionId: string, projectDir?: string): LoadedExtension | undefined
+⋮----
+private createContext(extensionId: string, extensionName: string, project?: Project, task?: Task): ExtensionContextImpl
 ⋮----
 private findExtensionByPath(filePath: string): LoadedExtension | undefined
 ⋮----
@@ -4732,6 +4774,8 @@ private async installDependencies(extensionPath: string): Promise<void>
    */
 async uninstallExtension(extensionId: string, projectDir?: string): Promise<boolean>
 ⋮----
+// Unload (dispose + onUnload) before removing files
+⋮----
 /**
    * Update an extension from a repository, overwriting existing files
    * @param extensionId - Extension identifier (filePath of installed extension)
@@ -4791,6 +4835,9 @@ async dispatchEvent<K extends keyof ExtensionEventMap>(
 ⋮----
 // Skip if extension doesn't handle this event
 ⋮----
+// For onProjectStopped: dispose project-level disposables BEFORE calling the handler
+// (disposers first, then manual cleanup — consistent with onUnload pattern)
+⋮----
 // Create ExtensionContext for this extension
 ⋮----
 // Call the extension handler
@@ -4820,6 +4867,9 @@ import { promises as fs } from 'fs';
 ⋮----
 import { Extension, ExtensionMetadata } from '@common/extensions';
 ⋮----
+import type { Project } from '@/project';
+import type { DisposableStore } from './disposable-store';
+⋮----
 import logger from '@/logger';
 ⋮----
 export interface LoadedExtension {
@@ -4830,6 +4880,8 @@ export interface LoadedExtension {
   initialized: boolean;
   projectDir?: string;
   readmeContent?: string;
+  project?: Project;
+  disposableStore?: DisposableStore;
 }
 ⋮----
 export class ExtensionRegistry
@@ -4866,13 +4918,16 @@ File: src/main/extensions/project-context.ts
 ================
 import { TaskContextImpl } from './task-context';
 ⋮----
+import type { DisposableStore } from './disposable-store';
 import type { ProjectContext, TaskContext } from '@common/extensions';
 import type { AgentProfile, CommandsData, CreateTaskParams, ProjectSettings, TaskData } from '@common/types';
 import type { Project } from '@/project';
 ⋮----
 export class ProjectContextImpl implements ProjectContext
 ⋮----
-constructor(private readonly project: Project)
+constructor(
+⋮----
+addDisposable(setup: () => (() => void | Promise<void>) | void): void
 ⋮----
 get baseDir(): string
 ⋮----
