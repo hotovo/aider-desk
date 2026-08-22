@@ -135,7 +135,7 @@ const execSearXng = (
 export default class SearXngSearchExtension implements Extension {
   static metadata = {
     name: 'SearXNG Search',
-    version: '1.0.2',
+    version: '1.0.3',
     description: 'Web search tool using SearXNG with auto-starting Docker container support',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
     author: 'wladimiiir',
@@ -419,11 +419,13 @@ export default class SearXngSearchExtension implements Extension {
       try {
         const parsed = JSON.parse(output);
 
-        if (!parsed.results || !Array.isArray(parsed.results)) {
-          return output;
+        const resultsArray = Array.isArray(parsed) ? parsed : parsed.results;
+
+        if (!Array.isArray(resultsArray) || resultsArray.length === 0) {
+          return `No results found for "${input.query}".`;
         }
 
-        const searchResults: SearchResult[] = parsed.results
+        const searchResults: SearchResult[] = resultsArray
           .slice(0, input.maxResults)
           .map((r: Record<string, unknown>) => ({
             title: String(r.title || 'Untitled'),
