@@ -211,7 +211,7 @@ describe('Home', () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByTestId('no-projects')).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('project-view').length).toBeGreaterThan(0);
     });
 
     // Simulate Ctrl+Tab
@@ -238,7 +238,7 @@ describe('Home', () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByTestId('no-projects')).not.toBeInTheDocument();
+      expect(screen.getAllByTestId('project-view').length).toBeGreaterThan(0);
     });
 
     // First switch to Project 2

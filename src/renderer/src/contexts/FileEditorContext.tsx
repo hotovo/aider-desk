@@ -25,7 +25,7 @@ export const FileEditorProvider = ({ projectDir, children }: { projectDir: strin
   const [activeFilePath, setActiveFilePath] = useLocalStorage<string | null>(`file-editor-active-file-${projectDir}`, null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
 
-  const files = openFiles ?? [];
+  const files = useMemo(() => openFiles ?? [], [openFiles]);
 
   useEffect(() => {
     if (files.length === 0) {
