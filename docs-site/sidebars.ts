@@ -47,6 +47,7 @@ const sidebars: SidebarsConfig = {
         "features/compact",
         "features/usage-dashboard",
         "features/aider-mcp-server",
+        "features/gbr",
         "features/readonly-view",
       ],
     },
