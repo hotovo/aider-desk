@@ -3,7 +3,7 @@ import { AgentProfile, Mode, SettingsData, TaskData } from '@common/types';
 
 import { Store } from '@/store';
 import logger from '@/logger';
-import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE } from '@/constants';
+import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE, PRODUCT_TELEMETRY_DISTINCT_ID } from '@/constants';
 import { getElectronApp } from '@/app';
 
 export class TelemetryManager {
@@ -176,29 +176,49 @@ export class TelemetryManager {
   }
 
   captureExtensionInstalled(extensionName: string, location: 'global' | 'project') {
-    if (!this.store.getSettings().telemetryEnabled) {
-      return;
+    if (this.store.getSettings().telemetryEnabled) {
+      this.client?.capture({
+        distinctId: this.distinctId,
+        event: 'extension-installed',
+        properties: {
+          extensionName,
+          location,
+        },
+      });
     }
+
     this.client?.capture({
-      distinctId: this.distinctId,
+      distinctId: PRODUCT_TELEMETRY_DISTINCT_ID,
       event: 'extension-installed',
       properties: {
         extensionName,
-        location,
+        os: process.platform,
+        appVersion: getElectronApp()?.getVersion(),
+        appType: APP_TYPE,
       },
     });
   }
 
   captureExtensionUninstalled(extensionName: string, location: 'global' | 'project') {
-    if (!this.store.getSettings().telemetryEnabled) {
-      return;
+    if (this.store.getSettings().telemetryEnabled) {
+      this.client?.capture({
+        distinctId: this.distinctId,
+        event: 'extension-uninstalled',
+        properties: {
+          extensionName,
+          location,
+        },
+      });
     }
+
     this.client?.capture({
-      distinctId: this.distinctId,
+      distinctId: PRODUCT_TELEMETRY_DISTINCT_ID,
       event: 'extension-uninstalled',
       properties: {
         extensionName,
-        location,
+        os: process.platform,
+        appVersion: getElectronApp()?.getVersion(),
+        appType: APP_TYPE,
       },
     });
   }

@@ -46,6 +46,7 @@ export const EXTENSIONS_REPOS_CACHE_DIR = path.join(AIDER_DESK_CACHE_DIR, 'exten
 
 export const POSTHOG_PUBLIC_API_KEY = process.env.POSTHOG_PUBLIC_API_KEY ?? '';
 export const POSTHOG_HOST = 'https://eu.i.posthog.com';
+export const PRODUCT_TELEMETRY_DISTINCT_ID = 'aiderdesk-global';
 
 export const HEADLESS_MODE = process.env.AIDER_DESK_HEADLESS === 'true';
 export const READONLY_MODE = process.env.AIDER_DESK_READONLY === 'true';
