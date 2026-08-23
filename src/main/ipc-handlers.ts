@@ -177,6 +177,19 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.isProjectPath(path);
   });
 
+  ipcMain.handle('clone-project', async (_, repositoryUrl: string, targetDir?: string): Promise<{ path?: string; error?: string }> => {
+    try {
+      const path = await eventsHandler.cloneProject(repositoryUrl, targetDir);
+      return { path };
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('cancel-clone-project', async () => {
+    eventsHandler.cancelCloneProject();
+  });
+
   ipcMain.handle('is-valid-path', async (_, baseDir: string, path: string) => {
     return await eventsHandler.isValidPath(baseDir, path);
   });

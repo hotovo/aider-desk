@@ -569,6 +569,13 @@ export class BrowserApi implements ApplicationAPI {
     const res = await this.post<{ path: string }, { isProject: boolean }>('/project/is-project-path', { path });
     return res.isProject;
   }
+  async cloneProject(repositoryUrl: string, targetDir?: string): Promise<string> {
+    const res = await this.post<{ repositoryUrl: string; targetDir?: string }, { path: string }>('/project/clone', { repositoryUrl, targetDir });
+    return res.path;
+  }
+  async cancelCloneProject(): Promise<void> {
+    await this.post('/project/clone/cancel', {});
+  }
   dropFile(baseDir: string, taskId: string, path: string): void {
     this.post('/drop-context-file', { projectDir: baseDir, taskId, path });
   }

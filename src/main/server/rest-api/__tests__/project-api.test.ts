@@ -334,3 +334,27 @@ describe('ProjectApi - run-code-change-requests endpoint', () => {
     });
   });
 });
+
+describe('ProjectApi - clone endpoint', () => {
+  describe('CloneProjectSchema validation', () => {
+    const CloneProjectSchema = z.object({
+      repositoryUrl: z.string().min(1, 'Repository URL is required'),
+      targetDir: z.string().optional(),
+    });
+
+    it('should validate request without target directory', () => {
+      const result = CloneProjectSchema.safeParse({ repositoryUrl: 'https://github.com/owner/repo.git' });
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate request with blank target directory', () => {
+      const result = CloneProjectSchema.safeParse({ repositoryUrl: 'https://github.com/owner/repo.git', targetDir: '   ' });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject request with missing repository URL', () => {
+      const result = CloneProjectSchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+  });
+});

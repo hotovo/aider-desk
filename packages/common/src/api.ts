@@ -144,6 +144,8 @@ export interface ApplicationAPI {
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
   isValidPath: (baseDir: string, path: string) => Promise<boolean>;
   isProjectPath: (path: string) => Promise<boolean>;
+  cloneProject: (repositoryUrl: string, targetDir?: string) => Promise<string>;
+  cancelCloneProject: () => Promise<void>;
   dropFile: (baseDir: string, taskId: string, path: string) => void;
   runCommand: (baseDir: string, taskId: string, command: string) => void;
   pasteImage: (baseDir: string, taskId: string, imageBuffer?: ArrayBuffer) => void;

@@ -71,6 +71,7 @@
     "retry": "Повторить",
     "open": "Открыть",
     "openProject": "Открыть проект",
+    "clone": "Клонировать",
     "lock": "Заблокировать",
     "default": "По умолчанию",
     "suffix.billion": "Млрд",
@@ -1095,7 +1096,15 @@
     "openButton": "Открыть",
     "browseFoldersTooltip": "Просмотр папок",
     "projectAlreadyOpenWarning": "Этот проект уже открыт.",
-    "cantOpenProject": "Этот проект не может быть открыт."
+    "cantOpenProject": "Этот проект не может быть открыт.",
+    "openLocalProject": "Открыть локальный",
+    "cloneFromGit": "Клонировать из Git",
+    "repositoryUrlPlaceholder": "Например, https://github.com/owner/repo.git",
+    "cloneDestinationPlaceholder": "По умолчанию: ~/.aider-desk/projects",
+    "repositoryUrlLabel": "URL репозитория",
+    "cloneDestinationLabel": "Папка назначения",
+    "cloningProject": "Клонирование репозитория...",
+    "cloneProjectFailed": "Не удалось клонировать проект"
   },
   "mode": {
     "code": "Код",

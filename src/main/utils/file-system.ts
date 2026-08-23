@@ -7,6 +7,7 @@ import slugify from 'slugify';
 import { glob } from 'glob';
 
 import logger from '@/logger';
+import { AIDER_DESK_PROJECTS_DIR } from '@/constants';
 // @ts-expect-error filenamify is not typed properly
 const filenamify = filenamifyImport.default;
 
@@ -58,6 +59,53 @@ export const isProjectPath = async (path: string): Promise<boolean> => {
     return true;
   } catch {
     return false;
+  }
+};
+
+const getRepoNameFromPath = (repoPath: string): string | null => {
+  const segments = repoPath.split('/').filter(Boolean);
+  const lastSegment = segments[segments.length - 1]?.replace(/\.git$/i, '');
+  return lastSegment || null;
+};
+
+export const parseRepositoryUrl = (repositoryUrl: string): { cloneUrl: string; repoName: string } | null => {
+  const trimmed = repositoryUrl.trim().replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(trimmed);
+    const repoName = getRepoNameFromPath(url.pathname);
+    return repoName ? { cloneUrl: trimmed, repoName } : null;
+  } catch {
+    return null;
+  }
+};
+
+export const cloneProjectRepository = async (repositoryUrl: string, targetDir?: string, signal?: AbortSignal): Promise<string> => {
+  const destinationDir = targetDir?.trim() || AIDER_DESK_PROJECTS_DIR;
+  const parsed = parseRepositoryUrl(repositoryUrl);
+  if (!parsed) {
+    throw new Error('Invalid repository URL');
+  }
+
+  await fs.promises.mkdir(destinationDir, { recursive: true });
+
+  const existingEntries = await fs.promises.readdir(destinationDir);
+  const dirName = deriveDirName(parsed.repoName, new Set(existingEntries));
+  const targetPath = path.join(destinationDir, dirName);
+
+  const git = simpleGit({ abort: signal });
+
+  try {
+    logger.info(`Cloning repository ${parsed.cloneUrl} to ${targetPath}`);
+    await git.clone(parsed.cloneUrl, targetPath);
+    return targetPath;
+  } catch (error) {
+    logger.error('Failed to clone repository', { repositoryUrl: parsed.cloneUrl, targetPath, error });
+    await fs.promises.rm(targetPath, { recursive: true, force: true });
+    throw error instanceof Error ? error : new Error(String(error));
   }
 };
 

@@ -109,6 +109,14 @@ const api: ApplicationAPI = {
   addFile: (baseDir, taskId, filePath, readOnly = false) => ipcRenderer.send('add-file', baseDir, taskId, filePath, readOnly),
   isValidPath: (baseDir, path) => ipcRenderer.invoke('is-valid-path', baseDir, path),
   isProjectPath: (path) => ipcRenderer.invoke('is-project-path', path),
+  cloneProject: async (repositoryUrl, targetDir) => {
+    const result = await ipcRenderer.invoke('clone-project', repositoryUrl, targetDir);
+    if (result.error || !result.path) {
+      throw new Error(result.error ?? 'Failed to clone the project');
+    }
+    return result.path;
+  },
+  cancelCloneProject: () => ipcRenderer.invoke('cancel-clone-project'),
   dropFile: (baseDir, taskId, path) => ipcRenderer.send('drop-file', baseDir, taskId, path),
   runCommand: (baseDir, taskId, command) => ipcRenderer.send('run-command', baseDir, taskId, command),
   pasteImage: (baseDir, taskId) => ipcRenderer.send('paste-image', baseDir, taskId),

@@ -71,6 +71,7 @@
     "retry": "Retry",
     "open": "Open",
     "openProject": "Open Project",
+    "clone": "Clone",
     "lock": "Lock",
     "default": "Default",
     "suffix.billion": "B",
@@ -1103,7 +1104,15 @@
     "openButton": "Open",
     "browseFoldersTooltip": "Browse folders",
     "projectAlreadyOpenWarning": "This project is already open.",
-    "cantOpenProject": "This project can not be opened."
+    "cantOpenProject": "This project can not be opened.",
+    "openLocalProject": "Open Local",
+    "cloneFromGit": "Clone from Git",
+    "repositoryUrlPlaceholder": "e.g. https://github.com/owner/repo.git",
+    "cloneDestinationPlaceholder": "default: ~/.aider-desk/projects",
+    "repositoryUrlLabel": "Repository URL",
+    "cloneDestinationLabel": "Destination folder",
+    "cloningProject": "Cloning repository...",
+    "cloneProjectFailed": "Failed to clone the project"
   },
   "mode": {
     "code": "Code",

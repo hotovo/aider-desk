@@ -54,10 +54,14 @@ describe('OpenProjectDialog', () => {
     isOpenDialogSupported: vi.fn(() => true),
     getFilePathSuggestions: vi.fn(() => Promise.resolve([])),
     isProjectPath: vi.fn(() => Promise.resolve(false)),
+    cloneProject: vi.fn(() => Promise.resolve('/cloned/project')),
+    cancelCloneProject: vi.fn(() => Promise.resolve()),
     showOpenDialog: vi.fn(() => Promise.resolve({ canceled: false, filePaths: ['/selected/path'] })),
   };
 
   beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
     vi.mocked(useApi).mockReturnValue(mockApi as unknown as ApplicationAPI);
   });
 
@@ -93,5 +97,114 @@ describe('OpenProjectDialog', () => {
     fireEvent.click(screen.getByText('common.open'));
 
     expect(onAddProject).toHaveBeenCalledWith('/some/path');
+  });
+
+  it('switches to clone mode and clones a repository', async () => {
+    const onAddProject = vi.fn();
+    const onClose = vi.fn();
+    render(<OpenProjectDialog onClose={onClose} onAddProject={onAddProject} openProjects={[]} />);
+
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+
+    const input = screen.getByTestId('repository-url-input');
+    expect(input).toBeInTheDocument();
+
+    const cloneButton = screen.getByText('common.clone');
+    expect(cloneButton).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: 'https://github.com/owner/repo.git' } });
+    fireEvent.change(screen.getByPlaceholderText('dialogs.cloneDestinationPlaceholder'), { target: { value: '/custom/projects' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('common.clone')).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByText('common.clone'));
+
+    await waitFor(() => {
+      expect(mockApi.cloneProject).toHaveBeenCalledWith('https://github.com/owner/repo.git', '/custom/projects');
+    });
+    expect(onAddProject).toHaveBeenCalledWith('/cloned/project');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('preloads and clears the saved clone destination', async () => {
+    localStorage.setItem('aider-desk-clone-destination', '/custom/projects');
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={vi.fn()} openProjects={[]} />);
+
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+
+    const destinationInput = screen.getByPlaceholderText('dialogs.cloneDestinationPlaceholder');
+    expect(destinationInput).toHaveValue('/custom/projects');
+    expect(destinationInput).toHaveAttribute('placeholder', 'dialogs.cloneDestinationPlaceholder');
+
+    fireEvent.change(destinationInput, { target: { value: '' } });
+
+    expect(destinationInput).toHaveValue('');
+    expect(localStorage.getItem('aider-desk-clone-destination')).toBeNull();
+
+    fireEvent.change(screen.getByTestId('repository-url-input'), { target: { value: 'https://github.com/owner/repo.git' } });
+    fireEvent.click(screen.getByText('common.clone'));
+
+    await waitFor(() => {
+      expect(mockApi.cloneProject).toHaveBeenCalledWith('https://github.com/owner/repo.git', undefined);
+    });
+  });
+
+  it('shows error and keeps dialog open when cloning fails', async () => {
+    mockApi.cloneProject.mockRejectedValue(new Error('repository not found'));
+    const onAddProject = vi.fn();
+    const onClose = vi.fn();
+    render(<OpenProjectDialog onClose={onClose} onAddProject={onAddProject} openProjects={[]} />);
+
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+
+    const input = screen.getByTestId('repository-url-input');
+    fireEvent.change(input, { target: { value: 'https://github.com/owner/repo.git' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('common.clone')).not.toBeDisabled();
+    });
+
+    fireEvent.click(screen.getByText('common.clone'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('clone-error')).toBeInTheDocument();
+    });
+    expect(screen.getByTestId('clone-error')).toHaveTextContent('repository not found');
+    expect(onAddProject).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('shows cloning view with tabs hidden and cancels the clone', async () => {
+    const onClose = vi.fn();
+    let resolveClone: ((path: string) => void) | undefined;
+    mockApi.cloneProject.mockImplementation(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveClone = resolve;
+        }),
+    );
+    render(<OpenProjectDialog onClose={onClose} onAddProject={vi.fn()} openProjects={[]} />);
+
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+    fireEvent.change(screen.getByTestId('repository-url-input'), { target: { value: 'https://github.com/owner/repo.git' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('common.clone')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByText('common.clone'));
+
+    await waitFor(() => {
+      expect(screen.getByText('dialogs.cloningProject')).toBeInTheDocument();
+    });
+    expect(screen.queryByText('dialogs.cloneFromGit')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+
+    expect(mockApi.cancelCloneProject).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+
+    resolveClone?.('/cloned/project');
   });
 });

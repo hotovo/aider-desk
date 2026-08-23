@@ -415,6 +415,28 @@ Pastes an image from clipboard into the project.
   }
   ```
 
+#### Clone Project
+Clones a git repository into the AiderDesk projects directory (`~/.aider-desk/projects`) by default. Set `targetDir` to clone into a different folder. Only full HTTP and HTTPS repository URLs are accepted.
+
+- **Endpoint**: `POST /api/project/clone`
+- **Request Body**:
+  ```json
+  {
+    "repositoryUrl": "https://github.com/owner/repo.git",
+    "targetDir": "/path/to/projects"
+  }
+  ```
+  | Field | Type | Required | Description |
+  |-------|------|----------|-------------|
+  | `repositoryUrl` | string | Yes | Full HTTP or HTTPS repository URL |
+  | `targetDir` | string | No | Parent folder for the cloned repository; defaults to `~/.aider-desk/projects` |
+- **Response**: `200 OK`
+  ```json
+  {
+    "path": "/path/to/projects/repo"
+  }
+  ```
+
 ### Task Management
 
 Tasks are the primary unit of work in AiderDesk. Each task holds its own conversation context, mode, working mode (local or worktree), and agent configuration. Understanding the task lifecycle is important for automation use cases.

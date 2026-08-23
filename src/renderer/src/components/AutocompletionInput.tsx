@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 
 import { KeyboardKeys } from '@/constants/keyboardKeys';
 
@@ -12,6 +13,7 @@ type Props = {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  label?: ReactNode;
   rightElement?: ReactNode;
   autoFocus?: boolean;
   onPaste?: (pastedText: string) => Promise<boolean>;
@@ -25,6 +27,7 @@ export const AutocompletionInput = ({
   placeholder,
   className,
   inputClassName,
+  label,
   rightElement,
   autoFocus,
   onPaste,
@@ -171,25 +174,28 @@ export const AutocompletionInput = ({
   };
 
   return (
-    <div className={clsx('relative flex items-center', className)}>
-      <input
-        ref={inputRef}
-        className={clsx(
-          'w-full p-3 rounded-lg bg-bg-primary-light-strong border border-bg-tertiary-strong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
-          inputClassName,
-        )}
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value, false)}
-        onKeyDown={handleKeyDown}
-        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-        placeholder={placeholder ? t(placeholder) : undefined}
-        autoFocus={autoFocus}
-        onPaste={handleOnPaste}
-      />
-      {rightElement && <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightElement}</div>}
-      {/* eslint-disable-next-line react-hooks/refs */}
-      {renderSuggestions()}
+    <div className={className}>
+      {label && <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>}
+      <div className="relative flex items-center">
+        <input
+          ref={inputRef}
+          className={twMerge(
+            'w-full p-3 rounded-lg bg-bg-primary-light-strong border border-bg-tertiary-strong text-sm text-text-primary placeholder-text-muted focus:outline-none focus:border-border-default focus:ring-1 focus:ring-border-default transition-colors',
+            inputClassName,
+          )}
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value, false)}
+          onKeyDown={handleKeyDown}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          placeholder={placeholder ? t(placeholder) : undefined}
+          autoFocus={autoFocus}
+          onPaste={handleOnPaste}
+        />
+        {rightElement && <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightElement}</div>}
+        {/* eslint-disable-next-line react-hooks/refs */}
+        {renderSuggestions()}
+      </div>
     </div>
   );
 };

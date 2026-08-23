@@ -60,7 +60,16 @@ import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
 import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
-import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
+import {
+  cloneProjectRepository,
+  getDefaultProjectSettings,
+  getEffectiveEnvironmentVariable,
+  getFilePathSuggestions,
+  isProjectPath,
+  isValidPath,
+  scrapeWeb,
+  openUrl,
+} from '@/utils';
 import { expandTilde } from '@/agent/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
@@ -87,6 +96,8 @@ export class EventsHandler {
     private readonly promptsManager: PromptsManager,
     private readonly windowManager?: WindowManager,
   ) {}
+
+  private cloneAbortController: AbortController | null = null;
 
   loadSettings(): SettingsData {
     return this.store.getSettings();
@@ -1173,6 +1184,19 @@ export class EventsHandler {
 
   async isProjectPath(path: string): Promise<boolean> {
     return await isProjectPath(path);
+  }
+
+  async cloneProject(repositoryUrl: string, targetDir?: string): Promise<string> {
+    this.cloneAbortController = new AbortController();
+    try {
+      return await cloneProjectRepository(repositoryUrl, targetDir, this.cloneAbortController.signal);
+    } finally {
+      this.cloneAbortController = null;
+    }
+  }
+
+  cancelCloneProject(): void {
+    this.cloneAbortController?.abort();
   }
 
   async isValidPath(baseDir: string, path: string): Promise<boolean> {

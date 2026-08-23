@@ -71,6 +71,7 @@
     "retry": "重试",
     "open": "打开",
     "openProject": "打开项目",
+    "clone": "克隆",
     "lock": "锁定",
     "default": "默认",
     "suffix.billion": "十亿",
@@ -1036,7 +1037,15 @@
     "openButton": "打开",
     "browseFoldersTooltip": "浏览文件夹",
     "projectAlreadyOpenWarning": "此项目已打开。",
-    "cantOpenProject": "无法打开此项目。"
+    "cantOpenProject": "无法打开此项目。",
+    "openLocalProject": "打开本地项目",
+    "cloneFromGit": "从 Git 克隆",
+    "repositoryUrlPlaceholder": "例如 https://github.com/owner/repo.git",
+    "cloneDestinationPlaceholder": "默认：~/.aider-desk/projects",
+    "repositoryUrlLabel": "仓库 URL",
+    "cloneDestinationLabel": "目标文件夹",
+    "cloningProject": "正在克隆仓库...",
+    "cloneProjectFailed": "克隆项目失败"
   },
   "mode": {
     "code": "代码",

@@ -40,6 +40,7 @@ export const AIDER_DESK_MCP_SERVERS_FILE = 'mcp-servers.json';
 export const AIDER_DESK_TMP_DIR = path.join(AIDER_DESK_DIR, 'tmp');
 export const AIDER_DESK_WATCH_FILES_LOCK = path.join(AIDER_DESK_DIR, 'watch-files.lock');
 export const WORKTREE_BRANCH_PREFIX = 'aider-desk/task/';
+export const AIDER_DESK_PROJECTS_DIR = path.join(AIDER_DESK_HOME_DIR, 'projects');
 export const AIDER_DESK_MEMORY_FILE = path.join(AIDER_DESK_DATA_DIR, 'memory.db');
 export const EXTENSIONS_REPOS_CACHE_DIR = path.join(AIDER_DESK_CACHE_DIR, 'extensions');
 
