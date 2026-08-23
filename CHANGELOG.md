@@ -17,6 +17,7 @@
 - added disposable resource management for extensions with automatic cleanup on unload
 - fixed disabled/uninstalled extensions still running their resources; toggling enable/disable now properly calls onUnload/onLoad lifecycle hooks
 - added option to clone git project directly from Open project dialog
+- added OpenCode Go as direct provider
 
 ## [0.79.0]
 

@@ -11,6 +11,7 @@ import {
   OpenAiCompatibleProvider,
   OpenAiProvider,
   OpenCodeProvider,
+  OpenCodeGoProvider,
   OpenRouterProvider,
   RequestyProvider,
   VertexAiProvider,
@@ -770,6 +771,7 @@ export interface SettingsData {
     minimax?: MinimaxProvider;
     'openai-compatible'?: OpenAiCompatibleProvider;
     opencode?: OpenCodeProvider;
+    'opencode-go'?: OpenCodeGoProvider;
     openrouter?: OpenRouterProvider;
     requesty?: RequestyProvider;
     synthetic?: SyntheticProvider;

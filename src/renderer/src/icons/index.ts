@@ -19,6 +19,7 @@ export { OllamaIcon } from './OllamaIcon';
 export { OpenAiIcon } from './OpenAiIcon';
 export { OpenAiCompatibleIcon } from './OpenAiCompatibleIcon';
 export { OpenCodeIcon } from './OpenCodeIcon';
+export { OpenCodeGoIcon } from './OpenCodeGoIcon';
 export { OpenRouterIcon } from './OpenRouterIcon';
 export { RequestyIcon } from './RequestyIcon';
 export { SyntheticIcon } from './SyntheticIcon';

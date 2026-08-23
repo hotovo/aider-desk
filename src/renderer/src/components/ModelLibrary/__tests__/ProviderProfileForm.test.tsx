@@ -56,6 +56,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   ZaiPlanParameters: () => <div>ZaiPlan Parameters</div>,
   SyntheticParameters: () => <div>Synthetic Parameters</div>,
   OpenCodeParameters: () => <div>OpenCode Parameters</div>,
+  OpenCodeGoParameters: () => <div>OpenCode Go Parameters</div>,
 }));
 
 describe('ProviderProfileForm', () => {

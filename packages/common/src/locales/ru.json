@@ -382,6 +382,9 @@
   "opencode": {
     "apiKey": "API-ключ"
   },
+  "opencodeGo": {
+    "apiKey": "API-ключ"
+  },
   "requesty": {
     "apiKey": "API-ключ",
     "modelPlaceholder": "например, claude-4-sonnet",
@@ -457,6 +460,7 @@
     "ollama": "Ollama",
     "openai": "OpenAI",
     "opencode": "OpenCode ZEN",
+    "opencode-go": "OpenCode Go",
     "openai-compatible": "Совместимый с OpenAI",
     "openrouter": "OpenRouter",
     "requesty": "Requesty",

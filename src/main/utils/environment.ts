@@ -61,6 +61,7 @@ const readApiKeyFromConfFile = (filePath: string, envVarName: string): string | 
           CEREBRAS_API_KEY: ['cerebras'],
           CLINE_API_KEY: ['clinepass'],
           OPENCODE_API_KEY: ['opencode'],
+          OPENCODE_GO_API_KEY: ['opencode-go'],
           REQUESTY_API_KEY: ['requesty'],
           SYNTHETIC_API_KEY: ['synthetic'],
           MISTRAL_API_KEY: ['mistral'],
