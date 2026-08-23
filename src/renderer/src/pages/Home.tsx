@@ -161,7 +161,7 @@ export const Home = () => {
           const remaining = optimisticOpenProjects.filter((project) => project.baseDir !== projectBaseDir);
 
           // Only change selection if we're closing the currently active project
-          if (projectBaseDir === activeProject && remaining.length > 0) {
+          if (compareBaseDirs(projectBaseDir, activeProject, os ?? undefined) && remaining.length > 0) {
             // Pick adjacent from remaining array (not original!) to avoid re-selecting the closed project
             const nextIndex = removedIndex >= remaining.length ? removedIndex - 1 : removedIndex;
             const nextProject = remaining[nextIndex];
@@ -179,7 +179,7 @@ export const Home = () => {
         }
       });
     },
-    [api, optimisticOpenProjects, activeProject, setOptimisticOpenProjects, setSearchParams],
+    [api, optimisticOpenProjects, activeProject, os, setOptimisticOpenProjects, setSearchParams],
   );
 
   // Close current project tab
@@ -304,12 +304,12 @@ export const Home = () => {
     (index: number) => {
       if (index < optimisticOpenProjects.length) {
         const targetProject = optimisticOpenProjects[index];
-        if (targetProject && targetProject.baseDir !== activeProject) {
+        if (targetProject && !compareBaseDirs(targetProject.baseDir, activeProject, os ?? undefined)) {
           void setActiveProject(targetProject.baseDir);
         }
       }
     },
-    [optimisticOpenProjects, activeProject, setActiveProject],
+    [optimisticOpenProjects, activeProject, os, setActiveProject],
   );
 
   // Switch to specific project tabs (Alt/Cmd + 1-9)
@@ -360,18 +360,22 @@ export const Home = () => {
       }
 
       setIsCtrlTabbing(true);
-      if (!isCtrlTabbing && previousProjectBaseDir && optimisticOpenProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
+      if (
+        !isCtrlTabbing &&
+        previousProjectBaseDir &&
+        optimisticOpenProjects.some((project) => compareBaseDirs(project.baseDir, previousProjectBaseDir, os ?? undefined))
+      ) {
         setPreviousProjectBaseDir(activeProject || null);
         void setActiveProject(previousProjectBaseDir);
       } else {
-        const currentIndex = optimisticOpenProjects.findIndex((project) => project.baseDir === activeProject);
+        const currentIndex = optimisticOpenProjects.findIndex((project) => compareBaseDirs(project.baseDir, activeProject, os ?? undefined));
         const nextIndex = (currentIndex + 1) % optimisticOpenProjects.length;
         void setActiveProject(optimisticOpenProjects[nextIndex].baseDir);
         setPreviousProjectBaseDir(activeProject || null);
       }
     },
     { scopes: 'home', keydown: true, keyup: false, enableOnFormTags: true, enableOnContentEditable: true },
-    [optimisticOpenProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, setActiveProject, PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT],
+    [optimisticOpenProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, os, setActiveProject, PROJECT_HOTKEYS.CYCLE_NEXT_PROJECT],
   );
 
   // Ctrl+Shift+Tab cycling (backward)
@@ -385,18 +389,22 @@ export const Home = () => {
       }
 
       setIsCtrlTabbing(true);
-      if (!isCtrlTabbing && previousProjectBaseDir && optimisticOpenProjects.some((project) => project.baseDir === previousProjectBaseDir)) {
+      if (
+        !isCtrlTabbing &&
+        previousProjectBaseDir &&
+        optimisticOpenProjects.some((project) => compareBaseDirs(project.baseDir, previousProjectBaseDir, os ?? undefined))
+      ) {
         setPreviousProjectBaseDir(activeProject || null);
         void setActiveProject(previousProjectBaseDir);
       } else {
-        const currentIndex = optimisticOpenProjects.findIndex((project) => project.baseDir === activeProject);
+        const currentIndex = optimisticOpenProjects.findIndex((project) => compareBaseDirs(project.baseDir, activeProject, os ?? undefined));
         const prevIndex = (currentIndex - 1 + optimisticOpenProjects.length) % optimisticOpenProjects.length;
         void setActiveProject(optimisticOpenProjects[prevIndex].baseDir);
         setPreviousProjectBaseDir(activeProject || null);
       }
     },
     { scopes: 'home', keydown: true, keyup: false, enableOnFormTags: true, enableOnContentEditable: true },
-    [optimisticOpenProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, setActiveProject, PROJECT_HOTKEYS.CYCLE_PREV_PROJECT],
+    [optimisticOpenProjects, activeProject, previousProjectBaseDir, isCtrlTabbing, os, setActiveProject, PROJECT_HOTKEYS.CYCLE_PREV_PROJECT],
   );
 
   // Reset Ctrl+Tab state on Control key up
@@ -414,7 +422,9 @@ export const Home = () => {
   const handleAddProject = async (baseDir: string) => {
     const projects = await api.addOpenProject(baseDir);
     setOpenProjects(projects);
-    void setActiveProject(baseDir);
+    // Activate using the baseDir as stored by the backend so the strict comparisons stay consistent
+    const addedProject = projects.find((project) => compareBaseDirs(project.baseDir, baseDir, os ?? undefined));
+    void setActiveProject(addedProject?.baseDir ?? baseDir);
   };
 
   const handleCloseOtherProjects = useCallback(
@@ -493,13 +503,13 @@ export const Home = () => {
         <div
           className="absolute top-0 left-0 w-full h-full"
           style={{
-            zIndex: activeProject === project.baseDir ? 1 : 0,
+            zIndex: compareBaseDirs(activeProject, project.baseDir, os ?? undefined) ? 1 : 0,
           }}
         >
           <ProjectView
             projectDir={project.baseDir}
-            isProjectActive={activeProject === project.baseDir}
-            initialTaskId={activeProject === project.baseDir ? initialTaskId : undefined}
+            isProjectActive={compareBaseDirs(activeProject, project.baseDir, os ?? undefined)}
+            initialTaskId={compareBaseDirs(activeProject, project.baseDir, os ?? undefined) ? initialTaskId : undefined}
           />
         </div>
       </ProjectSettingsProvider>

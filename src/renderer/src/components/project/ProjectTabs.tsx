@@ -1,4 +1,5 @@
 import { ProjectData } from '@common/types';
+import { compareBaseDirs } from '@common/utils';
 import { CSS } from '@dnd-kit/utilities';
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
@@ -15,6 +16,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useOS } from '@/hooks/useOS';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { getProjectTabClassName, ProjectTabContent } from '@/components/project/ProjectTabContent';
 import { useApi } from '@/contexts/ApiContext';
@@ -45,6 +47,7 @@ export const ProjectTabs = ({
   const [showRightScrollButton, setShowRightScrollButton] = useState(false);
   const [dragging, setDragging] = useState(false);
   const { isMobile } = useResponsive();
+  const os = useOS();
 
   const checkScrollButtonsVisibility = () => {
     const container = tabsContainerRef.current;
@@ -121,7 +124,7 @@ export const ProjectTabs = ({
   const projectIds = useMemo(() => openProjects.map((p) => p.baseDir), [openProjects]);
 
   if (isMobile) {
-    const selectedProject = openProjects.find((p) => p.baseDir === activeProject);
+    const selectedProject = openProjects.find((p) => !!activeProject && compareBaseDirs(p.baseDir, activeProject, os ?? undefined));
 
     return (
       <div className="flex items-center gap-2 px-2 py-2 min-w-0 flex-1">
@@ -162,7 +165,7 @@ export const ProjectTabs = ({
   return (
     <TabGroup
       className="overflow-x-hidden flex-1"
-      selectedIndex={openProjects.findIndex((p) => p.baseDir === activeProject)}
+      selectedIndex={openProjects.findIndex((p) => !!activeProject && compareBaseDirs(p.baseDir, activeProject, os ?? undefined))}
       onChange={(index) => {
         if (openProjects[index] && !dragging) {
           onSetActiveProject(openProjects[index].baseDir);
@@ -185,7 +188,7 @@ export const ProjectTabs = ({
                 <SortableTabItem
                   key={project.baseDir}
                   project={project}
-                  isActive={activeProject === project.baseDir}
+                  isActive={!!activeProject && compareBaseDirs(activeProject, project.baseDir, os ?? undefined)}
                   onCloseProject={onCloseProject}
                   onCloseOtherProjects={onCloseOtherProjects}
                   onCloseAllProjects={onCloseAllProjects}

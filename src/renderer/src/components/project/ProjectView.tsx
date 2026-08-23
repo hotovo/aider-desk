@@ -32,7 +32,7 @@ import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
-import { showInfoNotification } from '@/utils/notifications';
+import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
@@ -72,6 +72,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
   const taskViewRef = useRef<TaskViewRef>(null);
   const taskContentRef = useRef<HTMLDivElement>(null);
   const creatingTaskRef = useRef(false);
+  const hasActivatedTaskRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
   const activeTaskFiles = useTaskAllFiles(activeTask ? getTaskDir(activeTask) : undefined);
   const editorOpenFiles = useFileEditorStore((state) => state.projectsMap.get(projectDir)?.openFiles ?? []);
@@ -89,6 +90,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
 
   const activateTask = useCallback(
     (taskId: string, shouldFocusActiveTaskPrompt = true, shouldFocusNewTask = false) => {
+      hasActivatedTaskRef.current = true;
       setActiveTaskId(taskId);
       setShouldFocusNewTask(shouldFocusNewTask);
       if (shouldFocusActiveTaskPrompt) {
@@ -283,6 +285,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to load tasks:', error);
+        showErrorNotification(error instanceof Error ? error.message : String(error));
       }
     };
 
@@ -312,6 +315,25 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       cleanupProjectCache(projectDir);
     };
   }, [activateTask, api, projectDir, startupMode, initialTaskId]);
+
+  // Self-healing fallback: if the project became active and finished loading but no task was ever
+  // activated (e.g., lost startup race or a failed task creation), activate an existing task.
+  useEffect(() => {
+    if (!isProjectActive || starting || tasksLoading || activeTaskId || hasActivatedTaskRef.current) {
+      return;
+    }
+
+    const existingNewTask = optimisticTasks.find((task) => !task.createdAt && !task.archived);
+    const candidate =
+      existingNewTask ??
+      [...optimisticTasks]
+        .filter((task) => !task.archived)
+        .sort((first, second) => (second.updatedAt ?? second.createdAt ?? '').localeCompare(first.updatedAt ?? first.createdAt ?? ''))[0];
+
+    if (candidate) {
+      activateTask(candidate.id, false);
+    }
+  }, [isProjectActive, starting, tasksLoading, activeTaskId, optimisticTasks, activateTask]);
 
   const handleTaskSelect = useCallback(
     (taskId: string) => {
