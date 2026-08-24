@@ -1318,7 +1318,8 @@ export class WorktreeManager {
       // Find worktree that matches our task's worktree path
       const taskWorktree = worktrees.find((w) => w.path === taskWorktreePath);
 
-      if (taskWorktree) {
+      // A prunable worktree has a missing or invalid directory (stale registration), treat it as absent
+      if (taskWorktree && !taskWorktree.prunable) {
         return taskWorktree;
       }
 
