@@ -145,4 +145,26 @@ describe('TaskSidebar Hierarchy', () => {
     // Check that pin button is NOT visible in the hover actions row
     expect(screen.queryByTestId('pin-button-parent-1')).not.toBeInTheDocument();
   });
+
+  it('renders hierarchy controls for deeply nested subtasks', async () => {
+    const nestedTasks = [
+      { id: 'parent-1', name: 'Parent 1', updatedAt: '2023-01-01T00:00:00Z', parentId: null },
+      { id: 'child-1', name: 'Child 1', updatedAt: '2023-01-02T00:00:00Z', parentId: 'parent-1' },
+      { id: 'grandchild-1', name: 'Grandchild 1', updatedAt: '2023-01-03T00:00:00Z', parentId: 'child-1' },
+    ] as TaskData[];
+
+    render(<TaskSidebar loading={false} tasks={nestedTasks} activeTaskId="parent-1" onTaskSelect={vi.fn()} isCollapsed={false} onToggleCollapse={vi.fn()} />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('chevron-parent-1'));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('chevron-child-1'));
+    });
+
+    expect(screen.getByText('Grandchild 1')).toBeInTheDocument();
+    expect(screen.getByTestId('chevron-child-1')).toBeInTheDocument();
+    expect(screen.getByTestId('create-subtask-child-1')).toBeInTheDocument();
+    expect(screen.getByTestId('create-subtask-grandchild-1')).toBeInTheDocument();
+  });
 });

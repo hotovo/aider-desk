@@ -360,11 +360,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
     }),
     execute: async (input, { toolCallId }) => {
       const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autonomyMode, worktree, executeAndWait, executeInBackground } = input;
-      const parentTaskId: string | null | undefined = asSubtask
-        ? task.task.parentId || task.taskId
-        : 'parentTaskId' in input
-          ? (input.parentTaskId as string | null)
-          : undefined;
+      const parentTaskId: string | null | undefined = asSubtask ? task.taskId : 'parentTaskId' in input ? (input.parentTaskId as string | null) : undefined;
       const resolvedProfile = agentProfileId ? task.getProject().resolveAgentProfile(agentProfileId) : profile;
 
       if (!resolvedProfile) {

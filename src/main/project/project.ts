@@ -98,11 +98,6 @@ export class Project {
         throw new Error(`Parent task with id ${normalizedParams.parentId} not found`);
       }
 
-      // Flatten: if the parent is itself a subtask, use its parent instead for parentId
-      if (parentTask.task.parentId) {
-        normalizedParams.parentId = parentTask.task.parentId;
-      }
-
       if (!parentTask.task.createdAt) {
         // when a subtask for non-saved task is created we need to save the parent task first
         await parentTask.saveTask();
@@ -454,14 +449,23 @@ export class Project {
     try {
       // First, find and delete all subtasks recursively
       const allTasks = await this.getTasks();
-      const subtasks = allTasks.filter((t) => t.parentId === taskId);
 
-      for (const subtask of subtasks) {
-        await this.deleteTaskInternal(subtask.id);
+      const collectDescendantIds = (parentId: string, visited: Set<string>): string[] =>
+        allTasks
+          .filter((t) => t.parentId === parentId && !visited.has(t.id))
+          .flatMap((subtask) => {
+            visited.add(subtask.id);
+            return [subtask.id, ...collectDescendantIds(subtask.id, visited)];
+          });
+
+      const descendantIds = collectDescendantIds(taskId, new Set());
+
+      for (const subtaskId of descendantIds) {
+        await this.deleteTaskInternal(subtaskId);
         logger.info('Successfully deleted subtask', {
           baseDir: this.baseDir,
           parentTaskId: taskId,
-          subtaskId: subtask.id,
+          subtaskId,
         });
       }
 
@@ -471,7 +475,7 @@ export class Project {
       logger.info('Successfully deleted task with subtasks', {
         baseDir: this.baseDir,
         taskId,
-        subtaskCount: subtasks.length,
+        subtaskCount: descendantIds.length,
       });
     } catch (error) {
       logger.error('Failed to delete task:', {
@@ -480,6 +484,32 @@ export class Project {
         error: error instanceof Error ? error.message : String(error),
       });
       throw error;
+    }
+  }
+
+  /**
+   * Validates that a task can be assigned the given parent: the parent must exist
+   * and must not be the task itself or one of its descendants (which would create a cycle).
+   */
+  public validateParentAssignment(taskId: string, parentId: string): void {
+    const parentTask = this.getTask(parentId);
+    if (!parentTask) {
+      throw new Error(`Parent task with id ${parentId} not found`);
+    }
+
+    const isDescendantOf = (candidateId: string, ancestorId: string): boolean => {
+      const candidate = this.getTask(candidateId);
+      if (!candidate?.task.parentId) {
+        return false;
+      }
+      if (candidate.task.parentId === ancestorId) {
+        return true;
+      }
+      return isDescendantOf(candidate.task.parentId, ancestorId);
+    };
+
+    if (parentId === taskId || isDescendantOf(parentId, taskId)) {
+      throw new Error(`Cannot move task ${taskId} under itself or one of its subtasks (${parentId})`);
     }
   }
 

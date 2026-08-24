@@ -154,7 +154,7 @@ describe('Project Inheritance', () => {
     expect(task.parentId).toBeNull();
   });
 
-  it('should flatten subtask-of-subtask to use top-level parent', async () => {
+  it('should create a subtask of a subtask with the immediate parent as parentId', async () => {
     const parentTask = {
       task: {
         id: 'top-level-parent',
@@ -191,6 +191,6 @@ describe('Project Inheritance', () => {
 
     const newTask = await project.createNewTask({ parentId: 'subtask-id' });
 
-    expect(newTask.parentId).toBe('top-level-parent');
+    expect(newTask.parentId).toBe('subtask-id');
   });
 });

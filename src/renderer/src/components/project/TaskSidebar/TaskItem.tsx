@@ -18,6 +18,7 @@ import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { countAllSubtasks } from '@/utils/task-utils';
 
 type Props = {
   task: TaskData;
@@ -189,7 +190,6 @@ export const TaskItem = memo(
     const { t } = useTranslation();
     const [editTaskName, setEditTaskName] = useState(task.name);
     const isGeneratingName = task.name === '<<generating>>';
-    const subtasks = tasks.filter((t) => t.parentId === task.id);
     const isEditing = editingTaskId === task.id;
     const isSubtask = level > 0;
     const taskName = task.name || t('taskSidebar.untitled');
@@ -228,8 +228,8 @@ export const TaskItem = memo(
     };
 
     const isDragged = draggedTaskIds.has(task.id);
-    const isDropTarget = dragOverTaskId === task.id && !isDragged && level === 0;
-    const isRootLevel = level === 0;
+    const isDropTarget = dragOverTaskId === task.id && !isDragged;
+    const allSubtasksCount = countAllSubtasks(task.id, tasks);
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
       isDraggingRef.current = true;
@@ -244,7 +244,7 @@ export const TaskItem = memo(
     };
 
     const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-      if (!isRootLevel || isDragged || draggedTaskIds.size === 0) {
+      if (isDragged || draggedTaskIds.size === 0) {
         return;
       }
       e.preventDefault();
@@ -261,7 +261,7 @@ export const TaskItem = memo(
     };
 
     const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-      if (!isRootLevel || isDragged || draggedTaskIds.size === 0) {
+      if (isDragged || draggedTaskIds.size === 0) {
         return;
       }
       e.preventDefault();
@@ -281,7 +281,6 @@ export const TaskItem = memo(
           onDrop={readonly ? undefined : handleDrop}
           className={clsx(
             'group relative flex items-center justify-between py-1 pl-2 px-1 cursor-pointer transition-colors border select-none',
-            isSubtask && 'ml-2',
             isDragged && 'opacity-40',
             activeTaskId === task.id && !isMultiselectMode
               ? 'bg-bg-secondary border-border-dark-light'
@@ -291,6 +290,7 @@ export const TaskItem = memo(
           )}
           onClick={(e) => onTaskClick(e, task.id)}
           data-task-id={task.id}
+          style={level > 0 ? { marginLeft: `${level * 8}px` } : undefined}
         >
           {isSubtask && <div className="absolute left-[-1px] top-[-1px] bottom-[-1px] w-px bg-bg-secondary" />}
 
@@ -336,7 +336,7 @@ export const TaskItem = memo(
                 </div>
               )}
               <div className="flex items-center gap-0.5 text-3xs text-text-muted">
-                {hasChildren && !isSubtask && (
+                {hasChildren && (
                   <div className="w-5 h-5 flex items-center justify-center shrink-0 -ml-0.5">
                     <button
                       onClick={toggleExpand}
@@ -348,7 +348,7 @@ export const TaskItem = memo(
                     </button>
                   </div>
                 )}
-                <TaskStateChip state={task.state || DefaultTaskState.Todo} className={hasChildren && !isSubtask ? '' : '-ml-0.5'} />
+                <TaskStateChip state={task.state || DefaultTaskState.Todo} className={hasChildren ? '' : '-ml-0.5'} />
                 <ExtensionComponentWrapper
                   placement="task-sidebar-item-badges"
                   renderNullOnEmpty
@@ -376,7 +376,7 @@ export const TaskItem = memo(
 
           {!isMultiselectMode && (
             <div className="flex items-center">
-              {!readonly && level === 0 && (
+              {!readonly && (
                 <Tooltip content={t('taskSidebar.createSubtask')}>
                   <button
                     data-testid={`create-subtask-${task.id}`}
@@ -428,7 +428,7 @@ export const TaskItem = memo(
         {deleteConfirmTaskId === task.id && (
           <div className="m-2 p-2 bg-bg-primary border border-border-default rounded-md">
             <div className="text-2xs text-text-primary mb-2">
-              {subtasks.length > 0 ? t('taskSidebar.deleteConfirmWithSubtasks', { count: subtasks.length }) : t('taskSidebar.deleteConfirm')}
+              {allSubtasksCount > 0 ? t('taskSidebar.deleteConfirmWithSubtasks', { count: allSubtasksCount }) : t('taskSidebar.deleteConfirm')}
             </div>
             <div className="flex gap-2 justify-end">
               <Button variant="text" size="xs" color="tertiary" onClick={handleCancelDelete}>

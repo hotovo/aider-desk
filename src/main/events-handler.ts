@@ -941,9 +941,14 @@ export class EventsHandler {
   }
 
   async updateTask(baseDir: string, id: string, updates: Partial<TaskData>): Promise<TaskData | undefined> {
-    const task = this.projectManager.getProject(baseDir).getTask(id);
+    const project = this.projectManager.getProject(baseDir);
+    const task = project.getTask(id);
     if (!task) {
       return undefined;
+    }
+
+    if (updates.parentId) {
+      project.validateParentAssignment(id, updates.parentId);
     }
 
     // Delegate to Task.updateTask method which handles worktree logic

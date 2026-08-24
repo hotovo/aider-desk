@@ -328,7 +328,7 @@ describe('Project - createNewTask', () => {
       expect(storedTask?.task.parentId).toBe(parentTask.id);
     });
 
-    it('should flatten subtask-of-subtask to use top-level parent', async () => {
+    it('should allow creating a subtask of a subtask', async () => {
       // Setup: Create a two-level hierarchy
       const grandparentTask = await project.createNewTask();
       const parentTask = await project.createNewTask({ parentId: grandparentTask.id });
@@ -336,9 +336,9 @@ describe('Project - createNewTask', () => {
       // Act: Create a subtask of the parent task (which is itself a subtask)
       const subtask = await project.createNewTask({ parentId: parentTask.id });
 
-      // Assert: The subtask should be flattened to the grandparent (top-level parent)
-      expect(subtask.parentId).toBe(grandparentTask.id);
-      expect(subtask.parentId).not.toBe(parentTask.id);
+      // Assert: The subtask should point to its immediate parent
+      expect(subtask.parentId).toBe(parentTask.id);
+      expect(subtask.parentId).not.toBe(grandparentTask.id);
 
       // Assert: All three tasks should exist in the tasks Map
       expect((project as any).tasks.has(grandparentTask.id)).toBe(true);

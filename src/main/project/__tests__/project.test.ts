@@ -255,7 +255,7 @@ describe('Project - createNewTask', () => {
       expect(mockEventManager.sendTaskCreated).toHaveBeenCalledWith(newTask, undefined);
     });
 
-    it('should flatten subtask-of-subtask to use top-level parent', async () => {
+    it('should allow creating a subtask of a subtask', async () => {
       // Setup: Create a two-level hierarchy
       const grandparentTask = await project.createNewTask();
       const parentTask = await project.createNewTask({ parentId: grandparentTask.id });
@@ -263,8 +263,8 @@ describe('Project - createNewTask', () => {
       // Act: Create a subtask of the parent task (which is itself a subtask)
       const subtask = await project.createNewTask({ parentId: parentTask.id });
 
-      // Assert: The subtask should be flattened to the grandparent (top-level parent)
-      expect(subtask.parentId).toBe(grandparentTask.id);
+      // Assert: The subtask should point to its immediate parent
+      expect(subtask.parentId).toBe(parentTask.id);
     });
   });
 
@@ -652,5 +652,47 @@ describe('Project - deleteTask', () => {
     expect(deletedIds).toContain(parentTask.id);
     expect(deletedIds).toContain(subtask1.id);
     expect(deletedIds).toContain(subtask2.id);
+  });
+
+  it('should cascade delete deeply nested subtasks', async () => {
+    const parentTask = await project.createNewTask({ name: 'Parent Task' });
+    const subtask = await project.createNewTask({ parentId: parentTask.id, name: 'Subtask' });
+    const subSubtask = await project.createNewTask({ parentId: subtask.id, name: 'Sub-subtask' });
+
+    await project.deleteTask(parentTask.id);
+
+    const tasks = await project.getTasks();
+    expect(tasks.find((t) => t.id === subtask.id)).toBeUndefined();
+    expect(tasks.find((t) => t.id === subSubtask.id)).toBeUndefined();
+    expect(mockEventManager.sendTaskDeleted).toHaveBeenCalledTimes(3);
+  });
+
+  describe('validateParentAssignment', () => {
+    it('should throw when the target parent does not exist', async () => {
+      const task = await project.createNewTask({ name: 'Task' });
+
+      expect(() => project.validateParentAssignment(task.id, 'non-existent')).toThrow('not found');
+    });
+
+    it('should throw when assigning the task as its own parent', async () => {
+      const task = await project.createNewTask({ name: 'Task' });
+
+      expect(() => project.validateParentAssignment(task.id, task.id)).toThrow(/under itself/);
+    });
+
+    it('should throw when assigning one of its descendants as parent', async () => {
+      const parentTask = await project.createNewTask({ name: 'Parent Task' });
+      const subtask = await project.createNewTask({ parentId: parentTask.id, name: 'Subtask' });
+
+      expect(() => project.validateParentAssignment(parentTask.id, subtask.id)).toThrow(/under itself/);
+    });
+
+    it('should allow valid re-parenting', async () => {
+      const taskA = await project.createNewTask({ name: 'Task A' });
+      const taskB = await project.createNewTask({ name: 'Task B' });
+      const subtaskA = await project.createNewTask({ parentId: taskA.id, name: 'Subtask A' });
+
+      expect(() => project.validateParentAssignment(subtaskA.id, taskB.id)).not.toThrow();
+    });
   });
 });

@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added support for nested subtasks
+
 ## [0.80.0]
 
 - added extraction of images and safe serialization for non-text data

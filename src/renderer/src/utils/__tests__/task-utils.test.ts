@@ -1,12 +1,31 @@
 import { describe, it, expect } from 'vitest';
 import { DefaultTaskState, TaskData } from '@common/types';
 
-import { getSortedVisibleTasks, flattenTasksForVirtualization } from '../task-utils';
+import { countAllSubtasks, getSortedVisibleTasks, flattenTasksForVirtualization } from '../task-utils';
 
 const allStates = new Set([...Object.values(DefaultTaskState)]);
 const defaultStates = new Set([...Object.values(DefaultTaskState)]);
 
 describe('task-utils', () => {
+  describe('countAllSubtasks', () => {
+    it('should return 0 for a task without subtasks', () => {
+      const tasks = [{ id: '1', name: 'Task', updatedAt: '', parentId: null }] as TaskData[];
+      expect(countAllSubtasks('1', tasks)).toBe(0);
+    });
+
+    it('should count direct and nested subtasks', () => {
+      const tasks = [
+        { id: '1', name: 'Parent', updatedAt: '', parentId: null },
+        { id: '2', name: 'Child', updatedAt: '', parentId: '1' },
+        { id: '3', name: 'Grandchild', updatedAt: '', parentId: '2' },
+        { id: '4', name: 'Great-grandchild', updatedAt: '', parentId: '3' },
+        { id: '5', name: 'Other', updatedAt: '', parentId: null },
+      ] as TaskData[];
+      expect(countAllSubtasks('1', tasks)).toBe(3);
+      expect(countAllSubtasks('5', tasks)).toBe(0);
+    });
+  });
+
   describe('getSortedVisibleTasks', () => {
     const mockTasks: Partial<TaskData>[] = [
       { id: '1', name: 'Parent 1', updatedAt: '2026-01-14T10:00:00Z', archived: false, pinned: false, parentId: null },
