@@ -111,8 +111,8 @@ export class WorktreeManager {
         // 3. Clean up any existing worktree before recreating its directory
         try {
           await execWithShellPath(`git worktree remove "${worktreePath}" --force`, { cwd: projectPath });
-        } catch {
-          // Ignore cleanup errors
+        } catch (error) {
+          logger.warn(`Failed to remove existing worktree at ${worktreePath}:`, error);
         }
 
         await this.initializeWorktree(projectPath, taskId);
@@ -148,8 +148,9 @@ export class WorktreeManager {
             // Check if it's an actual branch (not just a commit SHA)
             await execWithShellPath(`git show-ref --verify --quiet refs/heads/${branch}`, { cwd: projectPath });
             branchExists = true;
-          } catch {
-            // Branch doesn't exist
+          } catch (error) {
+            // Branch doesn't exist, it will be created from baseRef
+            logger.debug(`Branch ${branch} not found, will create it from ${baseRef}:`, error);
           }
 
           if (branchExists) {
