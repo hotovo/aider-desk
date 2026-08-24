@@ -79,6 +79,30 @@
     );
   }
 
+  if (agentProfile?.provider === 'opencode-go' && data?.opencodeGo) {
+    const go = data.opencodeGo;
+
+    const renderWindow = (label, usageWindow) => (
+      <ui.Tooltip content={usageWindow.resetTime ? `Resets at ${formatResetTime(usageWindow.resetTime)}` : ''}>
+        <span className={usageWindow.rateLimited ? 'text-red-400' : undefined}>
+          {label}: {usageWindow.percentage}%
+        </span>
+      </ui.Tooltip>
+    );
+
+    return (
+      <div className="flex items-center gap-2 pt-1 justify-end w-full">
+        <div className="flex items-center gap-2">
+          {renderWindow('5 Hours', go.rolling)}
+          <span>|</span>
+          {renderWindow('Weekly', go.weekly)}
+          <span>|</span>
+          {renderWindow('Monthly', go.monthly)}
+        </div>
+      </div>
+    );
+  }
+
   if (agentProfile?.provider === 'neuralwatt' && data?.neuralwatt) {
     const nw = data.neuralwatt;
 

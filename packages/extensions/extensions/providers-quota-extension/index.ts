@@ -1,7 +1,7 @@
 /**
  * Providers Quota Extension
  *
- * Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar.
+ * Displays API quota information for Synthetic, Z.AI, Neuralwatt, DeepSeek, and OpenCode Go providers in the task status bar.
  * Shows quota based on the active agent profile's provider.
  *
  * API keys are automatically loaded from AiderDesk provider settings.
@@ -13,6 +13,7 @@
  *    SYNTHETIC_API_KEY=your_api_key_here
  *    ZAI_API_KEY=your_zai_api_key_here
  *    NEURALWATT_API_KEY=your_neuralwatt_api_key_here
+ *    OPENCODE_GO_API_KEY=your_opencode_go_api_key_here
  * 3. Restart AiderDesk
  *
  * The extension will display quota usage based on the active provider.
@@ -51,6 +52,7 @@ const syntheticCache: CachedData<SyntheticQuotaData> = { data: null, lastFetchTi
 const zaiCache: CachedData<ZaiQuotaData> = { data: null, lastFetchTime: 0 };
 const neuralwattCache: CachedData<NeuralwattQuotaData> = { data: null, lastFetchTime: 0 };
 const deepseekCache: CachedData<DeepseekQuotaData> = { data: null, lastFetchTime: 0 };
+const opencodeGoCache: CachedData<OpencodeGoQuotaData> = { data: null, lastFetchTime: 0 };
 
 // Synthetic API types
 interface SyntheticQuotaData {
@@ -169,6 +171,35 @@ interface DeepseekQuotaData {
   balance?: DeepseekBalanceInfo;
 }
 
+// OpenCode Go API types
+interface OpencodeGoUsageWindowResponse {
+  status?: string;
+  percent?: number;
+  resetsAt?: string;
+}
+
+interface OpencodeGoUsagePayload {
+  rolling?: OpencodeGoUsageWindowResponse;
+  weekly?: OpencodeGoUsageWindowResponse;
+  monthly?: OpencodeGoUsageWindowResponse;
+}
+
+interface OpencodeGoApiResponse {
+  usage?: OpencodeGoUsagePayload;
+}
+
+interface OpencodeGoUsageWindow {
+  percentage: number;
+  resetTime?: number;
+  rateLimited: boolean;
+}
+
+interface OpencodeGoQuotaData {
+  rolling: OpencodeGoUsageWindow;
+  weekly: OpencodeGoUsageWindow;
+  monthly: OpencodeGoUsageWindow;
+}
+
 // API key resolution: env var override → AiderDesk provider settings
 const getApiKey = (envVarName: string, providerName: string, context?: ExtensionContext): string | undefined => {
   const envKey = process.env[envVarName];
@@ -212,7 +243,7 @@ const fetchSyntheticQuota = async (context?: ExtensionContext): Promise<Syntheti
     });
 
     if (!response.ok) {
-      console.error(`[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`);
+      context?.log(`[Providers Quota] Synthetic API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -231,7 +262,7 @@ const fetchSyntheticQuota = async (context?: ExtensionContext): Promise<Syntheti
 
     return null;
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch Synthetic quota:', error);
+    context?.log('[Providers Quota] Failed to fetch Synthetic quota:', 'error');
     return null;
   }
 };
@@ -253,7 +284,7 @@ const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData |
     });
 
     if (!response.ok) {
-      console.error(`[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`);
+      context?.log(`[Providers Quota] Z.AI API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -274,7 +305,7 @@ const fetchZaiQuota = async (context?: ExtensionContext): Promise<ZaiQuotaData |
 
     return null;
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch Z.AI quota:', error);
+    context?.log('[Providers Quota] Failed to fetch Z.AI quota:', 'error');
     return null;
   }
 };
@@ -296,7 +327,7 @@ const fetchNeuralwattQuota = async (context?: ExtensionContext): Promise<Neuralw
     });
 
     if (!response.ok) {
-      console.error(`[Providers Quota] Neuralwatt API request failed: ${response.status} ${response.statusText}`);
+      context?.log(`[Providers Quota] Neuralwatt API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -324,7 +355,7 @@ const fetchNeuralwattQuota = async (context?: ExtensionContext): Promise<Neuralw
       accountingMethod: data.balance.accounting_method,
     };
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch Neuralwatt quota:', error);
+    context?.log('[Providers Quota] Failed to fetch Neuralwatt quota:', 'error');
     return null;
   }
 };
@@ -370,7 +401,7 @@ const fetchDeepseekBalance = async (context?: ExtensionContext): Promise<Deepsee
     });
 
     if (!response.ok) {
-      console.error(`[Providers Quota] DeepSeek API request failed: ${response.status} ${response.statusText}`);
+      context?.log(`[Providers Quota] DeepSeek API request failed: ${response.status} ${response.statusText}`);
       return null;
     }
 
@@ -381,7 +412,7 @@ const fetchDeepseekBalance = async (context?: ExtensionContext): Promise<Deepsee
       balance: data.balance_infos?.[0],
     };
   } catch (error) {
-    console.error('[Providers Quota] Failed to fetch DeepSeek balance:', error);
+    context?.log('[Providers Quota] Failed to fetch DeepSeek balance:', 'error');
     return null;
   }
 };
@@ -396,6 +427,69 @@ const getDeepseekBalance = async (context?: ExtensionContext): Promise<DeepseekQ
   deepseekCache.data = await fetchDeepseekBalance(context);
   deepseekCache.lastFetchTime = now;
   return deepseekCache.data;
+};
+
+const parseOpencodeGoWindow = (usageWindow: OpencodeGoUsageWindowResponse | undefined): OpencodeGoUsageWindow | null => {
+  if (!usageWindow || usageWindow.percent === undefined) {
+    return null;
+  }
+
+  return {
+    percentage: usageWindow.percent,
+    resetTime: usageWindow.resetsAt ? Date.parse(usageWindow.resetsAt) : undefined,
+    rateLimited: usageWindow.status === 'rate-limited',
+  };
+};
+
+const fetchOpencodeGoQuota = async (context?: ExtensionContext): Promise<OpencodeGoQuotaData | null> => {
+  const apiKey = getApiKey('OPENCODE_GO_API_KEY', 'opencode-go', context);
+
+  if (!apiKey) {
+    return null;
+  }
+
+  try {
+    const response = await fetch('https://opencode.ai/zen/go/v1/usage', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      context?.log(`[Providers Quota] OpenCode Go API request failed: ${response.status} ${response.statusText}`);
+      return null;
+    }
+
+    const data = (await response.json()) as OpencodeGoApiResponse;
+
+    const rolling = parseOpencodeGoWindow(data.usage?.rolling);
+    if (!rolling) {
+      return null;
+    }
+
+    return {
+      rolling,
+      weekly: parseOpencodeGoWindow(data.usage?.weekly) ?? { percentage: 0, rateLimited: false },
+      monthly: parseOpencodeGoWindow(data.usage?.monthly) ?? { percentage: 0, rateLimited: false },
+    };
+  } catch (error) {
+    context?.log('[Providers Quota] Failed to fetch OpenCode Go usage:', 'error');
+    return null;
+  }
+};
+
+const getOpencodeGoQuota = async (context?: ExtensionContext): Promise<OpencodeGoQuotaData | null> => {
+  const now = Date.now();
+
+  if (opencodeGoCache.data && now - opencodeGoCache.lastFetchTime < CACHE_DURATION) {
+    return opencodeGoCache.data;
+  }
+
+  opencodeGoCache.data = await fetchOpencodeGoQuota(context);
+  opencodeGoCache.lastFetchTime = now;
+  return opencodeGoCache.data;
 };
 
 const getNeuralwattQuota = async (context?: ExtensionContext): Promise<NeuralwattQuotaData | null> => {
@@ -415,8 +509,8 @@ const STATUS_BAR_COMPONENT_ID = 'providers-quota-indicator';
 export default class ProvidersQuotaExtension implements Extension {
   static metadata = {
     name: 'Providers Quota',
-    version: '1.5.2',
-    description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, and DeepSeek providers in the task status bar',
+    version: '1.6.0',
+    description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, DeepSeek, and OpenCode Go providers in the task status bar',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
     capabilities: ['ui'],
@@ -427,6 +521,7 @@ export default class ProvidersQuotaExtension implements Extension {
     const zaiKey = getApiKey('ZAI_API_KEY', 'zai-plan', context);
     const neuralwattKey = getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
     const deepseekKey = getApiKey('DEEPSEEK_API_KEY', 'deepseek', context);
+    const opencodeGoKey = getApiKey('OPENCODE_GO_API_KEY', 'opencode-go', context);
 
     const keys: string[] = [];
     if (syntheticKey) {
@@ -440,6 +535,9 @@ export default class ProvidersQuotaExtension implements Extension {
     }
     if (deepseekKey) {
       keys.push('DeepSeek');
+    }
+    if (opencodeGoKey) {
+      keys.push('OpenCode Go');
     }
 
     if (keys.length > 0) {
@@ -461,6 +559,9 @@ export default class ProvidersQuotaExtension implements Extension {
     if (deepseekKey) {
       await getDeepseekBalance(context);
     }
+    if (opencodeGoKey) {
+      await getOpencodeGoQuota(context);
+    }
   }
 
   async onPromptFinished(_event: PromptFinishedEvent, context: ExtensionContext): Promise<void> {
@@ -473,6 +574,8 @@ export default class ProvidersQuotaExtension implements Extension {
     neuralwattCache.lastFetchTime = 0;
     deepseekCache.data = null;
     deepseekCache.lastFetchTime = 0;
+    opencodeGoCache.data = null;
+    opencodeGoCache.lastFetchTime = 0;
 
     // Trigger UI refresh
     context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
@@ -500,13 +603,15 @@ export default class ProvidersQuotaExtension implements Extension {
     const hasZai = !!getApiKey('ZAI_API_KEY', 'zai-plan', context);
     const hasNeuralwatt = !!getApiKey('NEURALWATT_API_KEY', 'neuralwatt', context);
     const hasDeepseek = !!getApiKey('DEEPSEEK_API_KEY', 'deepseek', context);
+    const hasOpencodeGo = !!getApiKey('OPENCODE_GO_API_KEY', 'opencode-go', context);
 
     // Fetch all available quotas in parallel
-    const [syntheticQuota, zaiQuota, neuralwattQuota, deepseekQuota] = await Promise.all([
+    const [syntheticQuota, zaiQuota, neuralwattQuota, deepseekQuota, opencodeGoQuota] = await Promise.all([
       hasSynthetic ? getSyntheticQuota(context) : null,
       hasZai ? getZaiQuota(context) : null,
       hasNeuralwatt ? getNeuralwattQuota(context) : null,
       hasDeepseek ? getDeepseekBalance(context) : null,
+      hasOpencodeGo ? getOpencodeGoQuota(context) : null,
     ]);
 
     return {
@@ -514,10 +619,12 @@ export default class ProvidersQuotaExtension implements Extension {
       zai: zaiQuota,
       neuralwatt: neuralwattQuota,
       deepseek: deepseekQuota,
+      opencodeGo: opencodeGoQuota,
       hasSynthetic,
       hasZai,
       hasNeuralwatt,
       hasDeepseek,
+      hasOpencodeGo,
     };
   }
 }

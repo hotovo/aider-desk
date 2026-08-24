@@ -1,11 +1,12 @@
 # Providers Quota Extension
 
-Displays API quota information for **Synthetic**, **Z.AI**, and **Neuralwatt** providers in the AiderDesk task status bar. The extension automatically shows the relevant quota based on the active agent profile's provider.
+Displays API quota information for **Synthetic**, **Z.AI**, **Neuralwatt**, **DeepSeek**, and **OpenCode Go** providers in the AiderDesk task status bar. The extension automatically shows the relevant quota based on the active agent profile's provider.
 
 ## Features
 
 - **Synthetic Provider**: Shows used/limit with percentage and progress bar
 - **Z.AI Provider**: Shows 5-hour and weekly usage percentages with progress bars
+- **OpenCode Go Provider**: Shows 5-hour, weekly, and monthly usage percentages with reset times
 - **Neuralwatt Provider**: Shows quota based on account type:
   - **Subscription**: kWh used/included with percentage and renewal date
   - **Pay-as-you-go**: Credits remaining/total with percentage
@@ -38,6 +39,8 @@ The extension automatically displays quota information based on the active agent
 | `zai-plan` | `Z.ai: 5 Hours: 12% \| Weekly: 45%` |
 | `neuralwatt` (subscription) | `Neuralwatt: 13.90/20.0 kWh (70%)` |
 | `neuralwatt` (pay-as-you-go) | `Neuralwatt: $32.68/$52.34 (62%)` |
+| `deepseek` | `DeepSeek: $10.25` |
+| `opencode-go` | `Usage: 5 Hours: 19% \| Weekly: 30% \| Monthly: 25%` |
 
 If the agent profile's provider doesn't match a configured provider, no quota is displayed.
 
@@ -54,6 +57,7 @@ To override the API keys from AiderDesk settings, create a `.env` file in the ex
 SYNTHETIC_API_KEY=your_synthetic_api_key
 ZAI_API_KEY=your_zai_api_key
 NEURALWATT_API_KEY=your_neuralwatt_api_key
+OPENCODE_GO_API_KEY=your_opencode_go_api_key
 ```
 
 You can configure any combination of providers. Only configure the ones you use.
@@ -154,12 +158,28 @@ The extension supports multiple `.env` files loaded in priority order (later fil
   }
   ```
 
+### OpenCode Go API
+
+- **Endpoint**: `https://opencode.ai/zen/go/v1/usage` (undocumented)
+- **Auth**: `Authorization: Bearer <key>` — same API key as the `opencode-go` provider
+- **Response Format**:
+  ```json
+  {
+    "usage": {
+      "rolling": { "status": "ok", "percent": 19, "resetsAt": "2026-08-24T22:21:53.969Z" },
+      "weekly": { "status": "ok", "percent": 29, "resetsAt": "2026-08-31T00:00:00.969Z" },
+      "monthly": { "status": "ok", "percent": 25, "resetsAt": "2026-09-22T18:50:10.969Z" }
+    }
+  }
+  ```
+- `status` is `"rate-limited"` when the window limit is exhausted (rendered in red)
+
 ## Troubleshooting
 
 ### Quota not displayed
 
 1. Verify that the API key is set in AiderDesk Providers settings or `.env`
-2. Ensure the agent profile's provider matches (`synthetic`, `zai-plan`, or `neuralwatt`)
+2. Ensure the agent profile's provider matches (`synthetic`, `zai-plan`, `neuralwatt`, `deepseek`, or `opencode-go`)
 3. Check AiderDesk logs for error messages
 4. Verify network connectivity to the API endpoints
 
@@ -234,9 +254,15 @@ The `getUIExtensionData` method returns:
     creditsPercentage?: number,
     accountingMethod?: string
   } | null,
+  opencodeGo: {
+    rolling: { percentage: number, resetTime?: number, rateLimited: boolean },
+    weekly: { percentage: number, resetTime?: number, rateLimited: boolean },
+    monthly: { percentage: number, resetTime?: number, rateLimited: boolean }
+  } | null,
   hasSynthetic: boolean,
   hasZai: boolean,
-  hasNeuralwatt: boolean
+  hasNeuralwatt: boolean,
+  hasOpencodeGo: boolean
 }
 ```
 
