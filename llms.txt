@@ -138,6 +138,7 @@ src/
         ollama.ts
         openai-compatible.ts
         openai.ts
+        opencode-go.ts
         opencode.ts
         openrouter.ts
         requesty.ts
@@ -451,6 +452,9 @@ src/
             OpenAiModelOverrides.tsx
             OpenAiParameters.tsx
             OpenCodeAdvancedSettings.tsx
+            OpenCodeGoAdvancedSettings.tsx
+            OpenCodeGoModelOverrides.tsx
+            OpenCodeGoParameters.tsx
             OpenCodeModelOverrides.tsx
             OpenCodeParameters.tsx
             OpenRouterAdvancedSettings.tsx
@@ -717,6 +721,7 @@ src/
         OllamaIcon.tsx
         OpenAiCompatibleIcon.tsx
         OpenAiIcon.tsx
+        OpenCodeGoIcon.tsx
         OpenCodeIcon.tsx
         OpenRouterIcon.tsx
         requesty.png
@@ -6449,6 +6454,66 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
 // Voice support
 
 ================
+File: src/main/models/providers/opencode-go.ts
+================
+import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { isOpenCodeGoProvider, LlmProvider, OpenCodeGoProvider } from '@common/agent';
+import { createOpenAI } from '@ai-sdk/openai';
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { omit } from 'lodash';
+⋮----
+import { getDefaultModelInfo, getDefaultUsageReport } from './default';
+⋮----
+import type { LanguageModel, ModelMessage } from 'ai';
+⋮----
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+⋮----
+interface OpenCodeGoModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+⋮----
+interface OpenCodeGoModelsResponse {
+  object: string;
+  data: OpenCodeGoModel[];
+}
+⋮----
+type ModelEndpointType = 'openai-responses' | 'anthropic' | 'openai-compatible';
+⋮----
+// Based on the documented Go endpoints (https://opencode.ai/docs/go#endpoints). Model IDs for Go
+// don't follow a predictable naming scheme, so unlike the OpenCode Zen provider we map them explicitly.
+⋮----
+const getModelEndpointType = (modelId: string): ModelEndpointType =>
+⋮----
+// Fallback for models not yet in the documented list.
+⋮----
+const loadOpencodeGoModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+export const hasOpencodeGoEnvVars = (settings: SettingsData): boolean =>
+⋮----
+export const getOpencodeGoAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
+⋮----
+// === LLM Creation Functions ===
+export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
+⋮----
+// Grok's upstream rejects the `item_reference` input items that @ai-sdk/openai emits for
+// Responses history parts carrying OpenAI item IDs. Stripping that metadata makes the SDK
+// inline full content instead while keeping store (and thus caching behavior) at its default.
+const normalizeOpencodeGoMessages = (llmProvider: LlmProvider, model: Model, messages: ModelMessage[]): ModelMessage[] =>
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+⋮----
+// Message normalization
+
+================
 File: src/main/models/providers/opencode.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
@@ -6890,6 +6955,7 @@ import { ollamaProviderStrategy } from './providers/ollama';
 import { openaiProviderStrategy } from './providers/openai';
 import { openaiCompatibleProviderStrategy } from './providers/openai-compatible';
 import { opencodeProviderStrategy } from './providers/opencode';
+import { opencodeGoProviderStrategy } from './providers/opencode-go';
 import { openrouterProviderStrategy } from './providers/openrouter';
 import { requestyProviderStrategy } from './providers/requesty';
 import { syntheticProviderStrategy } from './providers/synthetic';
@@ -8100,6 +8166,10 @@ registerRoutes(router: Router): void
 // Validate path
 ⋮----
 // Is project path
+⋮----
+// Clone project from repository
+⋮----
+// Cancel active project clone
 ⋮----
 // Get file path suggestions
 ⋮----
@@ -10580,7 +10650,7 @@ import { AgentProfile, Mode, SettingsData, TaskData } from '@common/types';
 ⋮----
 import { Store } from '@/store';
 import logger from '@/logger';
-import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE } from '@/constants';
+import { POSTHOG_PUBLIC_API_KEY, POSTHOG_HOST, APP_TYPE, PRODUCT_TELEMETRY_DISTINCT_ID } from '@/constants';
 import { getElectronApp } from '@/app';
 ⋮----
 export class TelemetryManager
@@ -10780,6 +10850,7 @@ import slugify from 'slugify';
 import { glob } from 'glob';
 ⋮----
 import logger from '@/logger';
+import { AIDER_DESK_PROJECTS_DIR } from '@/constants';
 // @ts-expect-error filenamify is not typed properly
 ⋮----
 export const getFilePathSuggestions = async (currentPath: string, directoriesOnly = false): Promise<string[]> =>
@@ -10795,6 +10866,12 @@ export const getFilePathSuggestions = async (currentPath: string, directoriesOnl
 // Filter entries based on type and search pattern
 ⋮----
 export const isProjectPath = async (path: string): Promise<boolean> =>
+⋮----
+const getRepoNameFromPath = (repoPath: string): string | null =>
+⋮----
+export const parseRepositoryUrl = (repositoryUrl: string):
+⋮----
+export const cloneProjectRepository = async (repositoryUrl: string, targetDir?: string, signal?: AbortSignal): Promise<string> =>
 ⋮----
 export const isValidPath = async (baseDir: string, filePath: string): Promise<boolean> =>
 ⋮----
@@ -12277,7 +12354,16 @@ import { TerminalManager } from '@/terminal/terminal-manager';
 import { ExtensionManager, LoadedExtension } from '@/extensions';
 import { PromptsManager } from '@/prompts';
 import logger, { eventTransport } from '@/logger';
-import { getDefaultProjectSettings, getEffectiveEnvironmentVariable, getFilePathSuggestions, isProjectPath, isValidPath, scrapeWeb, openUrl } from '@/utils';
+import {
+  cloneProjectRepository,
+  getDefaultProjectSettings,
+  getEffectiveEnvironmentVariable,
+  getFilePathSuggestions,
+  isProjectPath,
+  isValidPath,
+  scrapeWeb,
+  openUrl,
+} from '@/utils';
 import { expandTilde } from '@/agent/utils';
 import { AIDER_DESK_TMP_DIR, LOGS_DIR } from '@/constants';
 import { EventManager } from '@/events';
@@ -12571,6 +12657,10 @@ async openUrlExternally(url: string): Promise<void>
 async openUrlInWindow(url: string, title?: string): Promise<void>
 ⋮----
 async isProjectPath(path: string): Promise<boolean>
+⋮----
+async cloneProject(repositoryUrl: string, targetDir?: string): Promise<string>
+⋮----
+cancelCloneProject(): void
 ⋮----
 async isValidPath(baseDir: string, path: string): Promise<boolean>
 ⋮----
@@ -13892,6 +13982,8 @@ async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
 addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void
 async isValidPath(baseDir: string, path: string): Promise<boolean>
 async isProjectPath(path: string): Promise<boolean>
+async cloneProject(repositoryUrl: string, targetDir?: string): Promise<string>
+async cancelCloneProject(): Promise<void>
 dropFile(baseDir: string, taskId: string, path: string): void
 runCommand(baseDir: string, taskId: string, command: string): void
 async pasteImage(baseDir: string, taskId: string, imageBuffer?: ArrayBuffer): Promise<void>
@@ -18925,6 +19017,52 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenCodeAdvancedSetting
 export const OpenCodeAdvancedSettings = () =>
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/OpenCodeGoAdvancedSettings.tsx
+================
+export const OpenCodeGoAdvancedSettings = () =>
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenCodeGoModelOverrides.tsx
+================
+import { getDefaultProviderParams, LlmProvider } from '@common/agent';
+⋮----
+import { DisableStreaming } from '../DisableStreaming';
+import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
+⋮----
+type Props = {
+  provider: LlmProvider;
+  overrides: Record<string, unknown>;
+  onChange: (overrides: Record<string, unknown>) => void;
+};
+⋮----
+export const OpenCodeGoModelOverrides = (
+⋮----
+const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
+
+================
+File: src/renderer/src/components/ModelLibrary/providers/OpenCodeGoParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { OpenCodeGoProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: OpenCodeGoProvider;
+  onChange: (updated: OpenCodeGoProvider) => void;
+};
+⋮----
+export const OpenCodeGoParameters = (
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/OpenCodeModelOverrides.tsx
 ================
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
@@ -19567,6 +19705,7 @@ import { GeminiModelOverrides } from './providers/GeminiModelOverrides';
 import { VertexAiModelOverrides } from './providers/VertexAiModelOverrides';
 import { OpenAiModelOverrides } from './providers/OpenAiModelOverrides';
 import { OpenCodeModelOverrides } from './providers/OpenCodeModelOverrides';
+import { OpenCodeGoModelOverrides } from './providers/OpenCodeGoModelOverrides';
 import { RequestyModelOverrides } from './providers/RequestyModelOverrides';
 import { AzureModelOverrides } from './providers/AzureModelOverrides';
 import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleModelOverrides';
@@ -19727,6 +19866,7 @@ import {
   OpenAiCompatibleIcon,
   OpenAiIcon,
   OpenCodeIcon,
+  OpenCodeGoIcon,
   OpenRouterIcon,
   RequestyIcon,
   SyntheticIcon,
@@ -19833,6 +19973,7 @@ import {
   OpenAiCompatibleParameters,
   OpenAiParameters,
   OpenCodeParameters,
+  OpenCodeGoParameters,
   OpenRouterParameters,
   RequestyParameters,
   SyntheticParameters,
@@ -19926,6 +20067,7 @@ import {
   OpenAiCompatibleIcon,
   OpenAiIcon,
   OpenCodeIcon,
+  OpenCodeGoIcon,
   OpenRouterIcon,
   RequestyIcon,
   SyntheticIcon,
@@ -20589,7 +20731,8 @@ type Props = {
 ================
 File: src/renderer/src/components/project/OpenProjectDialog.tsx
 ================
-import { useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { CgSpinner } from 'react-icons/cg';
 import { FaFolder } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
 import { ProjectData } from '@common/types';
@@ -20598,9 +20741,19 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
 import { Accordion } from '@/components/common/Accordion';
+import { BaseDialog } from '@/components/common/BaseDialog';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { IconButton } from '@/components/common/IconButton';
+import { Input } from '@/components/common/Input';
+import { Tabs } from '@/components/common/Tabs';
 import { useApi } from '@/contexts/ApiContext';
+⋮----
+enum OpenProjectMode {
+  Open = 'open',
+  Clone = 'clone',
+}
+⋮----
+const isValidRepositoryUrl = (url: string): boolean
 ⋮----
 type Props = {
   onClose: () => void;
@@ -20616,9 +20769,34 @@ const loadRecentProjects = async () =>
 ⋮----
 const updateSuggestions = async () =>
 ⋮----
+const updateDestinationSuggestions = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 const handleAddProject = () =>
 ⋮----
+const handleCloneProject = async () =>
+⋮----
+const handleCancelClone = () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleRepositoryUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleCloneDestinationChange = (value: string, isFromSuggestion: boolean) =>
+⋮----
+const handleConfirm = () =>
+⋮----
+const handleModeChange = (tabId: string) =>
+⋮----
+<BaseDialog title=
+⋮----
 title=
+⋮----
+setShowSuggestions(!isFromSuggestion);
+setProjectPath(value);
+⋮----
+placeholder=
 ⋮----
 onAddProject(path);
 onClose();
@@ -20648,6 +20826,7 @@ className=
 File: src/renderer/src/components/project/ProjectTabs.tsx
 ================
 import { ProjectData } from '@common/types';
+import { compareBaseDirs } from '@common/utils';
 import { CSS } from '@dnd-kit/utilities';
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
@@ -20664,6 +20843,7 @@ import type { DragEndEvent } from '@dnd-kit/core';
 import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
 import { useProjectProcessingState } from '@/stores/projectStore';
 import { useResponsive } from '@/hooks/useResponsive';
+import { useOS } from '@/hooks/useOS';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { getProjectTabClassName, ProjectTabContent } from '@/components/project/ProjectTabContent';
 import { useApi } from '@/contexts/ApiContext';
@@ -20730,7 +20910,7 @@ import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
-import { showInfoNotification } from '@/utils/notifications';
+import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
@@ -20782,6 +20962,9 @@ const initProject = async () =>
 // Handle startup mode
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+// Self-healing fallback: if the project became active and finished loading but no task was ever
+// activated (e.g., lost startup race or a failed task creation), activate an existing task.
 ⋮----
 // Switch to specific task tabs (Ctrl + 1-9)
 ⋮----
@@ -25049,6 +25232,7 @@ import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 ⋮----
 import { KeyboardKeys } from '@/constants/keyboardKeys';
 ⋮----
@@ -25059,6 +25243,7 @@ type Props = {
   placeholder?: string;
   className?: string;
   inputClassName?: string;
+  label?: ReactNode;
   rightElement?: ReactNode;
   autoFocus?: boolean;
   onPaste?: (pastedText: string) => Promise<boolean>;
@@ -25074,8 +25259,6 @@ const handleOnPaste = async (e: ClipboardEvent<HTMLInputElement>) =>
 // If onPaste didn't handle the paste (returned false), manually insert the text
 ⋮----
 zIndex: 1000, // Ensure it's above other elements
-⋮----
-className=
 ⋮----
 placeholder=
 ⋮----
@@ -26811,6 +26994,35 @@ export const OpenAiIcon = ({ width = 64, height = 64, className }: Props) => (
 );
 
 ================
+File: src/renderer/src/icons/OpenCodeGoIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const OpenCodeGoIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="OpenCode Go"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: '#131010',
+      color: 'rgb(255, 255, 255)',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg width={width * 0.75} height={width * 0.75 * (30 / 54)} viewBox="0 0 54 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 30H0V0H24V6H6V24H18V18H12V12H24V30Z" fill="currentColor"></path>
+      <path d="M12 18H18V24H6V12H12V18Z" fill="currentColor" fillOpacity="0.2"></path>
+      <path d="M48 12V24H36V12H48Z" fill="currentColor" fillOpacity="0.2"></path>
+      <path d="M54 30H30V0H54V30ZM36 24H48V6H36V24Z" fill="currentColor"></path>
+    </svg>
+  </div>
+);
+
+================
 File: src/renderer/src/icons/OpenCodeIcon.tsx
 ================
 type Props = {
@@ -27098,13 +27310,9 @@ const handleKeyUp = (e: KeyboardEvent) =>
 ⋮----
 const handleAddProject = async (baseDir: string) =>
 ⋮----
-const renderProjectPanels = ()
-⋮----
-const getUpdateTooltip = () =>
+// Activate using the baseDir as stored by the backend so the strict comparisons stay consistent
 ⋮----
 return ''; // Should not happen if showUpdateIcon is true
-⋮----
-const handleCloseReleaseNotes = async () =>
 ⋮----
 tooltip=
 ⋮----
