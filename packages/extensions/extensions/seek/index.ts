@@ -7,7 +7,7 @@ import type { Extension, ExtensionContext, ProjectStartedEvent, ToolDefinition }
 
 export const metadata = {
   name: 'seek',
-  version: '1.1.1',
+  version: '1.2.0',
   description: 'Fast ranked code search using seek (zoekt) — replaces the internal grep tool',
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/seek/icon.png',
@@ -356,13 +356,13 @@ export default class SeekExtension implements Extension {
 
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('[seek] extension loaded', 'info');
-  }
 
-  async onUnload(): Promise<void> {
-    for (const child of runningProcesses) {
-      child.kill('SIGTERM');
-    }
-    runningProcesses.clear();
+    context.addDisposable(() => () => {
+      for (const child of runningProcesses) {
+        child.kill('SIGTERM');
+      }
+      runningProcesses.clear();
+    });
   }
 
   async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void> {

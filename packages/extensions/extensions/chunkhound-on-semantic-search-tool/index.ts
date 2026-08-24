@@ -324,7 +324,7 @@ const chunkhoundSearch = async function (
 export default class ChunkhoundExtension implements Extension {
   static metadata = {
     name: 'ChunkHound Semantic Search Override',
-    version: '1.6.0',
+    version: '1.7.0',
     description: 'Utilizes onToolCalled to override power---semantic_search tool with ChunkHound semantic search',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-on-semantic-search-tool/icon.png',
@@ -335,6 +335,18 @@ export default class ChunkhoundExtension implements Extension {
 
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('ChunkHound Extension loading...', 'info');
+
+    context.addDisposable(() => () => {
+      runningIndexProcesses.forEach(({ process }) => {
+        process.kill('SIGTERM');
+      });
+      runningIndexProcesses.clear();
+
+      runningSearchProcesses.forEach((process) => {
+        process.kill('SIGTERM');
+      });
+      runningSearchProcesses.clear();
+    });
 
     const installed = await isChunkhoundInstalled();
     if (!installed) {
@@ -349,18 +361,6 @@ export default class ChunkhoundExtension implements Extension {
 
     context.log('ChunkHound Extension loaded successfully', 'info');
     this.initialized = true;
-  }
-
-  async onUnload(): Promise<void> {
-    runningIndexProcesses.forEach(({ process }) => {
-      process.kill('SIGTERM');
-    });
-    runningIndexProcesses.clear();
-
-    runningSearchProcesses.forEach((process) => {
-      process.kill('SIGTERM');
-    });
-    runningSearchProcesses.clear();
   }
 
   async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void> {

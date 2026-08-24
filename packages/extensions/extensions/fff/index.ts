@@ -7,7 +7,7 @@ import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/ext
 
 export const metadata = {
   name: 'fff',
-  version: '1.3.0',
+  version: '1.4.0',
   description: 'Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
@@ -172,16 +172,16 @@ export default class FffExtension implements Extension {
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('[fff] extension loaded', 'info');
 
+    context.addDisposable(() => () => {
+      for (const finder of this.finders.values()) {
+        finder.destroy();
+      }
+      this.finders.clear();
+    });
+
     if (!FileFinder.isAvailable()) {
       context.log('[fff] native library not available — fff will be disabled', 'error');
     }
-  }
-
-  async onUnload(): Promise<void> {
-    for (const finder of this.finders.values()) {
-      finder.destroy();
-    }
-    this.finders.clear();
   }
 
   getTools(_context: ExtensionContext): ToolDefinition[] {

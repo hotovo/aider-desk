@@ -333,7 +333,7 @@ const inputSchema = z.object({
 export default class ChunkhoundSearchExtension implements Extension {
   static metadata = {
     name: 'ChunkHound Search',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Replaces power semantic_search tool with ChunkHound for semantic code search',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-search/icon.png',
@@ -346,6 +346,18 @@ export default class ChunkhoundSearchExtension implements Extension {
   async onLoad(context: ExtensionContext): Promise<void> {
     this.context = context;
     context.log('ChunkHound Search Tool Extension loading...', 'info');
+
+    context.addDisposable(() => () => {
+      runningIndexProcesses.forEach(({ process }) => {
+        process.kill('SIGTERM');
+      });
+      runningIndexProcesses.clear();
+
+      runningSearchProcesses.forEach((process) => {
+        process.kill('SIGTERM');
+      });
+      runningSearchProcesses.clear();
+    });
 
     const installed = await isChunkhoundInstalled();
     if (!installed) {
@@ -360,18 +372,6 @@ export default class ChunkhoundSearchExtension implements Extension {
 
     context.log('ChunkHound Search Tool Extension loaded successfully', 'info');
     this.initialized = true;
-  }
-
-  async onUnload(): Promise<void> {
-    runningIndexProcesses.forEach(({ process }) => {
-      process.kill('SIGTERM');
-    });
-    runningIndexProcesses.clear();
-
-    runningSearchProcesses.forEach((process) => {
-      process.kill('SIGTERM');
-    });
-    runningSearchProcesses.clear();
   }
 
   async onProjectStarted(event: ProjectStartedEvent, context: ExtensionContext): Promise<void | Partial<ProjectStartedEvent>> {

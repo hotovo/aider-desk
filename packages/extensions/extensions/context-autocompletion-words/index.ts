@@ -13,7 +13,7 @@ const DEBOUNCE_MS = 2000;
 export default class ContextAutocompletionWordsExtension implements Extension {
   static metadata = {
     name: 'Context Autocompletion Words',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'Automatically extracts symbols from context files and adds them to autocompletion',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/context-autocompletion-words/icon.png',
@@ -24,6 +24,13 @@ export default class ContextAutocompletionWordsExtension implements Extension {
 
   async onLoad(context: ExtensionContext): Promise<void> {
     context.log('Context Autocompletion Words Extension loaded', 'info');
+
+    context.addDisposable(() => () => {
+      if (this.debounceTimer) {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = null;
+      }
+    });
   }
 
   async onFilesAdded(_event: FilesAddedEvent, context: ExtensionContext): Promise<void> {
