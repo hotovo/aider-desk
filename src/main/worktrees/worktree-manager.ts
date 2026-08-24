@@ -88,8 +88,6 @@ export class WorktreeManager {
 
   async createWorktree(projectPath: string, taskId: string, branch?: string, baseBranch = 'HEAD'): Promise<Worktree> {
     return await withLock(`worktree-create-${projectPath}-${taskId}`, async () => {
-      await this.initializeWorktree(projectPath, taskId);
-
       const worktreePath = this.getWorktreePath(projectPath, taskId);
 
       try {
@@ -103,14 +101,23 @@ export class WorktreeManager {
           await execWithShellPath('git init', { cwd: projectPath });
         }
 
-        // 2. Clean up any existing worktree directory first
+        // 2. Clean up stale worktree registrations (e.g. the directory was deleted out-of-band)
+        try {
+          await execWithShellPath('git worktree prune', { cwd: projectPath });
+        } catch (error) {
+          logger.warn('Failed to prune stale worktree registrations:', error);
+        }
+
+        // 3. Clean up any existing worktree before recreating its directory
         try {
           await execWithShellPath(`git worktree remove "${worktreePath}" --force`, { cwd: projectPath });
         } catch {
           // Ignore cleanup errors
         }
 
-        // 3. Ensure the repository has at least one commit
+        await this.initializeWorktree(projectPath, taskId);
+
+        // 4. Ensure the repository has at least one commit
         try {
           await execWithShellPath('git rev-parse HEAD', { cwd: projectPath });
         } catch {
@@ -129,7 +136,7 @@ export class WorktreeManager {
           }
         }
 
-        // 4. Logic for creating the worktree
+        // 5. Logic for creating the worktree
         let baseCommit: string;
         let newBranchName: string;
         const baseRef = baseBranch; // Will be 'HEAD' if not provided
