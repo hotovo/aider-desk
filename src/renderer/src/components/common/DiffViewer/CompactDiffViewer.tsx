@@ -1,4 +1,4 @@
-import React, { useMemo, FC } from 'react';
+import { useMemo, type TableHTMLAttributes } from 'react';
 import { diffLines, formatLines } from 'unidiff';
 import { getLanguageFromPath } from '@common/utils';
 import { clsx } from 'clsx';
@@ -8,28 +8,16 @@ import { parseDiff, File, Hunk as HunkType, SkipBlock, Line as LineType } from '
 
 import { highlightWithRefractor } from '@/utils/highlighter';
 import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
+import { DiffContextProvider, useDiffContext } from '@/contexts/DiffViewerContext';
 
-interface DiffContextValue {
-  language: string;
-  fileStatus: File['type'];
-}
-
-const DiffContext = React.createContext<DiffContextValue | null>(null);
-
-const useDiffContext = () => {
-  const context = React.useContext(DiffContext);
-  if (!context) {
-    throw new Error('useDiffContext must be used within a Diff component');
-  }
-  return context;
-};
-
-export interface DiffProps extends React.TableHTMLAttributes<HTMLTableElement>, Pick<File, 'hunks' | 'type'> {
+export interface DiffProps extends TableHTMLAttributes<HTMLTableElement>, Pick<File, 'hunks' | 'type'> {
   fileName?: string;
   language?: string;
 }
 
-const Hunk = ({ hunk }: { hunk: HunkType | SkipBlock }) => {
+type HunkProps = { hunk: HunkType | SkipBlock };
+
+const Hunk = ({ hunk }: HunkProps) => {
   return hunk.type === 'hunk' ? (
     <>
       {hunk.lines.map((line, index) => (
@@ -41,23 +29,22 @@ const Hunk = ({ hunk }: { hunk: HunkType | SkipBlock }) => {
   );
 };
 
-const Diff: React.FC<DiffProps> = ({ fileName, language = getLanguageFromPath(fileName), hunks, type, className, children, ...props }) => {
+const Diff = ({ fileName, language = getLanguageFromPath(fileName), hunks, type, className, children, ...props }: DiffProps) => {
   return (
-    <DiffContext.Provider value={{ language, fileStatus: type }}>
+    <DiffContextProvider value={{ language, fileStatus: type }}>
       <table
         {...props}
         className={clsx('font-mono text-[0.7rem] w-full m-0 border-separate border-0 outline-none overflow-x-auto border-spacing-0', className)}
       >
         <tbody className="w-full box-border">{children ?? hunks.map((hunk, index) => <Hunk key={index} hunk={hunk} />)}</tbody>
       </table>
-    </DiffContext.Provider>
+    </DiffContextProvider>
   );
 };
 
-const SkipBlockRow: React.FC<{
-  lines: number;
-  content?: string;
-}> = ({ lines, content }) => (
+type SkipBlockRowProps = { lines: number; content?: string };
+
+const SkipBlockRow = ({ lines, content }: SkipBlockRowProps) => (
   <>
     <tr className="h-4" />
     <tr className={clsx('h-10 font-mono bg-muted text-muted-foreground')}>
@@ -73,9 +60,9 @@ const SkipBlockRow: React.FC<{
   </>
 );
 
-const Line: React.FC<{
-  line: LineType;
-}> = ({ line }) => {
+type LineProps = { line: LineType };
+
+const Line = ({ line }: LineProps) => {
   const { language, fileStatus } = useDiffContext();
   const Tag = line.type === 'delete' ? 'del' : 'span';
   const lineNumberNew = line.type === 'normal' ? line.newLineNumber : line.lineNumber;
@@ -126,7 +113,7 @@ export interface CompactDiffViewerProps extends Omit<DiffProps, 'hunks' | 'type'
   showFilename?: boolean;
 }
 
-export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
+export const CompactDiffViewer = ({
   oldValue,
   newValue,
   udiff,
@@ -137,7 +124,7 @@ export const CompactDiffViewer: FC<CompactDiffViewerProps> = ({
   className,
   showFilename = true,
   ...props
-}) => {
+}: CompactDiffViewerProps) => {
   const resolvedLanguage = languageProp || getLanguageFromPath(fileName);
   useRefractorLanguage(resolvedLanguage);
   const files = useMemo(() => {

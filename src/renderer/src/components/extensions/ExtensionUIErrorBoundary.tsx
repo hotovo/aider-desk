@@ -1,4 +1,5 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 type Props = {
   extensionId: string;
@@ -30,9 +31,7 @@ export class ExtensionUIErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="flex items-center gap-1 px-2 py-0.5 text-xs text-text-error rounded">
-          <span className="truncate">
-            Error in {this.props.extensionId}/{this.props.componentId}
-          </span>
+          <ErrorMessage extensionId={this.props.extensionId} componentId={this.props.componentId} />
         </div>
       );
     }
@@ -40,3 +39,20 @@ export class ExtensionUIErrorBoundary extends Component<Props, State> {
     return this.props.children;
   }
 }
+
+type ErrorMessageProps = {
+  extensionId: string;
+  componentId: string;
+};
+
+const ErrorMessage = ({ extensionId, componentId }: ErrorMessageProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <span className="truncate">
+      {t('settings.extensions.uiErrorIn', {
+        component: `${extensionId}/${componentId}`,
+      })}
+    </span>
+  );
+};

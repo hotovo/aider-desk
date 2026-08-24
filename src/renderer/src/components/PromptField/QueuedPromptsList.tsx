@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdDragIndicator, MdEdit, MdPlaylistRemove, MdSave } from 'react-icons/md';
@@ -17,17 +17,14 @@ type QueuedPromptsListProps = {
   onEdit?: (id: string, newText: string) => void;
 };
 
-const SortableQueuedPromptItem = ({
-  prompt,
-  onRemove,
-  onSendNow,
-  onEdit,
-}: {
+type SortableQueuedPromptItemProps = {
   prompt: QueuedPromptData;
   onRemove?: (id: string) => void;
   onSendNow?: (id: string) => void;
   onEdit?: (id: string, newText: string) => void;
-}) => {
+};
+
+const SortableQueuedPromptItem = ({ prompt, onRemove, onSendNow, onEdit }: SortableQueuedPromptItemProps) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(prompt.text);
@@ -58,7 +55,7 @@ const SortableQueuedPromptItem = ({
     setIsEditing(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSave();

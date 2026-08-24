@@ -21,6 +21,7 @@ export const ReadonlyHeader = ({ projects, projectDir, onSelectProject }: Props)
     <header className="shrink-0 border-b border-border-dark-light bg-bg-primary-light flex items-stretch overflow-hidden">
       <div className="flex items-center gap-2 px-4 shrink-0 border-r border-border-dark-light bg-bg-primary">
         <img src={icon} alt="AiderDesk" className="h-5 w-5" />
+        {/* eslint-disable-next-line i18next/no-literal-string -- brand name */}
         <span className="font-bold text-sm text-text-primary">AiderDesk</span>
       </div>
       <nav className="flex-1 min-w-0 flex items-stretch overflow-x-auto scrollbar-none" aria-label={t('readonly.projects')}>

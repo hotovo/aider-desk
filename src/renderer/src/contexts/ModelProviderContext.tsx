@@ -1,4 +1,4 @@
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, useOptimistic, startTransition } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, useOptimistic, startTransition } from 'react';
 import { Model, ProviderProfile } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
@@ -19,7 +19,9 @@ export type ModelProviderContextType = {
 
 const ModelProviderContext = createContext<ModelProviderContextType | null>(null);
 
-export const ModelProviderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+type Props = { children: ReactNode };
+
+export const ModelProviderProvider = ({ children }: Props) => {
   const api = useApi();
   const [modelsLoading, setModelsLoading] = useState(true);
   const [providersLoading, setProvidersLoading] = useState(true);
@@ -234,7 +236,7 @@ const unsupportedReadonlyOperation = async (): Promise<void> => {
   throw new Error('READ_ONLY_MODE');
 };
 
-export const ReadonlyModelProvider = ({ children }: { children: ReactNode }) => {
+export const ReadonlyModelProvider = ({ children }: Props) => {
   const value = useMemo<ModelProviderContextType>(
     () => ({
       refresh: () => {},

@@ -37,7 +37,9 @@ vi.mock('../IconButton', () => ({
   ),
 }));
 
-const FocusRestoreConsumer = ({ focus }: { focus: () => void }) => {
+type Props = { focus: () => void };
+
+const FocusRestoreConsumer = ({ focus }: Props) => {
   useOverlayFocusRestore(focus, true);
   return <div>Prompt field placeholder</div>;
 };

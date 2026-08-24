@@ -30,7 +30,7 @@ export const MinimaxParameters = ({ provider, onChange }: Props) => {
           rel="noopener noreferrer"
           className="text-sm text-info-light hover:underline"
         >
-          Get MiniMax API key
+          {t('minimax.getApiKeyLink')}
         </a>
       </div>
       <Input

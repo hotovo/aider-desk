@@ -1,5 +1,5 @@
 import { AgentProfile, AIDER_MODES, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
-import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { ReactNode, forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
@@ -44,7 +44,7 @@ type Props = {
   onRestartAiderConnector: () => void;
 };
 
-export const TaskBar = React.forwardRef<TaskBarRef, Props>(
+export const TaskBar = forwardRef<TaskBarRef, Props>(
   (
     {
       baseDir,

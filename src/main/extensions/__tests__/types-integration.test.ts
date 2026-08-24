@@ -89,7 +89,7 @@ const TestExtensionConstructor: new () => Extension = class {
     context.log('Loaded', 'info');
   }
 
-  getTools(_context: ExtensionContext) {
+  getTools() {
     return [testTool];
   }
 } as unknown as new () => Extension;

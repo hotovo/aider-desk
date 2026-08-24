@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { type ChangeEvent, type KeyboardEvent } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AvailableExtension, InstalledExtension, SettingsData } from '@common/types';
 import { AIDER_DESK_EXTENSIONS_REPO_URL } from '@common/extensions';
@@ -62,9 +63,9 @@ interface IconButtonProps {
 
 interface InputProps {
   value?: string;
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
-  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void;
   wrapperClassName?: string;
 }
 

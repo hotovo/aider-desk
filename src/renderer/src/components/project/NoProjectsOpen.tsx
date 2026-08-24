@@ -16,6 +16,7 @@ export const NoProjectsOpen = ({ onOpenProject }: Props) => {
           <img src={icon} alt="AiderDesk" className="h-16 w-16" />
         </div>
         <h2 className="text-xl font-medium mb-4 uppercase ">
+          {/* eslint-disable-next-line i18next/no-literal-string -- brand name */}
           {t('noProjectsOpen.welcome')} <span className="text-text-primary font-bold">AiderDesk</span>
         </h2>
         <p className="text-text-muted-light mb-6 text-sm">{t('noProjectsOpen.description')}</p>

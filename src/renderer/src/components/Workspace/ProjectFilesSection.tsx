@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost } from '@common/types';
-import React, { useCallback, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
@@ -30,8 +30,8 @@ type Props = {
   visitedSections: Set<string>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
   editMode?: boolean;
   isHidden?: boolean;
   onToggleHidden?: () => void;

@@ -220,6 +220,12 @@
       "deleteMemoryDialogText": "이 메모리를 삭제하시겠습니까?"
     }
   },
+  "mermaid": {
+    "renderFailed": "다이어그램 렌더링 실패:"
+  },
+  "clinepass": {
+    "getApiKeyLink": "ClinePass API 키 받기"
+  },
   "modelLibrary": {
     "enableVoiceControl": "음성 제어 사용",
     "enableVoiceControlOnlyOneInfo": "한 번에 하나의 공급자만 사용할 수 있습니다.",
@@ -311,6 +317,7 @@
     "providerDisabled": "이 공급자는 비활성화되어 있습니다. 해당 모델을 사용할 수 없습니다."
   },
   "openai": {
+    "getApiKeyLink": "OpenAI API 키 받기",
     "apiKey": "API 키",
     "baseUrl": "기본 URL",
     "modelName": "모델 이름",
@@ -328,9 +335,11 @@
     "baseUrlPlaceholder": "예: https://api.anthropic.com"
   },
   "minimax": {
+    "getApiKeyLink": "MiniMax API 키 받기",
     "apiKey": "API 키"
   },
   "gemini": {
+    "getApiKeyLink": "Gemini API 키 받기",
     "apiKey": "API 키",
     "customBaseUrl": "사용자 지정 기본 URL",
     "thinkingBudget": "사고 예산 (토큰)",
@@ -340,16 +349,20 @@
     "useSearchGroundingTooltip": "활성화하면 모델이 검색 결과를 바탕으로 응답 근거를 마련하여 정확성과 관련성을 높입니다."
   },
   "groq": {
+    "getApiKeyLink": "Groq API 키 받기",
     "apiKey": "API 키",
     "modelPlaceholder": "예: moonshotai/kimi-k2-instruct"
   },
   "mistral": {
+    "getApiKeyLink": "Mistral API 키 받기",
     "apiKey": "API 키"
   },
   "kimiPlan": {
+    "getApiKeyLink": "Kimi Coding Plan API 키 받기",
     "apiKey": "API 키"
   },
   "alibabaPlan": {
+    "getApiKeyLink": "Alibaba Coding Plan API 키 받기",
     "apiKey": "API 키",
     "thinkingEnabled": "사고 모드 사용",
     "thinkingEnabledTooltip": "향상된 추론 능력을 위해 사고 모드를 활성화합니다",
@@ -373,22 +386,28 @@
     "sessionTokenTooltip": "임시 자격 증명을 위한 선택적 세션 토큰입니다."
   },
   "cerebras": {
+    "getApiKeyLink": "Cerebras API 키 받기",
     "apiKey": "API 키"
   },
   "neuralwatt": {
+    "getApiKeyLink": "Neuralwatt API 키 받기",
     "apiKey": "API 키"
   },
   "openRouter": {
+    "getApiKeyLink": "OpenRouter API 키 받기",
     "apiKey": "API 키",
     "modelPlaceholder": "예: anthropic/claude-3.7-sonnet"
   },
   "opencode": {
+    "getApiKeyLink": "OpenCode ZEN API 키 받기",
     "apiKey": "API 키"
   },
   "opencodeGo": {
+    "getApiKeyLink": "OpenCode Go API 키 받기",
     "apiKey": "API 키"
   },
   "requesty": {
+    "getApiKeyLink": "Requesty API 키 받기",
     "apiKey": "API 키",
     "modelPlaceholder": "예: claude-4-sonnet",
     "autoCacheLabel": "자동 캐시 사용",
@@ -405,9 +424,11 @@
     "apiKey": "API 키"
   },
   "synthetic": {
+    "getApiKeyLink": "Synthetic API 키 받기",
     "apiKey": "API 키"
   },
   "zaiPlan": {
+    "getApiKeyLink": "Z.AI API 키 받기",
     "apiKey": "API 키",
     "mcp": {
       "title": "MCP 서버",
@@ -492,6 +513,7 @@
       "mcpServers": "MCP 서버"
     },
     "extensions": {
+      "uiErrorIn": "{{component}}에서 오류 발생",
       "loading": "확장을 불러오는 중...",
       "tabs": {
         "installed": "설치됨",
@@ -1530,6 +1552,10 @@
     "revertChanges": "변경 사항 되돌리기"
   },
   "diffViewer": {
+    "oldValue": "이전 값",
+    "newValue": "새 값",
+    "error": "오류: {{message}}",
+    "reportIssue": "https://github.com/hotovo/aider-desk/issues에서 문제를 보고해 주세요.",
     "sideBySide": "나란히 보기",
     "unified": "통합 보기",
     "compact": "간략히",
@@ -1741,6 +1767,7 @@
       "charts": "차트 보기"
     },
     "charts": {
+      "andMore": "(+{{count}} 더 보기)",
       "tokenUsageTrend": "토큰 사용량 추이",
       "costBreakdown": "비용 분석",
       "messageBreakdown": "메시지 분석",
@@ -1776,6 +1803,8 @@
     }
   },
   "terminal": {
+    "connecting": "터미널에 연결 중...",
+    "tabLabel": "터미널",
     "copyOutput": "터미널 출력을 프롬프트로 복사",
     "minimize": "터미널 최소화",
     "addTerminal": "새 터미널 추가"

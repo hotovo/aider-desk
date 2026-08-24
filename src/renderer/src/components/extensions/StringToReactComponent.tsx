@@ -1,4 +1,6 @@
-import React, { useRef, useState, useEffect, type FC } from 'react';
+// eslint-disable-next-line no-restricted-imports -- needs the React runtime object itself, injected into sandboxed transpiled user components
+import * as React from 'react';
+import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { transpileJsxString } from '@common/jsx-transpiler';
 
 type SucraseOptions = {
@@ -20,7 +22,7 @@ const createBlobUrl = (code: string): string => {
   return URL.createObjectURL(blob);
 };
 
-const loadModule = async (blobUrl: string, react: typeof React): Promise<FC> => {
+const loadModule = async (blobUrl: string, react: typeof React): Promise<ComponentType> => {
   try {
     const module = await import(/* @vite-ignore */ blobUrl);
     return (module?.default || module)(react);
@@ -31,9 +33,9 @@ const loadModule = async (blobUrl: string, react: typeof React): Promise<FC> => 
   }
 };
 
-const StringToReactComponent: FC<StringToReactComponentProps> = ({ data, babelOptions, children }) => {
+const StringToReactComponent = ({ data, babelOptions, children }: StringToReactComponentProps) => {
   const [, rerender] = useState<object>({});
-  const componentRef = useRef<FC | null>(null);
+  const componentRef = useRef<ComponentType | null>(null);
   const loadIdRef = useRef(0);
   const resolvedOptions = babelOptions ?? DEFAULT_SUCRASE_OPTIONS;
   // eslint-disable-next-line react-hooks/refs

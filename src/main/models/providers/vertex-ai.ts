@@ -89,7 +89,7 @@ export const loadVertexAIModels = async (profile: ProviderProfile, settings: Set
   }
 };
 
-export const hasVertexAiEnvVars = (_settings: SettingsData): boolean => {
+export const hasVertexAiEnvVars = (): boolean => {
   // Vertex AI doesn't have a simple environment variable check like other providers
   // It requires project, location, and potentially credentials
   return false;

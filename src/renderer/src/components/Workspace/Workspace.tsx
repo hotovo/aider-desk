@@ -1,5 +1,5 @@
 import { ContextFile, Mode, TokensCost } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { DragEvent, Fragment, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalStorage } from '@reactuses/core';
 import { RiMenuUnfold4Line, RiListSettingsLine } from 'react-icons/ri';
@@ -32,7 +32,7 @@ type SortableSectionWrapperProps = {
   id: SectionType;
   editMode: boolean;
   isHidden: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 
 const SortableSectionWrapper = ({ id, editMode, isHidden, children }: SortableSectionWrapperProps) => {
@@ -157,7 +157,7 @@ export const Workspace = ({
   }, [api, baseDir, taskId]);
 
   const dropFile = useCallback(
-    (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => {
+    (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => {
       e.stopPropagation();
       const file = item.file;
       if (file) {
@@ -174,7 +174,7 @@ export const Workspace = ({
   );
 
   const addFile = useCallback(
-    (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();
       const shouldBeReadOnly = event.ctrlKey || event.metaKey;
       const pathToAdd = item.file ? item.file.path : item.index;
@@ -189,7 +189,7 @@ export const Workspace = ({
   );
 
   const handleFileDrop = useCallback(
-    async (event: React.DragEvent<HTMLDivElement>) => {
+    async (event: DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       setIsDragging(false);
 
@@ -213,12 +213,12 @@ export const Workspace = ({
     [api, baseDir, taskId],
   );
 
-  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     setIsDragging(false);
   }, []);
@@ -439,7 +439,7 @@ export const Workspace = ({
           </SortableContext>
         </DndContext>
       ) : (
-        <>{orderedSections.map((section) => (sectionsHidden.has(section) ? null : <React.Fragment key={section}>{renderSection(section)}</React.Fragment>))}</>
+        <>{orderedSections.map((section) => (sectionsHidden.has(section) ? null : <Fragment key={section}>{renderSection(section)}</Fragment>))}</>
       )}
     </div>
   );

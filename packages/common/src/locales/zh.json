@@ -221,6 +221,9 @@
       "deleteMemoryDialogText": "您确定要删除此记忆吗？"
     }
   },
+  "mermaid": {
+    "renderFailed": "渲染图表失败："
+  },
   "modelLibrary": {
     "enableVoiceControl": "启用语音控制",
     "enableVoiceControlOnlyOneInfo": "为此提供商启用语音控制。一次只能启用一个提供商。",
@@ -312,6 +315,7 @@
     "providerDisabled": "此提供商已被禁用。其模型将不可用。"
   },
   "openai": {
+    "getApiKeyLink": "获取 OpenAI API 密钥",
     "apiKey": "API 密钥",
     "baseUrl": "基础 URL",
     "modelName": "模型",
@@ -334,6 +338,7 @@
     "apiKey": "API 密钥"
   },
   "zaiPlan": {
+    "getApiKeyLink": "获取 Z.AI API 密钥",
     "apiKey": "API 密钥",
     "mcp": {
       "title": "MCP 服务器",
@@ -368,12 +373,15 @@
     "baseUrlPlaceholder": "例如 https://api.anthropic.com"
   },
   "minimax": {
+    "getApiKeyLink": "获取 MiniMax API 密钥",
     "apiKey": "API 密钥"
   },
   "synthetic": {
+    "getApiKeyLink": "获取 Synthetic API 密钥",
     "apiKey": "API 密钥"
   },
   "gemini": {
+    "getApiKeyLink": "获取 Gemini API 密钥",
     "apiKey": "API 密钥",
     "customBaseUrl": "自定义基础 URL",
     "thinkingBudget": "思考预算 (令牌)",
@@ -383,16 +391,20 @@
     "useSearchGroundingTooltip": "启用后，代理将使用搜索结果作为其响应的基础，从而提高准确性和相关性。"
   },
   "groq": {
+    "getApiKeyLink": "获取 Groq API 密钥",
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 moonshotai/kimi-k2-instruct"
   },
   "mistral": {
+    "getApiKeyLink": "获取 Mistral API 密钥",
     "apiKey": "API 密钥"
   },
   "kimiPlan": {
+    "getApiKeyLink": "获取 Kimi Coding Plan API 密钥",
     "apiKey": "API 密钥"
   },
   "alibabaPlan": {
+    "getApiKeyLink": "获取 Alibaba Coding Plan API 密钥",
     "apiKey": "API 密钥",
     "thinkingEnabled": "启用思考",
     "thinkingEnabledTooltip": "启用思考模式以增强推理能力",
@@ -416,22 +428,28 @@
     "sessionTokenTooltip": "临时凭证的可选会话令牌。"
   },
   "cerebras": {
+    "getApiKeyLink": "获取 Cerebras API 密钥",
     "apiKey": "API 密钥"
   },
   "neuralwatt": {
+    "getApiKeyLink": "获取 Neuralwatt API 密钥",
     "apiKey": "API 密钥"
   },
   "openRouter": {
+    "getApiKeyLink": "获取 OpenRouter API 密钥",
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 anthropic/claude-3.7-sonnet"
   },
   "opencode": {
+    "getApiKeyLink": "获取 OpenCode ZEN API 密钥",
     "apiKey": "API 密钥"
   },
   "opencodeGo": {
+    "getApiKeyLink": "获取 OpenCode Go API 密钥",
     "apiKey": "API 密钥"
   },
   "requesty": {
+    "getApiKeyLink": "获取 Requesty API 密钥",
     "apiKey": "API 密钥",
     "modelPlaceholder": "例如 claude-4-sonnet"
   },
@@ -442,6 +460,7 @@
     "addCustomModelInfo": "Azure 提供商的模型无法自动加载，您需要手动使用“+ 添加模型”添加它们，并确保模型名称与部署名称匹配。"
   },
   "clinepass": {
+    "getApiKeyLink": "获取 ClinePass API 密钥",
     "apiKey": "API 密钥"
   },
   "providers": {
@@ -498,6 +517,7 @@
       "about": "关于"
     },
     "extensions": {
+      "uiErrorIn": "{{component}} 中出现错误",
       "loading": "正在加载扩展...",
       "tabs": {
         "installed": "已安装",
@@ -1515,6 +1535,10 @@
     "revertChanges": "撤销更改"
   },
   "diffViewer": {
+    "oldValue": "旧值",
+    "newValue": "新值",
+    "error": "错误：{{message}}",
+    "reportIssue": "请在 https://github.com/hotovo/aider-desk/issues 报告问题。",
     "sideBySide": "并排",
     "unified": "统一",
     "compact": "紧凑",
@@ -1782,6 +1806,7 @@
       "charts": "图表视图"
     },
     "charts": {
+      "andMore": "(+{{count}} 更多)",
       "tokenUsageTrend": "令牌使用趋势",
       "costBreakdown": "成本明细",
       "messageBreakdown": "消息明细",
@@ -1817,6 +1842,8 @@
     }
   },
   "terminal": {
+    "connecting": "正在连接终端...",
+    "tabLabel": "终端",
     "copyOutput": "复制终端输出到提示",
     "minimize": "最小化终端",
     "addTerminal": "添加新终端"

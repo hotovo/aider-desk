@@ -85,17 +85,14 @@ export interface TaskContextType {
 
 const TasksContext = createContext<TaskContextType | null>(null);
 
-export const TasksProvider = ({
-  baseDir,
-  tasks,
-  activeTaskId,
-  children,
-}: {
+type Props = {
   baseDir: string;
   tasks: TaskData[];
   activeTaskId?: string | null;
   children: ReactNode;
-}) => {
+};
+
+export const TasksProvider = ({ baseDir, tasks, activeTaskId, children }: Props) => {
   const taskActions = useTaskActions({ baseDir });
   const inactivityCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 

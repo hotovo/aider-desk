@@ -25,7 +25,7 @@ export const KimiPlanParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
         <a href="https://www.kimi.com/code/console" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get Kimi Coding Plan API Key
+          {t('kimiPlan.getApiKeyLink')}
         </a>
       </div>
       <Input

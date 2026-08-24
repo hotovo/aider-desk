@@ -11,7 +11,7 @@ type Props = {
   worktreeStatus: WorktreeIntegrationStatus;
 };
 
-export const RebaseResolvedActions = ({ projectDir, taskId, worktreeStatus: _worktreeStatus }: Props) => {
+export const RebaseResolvedActions = ({ projectDir, taskId }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 

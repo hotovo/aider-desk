@@ -222,6 +222,12 @@
       "deleteMemoryDialogText": "Вы уверены, что хотите удалить эту память?"
     }
   },
+  "mermaid": {
+    "renderFailed": "Не удалось отобразить диаграмму:"
+  },
+  "neuralwatt": {
+    "getApiKeyLink": "Получить API-ключ Neuralwatt"
+  },
   "modelLibrary": {
     "enableVoiceControl": "Включить голосовое управление",
     "enableVoiceControlOnlyOneInfo": "Одновременно может быть включён только один провайдер.",
@@ -311,6 +317,7 @@
     "providerDisabled": "Этот провайдер отключён. Его модели будут недоступны."
   },
   "openai": {
+    "getApiKeyLink": "Получить API-ключ OpenAI",
     "apiKey": "API-ключ",
     "baseUrl": "Базовый URL",
     "modelName": "Название модели",
@@ -328,9 +335,11 @@
     "baseUrlPlaceholder": "например, https://api.anthropic.com"
   },
   "minimax": {
+    "getApiKeyLink": "Получить API-ключ MiniMax",
     "apiKey": "API-ключ"
   },
   "gemini": {
+    "getApiKeyLink": "Получить API-ключ Gemini",
     "apiKey": "API-ключ",
     "customBaseUrl": "Пользовательский базовый URL",
     "thinkingBudget": "Бюджет на рассуждение (токены)",
@@ -340,16 +349,20 @@
     "useSearchGroundingTooltip": "Когда включено, модель будет использовать результаты поиска для обоснования своих ответов, повышая точность и релевантность."
   },
   "groq": {
+    "getApiKeyLink": "Получить API-ключ Groq",
     "apiKey": "API-ключ",
     "modelPlaceholder": "например, moonshotai/kimi-k2-instruct"
   },
   "mistral": {
+    "getApiKeyLink": "Получить API-ключ Mistral",
     "apiKey": "API-ключ"
   },
   "kimiPlan": {
+    "getApiKeyLink": "Получить API-ключ Kimi Coding Plan",
     "apiKey": "API-ключ"
   },
   "alibabaPlan": {
+    "getApiKeyLink": "Получить API-ключ Alibaba Coding Plan",
     "apiKey": "API-ключ",
     "thinkingEnabled": "Режим рассуждений",
     "thinkingEnabledTooltip": "Включает режим рассуждений для расширенных возможностей логического вывода",
@@ -373,19 +386,24 @@
     "sessionTokenTooltip": "Необязательный токен сессии для временных учётных данных."
   },
   "cerebras": {
+    "getApiKeyLink": "Получить API-ключ Cerebras",
     "apiKey": "API-ключ"
   },
   "openRouter": {
+    "getApiKeyLink": "Получить API-ключ OpenRouter",
     "apiKey": "API-ключ",
     "modelPlaceholder": "например, anthropic/claude-3.7-sonnet"
   },
   "opencode": {
+    "getApiKeyLink": "Получить API-ключ OpenCode ZEN",
     "apiKey": "API-ключ"
   },
   "opencodeGo": {
+    "getApiKeyLink": "Получить API-ключ OpenCode Go",
     "apiKey": "API-ключ"
   },
   "requesty": {
+    "getApiKeyLink": "Получить API-ключ Requesty",
     "apiKey": "API-ключ",
     "modelPlaceholder": "например, claude-4-sonnet",
     "autoCacheLabel": "Использовать авто-кэш",
@@ -402,9 +420,11 @@
     "apiKey": "API-ключ"
   },
   "synthetic": {
+    "getApiKeyLink": "Получить API-ключ Synthetic",
     "apiKey": "API-ключ"
   },
   "zaiPlan": {
+    "getApiKeyLink": "Получить API-ключ Z.AI",
     "apiKey": "API-ключ",
     "mcp": {
       "title": "MCP-серверы",
@@ -440,6 +460,7 @@
     "addCustomModelInfo": "Модели не могут быть загружены автоматически для провайдера Azure. Вам нужно добавить их вручную с помощью «+ Добавить модель», убедившись, что имя модели соответствует имени развёртывания."
   },
   "clinepass": {
+    "getApiKeyLink": "Получить API-ключ ClinePass",
     "apiKey": "API-ключ"
   },
   "providers": {
@@ -493,6 +514,7 @@
       "mcpServers": "MCP-серверы"
     },
     "extensions": {
+      "uiErrorIn": "Ошибка в {{component}}",
       "loading": "Загрузка расширений...",
       "tabs": {
         "installed": "Установленные",
@@ -1551,6 +1573,10 @@
     "revertChanges": "Отменить изменения"
   },
   "diffViewer": {
+    "oldValue": "Старое значение",
+    "newValue": "Новое значение",
+    "error": "Ошибка: {{message}}",
+    "reportIssue": "Пожалуйста, сообщите о проблеме на https://github.com/hotovo/aider-desk/issues.",
     "sideBySide": "Бок о бок",
     "unified": "Унифицированный",
     "compact": "Компактный",
@@ -1762,6 +1788,7 @@
       "charts": "Графики"
     },
     "charts": {
+      "andMore": "(+ещё {{count}})",
       "tokenUsageTrend": "Динамика использования токенов",
       "costBreakdown": "Детализация затрат",
       "messageBreakdown": "Детализация сообщений",
@@ -1797,6 +1824,8 @@
     }
   },
   "terminal": {
+    "connecting": "Подключение к терминалу...",
+    "tabLabel": "Терминал",
     "copyOutput": "Скопировать вывод терминала в запрос",
     "minimize": "Свернуть терминал",
     "addTerminal": "Добавить терминал"

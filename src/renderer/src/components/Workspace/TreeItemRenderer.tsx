@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { useCallback, useMemo } from 'react';
+import { MouseEvent, useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
@@ -54,8 +54,8 @@ type Props = {
   onAddFileToGit?: (filePath: string) => void;
   addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export const TreeItemRenderer = ({
@@ -147,7 +147,7 @@ export const TreeItemRenderer = ({
   }, [expandedItems, item.index, setExpandedItems]);
 
   const handleChevronClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: MouseEvent) => {
       e.stopPropagation();
       toggleFolder();
     },
@@ -169,7 +169,7 @@ export const TreeItemRenderer = ({
   }, [updatedFile, onFileDiffClick]);
 
   const handleAddToGitClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: MouseEvent) => {
       e.stopPropagation();
       if (updatedFile && onAddFileToGit) {
         onAddFileToGit(updatedFile.path);
@@ -179,7 +179,7 @@ export const TreeItemRenderer = ({
   );
 
   const handleRevertClick = useCallback(
-    (e: React.MouseEvent) => {
+    (e: MouseEvent) => {
       e.stopPropagation();
       if (updatedFile) {
         onRevertFile(updatedFile.path);

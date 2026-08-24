@@ -1,4 +1,4 @@
-import React from 'react';
+import { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -108,7 +108,7 @@ export const parseMessageContent = (
     return thinkingAnswerContent;
   }
 
-  const parts: React.ReactNode[] = [];
+  const parts: ReactNode[] = [];
   const lines = content.split('\n');
   let currentText = '';
   let isInCodeBlock = false;
@@ -343,7 +343,7 @@ export const parseThinkingAnswerFormat = (
   allFiles: string[] = [],
   renderMarkdown = false,
   renderThinking = true,
-): React.ReactNode | null => {
+): ReactNode | null => {
   // Check for the thinking section first
   const thinkingRegex = /[-]{3,}\s*\n\s*►\s*\*\*THINKING\*\*\s*\n\s*([\s\S]*?)(?:\s*[-]{3,}\s*\n\s*►\s*\*\*ANSWER\*\*|$)/i;
   const thinkingMatch = content.match(thinkingRegex);
@@ -367,7 +367,7 @@ export const parseThinkingAnswerFormat = (
   return null;
 };
 
-export const parseCustomCommandBashFormat = (baseDir: string, content: string): React.ReactNode | null => {
+export const parseCustomCommandBashFormat = (baseDir: string, content: string): ReactNode | null => {
   // Find the opening tag
   const openTagStart = content.indexOf('<custom-command-bash>');
   if (openTagStart === -1) {

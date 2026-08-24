@@ -222,6 +222,9 @@
       "deleteMemoryDialogText": "Are you sure you want to delete this memory?"
     }
   },
+  "mermaid": {
+    "renderFailed": "Failed to render diagram:"
+  },
   "modelLibrary": {
     "enableVoiceControl": "Enable Voice Control",
     "enableVoiceControlOnlyOneInfo": "Only one provider can be enabled at a time.",
@@ -313,6 +316,7 @@
     "providerDisabled": "This provider is disabled. Its models will not be available."
   },
   "openai": {
+    "getApiKeyLink": "Get OpenAI API key",
     "apiKey": "API Key",
     "baseUrl": "Base URL",
     "modelName": "Model Name",
@@ -330,9 +334,11 @@
     "baseUrlPlaceholder": "e.g. https://api.anthropic.com"
   },
   "minimax": {
+    "getApiKeyLink": "Get MiniMax API key",
     "apiKey": "API Key"
   },
   "gemini": {
+    "getApiKeyLink": "Get Gemini API key",
     "apiKey": "API Key",
     "customBaseUrl": "Custom Base URL",
     "thinkingBudget": "Thinking budget (tokens)",
@@ -342,16 +348,20 @@
     "useSearchGroundingTooltip": "When enabled, the model will use search results to ground its responses, improving accuracy and relevance."
   },
   "groq": {
+    "getApiKeyLink": "Get Groq API key",
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. moonshotai/kimi-k2-instruct"
   },
   "mistral": {
+    "getApiKeyLink": "Get Mistral API key",
     "apiKey": "API Key"
   },
   "kimiPlan": {
+    "getApiKeyLink": "Get Kimi Coding Plan API Key",
     "apiKey": "API Key"
   },
   "alibabaPlan": {
+    "getApiKeyLink": "Get Alibaba Coding Plan API Key",
     "apiKey": "API Key",
     "thinkingEnabled": "Thinking Enabled",
     "thinkingEnabledTooltip": "Enable thinking mode for enhanced reasoning capabilities",
@@ -375,22 +385,28 @@
     "sessionTokenTooltip": "Optional session token for temporary credentials."
   },
   "cerebras": {
+    "getApiKeyLink": "Get Cerebras API key",
     "apiKey": "API Key"
   },
   "neuralwatt": {
+    "getApiKeyLink": "Get Neuralwatt API key",
     "apiKey": "API Key"
   },
   "openRouter": {
+    "getApiKeyLink": "Get OpenRouter API key",
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. anthropic/claude-3.7-sonnet"
   },
   "opencode": {
+    "getApiKeyLink": "Get OpenCode ZEN API key",
     "apiKey": "API Key"
   },
   "opencodeGo": {
+    "getApiKeyLink": "Get OpenCode Go API key",
     "apiKey": "API Key"
   },
   "requesty": {
+    "getApiKeyLink": "Get Requesty API key",
     "apiKey": "API Key",
     "modelPlaceholder": "e.g. claude-4-sonnet",
     "autoCacheLabel": "Use Auto Cache",
@@ -407,9 +423,11 @@
     "apiKey": "API Key"
   },
   "synthetic": {
+    "getApiKeyLink": "Get Synthetic API key",
     "apiKey": "API Key"
   },
   "zaiPlan": {
+    "getApiKeyLink": "Get Z.AI API key",
     "apiKey": "API Key",
     "mcp": {
       "title": "MCP Servers",
@@ -474,6 +492,7 @@
     "clinepass": "ClinePass"
   },
   "clinepass": {
+    "getApiKeyLink": "Get ClinePass API key",
     "apiKey": "API Key"
   },
   "select": {
@@ -499,6 +518,7 @@
       "about": "About"
     },
     "extensions": {
+      "uiErrorIn": "Error in {{component}}",
       "loading": "Loading extensions...",
       "tabs": {
         "installed": "Installed",
@@ -1562,6 +1582,10 @@
     "revertChanges": "Revert changes"
   },
   "diffViewer": {
+    "oldValue": "Old Value",
+    "newValue": "New Value",
+    "error": "Error: {{message}}",
+    "reportIssue": "Please report an issue in https://github.com/hotovo/aider-desk/issues.",
     "sideBySide": "Side by Side",
     "unified": "Unified",
     "compact": "Compact",
@@ -1774,6 +1798,7 @@
       "charts": "Charts View"
     },
     "charts": {
+      "andMore": "(+{{count}} more)",
       "tokenUsageTrend": "Token Usage Trend",
       "costBreakdown": "Cost Breakdown",
       "messageBreakdown": "Message Breakdown",
@@ -1809,6 +1834,8 @@
     }
   },
   "terminal": {
+    "connecting": "Connecting to terminal...",
+    "tabLabel": "Terminal",
     "copyOutput": "Copy terminal output to prompt",
     "minimize": "Minimize terminal",
     "addTerminal": "Add new terminal"

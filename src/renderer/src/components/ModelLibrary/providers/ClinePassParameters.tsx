@@ -25,7 +25,7 @@ export const ClinePassParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
         <a href="https://app.cline.bot" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get ClinePass API key
+          {t('clinepass.getApiKeyLink')}
         </a>
       </div>
       <Input

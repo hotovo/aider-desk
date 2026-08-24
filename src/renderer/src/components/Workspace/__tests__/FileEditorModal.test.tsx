@@ -83,7 +83,9 @@ vi.mock('@/components/common/Button', () => ({
   ),
 }));
 
-const FileOpener = ({ paths }: { paths: Array<{ path: string; taskId: string }> }) => {
+type Props = { paths: Array<{ path: string; taskId: string }> };
+
+const FileOpener = ({ paths }: Props) => {
   const openFile = useFileEditorStore((state) => state.openFile);
   return (
     <>

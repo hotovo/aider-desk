@@ -1,4 +1,4 @@
-import { ReactNode, useRef, useCallback, useState } from 'react';
+import { KeyboardEvent, ReactNode, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
@@ -52,7 +52,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
     }
   }, [isOpen, open, toggle, options, value, placement]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (!isOpen) {
       if (e.key === KeyboardKeys.Enter || e.key === KeyboardKeys.Space) {
         e.preventDefault();

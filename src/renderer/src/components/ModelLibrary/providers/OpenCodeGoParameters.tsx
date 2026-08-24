@@ -25,7 +25,7 @@ export const OpenCodeGoParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-4">
       <div className="!mt-0 !mb-5">
         <a href="https://opencode.ai/docs/go" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get OpenCode Go API key
+          {t('opencodeGo.getApiKeyLink')}
         </a>
       </div>
       <Input

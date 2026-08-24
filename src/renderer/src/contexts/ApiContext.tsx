@@ -7,7 +7,9 @@ import { BrowserApi } from '@/api/browser-api';
 export const ApiContext = createContext<ApplicationAPI | undefined>(undefined);
 export const ReadonlyViewContext = createContext(false);
 
-export const ApiProvider = ({ children }: { children: ReactNode }) => {
+type Props = { children: ReactNode };
+
+export const ApiProvider = ({ children }: Props) => {
   const api = useMemo<ApplicationAPI>(() => {
     if (window.api) {
       return window.api;

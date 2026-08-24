@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import React, { Activity } from 'react';
+import { Activity, Dispatch, MouseEvent, ReactNode, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
@@ -16,14 +16,14 @@ type Props = {
   totalStats: { additions: number; deletions: number };
   treeData: Record<string, TreeItem>;
   expandedItems: string[];
-  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  setExpandedItems: Dispatch<SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
   fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
-  actions?: React.ReactNode;
-  searchField?: React.ReactNode;
-  emptyContent?: React.ReactNode;
+  actions?: ReactNode;
+  searchField?: ReactNode;
+  emptyContent?: ReactNode;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
@@ -35,8 +35,8 @@ type Props = {
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export const WorkspaceSection = ({

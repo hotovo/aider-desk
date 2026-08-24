@@ -6,6 +6,7 @@ import tseslint from 'typescript-eslint';
 import importPlugin from 'eslint-plugin-import';
 import prettierPlugin from 'eslint-plugin-prettier/recommended';
 import reactPlugin from 'eslint-plugin-react';
+import i18nextPlugin from 'eslint-plugin-i18next';
 
 const ignores = [
   'build',
@@ -19,6 +20,23 @@ const ignores = [
   'packages/tree-sitter-utils',
   '.aider-desk'
 ];
+
+const noReactNamespaceEventTypes = {
+  selector: "TSTypeReference > TSQualifiedName[left.name='React'][right.name=/Event/]",
+  message: "Import React event types directly instead of using the React namespace (e.g., `import { MouseEvent } from 'react';`).",
+};
+
+const noCreateContextOutsideContextsDir = {
+  selector: "CallExpression[callee.name='createContext']",
+  message: 'Prefer Zustand stores over React Context for shared state; create contexts only in src/renderer/src/contexts/.',
+};
+
+const noInlinePropTypes = {
+  selector:
+    "VariableDeclarator[id.name=/^[A-Z]/] > ArrowFunctionExpression > :matches(Identifier, ObjectPattern)[typeAnnotation.typeAnnotation.type='TSTypeLiteral']",
+  message:
+    'Extract inline prop types into a dedicated `type Props` (or `<Component>Props`) declared directly above the component definition.',
+};
 
 export default tseslint.config({ ignores }, {
   ignores,
@@ -53,10 +71,56 @@ export default tseslint.config({ ignores }, {
   rules: {
     ...reactHooks.configs.recommended.rules,
     'import/no-unresolved': 'off',
+    'import/no-extraneous-dependencies': [
+      'warn',
+      {
+        devDependencies: true,
+        peerDependencies: true,
+        optionalDependencies: true,
+      },
+    ],
     'no-console': ['warn'],
     'no-unused-vars': 'off',
     quotes: ['error', 'single', { avoidEscape: true }],
     'curly': ['error', 'all'],
+
+    'no-restricted-syntax': [
+      'error',
+      noReactNamespaceEventTypes,
+      noInlinePropTypes,
+    ],
+
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: 'react',
+            importNames: ['default'],
+            message: "Default React import is unnecessary; use named imports instead (e.g., `import { useState } from 'react';`).",
+          },
+        ],
+        patterns: [
+          {
+            group: [
+              'classnames',
+              'class-names',
+              '@mui/icons-material',
+              '@mui/icons-material/*',
+              '@heroicons/*',
+              'lucide-react',
+              'react-feather',
+              'phosphor-react',
+              '@phosphor-icons/*',
+              '@tabler/icons*',
+              '@blueprintjs/icons',
+              '@radix-ui/react-icons',
+            ],
+            message: 'Use the react-icons library for icons.',
+          },
+        ],
+      },
+    ],
 
     'prettier/prettier': [
       'error',
@@ -90,9 +154,18 @@ export default tseslint.config({ ignores }, {
     '@typescript-eslint/no-unused-vars': [
       'error',
       {
-        argsIgnorePattern: '^_',
         varsIgnorePattern: '^_'
       }
+    ],
+
+    '@typescript-eslint/no-restricted-types': [
+      'error',
+      {
+        types: {
+          'React.FC': 'Do not type components with React.FC; use typed props argument instead: ({ ... }: Props) => ...',
+          'FC': 'Do not type components with FC; use typed props argument instead: ({ ... }: Props) => ...',
+        },
+      },
     ],
 
     'react/prop-types': 0,
@@ -151,6 +224,26 @@ export default tseslint.config({ ignores }, {
     'react-hooks/refs': 'warn',
     'react-compiler/react-compiler': 'warn',
   }
+}, {
+  files: ['src/renderer/src/**/*.{ts,tsx}'],
+  ignores: ['src/renderer/src/contexts/**'],
+  rules: {
+    'no-restricted-syntax': [
+      'error',
+      noReactNamespaceEventTypes,
+      noCreateContextOutsideContextsDir,
+    ],
+  },
+}, {
+  files: ['src/renderer/src/**/*.tsx'],
+  ignores: ['**/__tests__/**', 'src/renderer/src/icons/**'],
+  plugins: { i18next: i18nextPlugin },
+  rules: {
+    'i18next/no-literal-string': ['error', {
+      mode: 'jsx-text-only',
+      ignoreCallee: ['Trans'],
+    }],
+  },
 }, {
   files: ['**/__tests__/**/*.test.ts'],
   rules: {

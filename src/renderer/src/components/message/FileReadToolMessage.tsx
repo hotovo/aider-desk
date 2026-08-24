@@ -68,11 +68,7 @@ export const FileReadToolMessage = ({ message, onRemove, compact = false, onFork
             <CodeInline className="bg-bg-primary-light">{filePath.split(/[/\\]/).pop()}</CodeInline>
           </span>
         </Tooltip>
-        {(lineOffset !== 0 || lineLimit !== 1000) && (
-          <span className="text-text-muted text-2xs mt-[1px]">
-            L#{lineOffset}-{lineOffset + lineLimit}
-          </span>
-        )}
+        {(lineOffset !== 0 || lineLimit !== 1000) && <span className="text-text-muted text-2xs mt-[1px]">{`L#${lineOffset}-${lineOffset + lineLimit}`}</span>}
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&

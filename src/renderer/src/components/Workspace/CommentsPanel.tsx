@@ -1,4 +1,4 @@
-import { memo, useCallback, useState } from 'react';
+import { ChangeEvent, memo, useCallback, useState } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { RiMenuUnfold4Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
@@ -58,7 +58,7 @@ const CommentItem = memo(
       onCancelEdit();
     }, [pc.comment, onCancelEdit]);
 
-    const handleEditTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const handleEditTextChange = useCallback((e: ChangeEvent<HTMLTextAreaElement>) => {
       setEditText(e.target.value);
     }, []);
 

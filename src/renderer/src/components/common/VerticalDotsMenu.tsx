@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { clsx } from 'clsx';
 
@@ -7,7 +7,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 export type MenuOption = {
   label: string;
   action: () => void;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   disabled?: boolean;
 };
 

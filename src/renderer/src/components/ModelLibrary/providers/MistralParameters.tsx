@@ -25,7 +25,7 @@ export const MistralParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
         <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get Mistral API key
+          {t('mistral.getApiKeyLink')}
         </a>
       </div>
       <Input

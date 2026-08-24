@@ -1,4 +1,4 @@
-import React from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { ContextFile, Mode, TaskData } from '@common/types';
@@ -23,7 +23,7 @@ type Props = {
   runCommand: (command: string) => void;
   resetTask: () => void;
   mode: Mode;
-  setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
+  setAddFileDialogOptions: Dispatch<SetStateAction<AddFileDialogOptions | null>>;
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;

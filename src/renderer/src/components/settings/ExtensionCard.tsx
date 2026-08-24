@@ -141,10 +141,10 @@ export const ExtensionCard = ({
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
                 <h4 className={clsx('text-sm font-semibold truncate', isDisabled ? 'text-text-muted' : 'text-text-primary')}>{data.name}</h4>
-                <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium font-mono">v{data.version}</span>
+                <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium font-mono">{`v${data.version}`}</span>
                 {isInstalled && !isDisabled && (
                   <span className="text-3xs px-2 py-0.5 rounded bg-success-subtle text-success font-semibold flex items-center gap-1">
-                    ✓ {t('settings.extensions.active')}
+                    {`✓ ${t('settings.extensions.active')}`}
                   </span>
                 )}
                 {isInstalled && isDisabled && (

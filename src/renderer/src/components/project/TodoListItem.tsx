@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { KeyboardEvent, useState } from 'react';
 import { clsx } from 'clsx';
 import { MdEdit, MdDelete, MdCheck, MdClose, MdSwapHoriz } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -41,7 +41,7 @@ export const TodoListItem = ({ item, onToggle, onUpdate, onDelete, onHandoff }: 
     setIsEditing(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSaveEdit();
     } else if (e.key === 'Escape') {

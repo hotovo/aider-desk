@@ -20,7 +20,9 @@ export const TooltipProvider = ({ children, ...props }: TooltipPrimitive.Tooltip
 );
 
 // Simple arrow component using Radix's Arrow primitive
-const Arrow = ({ side = 'top' }: { side?: string }) => (
+type ArrowProps = { side?: string };
+
+const Arrow = ({ side = 'top' }: ArrowProps) => (
   <TooltipPrimitive.Arrow
     asChild
     width={16}

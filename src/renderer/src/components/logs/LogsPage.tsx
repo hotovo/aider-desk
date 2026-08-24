@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SystemLogEntry, SystemLogLevel } from '@common/types';
 import { clsx } from 'clsx';
@@ -240,7 +240,7 @@ export const LogsPage = ({ openInWindowUrl, onClose }: Props) => {
 
   // Handle scroll event for infinite scroll
   const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
+    (e: UIEvent<HTMLDivElement>) => {
       const container = e.currentTarget;
       if (!container) {
         return;

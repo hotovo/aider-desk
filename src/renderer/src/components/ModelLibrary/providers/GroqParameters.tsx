@@ -25,7 +25,7 @@ export const GroqParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
         <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get Groq API key
+          {t('groq.getApiKeyLink')}
         </a>
       </div>
       <Input

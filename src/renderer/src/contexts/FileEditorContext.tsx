@@ -20,7 +20,9 @@ type FileEditorContextValue = {
 
 const FileEditorContext = createContext<FileEditorContextValue | null>(null);
 
-export const FileEditorProvider = ({ projectDir, children }: { projectDir: string; children: ReactNode }) => {
+type Props = { projectDir: string; children: ReactNode };
+
+export const FileEditorProvider = ({ projectDir, children }: Props) => {
   const [openFiles, setOpenFiles] = useLocalStorage<OpenEditorFile[]>(`file-editor-open-files-${projectDir}`, []);
   const [activeFilePath, setActiveFilePath] = useLocalStorage<string | null>(`file-editor-active-file-${projectDir}`, null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);

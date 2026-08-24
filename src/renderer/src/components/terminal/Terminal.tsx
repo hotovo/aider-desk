@@ -2,6 +2,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 import './Terminal.scss';
 import { useApi } from '@/contexts/ApiContext';
@@ -32,6 +33,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
   const api = useApi();
 
   // Show connecting overlay when WASM is ready but no PTY process exists yet
+  const { t } = useTranslation();
   const isConnecting = isInitialized && visible && !terminalId;
 
   useImperativeHandle(ref, () => ({
@@ -235,7 +237,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       return undefined;
     }
 
-    const handleRestartInput = (_data: string) => {
+    const handleRestartInput = () => {
       // Clear terminalId to trigger re-creation via the createTerminal effect
       terminalRef.current?.clear();
       setTerminalId(null);
@@ -292,7 +294,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
       />
       {isConnecting && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-text-muted-light text-xs">Connecting to terminal...</div>
+          <div className="text-text-muted-light text-xs">{t('terminal.connecting')}</div>
         </div>
       )}
     </div>

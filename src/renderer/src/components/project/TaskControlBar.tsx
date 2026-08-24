@@ -86,7 +86,7 @@ export const TaskControlBar = forwardRef<TaskControlBarRef, Props>(
             {toggleTerminal && (
               <Button variant="text" color="tertiary" onClick={toggleTerminal} className={terminalVisible ? 'bg-bg-secondary-light' : ''} size="xs">
                 <VscTerminal className="w-3.5 h-3.5 mr-1 text-text-secondary" />
-                <span className="hidden sm:inline text-2xs text-text-secondary">Terminal</span>
+                <span className="hidden sm:inline text-2xs text-text-secondary">{t('terminal.tabLabel')}</span>
               </Button>
             )}
             {canUndoContextChange && onUndoContextChange ? (

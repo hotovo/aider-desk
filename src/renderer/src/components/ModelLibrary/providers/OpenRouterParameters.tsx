@@ -40,7 +40,7 @@ export const OpenRouterParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-4">
       <div className="!mt-0 !mb-5">
         <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get OpenRouter API key
+          {t('openRouter.getApiKeyLink')}
         </a>
       </div>
       <Input

@@ -483,7 +483,7 @@ export class ModelManager {
     for (const modelOverride of providerModelOverrides) {
       const existingIndex = enrichedModels.findIndex((model) => model.id === modelOverride.id);
       if (existingIndex >= 0) {
-        const cleanedOverride = Object.fromEntries(Object.entries(modelOverride).filter(([_, value]) => value !== undefined));
+        const cleanedOverride = Object.fromEntries(Object.entries(modelOverride).filter(([, value]) => value !== undefined));
         logger.debug(`Overriding model: ${providerId}/${modelOverride.id}`, {
           existing: enrichedModels[existingIndex],
           override: modelOverride,

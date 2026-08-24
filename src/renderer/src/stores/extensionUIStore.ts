@@ -199,7 +199,7 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>()(
         }
       },
 
-      handleRefreshEvent: (_api, data, currentProjectDir, _currentTaskId) => {
+      handleRefreshEvent: (_api, data, currentProjectDir) => {
         // Only handle component reloads - data refresh is handled by forceRefresh in loadComponentData
         // We don't invalidate data cache to avoid flicker (stale-while-revalidate pattern)
         if (!data.reloadComponents) {

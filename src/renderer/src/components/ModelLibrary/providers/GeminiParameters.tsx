@@ -38,7 +38,7 @@ export const GeminiParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-4">
       <div className="!mt-0 !mb-5">
         <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get Gemini API key
+          {t('gemini.getApiKeyLink')}
         </a>
       </div>
       <Input

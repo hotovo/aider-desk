@@ -18,7 +18,7 @@ type Props = {
   taskId?: string;
 };
 
-export const WelcomeMessage = ({ onModeChange, mode: _mode, projectDir, taskId: _taskId }: Props) => {
+export const WelcomeMessage = ({ onModeChange, projectDir }: Props) => {
   const { t } = useTranslation();
 
   const { isEmpty: isEmptyWelcomePage, renderComponents: renderWelcomePageComponents } = useExtensionComponentsWrapper({

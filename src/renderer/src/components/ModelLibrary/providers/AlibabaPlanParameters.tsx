@@ -27,7 +27,7 @@ export const AlibabaPlanParameters = ({ provider, onChange }: Props) => {
     <div className="space-y-2">
       <div className="!mt-0 !mb-5">
         <a href="https://bailian.console.aliyun.com/" target="_blank" rel="noopener noreferrer" className="text-sm text-info-light hover:underline">
-          Get Alibaba Coding Plan API Key
+          {t('alibabaPlan.getApiKeyLink')}
         </a>
       </div>
       <Input

@@ -235,7 +235,7 @@ describe('Power Tools - bash shell initialization', () => {
   });
   describe('output bounding', () => {
     const emitThenExit = (stdoutChunks: string[]) => {
-      vi.mocked(spawn).mockImplementation(((_shell: string, _args: string[], _options: any) => {
+      vi.mocked(spawn).mockImplementation((() => {
         const cp = new EventEmitter() as any;
         cp.stdout = new EventEmitter();
         cp.stderr = new EventEmitter();

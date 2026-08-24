@@ -103,11 +103,7 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false, onFor
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="flex items-center gap-2 mb-2">
           <span className="font-semibold text-text-secondary">{t('toolMessage.power.glob.foundFiles', { count: content.length })}</span>
-          {limit != null && (
-            <span className="text-text-muted">
-              {t('toolMessage.power.glob.for')} offset={offset}, limit={limit}
-            </span>
-          )}
+          {limit != null && <span className="text-text-muted">{`${t('toolMessage.power.glob.for')} offset=${offset}, limit=${limit}`}</span>}
         </div>
         <div className="space-y-1">
           {content.map((task: Task) => (

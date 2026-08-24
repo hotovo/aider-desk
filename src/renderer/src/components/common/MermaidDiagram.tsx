@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import mermaid from 'mermaid';
 import { CgSpinner } from 'react-icons/cg';
+import { useTranslation } from 'react-i18next';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -19,6 +20,7 @@ export const MermaidDiagram = ({ code, className = '' }: Props) => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const diagramId = useId();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const renderDiagram = async () => {
@@ -49,7 +51,7 @@ export const MermaidDiagram = ({ code, className = '' }: Props) => {
   if (error) {
     return (
       <div className={`p-4 bg-bg-error-light text-text-error rounded-md ${className}`}>
-        <p className="text-xs">Failed to render diagram:</p>
+        <p className="text-xs">{t('mermaid.renderFailed')}</p>
         <pre className="text-xs mt-1 overflow-auto">{error}</pre>
       </div>
     );

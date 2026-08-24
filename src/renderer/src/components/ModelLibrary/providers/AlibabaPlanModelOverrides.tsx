@@ -21,7 +21,7 @@ export const AlibabaPlanModelOverrides = ({ provider, overrides, onChange }: Pro
       thinkingBudget: updatedProvider.thinkingBudget,
     };
 
-    const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([_, value]) => value !== undefined));
+    const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
   };

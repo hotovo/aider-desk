@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { OpenRouterProvider } from '@common/agent';
 
 export const useArrayField = (
@@ -18,7 +18,7 @@ export const useArrayField = (
     }
   }, [provider, field]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     setDraftValue(e.target.value);
   };
 

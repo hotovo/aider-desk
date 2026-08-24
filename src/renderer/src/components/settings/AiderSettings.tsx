@@ -16,6 +16,9 @@ type Props = {
   initialShowEnvVars?: boolean;
 };
 
+const OPTIONS_DOC_URL = 'https://aider.chat/docs/config/options.html';
+const DOTENV_DOC_URL = 'https://aider.chat/docs/config/dotenv.html';
+
 export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = false }: Props) => {
   const { t } = useTranslation();
   const [showEnvVars, setShowEnvVars] = useState(initialShowEnvVars);
@@ -94,13 +97,8 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
           />
           <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.optionsDocumentation')}{' '}
-            <a
-              href="https://aider.chat/docs/config/options.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-info-lighter hover:text-info-lightest"
-            >
-              https://aider.chat/docs/config/options.html
+            <a href={OPTIONS_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-info-lighter hover:text-info-lightest">
+              {OPTIONS_DOC_URL}
             </a>
           </p>
         </div>
@@ -134,13 +132,8 @@ export const AiderSettings = ({ settings, setSettings, initialShowEnvVars = fals
           </div>
           <p className="text-xs text-text-secondary px-1">
             {t('settings.aider.envVarsDocumentation')}{' '}
-            <a
-              href="https://aider.chat/docs/config/dotenv.html"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-info-lighter hover:text-info-lightest"
-            >
-              https://aider.chat/docs/config/dotenv.html
+            <a href={DOTENV_DOC_URL} target="_blank" rel="noopener noreferrer" className="text-info-lighter hover:text-info-lightest">
+              {DOTENV_DOC_URL}
             </a>
           </p>
         </div>

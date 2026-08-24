@@ -1,4 +1,4 @@
-import React, { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
@@ -49,7 +49,7 @@ export const Table = <T extends object>({ data, columns, footerColumns }: Props<
     setSortState({ columnKey: accessorKey, direction: newDirection });
   };
 
-  const sortedData = React.useMemo(() => {
+  const sortedData = useMemo(() => {
     if (!sortState.columnKey || !sortState.direction) {
       return data;
     }

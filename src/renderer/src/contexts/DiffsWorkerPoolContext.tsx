@@ -24,7 +24,9 @@ const DiffsThemeSync = () => {
   return null;
 };
 
-export const DiffsWorkerPoolProvider = ({ children }: { children: ReactNode }) => {
+type Props = { children: ReactNode };
+
+export const DiffsWorkerPoolProvider = ({ children }: Props) => {
   const theme = useSettingsStore((state) => state.theme);
 
   const highlighterOptions = useMemo(

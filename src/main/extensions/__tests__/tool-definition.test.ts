@@ -19,7 +19,7 @@ describe('ToolDefinition', () => {
       name: 'test-tool',
       description: 'A test tool',
       inputSchema: schema,
-      async execute(args, _signal, _context) {
+      async execute(args) {
         return { content: [{ type: 'text', text: args.input }] };
       },
     };
@@ -40,7 +40,7 @@ describe('ToolDefinition', () => {
       name: 'echo',
       description: 'Echo the input',
       inputSchema: schema,
-      async execute(args, _signal, _context) {
+      async execute(args) {
         return {
           content: [{ type: 'text', text: Array(args.repeat).fill(args.message).join(' ') }],
         };
@@ -66,7 +66,7 @@ describe('ToolDefinition', () => {
       name: 'complex-tool',
       description: 'Tool with complex schema',
       inputSchema: schema,
-      async execute(args, _signal, _context) {
+      async execute(args) {
         return {
           content: [
             {

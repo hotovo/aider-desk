@@ -1,5 +1,4 @@
-import { ReactNode, useMemo, useState, useCallback } from 'react';
-import * as React from 'react';
+import { ReactNode, useMemo, useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { twMerge } from 'tailwind-merge';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
@@ -71,7 +70,7 @@ export const VirtualTable = <T extends object>({
   const rows = useMemo(() => sortedData.map((item, index) => ({ original: item, id: `${index}` })), [sortedData]);
 
   // Parent ref for virtualizer
-  const parentRef = React.useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
 
   // Create virtualizer
   // eslint-disable-next-line react-hooks/incompatible-library

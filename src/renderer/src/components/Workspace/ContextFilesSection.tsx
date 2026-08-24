@@ -1,5 +1,5 @@
 import { ContextFile, Mode, OS, TokensCost } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 
@@ -26,7 +26,7 @@ type Props = {
   onDropAllFiles: () => void;
   onToggle: () => void;
   onFilePreviewClick?: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   editMode?: boolean;
   isHidden?: boolean;
   onToggleHidden?: () => void;
@@ -93,7 +93,7 @@ export const ContextFilesSection = ({
     expandFolders(contextTreeData, userContextFiles);
   }, [contextTreeData, userContextFiles]);
 
-  const addFile = useCallback((_item: TreeItem) => (_event: React.MouseEvent<HTMLButtonElement>) => {}, []);
+  const addFile = useCallback(() => (): void => {}, []);
 
   const contextActions = useMemo(
     () => (

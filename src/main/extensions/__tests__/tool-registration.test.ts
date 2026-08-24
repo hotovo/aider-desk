@@ -77,7 +77,7 @@ const createValidTool = (overrides: Partial<ToolDefinition> = {}): ToolDefinitio
   inputSchema: z.object({
     input: z.string(),
   }),
-  async execute(args, _signal, _context) {
+  async execute(args) {
     return { content: [{ type: 'text', text: args.input }] };
   },
   ...overrides,
@@ -189,7 +189,7 @@ describe('Tool Registration', () => {
 
     it('should validate execute function', () => {
       const tool = createValidTool({
-        async execute(args, _signal, _context) {
+        async execute(args) {
           return { content: [{ type: 'text', text: args.input }] };
         },
       });

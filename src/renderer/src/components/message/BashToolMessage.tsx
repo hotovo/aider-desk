@@ -203,7 +203,7 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
               {timeout !== undefined && timeout !== null && (
                 <div className="flex items-center gap-2">
                   <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.timeout')}:</div>
-                  <div>{timeout}ms</div>
+                  <div>{`${timeout}ms`}</div>
                 </div>
               )}
               {isFinished && isStandardOutput && content.exitCode !== null && content.exitCode !== undefined && (

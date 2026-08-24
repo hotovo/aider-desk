@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
+import { useState, useRef, useEffect, ReactNode, ClipboardEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
@@ -43,7 +43,7 @@ export const AutocompletionInput = ({
     setSelectedIndex(-1);
   }, [suggestions]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent) => {
     if (!showSuggestions) {
       if (e.key === KeyboardKeys.Enter && onSubmit) {
         e.preventDefault();

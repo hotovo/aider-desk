@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useState } from 'react';
 import { MdAdd, MdExpandLess, MdOutlineChecklist, MdPlaylistRemove } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -51,7 +51,7 @@ export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDe
     setIsAddingTodo(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSaveTodo();
     } else if (e.key === 'Escape') {

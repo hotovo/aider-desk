@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
-import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
@@ -31,25 +31,18 @@ interface CommitGroup {
   deletions: number;
 }
 
-const UpdatedSectionHeader = ({
-  isOpen,
-  title,
-  totalStats,
-  updatedActions,
-  onToggle,
-  editMode,
-  isHidden,
-  onToggleHidden,
-}: {
+type UpdatedSectionHeaderProps = {
   isOpen: boolean;
   title: string;
   totalStats: { additions: number; deletions: number };
-  updatedActions: React.ReactNode;
+  updatedActions: ReactNode;
   onToggle: () => void;
   editMode?: boolean;
   isHidden?: boolean;
   onToggleHidden?: () => void;
-}) => {
+};
+
+const UpdatedSectionHeader = ({ isOpen, title, totalStats, updatedActions, onToggle, editMode, isHidden, onToggleHidden }: UpdatedSectionHeaderProps) => {
   return (
     <div
       className={clsx(
@@ -347,13 +340,13 @@ export const UpdatedFilesSection = ({
   }, []);
 
   const dropFile = useCallback(
-    (_item: TreeItem) => (_e: React.MouseEvent<HTMLButtonElement>) => {
+    () => (_e: MouseEvent<HTMLButtonElement>) => {
       _e.stopPropagation();
     },
     [],
   );
 
-  const addFile = useCallback((_item: TreeItem) => (_event: React.MouseEvent<HTMLButtonElement>) => {}, []);
+  const addFile = useCallback(() => (): void => {}, []);
 
   const updatedActions = useMemo(
     () => (
