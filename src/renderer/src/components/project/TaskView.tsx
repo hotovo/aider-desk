@@ -177,7 +177,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const [terminalVisible, setTerminalVisible] = useState(false);
     const [showTaskInfoPanel, setShowTaskInfoPanel] = useState(false);
     const [showSidebar, setShowSidebar] = useState(isMobile);
-    const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir, task.id);
+    const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir);
     const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${projectDir}-${task.id}`, false);
     const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
 

@@ -7,8 +7,8 @@ const DEFAULT_SIDEBAR_WIDTH = 300;
 const TTL_DAYS = 30;
 const DEBOUNCE_DELAY = 300;
 
-export const useSidebarWidth = (projectBaseDir: string, taskId: string) => {
-  const key = `sidebar-width-${projectBaseDir}-${taskId}`;
+export const useSidebarWidth = (projectBaseDir: string) => {
+  const key = `sidebar-width-${projectBaseDir}`;
 
   const [persistedWidth, setPersistedWidth, isLoading] = useIndexedDB('sidebar-widths', key, DEFAULT_SIDEBAR_WIDTH, {
     ttlDays: TTL_DAYS,
