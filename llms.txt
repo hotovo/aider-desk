@@ -630,6 +630,7 @@ src/
         CommandPaletteContext.tsx
         ContextMenuContext.tsx
         DiffsWorkerPoolContext.tsx
+        DiffViewerContext.tsx
         ExtensionApiContext.tsx
         ExtensionsContext.tsx
         FileEditorContext.tsx
@@ -6803,7 +6804,7 @@ export const loadVertexAIModels = async (profile: ProviderProfile, settings: Set
 ⋮----
 temperature: 0.7, // Default temperature for Vertex AI models
 ⋮----
-export const hasVertexAiEnvVars = (_settings: SettingsData): boolean =>
+export const hasVertexAiEnvVars = (): boolean =>
 ⋮----
 // Vertex AI doesn't have a simple environment variable check like other providers
 // It requires project, location, and potentially credentials
@@ -7557,8 +7558,6 @@ private async prepareInternalTask()
 ⋮----
 public async createNewTask(params?: CreateTaskParams)
 ⋮----
-// Flatten: if the parent is itself a subtask, use its parent instead for parentId
-⋮----
 // when a subtask for non-saved task is created we need to save the parent task first
 ⋮----
 // Allow extensions to modify initial task data before task is created
@@ -7622,7 +7621,17 @@ public async deleteTask(taskId: string): Promise<void>
 ⋮----
 // First, find and delete all subtasks recursively
 ⋮----
+const collectDescendantIds = (parentId: string, visited: Set<string>): string[]
+⋮----
 // Then delete the parent task
+⋮----
+/**
+   * Validates that a task can be assigned the given parent: the parent must exist
+   * and must not be the task itself or one of its descendants (which would create a cycle).
+   */
+public validateParentAssignment(taskId: string, parentId: string): void
+⋮----
+const isDescendantOf = (candidateId: string, ancestorId: string): boolean =>
 ⋮----
 public async duplicateTask(taskId: string): Promise<TaskData>
 ⋮----
@@ -14196,7 +14205,7 @@ async openPath(): Promise<boolean>
 ⋮----
 // Not available in browser context
 ⋮----
-async openUrlInWindow(_url: string, _title?: string): Promise<void>
+async openUrlInWindow(url: string): Promise<void>
 ⋮----
 async openUrlExternally(url: string): Promise<void>
 ⋮----
@@ -14452,7 +14461,7 @@ File: src/renderer/src/components/common/CommandPalette/index.ts
 ================
 File: src/renderer/src/components/common/DiffViewer/CompactDiffViewer.tsx
 ================
-import React, { useMemo, FC } from 'react';
+import { useMemo, type TableHTMLAttributes } from 'react';
 import { diffLines, formatLines } from 'unidiff';
 import { getLanguageFromPath } from '@common/utils';
 import { clsx } from 'clsx';
@@ -14462,18 +14471,14 @@ import { parseDiff, File, Hunk as HunkType, SkipBlock, Line as LineType } from '
 ⋮----
 import { highlightWithRefractor } from '@/utils/highlighter';
 import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
+import { DiffContextProvider, useDiffContext } from '@/contexts/DiffViewerContext';
 ⋮----
-interface DiffContextValue {
-  language: string;
-  fileStatus: File['type'];
-}
-⋮----
-const useDiffContext = () =>
-⋮----
-export interface DiffProps extends React.TableHTMLAttributes<HTMLTableElement>, Pick<File, 'hunks' | 'type'> {
+export interface DiffProps extends TableHTMLAttributes<HTMLTableElement>, Pick<File, 'hunks' | 'type'> {
   fileName?: string;
   language?: string;
 }
+⋮----
+type HunkProps = { hunk: HunkType | SkipBlock };
 ⋮----
 <tr className=
 ⋮----
@@ -14592,11 +14597,7 @@ type Props = {
   viewMode?: DiffViewMode;
 };
 ⋮----
-export const DiffViewer = (
-⋮----
 // eslint-disable-next-line no-console
-⋮----
-Please report an issue in https://github.com/hotovo/aider-desk/issues.
 ⋮----
 // No error, but no diff file (e.g., identical content)
 
@@ -15457,13 +15458,12 @@ File: src/renderer/src/components/common/MermaidDiagram.tsx
 import { useEffect, useId, useState } from 'react';
 import mermaid from 'mermaid';
 import { CgSpinner } from 'react-icons/cg';
+import { useTranslation } from 'react-i18next';
 ⋮----
 type Props = {
   code: string;
   className?: string;
 };
-⋮----
-export const MermaidDiagram = (
 ⋮----
 const renderDiagram = async () =>
 
@@ -15608,7 +15608,7 @@ export const Section = (
 ================
 File: src/renderer/src/components/common/Select.tsx
 ================
-import { ReactNode, useRef, useCallback, useState } from 'react';
+import { KeyboardEvent, ReactNode, useRef, useCallback, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
 import { useTranslation } from 'react-i18next';
@@ -15634,7 +15634,7 @@ type Props = {
   placement?: 'bottom' | 'top';
 };
 ⋮----
-const handleKeyDown = (e: React.KeyboardEvent) =>
+const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
 const handleOptionSelect = (option: Option) =>
 ⋮----
@@ -15669,35 +15669,15 @@ const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
 ================
 File: src/renderer/src/components/common/StyledTooltip.tsx
 ================
-import { ReactNode } from 'react';
-⋮----
-type Props = {
-  id: string;
-
-  content?: ReactNode;
-
-  maxWidth?: number | string;
-};
-⋮----
 /**
- * @deprecated Use the new Tooltip component directly instead
+ * @deprecated Use the new Tooltip component directly instead. This is a no-op shim kept for backwards compatibility.
  */
-export const StyledTooltip = ({
-  id: _id,
-
-  content: _content,
-
-  maxWidth: _maxWidth = '300px',
-}: Props) =>
-⋮----
-// The new Tooltip component doesn't use ids, so this is a no-op
-// The actual tooltip rendering is handled by the components that wrap
-// their elements with <Tooltip content={...}>
+export const StyledTooltip = ()
 
 ================
 File: src/renderer/src/components/common/Table.tsx
 ================
-import React, { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -15847,7 +15827,7 @@ onClick=
 ================
 File: src/renderer/src/components/common/VerticalDotsMenu.tsx
 ================
-import React, { useRef, useState } from 'react';
+import { ReactNode, useRef, useState } from 'react';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { clsx } from 'clsx';
 ⋮----
@@ -15856,7 +15836,7 @@ import { useClickOutside } from '@/hooks/useClickOutside';
 export type MenuOption = {
   label: string;
   action: () => void;
-  icon?: React.ReactNode;
+  icon?: ReactNode;
   disabled?: boolean;
 };
 ⋮----
@@ -15880,8 +15860,7 @@ onClick=
 ================
 File: src/renderer/src/components/common/VirtualTable.tsx
 ================
-import { ReactNode, useMemo, useState, useCallback } from 'react';
-⋮----
+import { ReactNode, useMemo, useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { twMerge } from 'tailwind-merge';
 import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
@@ -16013,6 +15992,7 @@ return <div className=
 File: src/renderer/src/components/extensions/ExtensionUIErrorBoundary.tsx
 ================
 import { Component, ErrorInfo, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 ⋮----
 type Props = {
   extensionId: string;
@@ -16036,6 +16016,11 @@ componentDidCatch(error: Error, errorInfo: ErrorInfo): void
 // eslint-disable-next-line no-console
 ⋮----
 render(): ReactNode
+⋮----
+type ErrorMessageProps = {
+  extensionId: string;
+  componentId: string;
+};
 
 ================
 File: src/renderer/src/components/extensions/FloatingExtensionPanels.tsx
@@ -16056,7 +16041,9 @@ type Props = {
 ================
 File: src/renderer/src/components/extensions/StringToReactComponent.tsx
 ================
-import React, { useRef, useState, useEffect, type FC } from 'react';
+// eslint-disable-next-line no-restricted-imports -- needs the React runtime object itself, injected into sandboxed transpiled user components
+⋮----
+import { type ComponentType, useEffect, useRef, useState } from 'react';
 import { transpileJsxString } from '@common/jsx-transpiler';
 ⋮----
 type SucraseOptions = {
@@ -16073,11 +16060,11 @@ export type StringToReactComponentProps = {
 ⋮----
 const createBlobUrl = (code: string): string =>
 ⋮----
-const loadModule = async (blobUrl: string, react: typeof React): Promise<FC> =>
+const loadModule = async (blobUrl: string, react: typeof React): Promise<ComponentType> =>
 ⋮----
 const module = await import(/* @vite-ignore */ blobUrl);
 ⋮----
-const StringToReactComponent: FC<StringToReactComponentProps> = (
+const StringToReactComponent = (
 ⋮----
 // eslint-disable-next-line react-hooks/refs
 ⋮----
@@ -16151,7 +16138,7 @@ export const useExtensionMessageComponent = (
 ================
 File: src/renderer/src/components/logs/LogsPage.tsx
 ================
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { UIEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SystemLogEntry, SystemLogLevel } from '@common/types';
 import { clsx } from 'clsx';
@@ -17936,7 +17923,7 @@ className=
 ================
 File: src/renderer/src/components/message/utils.tsx
 ================
-import React from 'react';
+import { ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18031,7 +18018,7 @@ export const parseThinkingAnswerFormat = (
   allFiles: string[] = [],
   renderMarkdown = false,
   renderThinking = true,
-): React.ReactNode | null =>
+): ReactNode | null =>
 ⋮----
 // Check for the thinking section first
 ⋮----
@@ -18417,8 +18404,6 @@ type Props = {
   onChange: (updated: CerebrasProvider) => void;
 };
 ⋮----
-export const CerebrasParameters = (
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
@@ -18437,8 +18422,6 @@ type Props = {
   provider: ClinePassProvider;
   onChange: (updated: ClinePassProvider) => void;
 };
-⋮----
-export const ClinePassParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -18650,8 +18633,6 @@ type Props = {
   onChange: (updated: GroqProvider) => void;
 };
 ⋮----
-export const GroqParameters = (
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
@@ -18679,8 +18660,6 @@ type Props = {
   provider: KimiPlanProvider;
   onChange: (updated: KimiPlanProvider) => void;
 };
-⋮----
-export const KimiPlanParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -18742,6 +18721,8 @@ type Props = {
 };
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
 
 ================
 File: src/renderer/src/components/ModelLibrary/providers/MistralParameters.tsx
@@ -18757,8 +18738,6 @@ type Props = {
   provider: MistralProvider;
   onChange: (updated: MistralProvider) => void;
 };
-⋮----
-export const MistralParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -19056,8 +19035,6 @@ type Props = {
   onChange: (updated: OpenCodeGoProvider) => void;
 };
 ⋮----
-export const OpenCodeGoParameters = (
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
@@ -19096,8 +19073,6 @@ type Props = {
   provider: OpenCodeProvider;
   onChange: (updated: OpenCodeProvider) => void;
 };
-⋮----
-export const OpenCodeParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -19176,8 +19151,6 @@ type Props = {
   provider: OpenRouterProvider;
   onChange: (updated: OpenRouterProvider) => void;
 };
-⋮----
-export const OpenRouterParameters = (
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -19318,8 +19291,6 @@ type Props = {
   onChange: (updated: SyntheticProvider) => void;
 };
 ⋮----
-export const SyntheticParameters = (
-⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
@@ -19354,7 +19325,7 @@ label=
 ================
 File: src/renderer/src/components/ModelLibrary/providers/useArrayField.ts
 ================
-import { useState, useEffect } from 'react';
+import { ChangeEvent, useEffect, useState } from 'react';
 import { OpenRouterProvider } from '@common/agent';
 ⋮----
 export const useArrayField = (
@@ -19365,7 +19336,7 @@ export const useArrayField = (
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
 ⋮----
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleBlur = () =>
 
@@ -20159,6 +20130,7 @@ import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { countAllSubtasks } from '@/utils/task-utils';
 ⋮----
 type Props = {
   task: TaskData;
@@ -20658,7 +20630,7 @@ export const FilesContextInfoContent = ({
 ================
 File: src/renderer/src/components/project/MobileSidebar.tsx
 ================
-import React from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { ContextFile, Mode, TaskData } from '@common/types';
@@ -20683,7 +20655,7 @@ type Props = {
   runCommand: (command: string) => void;
   resetTask: () => void;
   mode: Mode;
-  setAddFileDialogOptions: React.Dispatch<React.SetStateAction<AddFileDialogOptions | null>>;
+  setAddFileDialogOptions: Dispatch<SetStateAction<AddFileDialogOptions | null>>;
   task: TaskData;
   updateTask: (taskId: string, updates: Partial<TaskData>) => void;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
@@ -20727,6 +20699,8 @@ import icon from '../../../../../resources/icon.png?asset';
 type Props = {
   onOpenProject: () => void;
 };
+⋮----
+{/* eslint-disable-next-line i18next/no-literal-string -- brand name */}
 
 ================
 File: src/renderer/src/components/project/OpenProjectDialog.tsx
@@ -20989,7 +20963,7 @@ const initProject = async () =>
 File: src/renderer/src/components/project/TaskBar.tsx
 ================
 import { AgentProfile, AIDER_MODES, EditFormat, Mode, Model, ModelsData, RawModelInfo, TaskData } from '@common/types';
-import React, { ReactNode, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { ReactNode, forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { BsCodeSlash, BsFilter, BsLayoutSidebar } from 'react-icons/bs';
 import { CgTerminal } from 'react-icons/cg';
 import { GoProjectRoadmap } from 'react-icons/go';
@@ -21271,7 +21245,7 @@ height=
 ================
 File: src/renderer/src/components/project/TodoListItem.tsx
 ================
-import { useState } from 'react';
+import { KeyboardEvent, useState } from 'react';
 import { clsx } from 'clsx';
 import { MdEdit, MdDelete, MdCheck, MdClose, MdSwapHoriz } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -21296,7 +21270,7 @@ const handleSaveEdit = () =>
 ⋮----
 const handleCancelEdit = () =>
 ⋮----
-const handleKeyPress = (e: React.KeyboardEvent) =>
+const handleKeyPress = (e: KeyboardEvent) =>
 ⋮----
 const handleDelete = () =>
 ⋮----
@@ -21309,7 +21283,7 @@ onChange=
 ================
 File: src/renderer/src/components/project/TodoWindow.tsx
 ================
-import { useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useState } from 'react';
 import { MdAdd, MdExpandLess, MdOutlineChecklist, MdPlaylistRemove } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -21341,7 +21315,7 @@ const handleSaveTodo = () =>
 ⋮----
 const handleCancelAdd = () =>
 ⋮----
-const handleKeyPress = (e: React.KeyboardEvent) =>
+const handleKeyPress = (e: KeyboardEvent) =>
 ⋮----
 // Auto-collapse when all items are completed
 ⋮----
@@ -21879,7 +21853,7 @@ onClose=
 ================
 File: src/renderer/src/components/PromptField/QueuedPromptsList.tsx
 ================
-import { useMemo, useRef, useState } from 'react';
+import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
 import { MdDragIndicator, MdEdit, MdPlaylistRemove, MdSave } from 'react-icons/md';
@@ -21898,13 +21872,20 @@ type QueuedPromptsListProps = {
   onEdit?: (id: string, newText: string) => void;
 };
 ⋮----
+type SortableQueuedPromptItemProps = {
+  prompt: QueuedPromptData;
+  onRemove?: (id: string) => void;
+  onSendNow?: (id: string) => void;
+  onEdit?: (id: string, newText: string) => void;
+};
+⋮----
 const handleStartEdit = () =>
 ⋮----
 const handleSave = () =>
 ⋮----
 const handleCancel = () =>
 ⋮----
-const handleKeyDown = (e: React.KeyboardEvent) =>
+const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
 <Tooltip content=
 ⋮----
@@ -22034,6 +22015,8 @@ type Props = {
   projectDir: string;
   onSelectProject: (projectDir: string) => void;
 };
+⋮----
+{/* eslint-disable-next-line i18next/no-literal-string -- brand name */}
 ⋮----
 className=
 
@@ -22936,10 +22919,6 @@ setSettings({
                   autoCommits: checked,
                 },
               });
-⋮----
-https://aider.chat/docs/config/options.html
-⋮----
-https://aider.chat/docs/config/dotenv.html
 
 ================
 File: src/renderer/src/components/settings/ExtensionCard.tsx
@@ -23740,6 +23719,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
@@ -23790,7 +23770,7 @@ const handleTerminalExit = (data: TerminalExitData) =>
 ⋮----
 // Handle restart on keypress after exit
 ⋮----
-const handleRestartInput = (_data: string) =>
+const handleRestartInput = () =>
 ⋮----
 // Clear terminalId to trigger re-creation via the createTerminal effect
 ⋮----
@@ -23882,7 +23862,9 @@ export const TooltipProvider = ({ children, ...props }: TooltipPrimitive.Tooltip
 );
 ⋮----
 // Simple arrow component using Radix's Arrow primitive
-const Arrow = ({ side = 'top' }: { side?: string }) => (
+type ArrowProps = { side?: string };
+⋮----
+const Arrow = ({ side = 'top' }: ArrowProps) => (
   <TooltipPrimitive.Arrow
     asChild
     width={16}
@@ -24249,7 +24231,7 @@ export const formatDateByGroup = (timestamp: string, groupBy: GroupBy): string =
 ================
 File: src/renderer/src/components/Workspace/CommentsPanel.tsx
 ================
-import { memo, useCallback, useState } from 'react';
+import { ChangeEvent, memo, useCallback, useState } from 'react';
 import { HiPencil, HiTrash } from 'react-icons/hi';
 import { RiMenuUnfold4Line } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
@@ -24296,7 +24278,7 @@ onStartEdit=
 File: src/renderer/src/components/Workspace/ContextFilesSection.tsx
 ================
 import { ContextFile, Mode, OS, TokensCost } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -24323,7 +24305,7 @@ type Props = {
   onDropAllFiles: () => void;
   onToggle: () => void;
   onFilePreviewClick?: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   editMode?: boolean;
   isHidden?: boolean;
   onToggleHidden?: () => void;
@@ -24664,7 +24646,7 @@ const handleMouseDown = (event: MouseEvent<HTMLButtonElement>) =>
 File: src/renderer/src/components/Workspace/ProjectFilesSection.tsx
 ================
 import { ContextFile, OS, TokensCost } from '@common/types';
-import React, { useCallback, useMemo, useState } from 'react';
+import { MouseEvent, useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
@@ -24695,8 +24677,8 @@ type Props = {
   visitedSections: Set<string>;
   refreshAllFiles: (useGit?: boolean) => Promise<void>;
   onToggle: () => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
   editMode?: boolean;
   isHidden?: boolean;
   onToggleHidden?: () => void;
@@ -24738,7 +24720,7 @@ className=
 File: src/renderer/src/components/Workspace/SectionContent.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import React, { useCallback } from 'react';
+import { Dispatch, MouseEvent, ReactNode, SetStateAction, useCallback } from 'react';
 import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -24751,13 +24733,13 @@ type Props = {
   section: SectionType;
   treeData: Record<string, TreeItem>;
   expandedItems: string[];
-  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  setExpandedItems: Dispatch<SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
   fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
-  searchField?: React.ReactNode;
-  emptyContent?: React.ReactNode;
+  searchField?: ReactNode;
+  emptyContent?: ReactNode;
   disabledRuleFiles?: string[];
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
@@ -24765,8 +24747,8 @@ type Props = {
   onAddFileToGit?: (filePath: string) => void;
   addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 ================
@@ -24826,7 +24808,7 @@ onClick=
 File: src/renderer/src/components/Workspace/TreeItemRenderer.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { useCallback, useMemo } from 'react';
+import { MouseEvent, useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
@@ -24863,8 +24845,8 @@ type Props = {
   onAddFileToGit?: (filePath: string) => void;
   addingFilesToGit?: Set<string>;
   onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 ⋮----
 const renderChevron = () =>
@@ -25011,7 +24993,7 @@ isGeneratingMessage
 File: src/renderer/src/components/Workspace/UpdatedFilesSection.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
-import React, { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
@@ -25042,6 +25024,17 @@ interface CommitGroup {
   additions: number;
   deletions: number;
 }
+⋮----
+type UpdatedSectionHeaderProps = {
+  isOpen: boolean;
+  title: string;
+  totalStats: { additions: number; deletions: number };
+  updatedActions: ReactNode;
+  onToggle: () => void;
+  editMode?: boolean;
+  isHidden?: boolean;
+  onToggleHidden?: () => void;
+};
 ⋮----
 className=
 ⋮----
@@ -25114,7 +25107,7 @@ body.theme-light .context-dimmed {
 File: src/renderer/src/components/Workspace/Workspace.tsx
 ================
 import { ContextFile, Mode, TokensCost } from '@common/types';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { DragEvent, Fragment, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocalStorage } from '@reactuses/core';
 import { RiMenuUnfold4Line, RiListSettingsLine } from 'react-icons/ri';
@@ -25143,7 +25136,7 @@ type SortableSectionWrapperProps = {
   id: SectionType;
   editMode: boolean;
   isHidden: boolean;
-  children: React.ReactNode;
+  children: ReactNode;
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -25152,7 +25145,7 @@ type SortableSectionWrapperProps = {
 File: src/renderer/src/components/Workspace/WorkspaceSection.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import React, { Activity } from 'react';
+import { Activity, Dispatch, MouseEvent, ReactNode, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
@@ -25169,14 +25162,14 @@ type Props = {
   totalStats: { additions: number; deletions: number };
   treeData: Record<string, TreeItem>;
   expandedItems: string[];
-  setExpandedItems: React.Dispatch<React.SetStateAction<string[]>>;
+  setExpandedItems: Dispatch<SetStateAction<string[]>>;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
   fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
-  actions?: React.ReactNode;
-  searchField?: React.ReactNode;
-  emptyContent?: React.ReactNode;
+  actions?: ReactNode;
+  searchField?: ReactNode;
+  emptyContent?: ReactNode;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
@@ -25188,8 +25181,8 @@ type Props = {
   onFileDiffClick: (file: UpdatedFile) => void;
   onFilePreviewClick?: (filePath: string) => void;
   onRevertFile: (filePath: string) => void;
-  onDropFile: (item: TreeItem) => (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onAddFile: (item: TreeItem) => (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 ⋮----
 export const WorkspaceSection = ({
@@ -25228,7 +25221,7 @@ className=
 ================
 File: src/renderer/src/components/AutocompletionInput.tsx
 ================
-import { useState, useRef, useEffect, ReactNode, ClipboardEvent } from 'react';
+import { useState, useRef, useEffect, ReactNode, ClipboardEvent, KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createPortal } from 'react-dom';
 import { clsx } from 'clsx';
@@ -25250,7 +25243,7 @@ type Props = {
   onSubmit?: (isMultiSelect?: boolean) => void;
 };
 ⋮----
-const handleKeyDown = (e: React.KeyboardEvent) =>
+const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
 const handleOnPaste = async (e: ClipboardEvent<HTMLInputElement>) =>
 ⋮----
@@ -25436,6 +25429,8 @@ import { HotkeysProvider } from 'react-hotkeys-hook';
 ⋮----
 import { BrowserApi } from '@/api/browser-api';
 ⋮----
+type Props = { children: ReactNode };
+⋮----
 export const useOptionalApi = (): ApplicationAPI | undefined
 ⋮----
 export const useApi = (): ApplicationAPI =>
@@ -25517,6 +25512,22 @@ const workerFactory = ()
 const getDiffsTheme = (theme: Theme | null)
 ⋮----
 const DiffsThemeSync = () =>
+⋮----
+type Props = { children: ReactNode };
+
+================
+File: src/renderer/src/contexts/DiffViewerContext.tsx
+================
+import { createContext, useContext } from 'react';
+⋮----
+import { File } from '@/components/common/DiffViewer/utils';
+⋮----
+type DiffContextValue = {
+  language: string;
+  fileStatus: File['type'];
+};
+⋮----
+export const useDiffContext = () =>
 
 ================
 File: src/renderer/src/contexts/ExtensionApiContext.tsx
@@ -25609,6 +25620,8 @@ type FileEditorContextValue = {
   closeEditor: () => void;
 };
 ⋮----
+type Props = { projectDir: string; children: ReactNode };
+⋮----
 export const useFileEditor = () =>
 
 ================
@@ -25643,7 +25656,7 @@ export const useMcpServers = (): McpServersContextType =>
 ================
 File: src/renderer/src/contexts/ModelProviderContext.tsx
 ================
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, useOptimistic, startTransition } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState, useOptimistic, startTransition } from 'react';
 import { Model, ProviderProfile } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
@@ -25661,6 +25674,8 @@ export type ModelProviderContextType = {
   providersLoading: boolean;
   errors: Record<string, string>;
 };
+⋮----
+type Props = { children: ReactNode };
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -25767,6 +25782,13 @@ export interface TaskContextType {
   refreshContextFiles: (taskId: string) => Promise<void>;
   markTaskActive: (taskId: string) => void;
 }
+⋮----
+type Props = {
+  baseDir: string;
+  tasks: TaskData[];
+  activeTaskId?: string | null;
+  children: ReactNode;
+};
 ⋮----
 export const useTask = (): TaskContextType =>
 
@@ -30404,6 +30426,8 @@ export type VirtualTaskItem = { type: 'header'; id: string; title: string } | { 
 ⋮----
 export const getTaskDir = (task: TaskData): string
 ⋮----
+export const countAllSubtasks = (taskId: string, allTasks: TaskData[]): number
+⋮----
 const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined =>
 ⋮----
 export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<string>, showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
@@ -31081,7 +31105,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.80.0-dev",
+  "version": "0.81.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -31154,8 +31178,11 @@ File: package.json
     "@codemirror/autocomplete": "6.20.0",
     "@codemirror/language": "6.12.2",
     "@codemirror/language-data": "6.5.2",
+    "@codemirror/state": "6.5.4",
+    "@codemirror/view": "6.39.14",
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
+    "@dnd-kit/utilities": "3.2.2",
     "@dotenvx/dotenvx": "1.52.0",
     "@electron-toolkit/preload": "3.0.2",
     "@electron-toolkit/utils": "4.0.0",
@@ -31302,6 +31329,7 @@ File: package.json
     "eslint": "9.39.5",
     "eslint-config-prettier": "9.1.2",
     "eslint-import-resolver-typescript": "3.10.1",
+    "eslint-plugin-i18next": "6.1.5",
     "eslint-plugin-import": "2.32.0",
     "eslint-plugin-prettier": "5.5.5",
     "eslint-plugin-react": "7.37.5",
