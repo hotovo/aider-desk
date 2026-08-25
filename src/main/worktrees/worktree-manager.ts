@@ -88,8 +88,6 @@ export class WorktreeManager {
 
   async createWorktree(projectPath: string, taskId: string, branch?: string, baseBranch = 'HEAD'): Promise<Worktree> {
     return await withLock(`worktree-create-${projectPath}-${taskId}`, async () => {
-      await this.initializeWorktree(projectPath, taskId);
-
       const worktreePath = this.getWorktreePath(projectPath, taskId);
 
       try {
@@ -103,14 +101,23 @@ export class WorktreeManager {
           await execWithShellPath('git init', { cwd: projectPath });
         }
 
-        // 2. Clean up any existing worktree directory first
+        // 2. Clean up stale worktree registrations (e.g. the directory was deleted out-of-band)
         try {
-          await execWithShellPath(`git worktree remove "${worktreePath}" --force`, { cwd: projectPath });
-        } catch {
-          // Ignore cleanup errors
+          await execWithShellPath('git worktree prune', { cwd: projectPath });
+        } catch (error) {
+          logger.warn('Failed to prune stale worktree registrations:', error);
         }
 
-        // 3. Ensure the repository has at least one commit
+        // 3. Clean up any existing worktree before recreating its directory
+        try {
+          await execWithShellPath(`git worktree remove "${worktreePath}" --force`, { cwd: projectPath });
+        } catch (error) {
+          logger.warn(`Failed to remove existing worktree at ${worktreePath}:`, error);
+        }
+
+        await this.initializeWorktree(projectPath, taskId);
+
+        // 4. Ensure the repository has at least one commit
         try {
           await execWithShellPath('git rev-parse HEAD', { cwd: projectPath });
         } catch {
@@ -129,7 +136,7 @@ export class WorktreeManager {
           }
         }
 
-        // 4. Logic for creating the worktree
+        // 5. Logic for creating the worktree
         let baseCommit: string;
         let newBranchName: string;
         const baseRef = baseBranch; // Will be 'HEAD' if not provided
@@ -141,8 +148,9 @@ export class WorktreeManager {
             // Check if it's an actual branch (not just a commit SHA)
             await execWithShellPath(`git show-ref --verify --quiet refs/heads/${branch}`, { cwd: projectPath });
             branchExists = true;
-          } catch {
-            // Branch doesn't exist
+          } catch (error) {
+            // Branch doesn't exist, it will be created from baseRef
+            logger.debug(`Branch ${branch} not found, will create it from ${baseRef}:`, error);
           }
 
           if (branchExists) {
@@ -1310,7 +1318,8 @@ export class WorktreeManager {
       // Find worktree that matches our task's worktree path
       const taskWorktree = worktrees.find((w) => w.path === taskWorktreePath);
 
-      if (taskWorktree) {
+      // A prunable worktree has a missing or invalid directory (stale registration), treat it as absent
+      if (taskWorktree && !taskWorktree.prunable) {
         return taskWorktree;
       }
 
