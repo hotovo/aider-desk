@@ -91,10 +91,12 @@ export class McpManager {
       const initStartTime = Date.now();
       let loadingMessageShown = false;
 
-      const loadingTimeout = setTimeout(() => {
-        loadingMessageShown = true;
-        task.addLogMessage('loading', 'Initializing MCP servers...', false, promptContext);
-      }, 3000);
+      const loadingTimeout =
+        promptContext &&
+        setTimeout(() => {
+          loadingMessageShown = true;
+          task.addLogMessage('loading', 'Initializing MCP servers...', false, promptContext);
+        }, 3000);
 
       try {
         connectors = await this.initMcpConnectors(mcpServers, task.getProjectDir(), task.getTaskDir(), false, profile.enabledServers);
