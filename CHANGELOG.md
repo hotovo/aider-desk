@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added support for nested subtasks
+- improved worktree pruning
 
 ## [0.80.0]
 
