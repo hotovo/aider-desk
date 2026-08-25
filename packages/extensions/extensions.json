@@ -129,6 +129,18 @@
       ]
     },
     {
+      "id": "learn",
+      "name": "Learn",
+      "description": "Adds /learn command that creates reusable skills from any source — directories, URLs, conversation history, or pasted notes",
+      "folder": "learn",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": [
+        "commands",
+        "tools"
+      ]
+    },
+    {
       "id": "legacy-system-prompt",
       "name": "Legacy System Prompt",
       "description": "Restores the verbose pre-optimization system prompt and workflow — ideal for less capable models",
