@@ -208,6 +208,7 @@ export class ExtensionManager {
   private initialized = false;
   private listeners: ExtensionsChangeListener[] = [];
   private extensionMtimes: Map<string, number> = new Map();
+  private readonly startedProjects = new Map<string, Project>();
 
   private libraryLoader: ExtensionLibraryLoader;
 
@@ -364,6 +365,8 @@ export class ExtensionManager {
         logger.warn('[Extensions] Failed to preload available extensions:', error);
       });
     } catch (error) {
+      // Mark as initialized even on failure so dispatchEvent doesn't block forever waiting for init
+      this.initialized = true;
       logger.error(`[Extensions] Extension system initialization failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
@@ -404,6 +407,7 @@ export class ExtensionManager {
     try {
       await instance.onLoad(context);
       this.registry.setInitialized(filePath, true);
+      await this.dispatchDelayedProjectStarted(loaded);
       this.eventManager.sendExtensionUIRefresh({
         projectDir: project?.baseDir,
         extensionId: loaded.id,
@@ -414,6 +418,32 @@ export class ExtensionManager {
       await loaded.disposableStore?.disposeExtension();
       logger.error(`[Extensions] Failed to call onLoad for extension '${metadata.name}${project ? ` for project ${project.baseDir}}` : ''}':`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Delivers onProjectStarted to a freshly (re)initialized extension for projects that are
+   * already running — otherwise lifecycle events dispatched before this extension was
+   * loaded or reloaded would be silently lost.
+   */
+  private async dispatchDelayedProjectStarted(loaded: LoadedExtension): Promise<void> {
+    const { instance, metadata } = loaded;
+    if (typeof instance.onProjectStarted !== 'function' || this.startedProjects.size === 0) {
+      return;
+    }
+
+    // A project-bound extension initialized during Project.start() is not tracked as started yet;
+    // its onProjectStarted arrives via the regular dispatchEvent call right after.
+    const targets = loaded.project ? [loaded.project].filter((p) => this.startedProjects.has(p.baseDir)) : Array.from(this.startedProjects.values());
+
+    for (const target of targets) {
+      try {
+        const context = this.createContext(loaded.id, metadata.name, target);
+        await instance.onProjectStarted({ baseDir: target.baseDir }, context);
+        logger.debug(`[Extensions] Delivered delayed 'onProjectStarted' to '${metadata.name}' for ${target.baseDir}`);
+      } catch (error) {
+        logger.error(`[Extensions] Failed to deliver delayed 'onProjectStarted' to '${metadata.name}' for ${target.baseDir}:`, error);
+      }
     }
   }
 
@@ -2240,6 +2270,15 @@ export class ExtensionManager {
     project: Project,
     task?: Task,
   ): Promise<ExtensionEventMap[K]> {
+    // Wait for initialization so events are never delivered to a partially loaded extension set
+    await this.waitForInit();
+
+    if (eventName === 'onProjectStarted') {
+      this.startedProjects.set(project.baseDir, project);
+    } else if (eventName === 'onProjectStopped') {
+      this.startedProjects.delete(project.baseDir);
+    }
+
     // Get all extensions (global + project-specific)
     const allExtensions = this.registry.getExtensions();
     const enabledExtensions = this.filterEnabledExtensions(allExtensions);

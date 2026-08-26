@@ -876,6 +876,8 @@ describe('ExtensionManager', () => {
     beforeEach(() => {
       mockProject = { baseDir: '/test/project' };
       mockTask = { task: { id: 'task-1', name: 'Test Task' } };
+      // dispatchEvent waits for initialization, which these tests assume completed
+      (manager as any).initialized = true;
     });
 
     it('should dispatch event to all extension handlers', async () => {

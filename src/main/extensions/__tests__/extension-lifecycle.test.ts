@@ -90,6 +90,7 @@ describe('Extension Lifecycle', () => {
       undefined,
       mockDeps.registry,
     );
+    (manager as any).initialized = true;
   });
 
   afterEach(() => {
@@ -694,6 +695,95 @@ describe('Extension Lifecycle', () => {
       await manager.unloadExtension('/test/extension.ts');
 
       expect(order).toEqual(['ext-disposable', 'proj-disposable', 'onUnload']);
+    });
+  });
+
+  describe('Delayed onProjectStarted delivery', () => {
+    beforeEach(() => {
+      vi.spyOn(mockDeps.store, 'getSettings').mockReturnValue({ language: 'en', theme: 'dark' } as SettingsData);
+    });
+
+    const registerExtension = async (extension: Extension, filePath = '/test/extension.ts'): Promise<any> => {
+      const metadata = createMockMetadata();
+      const registry = (manager as any).registry as ExtensionRegistry;
+      await registry.register(extension, metadata, filePath);
+      return registry.getExtension(filePath)!;
+    };
+
+    it('should wait for initialization before dispatching events', async () => {
+      const onProjectStarted = vi.fn();
+      const extension = createMockExtension({ onProjectStarted });
+      const loaded = await registerExtension(extension);
+      await (manager as any).initializeExtension(loaded);
+
+      const project = { baseDir: '/proj' } as Project;
+      (manager as any).initialized = false;
+      const dispatchPromise = manager.dispatchEvent('onProjectStarted', {} as any, project);
+
+      await new Promise((resolve) => setTimeout(resolve, 60));
+      expect(onProjectStarted).not.toHaveBeenCalled();
+
+      (manager as any).initialized = true;
+      await dispatchPromise;
+
+      expect(onProjectStarted).toHaveBeenCalledTimes(1);
+    });
+
+    it('should deliver onProjectStarted to an extension initialized after the project started', async () => {
+      const onProjectStarted = vi.fn();
+      const extension = createMockExtension({ onProjectStarted });
+      const loaded = await registerExtension(extension);
+      const project = { baseDir: '/proj' } as Project;
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project);
+      expect(onProjectStarted).not.toHaveBeenCalled();
+
+      await (manager as any).initializeExtension(loaded);
+
+      expect(onProjectStarted).toHaveBeenCalledTimes(1);
+      expect(onProjectStarted).toHaveBeenCalledWith(expect.objectContaining({ baseDir: '/proj' }), expect.any(ExtensionContextImpl));
+    });
+
+    it('should not double-dispatch onProjectStarted during regular project startup', async () => {
+      const onProjectStarted = vi.fn();
+      const extension = createMockExtension({ onProjectStarted });
+      const loaded = await registerExtension(extension);
+      const project = { baseDir: '/proj' } as Project;
+
+      await (manager as any).initializeExtension(loaded, project);
+      expect(onProjectStarted).not.toHaveBeenCalled();
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project);
+      expect(onProjectStarted).toHaveBeenCalledTimes(1);
+    });
+
+    it('should deliver onProjectStarted for all running projects to a global extension', async () => {
+      const onProjectStarted = vi.fn();
+      const extension = createMockExtension({ onProjectStarted });
+      const loaded = await registerExtension(extension);
+      const project1 = { baseDir: '/proj1' } as Project;
+      const project2 = { baseDir: '/proj2' } as Project;
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project1);
+      await manager.dispatchEvent('onProjectStarted', {} as any, project2);
+
+      await (manager as any).initializeExtension(loaded);
+
+      expect(onProjectStarted).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not deliver onProjectStarted for projects that have been stopped', async () => {
+      const onProjectStarted = vi.fn();
+      const extension = createMockExtension({ onProjectStarted });
+      const loaded = await registerExtension(extension);
+      const project = { baseDir: '/proj' } as Project;
+
+      await manager.dispatchEvent('onProjectStarted', {} as any, project);
+      await manager.dispatchEvent('onProjectStopped', {} as any, project);
+
+      await (manager as any).initializeExtension(loaded);
+
+      expect(onProjectStarted).not.toHaveBeenCalled();
     });
   });
 });

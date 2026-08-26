@@ -8,6 +8,7 @@
 - fixed MCP servers initialization loading message shown without prompt context
 - added /skill: command to activate skills from the prompt field with autocomplete and optional follow-up prompt
 - fixed queued prompts for extension custom agent runs
+- fixed extensions losing project started events on startup race or hot reload, now re-delivered to re-initialized extensions
 
 ## [0.80.0]
 
