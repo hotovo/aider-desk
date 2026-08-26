@@ -559,7 +559,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.5.0',
+    version: '4.5.1',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -716,6 +716,19 @@ export default class CursorSdkExtension implements Extension {
       },
     };
 
+    const abortSignal = event.modelCallSettings?.abortSignal;
+    let activeRun: Run | undefined;
+    let abortListener: (() => void) | undefined;
+    if (abortSignal) {
+      abortListener = () => {
+        if (activeRun?.supports('cancel')) {
+          context.log('Abort requested, cancelling Cursor run', 'info');
+          void activeRun.cancel().catch(() => {});
+        }
+      };
+      abortSignal.addEventListener('abort', abortListener);
+    }
+
     let agent: SDKAgent | undefined;
     const existingAgentId = taskContext.data.metadata?.[AGENT_ID_METADATA_KEY] as string | undefined;
 
@@ -749,9 +762,14 @@ export default class CursorSdkExtension implements Extension {
         onStep: ({ step }: { step: ConversationStep }) => streamProcessor.onStep(step),
       } as SendOptions;
 
+      if (abortSignal?.aborted) {
+        throw new Error('Aborted before the Cursor run started');
+      }
+
       const run = await agent.send(sendMessage, sendOptions);
       context.log(`Cursor run started: ${run.id}`, 'info');
 
+      activeRun = run;
       this.activeRuns.set(taskId, run);
 
       taskContext.addLoadingMessage('Running Cursor agent...');
@@ -792,6 +810,9 @@ export default class CursorSdkExtension implements Extension {
       context.log(`Cursor agent error: ${message}`, 'error');
       taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
     } finally {
+      if (abortSignal && abortListener) {
+        abortSignal.removeEventListener('abort', abortListener);
+      }
       this.activeRuns.delete(taskId);
       taskContext.addLoadingMessage(undefined, true);
 
