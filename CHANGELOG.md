@@ -6,6 +6,7 @@
 - improved worktree pruning
 - workspace sidebar size is now stored on project level instead of task level
 - fixed MCP servers initialization loading message shown without prompt context
+- added /skill: command to activate skills from the prompt field with autocomplete and optional follow-up prompt
 
 ## [0.80.0]
 

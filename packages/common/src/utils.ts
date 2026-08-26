@@ -364,3 +364,14 @@ export const parseCommandArgs = (input: string): string[] => {
 
   return args;
 };
+
+export const SKILL_COMMAND_PREFIX = '/skill:';
+
+export const parseSkillCommand = (prompt: string): { skillName: string; prompt: string } | null => {
+  const match = prompt.match(/^\/skill:(\S+)(?:\s+([\s\S]+))?$/);
+  if (!match) {
+    return null;
+  }
+
+  return { skillName: match[1], prompt: (match[2] ?? '').trim() };
+};

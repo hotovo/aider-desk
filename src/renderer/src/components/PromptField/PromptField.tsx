@@ -2,6 +2,7 @@
 import {
   acceptCompletion,
   autocompletion,
+  type Completion,
   CompletionContext,
   type CompletionResult,
   currentCompletions,
@@ -20,7 +21,7 @@ import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
-import { parseCommandArgs } from '@common/utils';
+import { parseCommandArgs, parseSkillCommand, SKILL_COMMAND_PREFIX } from '@common/utils';
 import { getSubagentId } from '@common/agent';
 
 import { QueuedPromptsList } from './QueuedPromptsList';
@@ -30,6 +31,7 @@ import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
+import { useSkills } from '@/hooks/useSkills';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -235,6 +237,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
     } | null>(null);
     const editorRef = useRef<ReactCodeMirrorRef>(null);
     const [customCommands, extensionCommands] = useCommands(baseDir);
+    const skills = useSkills(baseDir, taskId);
     const api = useApi();
     const { getProfiles } = useAgents();
 
@@ -383,15 +386,38 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
               };
             }
           } else {
+            // Suggest skills after /skill:
+            if (/^\/skill:\S*$/.test(text)) {
+              return {
+                from: 0,
+                options: skills.map((skill) => ({
+                  label: `${SKILL_COMMAND_PREFIX}${skill.name}`,
+                  type: 'keyword',
+                })),
+                validFor: /^\/skill:\S*$/,
+              };
+            }
+
             // Add custom and extension commands to the list
             const allCommands = [...customCommands, ...extensionCommands];
             const customCmds = allCommands.map((cmd) => `/${cmd.name}`);
             return {
               from: 0,
-              options: [...COMMANDS, ...customCmds].map((cmd) => ({
-                label: cmd,
-                type: 'keyword',
-              })),
+              options: [...COMMANDS, SKILL_COMMAND_PREFIX, ...customCmds].map((cmd) => {
+                const option: Completion = { label: cmd, type: 'keyword' };
+
+                // Re-open the completion menu to show skill names right after accepting /skill:
+                if (cmd === SKILL_COMMAND_PREFIX) {
+                  option.apply = (view, completion, from, to) => {
+                    view.dispatch({
+                      changes: { from, to, insert: completion.label },
+                    });
+                    setTimeout(() => startCompletion(view), 1);
+                  };
+                }
+
+                return option;
+              }),
               validFor: /^\/\w*$/,
             };
           }
@@ -402,7 +428,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           options: [...words, ...allFiles].map((w) => ({ label: w, type: 'text' })),
         };
       },
-      [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words, subagentProfiles],
+      [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words, subagentProfiles, skills],
     );
 
     const allHistoryItems = useMemo(
@@ -730,6 +756,23 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       setSavedText(text);
     }, [setSavedText, text]);
 
+    const handleSubmitSkill = useCallback(
+      async (skillCommand: { skillName: string; prompt: string }) => {
+        const activated = await api.activateSkill(baseDir, taskId, skillCommand.skillName);
+        if (!activated) {
+          showErrorNotification(t('promptField.skillNotFound', { skill: skillCommand.skillName }));
+          return;
+        }
+
+        if (skillCommand.prompt) {
+          runPrompt(skillCommand.prompt, pastedImages.length > 0 ? pastedImages : undefined);
+        }
+        prepareForNextPrompt();
+        setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
+      },
+      [api, baseDir, taskId, runPrompt, pastedImages, prepareForNextPrompt, t],
+    );
+
     const handleSubmit = useCallback(() => {
       scrollToBottom?.();
       void stopRecording();
@@ -744,6 +787,12 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             void api.runCustomCommand(baseDir, taskId, cmd, args, mode);
             prepareForNextPrompt();
             setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
+            return;
+          }
+
+          const skillCommand = parseSkillCommand(text);
+          if (skillCommand) {
+            void handleSubmitSkill(skillCommand);
             return;
           }
 
@@ -795,6 +844,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       prepareForNextPrompt,
       pendingCommand,
       handleConfirmCommand,
+      handleSubmitSkill,
       runPrompt,
       runCommand,
       subagentProfiles,
@@ -824,6 +874,18 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             return [command.description, false];
           }
 
+          if (item === SKILL_COMMAND_PREFIX) {
+            return [t('commands.skill'), false];
+          }
+
+          if (item.startsWith(SKILL_COMMAND_PREFIX)) {
+            const skillName = item.slice(SKILL_COMMAND_PREFIX.length);
+            const skill = skills.find((s) => s.name === skillName);
+            if (skill) {
+              return [skill.description, false];
+            }
+          }
+
           if (item === '/init' && AIDER_MODES.includes(mode)) {
             return [t('commands.agentModeOnly'), true];
           }
@@ -833,7 +895,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
 
         return [null, false];
       },
-      [customCommands, extensionCommands, mode, t],
+      [customCommands, extensionCommands, mode, t, skills],
     );
 
     const toggleVoice = useCallback(() => {

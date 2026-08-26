@@ -455,7 +455,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('activate-skill', async (_, baseDir: string, taskId: string, skillName: string) => {
-    await eventsHandler.activateSkill(baseDir, taskId, skillName);
+    return await eventsHandler.activateSkill(baseDir, taskId, skillName);
   });
 
   ipcMain.handle('deactivate-skill', async (_, baseDir: string, taskId: string, skillName: string) => {

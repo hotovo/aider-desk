@@ -1648,6 +1648,7 @@
       "dontAsk": "(D)on't ask again"
     },
     "invalidCommand": "Invalid command",
+    "skillNotFound": "Skill '{{skill}}' not found",
     "stopResponse": "Stop response",
     "sendMessage": "Send message (Enter)",
     "clearChat": "Clear chat",
@@ -1762,7 +1763,8 @@
     "web": "Scrape a webpage and save it to a file. Use /web url [file] with optional [file].",
     "handoff": "Handoff conversation to new task with focus",
     "subtask": "Create a new subtask of the current task and switch to it",
-    "subagent": "Run a prompt in a specific subagent. Use /subagent <subagent-id> <prompt>"
+    "subagent": "Run a prompt in a specific subagent. Use /subagent <subagent-id> <prompt>",
+    "skill": "Activate a skill. Any text after the skill name is used as a prompt"
   },
   "telemetry": {
     "title": "Telemetry Information",

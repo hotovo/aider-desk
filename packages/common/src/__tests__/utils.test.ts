@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { parseCommandArgs } from '../utils';
+import { parseCommandArgs, parseSkillCommand } from '../utils';
 
 describe('parseCommandArgs', () => {
   it('should parse simple space-separated arguments', () => {
@@ -49,5 +49,38 @@ describe('parseCommandArgs', () => {
 
   it('should handle leading and trailing spaces', () => {
     expect(parseCommandArgs('  cmd arg  ')).toEqual(['cmd', 'arg']);
+  });
+});
+
+describe('parseSkillCommand', () => {
+  it('should return null for a prompt without the /skill: prefix', () => {
+    expect(parseSkillCommand('hello world')).toBeNull();
+  });
+
+  it('should return null when skill name is missing', () => {
+    expect(parseSkillCommand('/skill:')).toBeNull();
+    expect(parseSkillCommand('/skill: ')).toBeNull();
+  });
+
+  it('should parse skill name only', () => {
+    expect(parseSkillCommand('/skill:pdf')).toEqual({ skillName: 'pdf', prompt: '' });
+  });
+
+  it('should parse skill name with additional prompt text', () => {
+    expect(parseSkillCommand('/skill:pdf extract tables from the document')).toEqual({
+      skillName: 'pdf',
+      prompt: 'extract tables from the document',
+    });
+  });
+
+  it('should trim additional prompt text', () => {
+    expect(parseSkillCommand('/skill:pdf   extract tables   ')).toEqual({ skillName: 'pdf', prompt: 'extract tables' });
+  });
+
+  it('should support multiline prompt text', () => {
+    expect(parseSkillCommand('/skill:pdf extract\ntables\nfrom document')).toEqual({
+      skillName: 'pdf',
+      prompt: 'extract\ntables\nfrom document',
+    });
   });
 });

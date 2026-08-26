@@ -611,8 +611,13 @@ export class BrowserApi implements ApplicationAPI {
   getSkills(baseDir: string, taskId: string): Promise<SkillDefinition[]> {
     return this.get('/skills', { projectDir: baseDir, taskId });
   }
-  activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
-    return this.post('/skills/activate', { projectDir: baseDir, taskId, skillName });
+  async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<boolean> {
+    const res = await this.post<{ projectDir: string; taskId: string; skillName: string }, { success: boolean }>('/skills/activate', {
+      projectDir: baseDir,
+      taskId,
+      skillName,
+    });
+    return res.success;
   }
   deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
     return this.post('/skills/deactivate', { projectDir: baseDir, taskId, skillName });

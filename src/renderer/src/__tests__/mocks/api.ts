@@ -123,7 +123,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Skills operations
     getSkills: vi.fn((): Promise<never[]> => Promise.resolve([])),
-    activateSkill: vi.fn((): Promise<void> => Promise.resolve()),
+    activateSkill: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     deactivateSkill: vi.fn((): Promise<void> => Promise.resolve()),
 
     // Todo operations

@@ -154,7 +154,7 @@ export interface ApplicationAPI {
 
   // Skills operations
   getSkills: (baseDir: string, taskId: string) => Promise<SkillDefinition[]>;
-  activateSkill: (baseDir: string, taskId: string, skillName: string) => Promise<void>;
+  activateSkill: (baseDir: string, taskId: string, skillName: string) => Promise<boolean>;
   deactivateSkill: (baseDir: string, taskId: string, skillName: string) => Promise<void>;
 
   // Todo operations

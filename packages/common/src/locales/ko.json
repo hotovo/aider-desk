@@ -1618,6 +1618,7 @@
       "dontAsk": "(D)다시 묻지 않기"
     },
     "invalidCommand": "잘못된 명령",
+    "skillNotFound": "'{{skill}}' 스킬을 찾을 수 없습니다",
     "stopResponse": "응답 중지",
     "sendMessage": "메시지 전송 (Enter)",
     "clearChat": "채팅 지우기",
@@ -1731,7 +1732,8 @@
     "undo": "Aider가 수행한 것이라면 마지막 git 커밋 실행 취소",
     "web": "웹 페이지를 스크랩하여 파일에 저장합니다. [file]은 선택 사항이며 /web url [file]과 같이 사용하세요.",
     "handoff": "포커스를 지정하여 대화를 새 작업으로 핸드오프",
-    "subtask": "현재 작업의 새 하위 작업을 만들고 전환"
+    "subtask": "현재 작업의 새 하위 작업을 만들고 전환",
+    "skill": "스킬을 활성화합니다. 스킬 이름 뒤의 텍스트는 프롬프트로 사용됩니다"
   },
   "telemetry": {
     "title": "텔레메트리 정보",

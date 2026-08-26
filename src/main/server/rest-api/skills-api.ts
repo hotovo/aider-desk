@@ -45,8 +45,8 @@ export class SkillsApi extends BaseApi {
         }
 
         const { projectDir, taskId, skillName } = parsed;
-        await this.eventsHandler.activateSkill(projectDir, taskId, skillName);
-        res.status(200).json({ success: true });
+        const success = await this.eventsHandler.activateSkill(projectDir, taskId, skillName);
+        res.status(200).json({ success });
       }),
     );
 

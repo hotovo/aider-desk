@@ -59,6 +59,7 @@ import {
   extractTextContent,
   fileExists,
   parseCommandArgs,
+  parseSkillCommand,
   parseUsageReport,
 } from '@common/utils';
 import {
@@ -884,6 +885,22 @@ export class Task {
       this.queuedPrompts.push(queuedPrompt);
       this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
       return [];
+    }
+
+    const skillCommand = parseSkillCommand(prompt);
+    if (skillCommand) {
+      try {
+        await this.activateSkill(skillCommand.skillName);
+      } catch (error) {
+        logger.error('Failed to activate skill from prompt', { baseDir: this.project.baseDir, taskId: this.taskId, error });
+        this.addLogMessage('error', error instanceof Error ? error.message : String(error));
+        return [];
+      }
+
+      prompt = skillCommand.prompt;
+      if (!prompt) {
+        return [];
+      }
     }
 
     let promptContext: PromptContext = {

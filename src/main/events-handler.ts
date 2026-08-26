@@ -1240,9 +1240,25 @@ export class EventsHandler {
     return (await this.projectManager.getProject(baseDir).getTask(taskId)?.getSkills()) || [];
   }
 
-  async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
-    await this.projectManager.getProject(baseDir).getTask(taskId)?.activateSkill(skillName);
-    void this.projectManager.getProject(baseDir).getTask(taskId)?.sendSkillsUpdated();
+  async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<boolean> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      return false;
+    }
+
+    const skills = await task.getSkills();
+    if (!skills.some((skill) => skill.name === skillName)) {
+      return false;
+    }
+
+    try {
+      await task.activateSkill(skillName);
+      void task.sendSkillsUpdated();
+      return true;
+    } catch (error) {
+      logger.warn(`Failed to activate skill '${skillName}':`, error);
+      return false;
+    }
   }
 
   async deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void> {
