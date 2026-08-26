@@ -11653,17 +11653,17 @@ async createWorktree(projectPath: string, taskId: string, branch?: string, baseB
 ⋮----
 // Initialize git repository
 ⋮----
-// 2. Clean up any existing worktree directory first
+// 2. Clean up stale worktree registrations (e.g. the directory was deleted out-of-band)
 ⋮----
-// Ignore cleanup errors
+// 3. Clean up any existing worktree before recreating its directory
 ⋮----
-// 3. Ensure the repository has at least one commit
+// 4. Ensure the repository has at least one commit
 ⋮----
 // Repository has no commits yet, create initial commit
 ⋮----
 // Ignore add errors (no files to add)
 ⋮----
-// 4. Logic for creating the worktree
+// 5. Logic for creating the worktree
 ⋮----
 const baseRef = baseBranch; // Will be 'HEAD' if not provided
 ⋮----
@@ -11671,7 +11671,7 @@ const baseRef = baseBranch; // Will be 'HEAD' if not provided
 ⋮----
 // Check if it's an actual branch (not just a commit SHA)
 ⋮----
-// Branch doesn't exist
+// Branch doesn't exist, it will be created from baseRef
 ⋮----
 // A1. Use existing branch
 ⋮----
@@ -11941,6 +11941,8 @@ async getOriginBranch(worktreePath: string, branch: string): Promise<string | nu
 async getTaskWorktree(projectPath: string, taskId: string): Promise<Worktree | null>
 ⋮----
 // Find worktree that matches our task's worktree path
+⋮----
+// A prunable worktree has a missing or invalid directory (stale registration), treat it as absent
 ⋮----
 // If no worktree exists for this task, return null
 ⋮----
@@ -21345,7 +21347,7 @@ import { useDebounceFn } from '@reactuses/core';
 ⋮----
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 ⋮----
-export const useSidebarWidth = (projectBaseDir: string, taskId: string) =>
+export const useSidebarWidth = (projectBaseDir: string) =>
 ⋮----
 // Sync immediate width with persisted width when it loads
 ⋮----
