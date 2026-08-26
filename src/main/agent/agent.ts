@@ -618,10 +618,10 @@ export class Agent {
           ...modelCallSettings,
           ...extensionResult.modelCallSettings,
         };
-        // Restore the original abort signal when neither the caller nor the extension provided one,
-        // so the agent loop below manages its own abort controller as usual.
-        if (!abortSignal && !extensionResult.modelCallSettings?.abortSignal) {
-          modelCallSettings.abortSignal = abortSignal;
+        // Reset the injected dispatch signal so the agent loop below creates its own abort
+        // controller as usual, but keep a signal explicitly set by an extension.
+        if (!abortSignal && modelCallSettings.abortSignal === dispatchAbortController.signal) {
+          modelCallSettings.abortSignal = undefined;
         }
       } finally {
         this.abortControllers.delete(dispatchAbortControllerId);
