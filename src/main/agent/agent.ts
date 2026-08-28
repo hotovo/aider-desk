@@ -65,7 +65,6 @@ import {
   isNetworkError,
   readFileContent,
   safeStringifyToolOutput,
-  stripImageParts,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
@@ -907,6 +906,7 @@ export class Agent {
             projectProfiles,
             initialUserRequestMessageIndex,
             this.extensionManager,
+            shouldSendImages,
           );
 
           const extensionResult = await this.extensionManager.dispatchEvent(
@@ -923,7 +923,6 @@ export class Agent {
         };
 
         const optimizedMessages = await getOptimizedMessages();
-        const finalMessages = shouldSendImages ? optimizedMessages : stripImageParts(optimizedMessages);
 
         return {
           providerOptions,
@@ -934,7 +933,7 @@ export class Agent {
             }),
           }),
           instructions: systemPrompt,
-          messages: finalMessages,
+          messages: optimizedMessages,
           tools: toolSet,
           maxOutputTokens: effectiveMaxOutputTokens,
           maxRetries: MAX_RETRIES,

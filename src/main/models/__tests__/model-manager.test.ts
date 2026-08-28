@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
+import { ModelManager } from '../model-manager';
+
 import type { OllamaProvider } from '@common/agent';
 import type { Model, ProviderProfile } from '@common/types';
-
-import { ModelManager } from '../model-manager';
 
 const makeManager = (models: Model[]): ModelManager => {
   const manager = Object.create(ModelManager.prototype) as ModelManager;

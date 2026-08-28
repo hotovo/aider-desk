@@ -4,9 +4,9 @@ import os from 'os';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ModelMessage } from 'ai';
-
 import { BoundedOutputAccumulator, readFileContent, safeJsonStringify, stripImageParts, stringifyWithBudget, truncateToolResult } from '../utils';
+
+import type { ModelMessage } from 'ai';
 
 describe('stripImageParts', () => {
   it('removes image file parts and their intro text, keeping other text', () => {
@@ -31,7 +31,10 @@ describe('stripImageParts', () => {
     const messages: ModelMessage[] = [
       {
         role: 'user',
-        content: [{ type: 'text', text: 'Look' }, { type: 'image', image: 'abc123', mediaType: 'image/png' }],
+        content: [
+          { type: 'text', text: 'Look' },
+          { type: 'image', image: 'abc123', mediaType: 'image/png' },
+        ],
       },
     ];
 
@@ -44,7 +47,10 @@ describe('stripImageParts', () => {
     const messages: ModelMessage[] = [
       {
         role: 'user',
-        content: [{ type: 'text', text: 'Here is content of image file bar.png' }, { type: 'image', image: 'abc123', mediaType: 'image/png' }],
+        content: [
+          { type: 'text', text: 'Here is content of image file bar.png' },
+          { type: 'image', image: 'abc123', mediaType: 'image/png' },
+        ],
       },
     ];
 
@@ -58,7 +64,10 @@ describe('stripImageParts', () => {
   });
 
   it('leaves messages without images unchanged', () => {
-    const messages: ModelMessage[] = [{ role: 'user', content: [{ type: 'text', text: 'hello' }] }, { role: 'assistant', content: 'hi' }];
+    const messages: ModelMessage[] = [
+      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+      { role: 'assistant', content: 'hi' },
+    ];
 
     const result = stripImageParts(messages);
 
@@ -69,13 +78,19 @@ describe('stripImageParts', () => {
     const messages: ModelMessage[] = [
       {
         role: 'user',
-        content: [{ type: 'text', text: 'data' }, { type: 'file', mediaType: 'application/json', data: '{}' }],
+        content: [
+          { type: 'text', text: 'data' },
+          { type: 'file', mediaType: 'application/json', data: '{}' },
+        ],
       },
     ];
 
     const result = stripImageParts(messages);
 
-    expect(result[0].content).toEqual([{ type: 'text', text: 'data' }, { type: 'file', mediaType: 'application/json', data: '{}' }]);
+    expect(result[0].content).toEqual([
+      { type: 'text', text: 'data' },
+      { type: 'file', mediaType: 'application/json', data: '{}' },
+    ]);
   });
 });
 

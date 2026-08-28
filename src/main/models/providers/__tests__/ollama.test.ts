@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { loadOllamaModels } from '../ollama';
+
 import type { OllamaProvider } from '@common/agent';
 import type { ProviderProfile, SettingsData } from '@common/types';
-
-import { loadOllamaModels } from '../ollama';
 
 describe('loadOllamaModels vision capability detection', () => {
   const originalFetch = global.fetch;

@@ -16,7 +16,7 @@ import {
 } from '@common/tools';
 import { extractTextContent } from '@common/utils';
 
-import { convertMcpResultToModelOutput } from './utils';
+import {convertMcpResultToModelOutput, stripImageParts} from './utils';
 
 import logger from '@/logger';
 import { type CacheControl } from '@/models';
@@ -34,6 +34,7 @@ export const optimizeMessages = async (
   projectProfiles: AgentProfile[] = [],
   userRequestMessageIndex: number = -1,
   extensionManager?: ExtensionManager,
+  shouldSendImages: boolean = true,
 ): Promise<ModelMessage[]> => {
   if (messages.length === 0) {
     return [];
@@ -48,6 +49,7 @@ export const optimizeMessages = async (
   optimizedMessages = removeDuplicateToolCalls(optimizedMessages);
   optimizedMessages = optimizeAiderMessages(optimizedMessages);
   optimizedMessages = optimizeSubagentMessages(optimizedMessages);
+  optimizedMessages = shouldSendImages ? optimizedMessages : stripImageParts(optimizedMessages);
 
   logger.debug('Optimized messages:', {
     before: {

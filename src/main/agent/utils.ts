@@ -5,12 +5,13 @@ import { createReadStream, createWriteStream } from 'fs';
 import readline from 'readline';
 import { StringDecoder } from 'string_decoder';
 
-import type { ModelMessage } from 'ai';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
+
+import type { ModelMessage } from 'ai';
 
 /**
  * Zod schema that coerces string values to booleans before validation.
