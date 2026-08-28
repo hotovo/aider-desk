@@ -113,6 +113,12 @@ export enum AutonomyMode {
 
 export const DEFAULT_AUTONOMY_MODE = AutonomyMode.Guided;
 
+export enum TaskExecutionMode {
+  CreateOnly = 'create_only',
+  WaitForFinish = 'wait_for_finish',
+  RunInBackground = 'run_in_background',
+}
+
 export interface AiderRunOptions {
   autoApprove?: boolean;
   denyCommands?: boolean;
