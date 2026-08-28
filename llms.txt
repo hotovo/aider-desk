@@ -685,6 +685,7 @@ src/
         useResponsive.ts
         useScrollingPaused.ts
         useSearchText.tsx
+        useSkills.ts
         useTaskActions.ts
         useTaskCommandHandlers.ts
         useTaskDataHandlers.ts
@@ -2469,6 +2470,14 @@ async runAgent(
     images?: string[],
     skillsToActivate?: string[],
 ): Promise<ContextMessage[]>
+⋮----
+// Register an abort controller for the duration of the onAgentStarted dispatch so that
+// agent runs driven by extensions (which return blocked: true) are visible via isRunning().
+// This way Task.isPromptRunning() reports busy while such a run is in progress and
+// prompts sent during it get queued instead of starting a concurrent run.
+⋮----
+// Reset the injected dispatch signal so the agent loop below creates its own abort
+// controller as usual, but keep a signal explicitly set by an extension.
 ⋮----
 // Activate skills after the user message is persisted to context so the
 // agent sees: [history -> user message -> skill activation] and doesn't
@@ -4558,6 +4567,8 @@ async init(): Promise<void>
 ⋮----
 // Preload available extensions from repositories in background
 ⋮----
+// Mark as initialized even on failure so dispatchEvent doesn't block forever waiting for init
+⋮----
 /**
    * Preload available extensions from configured repositories.
    * This warms the fetcher cache so Settings page loads instantly.
@@ -4565,6 +4576,16 @@ async init(): Promise<void>
 private async preloadAvailableExtensions(): Promise<void>
 ⋮----
 private async initializeExtension(loaded: LoadedExtension, project?: Project): Promise<boolean>
+⋮----
+/**
+   * Delivers onProjectStarted to a freshly (re)initialized extension for projects that are
+   * already running — otherwise lifecycle events dispatched before this extension was
+   * loaded or reloaded would be silently lost.
+   */
+private async dispatchDelayedProjectStarted(loaded: LoadedExtension): Promise<void>
+⋮----
+// A project-bound extension initialized during Project.start() is not tracked as started yet;
+// its onProjectStarted arrives via the regular dispatchEvent call right after.
 ⋮----
 /**
    * Loads, registers, and initializes an extension from a file path.
@@ -4828,6 +4849,8 @@ async dispatchEvent<K extends keyof ExtensionEventMap>(
     project: Project,
     task?: Task,
 ): Promise<ExtensionEventMap[K]>
+⋮----
+// Wait for initialization so events are never delivered to a partially loaded extension set
 ⋮----
 // Get all extensions (global + project-specific)
 ⋮----
@@ -9673,6 +9696,7 @@ import {
   extractTextContent,
   fileExists,
   parseCommandArgs,
+  parseSkillCommand,
   parseUsageReport,
 } from '@common/utils';
 import {
@@ -12691,7 +12715,7 @@ async initProjectRulesFile(baseDir: string, taskId: string, args?: string): Prom
 ⋮----
 async getSkills(baseDir: string, taskId: string)
 ⋮----
-async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
+async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<boolean>
 ⋮----
 async deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
 ⋮----
@@ -14001,7 +14025,7 @@ async pasteImage(baseDir: string, taskId: string, imageBuffer?: ArrayBuffer): Pr
 scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void>
 initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void>
 getSkills(baseDir: string, taskId: string): Promise<SkillDefinition[]>
-activateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
+async activateSkill(baseDir: string, taskId: string, skillName: string): Promise<boolean>
 deactivateSkill(baseDir: string, taskId: string, skillName: string): Promise<void>
 getTodos(baseDir: string, taskId: string): Promise<TodoItem[]>
 addTodo(baseDir: string, taskId: string, name: string): Promise<TodoItem[]>
@@ -21711,6 +21735,7 @@ File: src/renderer/src/components/PromptField/PromptField.tsx
 import {
   acceptCompletion,
   autocompletion,
+  type Completion,
   CompletionContext,
   type CompletionResult,
   currentCompletions,
@@ -21729,7 +21754,7 @@ import { BiSend } from 'react-icons/bi';
 import { MdSave, MdStop, MdMic, MdMicOff, MdOutlineScheduleSend } from 'react-icons/md';
 import { AiOutlineClose } from 'react-icons/ai';
 import { clsx } from 'clsx';
-import { parseCommandArgs } from '@common/utils';
+import { parseCommandArgs, parseSkillCommand, SKILL_COMMAND_PREFIX } from '@common/utils';
 import { getSubagentId } from '@common/agent';
 ⋮----
 import { QueuedPromptsList } from './QueuedPromptsList';
@@ -21739,6 +21764,7 @@ import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
 import { showErrorNotification } from '@/utils/notifications';
 import { useCommands } from '@/hooks/useCommands';
+import { useSkills } from '@/hooks/useSkills';
 import { useApi } from '@/contexts/ApiContext';
 import { useAgents } from '@/contexts/AgentsContext';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -21815,7 +21841,11 @@ type Props = {
 ⋮----
 // Handle command suggestions
 ⋮----
+// Suggest skills after /skill:
+⋮----
 // Add custom and extension commands to the list
+⋮----
+// Re-open the completion menu to show skill names right after accepting /skill:
 ⋮----
 // Ensure cursor is at the end after setting text
 ⋮----
@@ -26233,6 +26263,20 @@ navigateToElement(0); // Navigate to the first result
 // eslint-disable-next-line
 ⋮----
 <div className=
+
+================
+File: src/renderer/src/hooks/useSkills.ts
+================
+import { SkillDefinition } from '@common/types';
+import { useEffect, useState } from 'react';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+export const useSkills = (baseDir: string, taskId?: string) =>
+⋮----
+// Load initial skills
+⋮----
+// Listen for skills updates
 
 ================
 File: src/renderer/src/hooks/useTaskActions.ts
