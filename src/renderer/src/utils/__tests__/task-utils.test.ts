@@ -107,6 +107,29 @@ describe('task-utils', () => {
       expect(sorted.map((t) => t.id)).toEqual(['3', '4', '1', '2']);
     });
 
+    it('should hide subtasks of archived parent when showArchived is false', () => {
+      const tasks: Partial<TaskData>[] = [
+        { id: '1', name: 'Archived Parent', updatedAt: '2026-01-14T10:00:00Z', pinned: false, parentId: null, archived: true },
+        { id: '2', name: 'Subtask of Archived Parent', updatedAt: '2026-01-14T10:05:00Z', pinned: false, parentId: '1', archived: false },
+        { id: '3', name: 'Active Parent', updatedAt: '2026-01-14T09:00:00Z', pinned: false, parentId: null, archived: false },
+        { id: '4', name: 'Subtask of Active Parent', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: '3', archived: false },
+      ];
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], allStates, false);
+      expect(sorted.map((t) => t.id)).toEqual(['3', '4']);
+    });
+
+    it('should hide nested subtasks of archived ancestor at any depth when showArchived is false', () => {
+      const tasks: Partial<TaskData>[] = [
+        { id: '1', name: 'Archived Grandparent', updatedAt: '2026-01-14T10:00:00Z', pinned: false, parentId: null, archived: true },
+        { id: '2', name: 'Subtask', updatedAt: '2026-01-14T10:05:00Z', pinned: false, parentId: '1', archived: false },
+        { id: '3', name: 'Sub-subtask', updatedAt: '2026-01-14T10:10:00Z', pinned: false, parentId: '2', archived: false },
+        { id: '4', name: 'Sub-sub-subtask', updatedAt: '2026-01-14T10:15:00Z', pinned: false, parentId: '3', archived: false },
+        { id: '5', name: 'Active Parent', updatedAt: '2026-01-14T09:00:00Z', pinned: false, parentId: null, archived: false },
+      ];
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], allStates, false);
+      expect(sorted.map((t) => t.id)).toEqual(['5']);
+    });
+
     it('should show archived subtasks of active parent when showArchived is true', () => {
       const tasks: Partial<TaskData>[] = [
         { id: '1', name: 'Active Parent', updatedAt: '2026-01-14T09:00:00Z', pinned: false, parentId: null, archived: false },
