@@ -292,7 +292,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
           case 'git ls-tree -r --name-only stash@{0}^3':
             return { stdout: 'file.cs\n', stderr: '' };
           case 'git ls-files --error-unmatch "file.cs"':
-            throw new Error(`"error: pathspec \'file.cs\' did not match any file(s) known to git"`);
+            throw new Error("error: pathspec 'file.cs' did not match any file(s) known to git");
           case 'git hash-object "file.cs"':
             return { stdout: 'hash123\n', stderr: '' };
           case 'git rev-parse "stash@{0}^3:file.cs"':
@@ -321,7 +321,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
           case 'git ls-tree -r --name-only stash@{0}^3':
             return { stdout: 'file.cs\n', stderr: '' };
           case 'git ls-files --error-unmatch "file.cs"':
-            throw new Error(`"error: pathspec \'file.cs\' did not match any file(s) known to git"`);
+            throw new Error("error: pathspec 'file.cs' did not match any file(s) known to git");
           case 'git hash-object "file.cs"':
             return { stdout: 'hashOnDisk\n', stderr: '' };
           case 'git rev-parse "stash@{0}^3:file.cs"':

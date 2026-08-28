@@ -933,7 +933,7 @@ export class WorktreeManager {
       // would block our own rebase and must not be aborted by this operation
       const { inProgress: rebaseInProgress } = await this.getRebaseState(worktreePath);
       if (rebaseInProgress) {
-        const gitError = new GitError(`Cannot squash merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.`);
+        const gitError = new GitError('Cannot squash merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.');
         gitError.gitCommands = executedCommands;
         gitError.workingDirectory = worktreePath;
         gitError.projectPath = projectPath;
@@ -1092,7 +1092,7 @@ export class WorktreeManager {
       // would block our own rebase and must not be aborted by this operation
       const { inProgress: rebaseInProgress } = await this.getRebaseState(worktreePath);
       if (rebaseInProgress) {
-        const gitError = new GitError(`Cannot merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.`);
+        const gitError = new GitError('Cannot merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.');
         gitError.gitCommands = executedCommands;
         gitError.workingDirectory = worktreePath;
         gitError.projectPath = projectPath;
