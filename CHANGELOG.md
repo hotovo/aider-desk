@@ -9,6 +9,11 @@
 - added /skill: command to activate skills from the prompt field with autocomplete and optional follow-up prompt
 - fixed queued prompts for extension custom agent runs
 - fixed extensions losing project started events on startup race or hot reload, now re-delivered to re-initialized extensions
+- added loading indicators for workspace sections
+- updated task creation tool with more clear create only, wait for finish, and run in background modes
+- added highlighted background for task sidebar filter and search icons when active
+- fixed agent loop silently re-sending the same prompt when step processing failed
+- fixed usage reports failing when provider models failed to load
 
 ## [0.80.0]
 

@@ -7,6 +7,8 @@ sidebar_label: "Providers"
 
 AiderDesk supports multiple Large Language Model (LLM) providers to power your AI coding assistant. You can configure these providers in the **Model Library** (accessible via the top bar icon). Each provider has specific configuration requirements, and most support environment variables for secure credential management.
 
+![Provider configuration with API keys](../images/provider-api-key.gif)
+
 ## Table of Contents
 
 - [Alibaba Plan](#alibaba-plan)
@@ -17,6 +19,7 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [Bedrock](#bedrock)
 - [Cerebras](#cerebras)
 - [Claude Agent SDK (Extension)](#claude-agent-sdk)
+- [Cline Pass](#cline-pass)
 - [Deepseek](#deepseek)
 - [Gemini](#gemini)
 - [GPUStack](#gpustack)
@@ -26,10 +29,12 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 - [LM Studio](#lm-studio)
 - [Minimax](#minimax)
 - [Mistral](#mistral)
+- [Neuralwatt](#neuralwatt)
 - [Ollama](#ollama)
 - [OpenAI](#openai)
 - [OpenAI Compatible](#openai-compatible)
 - [OpenCode](#opencode)
+- [OpenCode Go](#opencode-go)
 - [OpenRouter](#openrouter)
 - [Requesty](#requesty)
 - [Synthetic](#synthetic)
@@ -90,6 +95,7 @@ Use any Anthropic-compatible API endpoint (e.g., third-party proxies, self-hoste
   - Environment variable: `ANTHROPIC_API_KEY`
 - **Base URL**: The base URL of the Anthropic-compatible API endpoint
   - Environment variable: `ANTHROPIC_API_BASE`
+- **TLS Certificates**: Custom TLS certificate settings for endpoints that use self-signed or private CA certificates
 
 ### Setup
 
@@ -165,7 +171,7 @@ Azure OpenAI provides enterprise-grade AI models with enhanced security, complia
 
 ### Important Notes
 
-- **Custom Models Required**: Azure models are not automatically discovered. You need to add custom models manually through the [Model Library](../features/model-library.md)
+- **Custom Models Required**: Azure models are not automatically discovered. You need to add custom models manually through the [Model Library](../core/model-library.md)
 - **Resource Name Format**: Use only the resource name (e.g., `my-openai-resource`), not the full endpoint URL
 - **Regional Deployment**: Models are deployed to specific Azure regions, ensure your resource is in the desired region
 - **Reasoning Models**: For reasoning models (like o1-series), you must configure the reasoning effort in the Model Library:
@@ -463,9 +469,33 @@ This provider **only works in Agent mode**:
 
 ---
 
+## Cline Pass
+
+ClinePass provides access to Cline's hosted models through an OpenAI-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your ClinePass API key
+  - Environment variable: `CLINE_API_KEY`
+- **Models**: Discovered automatically from the API after the key is provided
+
+### Setup
+
+1. Get an API key at [app.cline.bot](https://app.cline.bot)
+2. Open the **Model Library**, add a **Cline Pass** profile, and paste your API key
+3. Select a model from the discovered list
+
+### Important Notes
+
+- **Aider Integration**: When used with Aider, models are exposed via the `openai/cline-pass/` prefix with the required environment variables set automatically
+
+---
+
 ## OpenAI Compatible
 
 Configure any OpenAI-compatible API endpoint to use custom models or self-hosted solutions.
+
+![TLS certificate settings for compatible provider endpoints](../images/provider-tls-settings.png)
 
 ### Configuration Parameters
 
@@ -473,6 +503,7 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
   - Environment variable: `OPENAI_API_BASE`
 - **API Key**: Your API key for the compatible service
   - Environment variable: `OPENAI_API_KEY`
+- **TLS Certificates**: Custom TLS certificate settings for endpoints that use self-signed or private CA certificates
 - **Models**: List of available models (comma-separated)
 
 ### Setup
@@ -485,7 +516,7 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
 ### Important Notes
 
 - **Unified Prefix**: Both Agent and Aider modes use the same `openai-compatible/` prefix
-- **Model Library**: Use the [Model Library](../features/model-library.md) for advanced configuration and custom model management
+- **Model Library**: Use the [Model Library](../core/model-library.md) for advanced configuration and custom model management
 - **API Compatibility**: Configure all settings in the Model Library for unified experience across all modes
 
 ---
@@ -509,6 +540,29 @@ OpenCode ZEN provides access to multiple provider models (OpenAI, Anthropic, Gem
 
 - **Multi-Provider**: Automatically routes to the correct SDK (OpenAI, Anthropic, Gemini) based on model name
 - **Available Models**: Includes models from multiple providers (e.g., `gpt-5`, `claude-sonnet-4-5`, `gemini-2.5-pro`)
+- **Aider Prefix**: Uses `openai/` prefix for Aider mode
+
+---
+
+## OpenCode Go
+
+OpenCode Go provides access to OpenCode's Go plan through an OpenAI-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your OpenCode Go API key
+  - Environment variable: `OPENCODE_GO_API_KEY`
+- **Models**: Discovered automatically from the API after the key is provided
+
+### Setup
+
+1. Get an API key from [OpenCode](https://opencode.ai/docs/go)
+2. Enter the API key in the Model Library OpenCode Go configuration
+3. Or set the `OPENCODE_GO_API_KEY` environment variable
+
+### Important Notes
+
+- **Multi-Provider**: Automatically routes to the correct SDK based on model name
 - **Aider Prefix**: Uses `openai/` prefix for Aider mode
 
 ---
@@ -622,6 +676,29 @@ Mistral AI provides powerful open and commercial models optimized for a variety 
 
 ---
 
+## Neuralwatt
+
+Neuralwatt provides hosted models through an OpenAI-compatible API.
+
+### Configuration Parameters
+
+- **API Key**: Your Neuralwatt API key
+  - Environment variable: `NEURALWATT_API_KEY`
+- **Reasoning Effort**: Default reasoning effort applied to supported models (`max`, `xhigh`, `high`, `medium`, `low`, `minimal`, `none`)
+- **Models**: Discovered automatically from the API after the key is provided
+
+### Setup
+
+1. Get an API key at the [Neuralwatt portal](https://portal.neuralwatt.com)
+2. Open the **Model Library**, add a **Neuralwatt** profile, and paste your API key
+3. Select a model from the discovered list and optionally adjust reasoning effort
+
+### Important Notes
+
+- **Aider Integration**: When used with Aider, models are exposed via the `openai/` prefix with the required environment variables set automatically
+
+---
+
 ## OpenRouter
 
 OpenRouter provides access to multiple models from various providers through a single API.
@@ -684,7 +761,7 @@ Requesty provides optimized model routing and caching for improved performance a
 ### Important Notes
 
 - **Unified Prefix**: Both Agent and Aider modes use the same `requesty/` prefix
-- **Model Library**: Use the [Model Library](../features/model-library.md) for advanced configuration and custom model management
+- **Model Library**: Use the [Model Library](../core/model-library.md) for advanced configuration and custom model management
 - **API Compatibility**: Configure all settings in the Providers section for unified experience across all modes
 
 ---
@@ -743,7 +820,7 @@ The **Model Library** provides advanced provider and model management capabiliti
 - **Model Management**: Hide irrelevant models, organize by provider profiles
 - **Advanced Configuration**: Configure multiple OpenAI-compatible providers with different prefixes
 
-For comprehensive provider and model management, see [Model Library](../features/model-library.md).
+For comprehensive provider and model management, see [Model Library](../core/model-library.md).
 
 ## Unified Model Prefix System
 
@@ -759,7 +836,9 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 | Azure | `azure/` |
 | Bedrock | `bedrock/` |
 | Cerebras | `cerebras/` |
+| Cline Pass | `openai/cline-pass/` |
 | Deepseek | `deepseek/` |
+| Neuralwatt | `openai/` |
 | Gemini | `gemini/` |
 | GPUStack | `openai/` |
 | Groq | `groq/` |
@@ -771,6 +850,7 @@ AiderDesk now uses a unified model prefix system across all modes (Agent, Code, 
 | Ollama | `ollama/` |
 | OpenAI Compatible | `openai-compatible/` |
 | OpenCode ZEN | `opencode/` |
+| OpenCode Go | `openai/` |
 | OpenRouter | `openrouter/` |
 | Requesty | `requesty/` |
 | Synthetic | `openai/` |

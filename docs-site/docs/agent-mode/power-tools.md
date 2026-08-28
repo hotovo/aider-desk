@@ -11,7 +11,7 @@ Power tools are a collection of specialized AI tools that provide direct file sy
 
 - **Direct file operations** - Read, write, and edit files without full Aider context management
 - **Advanced search capabilities** - Semantic search, pattern matching, and content discovery
-- **System integration** - Execute shell commands and delegate tasks to sub-agents
+- **System integration** - Execute shell commands and fetch web content
 - **Performance optimization** - Faster operations for simple file tasks
 
 Unlike Aider tools that manage the full codebase context, power tools offer immediate, targeted operations that are perfect for quick file modifications, content searches, and system interactions.
@@ -32,7 +32,7 @@ Once enabled, power tools are automatically available to the AI agent. You can:
 - Ask the agent to search for specific code patterns
 - Request file modifications or new file creation
 - Have the agent execute system commands (with approval)
-- Delegate complex analysis tasks to sub-agents
+- Fetch documentation or web pages for reference
 
 ## Available Power Tools
 
@@ -138,10 +138,10 @@ Searches file content using regular expressions with context.
 Executes shell commands with safety controls.
 
 **Features:**
-- Configurable timeout (default: 60 seconds)
+- Configurable timeout (default: 120 seconds)
 - Custom working directory
-- Structured output (stdout, stderr, exit code)
-- User approval required for safety
+- Optional allowed/denied command patterns to auto-approve or block matching commands
+- User approval required for safety (unless a pattern or tool approval matches)
 
 **Use cases:**
 - Running build scripts
@@ -152,23 +152,22 @@ Executes shell commands with safety controls.
 **Example request:**
 > "Run the test suite to check if my changes break anything"
 
-#### `power---agent`
-Delegates complex tasks to specialized sub-agents with limited context.
+#### `power---fetch`
+Fetches and returns the content of a web page from a specified URL.
 
 **Features:**
-- Cost-optimized with reduced capabilities
-- Stateless operation (single response)
-- Limited file context for focused work
-- Cannot spawn nested sub-agents
+- Returns content as **markdown** (default), raw **HTML**, or **raw** HTTP output
+- Useful for documentation, API responses, and files like GitHub raw content
 
 **Use cases:**
-- Analyzing specific files or components
-- Implementing focused features
-- Performing targeted refactoring
-- Code reviews and documentation
+- Retrieving library or framework documentation
+- Inspecting web APIs or configuration endpoints
+- Downloading reference material for the task at hand
 
 **Example request:**
-> "Analyze the authentication module and suggest improvements"
+> "Fetch the Express routing docs and summarize middleware usage"
+
+Note: Delegating work to specialized sub-agents is handled by the separate *Subagents* tool group — see [Subagents](subagents.md).
 
 ## Configuration
 
@@ -178,15 +177,17 @@ Access power tool settings through **Settings > Agent**:
 
 - **Use Power Tools** - Master toggle for all power tools
 - **Tool Approvals** - Individual approval settings for each tool
-- **Auto Approve** - Skip all approval dialogs (use with caution)
+- **Bash Patterns** - Optional allowed/denied command patterns (regular expressions separated by `;`) that auto-approve or block matching bash commands without a prompt
 
 ### Tool Approval States
 
 Each power tool can have different approval settings:
 
-- **Ask** (default) - Prompt for approval each time
-- **Always** - Auto-approve without prompting
+- **Ask** - Prompt for approval each time
+- **Always** - Auto-approve without prompting (the default for safe read-only tools like `file_read`, `glob`, `grep`, and `semantic_search`)
 - **Never** - Disable the tool completely
+
+Keep in mind that overall behavior also depends on the task's [autonomy mode](agent-mode.md#autonomy-modes): in Manual mode every tool call asks for approval, while Guided and Autonomous modes skip prompts according to the per-tool settings.
 
 ### Recommended Settings
 
@@ -214,8 +215,8 @@ Each power tool can have different approval settings:
    - Use `file_read` to examine matches
 
 3. **Complex Tasks:**
-   - Use `power---agent` for isolated analysis
-   - Provide specific file context for focused work
+   - Combine search tools with targeted `file_read` calls
+   - Delegate isolated analysis to a [subagent](subagents.md) via its separate tool group
    - Use for tasks that don't need full project context
 
 ### Performance Tips
@@ -251,6 +252,8 @@ When prompted for approval, you can choose:
 - **No** - Deny this operation
 - **Always** - Auto-approve this tool for all future uses
 - **Always for This Run** - Auto-approve for the current task
+
+![Power tool approval request in chat](../images/am-tool-approval-prompt.png)
 
 ### Security Best Practices
 

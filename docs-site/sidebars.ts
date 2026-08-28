@@ -1,53 +1,33 @@
 import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 
-// This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
-
-/**
- * Creating a sidebar enables you to:
- - create an ordered group of docs
- - render a sidebar for each doc of that group
- - provide next/previous navigation
-
- The sidebars can be generated from the filesystem, or explicitly defined here.
-
- Create as many sidebars as you want.
- */
 const sidebars: SidebarsConfig = {
-  // By default, Docusaurus generates a sidebar from the docs folder structure
   docsSidebar: [
-    "intro",
+    "index",
     {
       type: "category",
       label: "Getting Started",
       collapsed: false,
       items: [
-        "getting-started/onboarding-process",
-        "getting-started/project-management",
+        "getting-started/installation",
+        "getting-started/first-launch",
+        "getting-started/quick-start",
+        "getting-started/managing-projects",
+        "getting-started/development",
       ],
     },
     {
       type: "category",
-      label: "Features",
-      collapsed: true,
+      label: "Core Workflow",
+      collapsed: false,
       items: [
-        "features/chat-modes",
-        "features/model-library",
-        "features/commands-reference",
-        "features/ide-integration",
-        "features/reviewing-code-changes",
-        "features/updated-files",
-        "features/tasks",
-        "features/git-worktrees",
-        "features/custom-commands",
-        "features/memory",
-        "features/skills",
-        "features/web-scraping",
-        "features/voice-control",
-        "features/handoff",
-        "features/compact",
-        "features/usage-dashboard",
-        "features/aider-mcp-server",
-        "features/readonly-view",
+        "core/chat-modes",
+        "core/context-files",
+        "core/model-library",
+        "core/commands",
+        "core/reviewing-changes",
+        "core/handoff-and-compaction",
+        "core/command-palette",
+        "core/terminal-and-editor",
       ],
     },
     {
@@ -55,30 +35,73 @@ const sidebars: SidebarsConfig = {
       label: "Agent Mode",
       collapsed: true,
       items: [
-        "agent-mode/agent-mode",
-        "agent-mode/how-to-use",
-        "agent-mode/agent-profiles",
-        "agent-mode/subagents",
-        "agent-mode/aider-tools",
-        "agent-mode/power-tools",
-        "agent-mode/task-tools",
-        "agent-mode/mcp-servers",
-        "agent-mode/init",
-        "agent-mode/task-management",
+        {
+          type: "category",
+          label: "Fundamentals",
+          collapsed: true,
+          items: [
+            "agent-mode/agent-mode",
+            "agent-mode/how-to-use",
+            "agent-mode/managing-tasks",
+            "agent-mode/init",
+          ],
+        },
+        {
+          type: "category",
+          label: "Customization",
+          collapsed: true,
+          items: [
+            "agent-mode/agent-profiles",
+            "agent-mode/subagents",
+          ],
+        },
+        {
+          type: "category",
+          label: "Tools",
+          collapsed: true,
+          items: [
+            "agent-mode/aider-tools",
+            "agent-mode/power-tools",
+            "agent-mode/task-tools",
+            "agent-mode/task-management",
+            "agent-mode/memory",
+            "agent-mode/skills",
+            "agent-mode/mcp-servers",
+          ],
+        },
       ],
     },
     {
       type: "category",
       label: "Extensions",
-      collapsed: true,
+      collapsed: false,
       items: [
         "extensions/index",
-        "extensions/creating-extensions",
-        "extensions/installation",
-        "extensions/api-reference",
-        "extensions/events",
-        "extensions/event-flow",
         "extensions/extensions-gallery",
+        "extensions/installation",
+        {
+          type: "category",
+          label: "Developing Extensions",
+          collapsed: true,
+          items: [
+            "extensions/creating-extensions",
+            "extensions/event-flow",
+            "extensions/events",
+            "extensions/api-reference",
+          ],
+        },
+      ],
+    },
+    {
+      type: "category",
+      label: "Features",
+      collapsed: true,
+      items: [
+        "features/git-worktrees",
+        "features/updated-files",
+        "features/usage-dashboard",
+        "features/web-scraping",
+        "features/voice-control",
       ],
     },
     {
@@ -98,12 +121,16 @@ const sidebars: SidebarsConfig = {
     },
     {
       type: "category",
-      label: "API & Integration",
+      label: "Integrations",
       collapsed: true,
       items: [
-        "features/rest-api",
-        "features/socketio-events",
-        "features/browser-api",
+        "integrations/ide-integration",
+        "integrations/rest-api",
+        "integrations/socketio-events",
+        "integrations/browser-api",
+        "integrations/aider-mcp-server",
+        "integrations/readonly-view",
+        "integrations/acp",
       ],
     },
     {
@@ -114,7 +141,6 @@ const sidebars: SidebarsConfig = {
         "advanced/docker",
         "advanced/npm-cli",
         "advanced/cli-run",
-        "advanced/acp",
         "advanced/custom-aider-version",
         "advanced/extra-python-packages",
         "advanced/open-telemetry",

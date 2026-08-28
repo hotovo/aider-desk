@@ -9,6 +9,7 @@ import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 
 import { createFileTree } from './types';
+import { SectionLoading } from './SectionLoading';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
 import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
@@ -127,6 +128,7 @@ export const UpdatedFilesSection = ({
   const [groupExpandedItems, setGroupExpandedItems] = useState<Record<string, string[]>>({});
   const [flatExpandedItems, setFlatExpandedItems] = useState<string[]>([]);
   const [isRefreshingUpdated, setIsRefreshingUpdated] = useState(false);
+  const [isLoadingUpdated, setIsLoadingUpdated] = useState(true);
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [diffModalSelectedFile, setDiffModalSelectedFile] = useState<UpdatedFile | null>(null);
   const [fileToRevert, setFileToRevert] = useState<string | null>(null);
@@ -239,12 +241,15 @@ export const UpdatedFilesSection = ({
   }, [commitGroups, commitGroups.length]);
 
   const fetchUpdatedFiles = useCallback(async () => {
+    setIsLoadingUpdated(true);
     try {
       const files = await api.getUpdatedFiles(baseDir, taskId);
       setUpdatedFiles(files);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to fetch updated files:', error);
+    } finally {
+      setIsLoadingUpdated(false);
     }
   }, [api, baseDir, taskId]);
 
@@ -436,7 +441,9 @@ export const UpdatedFilesSection = ({
         {/* Content area */}
         <Activity mode={isOpen ? 'visible' : 'hidden'}>
           <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative">
-            {hasAnyContent ? (
+            {isLoadingUpdated ? (
+              <SectionLoading label={t('common.loadingFiles')} />
+            ) : hasAnyContent ? (
               <>
                 {isGrouped
                   ? commitGroups.map((group) => {

@@ -1,4 +1,13 @@
+---
+title: "Creating Extensions"
+sidebar_label: "Creating Extensions"
+---
+
 # Creating Extensions
+
+:::tip[Let the agent do it]
+AiderDesk ships with a built-in **Extension Creator skill** — ask your agent in plain language to build an extension for your workflow, and it generates the files, metadata, tools, commands, and event handlers for you. Use this guide for full manual control, or to understand what the agent produces.
+:::
 
 Extensions are TypeScript or JavaScript files that export a class implementing the `Extension` interface. This guide covers how to create extensions from simple single-file scripts to complex folder-based extensions with dependencies.
 

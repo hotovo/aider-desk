@@ -22,6 +22,8 @@ You can pass command-line arguments directly to the Aider process.
 1.  Go to **Settings > Aider**.
 2.  In the **Options** section, enter any valid `aider-chat` command-line flags (e.g., `--no-auto-commits`, `--map-tokens 8192`).
 
+![Aider settings tab with options and environment variables](../images/settings.png)
+
 Refer to the [official Aider documentation](https://aider.chat/docs/config/options.html) for a complete list of available options.
 
 ### Environment Variables
@@ -42,3 +44,4 @@ model: openai/gpt-4.1
 weak-model: openai/gpt-4o-mini
 edit-format: diff
 auto-commits: false
+```

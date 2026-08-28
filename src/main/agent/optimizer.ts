@@ -16,7 +16,7 @@ import {
 } from '@common/tools';
 import { extractTextContent } from '@common/utils';
 
-import {convertMcpResultToModelOutput, stripImageParts} from './utils';
+import { convertMcpResultToModelOutput, stripImageParts } from './utils';
 
 import logger from '@/logger';
 import { type CacheControl } from '@/models';

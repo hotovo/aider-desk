@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
+import { SectionLoading } from './SectionLoading';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
@@ -66,6 +67,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
   const [activating, setActivating] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const openFile = useFileEditorStore((state) => state.openFile);
 
   const loadSkills = useCallback(async () => {
@@ -78,7 +80,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
   }, [api, baseDir, taskId]);
 
   useEffect(() => {
-    void loadSkills();
+    void loadSkills().finally(() => setIsLoading(false));
   }, [loadSkills]);
 
   useEffect(() => {
@@ -147,6 +149,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
   );
 
   const hasContent = visitedSections.has('skills') && sortedSkills.length > 0;
+  const isLoadingSkills = isLoading || isRefreshing;
 
   return (
     <motion.div
@@ -176,7 +179,9 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
         >
-          {hasContent ? (
+          {isLoadingSkills ? (
+            <SectionLoading label={t('common.loadingFiles')} />
+          ) : hasContent ? (
             sortedSkills.map((skill) => (
               <div key={skill.name} className="flex items-center w-full px-1 h-7 group/item">
                 <div className="flex items-center flex-grow min-w-0 gap-1">

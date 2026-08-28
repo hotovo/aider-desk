@@ -1,4 +1,5 @@
 ---
+title: "Updated Files"
 sidebar_label: "Updated Files"
 ---
 
@@ -10,9 +11,15 @@ When the AI modifies files in your project, AiderDesk tracks these changes in th
 
 Updated Files are files that have been modified by Aider during the current task. They appear in a dedicated section in the left sidebar, separate from your context files and project files.
 
+![Updated Files section in the sidebar](../images/ft-updated-files-panel.png)
+
 Each updated file shows:
 - **File path** - The relative path to the modified file
 - **Line statistics** - Number of lines added (green) and removed (red)
+
+### Untracked Files
+
+Files that were newly created but are not yet tracked by Git also appear in the Updated Files section, marked as untracked. For these files, an **Add to Git** action is available directly on the file entry, so you can start tracking them without leaving the view. Once a file is tracked by Git, it participates in the normal diff and revert workflow like any other updated file.
 
 ## Accessing the Diff View
 
@@ -21,6 +28,8 @@ Clicking on any file in the Updated Files section opens a **Diff View Modal** th
 1. **Full diff visualization** - See exactly what changed with color-coded additions and deletions
 2. **Navigation controls** - Use arrow buttons to move between multiple updated files
 3. **File information** - Current file name and position in the list (e.g., "2 of 5")
+
+![Diff view with an inline request](../images/ft-updated-files-inline-request.png)
 
 The diff view supports the same visualization modes as inline code diffs:
 - **Side-by-Side** - Original code on the left, modified code on the right
@@ -73,5 +82,5 @@ The Updated Files list automatically updates as the AI makes changes. You can al
 
 ## Related Features
 
-- **[Diff Viewer](reviewing-code-changes.md)** - Learn about diff visualization modes and reverting changes
+- **[Diff Viewer](../core/reviewing-changes.md)** - Learn about diff visualization modes and reverting changes
 - **[Custom Prompts](../advanced/custom-prompts.md)** - Customize the inline request prompt template

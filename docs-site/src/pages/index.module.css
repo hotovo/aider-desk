@@ -247,7 +247,7 @@
 }
 
 .codeBlock {
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: 'Ubuntu Sans Mono', ui-monospace, 'Menlo', 'Monaco', monospace;
   font-size: 0.9rem;
 }
 
@@ -371,7 +371,6 @@
 .downloadSection,
 .featuresSection,
 .audienceSection,
-.demoSection,
 .communitySection {
   padding: 4rem 0;
 }
@@ -478,16 +477,6 @@
   color: white;
   position: relative;
   z-index: 1;
-}
-
-/* Light sections */
-.demoSection {
-  background: var(--ifm-background-color);
-  color: var(--ifm-color-primary-darkest);
-}
-
-.demoSection .sectionTitle {
-  color: var(--ifm-color-primary-darkest);
 }
 
 /* Dark sections */
@@ -749,65 +738,6 @@
   font-size: 0.9rem;
 }
 
-/* Video Section */
-.videoWrapper {
-  text-align: center;
-  margin-top: 2rem;
-}
-
-.videoLink {
-  display: inline-block;
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  transition: all 0.3s ease;
-}
-
-.videoLink:hover {
-  transform: scale(1.02) rotate(1deg);
-  box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-}
-
-.videoThumbnail {
-  position: relative;
-  display: inline-block;
-}
-
-.videoThumbnail img {
-  max-width: 100%;
-  height: auto;
-  display: block;
-  max-width: 600px;
-}
-
-.playButton {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 80px;
-  height: 80px;
-  background: rgba(255,255,255,0.95);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-
-.playButton:hover {
-  transform: translate(-50%, -50%) scale(1.1);
-  background: rgba(255,255,255,1);
-}
-
-.playIcon {
-  font-size: 1.5rem;
-  color: var(--ifm-color-primary-dark);
-  margin-left: 4px;
-}
-
 /* Community Section */
 .communityLinks {
   display: flex;
@@ -913,10 +843,6 @@
 
 .audienceSection .container {
   animation: fadeInUp 0.8s ease-out 0.8s both;
-}
-
-.demoSection .container {
-  animation: fadeInUp 0.8s ease-out 1s both;
 }
 
 .communitySection .container {
@@ -1039,7 +965,6 @@ html {
   .downloadSection,
   .featuresSection,
   .audienceSection,
-  .demoSection,
   .communitySection {
     padding: 3rem 0;
   }
@@ -1210,15 +1135,6 @@ html {
     0 0 0 1px rgba(160,174,192,0.15) inset;
 }
 
-[data-theme='dark'] .demoSection {
-  background: var(--ifm-background-color);
-  color: var(--ifm-color-primary-lightest);
-}
-
-[data-theme='dark'] .demoSection .sectionTitle {
-  color: var(--ifm-color-primary-lightest);
-}
-
 [data-theme='dark'] .communitySection {
   background: var(--ifm-color-primary-lighter);
   color: var(--ifm-color-primary-darkest);
@@ -1316,18 +1232,6 @@ html {
 
 [data-theme='dark'] .audienceContent span {
   color: var(--ifm-color-primary-lighter);
-}
-
-[data-theme='dark'] .playButton {
-  background: rgba(0,0,0,0.8);
-}
-
-[data-theme='dark'] .playButton:hover {
-  background: rgba(0,0,0,0.9);
-}
-
-[data-theme='dark'] .playIcon {
-  color: var(--ifm-color-primary-light);
 }
 
 /* Scroll to top button */

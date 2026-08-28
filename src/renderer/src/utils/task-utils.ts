@@ -42,13 +42,24 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
       return task.name.toLowerCase().includes(searchText);
     });
 
-  const tasksWithValidParents = filteredTasks.filter((task) => {
-    if (!task.parentId) {
-      return true;
+  const isAnyAncestorArchived = (task: TaskData): boolean => {
+    const visited = new Set<string>();
+    let current = task;
+    while (current.parentId && !visited.has(current.parentId)) {
+      visited.add(current.parentId);
+      const parentTask = tasks.find((t) => t.id === current.parentId);
+      if (!parentTask) {
+        return false;
+      }
+      if (parentTask.archived) {
+        return true;
+      }
+      current = parentTask;
     }
-    const parentTask = tasks.find((t) => t.id === task.parentId);
-    return showArchived || !parentTask || !parentTask.archived;
-  });
+    return false;
+  };
+
+  const tasksWithValidParents = showArchived ? filteredTasks : filteredTasks.filter((task) => !isAnyAncestorArchived(task));
 
   const topLevelTasks = tasksWithValidParents.filter((t) => !t.parentId || !tasksWithValidParents.some((p) => p.id === t.parentId));
   const subtasks = tasksWithValidParents.filter((t) => t.parentId && tasksWithValidParents.some((p) => p.id === t.parentId));

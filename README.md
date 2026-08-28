@@ -78,11 +78,11 @@ npx @aiderdesk/extensions install
 
 ### Model Context Protocol (MCP)
 
-Bring your own data. Connect AiderDesk to any standard MCP server to give your AI assistants secure, scoped access to external databases, enterprise APIs (Jira, Linear), or internal wikis. AiderDesk can also [expose itself as an MCP server](https://aiderdesk.hotovo.com/docs/features/aider-mcp-server) to other MCP-compatible clients like Claude Desktop or Cursor.
+Bring your own data. Connect AiderDesk to any standard MCP server to give your AI assistants secure, scoped access to external databases, enterprise APIs (Jira, Linear), or internal wikis. AiderDesk can also [expose itself as an MCP server](https://aiderdesk.hotovo.com/docs/integrations/aider-mcp-server) to other MCP-compatible clients like Claude Desktop or Cursor.
 
 ### Custom Commands & Skills
 
-Inject your project-specific shell commands, linters, and test suites directly into the AI's toolkit, allowing it to autonomously verify its own work. Package reusable expertise into [Skills](https://aiderdesk.hotovo.com/docs/features/skills) that load on-demand with progressive disclosure — keeping token usage lean while giving the AI domain-specific knowledge when needed.
+Inject your project-specific shell commands, linters, and test suites directly into the AI's toolkit, allowing it to autonomously verify its own work. Package reusable expertise into [Skills](https://aiderdesk.hotovo.com/docs/agent-mode/skills) that load on-demand with progressive disclosure — keeping token usage lean while giving the AI domain-specific knowledge when needed.
 
 ---
 

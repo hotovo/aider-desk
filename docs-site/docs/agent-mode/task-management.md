@@ -15,6 +15,8 @@ When the agent is given a high-level goal, it can use its "Todo" tools to break 
 
 A floating todo window will appear in the main chat view whenever there are active todo items within the current task. This window provides a real-time view of the agent's plan and progress for the specific task you're working on.
 
+![TODO window with the agent's checklist](../images/am-todo-window.png)
+
 From this window, you can:
 - **View all tasks** and their completion status.
 - **Manually check or uncheck** items to guide the agent or correct its state.

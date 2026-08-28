@@ -1,4 +1,5 @@
 ---
+title: "Subagents"
 sidebar_label: "Subagents"
 ---
 
@@ -73,6 +74,8 @@ Subagents enable strategic model selection for different tasks, significantly re
 #### Enable as Subagent
 Toggle this option to convert an agent profile into a subagent. Once enabled, the profile becomes available for task delegation.
 
+![Subagent configuration in an agent profile](../images/am-subagent-config.png)
+
 #### System Prompt
 The system prompt defines the subagent's behavior, expertise, and approach to problem-solving. This is the most important configuration aspect:
 
@@ -119,14 +122,14 @@ Example: "Expert code review specialist. Proactively reviews code for quality, s
 
 Subagents inherit tool permissions from the profile:
 
-- **Tool Groups**: Configure access to Power Tools, Aider Tools, and Todo Tools
+- **Tool Groups**: Configure access to Power Tools, Aider Tools, Todo Tools, Task Tools, Memory Tools, and Skills Tools
 - **Individual Tool Approvals**: Set approval levels for each tool (Ask, Always, Never)
 - **MCP Servers**: Control access to external Model Context Protocol servers
 
 Subagents run with optimized settings:
-- Reduced context window for cost efficiency
-- Limited file inclusion for focused work
-- Disabled nested subagents to prevent infinite loops
+- **Context Memory mode**: Choose whether the subagent keeps *Full Context* of previous runs, only the *Last Message*, or starts fresh (*Off*)
+- **No nested subagents**: Subagents cannot spawn further subagents, preventing infinite loops
+- **Focused context**: Limited file and rule inclusion keeps work targeted and costs down
 
 ## Using Subagents Effectively
 

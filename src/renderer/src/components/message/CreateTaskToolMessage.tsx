@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
-import { AutonomyMode, ToolMessage } from '@common/types';
+import { AutonomyMode, TaskExecutionMode, ToolMessage } from '@common/types';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -28,8 +28,18 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
   const mode = message.args.mode as string | undefined;
   const autonomyMode = message.args.autonomyMode as AutonomyMode | undefined;
   const worktree = message.args.worktree as boolean | undefined;
-  const executeAndWait = message.args.executeAndWait as boolean | undefined;
-  const executeInBackground = message.args.executeInBackground as boolean | undefined;
+  const executionMode = message.args.executionMode as TaskExecutionMode | undefined;
+
+  const getExecutionModeLabel = (mode: TaskExecutionMode) => {
+    switch (mode) {
+      case TaskExecutionMode.WaitForFinish:
+        return t('toolMessage.tasks.waitForFinish');
+      case TaskExecutionMode.RunInBackground:
+        return t('toolMessage.tasks.runInBackground');
+      default:
+        return t('toolMessage.tasks.createOnly');
+    }
+  };
   const content = message.content && JSON.parse(message.content);
   const isError = content && typeof content === 'string' && content.startsWith('Error creating task:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Creating task denied by user.');
@@ -137,15 +147,11 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
                   {worktree ? t('toolMessage.tasks.yes') : t('toolMessage.tasks.no')}
                 </div>
               )}
-              {executeAndWait ? (
+              {executionMode && (
                 <div className="text-3xs">
-                  <span className="text-text-muted">{t('toolMessage.tasks.executeAndWait')}:</span> {t('toolMessage.tasks.yes')}
+                  <span className="text-text-muted">{t('toolMessage.tasks.executionMode')}:</span> {getExecutionModeLabel(executionMode)}
                 </div>
-              ) : executeInBackground ? (
-                <div className="text-3xs">
-                  <span className="text-text-muted">{t('toolMessage.tasks.executeInBackground')}:</span> {t('toolMessage.tasks.yes')}
-                </div>
-              ) : null}
+              )}
             </div>
           </div>
         </div>

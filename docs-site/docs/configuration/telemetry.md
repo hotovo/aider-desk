@@ -13,6 +13,8 @@ All telemetry data collected is **anonymous**. We do not collect any personally 
 
 You can always disable telemetry in **Settings -> About -> Telemetry** section.
 
+![Telemetry toggle in the About settings page](../images/cfg-about-telemetry.png)
+
 ## Collected Events and Properties
 
 When telemetry is enabled, AiderDesk captures the following events:

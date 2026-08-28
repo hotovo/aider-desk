@@ -7,6 +7,8 @@ sidebar_label: "Settings"
 
 AiderDesk provides a centralized location to manage all your configurations. You can access it by clicking the gear icon in the top-right corner of the application.
 
+![Settings window with tab navigation](../images/settings.gif)
+
 The settings are organized into the following tabs:
 
 ### General
@@ -17,9 +19,7 @@ This tab contains settings related to the user interface and general application
 - **Notifications**: Enable or disable system notifications.
 - **Prompt Behavior**: Customize autocompletion, command confirmation, and key bindings for the prompt field. See [Prompt Behavior](./prompt-behavior.md) for more details.
 
-### Providers
-
-Manage the API keys and connection settings for all supported Large Language Model (LLM) providers, such as OpenAI, Anthropic, Gemini, and more. This is where you connect AiderDesk to your AI models.
+Model providers are not configured here — you manage API keys and connection settings for all supported Large Language Model (LLM) providers (OpenAI, Anthropic, Gemini, and more) in the **Model Library**, accessible from the top bar. See [Providers](./providers.md).
 
 ### Aider
 
@@ -29,7 +29,7 @@ Configure the underlying `aider-chat` engine.
 - **Context**: Control automatic inclusion of rule files.
 For more details, see [Aider Configuration](./aider-configuration.md).
 
-### Agent
+### Agents
 
 Configure the powerful Agent Mode.
 - **Agent Profiles**: Create and manage different profiles for the agent, each with its own model, tools, and behaviors.
@@ -43,20 +43,44 @@ Add and manage external tools via [MCP servers](../agent-mode/mcp-servers.md).
 - **File-Based Storage**: Configurations are stored in `mcp-servers.json` files (global: `~/.aider-desk/mcp-servers.json`, project: `<projectDir>/.aider-desk/mcp-servers.json`) and are watched for external changes.
 - **Tools & OAuth**: Inspect each server's tools, reload them, and connect OAuth-authorized remote servers.
 
+### Tasks
+
+Configure task-level behavior.
+- **Context Compaction**: Set token thresholds and choose the compaction type used when context grows too large. See [Handoff & Compaction](../core/handoff-and-compaction.md).
+- **Task Naming & State**: Enable smart task state handling and automatic task-name generation, optionally with dedicated models.
+- **Worktrees**: Choose the default working mode, branch prefix, and symlinked folders for [Git Worktrees](../features/git-worktrees.md).
+
 ### Memory
 
 Configure the built-in long-term Memory system.
 - **Enable/disable Memory**
 - **Embedding model selection** and similarity tuning
 - **View and delete stored memories**
-See [Memory](../features/memory.md) for details.
+See [Memory](../agent-mode/memory.md) for details.
+
+### Voice
+
+Configure [voice control](../features/voice-control.md) for dictating prompts.
+- **Provider & Model**: Select the provider profile and model used for transcription.
+- **Microphone**: Choose your input device and transcription language.
+- **System Instructions**: Guide how dictated audio is cleaned up into prompts.
+
+### Hotkeys
+
+Customize keyboard shortcuts for projects, tasks, dialogs (including the Command Palette), and prompt navigation.
+
+### Extensions
+
+Install and manage [extensions](../extensions/index.md).
+- **Installing**: Browse available extensions from the registry or install one from a URL (e.g., a GitHub repository).
+- **Managing**: Enable, disable, update, or uninstall extensions globally or per project.
 
 ### Network
 
 Configure the built-in web server and network connectivity.
-- **Server**: Start/stop the HTTP server that powers the [REST API](../features/rest-api.md), [Browser API](../features/browser-api.md), and remote access. When the server is running, it is accessible on port `24337` (configurable via `AIDER_DESK_PORT`).
+- **Server**: Start/stop the HTTP server that powers the [REST API](../integrations/rest-api.md), [Browser API](../integrations/browser-api.md), and remote access. When the server is running, it is accessible on port `24337` (configurable via `AIDER_DESK_PORT`).
 - **Basic Auth**: Protect the server with a username and password.
-- **Readonly View Mode**: Toggle [Readonly View Mode](../features/readonly-view.md) to expose a server-enforced, read-only browser UI. A nested option controls whether extension UI components render in the readonly view.
+- **Readonly View Mode**: Toggle [Readonly View Mode](../integrations/readonly-view.md) to expose a server-enforced, read-only browser UI. A nested option controls whether extension UI components render in the readonly view.
 - **CORS**: Restrict which origins can access the server.
 - **Cloudflare Tunnel**: Expose the server securely to the internet via a Cloudflare Tunnel without port forwarding.
 - **Proxy**: Configure HTTP/HTTPS proxy settings for outbound requests.

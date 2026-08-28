@@ -8,7 +8,7 @@ slug: "/advanced/cli-run"
 
 The `aiderdesk run` command lets you execute prompts non-interactively from the terminal. It connects to a running AiderDesk server, streams the AI response in real-time, and exits when the task completes. This is ideal for scripting, automation, and quickly getting answers without opening the UI.
 
-:::info Prerequisite
+:::info[Prerequisite]
 AiderDesk must already be running (via the desktop app, `aiderdesk start`, or `aiderdesk tui`). The `run` command does not start a server — it connects to an existing one.
 :::
 
@@ -46,6 +46,7 @@ When stdin is piped, the content is appended to the prompt.
 | `-m, --model <provider/model>` | Override the model to use (e.g. `openai/gpt-4o-mini`) |
 | `-a, --agent-profile <id>` | Use a specific agent profile by ID or name |
 | `--task-id <id>` | Run the prompt on an existing task instead of creating a new one |
+| `--autostart` | Automatically start the AiderDesk server if not running, and stop it when done |
 
 ## Output Formats
 

@@ -703,7 +703,7 @@ const TaskSidebarComponent = ({
                       <ExtensionComponentWrapper placement="tasks-sidebar-actions-left" />
                       <Tooltip content={t('taskSidebar.filterStates')}>
                         <button
-                          className="p-1.5 rounded-md hover:bg-bg-tertiary transition-colors"
+                          className={clsx('p-1.5 rounded-md transition-colors', isFilterVisible ? 'bg-bg-fourth' : 'hover:bg-bg-tertiary')}
                           onClick={() => {
                             setIsFilterVisible(!isFilterVisible);
                           }}
@@ -713,7 +713,7 @@ const TaskSidebarComponent = ({
                       </Tooltip>
                       <Tooltip content={t('taskSidebar.search')}>
                         <button
-                          className="p-1 rounded-md hover:bg-bg-tertiary transition-colors"
+                          className={clsx('p-1 rounded-md transition-colors', isSearchVisible ? 'bg-bg-fourth' : 'hover:bg-bg-tertiary')}
                           onClick={handleSearchToggle}
                           data-testid="search-toggle-button"
                         >

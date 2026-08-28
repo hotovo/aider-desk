@@ -53,6 +53,8 @@ Use **Settings → Voice** for the detailed configuration:
    - OpenAI: **Language**
    - Gemini: **Temperature**
 
+![Voice settings](../images/ft-voice-settings.png)
+
 The microphone icon will appear in the chat input when a supported provider profile has voice enabled.
 
 ## Using Voice Control
@@ -99,9 +101,9 @@ The voice control system uses Web Audio API for:
 - Supports OpenAI's real-time speech-to-text API
 - Handles audio buffer management and transcription events
 
-#### Gemini Integration  
+#### Gemini Integration
 - Uses Google GenAI SDK for live audio input
-- Uses the voice model `gemini-2.5-flash-native-audio-preview-12-2025` (current default)
+- Uses a Gemini live voice model (current default: `gemini-3.1-flash-live-preview`)
 - Implements an idle timeout (silence) auto-stop (default: 5 seconds)
 
 ### Security and Privacy
@@ -175,13 +177,13 @@ The voice control system includes several configurable parameters:
 Each provider has specific configuration options (available in **Settings → Voice**):
 
 #### OpenAI
-- **Model**: `gpt-live-transcribe`, `gpt-4o-transcribe`, or `gpt-4o-mini-transcribe`
+- **Model**: `gpt-live-transcribe` (default), `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, or `gpt-realtime-whisper`
 - **Language**: Selectable (default: `en`)
 - **System instructions**: Customizable
 - **Idle timeout**: Customizable
 
 #### Gemini
-- **Model**: `gemini-2.5-flash-native-audio-preview-12-2025` (current default)
+- **Model**: `gemini-3.1-flash-live-preview` (default) or `gemini-2.5-flash-native-audio-preview-12-2025`
 - **Temperature**: Slider from 0 to 1 (default: 0.7)
 - **System instructions**: Customizable
 - **Idle timeout**: Customizable

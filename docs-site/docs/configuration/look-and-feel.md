@@ -28,7 +28,7 @@ When you select a theme, AiderDesk applies the corresponding CSS class to the do
 
 ### Available Themes
 
-AiderDesk includes 14 carefully crafted themes:
+AiderDesk includes 18 carefully crafted themes:
 
 #### Dark Themes
 - **Dark** - The default theme with balanced contrast and modern appearance
@@ -37,17 +37,21 @@ AiderDesk includes 14 carefully crafted themes:
 - **Neon** - Vibrant theme inspired by cyberpunk aesthetics
 - **Neopunk** - Futuristic dark theme with bold accent colors
 - **Ocean** - Deep blue theme reminiscent of ocean depths
+- **Obsidian** - Volcanic glass-inspired deep theme
+- **Crimson** - Bold dark theme with red accents
 
 #### Light Themes
 - **Light** - Clean, minimal light theme with excellent readability
 - **BW (Black & White)** - High-contrast monochrome theme
 - **Serenity** - Calming light theme with soft, muted colors
 - **Cappuccino** - Warm, coffee-inspired light theme
+- **Fresh** - Crisp, energizing light theme
 
 #### Colorful Themes
 - **Aurora** - Ethereal theme inspired by northern lights
 - **Forest** - Nature-inspired green theme
 - **Lavender** - Purple-themed interface with calming aesthetics
+- **Botanical Garden** - Lush, plant-inspired theme (light & dark variants)
 
 ### Switching Themes
 
@@ -81,7 +85,7 @@ AiderDesk includes 19 carefully selected fonts covering various styles:
 - **Source Code Pro** - Adobe's open-source coding font
 - **Space Mono** - Quirky, distinctive monospace font
 - **Ubuntu Mono** - Part of the Ubuntu font family
-- **Fira Code** - Programming font with code ligatures
+- **Google Sans Code** - Google's coding-optimized monospace
 
 #### Sans-Serif Fonts
 - **Inter** - Highly readable modern sans-serif
@@ -89,7 +93,7 @@ AiderDesk includes 19 carefully selected fonts covering various styles:
 - **Nunito** - Well-balanced sans-serif with rounded terminals
 - **Quicksand** - Light, airy sans-serif font
 - **Space Grotesk** - Modern geometric sans-serif
-- **Google Sans Code** - Google's coding-optimized sans-serif
+- **Funnel Display** - Contemporary display sans-serif
 - **Sansation** - Clean, professional sans-serif
 
 #### Serif & Display Fonts

@@ -7,7 +7,6 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'AiderDesk',
-  //themes: ['@docusaurus/theme-search-algolia'],
   tagline: 'AI-Powered Coding',
   favicon: 'img/favicon.ico',
 
@@ -19,7 +18,7 @@ const config: Config = {
   url: 'https://aiderdesk.hotovo.com',
   baseUrl: '/',
 
-  // Add Google Fonts for Nunito
+  // Add Google Fonts for Nunito and Victor Mono
   headTags: [
     {
       tagName: 'link',
@@ -39,7 +38,7 @@ const config: Config = {
       tagName: 'link',
       attributes: {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Sono:wght@200..800&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Ubuntu+Sans+Mono:ital,wght@0,400..700;1,400..700&display=swap',
       },
     },
   ],
@@ -84,7 +83,16 @@ const config: Config = {
     ],
   ],
 
-  themes: ['@docusaurus/theme-mermaid'],
+  themes: [
+    '@docusaurus/theme-mermaid',
+    [
+      '@easyops-cn/docusaurus-search-local',
+      {
+        hashed: true,
+        language: ['en'],
+      },
+    ],
+  ],
 
   markdown: {
     mermaid: true,
@@ -96,38 +104,6 @@ const config: Config = {
   themeConfig: {
     // Replace with your project's social card
     image: './img/icon.png',
-    // algolia: {
-    //   // The application ID provided by Algolia
-    //   appId: 'YOUR_APP_ID',
-    //
-    //   // Public API key: it is safe to commit it
-    //   apiKey: 'YOUR_SEARCH_API_KEY',
-    //
-    //   indexName: 'YOUR_INDEX_NAME',
-    //
-    //   // Optional: see doc section below
-    //   contextualSearch: true,
-    //
-    //   // Optional: Specify domains where the navigation should occur through window.location instead on history.push. Useful when our Algolia config crawls multiple documentation sites and we want to navigate with window.location.href to them.
-    //   externalUrlRegex: 'external\\.com|domain\\.com',
-    //
-    //   // Optional: Replace parts of the item URLs from Algolia. Useful when using the same search index for multiple deployments using a different baseUrl. You can use regexp or string in the `from` param. For example: localhost:3000 vs myCompany.com/docs
-    //   replaceSearchResultPathname: {
-    //     from: '/docs/', // or as RegExp: /\/docs\//
-    //     to: '/',
-    //   },
-    //
-    //   // Optional: Algolia search parameters
-    //   searchParameters: {},
-    //
-    //   // Optional: path for search page that enabled by default (`false` to disable it)
-    //   searchPagePath: 'search',
-    //
-    //   // Optional: whether the insights feature is enabled or not on Docsearch (`false` by default)
-    //   insights: false,
-    //
-    //   //... other Algolia params
-    // },
     navbar: {
       title: 'AiderDesk',
       logo: {

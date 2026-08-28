@@ -15,12 +15,11 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, TaskExecutionMode, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
 
-import { coerceBoolean } from '@/agent/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
@@ -351,15 +350,16 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         .optional()
         .default(false)
         .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
-      executeAndWait: z
-        .boolean()
+      executionMode: z
+        .enum(TaskExecutionMode)
         .optional()
-        .default(false)
-        .describe('If true, the task will be created and executed immediately and the tool will wait for it to complete before returning.'),
-      executeInBackground: coerceBoolean.optional().default(false).describe('If true, the task will be created and executed in the background.'),
+        .default(TaskExecutionMode.CreateOnly)
+        .describe(
+          'How to run the new task. create_only (default): only create the task and save the initial prompt without executing it. wait_for_finish: start the task immediately and wait for its prompt to complete before returning. run_in_background: start the task immediately and return right away.',
+        ),
     }),
     execute: async (input, { toolCallId }) => {
-      const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autonomyMode, worktree, executeAndWait, executeInBackground } = input;
+      const { prompt, name, agentProfileId, modelId, mode = 'agent', asSubtask = false, autonomyMode, worktree, executionMode } = input;
       const parentTaskId: string | null | undefined = asSubtask ? task.taskId : 'parentTaskId' in input ? (input.parentTaskId as string | null) : undefined;
       const resolvedProfile = agentProfileId ? task.getProject().resolveAgentProfile(agentProfileId) : profile;
 
@@ -381,9 +381,9 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_CREATE_TASK}`;
       const questionKey = toolName;
       const questionText = 'Approve creating a new task?';
-      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${resolvedProfile.id}\nModel: ${effectiveModelId}${
-        executeAndWait ? '\nExecute and wait: true' : executeInBackground ? '\nExecute in background: true' : ''
-      }${parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''}`;
+      const questionSubject = `Prompt: ${prompt}\nAgent Profile: ${resolvedProfile.id}\nModel: ${effectiveModelId}\nExecution mode: ${executionMode}${
+        parentTaskId !== undefined ? `\nParent Task ID: ${parentTaskId || 'none (top-level task)'}` : ''
+      }`;
 
       const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
@@ -416,13 +416,13 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         await taskInstance.init();
         await taskInstance.saveTask(updates);
 
-        if (executeAndWait || executeInBackground) {
+        if (executionMode === TaskExecutionMode.CreateOnly) {
+          await taskInstance.savePromptOnly(prompt, false);
+        } else {
           const run = taskInstance.runPrompt(prompt, mode, false);
-          if (!executeInBackground) {
+          if (executionMode === TaskExecutionMode.WaitForFinish) {
             await run;
           }
-        } else {
-          await taskInstance.savePromptOnly(prompt, false);
         }
 
         const contextMessages = await taskInstance.getContextMessages();
@@ -430,8 +430,13 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         return {
           id: newTask.id,
           name: newTask.name,
-          result: executeAndWait ? 'Task has been created and executed successfully' : 'Task created successfully',
-          ...(executeAndWait &&
+          result:
+            executionMode === TaskExecutionMode.WaitForFinish
+              ? 'Task has been created and executed successfully'
+              : executionMode === TaskExecutionMode.RunInBackground
+                ? 'Task created and started in the background'
+                : 'Task created successfully',
+          ...(executionMode === TaskExecutionMode.WaitForFinish &&
             contextMessages.length > 0 && {
               lastMessage: contextMessages[contextMessages.length - 1],
             }),

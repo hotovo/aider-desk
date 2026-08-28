@@ -33,7 +33,7 @@ Providing the AI with a well-defined project overview is crucial for receiving a
 2.  **Run the Command**: Type `/init` into the prompt field and press `Enter`.
 3.  **Analysis**: The agent will begin analyzing your project. This may take a few moments depending on the size and complexity of your codebase. You will see log messages indicating its progress.
 4.  **File Generation**: Once the analysis is complete, a new file will be created named `AGENTS.md` in your project's root directory.
-5.  **Add to Context (Recommended)**: After the file is created, you will be asked if you want to add it to Aider's read-only context for all future tasks. Answering "Yes" will add the file path to your `.aider.conf.yml`, ensuring the agent always references it.
+5.  **Automatic Inclusion**: Once created, `AGENTS.md` is picked up automatically — AiderDesk adds it to the agent's read-only context as a project rule, so the agent references it in every task without further setup.
 
 ## The `AGENTS.md` File
 
@@ -45,4 +45,4 @@ You can review and even edit this file to provide more specific instructions or 
 
 ## Example
 
-You can find an example of the `AGENTS.md` file generated for AiderDesk itself [here](https://github.com/hotovo/aider-desk/blob/main/.aider-desk/rules/AGENTS.md).
+You can find an example of the `AGENTS.md` file used for AiderDesk's own development [here](https://github.com/hotovo/aider-desk/blob/main/AGENTS.md).

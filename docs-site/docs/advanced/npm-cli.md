@@ -141,6 +141,7 @@ npm update -g @aiderdesk/aiderdesk
 
 ## Next Steps
 
-- [Open a project](/docs/getting-started/projects) to start coding
-- [Configure providers](/docs/configuration/providers) to connect your AI models
+- [Open a project](../getting-started/managing-projects.md) to start coding
+- [Configure providers](../configuration/providers.md) to connect your AI models
 - [Explore Agent Mode](../agent-mode/agent-mode.md) for autonomous AI assistance
+- Serve a public, view-only dashboard with [Readonly View Mode](../integrations/readonly-view.md)

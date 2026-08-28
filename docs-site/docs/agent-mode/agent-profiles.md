@@ -1,10 +1,13 @@
 ---
+title: "Agent Profiles"
 sidebar_label: "Agent Profiles"
 ---
 
 # Agent Profiles
 
 Agent Profiles are the core of configuring the agent's behavior. You can create multiple profiles for different workflows (e.g., a "Code Analysis" profile that only reads files, or a "Refactoring" profile with full file write access).
+
+![Agent profiles in Settings](../images/am-agent-profiles-editor.png)
 
 ## File-Based Storage
 
@@ -83,9 +86,13 @@ Each agent profile is fully configurable to your needs. You can customize:
 
 ### Tool Groups
 
-- **Use Power Tools**: Enables built-in tools for file system access, shell commands, and sub-agent delegation.
+- **Use Power Tools**: Enables built-in tools for file system operations, search, shell commands, and web fetching.
 - **Use Aider Tools**: Allows the agent to interact with the underlying Aider instance (e.g., add/drop files, run prompts).
 - **Use Todo Tools**: Enables the agent to manage a persistent to-do list for the project.
+- **Use Task Tools**: Enables the agent to create, inspect, search, and manage [tasks](task-tools.md).
+- **Use Memory Tools**: Enables the agent to store and retrieve durable memories across tasks.
+- **Use Skills Tools**: Enables the agent to activate reusable skills.
+- **Use Subagents**: Allows the agent to delegate work to enabled [subagents](subagents.md).
 
 ### Rules & Instructions
 
@@ -115,7 +122,7 @@ Configure your MCP servers in **Settings > MCP Servers** and then enable them fo
 You are always in the driver's seat. For every tool, you can decide if the agent can use it automatically, never use it, or must ask for your permission every single time. This ensures the agent works with you, maintaining a perfect balance of automation and control.
 
 - **Individual Tool Approvals**: Set approval levels for each tool and MCP server tool:
-  - **Ask**: Prompt for approval each time (default)
+  - **Ask**: Prompt for approval each time (the default for potentially destructive tools like file writing or bash)
   - **Always**: Auto-approve without prompting
   - **Never**: Disable the tool completely
 

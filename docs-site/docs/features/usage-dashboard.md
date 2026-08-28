@@ -55,6 +55,7 @@ The Charts view transforms your usage data into interactive visualizations that 
 - **Token Usage Trend**: Visual representation of token consumption over time with trend analysis
 - **Model Usage Distribution**: Pie or bar chart showing usage distribution across different AI models
 - **Cost Breakdown**: Detailed breakdown of costs by project and model with comparative analysis
+- **Cache Hit Rate & Savings**: Prompt-cache hit rates and how much cached tokens save you on costs
 - **Message Breakdown**: Analysis of message patterns and conversation statistics
 
 **Interactive features:**
@@ -64,6 +65,8 @@ The Charts view transforms your usage data into interactive visualizations that 
 - **Responsive Design**: Charts adapt to different screen sizes and viewing preferences
 
 ![Charts view showing interactive visualizations](../images/usage-dashboard-charts.png)
+
+![Cache hit rate and savings charts](../images/dashboard-cache-charts.png)
 
 ## Benefits
 
