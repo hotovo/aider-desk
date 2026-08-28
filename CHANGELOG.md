@@ -11,6 +11,7 @@
 - fixed extensions losing project started events on startup race or hot reload, now re-delivered to re-initialized extensions
 - added loading indicators for workspace sections
 - updated task creation tool with more clear create only, wait for finish, and run in background modes
+- added highlighted background for task sidebar filter and search icons when active
 
 ## [0.80.0]
 
