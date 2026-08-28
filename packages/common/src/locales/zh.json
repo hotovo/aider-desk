@@ -283,7 +283,7 @@
     "cacheWriteInputTokenCost": "缓存写入成本 / 每百万令牌",
     "supportsTools": "支持工具",
     "supportsVision": "支持视觉",
-    "supportsVisionTooltip": "该模型是否能处理图像输入。选择自动时，尽可能从提供商检测该能力。选择是/可强制设置。",
+    "supportsVisionTooltip": "该模型是否能处理图像输入。选择自动时，尽可能从提供商检测该能力。选择是/否可强制设置。",
     "supportsVisionAuto": "自动（检测）",
     "supportsVisionYes": "是",
     "supportsVisionNo": "否",
