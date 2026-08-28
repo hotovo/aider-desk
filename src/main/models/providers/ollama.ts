@@ -38,10 +38,13 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
 
     const data = await response.json();
     const models =
-      data?.models?.map((m: { name: string }) => {
+      data?.models?.map((m: { name: string; details?: { context_length?: number } }) => {
+        const contextLength = m.details?.context_length;
+        const maxInputTokens = typeof contextLength === 'number' && contextLength > 0 ? contextLength : undefined;
         return {
           id: m.name,
           providerId: profile.id,
+          maxInputTokens,
         } satisfies Model;
       }) || [];
     logger.info(`Loaded ${models.length} Ollama models from ${effectiveBaseUrl} for profile ${profile.id}`);
