@@ -3,45 +3,51 @@ title: "Overview"
 sidebar_label: "Overview"
 ---
 
-# Agent Mode Overview
+# Agent Mode
 
-Agent Mode in AiderDesk transforms the application into a powerful, autonomous assistant capable of handling complex software engineering tasks. Powered by the Vercel AI SDK, the agent can plan, reason, and utilize a suite of tools to achieve its goals with minimal human intervention.
+**Agent Mode is the default way of working in AiderDesk.** Every new task runs with the agent out of the box — it plans, uses tools, and executes work autonomously while you stay in control through approval gates. Classic aider modes (`/code`, `/ask`, `/architect`) remain one click away in the mode selector whenever you want them.
+
+Powered by the Vercel AI SDK, the agent can handle complex software engineering tasks end to end.
 
 ## Key Capabilities
 
-- **Autonomous Task Execution**: The agent can break down a high-level request (e.g., "refactor the authentication logic") into a series of concrete steps.
-- **Tool Utilization**: It can use a wide range of tools, including built-in Power Tools for file system operations, Aider Tools for code manipulation, and external tools via MCP Servers.
-- **Configurable Profiles**: Tailor the agent's behavior, capabilities, and LLM settings for different tasks using Agent Profiles.
-- **Transparent Operation**: Observe the agent's thought process, the tools it chooses, and the results of its actions directly in the chat interface.
+- **Autonomous Task Execution**: The agent breaks a high-level request (e.g. *"refactor the authentication logic"*) into concrete steps and works through them.
+- **Tool Utilization**: Built-in [Power Tools](power-tools.md) for file system operations, [Aider Tools](aider-tools.md) for code manipulation, external tools via [MCP Servers](mcp-servers.md), plus [task tools](task-tools.md) that let it organize work into tasks and subtasks.
+- **Extensible to Any Workflow**: [Extensions](../extensions/index.md) can add custom tools, commands, modes, agent profiles, and UI — or just ask the agent (it ships with an Extension Creator skill).
+- **Configurable Profiles**: Tailor behavior, permissions, and model settings per workflow with [Agent Profiles](agent-profiles.md) and [Subagents](subagents.md).
+- **Transparent Operation**: Watch the agent's reasoning, tool calls, and results directly in the chat.
+- **Self-Managing Context**: With [smart auto-compaction](../core/handoff-and-compaction.md), long-running agents keep their own context healthy.
 
 ## Autonomy Modes
 
-When working in Agent Mode, you control how much freedom the agent has to act on your behalf. The **Autonomy Selector** in the prompt field lets you choose between three modes, each balancing automation and control differently.
+The **Autonomy Selector** in the prompt field controls how much freedom the agent has:
+
+![Autonomy selector in the prompt bar](../images/am-autonomy-selector.png)
 
 ### Manual
 
-Every tool execution and plan requires your explicit approval before proceeding. The agent will present its planned actions and wait for you to approve each one.
+Every tool execution and plan requires your explicit approval before proceeding.
 
-**Best for:** Unfamiliar codebases, risky operations, or when you want full oversight of every step the agent takes.
+**Best for:** Unfamiliar codebases, risky operations, or full oversight of every step.
 
-### Guided
+### Guided *(default)*
 
-The agent plans before acting and presents its plan for your approval. Once a plan is approved, tool executions within that plan are auto-approved, allowing the agent to work through the steps without interruption.
+The agent plans first and presents its plan for approval; executions within the approved plan are auto-approved.
 
-**Best for:** Everyday development — you stay in control of the overall direction while the agent executes the details efficiently.
+**Best for:** Everyday development — you steer direction while the agent handles the details.
 
 ### Autonomous
 
-The agent plans and executes without interruption until the task is complete. No approval dialogs are shown — the agent works independently from start to finish.
+The agent plans and executes without interruption until the task completes.
 
-**Best for:** Trusted, well-understood tasks where you want to step away and let the agent complete the work on its own.
+**Best for:** Trusted, well-understood tasks where you want to step away.
 
 ### Locking the Autonomy Mode
 
-By default, each new task starts in Guided mode. If you find yourself switching to the same mode every time, you can **lock** the autonomy mode by clicking the lock icon next to the selector. When locked, all newly created tasks will start in your chosen mode instead of the default.
+New tasks start in Guided mode by default. Clicking the lock icon next to the selector saves its locked/unlocked state as a project-level setting.
 
----
+## In This Section
 
-To learn how to use Agent Mode, see [How to Use Agent Mode](./how-to-use.md).
-
-
+- [How to Use Agent Mode](how-to-use.md)
+- [Managing Tasks](managing-tasks.md) — the task system the agent lives in
+- [AGENTS.md (/init)](init.md) — project rules the agent follows

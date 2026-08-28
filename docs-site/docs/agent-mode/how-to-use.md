@@ -43,7 +43,7 @@ The Model Library provides comprehensive provider management capabilities:
 3. **Cost Configuration**: Set custom pricing and token limits for accurate cost tracking
 4. **Model Organization**: Hide irrelevant models and organize by provider profiles
 
-See [Model Library](../features/model-library.md) for comprehensive provider management, including:
+See [Model Library](../core/model-library.md) for comprehensive provider management, including:
 - Setting up multiple OpenAI-compatible providers with different prefixes
 - Adding Azure OpenAI custom models
 - Configuring costs and token limits
@@ -69,6 +69,6 @@ To do this:
 
 ![Entering custom model](../images/model-selector-custom.gif)
 
-The model you choose will now be set for the current agent profile and it will be added to the top of the selector list for future use.
+The model you choose will be set for the current task, and it will be added to the top of the selector list (your preferred models) for future use.
 
-For advanced model management, including multiple profiles per provider and custom model configuration, see the [Model Library](../features/model-library.md).
+For advanced model management, including multiple profiles per provider and custom model configuration, see the [Model Library](../core/model-library.md).

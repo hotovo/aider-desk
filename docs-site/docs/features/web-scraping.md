@@ -16,6 +16,8 @@ To use the web scraper, simply use the `/web` command followed by the URL you wa
 /web https://react.dev/reference/react/useState
 ```
 
+![Scraping a URL with the /web command](../images/ft-web-scraping-command.png)
+
 ## How It Works
 
 When you execute the `/web` command, AiderDesk performs the following steps in the background:

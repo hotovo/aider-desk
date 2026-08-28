@@ -104,8 +104,8 @@ docker run -d \
 
 The setting is immutable for the process lifetime. Readonly mode requires at least one configured project, rejects the normal REST API and direct Socket.IO mutations, and automatically redirects browser routes to `/#/readonly`. Optional `AIDER_DESK_USERNAME` and `AIDER_DESK_PASSWORD` credentials continue to protect the deployment. Installed extension UI actions remain enabled and trusted; they can modify state by design. Set `AIDER_DESK_READONLY_EXTENSION_UI=false` to disable extension UI components and block their readonly API endpoints entirely.
 
-:::info Learn More
-See the [Readonly View Mode](../features/readonly-view.md) documentation for a complete guide covering use cases, extension-powered interactions, security considerations, and the full readonly API reference.
+:::info[Learn More]
+See the [Readonly View Mode](../integrations/readonly-view.md) documentation for a complete guide covering use cases, extension-powered interactions, security considerations, and the full readonly API reference.
 :::
 
 ### Opening Projects
@@ -490,7 +490,7 @@ To install additional Python packages, see [Extra Python Packages](./extra-pytho
 
 ### Using the REST API
 
-Once running, you can interact with AiderDesk via its REST API. See [REST API](../features/rest-api.md) for complete API documentation.
+Once running, you can interact with AiderDesk via its REST API. See [REST API](../integrations/rest-api.md) for complete API documentation.
 
 **Example API call:**
 

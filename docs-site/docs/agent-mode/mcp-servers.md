@@ -15,6 +15,8 @@ The [Model Context Protocol](https://modelcontextprotocol.io/) is an open standa
 
 You can manage your MCP servers in the dedicated **MCP Servers** tab in **Settings**.
 
+![MCP Servers settings tab](../images/am-mcp-servers-tab.png)
+
 ### Adding a New Server
 
 1.  Open **Settings** and navigate to the **MCP Servers** tab.

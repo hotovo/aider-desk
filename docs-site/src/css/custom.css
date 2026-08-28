@@ -18,9 +18,11 @@
   --ifm-background-color: #ffffff;
   --ifm-navbar-background-color: #f7fafc; /* slate-50 */
   --ifm-navbar-background-color-black-to-grey: black;
-  --ifm-code-font-size: 95%;
+  --ifm-code-font-size: 85%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.05);
-  --ifm-font-family-base: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-font-size-base: 90%;
+  --ifm-font-family-base: 'Ubuntu Sans Mono', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-font-family-monospace: 'Ubuntu Sans Mono', 'Sono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 /* Remove external link icon from navbar items */
@@ -43,6 +45,71 @@
   --ifm-navbar-background-color: #171923; /* slate-900 */
   --ifm-navbar-background-color-black-to-grey: a0aec0;
   --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+}
+
+/* Search bar: themed with the slate palette, wider, centered in the navbar */
+:root {
+  --ifm-navbar-search-input-background-color: #edf2f7; /* slate-100 */
+  --ifm-navbar-search-input-color: #1a202c; /* slate-800 */
+  --ifm-navbar-search-input-placeholder-color: #718096; /* slate-500 */
+  --search-local-input-active-border-color: #4a5568; /* slate-600 */
+  --search-local-modal-background: #ffffff;
+  --search-local-hit-background: #ffffff;
+  --search-local-hit-color: #1a202c; /* slate-800 */
+  --search-local-hit-shadow: 0 1px 3px 0 rgba(26, 32, 44, 0.15);
+  --search-local-highlight-color: #4a5568; /* slate-600 */
+  --search-local-muted-color: #718096; /* slate-500 */
+}
+
+[data-theme='dark'] {
+  --ifm-navbar-search-input-background-color: #2d3748; /* slate-700 */
+  --ifm-navbar-search-input-color: #e2e8f0; /* slate-200 */
+  --ifm-navbar-search-input-placeholder-color: #a0aec0; /* slate-400 */
+  --search-local-input-active-border-color: #a0aec0; /* slate-400 */
+  --search-local-modal-background: #171923; /* slate-900 */
+  --search-local-hit-background: #1a202c; /* slate-800 */
+  --search-local-hit-color: #e2e8f0; /* slate-200 */
+  --search-local-hit-shadow: none;
+  --search-local-highlight-color: #a0aec0; /* slate-400 */
+  --search-local-muted-color: #a0aec0; /* slate-400 */
+  --search-local-hit-active-color: #171923; /* slate-900 */
+}
+
+.navbar__search-input {
+  width: 24rem;
+  height: 2.25rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  transition:
+    border-color var(--ifm-transition-fast) var(--ifm-transition-timing-default),
+    box-shadow var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+.navbar__search-input:focus {
+  outline: none;
+  border-color: var(--search-local-input-active-border-color);
+  box-shadow: 0 0 0 3px rgba(74, 85, 104, 0.2); /* slate-600 @ 20% */
+}
+
+[data-theme='dark'] .navbar__search-input:focus {
+  box-shadow: 0 0 0 3px rgba(160, 174, 192, 0.2); /* slate-400 @ 20% */
+}
+
+/* Center the search bar and its dropdown in the navbar on desktop;
+   below 997px the search moves into the mobile sidebar and stays default */
+@media (min-width: 997px) {
+  .navbar__inner [class*='navbarSearchContainer'] {
+    position: absolute;
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .navbar__inner [class*='navbarSearchContainer'] [class*='dropdownMenu'] {
+    right: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+    max-width: calc(100vw - 2 * var(--ifm-navbar-padding-horizontal));
+  }
 }
 
 /* Reduce header font sizes */

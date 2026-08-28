@@ -41,6 +41,19 @@ Each task in AiderDesk can operate in one of two modes:
 - Requires explicit merge to integrate changes back to main
 - Ideal for complex features, experiments, and parallel development
 
+## Worktree Settings
+
+Each project's task settings control how worktrees behave (see `TaskSettings` in `packages/common/src/types/common.ts`):
+
+- **Default working mode** (`defaultWorkingMode`): Whether new tasks start in local or worktree mode
+- **Symlink folders** (`worktreeSymlinkFolders`): Folders that are symlinked from the project root into each task worktree instead of being duplicated — useful for large dependencies like `node_modules`
+- **Branch prefix** (`worktreeBranchPrefix`): Prefix used when creating worktree branch names
+- **Rename branch on name generation** (`renameBranchOnNameGeneration`): When enabled, the worktree branch is automatically renamed to match the AI-generated task name
+
+## Worktree Lifecycle Operations
+
+Per task, AiderDesk can create (and check out) a worktree, rebase it onto any branch, merge its changes back, rename its branch, apply or revert uncommitted changes, and prune stale worktree registrations. Stale entries left behind by out-of-band deletions are pruned automatically with `git worktree prune` during worktree creation and cleanup, keeping the repository metadata consistent.
+
 ## Worktree Workflow
 
 ### 1. Creating a Worktree Task

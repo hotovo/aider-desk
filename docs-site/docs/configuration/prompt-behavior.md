@@ -7,6 +7,8 @@ sidebar_label: "Prompt Behavior"
 
 Customize the behavior of the prompt input field to match your workflow. These settings can be found in **Settings > General > Prompt Behavior**.
 
+![Prompt Behavior and Key Bindings options in Settings > General](../images/cfg-prompt-behavior-settings.png)
+
 ## Suggestions
 
 Control when and how autocompletion suggestions appear as you type.

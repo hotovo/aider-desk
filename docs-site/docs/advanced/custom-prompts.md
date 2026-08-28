@@ -423,7 +423,7 @@ EOF
 
 ## Related Features
 
-- **Handoff**: Customize the handoff prompt template to control how conversation context is transferred to new tasks. See [Handoff](../features/handoff.md)
+- **Handoff**: Customize the handoff prompt template to control how conversation context is transferred to new tasks. See [Handoff](../core/handoff-and-compaction.md)
 - **Project Rules**: Combine custom prompts with rule files for complete behavior control. See [Project-Specific Rules](../configuration/project-specific-rules.md)
 - **Agent Profiles**: Create different agent profiles with different prompts. See [Agent Profiles](../agent-mode/agent-profiles.md)
-- **Memory System**: Use memory to store and retrieve user preferences that can inform prompts. See [Memory](../features/memory.md)
+- **Memory System**: Use memory to store and retrieve user preferences that can inform prompts. See [Memory](../agent-mode/memory.md)

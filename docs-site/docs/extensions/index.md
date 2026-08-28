@@ -2,6 +2,8 @@
 
 Extensions allow you to extend and customize AiderDesk's functionality. They can add new tools, commands, modes, agent profiles, and react to various events in the application lifecycle.
 
+![Extensions tab in Settings showing installed and available extensions](../images/extensions.gif)
+
 ## What Extensions Can Do
 
 ### Register New Capabilities
@@ -51,13 +53,23 @@ Project-level extensions can override global extensions with the same name.
 
 Extensions are **automatically reloaded** when changes are detected. There's no need to restart AiderDesk when developing or modifying extensions. Just save your file and the changes take effect within seconds.
 
+## Creating an Extension: Two Paths
+
+**Ask your agent.** AiderDesk ships with a built-in **Extension Creator skill**, so the fastest way to get a custom workflow is to describe it in the chat:
+
+> *"Create an extension that adds a `/standup` command posting my task states to our team channel."*
+
+The agent scaffolds the extension files, implements the tools, commands, or event handlers you asked for, and hot reload picks it up immediately — then you refine it together with your agent in an ordinary task.
+
+**Write it yourself.** Follow the [Creating Extensions](./creating-extensions.md) guide to set up the folder structure and implement the `Extension` interface (`getTools`, `getCommands`, `getModes`, `getAgentProfiles`, event handlers, UI components). The [Event Flow Guide](./event-flow.md) explains how events travel through the app, and the [API Reference](./api-reference.md) documents every hook.
+
 ## Getting Started
 
-1. [Create an Extension](./creating-extensions.md) - Learn how to build your first extension
+1. [Browse the Extension Gallery](./extensions-gallery.md) - See what's possible: production-ready extensions and examples
 2. [Installation Guide](./installation.md) - Install extensions via CLI or manually
-3. [API Reference](./api-reference.md) - Complete API documentation
-4. [Events Reference](./events.md) - All available events and their properties
-5. [Extension Gallery](./extensions-gallery.md) - Browse example extensions for inspiration and check out production-ready extensions
+3. Create your own — just ask your agent, or follow the [Creating Extensions](./creating-extensions.md) guide
+4. [API Reference](./api-reference.md) - Complete API documentation
+5. [Events Reference](./events.md) - All available events and their properties
 
 ## Quick Install
 

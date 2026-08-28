@@ -35,11 +35,15 @@ Task tools are available to all agent profiles by default when enabled.
 Lists all tasks in the current project, providing an overview of available work.
 
 **Parameters:**
-- `offset` (optional, number): Number of tasks to skip (for pagination)
-- `limit` (optional, number): Maximum number of tasks to return
-- `state` (optional, string): Filter tasks by state (e.g., TODO, IN_PROGRESS, DONE)
+- `offset`, `limit` (optional, number): Pagination
+- `state` (optional, string): Filter by state (built-in states: TODO, READY_FOR_IMPLEMENTATION, IN_PROGRESS, INTERRUPTED, DELEGATED, MORE_INFO_NEEDED, READY_FOR_REVIEW, DONE)
+- `createdAfter` / `createdBefore`, `updatedAfter` / `updatedBefore` (optional, date or ISO 8601 timestamp): Filter by date ranges
+- `workingMode` (optional, string): Filter by working mode (`local` or `worktree`)
+- `archived`, `pinned` (optional, boolean): Filter by archived/pinned status
+- `parentId` (optional, string or null): Filter by parent task; use null for top-level tasks
+- `nameQuery`, `agentProfileId`, `provider`, `model` (optional, string): Further filtering
 
-**Returns:** Array of task objects with id, name, creation/update timestamps, state, and subtaskIds (if applicable)
+**Returns:** Array of task objects with id, name, creation/update timestamps, state, working mode, parent/subtask IDs (if applicable)
 
 **Use Cases:**
 - Getting an overview of all available tasks before working
@@ -111,19 +115,23 @@ Creates a new task in the current project with an initial prompt.
 
 **Parameters:**
 - `prompt` (string, required): Initial prompt for the new task
-- `name` (string, optional): Optional name for the task (auto-generated if not provided)
-- `agentProfileId` (string, optional): Agent profile ID to use for the task
-- `modelId` (string, optional): Override the default model
-- `execute` (boolean, optional): Execute the task immediately after creation (default: false)
-- `executeInBackground` (boolean, optional): Run task in background if execute is true
+- `name` (string, optional): Concise name for the task (auto-generated if not provided)
+- `agentProfileId` (string, optional): Agent profile ID or name to use for the task
+- `modelId` (string, optional): Override the model in `provider/model` format
+- `mode` (string, optional): Optional mode to use for the task (only when explicitly requested)
+- `asSubtask` (boolean, optional): Create as a subtask of the current task; alternatively pass an explicit `parentTaskId`
 - `parentTaskId` (string, optional): Create as a subtask of the specified parent task
+- `autonomyMode` (string, optional): Autonomy mode for the new task (`manual`, `guided`, or `autonomous`)
+- `worktree` (boolean, optional): Create the task in worktree mode
+- `executeAndWait` (boolean, optional): If true, the task will be created and executed immediately, and the call waits for it to complete before returning
+- `executeInBackground` (boolean, optional): Create and run the task in the background without waiting
 
 **Returns:** Task object with id, name, and result message
 
 **Important Notes:**
-- If the current task is itself a subtask, you cannot create further subtasks from it
-- If parentTaskId is null or not provided, creates a top-level task
-- When creating a subtask, the new task inherits the parent's worktreePath
+- If neither asSubtask nor parentTaskId is set, creates a top-level task
+- Nested subtasks are supported — a subtask can create its own subtasks
+- When creating a subtask, the new task inherits the parent's working mode and worktree
 
 **Use Cases:**
 - Breaking down complex work into smaller, manageable subtasks
@@ -154,10 +162,30 @@ Permanently deletes a task and all its associated data.
 **Use Cases:**
 - Cleaning up completed or abandoned tasks
 - Removing incorrect or duplicate tasks
-- Archiving work that is no longer needed
+- Freeing up clutter from the task list (archiving keeps history, deletion does not)
 
 **Example:**
 > "Delete task abc-123 as it's no longer needed"
+
+---
+
+### `tasks---run_prompt`
+
+Runs a prompt on an existing task. Use this to send additional instructions to a task, continue work on it, or delegate follow-up work.
+
+**Parameters:**
+- `taskId` (string, required): The ID of the existing task to run the prompt on
+- `prompt` (string, required): The prompt to run on the task
+- `executeAndWait` (boolean, optional): If true (default), waits for the prompt to complete before returning; if false, runs in the background
+- `mode` (string, optional): Optional mode to use for the prompt
+
+**Use Cases:**
+- Continuing work on a paused or interrupted task
+- Delegating follow-up instructions to another task
+- Re-running a task with clarified requirements
+
+**Example:**
+> "Run this follow-up prompt on task abc-123 to address the review feedback"
 
 ---
 
@@ -341,9 +369,8 @@ Task tools complement the todo system:
 - Restart AiderDesk if settings don't take effect
 
 **Cannot create subtask:**
-- Ensure the current task is not itself a subtask
-- Verify parentTaskId is valid and exists
-- Check that parent task is not archived
+- Verify `parentTaskId` is valid and exists (or use `asSubtask` to attach to the current task)
+- Check that the parent task is not archived
 
 **Search returning no results:**
 - Use broader or different search terms
