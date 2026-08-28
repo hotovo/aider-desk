@@ -5,6 +5,7 @@ import { createReadStream, createWriteStream } from 'fs';
 import readline from 'readline';
 import { StringDecoder } from 'string_decoder';
 
+import type { ModelMessage } from 'ai';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { encode } from 'gpt-tokenizer/model/gpt-4o';
@@ -45,6 +46,49 @@ export const extractPromptContextFromToolResult = (toolResult: unknown): PromptC
 
 export const findLastUserMessage = (messages: ContextMessage[]): ContextUserMessage | undefined => {
   return [...messages].reverse().find((msg) => msg.role === MessageRole.User) as ContextUserMessage | undefined;
+};
+
+/**
+ * Matches the intro text the agent prepends before an image part (e.g.
+ * "Here is image foo.png for your reference." or "Here is content of image file
+ * foo.png"). Removed alongside image parts for models without vision support.
+ */
+const IMAGE_INTRO_TEXT_PATTERN = /^Here is (image .+ for your reference\.|content of image file .+)$/;
+
+const IMAGE_OMITTED_NOTE = 'Image content was omitted because the selected model does not support image input.';
+
+type ImageStripPart = { type: string; text?: string; mediaType?: string };
+
+/**
+ * Removes image parts (and their intro text) from user messages so that models
+ * without vision support never receive image input. If a user message is left
+ * empty, it is replaced with a short explanatory note to keep the message
+ * sequence valid.
+ */
+export const stripImageParts = (messages: ModelMessage[]): ModelMessage[] => {
+  return messages.map((message) => {
+    if (!Array.isArray(message.content)) {
+      return message;
+    }
+
+    const parts = message.content as ImageStripPart[];
+    const isImagePart = (part: ImageStripPart): boolean =>
+      part.type === 'image' || (part.type === 'file' && typeof part.mediaType === 'string' && part.mediaType.startsWith('image'));
+
+    if (!parts.some(isImagePart)) {
+      return message;
+    }
+
+    const remaining = parts.filter((part) => {
+      if (isImagePart(part)) {
+        return false;
+      }
+      return !(part.type === 'text' && typeof part.text === 'string' && IMAGE_INTRO_TEXT_PATTERN.test(part.text));
+    });
+
+    const content = remaining.length > 0 ? remaining : [{ type: 'text', text: IMAGE_OMITTED_NOTE }];
+    return { ...message, content } as ModelMessage;
+  });
 };
 
 /**

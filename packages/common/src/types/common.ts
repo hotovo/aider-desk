@@ -781,6 +781,7 @@ export interface SettingsData {
   telemetryInformed?: boolean;
   windowTitleTemplate?: string;
   promptBehavior: PromptBehavior;
+  sendImagesToModel?: boolean;
   server: {
     enabled: boolean;
     readonly: boolean;
@@ -1102,6 +1103,7 @@ export interface Model {
   cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
   supportsTools?: boolean;
+  supportsVision?: boolean;
   isCustom?: boolean;
   isHidden?: boolean;
   hasModelOverrides?: boolean;

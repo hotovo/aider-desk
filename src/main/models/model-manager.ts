@@ -61,7 +61,7 @@ const MODEL_LOAD_TIMEOUT_MS = 30_000;
 const MODELS_META_URL = 'https://models.dev/api.json';
 const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
 const PROVIDER_MODELS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'provider-models.json');
-const PROVIDER_MODELS_CACHE_VERSION = 2;
+const PROVIDER_MODELS_CACHE_VERSION = 3;
 
 type ProviderModelsCache = {
   version: number;
@@ -733,6 +733,17 @@ export class ModelManager {
     });
 
     return model;
+  }
+
+  /**
+   * Determines whether the given model supports image (vision) input.
+   * Returns true unless the model is explicitly known to be non-vision
+   * (`supportsVision === false`). Unknown values (e.g. cloud models) are
+   * assumed to support vision.
+   */
+  modelSupportsVision(provider: ProviderProfile, model: string | Model): boolean {
+    const modelObj = typeof model === 'string' ? this.getModelSettings(provider.id, model) : model;
+    return modelObj?.supportsVision !== false;
   }
 
   createLlm(

@@ -10,6 +10,35 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultUsageReport } from '@/models/providers/default';
 
+const OLLAMA_SHOW_TIMEOUT_MS = 5000;
+
+/**
+ * Detects whether an Ollama model supports image (vision) input by querying
+ * the model's capabilities via the `/api/show` endpoint. Returns `false` on
+ * any error so that non-vision local models never receive image input.
+ */
+const detectOllamaVisionCapability = async (apiBase: string, modelName: string): Promise<boolean> => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OLLAMA_SHOW_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${apiBase}/show`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: modelName }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      return false;
+    }
+    const data = await response.json();
+    return Array.isArray(data?.capabilities) && data.capabilities.includes('vision');
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 export const loadOllamaModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOllamaProvider(profile.provider)) {
     return { models: [], success: false };
@@ -37,13 +66,14 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
     }
 
     const data = await response.json();
-    const models =
-      data?.models?.map((m: { name: string }) => {
-        return {
-          id: m.name,
-          providerId: profile.id,
-        } satisfies Model;
-      }) || [];
+    const rawModels: Array<{ name: string }> = data?.models || [];
+    const models = await Promise.all(
+      rawModels.map(async (m) => ({
+        id: m.name,
+        providerId: profile.id,
+        supportsVision: await detectOllamaVisionCapability(normalized, m.name),
+      })),
+    );
     logger.info(`Loaded ${models.length} Ollama models from ${effectiveBaseUrl} for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {

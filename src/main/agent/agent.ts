@@ -65,6 +65,7 @@ import {
   isNetworkError,
   readFileContent,
   safeStringifyToolOutput,
+  stripImageParts,
 } from './utils';
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
@@ -885,6 +886,8 @@ export class Agent {
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
+      const shouldSendImages = settings.sendImagesToModel !== false && this.modelManager.modelSupportsVision(provider, modelName);
+
       logger.debug('Parameters:', {
         model: typeof model !== 'string' ? model.modelId : model,
         temperature: effectiveTemperature,
@@ -920,6 +923,7 @@ export class Agent {
         };
 
         const optimizedMessages = await getOptimizedMessages();
+        const finalMessages = shouldSendImages ? optimizedMessages : stripImageParts(optimizedMessages);
 
         return {
           providerOptions,
@@ -930,7 +934,7 @@ export class Agent {
             }),
           }),
           instructions: systemPrompt,
-          messages: optimizedMessages,
+          messages: finalMessages,
           tools: toolSet,
           maxOutputTokens: effectiveMaxOutputTokens,
           maxRetries: MAX_RETRIES,
