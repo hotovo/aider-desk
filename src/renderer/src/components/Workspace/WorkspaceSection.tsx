@@ -24,6 +24,7 @@ type Props = {
   actions?: ReactNode;
   searchField?: ReactNode;
   emptyContent?: ReactNode;
+  isLoading?: boolean;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
@@ -55,6 +56,7 @@ export const WorkspaceSection = ({
   actions,
   searchField,
   emptyContent,
+  isLoading,
   showBorderTop = false,
   disabledRuleFiles,
   totalRuleCount,
@@ -101,6 +103,7 @@ export const WorkspaceSection = ({
           os={os}
           searchField={searchField}
           emptyContent={emptyContent}
+          isLoading={isLoading}
           disabledRuleFiles={disabledRuleFiles}
           onToggleRuleFile={onToggleRuleFile}
           onFileDiffClick={onFileDiffClick}

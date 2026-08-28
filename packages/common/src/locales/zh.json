@@ -83,6 +83,7 @@
     "expand": "展开",
     "enabled": "已启用",
     "noFiles": "没有找到文件",
+      "loadingFiles": "正在加载文件...",
     "clickToRefresh": "点击刷新",
     "closeTasks": "关闭任务",
     "toggleTasks": "切换任务",

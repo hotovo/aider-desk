@@ -83,6 +83,7 @@
     "expand": "Expand",
     "enabled": "Enabled",
     "noFiles": "No files",
+      "loadingFiles": "Loading files...",
     "clickToRefresh": "Click to refresh",
     "closeTasks": "Close Tasks",
     "toggleTasks": "Toggle Tasks",

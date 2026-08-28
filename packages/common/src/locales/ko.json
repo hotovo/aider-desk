@@ -82,6 +82,7 @@
     "expand": "펼치기",
     "enabled": "사용",
     "noFiles": "파일 없음",
+      "loadingFiles": "파일 로드 중...",
     "clickToRefresh": "클릭하여 새로고침",
     "closeTasks": "작업 닫기",
     "toggleTasks": "작업 토글",

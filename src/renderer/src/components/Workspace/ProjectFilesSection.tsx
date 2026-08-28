@@ -222,6 +222,7 @@ export const ProjectFilesSection = ({
         os={os}
         actions={projectActions}
         searchField={searchField}
+        isLoading={isRefreshing}
         showBorderTop={showBorderTop}
         onToggle={onToggle}
         onFileDiffClick={() => {}}

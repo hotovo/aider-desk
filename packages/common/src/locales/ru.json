@@ -83,6 +83,7 @@
     "expand": "Развернуть",
     "enabled": "Включено",
     "noFiles": "Нет файлов",
+      "loadingFiles": "Загрузка файлов...",
     "clickToRefresh": "Нажмите для обновления",
     "closeTasks": "Закрыть задачи",
     "toggleTasks": "Переключить задачи",

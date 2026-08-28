@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 
 import { SectionHeader } from './SectionHeader';
+import { SectionLoading } from './SectionLoading';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
@@ -152,7 +153,9 @@ export const RulesSection = ({
           exit={{ opacity: 0, height: 0 }}
           transition={{ duration: 0.3, ease: 'easeInOut' }}
         >
-          {hasContent ? (
+          {isRefreshing ? (
+            <SectionLoading label={t('common.loadingFiles')} />
+          ) : hasContent ? (
             sortedRulesFiles.map((file) => {
               const isDisabled = disabledRuleFiles.includes(file.path);
               return (

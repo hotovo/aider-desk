@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
 import { TreeItemRenderer } from './TreeItemRenderer';
+import { SectionLoading } from './SectionLoading';
 
 import type { SectionType, TreeItem } from './types';
 
@@ -19,6 +20,7 @@ type Props = {
   os: OS | null;
   searchField?: ReactNode;
   emptyContent?: ReactNode;
+  isLoading?: boolean;
   disabledRuleFiles?: string[];
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
@@ -41,6 +43,7 @@ export const SectionContent = ({
   os,
   searchField,
   emptyContent,
+  isLoading,
   disabledRuleFiles,
   onToggleRuleFile,
   onFileDiffClick,
@@ -125,7 +128,9 @@ export const SectionContent = ({
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
-        {hasContent ? (
+        {isLoading ? (
+          <SectionLoading label={t('common.loadingFiles')} />
+        ) : hasContent ? (
           <ControlledTreeEnvironment
             items={treeData}
             getItemTitle={(item) => item.data}
