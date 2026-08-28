@@ -978,30 +978,45 @@ export class Agent {
             return;
           }
 
-          currentStepMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, effectiveAbortSignal);
-          const extensionResult = await this.extensionManager.dispatchEvent(
-            'onAgentStepFinished',
-            {
-              mode,
-              agentProfile: profile,
-              currentResponseId,
-              stepResult,
-              finishReason,
-              responseMessages: currentStepMessages,
-            },
-            task.project,
-            task,
-          );
-          currentStepMessages = extensionResult.responseMessages;
-          finishReason = extensionResult.finishReason;
+          try {
+            currentStepMessages = await this.processStep(currentResponseId, stepResult, task, provider, modelName, promptContext, effectiveAbortSignal);
+            const extensionResult = await this.extensionManager.dispatchEvent(
+              'onAgentStepFinished',
+              {
+                mode,
+                agentProfile: profile,
+                currentResponseId,
+                stepResult,
+                finishReason,
+                responseMessages: currentStepMessages,
+              },
+              task.project,
+              task,
+            );
+            currentStepMessages = extensionResult.responseMessages;
+            finishReason = extensionResult.finishReason;
 
-          currentResponseId = uuidv4();
-          responseMessageIndex = 0;
-          streamingMessageIds.clear();
+            currentResponseId = uuidv4();
+            responseMessageIndex = 0;
+            streamingMessageIds.clear();
 
-          if (currentStepMessages.length > 0) {
-            // Reset retry count when we get a response
-            retryCount = 0;
+            if (currentStepMessages.length > 0) {
+              // Reset retry count when we get a response
+              retryCount = 0;
+            }
+          } catch (error) {
+            // The AI SDK swallows errors thrown in onStepEnd callbacks, so
+            // capture them here to stop the loop instead of silently re-sending
+            // the same prompt on the next iteration
+            logger.error('Error processing step result:', error);
+            iterationError = error;
+            if (typeof error === 'string') {
+              task.addLogMessage('error', error, false, promptContext);
+            } else if (error instanceof Error) {
+              task.addLogMessage('error', error.message, false, promptContext);
+            } else {
+              task.addLogMessage('error', JSON.stringify(error), false, promptContext);
+            }
           }
         };
 

@@ -777,16 +777,22 @@ export class ModelManager {
       throw new Error(`Unsupported LLM provider: ${provider.provider.name}`);
     }
 
-    // Resolve Model object
-    let modelObj: Model | undefined;
+    // Resolve Model object, falling back to a minimal object so usage reports
+    // still work when provider models failed to load (e.g. network issues)
+    let modelObj: Model;
     if (typeof model === 'string') {
-      modelObj = this.getModelSettings(provider.id, model, true);
+      const foundModel = this.getModelSettings(provider.id, model, true);
+      if (foundModel) {
+        modelObj = foundModel;
+      } else {
+        logger.warn(`Model ${model} not found in provider ${provider.id}, generating usage report without model info`);
+        modelObj = {
+          id: model,
+          providerId: provider.id,
+        };
+      }
     } else {
       modelObj = model;
-    }
-
-    if (!modelObj) {
-      throw new Error(`Model not found: ${model}`);
     }
 
     return strategy.getUsageReport(task, provider, modelObj, usage, providerMetadata);

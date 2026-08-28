@@ -12,6 +12,8 @@
 - added loading indicators for workspace sections
 - updated task creation tool with more clear create only, wait for finish, and run in background modes
 - added highlighted background for task sidebar filter and search icons when active
+- fixed agent loop silently re-sending the same prompt when step processing failed
+- fixed usage reports failing when provider models failed to load
 
 ## [0.80.0]
 
