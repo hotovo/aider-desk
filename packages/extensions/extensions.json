@@ -9,7 +9,8 @@
       "hasDependencies": false,
       "capabilities": [
         "tools"
-      ]
+      ],
+      "installCount": 5
     },
     {
       "id": "wakatime",
@@ -19,7 +20,8 @@
       "type": "single",
       "capabilities": [
         "tracking"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "pirate",
@@ -30,7 +32,8 @@
       "capabilities": [
         "agents",
         "example"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "generate-tests",
@@ -41,7 +44,8 @@
       "capabilities": [
         "commands",
         "example"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "questions",
@@ -53,7 +57,8 @@
       "capabilities": [
         "commands",
         "ui"
-      ]
+      ],
+      "installCount": 5
     },
     {
       "id": "theme",
@@ -63,7 +68,8 @@
       "type": "single",
       "capabilities": [
         "commands"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "plan-mode",
@@ -73,7 +79,8 @@
       "type": "single",
       "capabilities": [
         "modes"
-      ]
+      ],
+      "installCount": 7
     },
     {
       "id": "protected-paths",
@@ -84,7 +91,8 @@
       "hasDependencies": false,
       "capabilities": [
         "security"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "permission-gate",
@@ -94,7 +102,8 @@
       "type": "single",
       "capabilities": [
         "security"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "ultrathink",
@@ -104,7 +113,8 @@
       "type": "single",
       "capabilities": [
         "optimization"
-      ]
+      ],
+      "installCount": 6
     },
     {
       "id": "external-rules",
@@ -115,7 +125,8 @@
       "hasDependencies": false,
       "capabilities": [
         "context"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "external-skills",
@@ -126,7 +137,8 @@
       "hasDependencies": false,
       "capabilities": [
         "context"
-      ]
+      ],
+      "installCount": 5
     },
     {
       "id": "learn",
@@ -138,7 +150,8 @@
       "capabilities": [
         "commands",
         "tools"
-      ]
+      ],
+      "installCount": 4
     },
     {
       "id": "legacy-system-prompt",
@@ -149,7 +162,8 @@
       "hasDependencies": true,
       "capabilities": [
         "context"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "sound-notification",
@@ -160,7 +174,8 @@
       "hasDependencies": false,
       "capabilities": [
         "notifications"
-      ]
+      ],
+      "installCount": 4
     },
     {
       "id": "sandbox",
@@ -175,7 +190,8 @@
       "supportedOS": [
         "linux",
         "macos"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "rtk",
@@ -191,7 +207,8 @@
       "supportedOS": [
         "linux",
         "macos"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "redact-secrets",
@@ -202,7 +219,8 @@
       "hasDependencies": true,
       "capabilities": [
         "security"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "chunkhound-search",
@@ -213,7 +231,8 @@
       "hasDependencies": false,
       "capabilities": [
         "search"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -224,7 +243,8 @@
       "hasDependencies": false,
       "capabilities": [
         "search"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "tree-sitter-repo-map",
@@ -236,7 +256,8 @@
       "capabilities": [
         "context",
         "commands"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "context-autocompletion-words",
@@ -247,7 +268,8 @@
       "hasDependencies": true,
       "capabilities": [
         "context"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "lsp",
@@ -259,7 +281,8 @@
       "capabilities": [
         "tools",
         "code-intelligence"
-      ]
+      ],
+      "installCount": 5
     },
     {
       "id": "plannotator",
@@ -273,7 +296,8 @@
         "tools",
         "commands",
         "workflows"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "programmatic-tool-calls",
@@ -284,7 +308,8 @@
       "hasDependencies": true,
       "capabilities": [
         "tools"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "ui-placement-demo",
@@ -295,7 +320,8 @@
       "capabilities": [
         "ui",
         "example"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "multi-model-run",
@@ -307,7 +333,8 @@
       "capabilities": [
         "ui",
         "workflows"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "providers-quota-extension",
@@ -318,7 +345,8 @@
       "hasDependencies": true,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "openai-codex",
@@ -329,7 +357,8 @@
       "hasDependencies": true,
       "capabilities": [
         "providers"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "fff",
@@ -345,7 +374,8 @@
       "supportedOS": [
         "linux",
         "macos"
-      ]
+      ],
+      "installCount": 6
     },
     {
       "id": "searxng-search",
@@ -357,7 +387,8 @@
       "capabilities": [
         "tools",
         "search"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "seek",
@@ -373,7 +404,8 @@
       "supportedOS": [
         "linux",
         "macos"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "tps-counter",
@@ -384,7 +416,8 @@
       "hasDependencies": false,
       "capabilities": [
         "metrics"
-      ]
+      ],
+      "installCount": 7
     },
     {
       "id": "verifier",
@@ -396,7 +429,8 @@
       "capabilities": [
         "workflows",
         "ui"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "bmad",
@@ -408,7 +442,8 @@
       "capabilities": [
         "modes",
         "ui"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "claude-agent-sdk",
@@ -420,7 +455,8 @@
       "capabilities": [
         "providers",
         "agent-loop"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "auggie-sdk",
@@ -431,7 +467,8 @@
       "hasDependencies": true,
       "capabilities": [
         "providers"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "cursor",
@@ -442,7 +479,8 @@
       "hasDependencies": true,
       "capabilities": [
         "providers"
-      ]
+      ],
+      "installCount": 0
     },
     {
       "id": "cursor-sdk",
@@ -454,7 +492,8 @@
       "capabilities": [
         "providers",
         "agent-loop"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "github-copilot",
@@ -466,7 +505,8 @@
       "capabilities": [
         "providers",
         "agent-loop"
-      ]
+      ],
+      "installCount": 2
     },
     {
       "id": "checkpoints",
@@ -478,7 +518,8 @@
       "capabilities": [
         "events",
         "ui"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "codegraph",
@@ -490,7 +531,8 @@
       "capabilities": [
         "tools",
         "search"
-      ]
+      ],
+      "installCount": 4
     },
     {
       "id": "kanban",
@@ -501,7 +543,8 @@
       "hasDependencies": false,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 6
     },
     {
       "id": "doom",
@@ -512,7 +555,8 @@
       "hasDependencies": false,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 1
     },
     {
       "id": "my-minions",
@@ -524,7 +568,8 @@
       "capabilities": [
         "agents",
         "example"
-      ]
+      ],
+      "installCount": 4
     },
     {
       "id": "wigolo",
@@ -536,7 +581,8 @@
       "capabilities": [
         "tools",
         "search"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "destructive-command-guard",
@@ -548,7 +594,8 @@
       "capabilities": [
         "security",
         "commands"
-      ]
+      ],
+      "installCount": 3
     },
     {
       "id": "git-log",
@@ -559,7 +606,8 @@
       "hasDependencies": false,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 6
     },
     {
       "id": "skill-gallery",
@@ -570,7 +618,8 @@
       "hasDependencies": true,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 10
     },
     {
       "id": "task-scheduler",
@@ -583,7 +632,8 @@
         "ui",
         "commands",
         "events"
-      ]
+      ],
+      "installCount": 4
     },
     {
       "id": "reasoning-selector",
@@ -594,7 +644,8 @@
       "hasDependencies": false,
       "capabilities": [
         "ui"
-      ]
+      ],
+      "installCount": 6
     }
   ]
 }
