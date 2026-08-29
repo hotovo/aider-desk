@@ -21,6 +21,7 @@
 - added reading context window from Ollama models' reported context_length, enabling the token usage bar and percentage-based auto-compaction
 - added image support for queued prompts, now shown with an image indicator in the queued prompts list
 - added install counts for available extensions with sorting by most installed or name
+- added support for cloning repositories over SSH
 
 ## [0.80.0]
 

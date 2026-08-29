@@ -53,9 +53,21 @@ describe('parseRepositoryUrl', () => {
     });
   });
 
-  it('rejects ssh, SCP-style, and shorthand forms', () => {
-    expect(parseRepositoryUrl('ssh://git@github.com:22/owner/repo.git')).toBeNull();
-    expect(parseRepositoryUrl('git@github.com:owner/repo.git')).toBeNull();
+  it('parses ssh URL with a custom port', () => {
+    expect(parseRepositoryUrl('ssh://git@github.com:22/owner/repo.git')).toEqual({
+      cloneUrl: 'ssh://git@github.com:22/owner/repo.git',
+      repoName: 'repo',
+    });
+  });
+
+  it('parses SCP-style SSH URL', () => {
+    expect(parseRepositoryUrl('git@github.com:owner/repo.git')).toEqual({
+      cloneUrl: 'git@github.com:owner/repo.git',
+      repoName: 'repo',
+    });
+  });
+
+  it('rejects shorthand forms', () => {
     expect(parseRepositoryUrl('owner/repo')).toBeNull();
     expect(parseRepositoryUrl('owner/repo.git')).toBeNull();
   });
@@ -120,6 +132,13 @@ describe('cloneProjectRepository', () => {
     expect(result).toBe('/tmp/aider-desk-projects/my-repo');
     expect(fs.promises.mkdir).toHaveBeenCalledWith(targetDir, { recursive: true });
     expect(getMockClone()).toHaveBeenCalledWith('https://github.com/owner/my-repo.git', '/tmp/aider-desk-projects/my-repo');
+  });
+
+  it('clones an SCP-style SSH repository', async () => {
+    const result = await cloneProjectRepository('git@github.com:owner/my-repo.git', targetDir);
+
+    expect(result).toBe('/tmp/aider-desk-projects/my-repo');
+    expect(getMockClone()).toHaveBeenCalledWith('git@github.com:owner/my-repo.git', '/tmp/aider-desk-projects/my-repo');
   });
 
   it('appends suffix when directory name already exists', async () => {

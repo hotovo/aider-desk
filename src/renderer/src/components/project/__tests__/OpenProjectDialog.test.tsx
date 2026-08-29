@@ -128,6 +128,26 @@ describe('OpenProjectDialog', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('clones an SSH repository', async () => {
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={vi.fn()} openProjects={[]} />);
+
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+    const input = screen.getByTestId('repository-url-input');
+    fireEvent.change(input, { target: { value: 'ftp://github.com/owner/repo.git' } });
+    expect(screen.getByText('common.clone')).toBeDisabled();
+
+    fireEvent.change(input, { target: { value: 'git@github.com:owner/repo.git' } });
+
+    await waitFor(() => {
+      expect(screen.getByText('common.clone')).not.toBeDisabled();
+    });
+    fireEvent.click(screen.getByText('common.clone'));
+
+    await waitFor(() => {
+      expect(mockApi.cloneProject).toHaveBeenCalledWith('git@github.com:owner/repo.git', undefined);
+    });
+  });
+
   it('preloads and clears the saved clone destination', async () => {
     localStorage.setItem('aider-desk-clone-destination', '/custom/projects');
     render(<OpenProjectDialog onClose={vi.fn()} onAddProject={vi.fn()} openProjects={[]} />);

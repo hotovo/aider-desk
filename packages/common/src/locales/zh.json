@@ -1071,7 +1071,7 @@
     "cantOpenProject": "无法打开此项目。",
     "openLocalProject": "打开本地项目",
     "cloneFromGit": "从 Git 克隆",
-    "repositoryUrlPlaceholder": "例如 https://github.com/owner/repo.git",
+    "repositoryUrlPlaceholder": "例如 https://github.com/owner/repo.git 或 git@github.com:owner/repo.git",
     "cloneDestinationPlaceholder": "默认：~/.aider-desk/projects",
     "repositoryUrlLabel": "仓库 URL",
     "cloneDestinationLabel": "目标文件夹",

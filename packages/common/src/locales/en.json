@@ -1138,7 +1138,7 @@
     "cantOpenProject": "This project can not be opened.",
     "openLocalProject": "Open Local",
     "cloneFromGit": "Clone from Git",
-    "repositoryUrlPlaceholder": "e.g. https://github.com/owner/repo.git",
+    "repositoryUrlPlaceholder": "e.g. https://github.com/owner/repo.git or git@github.com:owner/repo.git",
     "cloneDestinationPlaceholder": "default: ~/.aider-desk/projects",
     "repositoryUrlLabel": "Repository URL",
     "cloneDestinationLabel": "Destination folder",

@@ -1132,7 +1132,7 @@
     "cantOpenProject": "Этот проект не может быть открыт.",
     "openLocalProject": "Открыть локальный",
     "cloneFromGit": "Клонировать из Git",
-    "repositoryUrlPlaceholder": "Например, https://github.com/owner/repo.git",
+    "repositoryUrlPlaceholder": "Например, https://github.com/owner/repo.git или git@github.com:owner/repo.git",
     "cloneDestinationPlaceholder": "По умолчанию: ~/.aider-desk/projects",
     "repositoryUrlLabel": "URL репозитория",
     "cloneDestinationLabel": "Папка назначения",
