@@ -1,3 +1,4 @@
+import { GeminiVoiceModel } from '@common/agent';
 import { GoogleGenAI, LiveServerMessage, Modality, Session } from '@google/genai';
 
 import { VoiceProvider, VoiceSession, VoiceSessionConfig, VoiceSessionState } from './types';
@@ -46,12 +47,21 @@ export class GeminiVoiceProvider implements VoiceProvider {
         },
       });
 
+      // The transcription-only live model streams text transcriptions instead of audio.
+      const connectConfig =
+        config.model === GeminiVoiceModel.Gemini35TranscribeLive
+          ? {
+              responseModalities: [Modality.TEXT],
+              inputAudioTranscription: {},
+            }
+          : {
+              responseModalities: [Modality.AUDIO],
+              inputAudioTranscription: {},
+            };
+
       const session = await client.live.connect({
         model: config.model,
-        config: {
-          responseModalities: [Modality.AUDIO],
-          inputAudioTranscription: {},
-        },
+        config: connectConfig,
         callbacks: {
           onopen: () => {
             this.setState(VoiceSessionState.ACTIVE);

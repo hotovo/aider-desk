@@ -14,6 +14,7 @@
 - added highlighted background for task sidebar filter and search icons when active
 - fixed agent loop silently re-sending the same prompt when step processing failed
 - fixed usage reports failing when provider models failed to load
+- added support for the gemini-3.5-transcribe-live transcription voice model, now the default for Gemini voice
 
 ## [0.80.0]
 

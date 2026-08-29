@@ -337,6 +337,7 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
   ];
 
   const geminiModelOptions: Option[] = [
+    { label: GeminiVoiceModel.Gemini35TranscribeLive, value: GeminiVoiceModel.Gemini35TranscribeLive },
     { label: GeminiVoiceModel.Gemini31FlashLivePreview, value: GeminiVoiceModel.Gemini31FlashLivePreview },
     { label: GeminiVoiceModel.Gemini25FlashNativeAudio, value: GeminiVoiceModel.Gemini25FlashNativeAudio },
   ];
@@ -430,7 +431,8 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
   const openAiLanguage = openAiProvider?.voice?.language ?? 'en';
 
   const geminiProvider = selectedProfile?.provider.name === 'gemini' ? (selectedProfile.provider as GeminiProvider) : undefined;
-  const geminiModel = geminiProvider?.voice?.model ?? GeminiVoiceModel.Gemini31FlashLivePreview;
+  const geminiModel = geminiProvider?.voice?.model ?? GeminiVoiceModel.Gemini35TranscribeLive;
+  const isGeminiTranscriptionModel = providerName === 'gemini' && geminiModel === GeminiVoiceModel.Gemini35TranscribeLive;
   const geminiTemperature = geminiProvider?.voice?.temperature ?? 0.7;
 
   const [geminiTemperatureDraft, setGeminiTemperatureDraft] = useState<number>(geminiTemperature);
@@ -522,7 +524,7 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
                 />
               )}
 
-              {providerName === 'gemini' && (
+              {providerName === 'gemini' && !isGeminiTranscriptionModel && (
                 <Slider
                   label={
                     <div className="flex items-center text-sm">
@@ -538,12 +540,14 @@ export const VoiceSettings = ({ providers: localProviders, setProviders: setLoca
               )}
             </div>
 
-            <TextArea
-              label={t('settings.voice.systemInstructions')}
-              value={systemInstructions}
-              onChange={(e) => handleSystemInstructionsChange(e.target.value)}
-              rows={4}
-            />
+            {!isGeminiTranscriptionModel && (
+              <TextArea
+                label={t('settings.voice.systemInstructions')}
+                value={systemInstructions}
+                onChange={(e) => handleSystemInstructionsChange(e.target.value)}
+                rows={4}
+              />
+            )}
           </div>
         )}
       </Section>

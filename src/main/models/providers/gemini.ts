@@ -261,10 +261,25 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
     });
 
     // Default to the model specified in requirements or fallback
-    const modelId = provider.voice?.model ?? GeminiVoiceModel.Gemini31FlashLivePreview;
+    const modelId = provider.voice?.model ?? GeminiVoiceModel.Gemini35TranscribeLive;
     const temperature = provider.voice?.temperature ?? 0.7;
     const systemInstruction = provider.voice?.systemInstructions ?? DEFAULT_VOICE_SYSTEM_INSTRUCTIONS;
     const idleTimeoutMs = provider.voice?.idleTimeoutMs ?? 5000;
+
+    // The transcription-only live model streams text transcriptions instead of audio
+    // and does not support system instructions or temperature.
+    const connectConfig =
+      modelId === GeminiVoiceModel.Gemini35TranscribeLive
+        ? {
+            responseModalities: [Modality.TEXT],
+            inputAudioTranscription: {},
+          }
+        : {
+            inputAudioTranscription: {},
+            temperature,
+            responseModalities: [Modality.AUDIO],
+            systemInstruction,
+          };
 
     // Create ephemeral token
     // The token is valid for 1 minute for session initiation, and 30 minutes for the session duration by default.
@@ -276,12 +291,7 @@ const createGeminiVoiceSession = async (profile: ProviderProfile, settings: Sett
         newSessionExpireTime: expireTime,
         liveConnectConstraints: {
           model: modelId,
-          config: {
-            inputAudioTranscription: {},
-            temperature,
-            responseModalities: [Modality.AUDIO],
-            systemInstruction,
-          },
+          config: connectConfig,
         },
         httpOptions: {
           apiVersion: 'v1alpha',
