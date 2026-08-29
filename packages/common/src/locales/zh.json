@@ -1597,6 +1597,7 @@
     "editQueuedPrompt": "编辑",
     "saveQueuedPrompt": "保存",
     "cancelEditQueuedPrompt": "取消",
+    "queuedPromptImages": "已附加 {{count}} 张图片",
     "answers": {
       "yes": "(Y)是",
       "no": "(N)否",

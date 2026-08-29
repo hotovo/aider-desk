@@ -881,6 +881,7 @@ export class Task {
         text: prompt,
         mode,
         timestamp: Date.now(),
+        images,
       };
       this.queuedPrompts.push(queuedPrompt);
       this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
@@ -1005,10 +1006,10 @@ export class Task {
     if (this.queuedPrompts.length > 0) {
       const nextPrompt = this.queuedPrompts.shift();
       if (nextPrompt) {
-        this.addUserMessage(nextPrompt.id, nextPrompt.text);
+        this.addUserMessage(nextPrompt.id, nextPrompt.text, undefined, nextPrompt.images);
         this.addLogMessage('loading');
         this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
-        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id, false);
+        return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id, false, nextPrompt.images);
       }
     }
 
@@ -3028,7 +3029,7 @@ export class Task {
     }
 
     // interrupting to allow the next queued prompt to be sent
-    this.addUserMessage(queuedPrompt.id, queuedPrompt.text);
+    this.addUserMessage(queuedPrompt.id, queuedPrompt.text, undefined, queuedPrompt.images);
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
   }

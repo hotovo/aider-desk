@@ -1637,6 +1637,7 @@
     "editQueuedPrompt": "Редактировать",
     "saveQueuedPrompt": "Сохранить",
     "cancelEditQueuedPrompt": "Отмена",
+    "queuedPromptImages": "Прикреплено изображений: {{count}}",
     "answers": {
       "yes": "(Д)а",
       "no": "(Н)ет",

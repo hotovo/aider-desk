@@ -67,6 +67,7 @@ const ReorderQueuedPromptsSchema = z.object({
       text: z.string(),
       mode: z.string(),
       timestamp: z.number(),
+      images: z.array(z.string()).optional(),
     }),
   ),
 });

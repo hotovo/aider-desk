@@ -19,6 +19,7 @@
 - fixed auto-compaction not triggering for models with unknown context window, now falls back to the configured token threshold
 - fixed context size undercounting that skipped compaction when tool results were appended after the last usage report
 - added reading context window from Ollama models' reported context_length, enabling the token usage bar and percentage-based auto-compaction
+- added image support for queued prompts, now shown with an image indicator in the queued prompts list
 
 ## [0.80.0]
 

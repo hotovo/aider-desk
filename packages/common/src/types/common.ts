@@ -377,6 +377,7 @@ export interface QueuedPromptData {
   text: string;
   mode: Mode;
   timestamp: number;
+  images?: string[];
 }
 
 export interface QueuedPromptsUpdatedData {

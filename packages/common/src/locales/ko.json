@@ -1616,6 +1616,7 @@
     "editQueuedPrompt": "편집",
     "saveQueuedPrompt": "저장",
     "cancelEditQueuedPrompt": "취소",
+    "queuedPromptImages": "첨부된 이미지 {{count}}개",
     "answers": {
       "yes": "(Y)예",
       "no": "(N)아니요",

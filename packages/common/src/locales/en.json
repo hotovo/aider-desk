@@ -1646,6 +1646,7 @@
     "editQueuedPrompt": "Edit",
     "saveQueuedPrompt": "Save",
     "cancelEditQueuedPrompt": "Cancel",
+    "queuedPromptImages": "{{count}} image(s) attached",
     "answers": {
       "yes": "(Y)es",
       "no": "(N)o",
