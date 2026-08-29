@@ -16,6 +16,9 @@
 - fixed usage reports failing when provider models failed to load
 - added support for the gemini-3.5-transcribe-live transcription voice model, now the default for Gemini voice
 - fixed worktree merge failing on in-progress rebase and untracked stash files
+- fixed auto-compaction not triggering for models with unknown context window, now falls back to the configured token threshold
+- fixed context size undercounting that skipped compaction when tool results were appended after the last usage report
+- added reading context window from Ollama models' reported context_length, enabling the token usage bar and percentage-based auto-compaction
 
 ## [0.80.0]
 
