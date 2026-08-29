@@ -252,9 +252,6 @@ src/
     versions/
       index.ts
       versions-manager.ts
-    voice/
-      index.ts
-      VoiceService.ts
     worktrees/
       index.ts
       worktree-manager.ts
@@ -609,6 +606,7 @@ src/
           RulesSection.tsx
           SectionContent.tsx
           SectionHeader.tsx
+          SectionLoading.tsx
           SkillsSection.tsx
           TreeItemRenderer.tsx
           types.ts
@@ -1971,12 +1969,11 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, TaskExecutionMode, ToolApprovalState } from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
 ⋮----
-import { coerceBoolean } from '@/agent/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import { search } from '@/utils/probe';
 import logger from '@/logger';
@@ -2518,6 +2515,10 @@ const getOptimizedMessages = async () =>
 const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // Reset retry count when we get a response
+⋮----
+// The AI SDK swallows errors thrown in onStepEnd callbacks, so
+// capture them here to stop the loop instead of silently re-sending
+// the same prompt on the next iteration
 ⋮----
 // @ts-expect-error checking keys in error
 ⋮----
@@ -7141,7 +7142,8 @@ createLlm(
 ⋮----
 getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData
 ⋮----
-// Resolve Model object
+// Resolve Model object, falling back to a minimal object so usage reports
+// still work when provider models failed to load (e.g. network issues)
 ⋮----
 getCacheControl(provider: ProviderProfile, modelId: string): CacheControl | undefined
 ⋮----
@@ -11606,16 +11608,6 @@ public async downloadLatestAiderDesk(): Promise<void>
 // Reset autoDownload back to false after initiating
 ⋮----
 autoUpdater.autoDownload = false; // Ensure it's reset on error
-
-================
-File: src/main/voice/index.ts
-================
-// Voice functionality is now handled directly by LlmProviderStrategy
-
-================
-File: src/main/voice/VoiceService.ts
-================
-// This file has been removed as voice functionality is now handled directly by LlmProviderStrategy
 
 ================
 File: src/main/worktrees/index.ts
@@ -16482,7 +16474,7 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
-import { AutonomyMode, ToolMessage } from '@common/types';
+import { AutonomyMode, TaskExecutionMode, ToolMessage } from '@common/types';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -16496,6 +16488,8 @@ type Props = {
   onRemoveUpTo?: () => void;
   hideMessageBar?: boolean;
 };
+⋮----
+const getExecutionModeLabel = (mode: TaskExecutionMode) =>
 ⋮----
 {/* Task Details */}
 
@@ -24736,6 +24730,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
+import { SectionLoading } from './SectionLoading';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
@@ -24747,6 +24742,8 @@ const getFileName = (filePath: string) =>
 // eslint-disable-next-line no-console
 ⋮----
 className=
+⋮----
+<SectionLoading label=
 
 ================
 File: src/renderer/src/components/Workspace/SectionContent.tsx
@@ -24758,6 +24755,7 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { TreeItemRenderer } from './TreeItemRenderer';
+import { SectionLoading } from './SectionLoading';
 ⋮----
 import type { SectionType, TreeItem } from './types';
 ⋮----
@@ -24772,6 +24770,7 @@ type Props = {
   os: OS | null;
   searchField?: ReactNode;
   emptyContent?: ReactNode;
+  isLoading?: boolean;
   disabledRuleFiles?: string[];
   onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
   onFileDiffClick: (file: UpdatedFile) => void;
@@ -24782,6 +24781,8 @@ type Props = {
   onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
+⋮----
+<SectionLoading label=
 
 ================
 File: src/renderer/src/components/Workspace/SectionHeader.tsx
@@ -24811,6 +24812,24 @@ type Props = {
 className=
 
 ================
+File: src/renderer/src/components/Workspace/SectionLoading.tsx
+================
+import { CgSpinner } from 'react-icons/cg';
+⋮----
+type Props = {
+  label: string;
+};
+⋮----
+export const SectionLoading = ({ label }: Props) => (
+  <div className="absolute inset-0 flex items-center justify-center">
+    <div className="flex items-center gap-1.5 text-2xs text-text-secondary">
+      <CgSpinner className="w-4 h-4 text-text-muted animate-spin" />
+      {label}
+    </div>
+  </div>
+);
+
+================
 File: src/renderer/src/components/Workspace/SkillsSection.tsx
 ================
 import { SkillDefinition } from '@common/types';
@@ -24824,12 +24843,15 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 ⋮----
 import { SectionHeader } from './SectionHeader';
+import { SectionLoading } from './SectionLoading';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useApi } from '@/contexts/ApiContext';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 ⋮----
 className=
+⋮----
+<SectionLoading label=
 ⋮----
 if (skill.dirPath)
 openFile(baseDir, `$
@@ -25035,6 +25057,7 @@ import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 ⋮----
 import { createFileTree } from './types';
+import { SectionLoading } from './SectionLoading';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
 import { groupFilesByCommit, UNCOMMITTED_GROUP_ID } from './group-files';
@@ -25096,6 +25119,8 @@ className=
 {/* Outer section header */}
 ⋮----
 {/* Content area */}
+⋮----
+<SectionLoading label=
 ⋮----
 {renderCommitGroupHeader(group, isGroupExpanded)}
 
@@ -25202,6 +25227,7 @@ type Props = {
   actions?: ReactNode;
   searchField?: ReactNode;
   emptyContent?: ReactNode;
+  isLoading?: boolean;
   showBorderTop?: boolean;
   disabledRuleFiles?: string[];
   totalRuleCount?: number;
@@ -25233,6 +25259,7 @@ export const WorkspaceSection = ({
   actions,
   searchField,
   emptyContent,
+  isLoading,
   showBorderTop = false,
   disabledRuleFiles,
   totalRuleCount,
@@ -30477,6 +30504,8 @@ export const countAllSubtasks = (taskId: string, allTasks: TaskData[]): number
 const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined =>
 ⋮----
 export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<string>, showArchived: boolean = false, searchQuery: string = ''): TaskData[] =>
+⋮----
+const isAnyAncestorArchived = (task: TaskData): boolean =>
 ⋮----
 const sortFn = (a: TaskData, b: TaskData) =>
 ⋮----
