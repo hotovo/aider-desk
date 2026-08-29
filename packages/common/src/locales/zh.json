@@ -547,11 +547,17 @@
         "remove": "移除仓库",
         "default": "默认仓库"
       },
+      "sort": {
+        "label": "排序方式",
+        "mostInstalled": "安装最多",
+        "name": "名称"
+      },
       "by": "作者",
       "enabled": "启用",
       "active": "激活",
       "disabled": "已禁用",
       "projectSpecific": "项目",
+      "totalInstalls": "总安装量",
       "hasDependencies": "有依赖",
       "osNotSupported": "不支持",
       "osNotSupportedTooltip": "此扩展可能无法在您的操作系统上运行。请查看扩展详情获取更多信息。",

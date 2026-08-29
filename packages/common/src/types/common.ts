@@ -1225,6 +1225,7 @@ export interface AvailableExtension {
   repositoryUrl: string;
   hasDependencies?: boolean;
   readmeContent?: string;
+  installCount?: number;
 }
 
 export interface ExtensionOperationResult {

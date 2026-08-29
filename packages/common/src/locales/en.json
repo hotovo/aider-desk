@@ -548,11 +548,17 @@
         "remove": "Remove repository",
         "default": "Default repository"
       },
+      "sort": {
+        "label": "Sort by",
+        "mostInstalled": "Most installed",
+        "name": "Name"
+      },
       "by": "by",
       "enabled": "Enabled",
       "active": "Active",
       "disabled": "Disabled",
       "projectSpecific": "Project",
+      "totalInstalls": "Total installs",
       "hasDependencies": "Has dependencies",
       "osNotSupported": "Not supported",
       "osNotSupportedTooltip": "This extension might not work on your operating system. Check the extension details for more information.",

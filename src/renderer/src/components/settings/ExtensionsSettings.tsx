@@ -13,6 +13,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
 import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { Select } from '@/components/common/Select';
 import { ExtensionCard } from '@/components/settings/ExtensionCard';
 
 // Helper to format repository URL for display
@@ -50,6 +51,11 @@ enum Tab {
   Installed = 'installed',
 }
 
+enum ExtensionSort {
+  MostInstalled = 'most-installed',
+  Name = 'name',
+}
+
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
@@ -74,6 +80,11 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const [expandedRepositories, setExpandedRepositories] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCapabilities, setSelectedCapabilities] = useState<Set<string>>(new Set());
+  const [availableSort, setAvailableSort] = useState<ExtensionSort>(ExtensionSort.MostInstalled);
+
+  const handleAvailableSortChange = (value: string) => {
+    setAvailableSort(value as ExtensionSort);
+  };
 
   // Track repositories that are currently being loaded
   const [loadingRepositories, setLoadingRepositories] = useState<Set<string>>(new Set());
@@ -464,12 +475,22 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
     return true;
   });
 
+  const sortedAvailableExtensions = [...filteredAvailableExtensions].sort((a, b) => {
+    if (availableSort === ExtensionSort.MostInstalled) {
+      const diff = (b.installCount ?? 0) - (a.installCount ?? 0);
+      if (diff !== 0) {
+        return diff;
+      }
+    }
+    return a.name.localeCompare(b.name);
+  });
+
   const renderAvailableTab = () => {
     // Group all extensions by repository URL
     const extensionsByRepository = new Map<string, AvailableExtension[]>();
 
     // Add all available extensions to the map
-    filteredAvailableExtensions.forEach((extension) => {
+    sortedAvailableExtensions.forEach((extension) => {
       const repo = extension.repositoryUrl;
       if (!extensionsByRepository.has(repo)) {
         extensionsByRepository.set(repo, []);
@@ -677,15 +698,32 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
 
       {/* Search and Filters */}
       <div className="space-y-2">
-        <div className="relative">
-          <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('settings.extensions.search.placeholder')}
-            className="pl-10 bg-bg-primary border w-full"
-            wrapperClassName="w-full"
-          />
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1">
+            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('settings.extensions.search.placeholder')}
+              className="pl-10 bg-bg-primary border w-full"
+              wrapperClassName="w-full"
+            />
+          </div>
+          {activeTab === Tab.Available && (
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="text-xs text-text-muted whitespace-nowrap">{t('settings.extensions.sort.label')}</span>
+              <Select
+                value={availableSort}
+                onChange={handleAvailableSortChange}
+                options={[
+                  { label: t('settings.extensions.sort.mostInstalled'), value: ExtensionSort.MostInstalled },
+                  { label: t('settings.extensions.sort.name'), value: ExtensionSort.Name },
+                ]}
+                size="sm"
+                className="min-w-[11rem]"
+              />
+            </div>
+          )}
         </div>
 
         {allCapabilities.length > 0 && (

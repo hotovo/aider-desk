@@ -27,6 +27,7 @@ const getExtensionData = (extension: InstalledExtension | AvailableExtension) =>
     readmeContent: extension.readmeContent,
     iconUrl: isLoadedExtension ? extension.metadata.iconUrl : extension.iconUrl,
     supportedOS: isLoadedExtension ? extension.metadata.supportedOS : extension.supportedOS,
+    installCount: isLoadedExtension ? undefined : extension.installCount,
   };
 };
 
@@ -140,8 +141,16 @@ export const ExtensionCard = ({
             {/* Info */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h4 className={clsx('text-sm font-semibold truncate', isDisabled ? 'text-text-muted' : 'text-text-primary')}>{data.name}</h4>
-                <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-medium font-mono">{`v${data.version}`}</span>
+                <h4 className={clsx('text-sm font-semibold truncate mr-2', isDisabled ? 'text-text-muted' : 'text-text-primary')}>{data.name}</h4>
+                {data.installCount !== undefined && (
+                  <Tooltip content={t('settings.extensions.totalInstalls')}>
+                    <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-tertiary font-medium flex items-center gap-1">
+                      <FaDownload className="w-2 h-2" />
+                      {data.installCount.toLocaleString()}
+                    </span>
+                  </Tooltip>
+                )}
+                <span className="text-3xs px-2 py-0.5 rounded bg-bg-tertiary text-text-tertiary font-medium">{`v${data.version}`}</span>
                 {isInstalled && !isDisabled && (
                   <span className="text-3xs px-2 py-0.5 rounded bg-success-subtle text-success font-semibold flex items-center gap-1">
                     {`✓ ${t('settings.extensions.active')}`}
@@ -155,9 +164,7 @@ export const ExtensionCard = ({
                 )}
                 {isOSNotSupported && (
                   <Tooltip content={t('settings.extensions.osNotSupportedTooltip')}>
-                    <span className="text-3xs px-2 py-0.5 rounded bg-warning-subtle text-warning font-semibold cursor-help">
-                      {t('settings.extensions.osNotSupported')}
-                    </span>
+                    <span className="text-3xs px-2 py-0.5 rounded bg-warning-subtle text-warning font-semibold">{t('settings.extensions.osNotSupported')}</span>
                   </Tooltip>
                 )}
               </div>
