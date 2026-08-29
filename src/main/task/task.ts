@@ -561,7 +561,7 @@ export class Task {
         // Only remove the worktree if no other tasks share it
         const isShared = this.project.isWorktreeSharedWithOtherTasks(existingWorktree.path, this.taskId);
         if (!isShared) {
-          await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree);
+          await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree, true);
         }
         void this.sendUpdatedFilesUpdated();
         void this.sendWorktreeIntegrationStatusUpdated();
@@ -4358,6 +4358,14 @@ ${error.stderr}`,
 
     await this.waitForCurrentPromptToFinish();
 
+    if (this.task.worktree) {
+      const rebaseState = await this.worktreeManager.getRebaseState(this.task.worktree.path);
+      if (rebaseState.inProgress) {
+        this.addLogMessage('error', 'worktree.switchToLocalRebaseInProgress', true);
+        throw new Error('Cannot switch to local mode while a rebase is in progress. Continue or abort the rebase first.');
+      }
+    }
+
     if (options?.mergeBeforeSwitch && this.task.worktree) {
       try {
         const effectiveTargetBranch = options.targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
@@ -4787,7 +4795,7 @@ ${error.stderr}`,
       this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
-      const { success, error } = await this.worktreeManager.rebaseMainIntoWorktree(
+      const { success, error, ontoCommit } = await this.worktreeManager.rebaseMainIntoWorktree(
         this.task.worktree.path,
         effectiveFromBranch,
         this.task.worktree.baseCommit,
@@ -4795,14 +4803,11 @@ ${error.stderr}`,
       );
 
       if (success) {
-        // Update baseCommit to the new HEAD after successful rebase
-        // This ensures subsequent rebases only replay commits made after this point
-        const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
-        if (newHead) {
+        if (ontoCommit) {
           await this.saveTask({
             worktree: {
               ...this.task.worktree,
-              baseCommit: newHead,
+              baseCommit: ontoCommit,
               baseBranch: effectiveFromBranch,
             },
           });
@@ -4815,7 +4820,9 @@ ${error.stderr}`,
       if (error) {
         this.addLogMessage('loading', undefined, true);
         const isConflict = error.gitOutput?.includes('Resolve all conflicts');
-        if (!isConflict) {
+        if (isConflict) {
+          this.addLogMessage('error', 'worktree.rebasePausedDueToConflicts', true);
+        } else {
           this.addLogMessage('error', error.getErrorDetails(), true);
         }
       }
@@ -5053,18 +5060,14 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', 'Continuing rebase...');
-      const { ontoBranch } = await this.worktreeManager.continueRebase(this.task.worktree.path);
+      const { ontoCommit, ontoBranch } = await this.worktreeManager.continueRebase(this.task.worktree.path);
 
-      // Update baseCommit to the new HEAD after successful rebase continuation
-      // This ensures subsequent rebases only replay commits made after this point
-      const newHead = await this.worktreeManager.getHeadCommit(this.task.worktree.path);
-      if (newHead) {
+      if (ontoCommit) {
         await this.saveTask({
           lastMergeState: undefined,
           worktree: {
             ...this.task.worktree,
-            baseCommit: newHead,
-            // Update baseBranch if we could determine it from the rebase state, otherwise keep existing
+            baseCommit: ontoCommit,
             baseBranch: ontoBranch || this.task.worktree.baseBranch,
           },
         });

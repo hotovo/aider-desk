@@ -328,8 +328,15 @@ export class WorktreeManager {
     }
   }
 
-  async removeWorktree(projectDir: string, worktree: Worktree): Promise<void> {
+  async removeWorktree(projectDir: string, worktree: Worktree, force = false): Promise<void> {
     return await withLock(`worktree-remove-${projectDir}-${worktree.path}`, async () => {
+      if (!force) {
+        const rebaseState = await this.getRebaseState(worktree.path);
+        if (rebaseState.inProgress) {
+          throw new Error('Cannot remove a worktree while a rebase is in progress. Continue or abort the rebase first.');
+        }
+      }
+
       try {
         await execWithShellPath(`git worktree remove "${worktree.path}" --force`, { cwd: projectDir });
 
@@ -502,13 +509,17 @@ export class WorktreeManager {
     return await this.getProjectMainBranch(project.path);
   }
 
-  async getHeadCommit(worktreePath: string): Promise<string | undefined> {
+  async getCommitHash(worktreePath: string, ref: string): Promise<string | undefined> {
     try {
-      const { stdout } = await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+      const { stdout } = await execWithShellPath(`git rev-parse ${ref}`, { cwd: worktreePath });
       return stdout.trim();
     } catch {
       return undefined;
     }
+  }
+
+  async getHeadCommit(worktreePath: string): Promise<string | undefined> {
+    return await this.getCommitHash(worktreePath, 'HEAD');
   }
 
   /**
@@ -750,6 +761,7 @@ export class WorktreeManager {
     success: boolean;
     error?: GitError;
     hasTempCommit?: boolean;
+    ontoCommit?: string;
   }> {
     return await withLock(`git-rebase-${worktreePath}`, async () => {
       const executedCommands: string[] = [];
@@ -764,6 +776,8 @@ export class WorktreeManager {
           gitError.workingDirectory = worktreePath;
           return { success: false, hasTempCommit: false, error: gitError };
         }
+
+        const ontoCommit = await this.getCommitHash(worktreePath, mainBranch);
 
         // 1. Check for uncommitted changes and create temporary commit if needed
         const hasChanges = await this.hasUncommittedChanges(worktreePath);
@@ -828,6 +842,7 @@ export class WorktreeManager {
         return {
           success: true,
           hasTempCommit: false,
+          ontoCommit,
         };
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };

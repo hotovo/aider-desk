@@ -22,6 +22,7 @@
 - added image support for queued prompts, now shown with an image indicator in the queued prompts list
 - added install counts for available extensions with sorting by most installed or name
 - added support for cloning repositories over SSH
+- fixed conflicted worktree rebases silently orphaning commits when switching to local mode
 
 ## [0.80.0]
 
