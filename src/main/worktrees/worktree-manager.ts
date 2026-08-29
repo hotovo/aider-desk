@@ -757,6 +757,14 @@ export class WorktreeManager {
       let hadUncommittedChanges = false;
 
       try {
+        // 0. Guard against starting a rebase while one is already in progress
+        const { inProgress: rebaseInProgress } = await this.getRebaseState(worktreePath);
+        if (rebaseInProgress) {
+          const gitError = new GitError('A rebase is already in progress in the worktree. Continue or abort the rebase first.');
+          gitError.workingDirectory = worktreePath;
+          return { success: false, hasTempCommit: false, error: gitError };
+        }
+
         // 1. Check for uncommitted changes and create temporary commit if needed
         const hasChanges = await this.hasUncommittedChanges(worktreePath);
 
@@ -921,6 +929,17 @@ export class WorktreeManager {
     try {
       logger.info(`Squashing and merging worktree to ${mainBranch}: ${worktreePath}`);
 
+      // SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
+      // would block our own rebase and must not be aborted by this operation
+      const { inProgress: rebaseInProgress } = await this.getRebaseState(worktreePath);
+      if (rebaseInProgress) {
+        const gitError = new GitError('Cannot squash merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.');
+        gitError.gitCommands = executedCommands;
+        gitError.workingDirectory = worktreePath;
+        gitError.projectPath = projectPath;
+        throw gitError;
+      }
+
       // Get current branch name in worktree (for logging purposes)
       let command = 'git branch --show-current';
       executedCommands.push(`git branch --show-current (in ${worktreePath})`);
@@ -959,11 +978,16 @@ export class WorktreeManager {
         logger.debug(`Successfully rebased worktree onto ${mainBranch} before squashing`);
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };
-        // If rebase fails, abort it in the worktree
-        try {
-          await execWithShellPath('git rebase --abort', { cwd: worktreePath });
-        } catch {
-          // Ignore abort errors
+        // Only abort a rebase that this operation started - never a pre-existing rebase
+        // the user may still be resolving (e.g. started concurrently while we passed the guard)
+        const errOutput = err.stderr || err.stdout || '';
+        const preExistingRebase = errOutput.includes('already a rebase-merge directory') || errOutput.includes('already a rebase-apply directory');
+        if (!preExistingRebase) {
+          try {
+            await execWithShellPath('git rebase --abort', { cwd: worktreePath });
+          } catch {
+            // Ignore abort errors
+          }
         }
 
         const gitError = new GitError(`Failed to rebase worktree onto ${mainBranch} before squashing. Conflicts must be resolved first.`);
@@ -1036,6 +1060,11 @@ export class WorktreeManager {
 
       logger.info(`Successfully squashed and merged worktree to ${mainBranch} (worktree history preserved)`);
     } catch (error: unknown) {
+      // Preserve specific errors (e.g. rebase-in-progress guard, rebase conflict details)
+      if (error instanceof GitError) {
+        logger.error(`Failed to squash and merge worktree to ${mainBranch}:`, error);
+        throw error;
+      }
       const err = error as Error & { stderr?: string; stdout?: string };
       logger.error(`Failed to squash and merge worktree to ${mainBranch}:`, err);
 
@@ -1058,6 +1087,17 @@ export class WorktreeManager {
 
     try {
       logger.info(`Merging worktree to ${mainBranch} (without squashing): ${worktreePath}`);
+
+      // SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
+      // would block our own rebase and must not be aborted by this operation
+      const { inProgress: rebaseInProgress } = await this.getRebaseState(worktreePath);
+      if (rebaseInProgress) {
+        const gitError = new GitError('Cannot merge: a rebase is in progress in the worktree. Resolve or abort the rebase first.');
+        gitError.gitCommands = executedCommands;
+        gitError.workingDirectory = worktreePath;
+        gitError.projectPath = projectPath;
+        throw gitError;
+      }
 
       // Get current branch name in worktree (for logging purposes)
       let command = 'git branch --show-current';
@@ -1085,11 +1125,16 @@ export class WorktreeManager {
         logger.debug(`Successfully rebased worktree onto ${mainBranch}`);
       } catch (error: unknown) {
         const err = error as Error & { stderr?: string; stdout?: string };
-        // If rebase fails, abort it in the worktree
-        try {
-          await execWithShellPath('git rebase --abort', { cwd: worktreePath });
-        } catch {
-          // Ignore abort errors
+        // Only abort a rebase that this operation started - never a pre-existing rebase
+        // the user may still be resolving (e.g. started concurrently while we passed the guard)
+        const errOutput = err.stderr || err.stdout || '';
+        const preExistingRebase = errOutput.includes('already a rebase-merge directory') || errOutput.includes('already a rebase-apply directory');
+        if (!preExistingRebase) {
+          try {
+            await execWithShellPath('git rebase --abort', { cwd: worktreePath });
+          } catch {
+            // Ignore abort errors
+          }
         }
 
         const gitError = new GitError(`Failed to rebase worktree onto ${mainBranch}. Conflicts must be resolved first.`);
@@ -1138,6 +1183,11 @@ export class WorktreeManager {
 
       logger.info(`Successfully merged worktree to ${mainBranch} (without squashing)`);
     } catch (error: unknown) {
+      // Preserve specific errors (e.g. rebase-in-progress guard, rebase conflict details)
+      if (error instanceof GitError) {
+        logger.error(`Failed to merge worktree to ${mainBranch}:`, error);
+        throw error;
+      }
       const err = error as Error & { stderr?: string; stdout?: string };
       logger.error(`Failed to merge worktree to ${mainBranch}:`, err);
 
@@ -1419,7 +1469,22 @@ export class WorktreeManager {
 
       // Extract stash reference (e.g., "stash@{0}")
       const stashRef = stashEntry.split(':')[0];
-      await execWithShellPath(`git stash apply ${stashRef}`, { cwd: path });
+      try {
+        await execWithShellPath(`git stash apply ${stashRef}`, { cwd: path });
+      } catch (error) {
+        const err = error as Error & { stdout?: string; stderr?: string };
+        const output = err.stdout || err.stderr || err.message || '';
+        const hasUntrackedCollision = output.includes('already exists, no checkout') || output.includes('could not restore untracked files from stash');
+
+        if (!hasUntrackedCollision) {
+          throw error;
+        }
+
+        // A previous partial apply may have restored this stash's untracked files to disk,
+        // which blocks re-applying the stash. Remove identical copies and retry once.
+        await this.removeIdenticalStashUntrackedFiles(path, stashRef);
+        await execWithShellPath(`git stash apply ${stashRef}`, { cwd: path });
+      }
       logger.info(`Applied stash: ${stashRef}`);
     } catch (error) {
       logger.error(`Failed to apply stash ${stashId}:`, error);
@@ -1437,6 +1502,53 @@ export class WorktreeManager {
       }
 
       throw new Error(`Failed to apply stash: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Remove untracked files from the stash's untracked-files commit that already exist on disk
+   * with identical content (left behind by a partial stash apply), so the stash can be applied again.
+   * Tracked files and files with different content are never removed.
+   */
+  private async removeIdenticalStashUntrackedFiles(dir: string, stashRef: string): Promise<void> {
+    let files: string[] = [];
+    try {
+      const { stdout } = await execWithShellPath(`git ls-tree -r --name-only ${stashRef}^3`, { cwd: dir });
+      files = stdout
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+    } catch (error) {
+      logger.debug('Failed to list untracked files from stash, skipping collision cleanup:', error);
+      return;
+    }
+
+    for (const file of files) {
+      const filePath = join(dir, file);
+      if (!existsSync(filePath)) {
+        continue;
+      }
+
+      // Never remove files that are tracked in the index
+      let isTracked = false;
+      try {
+        await execWithShellPath(`git ls-files --error-unmatch "${file}"`, { cwd: dir });
+        isTracked = true;
+      } catch {
+        // not in the index
+      }
+      if (isTracked) {
+        continue;
+      }
+
+      const { stdout: diskHash } = await execWithShellPath(`git hash-object "${file}"`, { cwd: dir });
+      const { stdout: stashHash } = await execWithShellPath(`git rev-parse "${stashRef}^3:${file}"`, { cwd: dir });
+      if (diskHash.trim() !== stashHash.trim()) {
+        throw new Error(`Cannot restore stash untracked file "${file}": a different file already exists at that path`);
+      }
+
+      logger.info(`Removing partially restored stash file before stash re-apply: ${file}`);
+      await rm(filePath, { force: true });
     }
   }
 
@@ -1487,6 +1599,7 @@ export class WorktreeManager {
       let beforeMergeCommitHash = '';
       let worktreeBranchCommitHash = '';
       let mainOriginalStashId: string | undefined;
+      let mergeStarted = false;
 
       const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
@@ -1515,6 +1628,7 @@ export class WorktreeManager {
         }
 
         // 4. Perform the merge operation (existing methods handle the actual merge)
+        mergeStarted = true;
         if (squash) {
           if (!commitMessage) {
             throw new Error('Commit message is required for squash merge');
@@ -1559,20 +1673,24 @@ export class WorktreeManager {
         logger.error('Merge operation failed:', { error });
 
         // Recovery: revert main repo to pre-merge state before restoring stashes
-        try {
-          // Abort any in-progress merge (in case merge itself failed)
-          await execWithShellPath('git merge --abort', { cwd: projectPath });
-        } catch {
-          // Ignore - no merge in progress
-        }
-
-        // Hard reset main to undo merge commit and clean conflict markers from failed stash apply
-        if (beforeMergeCommitHash) {
+        // Only when the merge step actually ran - otherwise the main working tree may still
+        // contain un-stashed changes that a hard reset would destroy
+        if (mergeStarted) {
           try {
-            await execWithShellPath(`git reset --hard ${beforeMergeCommitHash}`, { cwd: projectPath });
-            logger.info('Reverted main repo to pre-merge state');
-          } catch (recoveryError) {
-            logger.error('Failed to reset main repo to pre-merge state:', { error: recoveryError });
+            // Abort any in-progress merge (in case merge itself failed)
+            await execWithShellPath('git merge --abort', { cwd: projectPath });
+          } catch {
+            // Ignore - no merge in progress
+          }
+
+          // Hard reset main to undo merge commit and clean conflict markers from failed stash apply
+          if (beforeMergeCommitHash) {
+            try {
+              await execWithShellPath(`git reset --hard ${beforeMergeCommitHash}`, { cwd: projectPath });
+              logger.info('Reverted main repo to pre-merge state');
+            } catch (recoveryError) {
+              logger.error('Failed to reset main repo to pre-merge state:', { error: recoveryError });
+            }
           }
         }
 
@@ -1596,7 +1714,13 @@ export class WorktreeManager {
           } catch (recoveryError) {
             logger.error('Failed to recover main branch stash:', {
               error: recoveryError,
+              stashId: mainOriginalStashId,
             });
+            throw new Error(
+              `The merge failed and your uncommitted changes on ${mainBranch} could not be restored automatically. ` +
+                `They are preserved in stash '${mainOriginalStashId}' - restore them manually with 'git stash list' and 'git stash apply'. ` +
+                `Original error: ${error instanceof Error ? error.message : String(error)}`,
+            );
           }
         }
 

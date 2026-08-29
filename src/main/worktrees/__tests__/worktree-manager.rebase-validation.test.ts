@@ -175,6 +175,12 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
   it('should use --onto with valid baseCommit', async () => {
     const baseCommit = 'abc123';
 
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns true (valid)
@@ -190,6 +196,12 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
   it('should fall back to simple rebase when baseCommit is not ancestor of HEAD', async () => {
     const baseCommit = 'stale123';
 
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns false (stale)
@@ -203,6 +215,12 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
   });
 
   it('should use simple rebase when baseCommit is not provided', async () => {
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // rebase command
