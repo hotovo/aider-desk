@@ -1994,15 +1994,27 @@ export class Agent {
     const usageReport = lastUsageReportMessage?.usageReport;
     const maxTokens = this.modelManager.getModelSettings(provider.id, model)?.maxInputTokens;
 
-    if (!usageReport || !maxTokens) {
-      logger.debug('No usageReport or maxTokens', {
+    if (!usageReport) {
+      logger.debug('No usageReport', {
         usageReport,
         maxTokens,
       });
       return true;
     }
 
-    const totalTokens = usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0);
+    let totalTokens = usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0);
+
+    // The usage report covers only up to (and including) the last model call. Tool
+    // results appended after it are not in that report, yet they are part of the next
+    // prompt — so a single large result (e.g. parallel file reads) can silently push
+    // the request past the model's context limit. Add an estimate for the trailing
+    // messages so the threshold reflects the real next-prompt size.
+    const lastReportIndex = resultMessages.indexOf(lastUsageReportMessage);
+    if (lastReportIndex >= 0 && lastReportIndex < resultMessages.length - 1) {
+      const trailingTokens = estimateMessageTokens(resultMessages.slice(lastReportIndex + 1));
+      totalTokens += trailingTokens;
+      logger.debug('Added trailing (post-usage-report) tokens to context total', { trailingTokens, totalTokens });
+    }
 
     let effectiveThreshold: number;
     let thresholdDescription: string;
@@ -2010,10 +2022,10 @@ export class Agent {
     if (taskTokensOverride !== undefined && taskTokensOverride > 0) {
       effectiveThreshold = taskTokensOverride;
       thresholdDescription = `task override: ${taskTokensOverride}`;
-    } else {
-      if (thresholdConfig.percentage === 0) {
-        return true;
-      }
+    } else if (thresholdConfig.percentage === 0) {
+      // percentage disabled → auto-compact off (consistent whether or not the context size is known)
+      return true;
+    } else if (maxTokens) {
       const percentageThreshold = (maxTokens * thresholdConfig.percentage) / 100;
       const tokenThreshold = thresholdConfig.tokens;
       if (tokenThreshold > 0) {
@@ -2022,6 +2034,16 @@ export class Agent {
         effectiveThreshold = percentageThreshold;
       }
       thresholdDescription = `percentage: ${percentageThreshold}, tokens: ${tokenThreshold}`;
+    } else if (thresholdConfig.tokens > 0) {
+      // model context size unknown — fall back to the absolute token threshold
+      effectiveThreshold = thresholdConfig.tokens;
+      thresholdDescription = `tokens: ${thresholdConfig.tokens}`;
+    } else {
+      logger.debug('No maxTokens or usable token threshold', {
+        maxTokens,
+        thresholdConfig,
+      });
+      return true;
     }
 
     logger.debug('Checking total tokens vs effective threshold', {

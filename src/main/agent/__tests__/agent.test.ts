@@ -28,7 +28,7 @@ import path from 'path';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ToolApprovalState } from '@common/types';
+import { ContextCompactionType, ToolApprovalState } from '@common/types';
 import { POWER_TOOL_FILE_READ, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
@@ -822,5 +822,197 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
       expect(new Set(toolCallIds).size).toBe(toolCallIds.length);
       expect(mockUuidv4).toHaveBeenCalled();
     });
+  });
+});
+
+describe('Agent - compactMessagesIfNeeded', () => {
+  let agent: Agent;
+  let mockProfile: ReturnType<typeof createMockAgentProfile>;
+
+  const buildAgent = (getModelSettings: () => unknown, percentage = 90) => {
+    const mockStore = {
+      getSettings: vi.fn(() => ({
+        taskSettings: {
+          contextCompactingThreshold: { percentage, tokens: 100000 },
+          contextCompactionType: ContextCompactionType.Compact,
+        },
+      })),
+    };
+    const mockModelManager = {
+      getModelSettings: vi.fn(getModelSettings),
+    };
+
+    return new AgentClass(
+      mockStore as any,
+      {} as any,
+      { getConnectors: vi.fn(() => []) } as any,
+      { getMergedServers: vi.fn(() => ({})) } as any,
+      mockModelManager as any,
+      { captureAgentRun: vi.fn() } as any,
+      {} as any,
+      {} as any,
+      { isInitialized: vi.fn(() => false), createExtensionToolset: vi.fn(() => ({})) } as any,
+    );
+  };
+
+  const makeUserRequestMessage = (): any => ({
+    id: 'user-1',
+    role: 'user',
+    content: 'continue',
+  });
+
+  const makeResultMessages = (sentTokens: number): any[] => [
+    {
+      id: 'assistant-1',
+      role: 'assistant',
+      content: '',
+      usageReport: {
+        model: 'test-model',
+        sentTokens,
+        receivedTokens: 1000,
+        cacheReadTokens: 0,
+        messageCost: 0,
+        agentTotalCost: 0,
+      },
+    },
+  ];
+
+  const runCompact = async (resultMessages: any[]) => {
+    const task = createMockTask();
+    task.compactConversation = vi.fn().mockResolvedValue(undefined);
+    task.smartCompactConversation = vi.fn().mockResolvedValue([]);
+    task.handoffConversation = vi.fn().mockResolvedValue(undefined);
+    task.getContextMessages = vi.fn().mockResolvedValue([]);
+    task.addLogMessage = vi.fn();
+    task.reloadGroupMessages = vi.fn();
+
+    agent['prepareMessages'] = vi.fn().mockResolvedValue([]);
+
+    await agent['compactMessagesIfNeeded'](
+      task,
+      mockProfile,
+      { id: 'test-provider' } as any,
+      'test-model',
+      makeUserRequestMessage(),
+      [],
+      [],
+      [],
+      resultMessages,
+    );
+
+    return task;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockProfile = createMockAgentProfile();
+  });
+
+  it('should compact based on the token threshold when the model context size is unknown', async () => {
+    // maxInputTokens is undefined (custom/self-hosted model not in the catalog)
+    agent = buildAgent(() => undefined);
+
+    // 120000 + 1000 = 121000 > 100000 token threshold
+    const task = await runCompact(makeResultMessages(120000));
+
+    expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should NOT compact when token usage is below the token threshold and context size is unknown', async () => {
+    agent = buildAgent(() => undefined);
+
+    // 50000 + 1000 = 51000 < 100000 token threshold
+    const task = await runCompact(makeResultMessages(50000));
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
+  });
+
+  it('should use the task-level token override even when the model context size is unknown', async () => {
+    agent = buildAgent(() => undefined);
+
+    // Set a low task-level override so that 121000 tokens exceeds it
+    const task = createMockTask({ contextCompactingThresholdTokens: 50000 } as any);
+    task.compactConversation = vi.fn().mockResolvedValue(undefined);
+    task.getContextMessages = vi.fn().mockResolvedValue([]);
+    task.addLogMessage = vi.fn();
+    task.reloadGroupMessages = vi.fn();
+    agent['prepareMessages'] = vi.fn().mockResolvedValue([]);
+
+    await agent['compactMessagesIfNeeded'](
+      task,
+      mockProfile,
+      { id: 'test-provider' } as any,
+      'test-model',
+      makeUserRequestMessage(),
+      [],
+      [],
+      [],
+      makeResultMessages(120000),
+    );
+
+    expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should honor the percentage threshold when the model context size is known', async () => {
+    // maxInputTokens known: 200000. percentage 90 -> 180000, tokens 100000 -> min = 100000
+    agent = buildAgent(() => ({ id: 'test-model', providerId: 'test-provider', maxInputTokens: 200000 }));
+
+    // 121000 > 100000
+    const task = await runCompact(makeResultMessages(120000));
+
+    expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not compact when percentage is 0 (explicit disable) with a known context size', async () => {
+    agent = buildAgent(() => ({ id: 'test-model', providerId: 'test-provider', maxInputTokens: 200000 }), 0);
+
+    const task = await runCompact(makeResultMessages(120000));
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
+  });
+
+  it('should not compact when percentage is 0 (explicit disable) even with an unknown context size', async () => {
+    agent = buildAgent(() => undefined, 0);
+
+    const task = await runCompact(makeResultMessages(120000));
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
+  });
+
+  it('should count a tool result appended after the last usage report when measuring context size', async () => {
+    agent = buildAgent(() => ({ id: 'test-model', providerId: 'test-provider', maxInputTokens: 200000 }));
+
+    // The usage report alone (51000) is below the 100000 threshold, but the large
+    // trailing tool result must push the measured total past it.
+    const bigText = 'lorem ipsum dolor sit amet '.repeat(10000); // ~70k tokens
+    const resultMessages = [
+      ...makeResultMessages(50000),
+      {
+        id: 'tool-1',
+        role: 'tool',
+        content: [{ type: 'tool-result', toolCallId: 'call-1', toolName: 'power:file_read', output: { type: 'text', value: bigText } }],
+      },
+    ];
+
+    const task = await runCompact(resultMessages);
+
+    expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not compact when the trailing tool result keeps the total below the threshold', async () => {
+    agent = buildAgent(() => ({ id: 'test-model', providerId: 'test-provider', maxInputTokens: 200000 }));
+
+    const resultMessages = [
+      ...makeResultMessages(50000),
+      {
+        id: 'tool-1',
+        role: 'tool',
+        content: [{ type: 'tool-result', toolCallId: 'call-1', toolName: 'power:file_read', output: { type: 'text', value: 'ok' } }],
+      },
+    ];
+
+    const task = await runCompact(resultMessages);
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
   });
 });
