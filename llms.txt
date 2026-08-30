@@ -2656,6 +2656,16 @@ private async compactMessagesIfNeeded(
 ⋮----
 // subagent cannot use Handoff, so we fallback to Smart compaction
 ⋮----
+// The usage report covers only up to (and including) the last model call. Tool
+// results appended after it are not in that report, yet they are part of the next
+// prompt — so a single large result (e.g. parallel file reads) can silently push
+// the request past the model's context limit. Add an estimate for the trailing
+// messages so the threshold reflects the real next-prompt size.
+⋮----
+// percentage disabled → auto-compact off (consistent whether or not the context size is known)
+⋮----
+// model context size unknown — fall back to the absolute token threshold
+⋮----
 // reload messages after compacting
 ⋮----
 // Perform handoff
@@ -4236,6 +4246,10 @@ private async scanForExtensions(extensionsPath: string, repoUrl: string): Promis
 // Try to read README.md for folder-based extensions
 ⋮----
 // README.md doesn't exist or can't be read, that's fine
+⋮----
+private async mergeInstallCounts(extensions: AvailableExtension[], extensionsPath: string, repoDir: string): Promise<void>
+⋮----
+// Registry file missing or invalid at this location, try the next candidate
 ⋮----
 private getRepoName(repoUrl: string): string
 ⋮----
@@ -5882,6 +5896,9 @@ const normalizeGeminiMessages = (_provider: LlmProvider, _model: Model, messages
 const createGeminiVoiceSession = async (profile: ProviderProfile, settings: SettingsData): Promise<VoiceSession> =>
 ⋮----
 // Default to the model specified in requirements or fallback
+⋮----
+// The transcription-only live model streams text transcriptions instead of audio
+// and does not support system instructions or temperature.
 ⋮----
 // Create ephemeral token
 // The token is valid for 1 minute for session initiation, and 30 minutes for the session duration by default.
@@ -11835,6 +11852,8 @@ async rebaseMainIntoWorktree(
     symlinkFolders: string[] = [],
 ): Promise<
 ⋮----
+// 0. Guard against starting a rebase while one is already in progress
+⋮----
 // 1. Check for uncommitted changes and create temporary commit if needed
 ⋮----
 // Stage all changes
@@ -11877,6 +11896,9 @@ private async squashAndMergeWorktreeToMain(
     baseCommit?: string,
 ): Promise<void>
 ⋮----
+// SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
+// would block our own rebase and must not be aborted by this operation
+⋮----
 // Get current branch name in worktree (for logging purposes)
 ⋮----
 // Check if there are any changes to merge (before rebase)
@@ -11887,7 +11909,8 @@ private async squashAndMergeWorktreeToMain(
 // SAFETY CHECK 1: Rebase worktree onto main FIRST before squashing
 // Use --onto with baseCommit to only replay worktree-specific commits
 ⋮----
-// If rebase fails, abort it in the worktree
+// Only abort a rebase that this operation started - never a pre-existing rebase
+// the user may still be resolving (e.g. started concurrently while we passed the guard)
 ⋮----
 // Ignore abort errors
 ⋮----
@@ -11903,11 +11926,16 @@ private async squashAndMergeWorktreeToMain(
 ⋮----
 // Commit the squashed changes with the provided message
 ⋮----
+// Preserve specific errors (e.g. rebase-in-progress guard, rebase conflict details)
+⋮----
 // Create detailed error with git command output
 ⋮----
 // Prioritize actual error messages over lastOutput (which may contain unrelated data like commit counts)
 ⋮----
 private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string): Promise<void>
+⋮----
+// SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
+// would block our own rebase and must not be aborted by this operation
 ⋮----
 // Get current branch name in worktree (for logging purposes)
 ⋮----
@@ -11915,7 +11943,8 @@ private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mai
 ⋮----
 // SAFETY CHECK 1: Rebase worktree onto main FIRST (resolves conflicts in worktree, not main)
 ⋮----
-// If rebase fails, abort it in the worktree
+// Only abort a rebase that this operation started - never a pre-existing rebase
+// the user may still be resolving (e.g. started concurrently while we passed the guard)
 ⋮----
 // Ignore abort errors
 ⋮----
@@ -11925,6 +11954,8 @@ private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mai
 ⋮----
 // SAFETY CHECK 2: Use --ff-only merge to prevent history rewriting
 // This will fail if local main has diverged from the worktree branch
+⋮----
+// Preserve specific errors (e.g. rebase-in-progress guard, rebase conflict details)
 ⋮----
 // Create detailed error with git command output
 ⋮----
@@ -11990,6 +12021,20 @@ async applyStash(path: string, stashId: string): Promise<void>
 ⋮----
 // Extract stash reference (e.g., "stash@{0}")
 ⋮----
+// A previous partial apply may have restored this stash's untracked files to disk,
+// which blocks re-applying the stash. Remove identical copies and retry once.
+⋮----
+/**
+   * Remove untracked files from the stash's untracked-files commit that already exist on disk
+   * with identical content (left behind by a partial stash apply), so the stash can be applied again.
+   * Tracked files and files with different content are never removed.
+   */
+private async removeIdenticalStashUntrackedFiles(dir: string, stashRef: string): Promise<void>
+⋮----
+// Never remove files that are tracked in the index
+⋮----
+// not in the index
+⋮----
 /**
    * Drop a stash by its identifier
    */
@@ -12034,6 +12079,8 @@ async mergeWorktreeToMainWithUncommitted(
 // Return merge state for potential revert
 ⋮----
 // Recovery: revert main repo to pre-merge state before restoring stashes
+// Only when the merge step actually ran - otherwise the main working tree may still
+// contain un-stashed changes that a hard reset would destroy
 ⋮----
 // Abort any in-progress merge (in case merge itself failed)
 ⋮----
@@ -21882,7 +21929,7 @@ File: src/renderer/src/components/PromptField/QueuedPromptsList.tsx
 import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdDragIndicator, MdEdit, MdPlaylistRemove, MdSave } from 'react-icons/md';
+import { MdDragIndicator, MdEdit, MdImage, MdPlaylistRemove, MdSave } from 'react-icons/md';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -23074,6 +23121,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { Input } from '@/components/common/Input';
 import { showErrorNotification, showSuccessNotification } from '@/utils/notifications';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
+import { Select } from '@/components/common/Select';
 import { ExtensionCard } from '@/components/settings/ExtensionCard';
 ⋮----
 // Helper to format repository URL for display
@@ -23096,12 +23144,19 @@ enum Tab {
   Installed = 'installed',
 }
 ⋮----
+enum ExtensionSort {
+  MostInstalled = 'most-installed',
+  Name = 'name',
+}
+⋮----
 type Props = {
   settings: SettingsData;
   setSettings: (settings: SettingsData) => void;
   openProjects?: ProjectData[];
   selectedProjectContext?: 'global' | string;
 };
+⋮----
+const handleAvailableSortChange = (value: string) =>
 ⋮----
 // Track repositories that are currently being loaded
 ⋮----
@@ -30530,6 +30585,7 @@ const addTaskWithSubtasks = (task: TaskData, level: number) =>
 ================
 File: src/renderer/src/voice/gemini.ts
 ================
+import { GeminiVoiceModel } from '@common/agent';
 import { GoogleGenAI, LiveServerMessage, Modality, Session } from '@google/genai';
 ⋮----
 import { VoiceProvider, VoiceSession, VoiceSessionConfig, VoiceSessionState } from './types';
@@ -30545,6 +30601,8 @@ async startSession(config: VoiceSessionConfig): Promise<VoiceSession>
 // Setup audio processing once and keep it alive
 ⋮----
 private async createGeminiSession(config: VoiceSessionConfig): Promise<VoiceSession>
+⋮----
+// The transcription-only live model streams text transcriptions instead of audio.
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
