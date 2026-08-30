@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 5
+      "installCount": 7
     },
     {
       "id": "legacy-system-prompt",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "plannotator",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "fff",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "codegraph",
