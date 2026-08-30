@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "protected-paths",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "learn",
@@ -232,7 +232,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 0
+      "installCount": 1
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "ui-placement-demo",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "bmad",
