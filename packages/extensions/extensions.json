@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "wakatime",
@@ -45,7 +45,7 @@
         "commands",
         "example"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "questions",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "external-rules",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 4
+      "installCount": 6
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 7
+      "installCount": 9
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "legacy-system-prompt",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "sandbox",
@@ -232,7 +232,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 3
+      "installCount": 5
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "plannotator",
@@ -334,7 +334,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "providers-quota-extension",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 3
+      "installCount": 5
     },
     {
       "id": "fff",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 6
+      "installCount": 8
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 7
+      "installCount": 9
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "bmad",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "codegraph",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "doom",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 3
+      "installCount": 6
     },
     {
       "id": "destructive-command-guard",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 6
+      "installCount": 8
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 10
+      "installCount": 13
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "reasoning-selector",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 7
+      "installCount": 8
     }
   ]
 }
