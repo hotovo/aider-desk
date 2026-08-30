@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "legacy-system-prompt",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "redact-secrets",
@@ -244,7 +244,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "tree-sitter-repo-map",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "plannotator",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "doom",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     }
   ]
 }
