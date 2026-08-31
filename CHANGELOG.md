@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved create task tool description and worktree inheritance
+
 ## [0.81.0]
 
 - added support for nested subtasks

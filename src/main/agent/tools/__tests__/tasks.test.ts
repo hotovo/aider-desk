@@ -569,7 +569,6 @@ describe('Tasks Tools - search_task', () => {
         parentId: null,
         name: 'New task',
         autonomyMode: undefined,
-        workingMode: 'local',
         agentProfileId: 'calling-profile',
         provider: 'anthropic',
         model: 'claude-sonnet',
@@ -581,6 +580,62 @@ describe('Tasks Tools - search_task', () => {
         model: 'claude-sonnet',
         mainModel: 'anthropic/claude-sonnet',
       });
+    });
+
+    it('preserves inherited working mode when creating a subtask without a worktree override', async () => {
+      const taskInstance = {
+        init: vi.fn().mockResolvedValue(undefined),
+        saveTask: vi.fn().mockResolvedValue(undefined),
+        savePromptOnly: vi.fn().mockResolvedValue(undefined),
+        getContextMessages: vi.fn().mockResolvedValue([]),
+      };
+      Object.assign(mockProfile, {
+        id: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+      });
+
+      mockProject.createNewTask = vi.fn().mockResolvedValue({ id: 'new-task-id', name: 'New task' });
+      mockProject.getTask.mockReturnValue(taskInstance);
+
+      const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
+      const createTaskTool = tools[createTaskToolKey];
+
+      await createTaskTool.execute({ prompt: 'Create a task', name: 'New task', asSubtask: true }, { toolCallId: 'tool-call-123' });
+
+      expect(mockProject.createNewTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          parentId: 'current-task-id',
+        }),
+      );
+      expect(mockProject.createNewTask).not.toHaveBeenCalledWith(expect.objectContaining({ workingMode: expect.anything() }));
+    });
+
+    it.each([
+      { worktree: true, workingMode: 'worktree' },
+      { worktree: false, workingMode: 'local' },
+    ])('uses working mode $workingMode when worktree is $worktree', async ({ worktree, workingMode }) => {
+      const taskInstance = {
+        init: vi.fn().mockResolvedValue(undefined),
+        saveTask: vi.fn().mockResolvedValue(undefined),
+        savePromptOnly: vi.fn().mockResolvedValue(undefined),
+        getContextMessages: vi.fn().mockResolvedValue([]),
+      };
+      Object.assign(mockProfile, {
+        id: 'calling-profile',
+        provider: 'anthropic',
+        model: 'claude-sonnet',
+      });
+
+      mockProject.createNewTask = vi.fn().mockResolvedValue({ id: 'new-task-id', name: 'New task' });
+      mockProject.getTask.mockReturnValue(taskInstance);
+
+      const tools = createTasksToolset(mockSettings, mockTask, mockProfile, mockPromptContext);
+      const createTaskTool = tools[createTaskToolKey];
+
+      await createTaskTool.execute({ prompt: 'Create a task', name: 'New task', worktree }, { toolCallId: 'tool-call-123' });
+
+      expect(mockProject.createNewTask).toHaveBeenCalledWith(expect.objectContaining({ workingMode }));
     });
 
     it('uses explicitly requested agent profile and model overrides', async () => {
