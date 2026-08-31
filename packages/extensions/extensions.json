@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "searxng-search",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "reasoning-selector",
