@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "fff",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "auggie-sdk",
