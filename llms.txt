@@ -10564,9 +10564,6 @@ public async getWorktreeIntegrationStatus(targetBranch?: string)
 ⋮----
 public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
 ⋮----
-// Update baseCommit to the new HEAD after successful rebase
-// This ensures subsequent rebases only replay commits made after this point
-⋮----
 public async abortWorktreeRebase(): Promise<void>
 ⋮----
 public async renameWorktreeBranch(newBranchName: string): Promise<void>
@@ -10598,11 +10595,6 @@ public async resolveConflictsWithAgent(): Promise<void>
 // No conflicts found
 ⋮----
 public async continueWorktreeRebase(): Promise<void>
-⋮----
-// Update baseCommit to the new HEAD after successful rebase continuation
-// This ensures subsequent rebases only replay commits made after this point
-⋮----
-// Update baseBranch if we could determine it from the rebase state, otherwise keep existing
 ⋮----
 // Clear any remaining merge state after successful rebase continuation
 ⋮----
@@ -11740,7 +11732,7 @@ private async existsAndIsDirectory(path: string): Promise<boolean>
 ⋮----
 private async isFolderTrackedByGit(projectPath: string, folderName: string): Promise<boolean>
 ⋮----
-async removeWorktree(projectDir: string, worktree: Worktree): Promise<void>
+async removeWorktree(projectDir: string, worktree: Worktree, force = false): Promise<void>
 ⋮----
 // Clean up the branch if it's a task branch (starts with "task-" or looks like generated from task name)
 ⋮----
@@ -11775,6 +11767,8 @@ async detectMainBranch(projectPath: string): Promise<string>
 ⋮----
 // Deprecated: Use getProjectMainBranch instead
 async getEffectiveMainBranch(project:
+⋮----
+async getCommitHash(worktreePath: string, ref: string): Promise<string | undefined>
 ⋮----
 async getHeadCommit(worktreePath: string): Promise<string | undefined>
 ⋮----
@@ -20794,7 +20788,7 @@ enum OpenProjectMode {
   Clone = 'clone',
 }
 ⋮----
-const isValidRepositoryUrl = (url: string): boolean
+const isValidRepositoryUrl = (url: string): boolean =>
 ⋮----
 type Props = {
   onClose: () => void;
