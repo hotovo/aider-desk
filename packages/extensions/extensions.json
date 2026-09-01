@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "protected-paths",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "plannotator",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "bmad",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 18
+      "installCount": 20
     },
     {
       "id": "task-scheduler",
