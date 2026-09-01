@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "verifier",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "doom",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "task-scheduler",
