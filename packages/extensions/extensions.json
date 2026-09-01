@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "external-rules",
@@ -321,7 +321,7 @@
         "ui",
         "example"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "multi-model-run",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "bmad",
