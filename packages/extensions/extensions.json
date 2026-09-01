@@ -45,7 +45,7 @@
         "commands",
         "example"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "questions",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "permission-gate",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "legacy-system-prompt",
@@ -220,7 +220,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "chunkhound-search",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "bmad",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "codegraph",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "doom",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 11
+      "installCount": 12
     }
   ]
 }
