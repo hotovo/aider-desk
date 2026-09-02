@@ -21,7 +21,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "pirate",
@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 11
+      "installCount": 13
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "ultrathink",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 11
+      "installCount": 13
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 10
+      "installCount": 12
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "plannotator",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "programmatic-tool-calls",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "bmad",
@@ -443,7 +443,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "claude-agent-sdk",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "kanban",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 22
+      "installCount": 24
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 12
+      "installCount": 13
     }
   ]
 }
