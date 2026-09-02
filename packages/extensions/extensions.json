@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 7
+      "installCount": 9
     },
     {
       "id": "fff",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "kanban",
