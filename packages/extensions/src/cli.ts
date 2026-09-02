@@ -30,6 +30,7 @@ interface Extension {
   type: 'single' | 'folder';
   hasDependencies?: boolean;
   capabilities: string[];
+  installCount?: number;
 }
 
 interface ExamplesConfig {

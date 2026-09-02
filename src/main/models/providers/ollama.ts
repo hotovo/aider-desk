@@ -66,13 +66,17 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
     }
 
     const data = await response.json();
-    const rawModels: Array<{ name: string }> = data?.models || [];
+    const rawModels: Array<{ name: string; details?: { context_length?: number } }> = data?.models || [];
     const models = await Promise.all(
-      rawModels.map(async (m) => ({
-        id: m.name,
-        providerId: profile.id,
-        supportsVision: await detectOllamaVisionCapability(normalized, m.name),
-      })),
+      rawModels.map(async (m) => {
+        const contextLength = m.details?.context_length;
+        return {
+          id: m.name,
+          providerId: profile.id,
+          supportsVision: await detectOllamaVisionCapability(normalized, m.name),
+          maxInputTokens: typeof contextLength === 'number' && contextLength > 0 ? contextLength : undefined,
+        } satisfies Model;
+      }),
     );
     logger.info(`Loaded ${models.length} Ollama models from ${effectiveBaseUrl} for profile ${profile.id}`);
     return { models, success: true };

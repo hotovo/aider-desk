@@ -172,6 +172,7 @@ export interface AlibabaPlanProvider extends LlmProviderBase {
 export const isAlibabaPlanProvider = (provider: LlmProviderBase): provider is AlibabaPlanProvider => provider.name === 'alibaba-plan';
 
 export enum GeminiVoiceModel {
+  Gemini35TranscribeLive = 'gemini-3.5-transcribe-live',
   Gemini31FlashLivePreview = 'gemini-3.1-flash-live-preview',
   Gemini25FlashNativeAudio = 'gemini-2.5-flash-native-audio-preview-12-2025',
 }
@@ -682,7 +683,7 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         voice: {
           idleTimeoutMs: 5000,
           systemInstructions: DEFAULT_VOICE_SYSTEM_INSTRUCTIONS,
-          model: GeminiVoiceModel.Gemini31FlashLivePreview,
+          model: GeminiVoiceModel.Gemini35TranscribeLive,
           temperature: 0.7,
         },
       } satisfies GeminiProvider;

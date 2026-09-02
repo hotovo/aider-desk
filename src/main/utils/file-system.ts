@@ -70,12 +70,17 @@ const getRepoNameFromPath = (repoPath: string): string | null => {
 
 export const parseRepositoryUrl = (repositoryUrl: string): { cloneUrl: string; repoName: string } | null => {
   const trimmed = repositoryUrl.trim().replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return null;
+  const scpMatch = !trimmed.includes('://') ? trimmed.match(/^(?:[^@\s/:]+@)?[^:\s/]+:(.+)$/) : null;
+  if (scpMatch) {
+    const repoName = getRepoNameFromPath(scpMatch[1]);
+    return repoName ? { cloneUrl: trimmed, repoName } : null;
   }
 
   try {
     const url = new URL(trimmed);
+    if (!['http:', 'https:', 'ssh:'].includes(url.protocol) || !url.hostname) {
+      return null;
+    }
     const repoName = getRepoNameFromPath(url.pathname);
     return repoName ? { cloneUrl: trimmed, repoName } : null;
   } catch {

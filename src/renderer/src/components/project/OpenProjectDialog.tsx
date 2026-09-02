@@ -20,7 +20,10 @@ enum OpenProjectMode {
   Clone = 'clone',
 }
 
-const isValidRepositoryUrl = (url: string): boolean => /^https?:\/\/\S+\/\S+$/i.test(url.trim());
+const isValidRepositoryUrl = (url: string): boolean => {
+  const trimmed = url.trim();
+  return /^(?:https?|ssh):\/\/\S+\/\S+$/i.test(trimmed) || (!trimmed.includes('://') && /^(?:[^@\s/:]+@)?[^:\s/]+:\S+$/.test(trimmed));
+};
 
 const CLONE_DESTINATION_STORAGE_KEY = 'aider-desk-clone-destination';
 

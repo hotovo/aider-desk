@@ -2,6 +2,10 @@
 
 ## [UNRELEASED]
 
+- improved create task tool description and worktree inheritance
+
+## [0.81.0]
+
 - added support for nested subtasks
 - improved worktree pruning
 - workspace sidebar size is now stored on project level instead of task level
@@ -14,6 +18,15 @@
 - added highlighted background for task sidebar filter and search icons when active
 - fixed agent loop silently re-sending the same prompt when step processing failed
 - fixed usage reports failing when provider models failed to load
+- added support for the gemini-3.5-transcribe-live transcription voice model, now the default for Gemini voice
+- fixed worktree merge failing on in-progress rebase and untracked stash files
+- fixed auto-compaction not triggering for models with unknown context window, now falls back to the configured token threshold
+- fixed context size undercounting that skipped compaction when tool results were appended after the last usage report
+- added reading context window from Ollama models' reported context_length, enabling the token usage bar and percentage-based auto-compaction
+- added image support for queued prompts, now shown with an image indicator in the queued prompts list
+- added install counts for available extensions with sorting by most installed or name
+- added support for cloning repositories over SSH
+- fixed conflicted worktree rebases silently orphaning commits when switching to local mode
 
 ## [0.80.0]
 

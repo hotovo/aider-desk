@@ -410,7 +410,7 @@ export class Project {
     }
 
     try {
-      await this.worktreeManager.removeWorktree(this.baseDir, taskData.worktree);
+      await this.worktreeManager.removeWorktree(this.baseDir, taskData.worktree, true);
     } catch (error) {
       logger.warn('Failed to remove worktree during task deletion', {
         baseDir: this.baseDir,

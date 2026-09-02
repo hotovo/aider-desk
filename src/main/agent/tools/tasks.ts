@@ -348,8 +348,9 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       worktree: z
         .boolean()
         .optional()
-        .default(false)
-        .describe('If true, the task will be created in worktree mode. Use only when explicitly requested by the user.'),
+        .describe(
+          "Controls the new task's working mode. Omit it to inherit the parent's working mode and worktree for subtasks, or use the project default for top-level tasks. If true, a subtask reuses its parent's worktree when available; otherwise a new worktree is created. If false, local mode is forced. Use only when explicitly requested by the user.",
+        ),
       executionMode: z
         .enum(TaskExecutionMode)
         .optional()
@@ -402,7 +403,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           parentId: parentTaskId || null,
           name: name || '',
           autonomyMode,
-          workingMode: worktree ? 'worktree' : 'local',
+          ...(worktree !== undefined && { workingMode: worktree ? 'worktree' : 'local' }),
           ...updates,
         });
 

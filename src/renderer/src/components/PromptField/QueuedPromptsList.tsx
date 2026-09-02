@@ -1,7 +1,7 @@
 import { KeyboardEvent, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BiSend } from 'react-icons/bi';
-import { MdDragIndicator, MdEdit, MdPlaylistRemove, MdSave } from 'react-icons/md';
+import { MdDragIndicator, MdEdit, MdImage, MdPlaylistRemove, MdSave } from 'react-icons/md';
 import { closestCenter, DndContext, type DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -110,6 +110,13 @@ const SortableQueuedPromptItem = ({ prompt, onRemove, onSendNow, onEdit }: Sorta
         </>
       ) : (
         <>
+          {prompt.images && prompt.images.length > 0 && (
+            <Tooltip content={t('promptField.queuedPromptImages', { count: prompt.images.length })}>
+              <span className="text-text-muted-light flex-shrink-0">
+                <MdImage size={14} />
+              </span>
+            </Tooltip>
+          )}
           <Tooltip content={t('promptField.editQueuedPrompt')}>
             <button onClick={handleStartEdit} className="text-text-muted hover:text-text-primary transition-colors">
               <MdEdit size={16} />

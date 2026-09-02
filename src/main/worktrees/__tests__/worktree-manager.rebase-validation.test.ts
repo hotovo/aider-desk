@@ -175,6 +175,14 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
   it('should use --onto with valid baseCommit', async () => {
     const baseCommit = 'abc123';
 
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    // resolve rebase target
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main123\n', stderr: '' });
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns true (valid)
@@ -182,14 +190,23 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
     // rebase command
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
-    await worktreeManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
+    const result = await worktreeManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
+    expect(result).toMatchObject({ success: true, ontoCommit: 'main123' });
     expect(execWithShellPath).toHaveBeenCalledWith(`git rebase --onto ${mainBranch} ${baseCommit}`, { cwd: testPath });
   });
 
   it('should fall back to simple rebase when baseCommit is not ancestor of HEAD', async () => {
     const baseCommit = 'stale123';
 
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    // resolve rebase target
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main123\n', stderr: '' });
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns false (stale)
@@ -203,6 +220,14 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
   });
 
   it('should use simple rebase when baseCommit is not provided', async () => {
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' }); // git status --porcelain=v1
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    // resolve rebase target
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main123\n', stderr: '' });
     // hasUncommittedChanges - no changes
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // rebase command
@@ -256,5 +281,39 @@ describe('WorktreeManager - continueRebase', () => {
 
     expect(result.ontoCommit).toBeUndefined();
     expect(result.ontoBranch).toBeUndefined();
+  });
+});
+
+describe('WorktreeManager - removeWorktree rebase guard', () => {
+  let worktreeManager: WorktreeManager;
+  const worktree = { path: '/test/worktree', branch: 'task-branch' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    worktreeManager = new WorktreeManager();
+  });
+
+  it('should preserve a worktree while a rebase is in progress', async () => {
+    vi.spyOn(worktreeManager, 'getRebaseState').mockResolvedValue({
+      inProgress: true,
+      hasUnmergedPaths: true,
+      unmergedFiles: ['CHANGELOG.md'],
+    });
+
+    await expect(worktreeManager.removeWorktree('/test/project', worktree)).rejects.toThrow('Cannot remove a worktree while a rebase is in progress');
+
+    expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git worktree remove'), expect.anything());
+    expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git branch -D'), expect.anything());
+  });
+
+  it('should allow explicit removal during task cleanup', async () => {
+    const rebaseStateSpy = vi.spyOn(worktreeManager, 'getRebaseState');
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    await worktreeManager.removeWorktree('/test/project', worktree, true);
+
+    expect(rebaseStateSpy).not.toHaveBeenCalled();
+    expect(execWithShellPath).toHaveBeenCalledWith('git worktree remove "/test/worktree" --force', { cwd: '/test/project' });
+    expect(execWithShellPath).toHaveBeenCalledWith('git branch -D task-branch', { cwd: '/test/project' });
   });
 });

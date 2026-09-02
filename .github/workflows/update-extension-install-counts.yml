@@ -1,0 +1,99 @@
+name: Update Extension Install Counts
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'
+
+jobs:
+  update-install-counts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch install counts from PostHog
+        env:
+          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
+          POSTHOG_PROJECT_ID: ${{ secrets.POSTHOG_PROJECT_ID }}
+          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { readFileSync, writeFileSync } from 'node:fs';
+
+          const POSTHOG_HOST = (process.env.POSTHOG_HOST || 'https://eu.posthog.com').replace(/\/$/, '');
+          const POSTHOG_PROJECT_ID = process.env.POSTHOG_PROJECT_ID;
+          const POSTHOG_PERSONAL_API_KEY = process.env.POSTHOG_PERSONAL_API_KEY;
+          const PRODUCT_TELEMETRY_DISTINCT_ID = 'aiderdesk-global';
+          const EXTENSIONS_JSON_PATH = 'packages/extensions/extensions.json';
+
+          if (!POSTHOG_PROJECT_ID || !POSTHOG_PERSONAL_API_KEY) {
+            console.error('Error: POSTHOG_PROJECT_ID and POSTHOG_PERSONAL_API_KEY are required');
+            process.exit(1);
+          }
+
+          const query = `
+          SELECT properties.extensionName AS name, count() AS installs
+          FROM events
+          WHERE event = 'extension-installed' AND distinct_id = '${PRODUCT_TELEMETRY_DISTINCT_ID}'
+          GROUP BY name
+          `.trim();
+
+          const response = await fetch(`${POSTHOG_HOST}/api/projects/${POSTHOG_PROJECT_ID}/query/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${POSTHOG_PERSONAL_API_KEY}`,
+            },
+            body: JSON.stringify({
+              query: {
+                kind: 'HogQLQuery',
+                query,
+              },
+            }),
+          });
+
+          if (!response.ok) {
+            const body = await response.text();
+            throw new Error(`PostHog query failed: ${response.status} ${body}`);
+          }
+
+          const data = await response.json();
+          const counts = new Map();
+          for (const row of data.results || []) {
+            const [name, installs] = row;
+            if (name) {
+              counts.set(String(name), Number(installs) || 0);
+            }
+          }
+
+          const registry = JSON.parse(readFileSync(EXTENSIONS_JSON_PATH, 'utf-8'));
+          let changed = false;
+
+          for (const entry of registry.extensions || []) {
+            // Install events carry the display name; fall back to id for safety
+            const total = counts.get(entry.name) ?? counts.get(entry.id) ?? 0;
+            if (entry.installCount !== total) {
+              entry.installCount = total;
+              changed = true;
+            }
+          }
+
+          if (changed) {
+            writeFileSync(EXTENSIONS_JSON_PATH, `${JSON.stringify(registry, null, 2)}\n`, 'utf-8');
+          }
+
+          console.log(changed ? `Updated install counts for ${counts.size} extension(s) in extensions.json` : 'Install counts are up to date, no changes');
+          EOF
+
+      - name: Commit updated counts
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          if git diff --quiet packages/extensions/extensions.json; then
+            echo "No changes to extensions.json, skipping commit"
+          else
+            git add packages/extensions/extensions.json
+            git commit -m "chore: update extension install counts"
+            git push
+          fi

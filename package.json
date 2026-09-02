@@ -1,6 +1,6 @@
 {
   "name": "aider-desk",
-  "version": "0.81.0-dev",
+  "version": "0.82.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",

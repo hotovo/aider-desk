@@ -64,7 +64,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 - React-based UI components and pages
 - Project views, chat interface, settings management
 - Context file management and diff viewing
-- Internationalization (i18n) with English/Chinese support
+- Internationalization (i18n) with English/Chinese/Russian/Korean support
 
 **src/preload/** - Electron preload scripts
 - Secure bridge between main and renderer processes
@@ -83,7 +83,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 **packages/common/src/** - Shared code between processes (published as `@aiderdesk/common`)
 - TypeScript type definitions
 - Utility functions and constants
-- Localization files (en.json, zh.json, ru.json)
+- Localization files (en.json, zh.json, ru.json, ko.json)
 
 **packages/mcp-server/** - MCP server package (`@aiderdesk/mcp-server`)
 - Standalone npm package for external MCP client integration
@@ -112,7 +112,7 @@ AiderDesk is an Electron-based desktop application that provides a GUI wrapper f
 - **AI Integration**: Vercel AI SDK, multiple LLM providers (OpenAI, Anthropic, Gemini, etc.)
 - **Build Tools**: electron-vite, esbuild, TypeScript project references
 - **Testing**: Vitest with React Testing Library, ESLint for linting, Prettier for formatting
-- **Internationalization**: i18next with English and Chinese support
+- **Internationalization**: i18next with English, Chinese, Russian, and Korean support
 
 ## Testing Framework
 
