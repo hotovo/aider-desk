@@ -27,7 +27,17 @@ describe('loadOllamaModels vision capability detection', () => {
     mockFetch(async (url, init) => {
       const u = String(url);
       if (u.endsWith('/api/tags')) {
-        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ models: [{ name: 'llava:7b' }, { name: 'qwen3:35b' }] }) };
+        return {
+          ok: true,
+          status: 200,
+          statusText: 'OK',
+          json: async () => ({
+            models: [
+              { name: 'llava:7b', details: { context_length: 8192 } },
+              { name: 'qwen3:35b', details: {} },
+            ],
+          }),
+        };
       }
       if (u.endsWith('/api/show')) {
         const body = JSON.parse(String(init?.body));
@@ -47,6 +57,8 @@ describe('loadOllamaModels vision capability detection', () => {
     const qwen = result.models.find((m) => m.id === 'qwen3:35b');
     expect(llava?.supportsVision).toBe(true);
     expect(qwen?.supportsVision).toBe(false);
+    expect(llava?.maxInputTokens).toBe(8192);
+    expect(qwen?.maxInputTokens).toBeUndefined();
   });
 
   it('defaults supportsVision to false when /api/show fails', async () => {
