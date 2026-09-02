@@ -13,7 +13,7 @@ vi.mock('@/telemetry');
 vi.mock('@/data-manager');
 vi.mock('@/events');
 vi.mock('@/models');
-vi.mock('@/worktrees');
+vi.mock('@/git');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
@@ -39,7 +39,7 @@ describe('Project Duplicate Subtask Prevention', () => {
   let project: Project;
   let mockStore: any;
   let mockModelManager: any;
-  let mockWorktreeManager: any;
+  let mockGitManager: any;
   let mockEventManager: any;
 
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('Project Duplicate Subtask Prevention', () => {
       getProviderModels: vi.fn().mockResolvedValue({ models: [] }),
     };
 
-    mockWorktreeManager = {
+    mockGitManager = {
       getTaskWorktree: vi.fn().mockResolvedValue(null),
     };
 
@@ -75,7 +75,7 @@ describe('Project Duplicate Subtask Prevention', () => {
       {} as any,
       mockEventManager as any,
       mockModelManager as any,
-      mockWorktreeManager as any,
+      mockGitManager as any,
       { initializeForProject: vi.fn() } as any,
       {} as any,
       { watchProject: vi.fn() } as any,

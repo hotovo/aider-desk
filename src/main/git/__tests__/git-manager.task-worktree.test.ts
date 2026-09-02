@@ -2,7 +2,7 @@ import { join } from 'path';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -25,8 +25,8 @@ const projectPath = '/test/project';
 const taskId = 'task-123';
 const taskWorktreePath = join(projectPath, AIDER_DESK_TASKS_DIR, taskId, 'worktree');
 
-describe('WorktreeManager - getTaskWorktree', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getTaskWorktree', () => {
+  let gitManager: GitManager;
 
   const mockWorktreeList = (taskWorktreeEntry: string) => {
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
@@ -40,13 +40,13 @@ describe('WorktreeManager - getTaskWorktree', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('returns the task worktree when it exists and is valid', async () => {
     mockWorktreeList(`worktree ${taskWorktreePath}\nHEAD def456\nbranch refs/heads/aider-desk/task/t2`);
 
-    const worktree = await worktreeManager.getTaskWorktree(projectPath, taskId);
+    const worktree = await gitManager.getTaskWorktree(projectPath, taskId);
 
     expect(worktree).toEqual({
       path: taskWorktreePath,
@@ -58,7 +58,7 @@ describe('WorktreeManager - getTaskWorktree', () => {
   it('returns null when the task worktree is prunable (stale registration)', async () => {
     mockWorktreeList(`worktree ${taskWorktreePath}\nHEAD def456\nbranch refs/heads/old-branch\nprunable`);
 
-    const worktree = await worktreeManager.getTaskWorktree(projectPath, taskId);
+    const worktree = await gitManager.getTaskWorktree(projectPath, taskId);
 
     expect(worktree).toBeNull();
   });
@@ -66,7 +66,7 @@ describe('WorktreeManager - getTaskWorktree', () => {
   it('returns null when no worktree exists for the task', async () => {
     mockWorktreeList('');
 
-    const worktree = await worktreeManager.getTaskWorktree(projectPath, taskId);
+    const worktree = await gitManager.getTaskWorktree(projectPath, taskId);
 
     expect(worktree).toBeNull();
   });

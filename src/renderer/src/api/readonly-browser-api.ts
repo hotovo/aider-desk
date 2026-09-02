@@ -30,7 +30,9 @@ const EVENT_TYPES = [
 ];
 
 const getBaseUrl = (): string => {
-  const port = window.location.port === '5173' ? '24337' : window.location.port;
+  // Allow overriding the API port via query param (e.g. when opening the dev renderer in a browser against a dev server)
+  const apiPortOverride = new URLSearchParams(window.location.search).get('apiPort');
+  const port = apiPortOverride || (window.location.port === '5173' ? '24337' : window.location.port);
   return `${window.location.protocol}//${window.location.hostname}${port ? `:${port}` : ''}`;
 };
 

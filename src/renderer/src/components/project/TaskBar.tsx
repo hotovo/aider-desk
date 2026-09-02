@@ -418,7 +418,7 @@ export const TaskBar = forwardRef<TaskBarRef, Props>(
 
     const handleRenameBranch = useCallback(
       async (newBranchName: string) => {
-        await api.renameWorktreeBranch(baseDir, task.id, newBranchName);
+        await api.renameGitBranch(baseDir, task.id, newBranchName);
       },
       [api, baseDir, task.id],
     );

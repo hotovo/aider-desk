@@ -4,12 +4,14 @@ import fs from 'fs/promises';
 import {
   AgentProfile,
   AutonomyMode,
+  BranchInfo,
   CloudflareTunnelStatus,
   CommandsData,
   CreateTaskParams,
   EditFormat,
   EnvironmentVariable,
   FileEdit,
+  GitSyncCommits,
   InstalledExtension,
   ExtensionToolInfo,
   McpOAuthStatusData,
@@ -818,7 +820,47 @@ export class EventsHandler {
   }
 
   async listBranches(projectDir: string): Promise<Array<{ name: string; isCurrent: boolean; hasWorktree: boolean }>> {
-    return await this.projectManager.worktreeManager.listBranches(projectDir);
+    return await this.projectManager.gitManager.listBranches(projectDir);
+  }
+
+  async listGitBranches(repoPath: string, includeRemote?: boolean): Promise<BranchInfo[]> {
+    return await this.projectManager.gitManager.listBranches(repoPath, includeRemote);
+  }
+
+  async getSyncCommits(repoPath: string, targetBranch?: string): Promise<GitSyncCommits> {
+    return await this.projectManager.gitManager.getSyncCommits(repoPath, targetBranch);
+  }
+
+  async createGitBranch(repoPath: string, name: string, startPoint?: string, checkout?: boolean): Promise<void> {
+    await this.projectManager.gitManager.createBranch(repoPath, name, startPoint, checkout);
+  }
+
+  async checkoutGitBranch(repoPath: string, branch: string, createTracking?: boolean, takeOver?: boolean): Promise<void> {
+    await this.projectManager.gitManager.checkoutBranch(repoPath, branch, createTracking, takeOver);
+  }
+
+  async deleteGitBranch(repoPath: string, branch: string, force?: boolean): Promise<void> {
+    await this.projectManager.gitManager.deleteBranch(repoPath, branch, force);
+  }
+
+  async mergeIntoCurrentBranch(repoPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    return await this.projectManager.gitManager.mergeIntoCurrent(repoPath, branch);
+  }
+
+  async rebaseOntoBranch(repoPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    return await this.projectManager.gitManager.rebaseOnto(repoPath, branch);
+  }
+
+  async updateGitBranch(repoPath: string, branchName: string): Promise<{ output: string }> {
+    return await this.projectManager.gitManager.updateBranch(repoPath, branchName);
+  }
+
+  async gitPull(repoPath: string): Promise<{ output: string }> {
+    return await this.projectManager.gitManager.gitPull(repoPath);
+  }
+
+  async gitPush(repoPath: string): Promise<{ output: string }> {
+    return await this.projectManager.gitManager.gitPush(repoPath);
   }
 
   async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string) {
@@ -866,13 +908,17 @@ export class EventsHandler {
     await task.resolveConflictsWithAgent();
   }
 
-  async renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+  async renameGitBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.renameWorktreeBranch(newBranchName);
+    await task.renameBranch(newBranchName);
+  }
+
+  async renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+    await this.renameGitBranch(baseDir, taskId, newBranchName);
   }
 
   async scrapeWeb(baseDir: string, taskId: string, url: string, filePath?: string): Promise<void> {

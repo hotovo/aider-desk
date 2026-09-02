@@ -58,6 +58,8 @@ import {
   AgentProfile,
   MemoryEntry,
   MemoryEmbeddingProgress,
+  BranchInfo,
+  GitSyncCommits,
   SwitchToLocalOptions,
   SwitchToWorktreeOptions,
   WorktreeIntegrationStatus,
@@ -154,7 +156,9 @@ export class BrowserApi implements ApplicationAPI {
   private appOS: OS | null = null;
 
   constructor() {
-    const port = window.location.port === '5173' ? '24337' : window.location.port;
+    // Allow overriding the API port via query param (e.g. when opening the dev renderer in a browser against a dev server)
+    const apiPortOverride = new URLSearchParams(window.location.search).get('apiPort');
+    const port = apiPortOverride || (window.location.port === '5173' ? '24337' : window.location.port);
     const baseUrl = `${window.location.protocol}//${window.location.hostname}${port ? `:${port}` : ''}`;
 
     this.socket = io(baseUrl, {
@@ -1196,6 +1200,79 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  listGitBranches(repoPath: string, includeRemote?: boolean): Promise<BranchInfo[]> {
+    return this.get('/project/git/branches', {
+      repoPath,
+      includeRemote: includeRemote ? 'true' : undefined,
+    });
+  }
+
+  getSyncCommits(repoPath: string, targetBranch?: string): Promise<GitSyncCommits> {
+    return this.get('/project/git/sync-commits', {
+      repoPath,
+      targetBranch: targetBranch || undefined,
+    });
+  }
+
+  async createGitBranch(repoPath: string, name: string, startPoint?: string, checkout?: boolean): Promise<void> {
+    await this.post('/project/git/branch/create', {
+      repoPath,
+      name,
+      startPoint,
+      checkout,
+    });
+  }
+
+  async checkoutGitBranch(repoPath: string, branch: string, createTracking?: boolean, takeOver?: boolean): Promise<void> {
+    await this.post('/project/git/branch/checkout', {
+      repoPath,
+      branch,
+      createTracking,
+      takeOver,
+    });
+  }
+
+  async deleteGitBranch(repoPath: string, branch: string, force?: boolean): Promise<void> {
+    await this.post('/project/git/branch/delete', {
+      repoPath,
+      branch,
+      force,
+    });
+  }
+
+  mergeIntoCurrentBranch(repoPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    return this.post('/project/git/merge', {
+      repoPath,
+      branch,
+    });
+  }
+
+  rebaseOntoBranch(repoPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    return this.post('/project/git/rebase', {
+      repoPath,
+      branch,
+    });
+  }
+
+  updateGitBranch(repoPath: string, branchName: string): Promise<{ output: string }> {
+    return this.post('/project/git/branch/update', {
+      repoPath,
+      branchName,
+    });
+  }
+
+  gitPull(repoPath: string): Promise<{ output: string }> {
+    return this.post('/project/git/pull', {
+      repoPath,
+    });
+  }
+
+  gitPush(repoPath: string): Promise<{ output: string }> {
+    return this.post('/project/git/push', {
+      repoPath,
+    });
+  }
+
   getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus> {
     return this.get('/project/worktree/status', {
       projectDir: baseDir,
@@ -1233,12 +1310,16 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
-    return this.post('/project/worktree/rename-branch', {
+  renameGitBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+    return this.post('/project/git/branch/rename', {
       projectDir: baseDir,
       taskId,
       newBranchName,
     });
+  }
+
+  renameWorktreeBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void> {
+    return this.renameGitBranch(baseDir, taskId, newBranchName);
   }
 
   // Memory operations

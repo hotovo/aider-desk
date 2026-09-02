@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - improved create task tool description and worktree inheritance
+- added git branch management
 
 ## [0.81.0]
 

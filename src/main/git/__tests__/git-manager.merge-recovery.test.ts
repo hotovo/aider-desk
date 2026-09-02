@@ -4,7 +4,7 @@ import { rm } from 'fs/promises';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -50,12 +50,12 @@ const createCollisionError = (): Error =>
     stdout: '',
   });
 
-describe('WorktreeManager - merge rebase guard and stash recovery', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - merge rebase guard and stash recovery', () => {
+  let gitManager: GitManager;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   describe('mergeWorktreeToMainWithUncommitted - in-progress rebase guard', () => {
@@ -89,9 +89,9 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
     it('should abort squash merge without touching rebase state when a rebase is in progress', async () => {
       mockRebaseInProgress();
 
-      await expect(
-        worktreeManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master'),
-      ).rejects.toThrow('Cannot squash merge: a rebase is in progress in the worktree');
+      await expect(gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master')).rejects.toThrow(
+        'Cannot squash merge: a rebase is in progress in the worktree',
+      );
 
       expect(getCommands()).not.toContain('git rebase --abort');
       expect(getCommands()).not.toContain('git rebase master');
@@ -101,7 +101,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
     it('should abort plain merge without touching rebase state when a rebase is in progress', async () => {
       mockRebaseInProgress();
 
-      await expect(worktreeManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, false, undefined, 'master')).rejects.toThrow(
+      await expect(gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, false, undefined, 'master')).rejects.toThrow(
         'Cannot merge: a rebase is in progress in the worktree',
       );
 
@@ -147,9 +147,9 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
         }
       });
 
-      await expect(
-        worktreeManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master'),
-      ).rejects.toThrow('Failed to rebase worktree onto master before squashing. Conflicts must be resolved first.');
+      await expect(gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master')).rejects.toThrow(
+        'Failed to rebase worktree onto master before squashing. Conflicts must be resolved first.',
+      );
 
       expect(getCommands()).toContain('git rebase --abort');
     });
@@ -193,9 +193,9 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
         }
       });
 
-      await expect(
-        worktreeManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master'),
-      ).rejects.toThrow('Failed to rebase worktree onto master before squashing. Conflicts must be resolved first.');
+      await expect(gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master')).rejects.toThrow(
+        'Failed to rebase worktree onto master before squashing. Conflicts must be resolved first.',
+      );
 
       expect(getCommands()).not.toContain('git rebase --abort');
     });
@@ -240,7 +240,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
         }
       });
 
-      const result = await worktreeManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master');
+      const result = await gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, true, 'test commit message', 'master');
 
       expect(result.beforeMergeCommitHash).toBe('aaa111');
       expect(result.worktreeBranchCommitHash).toBe('ccc333');
@@ -264,7 +264,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
         }
       });
 
-      const result = await worktreeManager.rebaseMainIntoWorktree(worktreePath, 'master');
+      const result = await gitManager.rebaseMainIntoWorktree(worktreePath, 'master');
 
       expect(result.success).toBe(false);
       expect(result.hasTempCommit).toBe(false);
@@ -303,7 +303,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
       });
       (existsSync as Mock).mockReturnValue(true);
 
-      await expect(worktreeManager.applyStash(projectPath, stashId)).resolves.toBeUndefined();
+      await expect(gitManager.applyStash(projectPath, stashId)).resolves.toBeUndefined();
 
       expect(applyCount).toBe(2);
       expect(rm).toHaveBeenCalledWith(join(projectPath, 'file.cs'), { force: true });
@@ -332,7 +332,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
       });
       (existsSync as Mock).mockReturnValue(true);
 
-      await expect(worktreeManager.applyStash(projectPath, stashId)).rejects.toThrow('a different file already exists at that path');
+      await expect(gitManager.applyStash(projectPath, stashId)).rejects.toThrow('a different file already exists at that path');
 
       expect(applyCount).toBe(1);
       expect(rm).not.toHaveBeenCalled();
@@ -357,7 +357,7 @@ describe('WorktreeManager - merge rebase guard and stash recovery', () => {
       });
       (existsSync as Mock).mockReturnValue(true);
 
-      await expect(worktreeManager.applyStash(projectPath, stashId)).rejects.toThrow('Failed to apply stash');
+      await expect(gitManager.applyStash(projectPath, stashId)).rejects.toThrow('Failed to apply stash');
 
       expect(applyCount).toBe(2);
       expect(rm).not.toHaveBeenCalled();

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -24,14 +24,14 @@ const createAbortError = (): Error => {
   return error;
 };
 
-describe('WorktreeManager - commitChanges cancellation', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - commitChanges cancellation', () => {
+  let gitManager: GitManager;
   const worktreePath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
-    vi.spyOn(worktreeManager, 'getUpdatedFiles').mockResolvedValue([
+    gitManager = new GitManager();
+    vi.spyOn(gitManager, 'getUpdatedFiles').mockResolvedValue([
       { path: 'file-a.ts', additions: 1, deletions: 0 },
       { path: 'file-b.ts', additions: 2, deletions: 1 },
     ]);
@@ -40,7 +40,7 @@ describe('WorktreeManager - commitChanges cancellation', () => {
   it('should stage updated files and commit, returning true', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    const committed = await worktreeManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -50,11 +50,11 @@ describe('WorktreeManager - commitChanges cancellation', () => {
 
   it('should return false and skip commit when cancelled during staging', async () => {
     (execWithShellPath as Mock).mockImplementation(async () => {
-      worktreeManager.cancelCommitChanges(worktreePath);
+      gitManager.cancelCommitChanges(worktreePath);
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await worktreeManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
 
     expect(committed).toBe(false);
     const commands = (execWithShellPath as Mock).mock.calls.map((call: unknown[]) => call[0] as string);
@@ -64,13 +64,13 @@ describe('WorktreeManager - commitChanges cancellation', () => {
   it('should return false when the commit process is aborted', async () => {
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
       if (command.startsWith('git commit')) {
-        worktreeManager.cancelCommitChanges(worktreePath);
+        gitManager.cancelCommitChanges(worktreePath);
         throw createAbortError();
       }
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await worktreeManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
 
     expect(committed).toBe(false);
   });
@@ -84,11 +84,11 @@ describe('WorktreeManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    await expect(worktreeManager.commitChanges(worktreePath, 'test commit', false)).rejects.toBe(commitError);
+    await expect(gitManager.commitChanges(worktreePath, 'test commit', false)).rejects.toBe(commitError);
   });
 
   it('should return false from cancelCommitChanges when no commit is running', () => {
-    expect(worktreeManager.cancelCommitChanges(worktreePath)).toBe(false);
+    expect(gitManager.cancelCommitChanges(worktreePath)).toBe(false);
   });
 
   it('should allow a new commit after cancellation', async () => {
@@ -99,10 +99,10 @@ describe('WorktreeManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    expect(await worktreeManager.commitChanges(worktreePath, 'cancelled commit', false)).toBe(false);
-    expect(worktreeManager.cancelCommitChanges(worktreePath)).toBe(false);
+    expect(await gitManager.commitChanges(worktreePath, 'cancelled commit', false)).toBe(false);
+    expect(gitManager.cancelCommitChanges(worktreePath)).toBe(false);
 
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
-    expect(await worktreeManager.commitChanges(worktreePath, 'new commit', false)).toBe(true);
+    expect(await gitManager.commitChanges(worktreePath, 'new commit', false)).toBe(true);
   });
 });

@@ -12,7 +12,7 @@ import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
-import { WorktreeManager } from '@/worktrees';
+import { GitManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
@@ -91,7 +91,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     logger.error('[Prompts] Prompts system initialization failed:', error);
   });
 
-  const worktreeManager = new WorktreeManager();
+  const gitManager = new GitManager();
 
   // Initialize agent profile manager with extension manager for unified profile access
   const agentProfileManager = new AgentProfileManager(eventManager, extensionManager, store);
@@ -108,7 +108,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     dataManager,
     eventManager,
     modelManager,
-    worktreeManager,
+    gitManager,
     agentProfileManager,
     memoryManager,
     promptsManager,

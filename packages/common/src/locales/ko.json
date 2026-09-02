@@ -83,7 +83,6 @@
     "enabled": "사용",
     "noFiles": "파일 없음",
       "loadingFiles": "파일 로드 중...",
-    "clickToRefresh": "클릭하여 새로고침",
     "closeTasks": "작업 닫기",
     "toggleTasks": "작업 토글",
     "submit": "제출"
@@ -1693,9 +1692,7 @@
     "worktreeOptionCarryOverKeepLabel": "가져오고 프로젝트에도 유지",
     "worktreeOptionCarryOverKeepDescription": "커밋되지 않은 변경 사항을 워크트리로 복사하면서 프로젝트 디렉터리에도 유지합니다",
     "switchToLocal": "로컬로 전환",
-    "switchToWorktree": "워크트리로 전환",
-    "switchToLocalTooltip": "현재 git 워크트리에서 작업 중입니다. 이 작업에 대해 로컬 프로젝트 디렉터리에서 직접 변경하도록 전환합니다.",
-    "switchToWorktreeTooltip": "현재 로컬 프로젝트 디렉터리에서 작업 중입니다. 이 작업에 대해 격리된 변경을 위해 git 워크트리를 사용하도록 전환합니다."
+    "switchToWorktree": "워크트리로 전환"
   },
   "workingModeTooltip": {
     "local": "이 작업에 대해 로컬 프로젝트 디렉터리에서 직접 변경합니다",
@@ -1905,8 +1902,12 @@
     "READY_FOR_IMPLEMENTATION": "구현 준비 완료",
     "TODO": "할 일"
   },
+  "git": {
+    "pullUpToDate": "프로젝트가 이미 최신 상태입니다 — 가져올 변경 사항이 없습니다",
+    "pullSuccess": "프로젝트가 성공적으로 업데이트되었습니다",
+    "pushSuccess": "변경 사항이 성공적으로 푸시되었습니다"
+  },
   "worktree": {
-    "aheadCommits": "↑ 커밋 {{count}}개",
     "uncommittedFiles": "파일 {{count}}개",
     "conflicts": "충돌",
     "conflictsPredicted": "충돌 예상됨",
@@ -1956,7 +1957,15 @@
     "noChanges": "변경 사항 없음",
     "renameBranch": "브랜치 이름 바꾸기",
     "branchNamePlaceholder": "브랜치 이름을 입력하세요...",
-    "basedOn": "기준"
+    "basedOn": "기준",
+    "rebaseFromCurrentBranch": "'{{branch}}'에서 리베이스",
+    "mergeIntoBranch": "브랜치로 병합...",
+    "squashIntoBranch": "브랜치로 스쿼시 후 병합...",
+    "applyUncommittedChanges": "커밋되지 않은 변경 사항 적용...",
+    "mergeIntoBranchTooltip": "이 워크트리의 모든 커밋과 커밋되지 않은 변경 사항을 대상 브랜치로 병합합니다(병합 커밋 생성).",
+    "squashIntoBranchTooltip": "모든 워크트리 커밋과 커밋되지 않은 변경 사항을 대상 브랜치의 단일 새 커밋으로 압축하여 결합합니다.",
+    "applyUncommittedChangesTooltip": "커밋을 병합하지 않고 이 워크트리의 커밋되지 않은 변경 사항만 대상 브랜치에 적용합니다.",
+    "rebaseFromCurrentBranchTooltip": "'{{branch}}' 브랜치 위로 워크트리 커밋을 다시 적용하고 베이스 참조를 업데이트합니다."
   },
   "welcomeMessage": {
     "title": "AiderDesk",

@@ -14,6 +14,7 @@ import {
   CommandsData,
   EditFormat,
   EnvironmentVariable,
+  GitSyncCommits,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -319,6 +320,19 @@ export interface ApplicationAPI {
   continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
   resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
   renameWorktreeBranch: (baseDir: string, taskId: string, newBranchName: string) => Promise<void>;
+  renameGitBranch: (baseDir: string, taskId: string, newBranchName: string) => Promise<void>;
+
+  // Git branch operations
+  listGitBranches: (repoPath: string, includeRemote?: boolean) => Promise<BranchInfo[]>;
+  getSyncCommits: (repoPath: string, targetBranch?: string) => Promise<GitSyncCommits>;
+  createGitBranch: (repoPath: string, name: string, startPoint?: string, checkout?: boolean) => Promise<void>;
+  checkoutGitBranch: (repoPath: string, branch: string, createTracking?: boolean, takeOver?: boolean) => Promise<void>;
+  deleteGitBranch: (repoPath: string, branch: string, force?: boolean) => Promise<void>;
+  mergeIntoCurrentBranch: (repoPath: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
+  rebaseOntoBranch: (repoPath: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
+  updateGitBranch: (repoPath: string, branchName: string) => Promise<{ output: string }>;
+  gitPull: (repoPath: string) => Promise<{ output: string }>;
+  gitPush: (repoPath: string) => Promise<{ output: string }>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;

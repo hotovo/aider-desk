@@ -606,6 +606,47 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.listBranches(baseDir);
   });
 
+  // Git branch operations
+  ipcMain.handle('list-git-branches', async (_, repoPath: string, includeRemote?: boolean) => {
+    return await eventsHandler.listGitBranches(repoPath, includeRemote);
+  });
+
+  ipcMain.handle('get-sync-commits', async (_, repoPath: string, targetBranch?: string) => {
+    return await eventsHandler.getSyncCommits(repoPath, targetBranch);
+  });
+
+  ipcMain.handle('create-git-branch', async (_, repoPath: string, name: string, startPoint?: string, checkout?: boolean) => {
+    await eventsHandler.createGitBranch(repoPath, name, startPoint, checkout);
+  });
+
+  ipcMain.handle('checkout-git-branch', async (_, repoPath: string, branch: string, createTracking?: boolean, takeOver?: boolean) => {
+    await eventsHandler.checkoutGitBranch(repoPath, branch, createTracking, takeOver);
+  });
+
+  ipcMain.handle('delete-git-branch', async (_, repoPath: string, branch: string, force?: boolean) => {
+    await eventsHandler.deleteGitBranch(repoPath, branch, force);
+  });
+
+  ipcMain.handle('merge-into-current-branch', async (_, repoPath: string, branch: string) => {
+    return await eventsHandler.mergeIntoCurrentBranch(repoPath, branch);
+  });
+
+  ipcMain.handle('rebase-onto-branch', async (_, repoPath: string, branch: string) => {
+    return await eventsHandler.rebaseOntoBranch(repoPath, branch);
+  });
+
+  ipcMain.handle('update-git-branch', async (_, repoPath: string, branchName: string) => {
+    return await eventsHandler.updateGitBranch(repoPath, branchName);
+  });
+
+  ipcMain.handle('git-pull', async (_, repoPath: string) => {
+    return await eventsHandler.gitPull(repoPath);
+  });
+
+  ipcMain.handle('git-push', async (_, repoPath: string) => {
+    return await eventsHandler.gitPush(repoPath);
+  });
+
   ipcMain.handle('get-worktree-integration-status', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
     return await eventsHandler.getWorktreeIntegrationStatus(baseDir, taskId, targetBranch);
   });
@@ -626,8 +667,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resolveConflictsWithAgent(baseDir, taskId);
   });
 
+  ipcMain.handle('rename-git-branch', async (_, baseDir: string, taskId: string, newBranchName: string) => {
+    await eventsHandler.renameGitBranch(baseDir, taskId, newBranchName);
+  });
+
   ipcMain.handle('rename-worktree-branch', async (_, baseDir: string, taskId: string, newBranchName: string) => {
-    await eventsHandler.renameWorktreeBranch(baseDir, taskId, newBranchName);
+    await eventsHandler.renameGitBranch(baseDir, taskId, newBranchName);
   });
 
   // Server control handlers

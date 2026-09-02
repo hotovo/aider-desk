@@ -100,8 +100,8 @@ vi.mock('@/memory/memory-manager', () => ({
   MemoryManager: class {},
 }));
 
-vi.mock('@/worktrees', () => ({
-  WorktreeManager: class {},
+vi.mock('@/git', () => ({
+  GitManager: class {},
 }));
 
 vi.mock('@/custom-commands', () => ({
@@ -125,7 +125,7 @@ vi.mock('uuid', () => ({
 import { Task } from '../task';
 
 describe('Task - readonly init', () => {
-  let mockWorktreeManager: { getTaskWorktree: ReturnType<typeof vi.fn>; removeWorktree: ReturnType<typeof vi.fn> };
+  let mockGitManager: { getTaskWorktree: ReturnType<typeof vi.fn>; removeWorktree: ReturnType<typeof vi.fn> };
   let mockExtensionManager: { isInitialized: ReturnType<typeof vi.fn>; dispatchEvent: ReturnType<typeof vi.fn> };
 
   const baseDir = '/test/project';
@@ -153,7 +153,7 @@ describe('Task - readonly init', () => {
       })),
     };
 
-    mockWorktreeManager = {
+    mockGitManager = {
       getTaskWorktree: vi.fn().mockResolvedValue(undefined),
       removeWorktree: vi.fn().mockResolvedValue(undefined),
     };
@@ -186,7 +186,7 @@ describe('Task - readonly init', () => {
       {} as any,
       mockEventManager as any,
       {} as any,
-      mockWorktreeManager as any,
+      mockGitManager as any,
       {} as any,
       {} as any,
       mockExtensionManager as any,
@@ -209,8 +209,8 @@ describe('Task - readonly init', () => {
 
     expect(state.todoItems).toEqual([]);
     expect(state.messages).toEqual([]);
-    expect(mockWorktreeManager.getTaskWorktree).not.toHaveBeenCalled();
-    expect(mockWorktreeManager.removeWorktree).not.toHaveBeenCalled();
+    expect(mockGitManager.getTaskWorktree).not.toHaveBeenCalled();
+    expect(mockGitManager.removeWorktree).not.toHaveBeenCalled();
     expect(aiderManager.start).not.toHaveBeenCalled();
     expect(autocompletionSpy).not.toHaveBeenCalled();
     expect(mockExtensionManager.dispatchEvent).toHaveBeenCalledWith('onTaskInitialized', expect.anything(), expect.anything(), expect.anything());

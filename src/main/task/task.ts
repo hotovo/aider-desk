@@ -112,7 +112,7 @@ import { ContextManager } from '@/task/context-manager';
 import { Project } from '@/project';
 import { AiderManager } from '@/task/aider-manager';
 import { SkillManager } from '@/skills/skill-manager';
-import { GitError, WorktreeManager } from '@/worktrees';
+import { GitError, GitManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { getElectronApp } from '@/app';
 import { PromptsManager } from '@/prompts';
@@ -204,7 +204,7 @@ export class Task {
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
     private readonly modelManager: ModelManager,
-    private readonly worktreeManager: WorktreeManager,
+    private readonly gitManager: GitManager,
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
@@ -422,14 +422,14 @@ export class Task {
 
     let resolvedBase = '';
     if (this.task.worktree.baseCommit) {
-      const branches = await this.worktreeManager.getBranchesContainingCommit(this.project.baseDir, this.task.worktree.baseCommit);
+      const branches = await this.gitManager.getBranchesContainingCommit(this.project.baseDir, this.task.worktree.baseCommit);
       if (branches.length === 1) {
         resolvedBase = branches[0];
       }
     }
     if (!resolvedBase) {
       try {
-        resolvedBase = await this.worktreeManager.getProjectMainBranch(this.project.baseDir);
+        resolvedBase = await this.gitManager.getProjectMainBranch(this.project.baseDir);
       } catch {
         resolvedBase = '';
       }
@@ -537,7 +537,7 @@ export class Task {
 
     // Check if worktree is enabled for this task
     const workingMode = this.task.workingMode;
-    const existingWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
+    const existingWorktree = await this.gitManager.getTaskWorktree(this.project.baseDir, this.taskId);
 
     if (workingMode === 'worktree') {
       if (existingWorktree) {
@@ -561,7 +561,7 @@ export class Task {
         // Only remove the worktree if no other tasks share it
         const isShared = this.project.isWorktreeSharedWithOtherTasks(existingWorktree.path, this.taskId);
         if (!isShared) {
-          await this.worktreeManager.removeWorktree(this.project.baseDir, existingWorktree, true);
+          await this.gitManager.removeWorktree(this.project.baseDir, existingWorktree, true);
         }
         void this.sendUpdatedFilesUpdated();
         void this.sendWorktreeIntegrationStatusUpdated();
@@ -2477,10 +2477,10 @@ export class Task {
   }
 
   public async getUpdatedFiles(): Promise<UpdatedFile[]> {
-    const mainBranch = this.task.worktree ? await this.worktreeManager.getProjectMainBranch(this.project.baseDir) : undefined;
+    const mainBranch = this.task.worktree ? await this.gitManager.getProjectMainBranch(this.project.baseDir) : undefined;
     const projectSettings = this.project.getProjectSettings();
     const groupMode = (projectSettings.updatedFilesGroupMode as UpdatedFilesGroupMode) || UpdatedFilesGroupMode.Grouped;
-    return await this.worktreeManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch, groupMode);
+    return await this.gitManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch, groupMode);
   }
 
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {
@@ -4195,11 +4195,11 @@ ${error.stderr}`,
 
   private async initWorktree(): Promise<void> {
     const branchName = this.generateBranchName();
-    this.task.worktree = await this.worktreeManager.createWorktree(this.project.baseDir, this.taskId, branchName);
+    this.task.worktree = await this.gitManager.createWorktree(this.project.baseDir, this.taskId, branchName);
 
     const settings = this.store.getSettings();
     if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
-      await this.worktreeManager.createSymlinks(this.project.baseDir, this.task.worktree.path, settings.taskSettings.worktreeSymlinkFolders);
+      await this.gitManager.createSymlinks(this.project.baseDir, this.task.worktree.path, settings.taskSettings.worktreeSymlinkFolders);
     }
   }
 
@@ -4212,7 +4212,7 @@ ${error.stderr}`,
 
     await this.waitForCurrentPromptToFinish();
 
-    const currentWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
+    const currentWorktree = await this.gitManager.getTaskWorktree(this.project.baseDir, this.taskId);
     if (mode === 'worktree') {
       if (!currentWorktree) {
         await this.initWorktree();
@@ -4223,7 +4223,7 @@ ${error.stderr}`,
         // Only remove the worktree if no other tasks share it
         const isShared = this.project.isWorktreeSharedWithOtherTasks(currentWorktree.path, this.taskId);
         if (!isShared) {
-          await this.worktreeManager.removeWorktree(this.project.baseDir, currentWorktree);
+          await this.gitManager.removeWorktree(this.project.baseDir, currentWorktree);
         }
       }
       this.task.worktree = undefined;
@@ -4257,7 +4257,7 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     try {
-      const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+      const effectiveTargetBranch = targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
 
       this.addLogMessage(
         'loading',
@@ -4268,7 +4268,7 @@ ${error.stderr}`,
       let effectiveCommitMessage = commitMessage;
       if (squash && !effectiveCommitMessage) {
         // Get changes information for AI generation
-        const changesDiff = await this.worktreeManager.getChangesDiff(this.project.baseDir, this.task.worktree.path, targetBranch);
+        const changesDiff = await this.gitManager.getChangesDiff(this.project.baseDir, this.task.worktree.path, targetBranch);
 
         if (changesDiff) {
           // Try to generate commit message using AI
@@ -4302,7 +4302,7 @@ ${error.stderr}`,
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-      const mergeState = await this.worktreeManager.mergeWorktreeToMainWithUncommitted(
+      const mergeState = await this.gitManager.mergeWorktreeToMainWithUncommitted(
         this.project.baseDir,
         this.task.id,
         this.task.worktree.path,
@@ -4359,7 +4359,7 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     if (this.task.worktree) {
-      const rebaseState = await this.worktreeManager.getRebaseState(this.task.worktree.path);
+      const rebaseState = await this.gitManager.getRebaseState(this.task.worktree.path);
       if (rebaseState.inProgress) {
         this.addLogMessage('error', 'worktree.switchToLocalRebaseInProgress', true);
         throw new Error('Cannot switch to local mode while a rebase is in progress. Continue or abort the rebase first.');
@@ -4368,14 +4368,14 @@ ${error.stderr}`,
 
     if (options?.mergeBeforeSwitch && this.task.worktree) {
       try {
-        const effectiveTargetBranch = options.targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+        const effectiveTargetBranch = options.targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
 
         this.addLogMessage('loading', `Merging worktree to ${effectiveTargetBranch} branch and switching to local mode...`);
 
         const settings = this.store.getSettings();
         const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-        const mergeState = await this.worktreeManager.mergeWorktreeToMainWithUncommitted(
+        const mergeState = await this.gitManager.mergeWorktreeToMainWithUncommitted(
           this.project.baseDir,
           this.task.id,
           this.task.worktree.path,
@@ -4448,7 +4448,7 @@ ${error.stderr}`,
       stashId = `local-${shortId}-to-worktree-${timestamp}`;
 
       try {
-        const stashResult = await this.worktreeManager.stashUncommittedChanges(
+        const stashResult = await this.gitManager.stashUncommittedChanges(
           stashId,
           this.project.baseDir,
           'Uncommitted changes to carry over to worktree',
@@ -4463,15 +4463,15 @@ ${error.stderr}`,
       }
     }
 
-    const existingWorktree = await this.worktreeManager.getTaskWorktree(this.project.baseDir, this.taskId);
+    const existingWorktree = await this.gitManager.getTaskWorktree(this.project.baseDir, this.taskId);
     if (!existingWorktree && !this.task.worktree) {
       try {
         await this.initWorktree();
       } catch (error) {
         if (stashId) {
           try {
-            await this.worktreeManager.applyStash(this.project.baseDir, stashId);
-            await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+            await this.gitManager.applyStash(this.project.baseDir, stashId);
+            await this.gitManager.dropStash(this.project.baseDir, stashId);
           } catch (restoreError) {
             logger.error('Failed to restore stash after worktree creation failure:', { error: restoreError, stashId });
             throw new Error(
@@ -4487,21 +4487,21 @@ ${error.stderr}`,
 
     if (stashId && this.task.worktree) {
       try {
-        await this.worktreeManager.applyStash(this.task.worktree.path, stashId);
+        await this.gitManager.applyStash(this.task.worktree.path, stashId);
 
         if (!options?.dropSourceChanges) {
-          await this.worktreeManager.applyStash(this.project.baseDir, stashId);
+          await this.gitManager.applyStash(this.project.baseDir, stashId);
         }
 
-        await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+        await this.gitManager.dropStash(this.project.baseDir, stashId);
       } catch (error) {
         logger.error('Failed to apply stashed changes to worktree:', { error });
 
         const originalMessage = error instanceof Error ? error.message : String(error);
 
         try {
-          await this.worktreeManager.applyStash(this.project.baseDir, stashId);
-          await this.worktreeManager.dropStash(this.project.baseDir, stashId);
+          await this.gitManager.applyStash(this.project.baseDir, stashId);
+          await this.gitManager.dropStash(this.project.baseDir, stashId);
           logger.info('Stashed changes restored to project root after failed apply to worktree');
           throw new Error(`Failed to apply stashed changes to worktree. Changes have been restored to project root. Error: ${originalMessage}`);
         } catch (restoreError) {
@@ -4523,7 +4523,7 @@ ${error.stderr}`,
   }
 
   public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles> {
-    return await this.worktreeManager.getUncommittedFiles(this.project.baseDir);
+    return await this.gitManager.getUncommittedFiles(this.project.baseDir);
   }
 
   public async applyUncommittedChanges(targetBranch?: string): Promise<void> {
@@ -4539,20 +4539,14 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     try {
-      const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+      const effectiveTargetBranch = targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
 
       this.addLogMessage('loading', `Applying uncommitted changes to ${effectiveTargetBranch} branch...`);
 
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-      await this.worktreeManager.applyUncommittedChangesToMain(
-        this.project.baseDir,
-        this.task.id,
-        this.task.worktree.path,
-        effectiveTargetBranch,
-        symlinkFolders,
-      );
+      await this.gitManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, effectiveTargetBranch, symlinkFolders);
 
       this.addLogMessage('info', `Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`, true);
     } catch (error) {
@@ -4591,7 +4585,7 @@ ${error.stderr}`,
 
     await this.waitForCurrentPromptToFinish();
 
-    await this.worktreeManager.mergeWorktreeToWorktree(this.task.worktree.path, targetWorktreeDir, includeUncommitted);
+    await this.gitManager.mergeWorktreeToWorktree(this.task.worktree.path, targetWorktreeDir, includeUncommitted);
 
     await this.sendUpdatedFilesUpdated();
   }
@@ -4618,7 +4612,7 @@ ${error.stderr}`,
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-      await this.worktreeManager.revertMerge(this.project.baseDir, this.task.id, this.task.worktree.path, this.task.lastMergeState, symlinkFolders);
+      await this.gitManager.revertMerge(this.project.baseDir, this.task.id, this.task.worktree.path, this.task.lastMergeState, symlinkFolders);
 
       // Clear merge state after successful revert
       await this.saveTask({ lastMergeState: undefined });
@@ -4644,7 +4638,7 @@ ${error.stderr}`,
       filePath,
     });
 
-    await this.worktreeManager.addFileToGit(this.getTaskDir(), filePath);
+    await this.gitManager.addFileToGit(this.getTaskDir(), filePath);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
@@ -4656,7 +4650,7 @@ ${error.stderr}`,
       filePath,
     });
 
-    await this.worktreeManager.restoreFile(this.getTaskDir(), filePath);
+    await this.gitManager.restoreFile(this.getTaskDir(), filePath);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
   }
@@ -4668,7 +4662,7 @@ ${error.stderr}`,
     });
 
     const taskDir = this.getTaskDir();
-    const diff = await this.worktreeManager.getUncommittedDiff(taskDir);
+    const diff = await this.gitManager.getUncommittedDiff(taskDir);
 
     if (!diff) {
       throw new Error('No uncommitted changes to commit');
@@ -4685,7 +4679,7 @@ ${error.stderr}`,
     // Get last 10 commit messages for context
     let commitHistoryText = '';
     try {
-      const commits = await this.worktreeManager.getLastCommits(taskDir, 10, false);
+      const commits = await this.gitManager.getLastCommits(taskDir, 10, false);
       if (commits.length > 0) {
         const commitMessages = commits.map((commit) => commit.message);
         commitHistoryText = `\n\nHere are the last ${commits.length} commit messages for reference:\n\n${commitMessages.map((msg, i) => `${i + 1}. ${msg}`).join('\n')}`;
@@ -4727,7 +4721,7 @@ ${error.stderr}`,
     amend = beforeResult.amend;
 
     const taskDir = this.getTaskDir();
-    const committed = await this.worktreeManager.commitChanges(taskDir, message, amend);
+    const committed = await this.gitManager.commitChanges(taskDir, message, amend);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
 
@@ -4740,7 +4734,7 @@ ${error.stderr}`,
 
   public cancelCommitChanges(): void {
     const taskDir = this.getTaskDir();
-    this.worktreeManager.cancelCommitChanges(taskDir);
+    this.gitManager.cancelCommitChanges(taskDir);
   }
 
   public async getWorktreeIntegrationStatus(targetBranch?: string) {
@@ -4748,15 +4742,15 @@ ${error.stderr}`,
       return null;
     }
 
-    const effectiveTargetBranch = targetBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+    const effectiveTargetBranch = targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
     const worktreePath = this.task.worktree.path;
     const settings = this.store.getSettings();
     const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
     const [unmergedWork, predictedConflicts, rebaseState] = await Promise.all([
-      this.worktreeManager.checkWorktreeForUnmergedWork(this.project.baseDir, worktreePath, effectiveTargetBranch, symlinkFolders),
-      this.worktreeManager.checkForRebaseConflicts(worktreePath, effectiveTargetBranch),
-      this.worktreeManager.getRebaseState(worktreePath),
+      this.gitManager.checkWorktreeForUnmergedWork(this.project.baseDir, worktreePath, effectiveTargetBranch, symlinkFolders),
+      this.gitManager.checkForRebaseConflicts(worktreePath, effectiveTargetBranch),
+      this.gitManager.getRebaseState(worktreePath),
     ]);
 
     return {
@@ -4781,7 +4775,7 @@ ${error.stderr}`,
       throw new Error('No worktree exists for this task');
     }
 
-    const effectiveFromBranch = fromBranch || (await this.worktreeManager.getProjectMainBranch(this.project.baseDir));
+    const effectiveFromBranch = fromBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
 
     logger.info('Rebasing worktree from branch', {
       baseDir: this.project.baseDir,
@@ -4795,7 +4789,7 @@ ${error.stderr}`,
       this.addLogMessage('loading', `Rebasing worktree from ${effectiveFromBranch}...`);
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
-      const { success, error, ontoCommit } = await this.worktreeManager.rebaseMainIntoWorktree(
+      const { success, error, ontoCommit } = await this.gitManager.rebaseMainIntoWorktree(
         this.task.worktree.path,
         effectiveFromBranch,
         this.task.worktree.baseCommit,
@@ -4846,7 +4840,7 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', 'Aborting rebase...');
-      await this.worktreeManager.abortRebase(this.task.worktree.path);
+      await this.gitManager.abortRebase(this.task.worktree.path);
       this.addLogMessage('info', 'Rebase aborted', true);
     } catch (error) {
       logger.error('Failed to abort rebase:', error);
@@ -4861,20 +4855,43 @@ ${error.stderr}`,
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
+  public async renameBranch(newBranchName: string): Promise<void> {
+    if (this.task.workingMode === 'worktree') {
+      if (!this.task.worktree) {
+        throw new Error('No worktree exists for this task');
+      }
+
+      const oldBranchName = this.task.worktree.branch;
+      if (!oldBranchName) {
+        throw new Error('Cannot determine current branch name');
+      }
+
+      if (oldBranchName === newBranchName) {
+        return;
+      }
+
+      const actualBranchName = await this.gitManager.renameBranch(this.project.baseDir, oldBranchName, newBranchName);
+      this.task.worktree.branch = actualBranchName;
+      await this.saveTask({ worktree: this.task.worktree });
+      void this.sendWorktreeIntegrationStatusUpdated();
+    } else {
+      const branches = await this.gitManager.listBranches(this.project.baseDir);
+      const currentBranch = branches.find((b) => b.isCurrent)?.name;
+      if (!currentBranch) {
+        throw new Error('Cannot determine current branch name');
+      }
+
+      if (currentBranch === newBranchName) {
+        return;
+      }
+
+      await this.gitManager.renameBranch(this.project.baseDir, currentBranch, newBranchName);
+      void this.sendUpdatedFilesUpdated();
+    }
+  }
+
   public async renameWorktreeBranch(newBranchName: string): Promise<void> {
-    if (!this.task.worktree) {
-      throw new Error('No worktree exists for this task');
-    }
-
-    const oldBranchName = this.task.worktree.branch;
-    if (!oldBranchName) {
-      throw new Error('Cannot determine current branch name');
-    }
-
-    const actualBranchName = await this.worktreeManager.renameBranch(this.project.baseDir, oldBranchName, newBranchName);
-    this.task.worktree.branch = actualBranchName;
-    await this.saveTask({ worktree: this.task.worktree });
-    void this.sendWorktreeIntegrationStatusUpdated();
+    await this.renameBranch(newBranchName);
   }
 
   private async executeConflictResolution(directoryPath: string, directoryName: string): Promise<void> {
@@ -4889,7 +4906,7 @@ ${error.stderr}`,
     try {
       this.addLogMessage('loading', `Resolving conflicts in ${directoryName}...`);
 
-      const files = await this.worktreeManager.listConflictedFiles(directoryPath);
+      const files = await this.gitManager.listConflictedFiles(directoryPath);
       if (files.length === 0) {
         this.addLogMessage('info', 'No conflicted files found', true);
         return;
@@ -4921,7 +4938,7 @@ ${error.stderr}`,
 
         this.addLogMessage('loading', `Resolving ${filePath}...`, false, promptContext);
 
-        const ctx = await this.worktreeManager.collectConflictContext(directoryPath, filePath);
+        const ctx = await this.gitManager.collectConflictContext(directoryPath, filePath);
 
         // Create temp directory structure for conflict files
         const conflictsDir = path.join(this.project.baseDir, AIDER_DESK_TMP_DIR, 'conflicts');
@@ -5024,7 +5041,7 @@ ${error.stderr}`,
     // Check worktree first
     if (this.task.worktree) {
       const worktreePath = this.task.worktree.path;
-      const worktreeRebaseState = await this.worktreeManager.getRebaseState(worktreePath);
+      const worktreeRebaseState = await this.gitManager.getRebaseState(worktreePath);
 
       if (worktreeRebaseState.hasUnmergedPaths) {
         logger.info('Conflicts found in worktree, resolving...', {
@@ -5037,7 +5054,7 @@ ${error.stderr}`,
 
     // Check main repository
     const baseDir = this.project.baseDir;
-    const baseRebaseState = await this.worktreeManager.getRebaseState(baseDir);
+    const baseRebaseState = await this.gitManager.getRebaseState(baseDir);
 
     if (baseRebaseState.hasUnmergedPaths) {
       logger.info('Conflicts found in main repository, resolving...', {
@@ -5060,7 +5077,7 @@ ${error.stderr}`,
 
     try {
       this.addLogMessage('loading', 'Continuing rebase...');
-      const { ontoCommit, ontoBranch } = await this.worktreeManager.continueRebase(this.task.worktree.path);
+      const { ontoCommit, ontoBranch } = await this.gitManager.continueRebase(this.task.worktree.path);
 
       if (ontoCommit) {
         await this.saveTask({

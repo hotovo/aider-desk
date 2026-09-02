@@ -84,7 +84,6 @@
     "enabled": "Включено",
     "noFiles": "Нет файлов",
       "loadingFiles": "Загрузка файлов...",
-    "clickToRefresh": "Нажмите для обновления",
     "closeTasks": "Закрыть задачи",
     "toggleTasks": "Переключить задачи",
     "submit": "Отправить"
@@ -1713,9 +1712,7 @@
     "worktreeOptionCarryOverKeepLabel": "Перенести и оставить в проекте",
     "worktreeOptionCarryOverKeepDescription": "Скопировать незакоммиченные изменения в рабочее дерево, также сохранив их в каталоге проекта",
     "switchToLocal": "Перейти в локальный режим",
-    "switchToWorktree": "Перейти в рабочее дерево",
-    "switchToLocalTooltip": "Сейчас работа ведётся в git worktree. Перейти к внесению изменений непосредственно в локальный каталог проекта для этой задачи.",
-    "switchToWorktreeTooltip": "Сейчас работа ведётся в локальном каталоге проекта. Перейти к использованию git worktree для изолированных изменений в этой задаче."
+    "switchToWorktree": "Перейти в рабочее дерево"
   },
   "workingModeTooltip": {
     "local": "Вносить изменения непосредственно в локальный каталог проекта для этой задачи",
@@ -1929,8 +1926,12 @@
     "READY_FOR_IMPLEMENTATION": "Готова к реализации",
     "TODO": "К выполнению"
   },
+  "git": {
+    "pullUpToDate": "Проект уже актуален — нет изменений для загрузки",
+    "pullSuccess": "Проект успешно обновлён",
+    "pushSuccess": "Изменения успешно отправлены"
+  },
   "worktree": {
-    "aheadCommits": "↑ {{count}} коммитов",
     "uncommittedFiles": "{{count}} файлов",
     "conflicts": "конфликтов",
     "conflictsPredicted": "Прогнозируемые конфликты",
@@ -1980,7 +1981,15 @@
     "noChanges": "Нет изменений",
     "renameBranch": "Переименовать ветку",
     "branchNamePlaceholder": "Введите название ветки...",
-    "basedOn": "На основе"
+    "basedOn": "На основе",
+    "rebaseFromCurrentBranch": "Перебазировать из '{{branch}}'",
+    "mergeIntoBranch": "Слияние в ветку...",
+    "squashIntoBranch": "Сквош и слияние в ветку...",
+    "applyUncommittedChanges": "Применить незакоммиченные изменения...",
+    "mergeIntoBranchTooltip": "Выполняет слияние всех коммитов и незакоммиченных изменений из этого рабочего дерева в целевую ветку (создаёт коммит слияния).",
+    "squashIntoBranchTooltip": "Объединяет все коммиты рабочего дерева и незакоммиченные изменения в один новый коммит в целевой ветке.",
+    "applyUncommittedChangesTooltip": "Применяет только незакоммиченные изменения из этого рабочего дерева к целевой ветке без слияния коммитов.",
+    "rebaseFromCurrentBranchTooltip": "Переносит коммиты рабочего дерева поверх '{{branch}}' и обновляет базовую ссылку."
   },
   "welcomeMessage": {
     "title": "AiderDesk",

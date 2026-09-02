@@ -2,7 +2,7 @@ import { join } from 'path';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -34,8 +34,8 @@ const projectPath = '/test/project';
 const taskId = 'task-123';
 const worktreePath = join(projectPath, AIDER_DESK_TASKS_DIR, taskId, 'worktree');
 
-describe('WorktreeManager - createWorktree', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - createWorktree', () => {
+  let gitManager: GitManager;
 
   const getCommands = (): string[] => (execWithShellPath as Mock).mock.calls.map((call: unknown[]) => call[0] as string);
 
@@ -77,13 +77,13 @@ describe('WorktreeManager - createWorktree', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('prunes stale worktree registrations and removes existing worktree before adding', async () => {
     mockGitCommands({ removeFails: true });
 
-    const worktree = await worktreeManager.createWorktree(projectPath, taskId, 'task-branch');
+    const worktree = await gitManager.createWorktree(projectPath, taskId, 'task-branch');
 
     const commands = getCommands();
     const pruneIndex = commands.indexOf('git worktree prune');
@@ -105,7 +105,7 @@ describe('WorktreeManager - createWorktree', () => {
   it('still creates the worktree when prune fails', async () => {
     mockGitCommands({ pruneFails: true });
 
-    const worktree = await worktreeManager.createWorktree(projectPath, taskId, 'task-branch');
+    const worktree = await gitManager.createWorktree(projectPath, taskId, 'task-branch');
 
     expect(worktree.path).toBe(worktreePath);
     expect(worktree.branch).toBe('task-branch');
@@ -114,7 +114,7 @@ describe('WorktreeManager - createWorktree', () => {
   it('creates a detached worktree when no branch is provided', async () => {
     mockGitCommands();
 
-    const worktree = await worktreeManager.createWorktree(projectPath, taskId);
+    const worktree = await gitManager.createWorktree(projectPath, taskId);
 
     const addCommand = getCommands().find((command) => command.startsWith('git worktree add'));
     expect(addCommand).toBe(`git worktree add "${worktreePath}" HEAD`);

@@ -16,7 +16,7 @@ import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
 import { INTERNAL_TASK_ID, Task } from '@/task';
 import { migrateSessionsToTasks } from '@/project/migrations';
-import { WorktreeManager } from '@/worktrees';
+import { GitManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
@@ -43,7 +43,7 @@ export class Project {
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
     private readonly modelManager: ModelManager,
-    private readonly worktreeManager: WorktreeManager,
+    private readonly gitManager: GitManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
@@ -187,7 +187,7 @@ export class Project {
       this.dataManager,
       this.eventManager,
       this.modelManager,
-      this.worktreeManager,
+      this.gitManager,
       this.memoryManager,
       this.promptsManager,
       this.extensionManager,
@@ -410,7 +410,7 @@ export class Project {
     }
 
     try {
-      await this.worktreeManager.removeWorktree(this.baseDir, taskData.worktree, true);
+      await this.gitManager.removeWorktree(this.baseDir, taskData.worktree, true);
     } catch (error) {
       logger.warn('Failed to remove worktree during task deletion', {
         baseDir: this.baseDir,
@@ -647,7 +647,7 @@ export class Project {
     await this.promptsManager.unwatchProject(this.baseDir);
     this.extensionManager.stopProjectWatcher(this.baseDir);
     await Promise.all(Array.from(this.tasks.values()).map((task) => task.close()));
-    await this.worktreeManager.close(this.baseDir);
+    await this.gitManager.close(this.baseDir);
 
     // Remove watch-files lock file if it exists
     const lockFilePath = path.join(this.baseDir, AIDER_DESK_WATCH_FILES_LOCK);

@@ -263,9 +263,9 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
               <div
                 ref={popupRef}
                 style={popupStyle}
-                className="bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-[9999] flex flex-col w-[500px] max-w-[calc(100vw-20px)]"
+                className="overflow-hidden bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-[9999] flex flex-col w-[500px] max-w-[calc(100vw-20px)]"
               >
-                <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
+                <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-b-md z-10 flex items-center space-x-2">
                   <input
                     type="text"
                     autoFocus={true}
@@ -281,7 +281,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
                     </div>
                   )}
                 </div>
-                <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+                <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
                   {labelOnNull && !debouncedSearchTerm && (
                     <>
                       <div
@@ -319,11 +319,11 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
           ) : (
             <div
               className={twMerge(
-                'absolute left-0 bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
+                'absolute left-0 overflow-hidden bg-bg-primary-light border border-border-default-dark rounded-md shadow-lg z-50 flex flex-col w-[500px] max-w-[calc(100vw-20px)]',
                 popupPlacement === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1',
               )}
             >
-              <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-md z-10 flex items-center space-x-2">
+              <div className="sticky top-0 p-2 border-b border-border-default-dark bg-bg-primary-light rounded-b-md z-10 flex items-center space-x-2">
                 <input
                   type="text"
                   autoFocus={true}
@@ -339,7 +339,7 @@ export const ModelSelector = forwardRef<ModelSelectorRef, Props>(
                   </div>
                 )}
               </div>
-              <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
+              <div className="overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth max-h-48">
                 {labelOnNull && !debouncedSearchTerm && (
                   <>
                     <div

@@ -1,7 +1,5 @@
 import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
 import { useCallback, useEffect, useState, useMemo } from 'react';
-import { AiFillFolderOpen } from 'react-icons/ai';
-import { IoGitBranch } from 'react-icons/io5';
 import { MdClose } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -10,12 +8,10 @@ import { useTranslation } from 'react-i18next';
 import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
-import { useResponsive } from '@/hooks/useResponsive';
-import { WorktreeMergeButton } from '@/components/project/WorktreeMergeButton';
+import { GitBranchesButton } from '@/components/project/GitBranchesButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
-import { WorktreeStatusBadges } from '@/components/project/WorktreeStatusBadges';
 import { useApi } from '@/contexts/ApiContext';
 import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
@@ -32,9 +28,6 @@ enum WorktreeSwitchOption {
   CarryOverRemove = 'carryOverRemove',
   CarryOverKeep = 'carryOverKeep',
 }
-
-const LOCAL_MODE_ICON = AiFillFolderOpen;
-const WORKTREE_MODE_ICON = IoGitBranch;
 
 type Props = {
   task: TaskData;
@@ -63,7 +56,6 @@ export const TaskWorkingMode = ({
   onRenameBranch,
   isMerging,
 }: Props) => {
-  const { isMobile } = useResponsive();
   const { t } = useTranslation();
   const api = useApi();
   const allTasks = useProjectTasks(task.baseDir);
@@ -74,7 +66,7 @@ export const TaskWorkingMode = ({
   const [worktreeOption, setWorktreeOption] = useState<WorktreeSwitchOption>(WorktreeSwitchOption.JustSwitch);
   const [localUncommittedFiles, setLocalUncommittedFiles] = useState<WorktreeUncommittedFiles | null>(null);
   const isWorktree = task.workingMode === 'worktree';
-  const { worktreeStatus, refreshStatus: handleRefresh } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
+  const { worktreeStatus } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
   const { isCommitting, cancelCommit } = useCommitChanges(task.baseDir, task.id);
 
   const isWorktreeShared = useMemo(() => {
@@ -311,51 +303,28 @@ export const TaskWorkingMode = ({
         <span className="text-2xs">{t('workingMode.switching')}</span>
       ) : (
         <>
-          {task.workingMode === 'worktree' && (
-            <>
-              {worktreeStatus && <WorktreeStatusBadges status={worktreeStatus} onRefresh={handleRefresh} />}
-              {task.lastMergeState && <WorktreeRevertButton onRevert={onRevert} disabled={isMerging} />}
-              <WorktreeMergeButton
-                baseDir={task.baseDir}
-                defaultBranch={worktreeStatus?.targetBranch}
-                onMerge={onMerge}
-                onSquash={onSquash}
-                onOnlyUncommitted={onOnlyUncommitted}
-                onRebaseFromBranch={onRebaseFromBranch}
-                onAbortRebase={onAbortRebase}
-                onContinueRebase={onContinueRebase}
-                onResolveConflictsWithAgent={onResolveConflictsWithAgent}
-                onRenameBranch={onRenameBranch}
-                canAbortRebase={worktreeStatus?.rebaseState.inProgress}
-                canContinueRebase={worktreeStatus?.rebaseState.inProgress}
-                canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}
-                disabled={isMerging}
-                status={worktreeStatus}
-                taskName={task.name}
-              />
-            </>
-          )}
-          {task.workingMode === 'worktree' ? (
-            <Button size="xs" variant="text" color="tertiary" onClick={handleSwitchToLocal} tooltip={t('workingMode.switchToLocalTooltip')}>
-              <LOCAL_MODE_ICON className="w-3.5 h-3.5" />
-              {!isMobile && (
-                <span className="text-2xs ml-1">
-                  {t('workingMode.switchToLocal')}
-                  {willShowConfirmDialog ? '...' : ''}
-                </span>
-              )}
-            </Button>
-          ) : (
-            <Button size="xs" variant="text" color="tertiary" onClick={handleSwitchToWorktree} tooltip={t('workingMode.switchToWorktreeTooltip')}>
-              <WORKTREE_MODE_ICON className="w-3.5 h-3.5" />
-              {!isMobile && (
-                <span className="text-2xs ml-1">
-                  {t('workingMode.switchToWorktree')}
-                  {willShowConfirmDialog ? '...' : ''}
-                </span>
-              )}
-            </Button>
-          )}
+          {task.workingMode === 'worktree' && task.lastMergeState && <WorktreeRevertButton onRevert={onRevert} disabled={isMerging} />}
+          <GitBranchesButton
+            baseDir={task.baseDir}
+            worktreePath={task.workingMode === 'worktree' ? task.worktree?.path : undefined}
+            status={worktreeStatus}
+            taskName={task.name}
+            disabled={isMerging}
+            onSwitchToLocal={handleSwitchToLocal}
+            onSwitchToWorktree={handleSwitchToWorktree}
+            willShowConfirmDialog={willShowConfirmDialog}
+            onMerge={onMerge}
+            onSquash={onSquash}
+            onOnlyUncommitted={onOnlyUncommitted}
+            onRebaseFromBranch={onRebaseFromBranch}
+            onAbortRebase={onAbortRebase}
+            onContinueRebase={onContinueRebase}
+            onResolveConflictsWithAgent={onResolveConflictsWithAgent}
+            onRenameBranch={onRenameBranch}
+            canAbortRebase={worktreeStatus?.rebaseState.inProgress}
+            canContinueRebase={worktreeStatus?.rebaseState.inProgress}
+            canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}
+          />
         </>
       )}
       {showConfirmLocal && (

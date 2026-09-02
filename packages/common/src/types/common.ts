@@ -48,6 +48,11 @@ export interface WorktreeAheadCommits {
   commits: string[];
 }
 
+export interface GitSyncCommits {
+  outgoing: WorktreeAheadCommits;
+  incoming: WorktreeAheadCommits;
+}
+
 export interface WorktreeUncommittedFiles {
   count: number;
   files: string[];
@@ -1179,6 +1184,10 @@ export interface BranchInfo {
   name: string;
   isCurrent: boolean;
   hasWorktree: boolean;
+  isRemote?: boolean;
+  upstream?: string;
+  ahead?: number;
+  behind?: number;
 }
 export interface NotificationData {
   baseDir: string;

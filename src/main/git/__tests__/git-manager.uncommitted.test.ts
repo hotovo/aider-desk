@@ -2,7 +2,7 @@ import { lstatSync } from 'fs';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 import { execWithShellPath } from '@/utils';
 
@@ -25,19 +25,19 @@ vi.mock('fs', () => ({
   lstatSync: vi.fn(),
 }));
 
-describe('WorktreeManager - hasUncommittedChanges', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - hasUncommittedChanges', () => {
+  let gitManager: GitManager;
   const testPath = '/test/project/path';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return false when no uncommitted changes', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(false);
   });
@@ -49,7 +49,7 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
     });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(true);
   });
@@ -61,7 +61,7 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
     });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => true });
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(false);
   });
@@ -75,7 +75,7 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(true);
   });
@@ -89,7 +89,7 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
       throw new Error('ENOENT');
     });
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(true);
   });
@@ -97,7 +97,7 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
   it('should return false on execWithShellPath failure', async () => {
     (execWithShellPath as Mock).mockRejectedValueOnce(new Error('git failed'));
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(false);
   });
@@ -111,25 +111,25 @@ describe('WorktreeManager - hasUncommittedChanges', () => {
       isSymbolicLink: () => p.includes('node_modules') || p.includes('resources/linux'),
     }));
 
-    const result = await worktreeManager.hasUncommittedChanges(testPath);
+    const result = await gitManager.hasUncommittedChanges(testPath);
 
     expect(result).toBe(true);
   });
 });
 
-describe('WorktreeManager - getUncommittedFiles', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getUncommittedFiles', () => {
+  let gitManager: GitManager;
   const testPath = '/test/project/path';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return empty when no uncommitted changes', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-    const result = await worktreeManager.getUncommittedFiles(testPath);
+    const result = await gitManager.getUncommittedFiles(testPath);
 
     expect(result.count).toBe(0);
     expect(result.files).toEqual([]);
@@ -144,7 +144,7 @@ describe('WorktreeManager - getUncommittedFiles', () => {
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
 
-    const result = await worktreeManager.getUncommittedFiles(testPath);
+    const result = await gitManager.getUncommittedFiles(testPath);
 
     expect(result.count).toBe(1);
     expect(result.files).toEqual(['src/main/file.ts']);
@@ -157,7 +157,7 @@ describe('WorktreeManager - getUncommittedFiles', () => {
     });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
 
-    const result = await worktreeManager.getUncommittedFiles(testPath);
+    const result = await gitManager.getUncommittedFiles(testPath);
 
     expect(result.count).toBe(2);
     expect(result.files).toEqual(['src/main/a.ts', 'src/main/b.ts']);
@@ -170,7 +170,7 @@ describe('WorktreeManager - getUncommittedFiles', () => {
     });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => true });
 
-    const result = await worktreeManager.getUncommittedFiles(testPath);
+    const result = await gitManager.getUncommittedFiles(testPath);
 
     expect(result.count).toBe(0);
     expect(result.files).toEqual([]);
@@ -183,7 +183,7 @@ describe('WorktreeManager - getUncommittedFiles', () => {
     });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
 
-    const result = await worktreeManager.getUncommittedFiles(testPath);
+    const result = await gitManager.getUncommittedFiles(testPath);
 
     expect(result.count).toBe(2);
     expect(result.files).toEqual(['src/file.ts']);

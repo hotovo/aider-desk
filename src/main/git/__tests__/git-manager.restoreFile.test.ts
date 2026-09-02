@@ -3,7 +3,7 @@ import { join } from 'path';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 vi.mock('@/logger', () => ({
   default: {
@@ -23,13 +23,13 @@ vi.mock('fs/promises');
 
 import { execWithShellPath } from '@/utils';
 
-describe('WorktreeManager - restoreFile', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - restoreFile', () => {
+  let gitManager: GitManager;
   const worktreePath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   describe('Tracked files (exist in HEAD)', () => {
@@ -37,7 +37,7 @@ describe('WorktreeManager - restoreFile', () => {
       // git cat-file -e returns exitCode 0 for files that exist in HEAD
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await worktreeManager.restoreFile(worktreePath, 'tracked-file.txt');
+      await gitManager.restoreFile(worktreePath, 'tracked-file.txt');
 
       // First call should be to check if file exists in HEAD
       expect(execWithShellPath).toHaveBeenCalledWith('git cat-file -e HEAD:"tracked-file.txt"', {
@@ -54,7 +54,7 @@ describe('WorktreeManager - restoreFile', () => {
       // git cat-file -e returns exitCode 0 for files that exist in HEAD
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await worktreeManager.restoreFile(worktreePath, 'deleted-file.txt');
+      await gitManager.restoreFile(worktreePath, 'deleted-file.txt');
 
       // Should call git restore to recreate the file from HEAD
       expect(execWithShellPath).toHaveBeenCalledWith('git restore --staged --worktree --source=HEAD -- "deleted-file.txt"', {
@@ -65,7 +65,7 @@ describe('WorktreeManager - restoreFile', () => {
     it('should escape quotes in file path for tracked files', async () => {
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await worktreeManager.restoreFile(worktreePath, 'file with "quotes".txt');
+      await gitManager.restoreFile(worktreePath, 'file with "quotes".txt');
 
       // Check that quotes are escaped in both commands
       const calls = (execWithShellPath as Mock).mock.calls;
@@ -84,7 +84,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => false, isSymbolicLink: () => false } as any);
       vi.mocked(fs.unlink).mockResolvedValueOnce(undefined);
 
-      await worktreeManager.restoreFile(worktreePath, 'new-file.txt');
+      await gitManager.restoreFile(worktreePath, 'new-file.txt');
 
       // First call should be to check if file exists in HEAD
       expect(execWithShellPath).toHaveBeenCalledWith('git cat-file -e HEAD:"new-file.txt"', {
@@ -109,7 +109,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => false, isSymbolicLink: () => false } as any);
       vi.mocked(fs.unlink).mockResolvedValueOnce(undefined);
 
-      await worktreeManager.restoreFile(worktreePath, 'untracked.txt');
+      await gitManager.restoreFile(worktreePath, 'untracked.txt');
 
       // Should still try to delete from working tree
       expect(fs.unlink).toHaveBeenCalledWith(join(worktreePath, 'untracked.txt'));
@@ -124,7 +124,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => false, isSymbolicLink: () => true } as any);
       vi.mocked(fs.unlink).mockResolvedValueOnce(undefined);
 
-      await worktreeManager.restoreFile(worktreePath, 'untracked-symlink');
+      await gitManager.restoreFile(worktreePath, 'untracked-symlink');
 
       // Should use lstat to detect symlink (not following it) - using absolute path
       expect(fs.lstat).toHaveBeenCalledWith(join(worktreePath, 'untracked-symlink'));
@@ -144,7 +144,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => true, isSymbolicLink: () => false } as any);
       vi.mocked(fs.rm).mockResolvedValueOnce(undefined);
 
-      await worktreeManager.restoreFile(worktreePath, 'untracked-folder');
+      await gitManager.restoreFile(worktreePath, 'untracked-folder');
 
       // Should check if it's a directory using lstat (absolute path)
       expect(fs.lstat).toHaveBeenCalledWith(join(worktreePath, 'untracked-folder'));
@@ -162,7 +162,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => false, isSymbolicLink: () => true } as any);
       vi.mocked(fs.unlink).mockResolvedValueOnce(undefined);
 
-      await worktreeManager.restoreFile(worktreePath, 'symlink-to-folder');
+      await gitManager.restoreFile(worktreePath, 'symlink-to-folder');
 
       // Should use fs.unlink to remove the symlink itself (not the target) - absolute path
       expect(fs.unlink).toHaveBeenCalledWith(join(worktreePath, 'symlink-to-folder'));
@@ -181,7 +181,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockRejectedValueOnce(enoentError);
 
       // Should not throw, just log and return
-      await expect(worktreeManager.restoreFile(worktreePath, 'already-deleted-file.txt')).resolves.not.toThrow();
+      await expect(gitManager.restoreFile(worktreePath, 'already-deleted-file.txt')).resolves.not.toThrow();
     });
 
     it('should re-throw unexpected errors from lstat', async () => {
@@ -194,7 +194,7 @@ describe('WorktreeManager - restoreFile', () => {
       (otherError as NodeJS.ErrnoException).code = 'EACCES';
       vi.mocked(fs.lstat).mockRejectedValueOnce(otherError);
 
-      await expect(worktreeManager.restoreFile(worktreePath, 'permission-denied-file.txt')).rejects.toThrow('EACCES: permission denied');
+      await expect(gitManager.restoreFile(worktreePath, 'permission-denied-file.txt')).rejects.toThrow('EACCES: permission denied');
     });
 
     it('should log error and re-throw when git restore fails for tracked files', async () => {
@@ -203,7 +203,7 @@ describe('WorktreeManager - restoreFile', () => {
       // git restore fails
       (execWithShellPath as Mock).mockRejectedValueOnce(new Error('git restore failed'));
 
-      await expect(worktreeManager.restoreFile(worktreePath, 'tracked.txt')).rejects.toThrow('git restore failed');
+      await expect(gitManager.restoreFile(worktreePath, 'tracked.txt')).rejects.toThrow('git restore failed');
     });
 
     it('should log error and re-throw when unlink fails for new files', async () => {
@@ -214,7 +214,7 @@ describe('WorktreeManager - restoreFile', () => {
       vi.mocked(fs.lstat).mockResolvedValueOnce({ isDirectory: () => false, isSymbolicLink: () => false } as any);
       vi.mocked(fs.unlink).mockRejectedValueOnce(new Error('EACCES: permission denied'));
 
-      await expect(worktreeManager.restoreFile(worktreePath, 'untracked.txt')).rejects.toThrow('EACCES: permission denied');
+      await expect(gitManager.restoreFile(worktreePath, 'untracked.txt')).rejects.toThrow('EACCES: permission denied');
     });
   });
 
@@ -222,7 +222,7 @@ describe('WorktreeManager - restoreFile', () => {
     it('should handle file paths with spaces', async () => {
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await worktreeManager.restoreFile(worktreePath, 'path with spaces/file.txt');
+      await gitManager.restoreFile(worktreePath, 'path with spaces/file.txt');
 
       const calls = (execWithShellPath as Mock).mock.calls;
       expect(calls[0][0]).toContain('"path with spaces/file.txt"');
@@ -232,7 +232,7 @@ describe('WorktreeManager - restoreFile', () => {
     it('should handle relative paths', async () => {
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await worktreeManager.restoreFile(worktreePath, '../relative/file.txt');
+      await gitManager.restoreFile(worktreePath, '../relative/file.txt');
 
       const calls = (execWithShellPath as Mock).mock.calls;
       expect(calls[0][0]).toContain('"../relative/file.txt"');

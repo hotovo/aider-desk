@@ -2,7 +2,7 @@ import { lstatSync } from 'fs';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 import { execWithShellPath } from '@/utils';
 
@@ -61,13 +61,13 @@ const useMockSeq = (seq: MockSeq): void => {
   });
 };
 
-describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getUpdatedFiles symlink filtering', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should filter out symlink paths in non-worktree mode (getNonWorktreeUpdatedFiles)', async () => {
@@ -84,7 +84,7 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/main/file.ts');
@@ -105,7 +105,7 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath, 'worktree', mainBranch, 'flat' as never);
+    const result = await gitManager.getUpdatedFiles(testPath, 'worktree', mainBranch, 'flat' as never);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/app.ts');
@@ -132,7 +132,7 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
+    const result = await gitManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
 
     const paths = result.map((f) => f.path);
     expect(paths).toContain('src/main/file.ts');
@@ -161,7 +161,7 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
+    const result = await gitManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
 
     const paths = result.map((f) => f.path);
     expect(paths).toContain('src/main/file.ts');
@@ -169,13 +169,13 @@ describe('WorktreeManager - getUpdatedFiles symlink filtering', () => {
   });
 });
 
-describe('WorktreeManager - untracked files', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - untracked files', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false, isDirectory: () => false });
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('updated'));
@@ -192,7 +192,7 @@ describe('WorktreeManager - untracked files', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({ path: 'src/modified.ts' });
@@ -208,7 +208,7 @@ describe('WorktreeManager - untracked files', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
@@ -230,7 +230,7 @@ describe('WorktreeManager - untracked files', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(0);
     expect(fs.default.readFile).not.toHaveBeenCalled();
@@ -239,7 +239,7 @@ describe('WorktreeManager - untracked files', () => {
   it('should add a file to Git in the requested worktree', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    await worktreeManager.addFileToGit(testPath, 'src/new file.ts');
+    await gitManager.addFileToGit(testPath, 'src/new file.ts');
 
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/new file.ts"', { cwd: testPath });
   });
@@ -247,19 +247,19 @@ describe('WorktreeManager - untracked files', () => {
   it('should escape shell substitutions when adding a file to Git', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    await worktreeManager.addFileToGit(testPath, 'src/$HOME-`command`-"quoted".ts');
+    await gitManager.addFileToGit(testPath, 'src/$HOME-`command`-"quoted".ts');
 
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/\\$HOME-\\`command\\`-\\"quoted\\".ts"', { cwd: testPath });
   });
 });
 
-describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return staged files when there are no commits (non-worktree mode)', async () => {
@@ -271,7 +271,7 @@ describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/main.ts');
@@ -294,7 +294,7 @@ describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/main.ts');
@@ -310,7 +310,7 @@ describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath);
+    const result = await gitManager.getUpdatedFiles(testPath);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('assets/image.png');
@@ -330,7 +330,7 @@ describe('WorktreeManager - getUpdatedFiles no HEAD (no commits)', () => {
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
 
-    const result = await worktreeManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
+    const result = await gitManager.getUpdatedFiles(testPath, 'worktree', mainBranch);
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/app.ts');

@@ -9,14 +9,14 @@ import { Project } from '@/project';
 import { Store } from '@/store';
 import { EventManager } from '@/events';
 import { ModelManager } from '@/models';
-import { WorktreeManager } from '@/worktrees';
+import { GitManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { PromptsManager } from '@/prompts';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 
 export class ProjectManager {
-  public readonly worktreeManager: WorktreeManager;
+  public readonly gitManager: GitManager;
   private projects: Project[] = [];
 
   constructor(
@@ -27,14 +27,14 @@ export class ProjectManager {
     private readonly dataManager: DataManager,
     private readonly eventManager: EventManager,
     private readonly modelManager: ModelManager,
-    worktreeManager: WorktreeManager,
+    gitManager: GitManager,
     private readonly agentProfileManager: AgentProfileManager,
     private readonly memoryManager: MemoryManager,
     private readonly promptsManager: PromptsManager,
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
-    this.worktreeManager = worktreeManager;
+    this.gitManager = gitManager;
   }
 
   private findProject(baseDir: string): Project | undefined {
@@ -52,7 +52,7 @@ export class ProjectManager {
       this.dataManager,
       this.eventManager,
       this.modelManager,
-      this.worktreeManager,
+      this.gitManager,
       this.agentProfileManager,
       this.memoryManager,
       this.promptsManager,

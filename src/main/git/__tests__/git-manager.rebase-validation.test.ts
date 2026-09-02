@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 
-import { WorktreeManager } from '../worktree-manager';
+import { GitManager } from '../git-manager';
 
 import { execWithShellPath } from '@/utils';
 
@@ -23,19 +23,19 @@ vi.mock('fs', () => ({
   lstatSync: vi.fn(),
 }));
 
-describe('WorktreeManager - isCommitAncestorOf', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - isCommitAncestorOf', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return true when commit is ancestor of HEAD', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-    const result = await worktreeManager.isCommitAncestorOf(testPath, 'abc123');
+    const result = await gitManager.isCommitAncestorOf(testPath, 'abc123');
 
     expect(result).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git merge-base --is-ancestor abc123 HEAD', { cwd: testPath });
@@ -44,7 +44,7 @@ describe('WorktreeManager - isCommitAncestorOf', () => {
   it('should return false when commit is not ancestor of HEAD', async () => {
     (execWithShellPath as Mock).mockRejectedValueOnce(new Error('exit code 1'));
 
-    const result = await worktreeManager.isCommitAncestorOf(testPath, 'abc123');
+    const result = await gitManager.isCommitAncestorOf(testPath, 'abc123');
 
     expect(result).toBe(false);
   });
@@ -52,20 +52,20 @@ describe('WorktreeManager - isCommitAncestorOf', () => {
   it('should use custom descendant ref when provided', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-    const result = await worktreeManager.isCommitAncestorOf(testPath, 'abc123', 'feature-branch');
+    const result = await gitManager.isCommitAncestorOf(testPath, 'abc123', 'feature-branch');
 
     expect(result).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git merge-base --is-ancestor abc123 feature-branch', { cwd: testPath });
   });
 });
 
-describe('WorktreeManager - getRebaseOntoCommit', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getRebaseOntoCommit', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return onto commit from rebase-merge', async () => {
@@ -73,7 +73,7 @@ describe('WorktreeManager - getRebaseOntoCommit', () => {
       .mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' }) // git rev-parse --git-path rebase-merge
       .mockResolvedValueOnce({ stdout: 'abc123def456\n', stderr: '' }); // cat onto file
 
-    const result = await worktreeManager.getRebaseOntoCommit(testPath);
+    const result = await gitManager.getRebaseOntoCommit(testPath);
 
     expect(result).toBe('abc123def456');
   });
@@ -85,7 +85,7 @@ describe('WorktreeManager - getRebaseOntoCommit', () => {
       .mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' }) // git rev-parse --git-path rebase-apply
       .mockResolvedValueOnce({ stdout: 'def789abc012\n', stderr: '' }); // cat onto file
 
-    const result = await worktreeManager.getRebaseOntoCommit(testPath);
+    const result = await gitManager.getRebaseOntoCommit(testPath);
 
     expect(result).toBe('def789abc012');
   });
@@ -97,7 +97,7 @@ describe('WorktreeManager - getRebaseOntoCommit', () => {
       .mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' })
       .mockRejectedValueOnce(new Error('file not found'));
 
-    const result = await worktreeManager.getRebaseOntoCommit(testPath);
+    const result = await gitManager.getRebaseOntoCommit(testPath);
 
     expect(result).toBeUndefined();
   });
@@ -105,25 +105,25 @@ describe('WorktreeManager - getRebaseOntoCommit', () => {
   it('should return undefined on git command failure', async () => {
     (execWithShellPath as Mock).mockRejectedValueOnce(new Error('git failed'));
 
-    const result = await worktreeManager.getRebaseOntoCommit(testPath);
+    const result = await gitManager.getRebaseOntoCommit(testPath);
 
     expect(result).toBeUndefined();
   });
 });
 
-describe('WorktreeManager - getBranchPointingAtCommit', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - getBranchPointingAtCommit', () => {
+  let gitManager: GitManager;
   const testPath = '/test/project';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return branch name when a branch points at commit', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main\n', stderr: '' });
 
-    const result = await worktreeManager.getBranchPointingAtCommit(testPath, 'abc123');
+    const result = await gitManager.getBranchPointingAtCommit(testPath, 'abc123');
 
     expect(result).toBe('main');
     expect(execWithShellPath).toHaveBeenCalledWith("git branch --points-at abc123 --format='%(refname:short)'", { cwd: testPath });
@@ -132,7 +132,7 @@ describe('WorktreeManager - getBranchPointingAtCommit', () => {
   it('should return first branch when multiple branches point at commit', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main\ndevelop\n', stderr: '' });
 
-    const result = await worktreeManager.getBranchPointingAtCommit(testPath, 'abc123');
+    const result = await gitManager.getBranchPointingAtCommit(testPath, 'abc123');
 
     expect(result).toBe('main');
   });
@@ -140,7 +140,7 @@ describe('WorktreeManager - getBranchPointingAtCommit', () => {
   it('should return undefined when no branch points at commit', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-    const result = await worktreeManager.getBranchPointingAtCommit(testPath, 'abc123');
+    const result = await gitManager.getBranchPointingAtCommit(testPath, 'abc123');
 
     expect(result).toBeUndefined();
   });
@@ -148,7 +148,7 @@ describe('WorktreeManager - getBranchPointingAtCommit', () => {
   it('should filter out HEAD and parenthetical entries', async () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '(HEAD detached)\nmain\n', stderr: '' });
 
-    const result = await worktreeManager.getBranchPointingAtCommit(testPath, 'abc123');
+    const result = await gitManager.getBranchPointingAtCommit(testPath, 'abc123');
 
     expect(result).toBe('main');
   });
@@ -156,20 +156,20 @@ describe('WorktreeManager - getBranchPointingAtCommit', () => {
   it('should return undefined on git command failure', async () => {
     (execWithShellPath as Mock).mockRejectedValueOnce(new Error('git failed'));
 
-    const result = await worktreeManager.getBranchPointingAtCommit(testPath, 'abc123');
+    const result = await gitManager.getBranchPointingAtCommit(testPath, 'abc123');
 
     expect(result).toBeUndefined();
   });
 });
 
-describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
   const mainBranch = 'main';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should use --onto with valid baseCommit', async () => {
@@ -190,7 +190,7 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
     // rebase command
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
-    const result = await worktreeManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
+    const result = await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
     expect(result).toMatchObject({ success: true, ontoCommit: 'main123' });
     expect(execWithShellPath).toHaveBeenCalledWith(`git rebase --onto ${mainBranch} ${baseCommit}`, { cwd: testPath });
@@ -214,7 +214,7 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
     // rebase command (should be simple rebase)
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
-    await worktreeManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
+    await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
     expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
   });
@@ -233,19 +233,19 @@ describe('WorktreeManager - rebaseMainIntoWorktree baseCommit validation', () =>
     // rebase command
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
-    await worktreeManager.rebaseMainIntoWorktree(testPath, mainBranch);
+    await gitManager.rebaseMainIntoWorktree(testPath, mainBranch);
 
     expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
   });
 });
 
-describe('WorktreeManager - continueRebase', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - continueRebase', () => {
+  let gitManager: GitManager;
   const testPath = '/test/worktree';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should return onto info when rebase state exists', async () => {
@@ -260,7 +260,7 @@ describe('WorktreeManager - continueRebase', () => {
     // git log (for resetTempCommitIfExists)
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Regular commit message', stderr: '' });
 
-    const result = await worktreeManager.continueRebase(testPath);
+    const result = await gitManager.continueRebase(testPath);
 
     expect(result.ontoCommit).toBe('abc123def456');
     expect(result.ontoBranch).toBe('main');
@@ -277,40 +277,40 @@ describe('WorktreeManager - continueRebase', () => {
     // git log (for resetTempCommitIfExists)
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Regular commit message', stderr: '' });
 
-    const result = await worktreeManager.continueRebase(testPath);
+    const result = await gitManager.continueRebase(testPath);
 
     expect(result.ontoCommit).toBeUndefined();
     expect(result.ontoBranch).toBeUndefined();
   });
 });
 
-describe('WorktreeManager - removeWorktree rebase guard', () => {
-  let worktreeManager: WorktreeManager;
+describe('GitManager - removeWorktree rebase guard', () => {
+  let gitManager: GitManager;
   const worktree = { path: '/test/worktree', branch: 'task-branch' };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    worktreeManager = new WorktreeManager();
+    gitManager = new GitManager();
   });
 
   it('should preserve a worktree while a rebase is in progress', async () => {
-    vi.spyOn(worktreeManager, 'getRebaseState').mockResolvedValue({
+    vi.spyOn(gitManager, 'getRebaseState').mockResolvedValue({
       inProgress: true,
       hasUnmergedPaths: true,
       unmergedFiles: ['CHANGELOG.md'],
     });
 
-    await expect(worktreeManager.removeWorktree('/test/project', worktree)).rejects.toThrow('Cannot remove a worktree while a rebase is in progress');
+    await expect(gitManager.removeWorktree('/test/project', worktree)).rejects.toThrow('Cannot remove a worktree while a rebase is in progress');
 
     expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git worktree remove'), expect.anything());
     expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git branch -D'), expect.anything());
   });
 
   it('should allow explicit removal during task cleanup', async () => {
-    const rebaseStateSpy = vi.spyOn(worktreeManager, 'getRebaseState');
+    const rebaseStateSpy = vi.spyOn(gitManager, 'getRebaseState');
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    await worktreeManager.removeWorktree('/test/project', worktree, true);
+    await gitManager.removeWorktree('/test/project', worktree, true);
 
     expect(rebaseStateSpy).not.toHaveBeenCalled();
     expect(execWithShellPath).toHaveBeenCalledWith('git worktree remove "/test/worktree" --force', { cwd: '/test/project' });

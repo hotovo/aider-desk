@@ -21,7 +21,7 @@ vi.mock('@/custom-commands');
 vi.mock('@/telemetry');
 vi.mock('@/events');
 vi.mock('@/project/migrations');
-vi.mock('@/worktrees');
+vi.mock('@/git');
 vi.mock('@/memory/memory-manager');
 vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
@@ -53,7 +53,7 @@ import { Store } from '@/store';
 import { Task, INTERNAL_TASK_ID } from '@/task';
 import { TelemetryManager } from '@/telemetry';
 import { determineMainModel, determineWeakModel } from '@/utils';
-import { WorktreeManager } from '@/worktrees';
+import { GitManager } from '@/git';
 import { migrateSessionsToTasks } from '@/project/migrations';
 
 describe('Project - createNewTask', () => {
@@ -64,7 +64,7 @@ describe('Project - createNewTask', () => {
   let mockDataManager: Partial<DataManager>;
   let mockEventManager: Partial<EventManager>;
   let mockModelManager: Partial<ModelManager>;
-  let mockWorktreeManager: Partial<WorktreeManager>;
+  let mockGitManager: Partial<GitManager>;
   let mockAgentProfileManager: Partial<AgentProfileManager>;
   let mockMemoryManager: Partial<MemoryManager>;
   let mockPromptsManager: Partial<PromptsManager>;
@@ -191,7 +191,7 @@ describe('Project - createNewTask', () => {
         environmentVariables: {},
       })),
     };
-    mockWorktreeManager = {
+    mockGitManager = {
       close: vi.fn(() => Promise.resolve()),
       getTaskWorktree: vi.fn(() => Promise.resolve(null)),
       createWorktree: vi.fn(() => Promise.resolve({ path: '/test/worktree' })),
@@ -249,7 +249,7 @@ describe('Project - createNewTask', () => {
       mockDataManager as DataManager,
       mockEventManager as EventManager,
       mockModelManager as ModelManager,
-      mockWorktreeManager as WorktreeManager,
+      mockGitManager as GitManager,
       mockAgentProfileManager as AgentProfileManager,
       mockMemoryManager as MemoryManager,
       mockPromptsManager as PromptsManager,

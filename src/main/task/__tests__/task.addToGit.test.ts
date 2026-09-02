@@ -104,8 +104,8 @@ vi.mock('@/memory/memory-manager', () => ({
   MemoryManager: class {},
 }));
 
-vi.mock('@/worktrees', () => ({
-  WorktreeManager: class {},
+vi.mock('@/git', () => ({
+  GitManager: class {},
 }));
 
 vi.mock('@/custom-commands', () => ({
@@ -138,7 +138,7 @@ describe('Task - addToGit', () => {
   let mockDataManager: any;
   let mockEventManager: any;
   let mockModelManager: any;
-  let mockWorktreeManager: any;
+  let mockGitManager: any;
   let mockMemoryManager: any;
   let mockPromptsManager: any;
   let mockExtensionManager: any;
@@ -189,7 +189,7 @@ describe('Task - addToGit', () => {
       sendTaskDeleted: vi.fn(),
     };
     mockModelManager = {};
-    mockWorktreeManager = {};
+    mockGitManager = {};
     mockMemoryManager = {};
     mockPromptsManager = {};
     mockExtensionManager = {
@@ -209,7 +209,7 @@ describe('Task - addToGit', () => {
       mockDataManager,
       mockEventManager,
       mockModelManager,
-      mockWorktreeManager,
+      mockGitManager,
       mockMemoryManager,
       mockPromptsManager,
       mockExtensionManager,
