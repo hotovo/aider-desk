@@ -27,7 +27,6 @@ import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
 import { ModelSelector } from '@/components/ModelSelector';
 import { Input } from '@/components/common/Input';
-
 import { Tabs } from '@/components/common/Tabs';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
@@ -367,8 +366,6 @@ export const AgentSettings = ({
     setSettings(updatedSettings);
   };
 
-
-
   const handleModelChange = (model: Model | null) => {
     if (!model || !selectedProfile) {
       return;
@@ -602,8 +599,6 @@ export const AgentSettings = ({
             <span className="text-sm font-medium uppercase truncate">{selectedProfile?.name || t('settings.agent.selectOrCreateProfile')}</span>
           </div>
         )}
-
-
 
         {selectedProfile ? (
           <>
