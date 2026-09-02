@@ -549,6 +549,7 @@ export interface AgentProfile {
   maxTokens?: number; // overrides model maxOutputTokens when set
   minTimeBetweenToolCalls: number; // in milliseconds
   temperature?: number; // overrides model temperature when set
+  sendImagesToModel?: boolean;
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
   toolSettings: Record<string, ToolSettings>;

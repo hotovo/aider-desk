@@ -27,8 +27,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { Button } from '@/components/common/Button';
 import { ModelSelector } from '@/components/ModelSelector';
 import { Input } from '@/components/common/Input';
-import { Checkbox } from '@/components/common/Checkbox';
-import { InfoIcon } from '@/components/common/InfoIcon';
+
 import { Tabs } from '@/components/common/Tabs';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { showErrorNotification } from '@/utils/notifications';
@@ -368,9 +367,7 @@ export const AgentSettings = ({
     setSettings(updatedSettings);
   };
 
-  const handleSendImagesToModelChange = (checked: boolean) => {
-    setSettings({ ...settings, sendImagesToModel: checked });
-  };
+
 
   const handleModelChange = (model: Model | null) => {
     if (!model || !selectedProfile) {
@@ -606,20 +603,7 @@ export const AgentSettings = ({
           </div>
         )}
 
-        <div className="px-6 pt-4 pb-2 border-b border-border-default flex-shrink-0">
-          <div className="max-w-3xl mx-auto">
-            <Checkbox
-              label={
-                <div className="flex items-center text-sm">
-                  <span>{t('settings.agent.sendImagesToModel')}</span>
-                  <InfoIcon tooltip={t('settings.agent.sendImagesToModelTooltip')} className="ml-2" />
-                </div>
-              }
-              checked={settings.sendImagesToModel !== false}
-              onChange={handleSendImagesToModelChange}
-            />
-          </div>
-        </div>
+
 
         {selectedProfile ? (
           <>

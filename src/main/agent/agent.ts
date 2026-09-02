@@ -885,7 +885,8 @@ export class Agent {
       const effectiveTemperature = profile.temperature ?? modelSettings?.temperature;
       const effectiveMaxOutputTokens = profile.maxTokens ?? modelSettings?.maxOutputTokens;
 
-      const shouldSendImages = settings.sendImagesToModel !== false && this.modelManager.modelSupportsVision(provider, modelName);
+      const effectiveSendImages = profile.sendImagesToModel ?? settings.sendImagesToModel;
+      const shouldSendImages = effectiveSendImages !== false && this.modelManager.modelSupportsVision(provider, modelName);
 
       logger.debug('Parameters:', {
         model: typeof model !== 'string' ? model.modelId : model,
