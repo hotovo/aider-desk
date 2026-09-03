@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "wakatime",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "legacy-system-prompt",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "sound-notification",
@@ -220,7 +220,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "chunkhound-search",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "ui-placement-demo",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "reasoning-selector",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 14
+      "installCount": 15
     }
   ]
 }
