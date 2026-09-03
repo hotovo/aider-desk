@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "wakatime",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "protected-paths",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "legacy-system-prompt",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "plannotator",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "seek",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "bmad",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     }
   ]
 }
