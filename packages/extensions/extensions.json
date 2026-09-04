@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "wakatime",
@@ -21,7 +21,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "pirate",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "doom",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "destructive-command-guard",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 19
+      "installCount": 20
     }
   ]
 }
