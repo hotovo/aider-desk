@@ -599,6 +599,7 @@ export const AgentSettings = ({
             <span className="text-sm font-medium uppercase truncate">{selectedProfile?.name || t('settings.agent.selectOrCreateProfile')}</span>
           </div>
         )}
+
         {selectedProfile ? (
           <>
             {/* Profile Header */}

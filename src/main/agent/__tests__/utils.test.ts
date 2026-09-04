@@ -4,7 +4,95 @@ import os from 'os';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { BoundedOutputAccumulator, readFileContent, safeJsonStringify, stringifyWithBudget, truncateToolResult } from '../utils';
+import { BoundedOutputAccumulator, readFileContent, safeJsonStringify, stripImageParts, stringifyWithBudget, truncateToolResult } from '../utils';
+
+import type { ModelMessage } from 'ai';
+
+describe('stripImageParts', () => {
+  it('removes image file parts and their intro text, keeping other text', () => {
+    const messages: ModelMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Please review this' },
+          { type: 'text', text: 'Here is image foo.png for your reference.' },
+          { type: 'file', mediaType: 'image/png', data: 'abc123' },
+        ],
+      },
+    ];
+
+    const result = stripImageParts(messages);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].content).toEqual([{ type: 'text', text: 'Please review this' }]);
+  });
+
+  it('removes type "image" parts', () => {
+    const messages: ModelMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Look' },
+          { type: 'image', image: 'abc123', mediaType: 'image/png' },
+        ],
+      },
+    ];
+
+    const result = stripImageParts(messages);
+
+    expect(result[0].content).toEqual([{ type: 'text', text: 'Look' }]);
+  });
+
+  it('replaces an image-only user message with a note', () => {
+    const messages: ModelMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Here is content of image file bar.png' },
+          { type: 'image', image: 'abc123', mediaType: 'image/png' },
+        ],
+      },
+    ];
+
+    const result = stripImageParts(messages);
+
+    expect(result).toHaveLength(1);
+    const content = result[0].content as Array<{ type: string; text?: string }>;
+    expect(content).toHaveLength(1);
+    expect(content[0].type).toBe('text');
+    expect(content[0].text).toMatch(/does not support image input/);
+  });
+
+  it('leaves messages without images unchanged', () => {
+    const messages: ModelMessage[] = [
+      { role: 'user', content: [{ type: 'text', text: 'hello' }] },
+      { role: 'assistant', content: 'hi' },
+    ];
+
+    const result = stripImageParts(messages);
+
+    expect(result).toEqual(messages);
+  });
+
+  it('leaves non-image file parts intact', () => {
+    const messages: ModelMessage[] = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'data' },
+          { type: 'file', mediaType: 'application/json', data: '{}' },
+        ],
+      },
+    ];
+
+    const result = stripImageParts(messages);
+
+    expect(result[0].content).toEqual([
+      { type: 'text', text: 'data' },
+      { type: 'file', mediaType: 'application/json', data: '{}' },
+    ]);
+  });
+});
 
 describe('truncateToolResult', () => {
   it('should return content unchanged when within both limits', async () => {

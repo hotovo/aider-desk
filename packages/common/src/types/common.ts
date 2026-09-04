@@ -554,6 +554,7 @@ export interface AgentProfile {
   maxTokens?: number; // overrides model maxOutputTokens when set
   minTimeBetweenToolCalls: number; // in milliseconds
   temperature?: number; // overrides model temperature when set
+  sendImagesToModel?: boolean;
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
   toolSettings: Record<string, ToolSettings>;
@@ -793,6 +794,7 @@ export interface SettingsData {
   telemetryInformed?: boolean;
   windowTitleTemplate?: string;
   promptBehavior: PromptBehavior;
+  sendImagesToModel?: boolean;
   server: {
     enabled: boolean;
     readonly: boolean;
@@ -1114,6 +1116,7 @@ export interface Model {
   cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
   supportsTools?: boolean;
+  supportsVision?: boolean;
   isCustom?: boolean;
   isHidden?: boolean;
   hasModelOverrides?: boolean;

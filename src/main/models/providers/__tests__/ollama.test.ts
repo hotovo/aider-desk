@@ -39,8 +39,8 @@ describe('loadOllamaModels', () => {
 
     expect(result.success).toBe(true);
     expect(result.models).toEqual([
-      { id: 'model-a:latest', providerId: 'ollama-test', maxInputTokens: 262144 },
-      { id: 'model-b:latest', providerId: 'ollama-test', maxInputTokens: undefined },
+      { id: 'model-a:latest', providerId: 'ollama-test', maxInputTokens: 262144, supportsVision: false },
+      { id: 'model-b:latest', providerId: 'ollama-test', maxInputTokens: undefined, supportsVision: false },
     ]);
   });
 
@@ -52,8 +52,8 @@ describe('loadOllamaModels', () => {
     const result = await loadOllamaModels(profile, settings);
 
     expect(result.models).toEqual([
-      { id: 'model-zero:latest', providerId: 'ollama-test', maxInputTokens: undefined },
-      { id: 'model-none:latest', providerId: 'ollama-test', maxInputTokens: undefined },
+      { id: 'model-zero:latest', providerId: 'ollama-test', maxInputTokens: undefined, supportsVision: false },
+      { id: 'model-none:latest', providerId: 'ollama-test', maxInputTokens: undefined, supportsVision: false },
     ]);
   });
 });
