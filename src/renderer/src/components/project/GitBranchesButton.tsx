@@ -878,7 +878,7 @@ export const GitBranchesButton = ({
         >
           <div className="flex flex-col gap-3">
             <p className="text-sm">{t('git.confirmPushMessage', { count: outgoingCount })}</p>
-            <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-xs text-text-secondary">
+            <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-2xs text-text-secondary">
               {syncCommits.outgoing.commits.map((commit, index) => (
                 <div key={index} className="truncate">
                   {commit}
