@@ -4383,7 +4383,8 @@ ${error.stderr}`,
 
     if (options?.mergeBeforeSwitch && this.task.worktree) {
       try {
-        const effectiveTargetBranch = options.targetBranch || this.task.worktree.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
+        const effectiveTargetBranch =
+          options.targetBranch || this.task.worktree.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
 
         this.addLogMessage('loading', `Merging worktree to ${effectiveTargetBranch} branch and switching to local mode...`);
 
