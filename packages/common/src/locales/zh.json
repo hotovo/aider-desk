@@ -2003,7 +2003,9 @@
     "mergeIntoBranchTooltip": "将此工作树的所有提交和未提交更改合并到目标分支中（创建合并提交）。",
     "squashIntoBranchTooltip": "将所有工作树提交和未提交更改压缩为目标分支上的单个新提交。",
     "applyUncommittedChangesTooltip": "仅将此工作树的未提交更改应用到项目目录当前检出的分支，不合并任何提交。",
-    "rebaseFromCurrentBranchTooltip": "在 '{{branch}}' 之上重放工作树提交并更新基准引用。"
+    "rebaseFromCurrentBranchTooltip": "在 '{{branch}}' 之上重放工作树提交并更新基准引用。",
+    "aheadCommitsTooltip": "领先 '{{branch}}' 的提交（{{count}}）：",
+    "behindCommitsTooltip": "落后 '{{branch}}' 的提交（{{count}}）："
   },
   "welcomeMessage": {
     "title": "AiderDesk",

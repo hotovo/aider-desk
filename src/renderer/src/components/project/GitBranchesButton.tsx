@@ -148,21 +148,29 @@ export const GitBranchesButton = ({
   const repoPath = worktreePath || baseDir;
   const currentBranch = branches.find((b) => b.isCurrent)?.name || status?.currentBranch || '';
   const isWorktree = Boolean(worktreePath);
+  const worktreeBaseBranch = isWorktree ? status?.baseBranch || status?.targetBranch : undefined;
 
   const incomingCount = syncCommits.incoming.count;
   const outgoingCount = syncCommits.outgoing.count;
   const commitChanges: string[] = [];
   if (outgoingCount > 0) {
-    commitChanges.push(buildCommitsTooltip(t('git.outgoingCommitsTooltip', { count: outgoingCount }), syncCommits.outgoing.commits));
+    const label = worktreeBaseBranch
+      ? t('worktree.aheadCommitsTooltip', { count: outgoingCount, branch: worktreeBaseBranch })
+      : t('git.outgoingCommitsTooltip', { count: outgoingCount });
+    commitChanges.push(buildCommitsTooltip(label, syncCommits.outgoing.commits));
   }
   if (incomingCount > 0) {
-    commitChanges.push(buildCommitsTooltip(t('git.incomingCommitsTooltip', { count: incomingCount }), syncCommits.incoming.commits));
+    const label = worktreeBaseBranch
+      ? t('worktree.behindCommitsTooltip', { count: incomingCount, branch: worktreeBaseBranch })
+      : t('git.incomingCommitsTooltip', { count: incomingCount });
+    commitChanges.push(buildCommitsTooltip(label, syncCommits.incoming.commits));
   }
   const branchesTooltip = `${t('git.gitBranchLabel', { branch: currentBranch || t('git.noCurrentBranch') })}\n${commitChanges.length > 0 ? `\n${commitChanges.join('\n\n')}` : t('git.upToDate')}`;
 
   const recentBranchesWithCurrent = currentBranch ? [currentBranch, ...recentBranches.filter((name) => name !== currentBranch)] : recentBranches;
 
   const [mainBranchName, setMainBranchName] = useState<string | null>(null);
+  const rebaseBranch = status?.baseBranch || mainBranchName;
 
   const loadBranches = useCallback(async () => {
     setLoading(true);
@@ -192,12 +200,12 @@ export const GitBranchesButton = ({
 
   const loadSyncCommits = useCallback(async () => {
     try {
-      const result = await api.getSyncCommits(repoPath, isWorktree ? status?.targetBranch : undefined);
+      const result = await api.getSyncCommits(repoPath, worktreeBaseBranch);
       setSyncCommits(result);
     } catch {
       setSyncCommits({ outgoing: { count: 0, commits: [] }, incoming: { count: 0, commits: [] } });
     }
-  }, [api, repoPath, isWorktree, status?.targetBranch]);
+  }, [api, repoPath, worktreeBaseBranch]);
 
   useEffect(() => {
     void loadBranches();
@@ -576,21 +584,21 @@ export const GitBranchesButton = ({
                 </button>
               </Tooltip>
               <Tooltip
-                content={mainBranchName ? t('worktree.rebaseFromCurrentBranchTooltip', { branch: mainBranchName }) : t('worktree.confirmRebaseMessage')}
+                content={rebaseBranch ? t('worktree.rebaseFromCurrentBranchTooltip', { branch: rebaseBranch }) : t('worktree.confirmRebaseMessage')}
                 side="left"
                 delayDuration={700}
               >
                 <button
                   onClick={() => {
-                    if (mainBranchName) {
-                      onRebaseFromBranch(mainBranchName);
+                    if (rebaseBranch) {
+                      onRebaseFromBranch(rebaseBranch);
                     }
                   }}
                   className={menuItemClass}
-                  disabled={disabled || !mainBranchName}
+                  disabled={disabled || !rebaseBranch}
                 >
                   <FaArrowsRotate className="w-3 h-3 flex-shrink-0" />
-                  {mainBranchName ? t('worktree.rebaseFromCurrentBranch', { branch: mainBranchName }) : t('worktree.rebaseFromBranch')}
+                  {rebaseBranch ? t('worktree.rebaseFromCurrentBranch', { branch: rebaseBranch }) : t('worktree.rebaseFromBranch')}
                 </button>
               </Tooltip>
 

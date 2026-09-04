@@ -1930,7 +1930,9 @@
   "git": {
     "pullUpToDate": "Проект уже актуален — нет изменений для загрузки",
     "pullSuccess": "Проект успешно обновлён",
-    "pushSuccess": "Изменения успешно отправлены"
+    "pushSuccess": "Изменения успешно отправлены",
+    "outgoingCommitsTooltip": "Исходящие коммиты ({{count}}):",
+    "incomingCommitsTooltip": "Входящие коммиты ({{count}}):"
   },
   "worktree": {
     "uncommittedFiles": "{{count}} файлов",
@@ -1990,7 +1992,9 @@
     "mergeIntoBranchTooltip": "Выполняет слияние всех коммитов и незакоммиченных изменений из этого рабочего дерева в целевую ветку (создаёт коммит слияния).",
     "squashIntoBranchTooltip": "Объединяет все коммиты рабочего дерева и незакоммиченные изменения в один новый коммит в целевой ветке.",
     "applyUncommittedChangesTooltip": "Применяет только незакоммиченные изменения из этого рабочего дерева к ветке, которая сейчас проверена в директории проекта, без слияния коммитов.",
-    "rebaseFromCurrentBranchTooltip": "Переносит коммиты рабочего дерева поверх '{{branch}}' и обновляет базовую ссылку."
+    "rebaseFromCurrentBranchTooltip": "Переносит коммиты рабочего дерева поверх '{{branch}}' и обновляет базовую ссылку.",
+    "aheadCommitsTooltip": "Коммиты впереди '{{branch}}' ({{count}}):",
+    "behindCommitsTooltip": "Коммиты позади '{{branch}}' ({{count}}):"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

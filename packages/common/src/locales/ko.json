@@ -1906,7 +1906,9 @@
   "git": {
     "pullUpToDate": "프로젝트가 이미 최신 상태입니다 — 가져올 변경 사항이 없습니다",
     "pullSuccess": "프로젝트가 성공적으로 업데이트되었습니다",
-    "pushSuccess": "변경 사항이 성공적으로 푸시되었습니다"
+    "pushSuccess": "변경 사항이 성공적으로 푸시되었습니다",
+    "outgoingCommitsTooltip": "보낼 커밋 ({{count}}개):",
+    "incomingCommitsTooltip": "가져올 커밋 ({{count}}개):"
   },
   "worktree": {
     "uncommittedFiles": "파일 {{count}}개",
@@ -1966,7 +1968,9 @@
     "mergeIntoBranchTooltip": "이 워크트리의 모든 커밋과 커밋되지 않은 변경 사항을 대상 브랜치로 병합합니다(병합 커밋 생성).",
     "squashIntoBranchTooltip": "모든 워크트리 커밋과 커밋되지 않은 변경 사항을 대상 브랜치의 단일 새 커밋으로 압축하여 결합합니다.",
     "applyUncommittedChangesTooltip": "커밋을 병합하지 않고 이 워크트리의 커밋되지 않은 변경 사항만 프로젝트 디렉토리에 현재 체크아웃된 브랜치에 적용합니다.",
-    "rebaseFromCurrentBranchTooltip": "'{{branch}}' 브랜치 위로 워크트리 커밋을 다시 적용하고 베이스 참조를 업데이트합니다."
+    "rebaseFromCurrentBranchTooltip": "'{{branch}}' 브랜치 위로 워크트리 커밋을 다시 적용하고 베이스 참조를 업데이트합니다.",
+    "aheadCommitsTooltip": "'{{branch}}'보다 앞선 커밋 ({{count}}개):",
+    "behindCommitsTooltip": "'{{branch}}'보다 뒤처진 커밋 ({{count}}개):"
   },
   "welcomeMessage": {
     "title": "AiderDesk",
