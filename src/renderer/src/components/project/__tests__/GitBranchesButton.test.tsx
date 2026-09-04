@@ -73,19 +73,10 @@ describe('GitBranchesButton', () => {
 
   describe('worktree mode', () => {
     it('queries getSyncCommits with baseBranch and formats ahead/behind tooltips relative to base branch', async () => {
-      render(
-        <GitBranchesButton
-          {...defaultProps}
-          worktreePath="/project/.aider-desk/tasks/task-123/worktree"
-          status={mockStatus}
-        />,
-      );
+      render(<GitBranchesButton {...defaultProps} worktreePath="/project/.aider-desk/tasks/task-123/worktree" status={mockStatus} />);
 
       await waitFor(() => {
-        expect(mockApi.getSyncCommits).toHaveBeenCalledWith(
-          '/project/.aider-desk/tasks/task-123/worktree',
-          'main',
-        );
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project/.aider-desk/tasks/task-123/worktree', 'main');
       });
 
       // Open branches menu to view rebase button
@@ -99,15 +90,120 @@ describe('GitBranchesButton', () => {
 
   describe('local mode', () => {
     it('queries getSyncCommits with undefined targetBranch and uses git sync tooltip labels', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([
-        { name: 'main', isCurrent: true, hasWorktree: false, isRemote: false },
-      ]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
 
       render(<GitBranchesButton {...defaultProps} />);
 
       await waitFor(() => {
         expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', undefined);
       });
+    });
+  });
+
+  describe('push action', () => {
+    it('disables push button when outgoing commit count is 0', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.getSyncCommits = vi.fn().mockResolvedValue({
+        outgoing: { count: 0, commits: [] },
+        incoming: { count: 0, commits: [] },
+      });
+
+      render(<GitBranchesButton {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', undefined);
+      });
+
+      // Open menu
+      fireEvent.click(screen.getByRole('button', { name: /main/i }));
+
+      // Push button should be disabled
+      const pushBtn = screen.getByRole('button', { name: 'git.push...' });
+      expect(pushBtn).toBeDisabled();
+    });
+
+    it('opens push confirm dialog with commit summary, commit list, and force checkbox unchecked by default', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+
+      render(<GitBranchesButton {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', undefined);
+      });
+
+      // Open menu
+      fireEvent.click(screen.getByRole('button', { name: /main/i }));
+
+      // Click push button
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+
+      // Dialog should be open with commit summary and commit list
+      expect(screen.getByText('git.confirmPushTitle')).toBeInTheDocument();
+      expect(screen.getByText('git.confirmPushMessage:2')).toBeInTheDocument();
+      expect(screen.getByText('hash1 feat: ahead 1')).toBeInTheDocument();
+      expect(screen.getByText('hash2 feat: ahead 2')).toBeInTheDocument();
+
+      // Checkbox should be present and unchecked
+      const forceCheckbox = screen.getByRole('checkbox');
+      expect(forceCheckbox).not.toBeChecked();
+
+      // Confirm push without force
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+
+      await waitFor(() => {
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', false);
+      });
+      expect(screen.queryByText('git.confirmPushTitle')).not.toBeInTheDocument();
+    });
+
+    it('force pushes when force checkbox is checked', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+
+      render(<GitBranchesButton {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', undefined);
+      });
+
+      // Open menu and click push
+      fireEvent.click(screen.getByRole('button', { name: /main/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+
+      // Check the force checkbox
+      const forceLabel = screen.getByText('git.force');
+      fireEvent.click(forceLabel);
+
+      const forceCheckbox = screen.getByRole('checkbox');
+      expect(forceCheckbox).toBeChecked();
+
+      // Confirm push
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+
+      await waitFor(() => {
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', true);
+      });
+    });
+
+    it('cancels push dialog without calling gitPush', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+
+      render(<GitBranchesButton {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', undefined);
+      });
+
+      // Open menu and click push
+      fireEvent.click(screen.getByRole('button', { name: /main/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+
+      expect(screen.getByText('git.confirmPushTitle')).toBeInTheDocument();
+
+      // Click cancel
+      fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+
+      expect(screen.queryByText('git.confirmPushTitle')).not.toBeInTheDocument();
+      expect(mockApi.gitPush).not.toHaveBeenCalled();
     });
   });
 });

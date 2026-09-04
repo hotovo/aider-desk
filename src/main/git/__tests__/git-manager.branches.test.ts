@@ -427,4 +427,24 @@ describe('GitManager - branch operations', () => {
       expect(execWithShellPath).not.toHaveBeenCalledWith('git fetch --quiet', expect.anything());
     });
   });
+
+  describe('gitPush', () => {
+    it('executes git push when force is false or undefined', async () => {
+      (execWithShellPath as Mock).mockResolvedValue({ stdout: 'Everything up-to-date', stderr: '' });
+
+      const result = await gitManager.gitPush(projectPath);
+
+      expect(execWithShellPath).toHaveBeenCalledWith('git push', { cwd: projectPath });
+      expect(result.output).toBe('Everything up-to-date');
+    });
+
+    it('executes git push --force when force is true', async () => {
+      (execWithShellPath as Mock).mockResolvedValue({ stdout: 'forced update', stderr: '' });
+
+      const result = await gitManager.gitPush(projectPath, true);
+
+      expect(execWithShellPath).toHaveBeenCalledWith('git push --force', { cwd: projectPath });
+      expect(result.output).toBe('forced update');
+    });
+  });
 });

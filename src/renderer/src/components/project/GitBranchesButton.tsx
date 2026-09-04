@@ -11,6 +11,7 @@ import { BranchInfo, GitSyncCommits, WorktreeIntegrationStatus } from '@common/t
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/common/Checkbox';
 import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { GitStatusBadges } from '@/components/project/GitStatusBadges';
@@ -140,6 +141,8 @@ export const GitBranchesButton = ({
   const [showAbortRebaseConfirm, setShowAbortRebaseConfirm] = useState(false);
   const [showContinueRebaseConfirm, setShowContinueRebaseConfirm] = useState(false);
   const [showResolveWithAgentConfirm, setShowResolveWithAgentConfirm] = useState(false);
+  const [showPushConfirm, setShowPushConfirm] = useState(false);
+  const [forcePush, setForcePush] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -244,6 +247,8 @@ export const GitBranchesButton = ({
     setBranchToCheckout(null);
     setBranchToBase(null);
     setNewBranchFromName('');
+    setShowPushConfirm(false);
+    setForcePush(false);
   };
 
   const handleCreateBranchConfirm = async () => {
@@ -440,15 +445,29 @@ export const GitBranchesButton = ({
     }
   };
 
-  const handlePush = async () => {
+  const handlePush = () => {
+    if (disabled || outgoingCount === 0) {
+      return;
+    }
     handleCloseDropdown();
+    setForcePush(false);
+    setShowPushConfirm(true);
+  };
+
+  const handlePushConfirm = async () => {
+    setShowPushConfirm(false);
     try {
-      await api.gitPush(repoPath);
+      await api.gitPush(repoPath, forcePush);
       showInfoNotification(t('git.pushSuccess'));
       await loadSyncCommits();
     } catch (error) {
       handleError(error);
     }
+  };
+
+  const handlePushCancel = () => {
+    setShowPushConfirm(false);
+    setForcePush(false);
   };
 
   const handleEditBranch = () => {
@@ -487,7 +506,8 @@ export const GitBranchesButton = ({
     }
   };
 
-  const menuItemClass = 'w-full px-3 py-1 text-left text-2xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2';
+  const menuItemClass =
+    'w-full px-3 py-1 text-left text-2xs text-text-primary hover:bg-bg-tertiary transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -672,9 +692,9 @@ export const GitBranchesButton = ({
                 <FaDownload className="w-3 h-3" />
                 {t('git.updateProject')}
               </button>
-              <button onClick={() => void handlePush()} className={menuItemClass}>
+              <button onClick={handlePush} className={menuItemClass} disabled={disabled || outgoingCount === 0}>
                 <FaUpload className="w-3 h-3" />
-                {t('git.push')}
+                {t('git.push')}...
               </button>
             </div>
           )}
@@ -845,6 +865,28 @@ export const GitBranchesButton = ({
           closeOnEscape
         >
           <p className="text-sm mb-3">{t('worktree.confirmResolveConflictsWithAgentMessage')}</p>
+        </ConfirmDialog>
+      )}
+
+      {showPushConfirm && (
+        <ConfirmDialog
+          title={t('git.confirmPushTitle')}
+          onConfirm={() => void handlePushConfirm()}
+          onCancel={handlePushCancel}
+          confirmButtonText={t('git.push')}
+          closeOnEscape
+        >
+          <div className="flex flex-col gap-3">
+            <p className="text-sm">{t('git.confirmPushMessage', { count: outgoingCount })}</p>
+            <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-xs text-text-secondary">
+              {syncCommits.outgoing.commits.map((commit, index) => (
+                <div key={index} className="truncate">
+                  {commit}
+                </div>
+              ))}
+            </div>
+            <Checkbox label={t('git.force')} checked={forcePush} onChange={setForcePush} />
+          </div>
         </ConfirmDialog>
       )}
     </div>

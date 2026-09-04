@@ -859,8 +859,8 @@ export class EventsHandler {
     return await this.projectManager.gitManager.gitPull(repoPath);
   }
 
-  async gitPush(repoPath: string): Promise<{ output: string }> {
-    return await this.projectManager.gitManager.gitPush(repoPath);
+  async gitPush(repoPath: string, force?: boolean): Promise<{ output: string }> {
+    return await this.projectManager.gitManager.gitPush(repoPath, force);
   }
 
   async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string) {

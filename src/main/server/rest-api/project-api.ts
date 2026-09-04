@@ -435,6 +435,7 @@ const UpdateGitBranchSchema = z.object({
 
 const GitPushSchema = z.object({
   repoPath: z.string().min(1, 'Repository path is required'),
+  force: z.boolean().optional(),
 });
 
 const WorktreeStatusSchema = z.object({
@@ -1350,8 +1351,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { repoPath } = parsed;
-        const result = await this.eventsHandler.gitPush(repoPath);
+        const { repoPath, force } = parsed;
+        const result = await this.eventsHandler.gitPush(repoPath, force);
         res.status(200).json(result);
       }),
     );

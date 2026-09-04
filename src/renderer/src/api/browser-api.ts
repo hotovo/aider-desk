@@ -1266,9 +1266,10 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  gitPush(repoPath: string): Promise<{ output: string }> {
+  gitPush(repoPath: string, force?: boolean): Promise<{ output: string }> {
     return this.post('/project/git/push', {
       repoPath,
+      force,
     });
   }
 

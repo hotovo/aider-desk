@@ -1575,9 +1575,10 @@ export class GitManager {
     }
   }
 
-  async gitPush(worktreePath: string): Promise<{ output: string }> {
+  async gitPush(worktreePath: string, force?: boolean): Promise<{ output: string }> {
     try {
-      const { stdout, stderr } = await execWithShellPath('git push', {
+      const command = force ? 'git push --force' : 'git push';
+      const { stdout, stderr } = await execWithShellPath(command, {
         cwd: worktreePath,
       });
       const output = stdout || stderr || 'Push completed successfully';

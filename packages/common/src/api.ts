@@ -332,7 +332,7 @@ export interface ApplicationAPI {
   rebaseOntoBranch: (repoPath: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
   updateGitBranch: (repoPath: string, branchName: string) => Promise<{ output: string }>;
   gitPull: (repoPath: string) => Promise<{ output: string }>;
-  gitPush: (repoPath: string) => Promise<{ output: string }>;
+  gitPush: (repoPath: string, force?: boolean) => Promise<{ output: string }>;
 
   // Agent profile operations
   getAllAgentProfiles: () => Promise<AgentProfile[]>;

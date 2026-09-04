@@ -643,8 +643,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.gitPull(repoPath);
   });
 
-  ipcMain.handle('git-push', async (_, repoPath: string) => {
-    return await eventsHandler.gitPush(repoPath);
+  ipcMain.handle('git-push', async (_, repoPath: string, force?: boolean) => {
+    return await eventsHandler.gitPush(repoPath, force);
   });
 
   ipcMain.handle('get-worktree-integration-status', async (_, baseDir: string, taskId: string, targetBranch?: string) => {

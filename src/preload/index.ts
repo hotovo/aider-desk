@@ -759,7 +759,7 @@ const api: ApplicationAPI = {
   rebaseOntoBranch: (repoPath, branch) => ipcRenderer.invoke('rebase-onto-branch', repoPath, branch),
   updateGitBranch: (repoPath, branchName) => ipcRenderer.invoke('update-git-branch', repoPath, branchName),
   gitPull: (repoPath) => ipcRenderer.invoke('git-pull', repoPath),
-  gitPush: (repoPath) => ipcRenderer.invoke('git-push', repoPath),
+  gitPush: (repoPath, force) => ipcRenderer.invoke('git-push', repoPath, force),
 
   // Agent profile operations
   getAllAgentProfiles: () => ipcRenderer.invoke('get-agent-profiles'),
