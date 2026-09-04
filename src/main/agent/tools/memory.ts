@@ -46,7 +46,11 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
         const taskId = task.taskId;
         const memoryType = type as MemoryEntryType;
 
-        await memoryManager.storeMemory(projectId, taskId, memoryType, content);
+        const id = await memoryManager.storeMemory(projectId, taskId, memoryType, content);
+
+        if (!id) {
+          return 'Failed to store memory: memory system unavailable.';
+        }
 
         logger.info('Memory stored successfully', {
           projectId,
@@ -55,7 +59,7 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
           contentLength: content.length,
         });
 
-        return 'Memory stored successfully';
+        return { success: true, id };
       } catch (error) {
         logger.error('Failed to store memory:', error);
         return `Failed to store memory: ${error instanceof Error ? error.message : 'Unknown error'}`;
