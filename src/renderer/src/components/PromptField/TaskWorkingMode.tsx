@@ -300,7 +300,10 @@ export const TaskWorkingMode = ({
           />
         </span>
       ) : isSwitching ? (
-        <span className="text-2xs">{t('workingMode.switching')}</span>
+        <span className="flex items-center gap-1 text-2xs text-text-secondary">
+          <CgSpinner className="w-3 h-3 animate-spin mb-[2px] mr-0.5" />
+          {t('workingMode.switching')}
+        </span>
       ) : (
         <>
           {task.workingMode === 'worktree' && task.lastMergeState && <WorktreeRevertButton onRevert={onRevert} disabled={isMerging} />}
