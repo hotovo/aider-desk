@@ -784,6 +784,7 @@ export class Agent {
         toolSet,
         systemPrompt,
         task.task.lastAgentProviderMetadata,
+        task.task.id,
       );
       logger.debug('LLM model created successfully', {
         model: typeof model !== 'string' ? model.modelId : model,
@@ -1600,6 +1601,7 @@ export class Agent {
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
+    sessionId?: string,
   ): Promise<string | undefined> {
     const [providerId, modelName] = extractProviderModel(modelId);
     const providers = this.modelManager.getProviders();
@@ -1609,7 +1611,7 @@ export class Agent {
     }
 
     const settings = this.store.getSettings();
-    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined);
+    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined, sessionId);
     const cacheControl = this.modelManager.getCacheControl(provider, modelName);
     const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
     const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
@@ -1671,6 +1673,7 @@ export class Agent {
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
+    sessionId?: string,
   ): Promise<T | undefined> {
     const [providerId, modelName] = extractProviderModel(modelId);
     const providers = this.modelManager.getProviders();
@@ -1680,7 +1683,7 @@ export class Agent {
     }
 
     const settings = this.store.getSettings();
-    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined);
+    const model = await this.modelManager.createLlm(provider, modelName, settings, projectDir, undefined, systemPrompt, undefined, sessionId);
     const cacheControl = this.modelManager.getCacheControl(provider, modelName);
     const providerOptions = this.modelManager.getProviderOptions(provider, modelName);
     const providerParameters = this.modelManager.getProviderParameters(provider, modelName);
@@ -2088,8 +2091,8 @@ export class Agent {
             promptContext,
             abortSignal,
             (t, instructions) => this.promptsManager.getCompactConversationPrompt(t, instructions),
-            (modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal) =>
-              this.generateText(modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal),
+            (modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal, sessionId) =>
+              this.generateText(modelId, systemPrompt, prompt, projectDir, msgs, abortable, signal, sessionId),
           );
 
           contextMessages.length = 0;

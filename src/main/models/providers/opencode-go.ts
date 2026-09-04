@@ -1,4 +1,4 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, SettingsData, TlsPolicyRegistrar } from '@common/types';
 import { isOpenCodeGoProvider, LlmProvider, OpenCodeGoProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -7,7 +7,7 @@ import { omit } from 'lodash';
 
 import { getDefaultModelInfo, getDefaultUsageReport } from './default';
 
-import type { LanguageModel, ModelMessage } from 'ai';
+import type { LanguageModel, ModelMessage, ToolSet } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
@@ -133,7 +133,17 @@ export const getOpencodeGoAiderMapping = (provider: ProviderProfile, modelId: st
 };
 
 // === LLM Creation Functions ===
-export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
+export const createOpencodeGoLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  _tlsRegistrar?: TlsPolicyRegistrar,
+  sessionId?: string,
+): LanguageModel => {
   const provider = profile.provider as OpenCodeGoProvider;
   let apiKey = provider.apiKey;
 
@@ -148,6 +158,11 @@ export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, sett
     throw new Error('OpenCode Go API key is required in Providers settings or Aider environment variables (OPENCODE_GO_API_KEY)');
   }
 
+  const headers: Record<string, string> = {
+    ...profile.headers,
+    ...(sessionId ? { 'x-opencode-session': sessionId } : {}),
+  };
+
   const modelId = model.id;
   const endpointType = getModelEndpointType(modelId);
 
@@ -156,7 +171,7 @@ export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, sett
       const openai = createOpenAI({
         apiKey,
         baseURL: ENDPOINT_BASE_URL,
-        headers: profile.headers,
+        headers,
       });
       return openai.responses(modelId);
     }
@@ -164,7 +179,7 @@ export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, sett
       const anthropic = createAnthropic({
         apiKey,
         baseURL: ENDPOINT_BASE_URL,
-        headers: profile.headers,
+        headers,
       });
       return anthropic(modelId);
     }
@@ -173,7 +188,7 @@ export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, sett
         name: 'opencode-go',
         apiKey,
         baseURL: ENDPOINT_BASE_URL,
-        headers: profile.headers,
+        headers,
       });
       return compatible(modelId);
     }

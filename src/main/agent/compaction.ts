@@ -51,9 +51,10 @@ export const generateCompactedSummary = async (
     messages: ContextMessage[],
     abortable: boolean,
     abortSignal?: AbortSignal,
+    sessionId?: string,
   ) => Promise<string | undefined> = async () => undefined,
 ): Promise<ContextMessage[]> => {
   const compactPrompt = await getCompactConversationPrompt(task, undefined);
-  const summaryText = await generateText(`${profile.provider}/${profile.model}`, '', compactPrompt, task.getProjectDir(), allMessages, true, abortSignal);
+  const summaryText = await generateText(`${profile.provider}/${profile.model}`, '', compactPrompt, task.getProjectDir(), allMessages, true, abortSignal, task.task.id);
   return buildCompactSummaryMessages(userMessage, summaryText, promptContext);
 };

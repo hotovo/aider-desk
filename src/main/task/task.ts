@@ -1237,6 +1237,8 @@ export class Task {
         this.getProjectDir(),
         undefined,
         false,
+        undefined,
+        this.task.id,
       );
       if (taskName) {
         logger.debug('Generated task name:', { taskName });
@@ -1305,7 +1307,16 @@ export class Task {
 
       this.addLogMessage('loading', 'Updating task state...');
 
-      const answer = await this.agent.generateText(modelId, await this.promptsManager.getUpdateTaskStatePrompt(this), wrappedMessage, this.getProjectDir());
+      const answer = await this.agent.generateText(
+        modelId,
+        await this.promptsManager.getUpdateTaskStatePrompt(this),
+        wrappedMessage,
+        this.getProjectDir(),
+        undefined,
+        true,
+        undefined,
+        this.task.id,
+      );
 
       this.addLogMessage('loading', undefined, true);
       if (!answer) {
@@ -3622,6 +3633,8 @@ export class Task {
           this.getProjectDir(),
           await this.contextManager.getContextMessages(),
           true,
+          undefined,
+          this.task.id,
         );
       } else {
         const responses = await this.sendPromptToAider(handoffPrompt, undefined, 'ask');
@@ -4284,6 +4297,8 @@ ${error.stderr}`,
                 this.getProjectDir(),
                 undefined,
                 false,
+                undefined,
+                this.task.id,
               );
               logger.info('Generated commit message:', {
                 commitMessage: effectiveCommitMessage,
@@ -4696,6 +4711,8 @@ ${error.stderr}`,
       this.getProjectDir(),
       undefined,
       false,
+      undefined,
+      this.task.id,
     );
 
     if (!commitMessage) {
@@ -5196,11 +5213,11 @@ ${error.stderr}`,
   }
 
   public async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined> {
-    return this.agent.generateText(modelId, systemPrompt, prompt, this.getProjectDir());
+    return this.agent.generateText(modelId, systemPrompt, prompt, this.getProjectDir(), [], true, undefined, this.task.id);
   }
 
   public async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined> {
-    return this.agent.generateObject(modelId, systemPrompt, prompt, schema, this.getProjectDir());
+    return this.agent.generateObject(modelId, systemPrompt, prompt, schema, this.getProjectDir(), [], true, undefined, this.task.id);
   }
 
   async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void> {

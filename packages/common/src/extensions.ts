@@ -169,6 +169,7 @@ export interface ExtensionProviderStrategy {
     systemPrompt?: string,
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
+    sessionId?: string,
   ) => unknown | Promise<unknown>;
   loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 

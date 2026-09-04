@@ -743,6 +743,7 @@ export class ModelManager {
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    sessionId?: string,
   ): LanguageModel | Promise<LanguageModel> {
     const strategy = this.providerRegistry[provider.provider.name];
     if (!strategy) {
@@ -768,7 +769,7 @@ export class ModelManager {
       throw new Error(`Model not found: ${model}`);
     }
 
-    return strategy.createLlm(provider, modelObj, settings, projectDir, toolSet, systemPrompt, providerMetadata, this.tlsRegistrar);
+    return strategy.createLlm(provider, modelObj, settings, projectDir, toolSet, systemPrompt, providerMetadata, this.tlsRegistrar, sessionId);
   }
 
   getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData {
@@ -993,8 +994,8 @@ export class ModelManager {
 
       this.providerRegistry[provider.provider.name] = {
         ...provider.strategy,
-        createLlm: (profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata, tlsRegistrar) =>
-          provider.strategy.createLlm(profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata, tlsRegistrar) as
+        createLlm: (profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata, tlsRegistrar, sessionId) =>
+          provider.strategy.createLlm(profile, model, settings, projectDir, toolSet, systemPrompt, providerMetadata, tlsRegistrar, sessionId) as
             | LanguageModel
             | Promise<LanguageModel>,
         getUsageReport: provider.strategy.getUsageReport || getDefaultUsageReport,

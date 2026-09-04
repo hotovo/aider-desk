@@ -46,6 +46,7 @@ export interface LlmProviderStrategy {
     systemPrompt?: string,
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
+    sessionId?: string,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**

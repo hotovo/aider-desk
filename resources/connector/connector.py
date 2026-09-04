@@ -129,6 +129,15 @@ def update_model_params(models_info, model):
   temperature = info.get('temperature')
   model.use_temperature = temperature if temperature is not None else False
 
+  task_id = os.environ.get("TASK_ID")
+  openai_base = os.environ.get("OPENAI_API_BASE", "")
+  anthropic_base = os.environ.get("ANTHROPIC_BASE_URL", "")
+  if task_id and ("opencode.ai/zen/go" in openai_base or "opencode.ai/zen/go" in anthropic_base):
+    if model.extra_params is None:
+      model.extra_params = {}
+    extra_headers = model.extra_params.setdefault("extra_headers", {})
+    extra_headers["x-opencode-session"] = task_id
+
 def wait_for_async(connector, coroutine):
   try:
     if threading.current_thread() is threading.main_thread():
