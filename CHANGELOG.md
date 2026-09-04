@@ -8,6 +8,7 @@
 - added x-opencode-session header to OpenCode Go provider
 - fixed worktree commit tracking and operations to use base branch
 - added confirmation dialog and force option for git push
+- fixed working mode switch dialog staying open and appearing frozen while switching
 
 ## [0.81.0]
 

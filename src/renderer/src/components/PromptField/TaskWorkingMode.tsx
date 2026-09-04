@@ -104,6 +104,8 @@ export const TaskWorkingMode = ({
 
   const performSwitch = useCallback(
     async (mode: WorkingMode) => {
+      setShowConfirmLocal(false);
+      setShowConfirmWorktree(false);
       setIsSwitching(true);
       try {
         if (mode === 'local') {
@@ -116,8 +118,6 @@ export const TaskWorkingMode = ({
         console.error('Failed to update task:', error);
       } finally {
         setIsSwitching(false);
-        setShowConfirmLocal(false);
-        setShowConfirmWorktree(false);
       }
     },
     [api, task.baseDir, task.id],
@@ -157,6 +157,7 @@ export const TaskWorkingMode = ({
   );
 
   const performMergeAndSwitch = async () => {
+    setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
       const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: worktreeStatus?.targetBranch };
@@ -166,11 +167,11 @@ export const TaskWorkingMode = ({
       console.error('Failed to merge and switch:', error);
     } finally {
       setIsSwitching(false);
-      setShowConfirmLocal(false);
     }
   };
 
   const performMergeAndSwitchAll = async () => {
+    setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
       const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: worktreeStatus?.targetBranch, switchAllInWorktree: true };
@@ -180,7 +181,6 @@ export const TaskWorkingMode = ({
       console.error('Failed to merge and switch all:', error);
     } finally {
       setIsSwitching(false);
-      setShowConfirmLocal(false);
     }
   };
 
@@ -204,6 +204,7 @@ export const TaskWorkingMode = ({
   };
 
   const performSwitchToWorktreeWithChanges = async (dropSourceChanges: boolean) => {
+    setShowConfirmWorktree(false);
     setIsSwitching(true);
     try {
       const options: SwitchToWorktreeOptions = {
@@ -216,7 +217,6 @@ export const TaskWorkingMode = ({
       console.error('Failed to switch to worktree with changes:', error);
     } finally {
       setIsSwitching(false);
-      setShowConfirmWorktree(false);
     }
   };
 
