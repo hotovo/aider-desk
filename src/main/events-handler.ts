@@ -725,13 +725,13 @@ export class EventsHandler {
     return await task.getLocalUncommittedFiles();
   }
 
-  async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
+  async applyUncommittedChanges(baseDir: string, taskId: string): Promise<void> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       throw new Error(`Task ${taskId} not found`);
     }
 
-    await task.applyUncommittedChanges(targetBranch);
+    await task.applyUncommittedChanges();
   }
 
   async revertLastMerge(baseDir: string, taskId: string): Promise<void> {

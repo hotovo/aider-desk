@@ -4,6 +4,7 @@
 
 - improved create task tool description and worktree inheritance
 - added git branch management
+- added support for checkoutless merge/squash for worktree operations
 
 ## [0.81.0]
 

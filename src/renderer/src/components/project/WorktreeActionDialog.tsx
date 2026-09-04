@@ -4,7 +4,7 @@ import { BranchInfo } from '@common/types';
 
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
-import Select from '@/components/common/Select';
+import SearchableSelect from '@/components/common/SearchableSelect';
 import { Input } from '@/components/common/Input';
 
 type Props = {
@@ -79,7 +79,7 @@ export const WorktreeActionDialog = ({
   const options = useMemo(() => {
     return branches.map((b) => ({
       value: b.name,
-      label: `${b.name}${b.hasWorktree ? ` (${t('worktree.branchHasWorktree')})` : ''}`,
+      label: `${b.name}${b.isCurrent ? ` (${t('worktree.branchCurrent')})` : ''}`,
     }));
   }, [branches, t]);
 
@@ -114,7 +114,7 @@ export const WorktreeActionDialog = ({
         )}
 
         <div className="flex flex-col gap-2">
-          <Select
+          <SearchableSelect
             label={<span className="text-xs text-text-muted-light">{t('worktree.selectBranch')}</span>}
             value={selectedBranch}
             onChange={handleBranchChange}

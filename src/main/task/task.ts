@@ -4526,7 +4526,7 @@ ${error.stderr}`,
     return await this.gitManager.getUncommittedFiles(this.project.baseDir);
   }
 
-  public async applyUncommittedChanges(targetBranch?: string): Promise<void> {
+  public async applyUncommittedChanges(): Promise<void> {
     if (!this.task.worktree) {
       throw new Error('No worktree exists for this task');
     }
@@ -4539,16 +4539,16 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     try {
-      const effectiveTargetBranch = targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
+      const targetBranch = await this.gitManager.getProjectMainBranch(this.project.baseDir);
 
-      this.addLogMessage('loading', `Applying uncommitted changes to ${effectiveTargetBranch} branch...`);
+      this.addLogMessage('loading', `Applying uncommitted changes to ${targetBranch} branch...`);
 
       const settings = this.store.getSettings();
       const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-      await this.gitManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, effectiveTargetBranch, symlinkFolders);
+      await this.gitManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, symlinkFolders);
 
-      this.addLogMessage('info', `Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`, true);
+      this.addLogMessage('info', `Successfully applied uncommitted changes to ${targetBranch} branch`, true);
     } catch (error) {
       logger.error('Failed to apply uncommitted changes:', error);
 

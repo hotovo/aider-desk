@@ -496,7 +496,8 @@
     "apiKey": "API Key"
   },
   "select": {
-    "placeholder": "Select an option"
+    "placeholder": "Select an option",
+    "noMatches": "No matches found"
   },
   "settings": {
     "title": "Settings",
@@ -1966,17 +1967,17 @@
     "selectBranch": "Select branch",
     "selectTargetBranchTitle": "Select target branch",
     "selectSourceBranchTitle": "Select source branch",
-    "branchHasWorktree": "has worktree",
+    "branchCurrent": "current branch",
     "mergeTooltip": "Merge worktree changes to a branch",
     "revertTooltip": "Revert the last merged changes",
     "confirmMerge": "Are you sure you want to {{action}} the worktree changes to the main branch? This will include any uncommitted changes.",
     "confirmRevert": "Are you sure you want to revert the last merge? This will reset the main branch to its previous state.",
     "confirmMergeTitle": "Confirm Merge",
     "confirmSquashTitle": "Confirm Squash",
-    "confirmOnlyUncommittedTitle": "Confirm Apply Uncommitted Changes",
+    "confirmOnlyUncommittedTitle": "Apply uncommitted changes",
     "confirmMergeMessage": "Are you sure you want to merge the worktree changes to the selected branch?",
     "confirmSquashMessage": "Are you sure you want to squash and merge the worktree changes to the selected branch?",
-    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the selected branch? No git merge will be performed.",
+    "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the currently checked out branch {{branch}}? No git merge will be performed and the project directory will stay on its current branch.",
     "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
     "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
     "dontAskAgain": "Don't ask me again",
@@ -1990,10 +1991,10 @@
     "rebaseFromCurrentBranch": "Rebase from '{{branch}}'",
     "mergeIntoBranch": "Merge into branch...",
     "squashIntoBranch": "Squash & merge into branch...",
-    "applyUncommittedChanges": "Apply uncommitted changes...",
+    "applyUncommittedChanges": "Apply uncommitted changes",
     "mergeIntoBranchTooltip": "Merges all commits and uncommitted changes from this worktree into a target branch (creates a merge commit).",
     "squashIntoBranchTooltip": "Combines all worktree commits and uncommitted changes into a single new commit on a target branch.",
-    "applyUncommittedChangesTooltip": "Applies only uncommitted changes from this worktree to a target branch without merging any commits.",
+    "applyUncommittedChangesTooltip": "Applies only uncommitted changes from this worktree to the branch currently checked out in the project directory, without merging any commits.",
     "rebaseFromCurrentBranchTooltip": "Replays worktree commits on top of '{{branch}}' and updates the base reference."
   },
   "welcomeMessage": {

@@ -323,8 +323,8 @@ export class TaskContextImpl implements TaskContext {
     return this.task.getLocalUncommittedFiles();
   }
 
-  async applyUncommittedChanges(targetBranch?: string): Promise<void> {
-    await this.task.applyUncommittedChanges(targetBranch);
+  async applyUncommittedChanges(): Promise<void> {
+    await this.task.applyUncommittedChanges();
   }
 
   async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void> {

@@ -1,3 +1,4 @@
+import os from 'os';
 import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync, lstatSync } from 'fs';
@@ -1180,6 +1181,7 @@ export class GitManager {
     mainBranch: string,
     commitMessage: string,
     baseCommit?: string,
+    checkoutless = false,
   ): Promise<void> {
     const executedCommands: string[] = [];
     let lastOutput = '';
@@ -1265,6 +1267,47 @@ export class GitManager {
       lastOutput = worktreeHead || stderr3 || '';
       const worktreeCommitHash = worktreeHead.trim();
 
+      if (checkoutless) {
+        // Create the squashed commit via plumbing and update the target branch ref directly
+        // without checking it out (the project directory is on a different branch, and git
+        // guarantees the target branch cannot be checked out in any other worktree)
+        const { stdout: worktreeTree } = await execWithShellPath(`git rev-parse '${worktreeCommitHash}^{tree}'`, { cwd: worktreePath });
+        const treeHash = worktreeTree.trim();
+
+        const { stdout: targetHead } = await execWithShellPath(`git rev-parse ${mainBranch}`, { cwd: projectPath });
+        const targetHeadHash = targetHead.trim();
+
+        // No-op check: nothing to squash if the trees are identical
+        const { stdout: targetTree } = await execWithShellPath(`git rev-parse '${mainBranch}^{tree}'`, { cwd: projectPath });
+        if (treeHash === targetTree.trim()) {
+          logger.info('No changes to squash merge (worktree tree is identical to target branch tree)');
+          return;
+        }
+
+        const commitMessageFile = join(os.tmpdir(), `aiderdesk-squash-message-${Date.now()}.txt`);
+        await fs.writeFile(commitMessageFile, commitMessage, 'utf-8');
+        try {
+          command = `git commit-tree ${treeHash} -p ${targetHeadHash} -F "${commitMessageFile}"`;
+          executedCommands.push(`git commit-tree ${treeHash} -p ${targetHeadHash} -F <message-file> (in ${projectPath})`);
+          const commitResult = await execWithShellPath(command, {
+            cwd: projectPath,
+          });
+          lastOutput = commitResult.stdout || commitResult.stderr || '';
+          const newCommitHash = commitResult.stdout.trim();
+
+          command = `git update-ref refs/heads/${mainBranch} ${newCommitHash} ${targetHeadHash}`;
+          executedCommands.push(`git update-ref refs/heads/${mainBranch} ${newCommitHash} <old-hash> (in ${projectPath})`);
+          await execWithShellPath(command, {
+            cwd: projectPath,
+          });
+
+          logger.info(`Successfully squash merged ${branchName} into ${mainBranch} (${newCommitHash}) without checkout`);
+        } finally {
+          await fs.rm(commitMessageFile, { force: true });
+        }
+        return;
+      }
+
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
       executedCommands.push(`git checkout ${mainBranch} (in ${projectPath})`);
@@ -1339,7 +1382,7 @@ export class GitManager {
     }
   }
 
-  private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string): Promise<void> {
+  private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, checkoutless = false): Promise<void> {
     const executedCommands: string[] = [];
     let lastOutput = '';
 
@@ -1410,6 +1453,32 @@ export class GitManager {
       const { stdout: worktreeHead, stderr: stderr1b } = await execWithShellPath(command, { cwd: worktreePath });
       lastOutput = worktreeHead || stderr1b || '';
       const worktreeCommitHash = worktreeHead.trim();
+
+      if (checkoutless) {
+        // Update the target branch ref directly without checking it out:
+        // the project directory is on a different branch, and git guarantees the target
+        // branch cannot be checked out in any other worktree
+        try {
+          await execWithShellPath(`git merge-base --is-ancestor ${mainBranch} ${worktreeCommitHash}`, {
+            cwd: projectPath,
+          });
+        } catch {
+          throw new Error(
+            `Failed to fast-forward ${mainBranch} to ${branchName}: ${mainBranch} is not an ancestor of the worktree HEAD. ` +
+              `The branch may have diverged - rebase the worktree onto ${mainBranch} first.`,
+          );
+        }
+
+        const { stdout: targetHead } = await execWithShellPath(`git rev-parse ${mainBranch}`, { cwd: projectPath });
+        command = `git update-ref refs/heads/${mainBranch} ${worktreeCommitHash} ${targetHead.trim()}`;
+        executedCommands.push(`git update-ref refs/heads/${mainBranch} ${worktreeCommitHash} <old-hash> (in ${projectPath})`);
+        await execWithShellPath(command, {
+          cwd: projectPath,
+        });
+
+        logger.info(`Successfully fast-forwarded ${mainBranch} to ${branchName} (${worktreeCommitHash}) without checkout`);
+        return;
+      }
 
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
@@ -1927,6 +1996,11 @@ export class GitManager {
 
       const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
+      // If the project directory is on a different branch, update the target branch ref directly
+      // without checking it out (the working tree is left untouched)
+      const projectCurrentBranch = await this.getProjectMainBranch(projectPath).catch(() => '');
+      const checkoutless = Boolean(targetBranch) && projectCurrentBranch !== mainBranch;
+
       try {
         logger.info(`Starting ${squash ? 'squash' : 'merge'} operation with uncommitted changes support`);
 
@@ -1945,10 +2019,13 @@ export class GitManager {
         // 2. Stash uncommitted changes in worktree
         await this.stashUncommittedChanges(worktreeStashId, worktreePath, 'Worktree uncommitted changes before merge', symlinkFolders);
 
-        // 3. Stash uncommitted changes in main branch if any
-        const mainStashResult = await this.stashUncommittedChanges(mainStashId, projectPath, 'Main branch uncommitted changes before merge', []);
-        if (mainStashResult) {
-          mainOriginalStashId = mainStashResult;
+        // 3. Stash uncommitted changes in main branch if any (not needed for checkoutless merge,
+        // since the project directory working tree is never touched)
+        if (!checkoutless) {
+          const mainStashResult = await this.stashUncommittedChanges(mainStashId, projectPath, 'Main branch uncommitted changes before merge', []);
+          if (mainStashResult) {
+            mainOriginalStashId = mainStashResult;
+          }
         }
 
         // 4. Perform the merge operation (existing methods handle the actual merge)
@@ -1957,15 +2034,21 @@ export class GitManager {
           if (!commitMessage) {
             throw new Error('Commit message is required for squash merge');
           }
-          await this.squashAndMergeWorktreeToMain(projectPath, worktreePath, mainBranch, commitMessage, baseCommit);
+          await this.squashAndMergeWorktreeToMain(projectPath, worktreePath, mainBranch, commitMessage, baseCommit, checkoutless);
         } else {
-          await this.mergeWorktreeToMain(projectPath, worktreePath, mainBranch);
+          await this.mergeWorktreeToMain(projectPath, worktreePath, mainBranch, checkoutless);
         }
 
         // 5. Apply worktree stash to both branches (keeping changes uncommitted)
+        // For checkoutless merge the project directory is on a different branch, so the
+        // worktree's uncommitted changes are only restored into the worktree
         if (worktreeStashId) {
-          logger.info('Applying worktree stash to main branch');
-          await this.applyStash(projectPath, worktreeStashId);
+          if (checkoutless) {
+            logger.info('Skipping applying worktree stash to project directory (checkoutless merge)');
+          } else {
+            logger.info('Applying worktree stash to main branch');
+            await this.applyStash(projectPath, worktreeStashId);
+          }
 
           logger.info('Applying worktree stash back to worktree');
           await this.applyStash(worktreePath, worktreeStashId);
@@ -1989,6 +2072,7 @@ export class GitManager {
           worktreeBranchCommitHash,
           mainOriginalStashId,
           targetBranch: mainBranch,
+          checkoutless,
           timestamp,
         };
 
@@ -2000,20 +2084,32 @@ export class GitManager {
         // Only when the merge step actually ran - otherwise the main working tree may still
         // contain un-stashed changes that a hard reset would destroy
         if (mergeStarted) {
-          try {
-            // Abort any in-progress merge (in case merge itself failed)
-            await execWithShellPath('git merge --abort', { cwd: projectPath });
-          } catch {
-            // Ignore - no merge in progress
-          }
-
-          // Hard reset main to undo merge commit and clean conflict markers from failed stash apply
-          if (beforeMergeCommitHash) {
+          if (checkoutless) {
+            // Checkoutless merge never touched the project working tree - only move the ref back
+            if (beforeMergeCommitHash) {
+              try {
+                await execWithShellPath(`git update-ref refs/heads/${mainBranch} ${beforeMergeCommitHash}`, { cwd: projectPath });
+                logger.info('Reverted target branch ref to pre-merge state');
+              } catch (recoveryError) {
+                logger.error('Failed to reset target branch ref to pre-merge state:', { error: recoveryError });
+              }
+            }
+          } else {
             try {
-              await execWithShellPath(`git reset --hard ${beforeMergeCommitHash}`, { cwd: projectPath });
-              logger.info('Reverted main repo to pre-merge state');
-            } catch (recoveryError) {
-              logger.error('Failed to reset main repo to pre-merge state:', { error: recoveryError });
+              // Abort any in-progress merge (in case merge itself failed)
+              await execWithShellPath('git merge --abort', { cwd: projectPath });
+            } catch {
+              // Ignore - no merge in progress
+            }
+
+            // Hard reset main to undo merge commit and clean conflict markers from failed stash apply
+            if (beforeMergeCommitHash) {
+              try {
+                await execWithShellPath(`git reset --hard ${beforeMergeCommitHash}`, { cwd: projectPath });
+                logger.info('Reverted main repo to pre-merge state');
+              } catch (recoveryError) {
+                logger.error('Failed to reset main repo to pre-merge state:', { error: recoveryError });
+              }
             }
           }
         }
@@ -3040,19 +3136,16 @@ export class GitManager {
   }
 
   /**
-   * Apply uncommitted changes from worktree to main branch without merging commits
+   * Apply uncommitted changes from worktree to the branch currently checked out in the
+   * project directory without merging commits or switching branches
    * This transfers work-in-progress changes while keeping them uncommitted in both branches
    */
-  async applyUncommittedChangesToMain(
-    projectPath: string,
-    taskId: string,
-    worktreePath: string,
-    targetBranch?: string,
-    symlinkFolders: string[] = [],
-  ): Promise<void> {
+  async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string, symlinkFolders: string[] = []): Promise<void> {
     return await withLock(`git-apply-uncommitted-${worktreePath}`, async () => {
       const timestamp = Date.now();
       const worktreeStashId = `worktree-${taskId.length > 24 ? taskId.substring(24) : taskId}-uncommitted-${timestamp}`;
+      const projectStashId = `main-${taskId.length > 24 ? taskId.substring(24) : taskId}-uncommitted-${timestamp}`;
+      let projectOriginalStashId: string | undefined;
 
       try {
         logger.info('Starting apply uncommitted changes operation');
@@ -3071,15 +3164,21 @@ export class GitManager {
           return;
         }
 
-        const effectiveTargetBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
+        const targetBranch = await this.getProjectMainBranch(projectPath);
 
-        // 3. Switch main repo to target branch
-        await execWithShellPath(`git checkout ${effectiveTargetBranch}`, {
-          cwd: projectPath,
-        });
+        // 3. Stash uncommitted changes in the project directory to keep them safe while applying
+        const projectStashResult = await this.stashUncommittedChanges(
+          projectStashId,
+          projectPath,
+          'Project directory uncommitted changes before applying worktree changes',
+          [],
+        );
+        if (projectStashResult) {
+          projectOriginalStashId = projectStashResult;
+        }
 
-        // 4. Apply stash to target branch (keeping uncommitted)
-        logger.info(`Applying uncommitted changes to ${effectiveTargetBranch} branch`);
+        // 4. Apply stash to the currently checked out branch (keeping uncommitted)
+        logger.info(`Applying uncommitted changes to ${targetBranch} branch`);
         await this.applyStash(projectPath, worktreeStashId);
 
         // 5. Apply stash back to worktree (keeping uncommitted)
@@ -3089,16 +3188,33 @@ export class GitManager {
         // 6. Clean up stash
         await this.dropStash(worktreePath, worktreeStashId);
 
-        logger.info(`Successfully applied uncommitted changes to ${effectiveTargetBranch} branch`);
+        // 7. Restore project directory's original uncommitted changes if any
+        if (projectOriginalStashId) {
+          logger.info('Restoring project directory original uncommitted changes');
+          await this.applyStash(projectPath, projectOriginalStashId);
+          await this.dropStash(projectPath, projectOriginalStashId);
+        }
+
+        logger.info(`Successfully applied uncommitted changes to ${targetBranch} branch`);
       } catch (error) {
         logger.error('Failed to apply uncommitted changes:', error);
 
-        // Recovery: clean up main repo from failed stash apply
+        // Recovery: clean up project directory from failed stash apply
         try {
-          await execWithShellPath('git checkout -- .', { cwd: projectPath });
-          logger.info('Cleaned up main repo after failed stash apply');
+          await execWithShellPath('git reset --hard', { cwd: projectPath });
+          logger.info('Cleaned up project directory after failed stash apply');
         } catch (recoveryError) {
-          logger.error('Failed to clean up main repo:', { error: recoveryError });
+          logger.error('Failed to clean up project directory:', { error: recoveryError });
+        }
+
+        // Restore project directory's original uncommitted changes
+        if (projectOriginalStashId) {
+          try {
+            await this.applyStash(projectPath, projectOriginalStashId);
+            await this.dropStash(projectPath, projectOriginalStashId);
+          } catch (recoveryError) {
+            logger.error('Failed to recover project directory stash:', recoveryError);
+          }
         }
 
         // Restore stash to worktree
@@ -3132,6 +3248,12 @@ export class GitManager {
       try {
         logger.info('Starting merge revert operation', { mergeState });
 
+        const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));
+        const projectCurrentBranch = await this.getProjectMainBranch(projectPath).catch(() => '');
+        // For a checkoutless merge the ref is moved back directly, unless the user has since
+        // checked out the target branch in the project directory
+        const checkoutlessRevert = Boolean(mergeState.checkoutless) && projectCurrentBranch !== targetBranch;
+
         // 1. Stash current uncommitted changes in worktree
         worktreeRevertStashId = await this.stashUncommittedChanges(
           currentWorktreeStashId,
@@ -3140,18 +3262,23 @@ export class GitManager {
           symlinkFolders,
         );
 
-        // 2. Stash current uncommitted changes in main repo to clean the working directory
-        // This is crucial to avoid conflicts with untracked files when applying the original stash
-        mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert', []);
+        if (checkoutlessRevert) {
+          // 2. Move the target branch ref back to the pre-merge state without touching the project working tree
+          logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash} (without checkout)`);
+          await execWithShellPath(`git update-ref refs/heads/${targetBranch} ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
+        } else {
+          // 2. Stash current uncommitted changes in main repo to clean the working directory
+          // This is crucial to avoid conflicts with untracked files when applying the original stash
+          mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert', []);
 
-        // 3. Switch to the branch we merged into, then reset it to previous state
-        const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));
-        await execWithShellPath(`git checkout ${targetBranch}`, {
-          cwd: projectPath,
-        });
+          // 3. Switch to the branch we merged into, then reset it to previous state
+          await execWithShellPath(`git checkout ${targetBranch}`, {
+            cwd: projectPath,
+          });
 
-        logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash}`);
-        await execWithShellPath(`git reset --hard ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
+          logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash}`);
+          await execWithShellPath(`git reset --hard ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
+        }
 
         // 4. Reset worktree branch to previous state
         logger.info(`Resetting worktree branch to ${mergeState.worktreeBranchCommitHash}`);

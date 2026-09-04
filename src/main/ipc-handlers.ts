@@ -566,8 +566,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getLocalUncommittedFiles(baseDir, taskId);
   });
 
-  ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
-    await eventsHandler.applyUncommittedChanges(baseDir, taskId, targetBranch);
+  ipcMain.handle('apply-uncommitted-changes', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.applyUncommittedChanges(baseDir, taskId);
   });
 
   ipcMain.handle('revert-last-merge', async (_, baseDir: string, taskId: string) => {

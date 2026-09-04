@@ -1145,11 +1145,10 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void> {
+  applyUncommittedChanges(baseDir: string, taskId: string): Promise<void> {
     return this.post('/project/worktree/apply-uncommitted', {
       projectDir: baseDir,
       taskId,
-      targetBranch,
     });
   }
 

@@ -311,7 +311,7 @@ export interface ApplicationAPI {
   switchToLocalWorkingMode: (baseDir: string, taskId: string, options?: SwitchToLocalOptions) => Promise<void>;
   switchToWorktreeWorkingMode: (baseDir: string, taskId: string, options?: SwitchToWorktreeOptions) => Promise<void>;
   getLocalUncommittedFiles: (baseDir: string, taskId: string) => Promise<WorktreeUncommittedFiles>;
-  applyUncommittedChanges: (baseDir: string, taskId: string, targetBranch?: string) => Promise<void>;
+  applyUncommittedChanges: (baseDir: string, taskId: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
   listBranches: (baseDir: string) => Promise<BranchInfo[]>;
   getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<WorktreeIntegrationStatus | null>;

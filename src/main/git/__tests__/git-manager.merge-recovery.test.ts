@@ -3,6 +3,7 @@ import { existsSync } from 'fs';
 import { rm } from 'fs/promises';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
+import { MergeState } from '@common/types';
 
 import { GitManager } from '../git-manager';
 
@@ -225,17 +226,19 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
             return { stdout: 'abc123 some commit\n', stderr: '' };
           case 'git rebase master':
             return { stdout: '', stderr: '' };
-          case 'git checkout master':
-            return { stdout: '', stderr: '' };
-          case 'git merge --squash ccc333':
-            return { stdout: '', stderr: '' };
-          case 'git diff --cached --quiet':
-            throw new Error('staged changes present');
-          case 'git commit -m "test commit message"':
-            return { stdout: '', stderr: '' };
+          case "git rev-parse 'ccc333^{tree}'":
+            return { stdout: 'tree444\n', stderr: '' };
+          case "git rev-parse 'master^{tree}'":
+            return { stdout: 'tree555\n', stderr: '' };
           case 'git stash list':
             return { stdout: '', stderr: '' };
           default:
+            if (command.startsWith('git commit-tree ')) {
+              return { stdout: 'ddd444\n', stderr: '' };
+            }
+            if (command.startsWith('git update-ref refs/heads/master ')) {
+              return { stdout: '', stderr: '' };
+            }
             throw new Error(`Unexpected command: ${command}`);
         }
       });
@@ -246,6 +249,88 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
       expect(result.worktreeBranchCommitHash).toBe('ccc333');
       expect(result.targetBranch).toBe('master');
       expect(result.mainOriginalStashId).toBeUndefined();
+      expect(result.checkoutless).toBe(true);
+      expect(getCommands().some((command) => command.startsWith('git commit-tree tree444 -p aaa111'))).toBe(true);
+      expect(getCommands().some((command) => command.startsWith('git update-ref refs/heads/master ddd444 aaa111'))).toBe(true);
+      expect(getCommands()).not.toContain('git checkout master');
+    });
+  });
+
+  describe('checkoutless merge into a different branch', () => {
+    const setupCheckoutlessMocks = () => {
+      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+        switch (command) {
+          case 'git rev-parse master':
+            return { stdout: 'aaa111\n', stderr: '' };
+          case 'git rev-parse HEAD':
+            return { stdout: 'ccc333\n', stderr: '' };
+          case 'git status --porcelain=v1 -z':
+            return { stdout: '', stderr: '' };
+          case 'git status --porcelain=v1':
+            return { stdout: '', stderr: '' };
+          case 'git rev-parse --git-path rebase-merge':
+            return { stdout: `${rebaseMergeDir}\n`, stderr: '' };
+          case `test -e "${rebaseMergeDir}"`:
+            throw new Error('No such file or directory');
+          case 'git rev-parse --git-path rebase-apply':
+            return { stdout: '/test/worktree/.git/rebase-apply\n', stderr: '' };
+          case 'test -e "/test/worktree/.git/rebase-apply"':
+            throw new Error('No such file or directory');
+          case 'git branch --show-current':
+            return { stdout: 'task-branch\n', stderr: '' };
+          case 'git log --oneline master..HEAD':
+            return { stdout: 'abc123 some commit\n', stderr: '' };
+          case 'git rebase master':
+            return { stdout: '', stderr: '' };
+          case 'git merge-base --is-ancestor master ccc333':
+            return { stdout: '', stderr: '' };
+          case 'git update-ref refs/heads/master ccc333 aaa111':
+            return { stdout: '', stderr: '' };
+          case 'git update-ref refs/heads/master aaa111':
+            return { stdout: '', stderr: '' };
+          case 'git reset --hard ccc333':
+            return { stdout: '', stderr: '' };
+          case 'git stash list':
+            return { stdout: '', stderr: '' };
+          default:
+            throw new Error(`Unexpected command: ${command}`);
+        }
+      });
+    };
+
+    it('fast-forwards the target branch ref without checking it out', async () => {
+      setupCheckoutlessMocks();
+
+      const result = await gitManager.mergeWorktreeToMainWithUncommitted(projectPath, 'task-123', worktreePath, false, undefined, 'master');
+
+      expect(result.beforeMergeCommitHash).toBe('aaa111');
+      expect(result.worktreeBranchCommitHash).toBe('ccc333');
+      expect(result.targetBranch).toBe('master');
+      expect(result.checkoutless).toBe(true);
+      expect(result.mainOriginalStashId).toBeUndefined();
+      expect(getCommands()).toContain('git merge-base --is-ancestor master ccc333');
+      expect(getCommands()).toContain('git update-ref refs/heads/master ccc333 aaa111');
+      expect(getCommands()).not.toContain('git checkout master');
+      expect(getCommands().some((command) => command.startsWith('git merge --ff-only'))).toBe(false);
+    });
+
+    it('reverts by moving the ref back without checking out the target branch', async () => {
+      setupCheckoutlessMocks();
+
+      const mergeState: MergeState = {
+        beforeMergeCommitHash: 'aaa111',
+        worktreeBranchCommitHash: 'ccc333',
+        targetBranch: 'master',
+        checkoutless: true,
+        timestamp: Date.now(),
+      };
+
+      await gitManager.revertMerge(projectPath, 'task-123', worktreePath, mergeState);
+
+      expect(getCommands()).toContain('git update-ref refs/heads/master aaa111');
+      expect(getCommands()).not.toContain('git checkout master');
+      expect(getCommands()).not.toContain('git reset --hard aaa111');
+      expect(getCommands()).toContain('git reset --hard ccc333');
     });
   });
 

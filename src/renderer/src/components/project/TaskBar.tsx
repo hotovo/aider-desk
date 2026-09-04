@@ -385,24 +385,21 @@ export const TaskBar = forwardRef<TaskBarRef, Props>(
       }
     }, [api, baseDir, task.id, task.worktree]);
 
-    const handleOnlyUncommitted = useCallback(
-      async (targetBranch?: string) => {
-        if (!task.worktree) {
-          return;
-        }
+    const handleOnlyUncommitted = useCallback(async () => {
+      if (!task.worktree) {
+        return;
+      }
 
-        setIsMerging(true);
-        try {
-          await api.applyUncommittedChanges(baseDir, task.id, targetBranch);
-        } catch (error) {
-          // eslint-disable-next-line no-console
-          console.error('Failed to apply uncommitted changes:', error);
-        } finally {
-          setIsMerging(false);
-        }
-      },
-      [api, baseDir, task.id, task.worktree],
-    );
+      setIsMerging(true);
+      try {
+        await api.applyUncommittedChanges(baseDir, task.id);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to apply uncommitted changes:', error);
+      } finally {
+        setIsMerging(false);
+      }
+    }, [api, baseDir, task.id, task.worktree]);
 
     const handleRevert = useCallback(async () => {
       setIsMerging(true);

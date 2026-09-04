@@ -33,7 +33,7 @@ type Props = {
   task: TaskData;
   onMerge: (targetBranch?: string) => void;
   onSquash: (targetBranch?: string, commitMessage?: string) => void;
-  onOnlyUncommitted: (targetBranch?: string) => void;
+  onOnlyUncommitted: () => void;
   onRebaseFromBranch: (fromBranch?: string) => void;
   onAbortRebase: () => void;
   onContinueRebase: () => void;

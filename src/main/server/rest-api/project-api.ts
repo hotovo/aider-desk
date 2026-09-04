@@ -328,7 +328,6 @@ const LocalUncommittedFilesSchema = z.object({
 const ApplyUncommittedChangesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
-  targetBranch: z.string().optional(),
 });
 
 const RevertLastMergeSchema = z.object({
@@ -1066,8 +1065,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, targetBranch } = parsed;
-        await this.eventsHandler.applyUncommittedChanges(projectDir, taskId, targetBranch);
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.applyUncommittedChanges(projectDir, taskId);
         res.status(200).json({ message: 'Uncommitted changes applied' });
       }),
     );

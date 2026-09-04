@@ -492,7 +492,8 @@
     "azure": "Azure"
   },
   "select": {
-    "placeholder": "옵션 선택"
+    "placeholder": "옵션 선택",
+    "noMatches": "일치 항목 없음"
   },
   "settings": {
     "title": "설정",
@@ -1937,17 +1938,17 @@
     "selectBranch": "브랜치 선택",
     "selectTargetBranchTitle": "대상 브랜치 선택",
     "selectSourceBranchTitle": "소스 브랜치 선택",
-    "branchHasWorktree": "워크트리 있음",
+    "branchCurrent": "현재 브랜치",
     "mergeTooltip": "워크트리 변경 사항을 브랜치로 병합",
     "revertTooltip": "마지막으로 병합된 변경 사항 되돌리기",
     "confirmMerge": "워크트리 변경 사항을 메인 브랜치로 {{action}}하시겠습니까? 커밋되지 않은 변경 사항도 포함됩니다.",
     "confirmRevert": "마지막 병합을 되돌리시겠습니까? 메인 브랜치가 이전 상태로 재설정됩니다.",
     "confirmMergeTitle": "병합 확인",
     "confirmSquashTitle": "스쿼시 확인",
-    "confirmOnlyUncommittedTitle": "커밋되지 않은 변경 사항 적용 확인",
+    "confirmOnlyUncommittedTitle": "커밋되지 않은 변경 사항 적용",
     "confirmMergeMessage": "워크트리 변경 사항을 선택한 브랜치로 병합하시겠습니까?",
     "confirmSquashMessage": "워크트리 변경 사항을 선택한 브랜치로 스쿼시 후 병합하시겠습니까?",
-    "confirmOnlyUncommittedMessage": "워크트리의 커밋되지 않은 변경 사항을 선택한 브랜치에 적용하시겠습니까? git 병합은 수행되지 않습니다.",
+    "confirmOnlyUncommittedMessage": "워크트리의 커밋되지 않은 변경 사항을 프로젝트 디렉토리에 현재 체크아웃된 브랜치 {{branch}}에 적용하시겠습니까? git 병합은 수행되지 않으며 프로젝트 디렉토리는 현재 브랜치에 유지됩니다.",
     "mergeConflicts": "워크트리와 대상 브랜치 간의 충돌로 인해 병합에 실패했습니다. 먼저 워크트리를 리베이스하여 충돌을 해결하세요.",
     "applyUncommittedConflicts": "대상 브랜치와의 충돌로 인해 커밋되지 않은 변경 사항을 적용하지 못했습니다. 먼저 워크트리를 리베이스하여 변경 사항을 맞추세요.",
     "dontAskAgain": "다시 묻지 않기",
@@ -1961,10 +1962,10 @@
     "rebaseFromCurrentBranch": "'{{branch}}'에서 리베이스",
     "mergeIntoBranch": "브랜치로 병합...",
     "squashIntoBranch": "브랜치로 스쿼시 후 병합...",
-    "applyUncommittedChanges": "커밋되지 않은 변경 사항 적용...",
+    "applyUncommittedChanges": "커밋되지 않은 변경 사항 적용",
     "mergeIntoBranchTooltip": "이 워크트리의 모든 커밋과 커밋되지 않은 변경 사항을 대상 브랜치로 병합합니다(병합 커밋 생성).",
     "squashIntoBranchTooltip": "모든 워크트리 커밋과 커밋되지 않은 변경 사항을 대상 브랜치의 단일 새 커밋으로 압축하여 결합합니다.",
-    "applyUncommittedChangesTooltip": "커밋을 병합하지 않고 이 워크트리의 커밋되지 않은 변경 사항만 대상 브랜치에 적용합니다.",
+    "applyUncommittedChangesTooltip": "커밋을 병합하지 않고 이 워크트리의 커밋되지 않은 변경 사항만 프로젝트 디렉토리에 현재 체크아웃된 브랜치에 적용합니다.",
     "rebaseFromCurrentBranchTooltip": "'{{branch}}' 브랜치 위로 워크트리 커밋을 다시 적용하고 베이스 참조를 업데이트합니다."
   },
   "welcomeMessage": {

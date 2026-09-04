@@ -38,6 +38,7 @@ export const MergeStateSchema = z.object({
   worktreeBranchCommitHash: z.string(),
   mainOriginalStashId: z.string().optional(),
   targetBranch: z.string().optional(),
+  checkoutless: z.boolean().optional(),
   timestamp: z.number(),
 });
 

@@ -494,7 +494,8 @@
   },
   "select": {
     "placeholder": "选择选项",
-    "loadingTasks": "正在加载任务..."
+    "loadingTasks": "正在加载任务...",
+    "noMatches": "未找到匹配项"
   },
   "settings": {
     "title": "设置",
@@ -1974,17 +1975,17 @@
     "selectBranch": "选择分支",
     "selectTargetBranchTitle": "选择目标分支",
     "selectSourceBranchTitle": "选择源分支",
-    "branchHasWorktree": "已有工作树",
+    "branchCurrent": "当前分支",
     "mergeTooltip": "将工作树更改合并到分支",
     "revertTooltip": "撤销最后一次合并的更改",
     "confirmMerge": "您确定要{{action}}工作树更改到主分支吗？这将包含任何未提交的更改。",
     "confirmRevert": "您确定要撤销最后一次合并吗？这将把主分支重置到之前的状态。",
     "confirmMergeTitle": "确认合并",
     "confirmSquashTitle": "确认压缩合并",
-    "confirmOnlyUncommittedTitle": "确认应用未提交的更改",
+    "confirmOnlyUncommittedTitle": "应用未提交的更改",
     "confirmMergeMessage": "您确定要将工作树更改合并到所选分支吗？",
     "confirmSquashMessage": "您确定要压缩并合并工作树更改到所选分支吗？",
-    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到所选分支吗？不会执行 git 合并操作。",
+    "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到当前检出的分支 {{branch}} 吗？不会执行 git 合并操作，项目目录将保持在当前分支。",
     "mergeConflicts": "由于工作树与目标分支之间存在冲突，合并失败。请先对工作树进行变基以解决冲突。",
     "applyUncommittedConflicts": "由于与目标分支存在冲突，无法应用未提交的更改。请先对工作树进行变基以对齐您的更改。",
     "dontAskAgain": "不再询问",
@@ -1998,10 +1999,10 @@
     "rebaseFromCurrentBranch": "从 '{{branch}}' 变基",
     "mergeIntoBranch": "合并到分支...",
     "squashIntoBranch": "压缩并合并到分支...",
-    "applyUncommittedChanges": "应用未提交的更改...",
+    "applyUncommittedChanges": "应用未提交的更改",
     "mergeIntoBranchTooltip": "将此工作树的所有提交和未提交更改合并到目标分支中（创建合并提交）。",
     "squashIntoBranchTooltip": "将所有工作树提交和未提交更改压缩为目标分支上的单个新提交。",
-    "applyUncommittedChangesTooltip": "仅将此工作树的未提交更改应用到目标分支，不合并任何提交。",
+    "applyUncommittedChangesTooltip": "仅将此工作树的未提交更改应用到项目目录当前检出的分支，不合并任何提交。",
     "rebaseFromCurrentBranchTooltip": "在 '{{branch}}' 之上重放工作树提交并更新基准引用。"
   },
   "welcomeMessage": {
