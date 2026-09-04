@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "theme",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "external-rules",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "learn",
@@ -232,7 +232,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "programmatic-tool-calls",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "task-scheduler",
