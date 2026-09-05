@@ -1,6 +1,15 @@
-import { describe, expect, it } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
-import { balanceFences, normalizePythonCommands, preprocessSkillContent } from './skill-preprocessor';
+import { afterAll, describe, expect, it } from 'vitest';
+
+import {
+  balanceFences,
+  loadBmadConfig,
+  normalizePythonCommands,
+  preprocessSkillContent,
+} from './skill-preprocessor';
 
 describe('normalizePythonCommands', () => {
   it('rewrites bare python3 invocations to uv run', () => {
@@ -62,5 +71,48 @@ describe('preprocessSkillContent', () => {
       skillName: 'bmad-build',
     });
     expect(out).toBe('Run: uv run build.py');
+  });
+});
+
+describe('loadBmadConfig', () => {
+  const createdDirs: string[] = [];
+
+  afterAll(() => {
+    for (const dir of createdDirs) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  const makeProject = (files: Record<string, string>): string => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bmad-config-'));
+    createdDirs.push(dir);
+    for (const [relPath, content] of Object.entries(files)) {
+      const fullPath = path.join(dir, relPath);
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      fs.writeFileSync(fullPath, content, 'utf8');
+    }
+    return dir;
+  };
+
+  it('prefers config.user.yaml over bmm base and core config', () => {
+    const dir = makeProject({
+      '_bmad/core/config.yaml': 'user_name: Core\n',
+      '_bmad/bmm/config.yaml': 'user_name: Base\n',
+      '_bmad/bmm/config.user.yaml': 'user_name: Real\n',
+    });
+    expect(loadBmadConfig(dir).user_name).toBe('Real');
+  });
+
+  it('prefers bmm base config over core when no user override exists', () => {
+    const dir = makeProject({
+      '_bmad/core/config.yaml': 'user_name: Core\n',
+      '_bmad/bmm/config.yaml': 'user_name: Base\n',
+    });
+    expect(loadBmadConfig(dir).user_name).toBe('Base');
+  });
+
+  it('falls back to core config and tolerates missing files', () => {
+    const dir = makeProject({ '_bmad/core/config.yaml': 'user_name: Core\n' });
+    expect(loadBmadConfig(dir)).toEqual({ user_name: 'Core' });
   });
 });

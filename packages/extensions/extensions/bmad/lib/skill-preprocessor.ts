@@ -50,12 +50,13 @@ export function loadBmadConfig(projectDir: string): BmadConfig {
   const base = readYamlSafe('_bmad/bmm/config.yaml');
   const user = readYamlSafe('_bmad/bmm/config.user.yaml');
 
-  const sources = [core, base, user];
+  // Highest priority first: user overrides win, then bmm base, then core.
+  const sources = [user, base, core];
 
   for (const src of sources) {
     if (src) {
       for (const key of Object.keys(src)) {
-        // Only set if still undefined -- first match wins (core < base < user)
+        // Only set if still undefined -- first match wins (user > base > core)
         if (result[key as keyof BmadConfig] === undefined) {
           (result as Record<string, unknown>)[key] = src[key];
         }

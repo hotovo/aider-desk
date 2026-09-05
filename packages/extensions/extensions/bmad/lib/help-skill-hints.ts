@@ -6,7 +6,9 @@ import {
   listCatalog,
   readModuleConfigs,
 } from './install-registry';
-import { resolveSkillsDir } from './skills';import type { CatalogEntry } from './install-registry';
+import { resolveSkillsDir } from './skills';
+
+import type { CatalogEntry } from './install-registry';
 
 // ---------------------------------------------------------------------------
 // bmad-help state hints
