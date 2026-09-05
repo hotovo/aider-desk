@@ -1,115 +1,123 @@
-# BMAD Method Extension
+# BMAD Extension for AiderDesk
 
-Integrates the [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) (**B**uild **M**ore **A**rchitect **D**reams) into AiderDesk, providing a guided UI for running BMAD workflows directly from your desktop.
+Lean backend that integrates a standard [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) installation into [AiderDesk](https://github.com/hotovo/aider-desk). The extension owns no workflow definitions of its own: everything it shows and starts comes from the installed method.
 
-## What is the BMAD Method?
+> **Version:** 2.0.0 · **Requires:** AiderDesk ≥ 0.77.0 (verified against 0.81.0) · **BMAD:** ≥ 6.10 (6.12.0 verified) · **License:** MIT
 
-The BMAD Method is an AI-driven agile development framework that guides you through the full software development lifecycle — from brainstorming and analysis through planning, architecture, and implementation. Instead of letting AI tools do all the thinking, BMAD uses specialized agents and structured workflows that act as expert collaborators, bringing out your best thinking in partnership with the AI.
+---
 
-Key ideas:
+## How it works
 
-- **Structured workflows** grounded in agile best practices across analysis, planning, solutioning, and implementation
-- **Specialized agents** — domain experts (Analyst, PM, Architect, Developer, UX Designer, and more) that guide each phase
-- **Scale-adaptive** — automatically adjusts planning depth based on project complexity, from quick fixes to enterprise systems
+1. Install the method once per project: `npx bmad-method install` in the project root (interactive, choose modules and tools as usual).
+2. The extension reads the installation's own manifests:
+   - `_bmad/_config/manifest.yaml` (version, installed modules, configured tools)
+   - `_bmad/_config/skill-manifest.csv` (all installed skills)
+   - `_bmad/<module>/module-help.csv` (the method's own menu: names, menu codes, phases, ordering)
+3. The AiderDesk UI lists exactly this menu, grouped by module and phase. Starting an entry injects its original `SKILL.md` and the installed method drives execution.
+4. Slash skills (`/bmad-help`, `/bmad-brainstorm`, ...) are provided natively by AiderDesk's project-skill support; the extension does not intercept chat.
 
-Learn more at [docs.bmad-method.org](https://docs.bmad-method.org).
+### What the extension does
 
-## What This Extension Adds to AiderDesk
+- **Discovery:** builds the catalog from the manifests above. No hardcoded workflow list.
+- **Execution:** one generic start template loads the selected skill; install/update wraps `npx bmad-method install`.
+- **Progress:** tracks each entry's artifacts by its own output metadata plus `sprint-status.yaml`. Matching tolerates naming variants (brainstorm vs brainstorming) and resolves nested config templates; entries without usable artifact metadata stay untracked and are listed as such in the UI. An artifact with a non-final frontmatter status (e.g. `draft`) counts as in progress only while it is the newest artifact in the project: the method never sets a product brief to final, so a stale draft would otherwise keep a phantom Continue button alive and shadow the real next step (verified: completed planning of agent-x now suggests Build instead of Create Brief).
+- **bmad-help grounding:** after every install/update (and once on first access per session) the extension appends a deterministic state-detection block to the installed `bmad-help/SKILL.md`: per catalog row it states where to scan and which words identify artifacts, using exactly the same token semantics as this extension's progress tracking. It also names `_bmad-output/implementation-artifacts/sprint-status.yaml` (`development_status`) as the authority for implementation progress, so `/bmad-help` no longer recommends completed planning workflows like Create Epics and Stories just because an artifact is named `epics.md`. The block lives between HTML comment markers; replacing it is idempotent and never touches upstream content outside the markers. Untracked rows that share their skill with a tracked row (e.g. Sprint Status [SS] and Sprint Planning [SP]) inherit that row's artifact as their completion signal. When bmad-help is started from the UI, the extension additionally prepends a live project-state snapshot to the skill context (completed and in-progress rows with artifact paths, untracked rows with reasons, sprint board counts, recommended next steps), so the skill orients from the same deterministic scan as the UI instead of fuzzy filename matching at runtime.
+- **Safety:** auto-approves reads inside `_bmad/`, `_bmad-output/` and the installed skills directories (segment-based matching, anchored to the project's skills dir), auto-approves writes inside `_bmad-output/` and `_bmad/render/`, enforces `uv run` for Python, blocks chained, redirected or multi-line bash commands from auto-approval. Policy isolated in lib/tool-approval.ts with unit tests.
 
-This extension brings the BMAD Method directly into AiderDesk with:
+### Additional modules
 
-### Welcome Page with Workflow Dashboard
+Modules such as Game Dev Studio (`gds`), Creative Intelligence Suite (`cis`) or Test Architect (`tea`) appear automatically once installed. Re-run the installer to add them; no extension change needed.
 
-When you select **BMAD** mode in AiderDesk, a welcome page appears with a visual workflow dashboard showing:
+---
 
-- **Full Workflow** — organized into four phases: Analysis → Planning → Solutioning → Implementation
-- **Quick Flow** — a streamlined path for well-defined tasks that don't need full planning
-- Progress tracking per workflow with step indicators
-- Artifact detection — completed workflow outputs are linked and openable
-- Suggested next workflows based on your current progress
+## Features
 
-### One-Click Installation
+### Welcome Page (BMAD mode)
 
-The welcome page detects whether BMAD is installed in your project. If not, it offers a one-click install that runs `npx bmad-method install` in your project directory — no terminal needed.
+- **Pinned orchestrator:** BMAD Help sits directly under the header, always visible and one click away, and starts in a fresh task. It is no longer buried in the helpers section; a Help button in the task bar opens it from any chat
+- **Method menu:** all entries from `module-help.csv` whose skill is installed, grouped by original phase (`plan`, `2-planning`, `ship`, `anytime` or whatever the installed modules define), with menu codes and search. Skills listed by several modules merge into one card with module badges; phases start collapsed except the current one, which is highlighted with a you-are-here badge; helper entries without artifact output (party mode, advanced elicitation) have their own section
+- **All Skills tab:** every skill of the installer manifest, including internal ones without a menu row
+- **Project compass:** one merged card with the overall progress bar over tracked lifecycle skills (anytime helpers excluded, they keep their own bar), per-phase bars with plan and 2-planning merged into one Planning phase, epic/sprint badge from `sprint-status.yaml` and the phase stepper with done/current/upcoming markers
+- **Next steps:** up to 3 suggestions from the method's `followed-by` chain, required flags and sprint state. The first recommended step renders as a hero card with phase context and a large start button; remaining steps are compact rows; prerequisite hints and artifact links are included
+- **Artifact links**, start confirmation and a 15s background refresh while the extension is installed; task state changes refresh both UI surfaces immediately
+- **Update banner:** newer bmad-method patches in the same minor line; installs the resolved patch version
+- **Safe reset:** moves `_bmad-output` to `_bmad-output-trash-<timestamp>` instead of deleting
 
 ### Task Actions
 
-While working on a task in BMAD mode, the extension shows contextual actions in the task status bar:
+Slim bar in every task of a BMAD project: current workflow badge (switchable via dropdown over the catalog; a finished workflow in the task metadata shows a check mark instead of implying active work), artifact link, mini progress, Help button, follow-up chips and a toggleable project overview.
 
-- **Resume** buttons for incomplete workflows
-- **Suggested next workflow** based on what you've completed so far
-- Quick access to execute the next logical step in your project
+Note on visibility: the Welcome Page overlay only renders while a task has no messages yet. As soon as any message exists in the conversation (a normal prompt or an internal skill activation record), AiderDesk shows the chat instead - this is core AiderDesk behavior, not controlled by the extension. To follow progress while working inside a task, use the project-overview toggle in the Task Actions bar.
 
-### Automatic Context Preparation
+---
 
-When you start a workflow, the extension automatically:
+## Requirements
 
-- Loads the relevant BMAD workflow prompt
-- Attaches completed artifacts (product brief, PRD, architecture, etc.) as context
-- Sets up the agent with the right system prompt for the selected workflow
+| Component | Version | Notes |
+| --- | --- | --- |
+| AiderDesk | ≥ 0.77.0 | extension API 0.81.0 |
+| bmad-method | ≥ 6.10 | 6.12.0 verified; standard installation layout required |
 
-## Workflows
+## Installation
 
-### Full Workflow
+Install using the official installer CLI:
 
-| Phase | Workflow | Description |
-|-------|----------|-------------|
-| **Analysis** | Brainstorming | Interactive brainstorming with diverse creative techniques |
-| **Analysis** | Research | Comprehensive research across multiple domains |
-| **Analysis** | Create Product Brief | Define product vision and target users |
-| **Planning** | Create PRD | Comprehensive requirements document |
-| **Planning** | Create UX Design | UX design documentation for product interface |
-| **Solutioning** | Create Architecture | Technical architecture and system design |
-| **Solutioning** | Create Epics & Stories | Break down requirements into implementation-ready items |
-| **Implementation** | Sprint Planning | Generate sprint status tracking |
-| **Implementation** | Create Story | Guided development for implementing stories |
-| **Implementation** | Dev Story | Execute stories with implementation, tests, and validation |
-| **Implementation** | Code Review | Adversarial senior developer code review |
+```bash
+# For all projects (recommended)
+npx @aiderdesk/extensions install bmad --global
 
-### Quick Flow
+# Or only for the current project
+npx @aiderdesk/extensions install bmad
+```
 
-| Workflow | Description |
-|----------|-------------|
-| Quick Spec | Create focused specifications for well-defined features |
-| Quick Dev | Rapid spec-to-implementation for small features |
+The installer copies the extension into `~/.aider-desk/extensions/bmad` (project-local: `.aider-desk/extensions/bmad`) and runs `npm install` automatically.
 
-## Prerequisites
+1. Start/restart AiderDesk (a running instance picks the new extension up via hot reload).
+2. In a project, run `npx bmad-method install` (or use the Welcome Page button, which runs the same installer non-interactively).
 
-- **Node.js v20+** — required to install the BMAD Method via npx
-- **AiderDesk** — the extension is available in the extensions gallery
+The BMAD UI appears only when a standard installation exists in the opened project.
 
-## Getting Started
+### Configuration (environment variables, set before starting AiderDesk)
 
-1. Install the extension from AiderDesk's extension gallery
-2. Open a project and select **BMAD** from the mode selector
-3. Click **Install BMAD Method** on the welcome page (or install manually via `npx bmad-method install`)
-4. Choose a workflow and start building
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AIDERDESK_BMAD_PACKAGE` | `bmad-method@6.12.0` | package spec used by the built-in install/update |
+| `AIDERDESK_BMAD_MODULES` | `bmm` | modules for non-interactive install |
+| `AIDERDESK_BMAD_TOOLS` | `amp` | tool target for non-interactive install (`.agents/skills`) |
 
-## Troubleshooting
+Installations made manually with other tools (for example antigravity) are detected via the manifest regardless of these defaults.
 
-### Installation Fails
+---
 
-If the one-click installation fails, check the following:
+## Quick start
 
-1. **Node.js version** — BMAD requires **Node.js v20 or newer**. Check your version:
-   ```bash
-   node --version
-   ```
-   If you're running an older version, upgrade via [nodejs.org](https://nodejs.org) or your package manager (nvm, fnm, etc.).
+1. Open a project with a BMAD installation and switch to BMAD mode.
+2. Follow the phase order on the Welcome Page: brief or PRFAQ → PRD → UX (optional) → architecture → epics and stories → sprint planning.
+3. Start Build (`BD`) for the implementation loop; stories come from the sprint board created by sprint planning.
+4. Slash skills work directly in chat: `/bmad-help` explains the current state.
 
-2. **Legacy installation conflict** — If you previously installed BMAD v4, the `.bmad-method` folder in your project will block installation. Remove it and retry:
-   ```bash
-   rm -rf .bmad-method
-   ```
+## Known limitations
 
-3. **Manual installation** — You can always install directly from the terminal:
-   ```bash
-   npx bmad-method install
-   ```
-   Then click **Refresh** on the welcome page to detect the installation.
+- On Windows consoles, Python helper scripts that print emoji can fail with UnicodeEncodeError (legacy console codepage vs utf-8). The extension sets `PYTHONIOENCODING=utf-8` for its own process at load time and injects the hint to prefix such runs: `$env:PYTHONIOENCODING='utf-8'; uv run _bmad/scripts/<script>.py`. If you see the error anyway, run AiderDesk with the variable set in the environment it was started from.
+- Completion tracking covers entries with usable artifact metadata in `module-help.csv`; unknown placeholders degrade to the resolvable base path (for example `{slug}` falls back to the specs folder). Entries without any artifact location stay untracked and are listed under "Not counted in progress" in the UI.
+- Workflow IDs changed in v2.0 (now canonical skill ids). Tasks created with v1.x workflow metadata lose their continuation link; restart the workflow from the UI.
+- The extension targets the 6.10+ skill layout; older layouts must be migrated by the installer's update action.
 
-## Links
+## Development
 
-- [BMAD Method Documentation](https://docs.bmad-method.org)
-- [BMAD Method GitHub](https://github.com/bmad-code-org/BMAD-METHOD)
-- [Discord Community](https://discord.gg/gk8jAdXWmj)
+- No build step: AiderDesk loads `index.ts` directly.
+- Type check: `npx tsc --noEmit`
+- Tests: `npx vitest run` (178 tests across 13 files)
+- Key sources: `lib/install-registry.ts` (discovery), `lib/context-preparer.ts` + `context/workflow-start.json.hbs` (execution), `lib/bmad-manager.ts` (status/install/update), `lib/help-skill-hints.ts` (bmad-help state hints), `lib/help-state.ts` (bmad-help state snapshot)
+
+## Credits
+
+Built on the [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) by BMad Code Org and [AiderDesk](https://github.com/hotovo/aider-desk) by hotovo. Based on the original BMAD extension for AiderDesk by wladimiiir.
+
+## Contributing
+
+This extension lives in the [AiderDesk](https://github.com/hotovo/aider-desk) repository; contributions are welcome there.
+
+## License
+
+MIT

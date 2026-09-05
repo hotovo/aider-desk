@@ -435,7 +435,7 @@
     {
       "id": "bmad",
       "name": "BMAD Method",
-      "description": "Provides BMAD mode with structured workflows for planning, designing, and implementing software projects",
+      "description": "Integrates a standard bmad-method installation into BMAD mode: discovers the method's own menu, starts original skills, tracks progress",
       "folder": "bmad",
       "type": "folder",
       "hasDependencies": true,

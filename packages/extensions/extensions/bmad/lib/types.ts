@@ -1,44 +1,21 @@
-/**
- * BMAD workflow execution phases
- */
-export enum WorkflowPhase {
-  Analysis = 'analysis',
-  Planning = 'planning',
-  Solutioning = 'solutioning',
-  Implementation = 'implementation',
-  QuickFlow = 'quick-flow',
-}
+import type { ArtifactTracker, CatalogEntry, InstalledModuleInfo, UntrackReason } from './install-registry';
+
+export type { CatalogEntry, InstalledModuleInfo };
 
 /**
- * Metadata for a BMAD workflow
+ * A skill installed by the BMAD installer (parsed from _bmad/_config/skill-manifest.csv)
  */
-export interface WorkflowMetadata {
+export interface InstalledSkill {
   id: string;
   name: string;
-  phase: WorkflowPhase;
   description: string;
-  workflowPath: string;
-  outputArtifact: string;
-  totalSteps: number;
-  requiredArtifacts?: string[];
-  followUps?: string[];
+  module: string;
+  /** Path to SKILL.md relative to the project root */
+  skillPath: string;
 }
 
 /**
- * Incomplete workflow metadata
- */
-export interface IncompleteWorkflowMetadata {
-  workflowId: string;
-  artifactPath: string;
-  stepsCompleted: number[];
-  nextStep: number;
-  lastModified: Date;
-  corrupted?: boolean;
-  corruptionError?: string;
-}
-
-/**
- * Story status values in sprint-status.yaml
+ * Story status values in sprint-status.yaml (schema defined by the method)
  */
 export enum StoryStatus {
   Backlog = 'backlog',
@@ -53,7 +30,6 @@ export enum StoryStatus {
  */
 export interface SprintStatusData {
   storyStatuses: StoryStatus[];
-  completedWorkflows: string[];
 }
 
 export type DetectedArtifact = {
@@ -64,11 +40,13 @@ export type DetectedArtifact = {
 };
 
 export type DetectedArtifacts = {
-  [workflowId: string]: DetectedArtifact;
+  [entryId: string]: DetectedArtifact;
 };
 
 /**
- * Workflow artifacts detection result
+ * Artifact scan result. Completion is derived generically from the
+ * output-location/outputs columns of module-help.csv (see
+ * install-registry.deriveArtifactTracker) plus sprint-status.yaml.
  */
 export interface WorkflowArtifacts {
   completedWorkflows: string[];
@@ -79,18 +57,53 @@ export interface WorkflowArtifacts {
 }
 
 /**
- * BMAD Mode status
+ * A catalog entry that produces artifacts but cannot be located generically,
+ * surfaced so the UI can explain why it never counts toward progress.
+ */
+export interface UntrackedWorkflow {
+  id: string;
+  name: string;
+  reason: UntrackReason;
+}
+
+/** Catalog entries with a derived artifact tracker (tracked in progress). */
+export type TrackedEntries = Record<string, ArtifactTracker>;
+
+/**
+ * BMAD status
  */
 export interface BmadStatus {
   projectDir: string;
   installed: boolean;
   version?: string;
-  availableWorkflows: WorkflowMetadata[];
+  /** Installed modules from _bmad/_config/manifest.yaml */
+  modules: InstalledModuleInfo[];
+  /** Resolved tool skills directory (POSIX, project-relative) */
+  skillsDir?: string;
+  /** The method's own menu entries whose skill is installed */
+  catalog: CatalogEntry[];
+  /** Entry ids with a derived completion glob (artifact tracking eligible) */
+  trackedEntries: TrackedEntries;
+  /** Menu entries that produce artifacts but cannot be located generically */
+  untrackedWorkflows?: UntrackedWorkflow[];
   completedWorkflows: string[];
   inProgressWorkflows: string[];
   incompleteWorkflows?: IncompleteWorkflowMetadata[];
   detectedArtifacts: DetectedArtifacts;
   sprintStatus?: SprintStatusData;
+}
+
+/**
+ * Incomplete workflow metadata
+ */
+export interface IncompleteWorkflowMetadata {
+  workflowId: string;
+  artifactPath: string;
+  stepsCompleted: number[];
+  nextStep: number;
+  lastModified: Date;
+  corrupted?: boolean;
+  corruptionError?: string;
 }
 
 /**
@@ -126,9 +139,81 @@ export interface WorkflowExecutionResult {
 }
 
 /**
- * BMAD action extracted from assistant messages
+ * Progress of a single phase (original phase labels from module-help.csv)
+ */
+export interface PhaseProgress {
+  phase: string;
+  phaseName: string;
+  completed: number;
+  inProgress: number;
+  total: number;
+  percentage: number;
+}
+
+/**
+ * Epic/sprint story status distribution
+ */
+export interface EpicProgress {
+  backlog: number;
+  readyForDev: number;
+  inProgress: number;
+  review: number;
+  done: number;
+  total: number;
+  percentage: number;
+}
+
+/**
+ * Overall project progress summary computed from BmadStatus.
+ */
+export interface ProgressSummary {
+  overall: {
+    completed: number;
+    inProgress: number;
+    total: number;
+    percentage: number;
+  };
+  phases: PhaseProgress[];
+  epicProgress?: EpicProgress;
+}
+
+/**
+ * BMAD action extracted from assistant messages ([Y] Yes menus etc.)
  */
 export interface BmadAction {
   actionLetter: string;
   actionName: string;
+}
+
+/**
+ * Result of a bmad-method version update check against the npm registry.
+ */
+export interface UpdateInfo {
+  currentVersion: string;
+  latestPatchVersion: string;
+  updateAvailable: boolean;
+  lastChecked: number;
+  error?: string;
+  notes?: string[];
+}
+
+/**
+ * BMAD configuration settings (merged from the installed modules' config.yaml).
+ *
+ * Includes an index signature so that future BMAD fields (added by upstream)
+ * pass the type-checker without a code change.
+ */
+export interface BmadConfig {
+  project_name?: string;
+  user_name?: string;
+  communication_language?: string;
+  document_output_language?: string;
+  user_skill_level?: string;
+  implementation_artifacts?: string;
+  planning_artifacts?: string;
+  output_folder?: string;
+  project_context?: string;
+  language?: string;
+  config_version?: string;
+  [key: string]: string | undefined;
 }

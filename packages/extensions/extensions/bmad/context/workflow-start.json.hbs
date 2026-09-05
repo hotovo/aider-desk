@@ -1,0 +1,112 @@
+[
+  {
+    "id": "5fae93ff-ac6e-4eeb-805d-7ef115abf815",
+    "role": "user",
+    "content": "IT IS CRITICAL THAT YOU FOLLOW THIS COMMAND: LOAD the FULL {{skillPath}}, READ its entire contents and follow its directions exactly! The skill root directory is the folder containing that SKILL.md — bare file references inside the skill resolve from there; read them with the file read tool when the skill directs you to.{{#if actionHint}} The user selected the menu entry \"{{entryName}}\" (action: {{actionHint}}) of this skill — honor that intent.{{/if}} CRITICAL: ALL Python scripts MUST be run via `uv run` — NEVER use raw `python3`. If `uv` is genuinely unavailable, use the fallback documented in the skill or perform the step manually. Do not abort the workflow. PITFALL (Windows consoles): Python scripts printing emoji or other non-ASCII text crash with UnicodeEncodeError under the legacy console codepage; on Windows ALWAYS prefix such runs: $env:PYTHONIOENCODING='utf-8'; uv run _bmad/scripts/<script>.py",
+    "promptContext": {
+      "id": "workflow-start",
+      "group": {
+        "id": "workflow-start",
+        "name": "{{entryName}}",
+        "color": "#06b6d4",
+        "finished": true
+      }
+    }
+  },
+  {
+    "id": "b26ae2fd-2c1c-4a84-bd0b-2bb8b71a1cae",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I will load the {{entryName}} skill and follow its directions."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_39ca93089c1202a1bdb7aa38",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "{{skillPath}}",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 2000
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "workflow-start",
+      "group": {
+        "id": "workflow-start"
+      }
+    }
+  },
+  {
+    "id": "3bc2bcaa-ed12-4052-8b8e-daf4a5b58479",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_39ca93089c1202a1bdb7aa38",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{skillFileContentByPath skillPath}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "workflow-start",
+      "group": {
+        "id": "workflow-start"
+      }
+    }
+  },
+  {
+    "id": "16d79d24-5184-4fb2-ab4f-b07096ea1d4c",
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "I've loaded the skill instructions. Now I'll load the module configuration before starting."
+      },
+      {
+        "type": "tool-call",
+        "toolCallId": "call_106203c4f82bac96fd1601cc",
+        "toolName": "power---file_read",
+        "input": {
+          "filePath": "_bmad/{{skillModule}}/config.yaml",
+          "withLines": false,
+          "lineOffset": 0,
+          "lineLimit": 200
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "workflow-start",
+      "group": {
+        "id": "workflow-start"
+      }
+    }
+  },
+  {
+    "id": "b6054ff2-6700-4269-9d71-fb8df71bc105",
+    "role": "tool",
+    "content": [
+      {
+        "type": "tool-result",
+        "toolCallId": "call_106203c4f82bac96fd1601cc",
+        "toolName": "power---file_read",
+        "output": {
+          "type": "text",
+          "value": {{fileContent (concatPath '_bmad/' skillModule '/config.yaml')}}
+        }
+      }
+    ],
+    "promptContext": {
+      "id": "workflow-start",
+      "group": {
+        "id": "workflow-start"
+      }
+    }
+  }
+]

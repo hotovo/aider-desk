@@ -1,163 +1,132 @@
-import { BMAD_WORKFLOWS } from './workflows';
-import { WorkflowArtifacts, SprintStatusData, StoryStatus, WorkflowMetadata, WorkflowPhase } from './types';
+import { orderedPhases } from './install-registry';
+
+import { StoryStatus } from './types';
+
+import type { BmadStatus, CatalogEntry, SprintStatusData } from './types';
 
 /**
- * Simple glob pattern matching for artifact paths
+ * Workflow suggestions for the BMAD UI (v2).
+ *
+ * Derived from the method's own metadata: the followed-by chain of
+ * module-help.csv, the required flags, and the sprint board. No hardcoded
+ * workflow registry — unknown installations degrade to the chain hints of
+ * whatever entries exist.
  */
-const matchesPattern = (pathToMatch: string, pattern: string): boolean => {
-  const regexPattern = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*');
-
-  const regex = new RegExp(`^${regexPattern}$`);
-  return regex.test(pathToMatch);
-};
 
 /**
- * Calculate prerequisite satisfaction score for a workflow
- */
-const getPrerequisiteScore = (workflow: WorkflowMetadata | undefined, detectedArtifacts: WorkflowArtifacts['detectedArtifacts']): number => {
-  if (!workflow?.requiredArtifacts || workflow.requiredArtifacts.length === 0) {
-    return 100;
-  }
-
-  let satisfiedCount = 0;
-  const totalRequired = workflow.requiredArtifacts.length;
-
-  workflow.requiredArtifacts.forEach((requiredPattern) => {
-    const hasMatch = Object.values(detectedArtifacts).some((artifact) => matchesPattern(artifact.path, requiredPattern));
-    if (hasMatch) {
-      satisfiedCount++;
-    }
-  });
-
-  return (satisfiedCount / totalRequired) * 100;
-};
-
-/**
- * Determine if the user is on the Quick Flow path
- */
-const isOnQuickPath = (completedWorkflows: string[]): boolean => {
-  const quickWorkflowIds = BMAD_WORKFLOWS.filter((w) => w.phase === WorkflowPhase.QuickFlow).map((w) => w.id);
-  return completedWorkflows.some((id) => quickWorkflowIds.includes(id));
-};
-
-/**
- * Determine if the user is on the Full Workflow path
- */
-const isOnFullPath = (completedWorkflows: string[]): boolean => {
-  const fullPathPhases = [WorkflowPhase.Analysis, WorkflowPhase.Planning, WorkflowPhase.Solutioning, WorkflowPhase.Implementation];
-  const fullWorkflowIds = BMAD_WORKFLOWS.filter((w) => fullPathPhases.includes(w.phase)).map((w) => w.id);
-  return completedWorkflows.some((id) => fullWorkflowIds.includes(id));
-};
-
-/**
- * Generate smart workflow suggestions
+ * Suggest catalog entry ids for "what to do next".
+ *
+ * Rules (in priority order):
+ * 1. Nothing done yet → up to 2 required entries of the earliest phase.
+ * 2. Active workflow not completed yet → stay focused (no suggestions).
+ * 3. Sprint-driven: backlog stories → the method's implementation-loop entry
+ *    ('bmad-build'); stories in review → its ad-hoc code review entry when
+ *     installed.
+ * 4. Followed-by hints of completed entries (the method's own ordering),
+ *    current task's chain first.
+ * 5. Reverse-chain fallback: BMAD 6.11's module-help.csv only fills
+ *    preceded-by (followed-by is empty on real installations), so rule 4
+ *    alone yields nothing there. Suggests entries whose prerequisites are
+ *    all completed plus required entries without prerequisites, ordered by
+ *    the method's phase order.
  */
 export const generateSuggestions = (
-  completedWorkflows: string[],
-  detectedArtifacts: WorkflowArtifacts['detectedArtifacts'],
-  sprintStatus?: SprintStatusData,
+  status: BmadStatus,
   taskMetadata?: Record<string, unknown>,
 ): string[] => {
-  if (completedWorkflows.length === 0) {
-    return ['create-product-brief', 'quick-spec'];
-  }
-
-  const currentWorkflowId = taskMetadata?.bmadWorkflowId as string | undefined;
-  const currentWorkflow = currentWorkflowId ? BMAD_WORKFLOWS.find((w) => w.id === currentWorkflowId) : undefined;
-
-  const followUpSet = new Set<string>();
-
-  if (currentWorkflow) {
-    if (currentWorkflow.id === 'create-story' && sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
-      return ['dev-story'];
-    }
-
-    if (currentWorkflow.id === 'dev-story') {
-      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Review)) {
-        followUpSet.add('code-review');
-      }
-      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
-        followUpSet.add('create-story');
-      }
-
-      return Array.from(followUpSet);
-    }
-
-    if (currentWorkflow.id === 'code-review') {
-      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
-        followUpSet.add('create-story');
-      }
-      if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
-        followUpSet.add('dev-story');
-      }
-      return Array.from(followUpSet);
-    }
-  } else {
-    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Backlog)) {
-      followUpSet.add('create-story');
-    }
-    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.ReadyForDev)) {
-      followUpSet.add('dev-story');
-    }
-    if (sprintStatus?.storyStatuses.some((status) => status === StoryStatus.Review)) {
-      followUpSet.add('code-review');
-    }
-  }
-
-  if (currentWorkflow && !completedWorkflows.includes(currentWorkflowId!)) {
+  const catalog = status.catalog || [];
+  if (catalog.length === 0) {
     return [];
   }
 
-  completedWorkflows.forEach((workflowId) => {
-    const workflow = BMAD_WORKFLOWS.find((w) => w.id === workflowId);
-    if (workflow?.followUps) {
-      workflow.followUps.forEach((followUp) => followUpSet.add(followUp));
+  const byId = new Map(catalog.map((entry) => [entry.id, entry]));
+  const completed = new Set(status.completedWorkflows || []);
+  const inProgress = new Set(status.inProgressWorkflows || []);
+  const isDone = (id: string): boolean => completed.has(id) || inProgress.has(id);
+
+  // 2. An unfinished active workflow owns the conversation — no suggestions.
+  const currentId = taskMetadata?.bmadWorkflowId as string | undefined;
+  const currentEntry = currentId ? byId.get(currentId) : undefined;
+  if (currentEntry && !completed.has(currentEntry.id)) {
+    return [];
+  }
+
+  const hints: string[] = [];
+  const addHint = (id: string | undefined): void => {
+    if (!id) {
+      return;
     }
-  });
+    const entry = byId.get(id);
+    if (!entry || isDone(id) || hints.includes(id)) {
+      return;
+    }
+    hints.push(id);
+  };
 
-  const onQuickPath = isOnQuickPath(completedWorkflows);
-  const onFullPath = isOnFullPath(completedWorkflows);
+  if (completed.size === 0 && inProgress.size === 0) {
+    // 1. Fresh project: required entries of the earliest lifecycle phase.
+    for (const phase of orderedPhases(catalog).slice(0, 1)) {
+      catalog
+        .filter((entry) => entry.phase === phase && entry.required)
+        .slice(0, 2)
+        .forEach((entry) => addHint(entry.id));
+    }
+    if (hints.length === 0) {
+      byId.get('bmad-help') && addHint('bmad-help');
+    }
+  } else {
+    // 3. Sprint-driven hints.
+    const storyStatuses = status.sprintStatus?.storyStatuses;
+    if (storyStatuses?.length) {
+      if (storyStatuses.includes(StoryStatus.Backlog)) {
+        addHintBySkill(catalog, 'bmad-build', addHint);
+      }
+      if (storyStatuses.includes(StoryStatus.Review)) {
+        addHintBySkill(catalog, 'bmad-code-review', addHint);
+      }
+    }
 
-  if (onQuickPath && !completedWorkflows.includes('create-product-brief') && !followUpSet.has('create-product-brief')) {
-    followUpSet.add('create-product-brief');
-  }
+    // 4. The method's own chain: followed-by of completed entries.
+    for (const id of status.completedWorkflows || []) {
+      byId.get(id)?.followedBy.forEach(addHint);
+    }
+    currentEntry?.followedBy.forEach(addHint);
 
-  if (onFullPath && !completedWorkflows.includes('quick-spec') && !followUpSet.has('quick-spec')) {
-    followUpSet.add('quick-spec');
-  }
-
-  if (currentWorkflow && completedWorkflows.includes(currentWorkflowId!)) {
-    if (currentWorkflow.followUps) {
-      const currentFollowUps = new Set(currentWorkflow.followUps);
-      followUpSet.forEach((item) => {
-        if (!currentFollowUps.has(item)) {
-          followUpSet.delete(item);
+    // 5. Reverse-chain fallback (see header docs): prerequisites met or
+    // required without prerequisites, in the method's phase order.
+    const orderOf = new Map(orderedPhases(catalog).map((phase, index) => [phase, index]));
+    catalog
+      .filter((entry) => {
+        if (isDone(entry.id)) {
+          return false;
         }
-      });
-    }
+        if (entry.precededBy.length > 0) {
+          return entry.precededBy.every((id) => completed.has(id));
+        }
+        return entry.required;
+      })
+      .sort(
+        (a, b) =>
+          (orderOf.get(a.phase) ?? Number.MAX_SAFE_INTEGER) -
+            (orderOf.get(b.phase) ?? Number.MAX_SAFE_INTEGER) ||
+          catalog.indexOf(a) - catalog.indexOf(b),
+      )
+      .forEach((entry) => addHint(entry.id));
   }
 
-  const suggestions = Array.from(followUpSet).filter((workflowId) => !completedWorkflows.includes(workflowId));
-
-  return suggestions.sort((a, b) => {
-    const workflowA = BMAD_WORKFLOWS.find((w) => w.id === a);
-    const workflowB = BMAD_WORKFLOWS.find((w) => w.id === b);
-
-    if (currentWorkflow) {
-      const aIsFromCurrent = currentWorkflow.followUps?.includes(a) ?? false;
-      const bIsFromCurrent = currentWorkflow.followUps?.includes(b) ?? false;
-
-      if (aIsFromCurrent && !bIsFromCurrent) {
-        return -1;
-      }
-      if (!aIsFromCurrent && bIsFromCurrent) {
-        return 1;
-      }
-    }
-
-    const scoreA = getPrerequisiteScore(workflowA, detectedArtifacts);
-    const scoreB = getPrerequisiteScore(workflowB, detectedArtifacts);
-
-    return scoreB - scoreA;
-  });
+  return hints;
 };
+
+const addHintBySkill = (
+  catalog: CatalogEntry[],
+  skillId: string,
+  addHint: (id: string | undefined) => void,
+): void => {
+  addHint(catalog.find((entry) => entry.skillId === skillId)?.id);
+};
+
+/**
+ * Sprint story counts helper kept exported for tests/UI badges.
+ */
+export const countSprintStories = (sprintStatus?: SprintStatusData): number =>
+  sprintStatus?.storyStatuses.length ?? 0;
