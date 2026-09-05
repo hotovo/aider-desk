@@ -1,6 +1,6 @@
 {
   "name": "openai-codex",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "OpenAI Codex provider for AiderDesk using ChatGPT Plus/Pro OAuth authentication",
   "main": "index.ts",
   "author": "AiderDesk",

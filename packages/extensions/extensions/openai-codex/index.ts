@@ -1,10 +1,11 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { readFileSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
+import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { platform, release, arch } from 'node:os';
+import { homedir, platform, release, arch } from 'node:os';
 
 import { createOpenAI } from '@ai-sdk/openai';
 
@@ -20,22 +21,32 @@ import type {
   UIComponentDefinition,
 } from '@aiderdesk/extensions';
 
-// @ts-expect-error -- import.meta.url is supported in the extension runtime
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// OAuth configuration
+// Public Codex CLI OAuth client, PKCE. OpenAI allows any loopback port in the redirect URI,
+// matching how the official codex-rs binds an ephemeral port and reads back the actual port.
 const CLIENT_ID_BASE64 = 'YXBwX0VNb2FtRUVaNzNmMENrWGFYcDdocmFubg==';
 const getClientId = (): string => atob(CLIENT_ID_BASE64);
 const AUTHORIZE_URL = 'https://auth.openai.com/oauth/authorize';
 const TOKEN_URL = 'https://auth.openai.com/oauth/token';
-const REDIRECT_URI = 'http://localhost:1455/auth/callback';
 const SCOPE = 'openid profile email offline_access';
 const JWT_CLAIM_PATH = 'https://api.openai.com/auth';
 const CODEX_BASE_URL = 'https://chatgpt.com/backend-api/codex';
 const CODEX_USAGE_URL = 'https://chatgpt.com/backend-api/wham/usage';
+const DEVICE_USER_CODE_URL = 'https://auth.openai.com/api/accounts/deviceauth/usercode';
+const DEVICE_TOKEN_URL = 'https://auth.openai.com/api/accounts/deviceauth/token';
+const DEVICE_VERIFICATION_URL = 'https://auth.openai.com/codex/device';
+const DEVICE_EXCHANGE_REDIRECT_URI = 'https://auth.openai.com/deviceauth/callback';
+const DEVICE_FLOW_TIMEOUT_MS = 15 * 60 * 1000;
+const BROWSER_FLOW_TIMEOUT_MS = 10 * 60 * 1000;
+// Hard timeout on every outbound call so an unreachable host can never leave a request hanging
+// for minutes and stall UI data loading that awaits it
+const FETCH_TIMEOUT_MS = 15_000;
+const REFRESH_TOKEN_EXPIRY_BUFFER_MS = 60_000;
 const CACHE_DURATION = 60_000;
 const STATUS_BAR_COMPONENT_ID = 'openai-codex-quota-indicator';
+const CONFIG_COMPONENT_ID = 'config';
 
 interface CodexUsageWindow {
   used_percent: number;
@@ -71,13 +82,19 @@ let currentSessionId: string | undefined;
 const clampCacheKey = (key: string): string =>
   key.length <= PROMPT_CACHE_KEY_MAX_LENGTH ? key : Array.from(key).slice(0, PROMPT_CACHE_KEY_MAX_LENGTH).join('');
 
-// Token storage
-const TOKEN_FILE = join(__dirname, 'auth-token.json');
+// Tokens live in the app data dir so they survive extension updates; the legacy location inside
+// the extension install dir is migrated on load.
+const DATA_DIR = process.env.AIDER_DESK_DATA_DIR
+  ? join(process.env.AIDER_DESK_DATA_DIR, 'extensions-data', 'openai-codex')
+  : join(homedir(), '.aider-desk', 'extensions-data', 'openai-codex');
+const TOKEN_FILE = join(DATA_DIR, 'auth-token.json');
+const LEGACY_TOKEN_FILE = join(__dirname, 'auth-token.json');
 
 interface StoredTokens {
   accessToken: string;
   refreshToken: string;
   expiresAt: number;
+  email?: string;
 }
 
 // Hardcoded models from https://developers.openai.com/codex/models
@@ -169,11 +186,28 @@ const loadTokens = async (): Promise<StoredTokens | null> => {
 };
 
 const saveTokens = async (tokens: StoredTokens): Promise<void> => {
-  await mkdir(__dirname, { recursive: true });
-  await writeFile(TOKEN_FILE, JSON.stringify(tokens, null, 2), 'utf-8');
+  await mkdir(DATA_DIR, { recursive: true });
+  await writeFile(TOKEN_FILE, JSON.stringify(tokens, null, 2), { encoding: 'utf-8', mode: 0o600 });
 };
 
-// --- PKCE ---
+const clearTokens = async (): Promise<void> => {
+  await unlink(TOKEN_FILE).catch(() => {});
+};
+
+const migrateLegacyTokens = async (): Promise<void> => {
+  if (!existsSync(LEGACY_TOKEN_FILE) || existsSync(TOKEN_FILE)) {
+    return;
+  }
+  try {
+    const tokens = JSON.parse(readFileSync(LEGACY_TOKEN_FILE, 'utf-8')) as StoredTokens;
+    await saveTokens(tokens);
+    await unlink(LEGACY_TOKEN_FILE).catch(() => {});
+  } catch {
+    // best-effort migration
+  }
+};
+
+// --- PKCE and JWT ---
 
 const generatePKCE = async (): Promise<{ verifier: string; challenge: string }> => {
   const verifierBytes = randomBytes(32);
@@ -185,12 +219,11 @@ const generatePKCE = async (): Promise<{ verifier: string; challenge: string }> 
   return { verifier, challenge };
 };
 
-// --- JWT decoding ---
-
 interface JwtPayload {
   [JWT_CLAIM_PATH]?: {
     chatgpt_account_id?: string;
   };
+  email?: string;
   [key: string]: unknown;
 }
 
@@ -213,49 +246,89 @@ const getAccountId = (accessToken: string): string | null => {
   return typeof accountId === 'string' && accountId.length > 0 ? accountId : null;
 };
 
-// --- Token refresh ---
+const getEmail = (token: string): string | undefined => {
+  const payload = decodeJwt(token);
+  return typeof payload?.email === 'string' && payload.email.length > 0 ? payload.email : undefined;
+};
 
-const refreshAccessToken = async (refreshToken: string, context: ExtensionContext): Promise<StoredTokens> => {
-  context.log('Refreshing OpenAI access token...', 'info');
+// --- Token exchange & refresh ---
 
-  const response = await fetch(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: getClientId(),
-    }),
-  });
+interface TokenResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  id_token?: string;
+}
 
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new Error(`Token refresh failed: ${response.status} ${text}`);
-  }
-
-  const json = (await response.json()) as {
-    access_token?: string;
-    refresh_token?: string;
-    expires_in?: number;
-  };
-
+const extractStoredTokens = async (json: TokenResponse): Promise<StoredTokens> => {
   if (!json.access_token || !json.refresh_token || typeof json.expires_in !== 'number') {
-    throw new Error('Token refresh response missing required fields');
+    throw new Error('Token response missing required fields');
   }
 
   const tokens: StoredTokens = {
     accessToken: json.access_token,
     refreshToken: json.refresh_token,
     expiresAt: Date.now() + json.expires_in * 1000,
+    email: json.id_token ? getEmail(json.id_token) : undefined,
   };
 
   await saveTokens(tokens);
-  context.log('OpenAI access token refreshed successfully', 'info');
-
   return tokens;
 };
 
-// --- Local OAuth callback server ---
+const exchangeAuthorizationCode = async (code: string, codeVerifier: string, redirectUri: string): Promise<StoredTokens> => {
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: getClientId(),
+        code,
+        code_verifier: codeVerifier,
+        redirect_uri: redirectUri,
+      }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw networkError(error, TOKEN_URL);
+  }
+
+  if (!tokenResponse.ok) {
+    const text = await tokenResponse.text().catch(() => '');
+    throw new Error(`Token exchange failed: ${tokenResponse.status} ${text}`);
+  }
+
+  return extractStoredTokens((await tokenResponse.json()) as TokenResponse);
+};
+
+const refreshAccessToken = async (refreshToken: string, context: ExtensionContext): Promise<StoredTokens> => {
+  let response: Response;
+  try {
+    response = await fetch(TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: refreshToken,
+        client_id: getClientId(),
+      }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (error) {
+    throw networkError(error, TOKEN_URL);
+  }
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`Token refresh failed: ${response.status} ${text}`);
+  }
+
+  return extractStoredTokens((await response.json()) as TokenResponse);
+};
+
+// --- Browser (loopback callback) OAuth flow ---
 
 const OAUTH_SUCCESS_HTML = `<!DOCTYPE html>
 <html><head><title>Authentication Successful</title><style>
@@ -271,7 +344,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;justif
 h1{color:#ef4444;font-size:1.5rem}p{color:#999;margin-top:0.5rem}
 </style></head><body><div class="card"><h1>&#10007; Authentication Failed</h1><p>${message}</p></div></body></html>`;
 
-const startOAuthServer = (expectedState: string): Promise<{ server: Server; waitForCode: () => Promise<string> }> => {
+const startOAuthServer = (expectedState: string): Promise<{ server: Server; waitForCode: () => Promise<string>; redirectUri: string }> => {
   return new Promise((resolve, reject) => {
     let codeResolver: ((code: string) => void) | null = null;
     const codePromise = new Promise<string>((resolveCode) => {
@@ -281,23 +354,30 @@ const startOAuthServer = (expectedState: string): Promise<{ server: Server; wait
     const server = createServer((req, res) => {
       try {
         const url = new URL(req.url || '/', 'http://localhost');
+        const reply = (status: number, message: string) => {
+          res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8' });
+          res.end(OAUTH_ERROR_HTML(message));
+        };
 
         if (url.pathname !== '/auth/callback') {
-          res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(OAUTH_ERROR_HTML('Callback route not found.'));
+          reply(404, 'Callback route not found.');
+          return;
+        }
+
+        const oauthError = url.searchParams.get('error');
+        if (oauthError) {
+          reply(400, url.searchParams.get('error_description') || oauthError);
           return;
         }
 
         if (url.searchParams.get('state') !== expectedState) {
-          res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(OAUTH_ERROR_HTML('State mismatch. Please try again.'));
+          reply(400, 'State mismatch. Please try again.');
           return;
         }
 
         const code = url.searchParams.get('code');
         if (!code) {
-          res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-          res.end(OAUTH_ERROR_HTML('Missing authorization code.'));
+          reply(400, 'Missing authorization code.');
           return;
         }
 
@@ -310,165 +390,309 @@ const startOAuthServer = (expectedState: string): Promise<{ server: Server; wait
       }
     });
 
-    server.listen(1455, '127.0.0.1', () => {
-      resolve({ server, waitForCode: () => codePromise });
+    server.on('error', (err: NodeJS.ErrnoException) => {
+      reject(new Error(`Failed to start OAuth callback server: ${err.message}`));
     });
 
-    server.on('error', (err: NodeJS.ErrnoException) => {
-      reject(new Error(`Failed to start OAuth callback server on port 1455: ${err.message}`));
+    server.listen(0, '127.0.0.1', () => {
+      const port = (server.address() as AddressInfo).port;
+      resolve({ server, waitForCode: () => codePromise, redirectUri: `http://localhost:${port}/auth/callback` });
     });
   });
 };
 
-// --- Full OAuth flow ---
-
-const runOAuthFlow = async (context: ExtensionContext): Promise<StoredTokens> => {
-  context.log('Starting OpenAI OAuth flow...', 'info');
+const runBrowserOAuthFlow = async (context: ExtensionContext): Promise<void> => {
+  context.log('Starting OpenAI browser OAuth flow...', 'info');
 
   const { verifier, challenge } = await generatePKCE();
   const state = randomBytes(16).toString('hex');
 
-  const authUrl = new URL(AUTHORIZE_URL);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('client_id', getClientId());
-  authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
-  authUrl.searchParams.set('scope', SCOPE);
-  authUrl.searchParams.set('code_challenge', challenge);
-  authUrl.searchParams.set('code_challenge_method', 'S256');
-  authUrl.searchParams.set('state', state);
-  authUrl.searchParams.set('id_token_add_organizations', 'true');
-  authUrl.searchParams.set('codex_cli_simplified_flow', 'true');
-  authUrl.searchParams.set('originator', 'aiderdesk');
-
-  const { server, waitForCode } = await startOAuthServer(state);
+  const { server, waitForCode, redirectUri } = await startOAuthServer(state);
 
   try {
+    const authUrl = new URL(AUTHORIZE_URL);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('client_id', getClientId());
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('scope', SCOPE);
+    authUrl.searchParams.set('code_challenge', challenge);
+    authUrl.searchParams.set('code_challenge_method', 'S256');
+    authUrl.searchParams.set('state', state);
+    authUrl.searchParams.set('id_token_add_organizations', 'true');
+    authUrl.searchParams.set('codex_cli_simplified_flow', 'true');
+    authUrl.searchParams.set('originator', 'aiderdesk');
+
     await context.openUrl(authUrl.toString(), 'external');
-    context.log('Browser opened for OpenAI login. Waiting for callback...', 'info');
 
-    const code = await waitForCode();
-    context.log('Received authorization code, exchanging for tokens...', 'info');
-
-    const tokenResponse = await fetch(TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: getClientId(),
-        code,
-        code_verifier: verifier,
-        redirect_uri: REDIRECT_URI,
-      }),
+    const timeout = new Promise<never>((_, rejectTimeout) => {
+      setTimeout(() => rejectTimeout(new Error('Sign-in timed out. Please try again.')), BROWSER_FLOW_TIMEOUT_MS).unref();
     });
 
-    if (!tokenResponse.ok) {
-      const text = await tokenResponse.text().catch(() => '');
-      throw new Error(`Token exchange failed: ${tokenResponse.status} ${text}`);
-    }
+    const code = await Promise.race([waitForCode(), timeout]);
+    context.log('Received authorization code, exchanging for tokens...', 'info');
 
-    const json = (await tokenResponse.json()) as {
-      access_token?: string;
-      refresh_token?: string;
-      expires_in?: number;
-    };
-
-    if (!json.access_token || !json.refresh_token || typeof json.expires_in !== 'number') {
-      throw new Error('Token exchange response missing required fields');
-    }
-
-    const tokens: StoredTokens = {
-      accessToken: json.access_token,
-      refreshToken: json.refresh_token,
-      expiresAt: Date.now() + json.expires_in * 1000,
-    };
-
-    await saveTokens(tokens);
-    context.log('OpenAI authentication successful!', 'info');
-
-    return tokens;
+    await exchangeAuthorizationCode(code, verifier, redirectUri);
+    quotaCache.data = null;
+    quotaCache.lastFetchTime = 0;
+    context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
   } finally {
     server.close();
   }
 };
 
-// --- Get valid access token ---
+// --- Device code flow (works when the browser runs on a different machine than AiderDesk) ---
 
-const getValidAccessToken = async (context: ExtensionContext): Promise<{ accessToken: string; accountId: string }> => {
-  const tokens = await loadTokens();
+interface DeviceCodeResponse {
+  device_auth_id?: string;
+  user_code?: string;
+  interval?: number | string;
+}
 
-  if (tokens) {
-    // Refresh if expired (with 60s buffer)
-    if (Date.now() >= tokens.expiresAt - 60_000) {
-      try {
-        const refreshed = await refreshAccessToken(tokens.refreshToken, context);
-        const accountId = getAccountId(refreshed.accessToken);
-        if (!accountId) {
-          throw new Error('Failed to extract account ID from refreshed token');
-        }
-        return { accessToken: refreshed.accessToken, accountId };
-      } catch (error) {
-        context.log(`Token refresh failed: ${error instanceof Error ? error.message : error}. Re-authenticating...`, 'warn');
-      }
-    } else {
-      const accountId = getAccountId(tokens.accessToken);
-      if (accountId) {
-        return { accessToken: tokens.accessToken, accountId };
-      }
-      context.log('Failed to extract account ID from stored token, re-authenticating...', 'warn');
-    }
+interface DeviceTokenResponse {
+  authorization_code?: string;
+  code_verifier?: string;
+}
+
+interface DeviceFlowState {
+  userCode: string;
+  verificationUrl: string;
+  abort: AbortController;
+}
+
+let deviceFlow: DeviceFlowState | null = null;
+let browserFlowRunning = false;
+let lastAuthError: string | undefined;
+
+const abortErrorName = 'AbortError';
+
+// Node's fetch reports network problems as a bare "fetch failed" TypeError; surface the cause
+// (DNS, refusal, TLS, proxy) so users can actually tell what failed.
+const networkError = (error: unknown, url: string): Error => {
+  const cause = (error as { cause?: unknown })?.cause;
+  const detail = cause instanceof Error ? cause.message : typeof cause === 'string' ? cause : undefined;
+  let host = url;
+  try {
+    host = new URL(url).host;
+  } catch {
+    // keep full url as fallback
   }
-
-  // No valid tokens — trigger full OAuth flow
-  const newTokens = await runOAuthFlow(context);
-  const accountId = getAccountId(newTokens.accessToken);
-  if (!accountId) {
-    throw new Error('Failed to extract account ID from token');
-  }
-  return { accessToken: newTokens.accessToken, accountId };
+  return new Error(detail ? `Network error calling ${host}: ${detail}` : `Network error calling ${host}`);
 };
 
-// Non-interactive variant for background fetches (quota display): returns null instead of starting the OAuth flow
-const getValidAccessTokenNonInteractive = async (context: ExtensionContext): Promise<{ accessToken: string; accountId: string } | null> => {
+const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        const err = new Error('Aborted');
+        err.name = abortErrorName;
+        reject(err);
+      },
+      { once: true },
+    );
+  });
+
+const cancelDeviceFlow = (): void => {
+  if (deviceFlow) {
+    deviceFlow.abort.abort();
+    deviceFlow = null;
+  }
+};
+
+// Only mutates the flow that failed — a late error from an aborted flow must not taint a newer one
+const failDeviceFlow = (message: string, context: ExtensionContext): void => {
+  context.log(`Device code sign-in failed: ${message}`, 'warn');
+  lastAuthError = message;
+  if (deviceFlow) {
+    deviceFlow.abort.abort();
+    deviceFlow = null;
+  }
+};
+
+const runDeviceCodeFlow = async (context: ExtensionContext): Promise<void> => {
+  if (!deviceFlow) {
+    return;
+  }
+  const flow = deviceFlow;
+  const signal = flow.abort.signal;
+
+  try {
+    let userCodeResponse: Response;
+    try {
+      userCodeResponse = await fetch(DEVICE_USER_CODE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: getClientId() }),
+        signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
+      });
+    } catch (error) {
+      throw signal.aborted ? error : networkError(error, DEVICE_USER_CODE_URL);
+    }
+
+    if (userCodeResponse.status === 404) {
+      throw new Error('Device code sign-in is not enabled for this account. Enable it in ChatGPT security settings (or ask your workspace admin).');
+    }
+    if (!userCodeResponse.ok) {
+      throw new Error(`Device code request failed: ${userCodeResponse.status}`);
+    }
+
+    const userCodeJson = (await userCodeResponse.json()) as DeviceCodeResponse;
+    if (!userCodeJson.device_auth_id || !userCodeJson.user_code) {
+      throw new Error('Device code response missing required fields');
+    }
+    const parsedInterval = typeof userCodeJson.interval === 'number' ? userCodeJson.interval : parseInt(String(userCodeJson.interval ?? '5'), 10);
+    const intervalMs = Math.max(Number.isFinite(parsedInterval) ? parsedInterval! : 5, 1) * 1000;
+
+    if (deviceFlow !== flow) {
+      return;
+    }
+    flow.userCode = userCodeJson.user_code;
+    context.log(`Device code sign-in started: ${userCodeJson.user_code}`, 'info');
+
+    const deadline = Date.now() + DEVICE_FLOW_TIMEOUT_MS;
+    while (Date.now() < deadline && !signal.aborted) {
+      await sleep(intervalMs, signal);
+
+      let pollResponse: Response;
+      try {
+        pollResponse = await fetch(DEVICE_TOKEN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            device_auth_id: userCodeJson.device_auth_id,
+            user_code: userCodeJson.user_code,
+          }),
+          signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]),
+        });
+      } catch (error) {
+        throw signal.aborted ? error : networkError(error, DEVICE_TOKEN_URL);
+      }
+
+      if (pollResponse.ok) {
+        const pollJson = (await pollResponse.json()) as DeviceTokenResponse;
+        if (!pollJson.authorization_code || !pollJson.code_verifier) {
+          throw new Error('Device token response missing required fields');
+        }
+        await exchangeAuthorizationCode(pollJson.authorization_code, pollJson.code_verifier, DEVICE_EXCHANGE_REDIRECT_URI);
+        context.log('OpenAI device code sign-in successful', 'info');
+        if (deviceFlow === flow) {
+          deviceFlow = null;
+        }
+        lastAuthError = undefined;
+        quotaCache.data = null;
+        quotaCache.lastFetchTime = 0;
+        context.triggerUIDataRefresh(STATUS_BAR_COMPONENT_ID);
+        return;
+      }
+
+      // 403/404 mean "not approved yet" — keep polling until the deadline
+      if (pollResponse.status !== 403 && pollResponse.status !== 404) {
+        throw new Error(`Device code polling failed: ${pollResponse.status}`);
+      }
+    }
+
+    if (!signal.aborted) {
+      failDeviceFlow('Device code sign-in timed out. Please try again.', context);
+    }
+  } catch (error) {
+    if ((error as Error)?.name !== abortErrorName) {
+      failDeviceFlow(error instanceof Error ? error.message : String(error), context);
+    }
+  }
+};
+
+const startDeviceCodeFlow = (context: ExtensionContext): void => {
+  cancelDeviceFlow();
+  lastAuthError = undefined;
+  deviceFlow = {
+    userCode: '',
+    verificationUrl: DEVICE_VERIFICATION_URL,
+    abort: new AbortController(),
+  };
+  void runDeviceCodeFlow(context);
+};
+
+// --- Auth state (surfaced to the settings UI via config data and UI actions) ---
+
+interface AuthState {
+  status: 'signed-in' | 'expired' | 'signed-out';
+  email?: string;
+  accountId?: string;
+  pendingFlow: null | { type: 'browser' | 'device'; userCode?: string; verificationUrl?: string };
+  lastError?: string;
+}
+
+const getAuthState = async (): Promise<AuthState> => {
+  const tokens = await loadTokens();
+  const state: AuthState = {
+    status: tokens ? (Date.now() < tokens.expiresAt ? 'signed-in' : 'expired') : 'signed-out',
+    pendingFlow: null,
+  };
+  if (tokens) {
+    state.email = tokens.email;
+    const accountId = getAccountId(tokens.accessToken);
+    if (accountId) {
+      state.accountId = accountId;
+    }
+  }
+  if (deviceFlow) {
+    state.pendingFlow = {
+      type: 'device',
+      userCode: deviceFlow.userCode || undefined,
+      verificationUrl: DEVICE_VERIFICATION_URL,
+    };
+  } else if (browserFlowRunning) {
+    state.pendingFlow = { type: 'browser' };
+  }
+  if (lastAuthError) {
+    state.lastError = lastAuthError;
+  }
+  return state;
+};
+
+const getValidTokensNonInteractive = async (context: ExtensionContext): Promise<StoredTokens | null> => {
   const tokens = await loadTokens();
   if (!tokens) {
     return null;
   }
 
-  if (Date.now() >= tokens.expiresAt - 60_000) {
+  if (Date.now() >= tokens.expiresAt - REFRESH_TOKEN_EXPIRY_BUFFER_MS) {
     try {
-      const refreshed = await refreshAccessToken(tokens.refreshToken, context);
-      const accountId = getAccountId(refreshed.accessToken);
-      if (!accountId) {
-        return null;
-      }
-      return { accessToken: refreshed.accessToken, accountId };
+      return await refreshAccessToken(tokens.refreshToken, context);
     } catch (error) {
       context.log(`Token refresh failed: ${error instanceof Error ? error.message : error}`, 'warn');
       return null;
     }
   }
 
-  const accountId = getAccountId(tokens.accessToken);
-  if (!accountId) {
-    return null;
-  }
-  return { accessToken: tokens.accessToken, accountId };
+  return tokens;
 };
 
 const fetchQuota = async (context: ExtensionContext): Promise<CodexQuotaData | null> => {
   try {
-    const auth = await getValidAccessTokenNonInteractive(context);
-    if (!auth) {
+    const tokens = await getValidTokensNonInteractive(context);
+    if (!tokens) {
       return null;
     }
-    const { accessToken, accountId } = auth;
-    const response = await fetch(CODEX_USAGE_URL, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'ChatGPT-Account-Id': accountId,
-        'User-Agent': `aiderdesk (${platform()} ${release()}; ${arch()})`,
-      },
-    });
+    const accountId = getAccountId(tokens.accessToken);
+    if (!accountId) {
+      return null;
+    }
+    let response: Response;
+    try {
+      response = await fetch(CODEX_USAGE_URL, {
+        headers: {
+          Authorization: `Bearer ${tokens.accessToken}`,
+          'ChatGPT-Account-Id': accountId,
+          'User-Agent': `aiderdesk (${platform()} ${release()}; ${arch()})`,
+        },
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      });
+    } catch (error) {
+      throw networkError(error, CODEX_USAGE_URL);
+    }
 
     if (!response.ok) {
       context.log(`Failed to fetch OpenAI Codex usage: ${response.status} ${response.statusText}`, 'warn');
@@ -487,15 +711,30 @@ const fetchQuota = async (context: ExtensionContext): Promise<CodexQuotaData | n
   }
 };
 
+let quotaInflight: Promise<CodexQuotaData | null> | null = null;
+
 const getQuota = async (context: ExtensionContext): Promise<CodexQuotaData | null> => {
   const now = Date.now();
   if (quotaCache.data && now - quotaCache.lastFetchTime < CACHE_DURATION) {
     return quotaCache.data;
   }
 
-  quotaCache.data = await fetchQuota(context);
-  quotaCache.lastFetchTime = now;
-  return quotaCache.data;
+  // Deduplicate concurrent calls — multiple UI slots can request quota data at the same time
+  if (quotaInflight) {
+    return quotaInflight;
+  }
+
+  quotaInflight = fetchQuota(context)
+    .then((data) => {
+      quotaCache.data = data;
+      quotaCache.lastFetchTime = Date.now();
+      return data;
+    })
+    .finally(() => {
+      quotaInflight = null;
+    });
+
+  return quotaInflight;
 };
 
 // --- Extension class ---
@@ -505,20 +744,30 @@ const PROVIDER_ID = 'openai-codex';
 export default class OpenAICodexAuthExtension implements Extension {
   static metadata = {
     name: 'OpenAI Codex Auth',
-    version: '1.4.1',
-    description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with quota display',
+    version: '2.0.0',
+    description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with a dedicated sign-in UI (browser or device code)',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/openai-codex/icon.png',
     author: 'wladimiiir',
   };
 
+  private configComponentJsx = '';
+
   async onLoad(context: ExtensionContext): Promise<void> {
+    await migrateLegacyTokens();
+
+    try {
+      this.configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx'), 'utf-8');
+    } catch {
+      context.log('OpenAI Codex Auth: ConfigComponent.jsx not found', 'warn');
+    }
+
     const tokens = await loadTokens();
     if (tokens && Date.now() < tokens.expiresAt) {
       context.log('OpenAI Codex Auth loaded (authenticated)', 'info');
     } else if (tokens) {
       context.log('OpenAI Codex Auth loaded (token expired, will refresh on use)', 'info');
     } else {
-      context.log('OpenAI Codex Auth loaded (not authenticated — will prompt on first use)', 'info');
+      context.log('OpenAI Codex Auth loaded (not authenticated — use extension settings to sign in)', 'info');
     }
 
     // Pre-fetch quota data so usage is available immediately when the component first mounts
@@ -561,11 +810,83 @@ export default class OpenAICodexAuthExtension implements Extension {
     return getQuota(context);
   }
 
+  getConfigComponent(): string | undefined {
+    return this.configComponentJsx || undefined;
+  }
+
+  async getConfigData(): Promise<AuthState> {
+    return getAuthState();
+  }
+
+  async saveConfigData(): Promise<AuthState> {
+    // No editable fields — sign-in changes go through executeUIExtensionAction
+    return getAuthState();
+  }
+
+  async executeUIExtensionAction(componentId: string, action: string, _args: unknown[], context: ExtensionContext): Promise<unknown> {
+    if (componentId !== CONFIG_COMPONENT_ID) {
+      return undefined;
+    }
+
+    switch (action) {
+      case 'getAuthState':
+        return getAuthState();
+
+      case 'signInBrowser': {
+        if (browserFlowRunning || deviceFlow) {
+          return getAuthState();
+        }
+        browserFlowRunning = true;
+        lastAuthError = undefined;
+        void (async () => {
+          try {
+            await runBrowserOAuthFlow(context);
+            context.log('OpenAI browser sign-in successful', 'info');
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            context.log(`Browser sign-in failed: ${message}`, 'warn');
+            lastAuthError = message;
+          } finally {
+            browserFlowRunning = false;
+          }
+        })();
+        return getAuthState();
+      }
+
+      case 'signInDeviceCode':
+        startDeviceCodeFlow(context);
+        return getAuthState();
+
+      case 'cancelSignIn':
+        cancelDeviceFlow();
+        browserFlowRunning = false;
+        lastAuthError = undefined;
+        return getAuthState();
+
+      case 'signOut':
+        cancelDeviceFlow();
+        browserFlowRunning = false;
+        lastAuthError = undefined;
+        await clearTokens();
+        context.log('OpenAI Codex signed out', 'info');
+        return getAuthState();
+
+      default:
+        return undefined;
+    }
+  }
+
   getProviders(context: ExtensionContext): ProviderDefinition[] {
     const createLlm = async (_profile: ProviderProfile, model: Model) => {
-      context.log(`Creating OpenAI Codex model: ${model.id}`, 'info');
-
-      const { accessToken, accountId } = await getValidAccessToken(context);
+      // Never start OAuth here — sign-in is an explicit user action from the settings UI
+      const tokens = await getValidTokensNonInteractive(context);
+      if (!tokens) {
+        throw new Error('OpenAI Codex is not authenticated. Open extension settings for OpenAI Codex Auth and sign in.');
+      }
+      const accountId = getAccountId(tokens.accessToken);
+      if (!accountId) {
+        throw new Error('OpenAI Codex: failed to extract account ID from token. Sign in again from extension settings.');
+      }
 
       const sessionId = currentSessionId ?? '';
       const headers: Record<string, string> = {
@@ -581,7 +902,7 @@ export default class OpenAICodexAuthExtension implements Extension {
 
       const provider = createOpenAI({
         baseURL: CODEX_BASE_URL,
-        apiKey: accessToken,
+        apiKey: tokens.accessToken,
         headers,
       });
 
