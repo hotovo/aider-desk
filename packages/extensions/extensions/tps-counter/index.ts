@@ -97,11 +97,11 @@ export default class TPSCounterExtension implements Extension {
 
   async onResponseCompleted(event: ResponseCompletedEvent, context: ExtensionContext): Promise<void> {
     const messageId = event.response.messageId;
-    context.log(`[TPS] onResponseCompleted - messageId: ${messageId}`, 'info');
+    context.log(`[TPS] onResponseCompleted - messageId: ${messageId}`, 'debug');
     const startTime = this.messageStartTimes.get(messageId);
 
     if (!startTime || !event.response.usageReport) {
-      context.log(`[TPS] onResponseCompleted - skipping (no startTime or usageReport)`, 'info');
+      context.log(`[TPS] onResponseCompleted - skipping (no startTime or usageReport)`, 'debug');
       return;
     }
 
@@ -128,7 +128,7 @@ export default class TPSCounterExtension implements Extension {
       duration: durationSeconds,
     });
 
-    context.log(`[TPS] messageTpsData keys after update: ${JSON.stringify([...this.messageTpsData.keys()])}`, 'info');
+    context.log(`[TPS] messageTpsData keys after update: ${JSON.stringify([...this.messageTpsData.keys()])}`, 'debug');
 
     this.messageStartTimes.delete(messageId);
     context.triggerUIDataRefresh('tps-counter');
@@ -168,7 +168,7 @@ export default class TPSCounterExtension implements Extension {
 
     if (componentId === 'tps-counter-message-bar') {
       const data = Object.fromEntries(this.messageTpsData);
-      context.log(`[TPS] getUIExtensionData - returning keys: ${JSON.stringify(Object.keys(data))}`, 'info');
+      context.log(`[TPS] getUIExtensionData - returning keys: ${JSON.stringify(Object.keys(data))}`, 'debug');
       return data;
     }
 
