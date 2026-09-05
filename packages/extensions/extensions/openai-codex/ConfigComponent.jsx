@@ -78,11 +78,11 @@
 
       {isPending && (
         <div className="flex flex-col gap-3 rounded-lg border border-border-primary p-4">
-          {config.pendingFlow.type === 'device' && deviceCode ? (
+          {config.pendingFlow?.type === 'device' && deviceCode ? (
             <>
               <p>1. Open the sign-in page in any browser:</p>
-              <a href={config.pendingFlow.verificationUrl} target="_blank" rel="noopener noreferrer" className="text-left text-blue-500 underline">
-                {config.pendingFlow.verificationUrl}
+              <a href={config.pendingFlow?.verificationUrl} target="_blank" rel="noopener noreferrer" className="text-left text-blue-500 underline">
+                {config.pendingFlow?.verificationUrl}
               </a>
               <p>2. Enter this one-time code:</p>
               <div className="rounded bg-bg-tertiary px-4 py-2 font-mono text-xl tracking-widest">{deviceCode}</div>
