@@ -132,7 +132,11 @@ describe('EventsHandler', () => {
 
     eventsHandler.removeOpenProject('/project-b');
 
-    expect(store.setOpenProjects).toHaveBeenCalledWith([projectA]);
+    expect(store.setOpenProjects).toHaveBeenCalledWith([expect.objectContaining({ baseDir: '/project-a', active: true })]);
+    const calls = vi.mocked(store.setOpenProjects).mock.calls;
+    const saved = calls[calls.length - 1][0];
+    // The retained project must be a new object, not the original store reference
+    expect(saved[0]).not.toBe(projectA);
     expect(eventManager.sendExtensionUIRefresh).toHaveBeenCalledTimes(1);
     expect(eventManager.sendExtensionUIRefresh).toHaveBeenCalledWith({});
   });
