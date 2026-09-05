@@ -1465,6 +1465,14 @@ export interface ExtensionContext {
   getOpenProjectDirs(): string[];
 
   /**
+   * Get the base directory of the currently active (focused) project tab.
+   * Available regardless of whether the context itself is scoped to a project or task.
+   * Returns an empty string when no project is active.
+   * Optional: may be absent on older hosts, so feature-detect with `typeof` before calling.
+   */
+  getActiveProjectDir?(): string;
+
+  /**
    * Get the task context for the current task.
    * Only available when the context is created for a specific task (e.g., task event handlers,
    * command execution within a task). Returns null when no task is available.
@@ -1523,8 +1531,23 @@ export interface ExtensionContext {
    * No-op if the EventManager is not available.
    * @param componentId - Optional component ID to refresh only a specific component
    * @param taskId - Optional task ID to scope the refresh to components for a specific task
+   * @param projectDir - Optional project directory to scope the refresh to components for a specific project.
+   * Passing the third argument explicitly (even as `undefined`) triggers a global refresh applying to
+   * all mounted components; omitting the third argument falls back to the context's project directory
+   * (when the context is scoped to a project).
    */
-  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+  triggerUIDataRefresh(componentId?: string, taskId?: string, projectDir?: string): void;
+
+  /**
+   * Trigger a global UI data refresh for this extension's components, applying
+   * to all mounted components regardless of project scope. Use this when global
+   * state (e.g. the active project) changed.
+   * No-op if the EventManager is not available.
+   * May be absent on older hosts, feature-detect with typeof.
+   * @param componentId - Optional component ID to refresh only a specific component
+   * @param taskId - Optional task ID to scope the refresh to components for a specific task
+   */
+  triggerGlobalUIDataRefresh?(componentId?: string, taskId?: string): void;
 
   /**
    * Trigger a full reload of all UI component definitions for this extension.

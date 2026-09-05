@@ -67,6 +67,18 @@ export class ExtensionContextImpl implements ExtensionContext {
     }
   }
 
+  getActiveProjectDir(): string {
+    if (!this.store) {
+      return '';
+    }
+    try {
+      return this.store.getOpenProjects().find((project) => project.active)?.baseDir ?? '';
+    } catch (error) {
+      this.log(`Failed to get active project dir: ${error}`, 'error');
+      return '';
+    }
+  }
+
   getTaskContext(): TaskContext | null {
     return this.taskContext;
   }
@@ -151,18 +163,31 @@ export class ExtensionContextImpl implements ExtensionContext {
     }
   }
 
-  triggerUIDataRefresh(componentId?: string, taskId?: string): void {
+  private sendUIDataRefresh(projectDir: string | undefined, componentId?: string, taskId?: string, global = false): void {
     if (!this.eventManager) {
       this.log('EventManager not available, cannot trigger UI data refresh', 'warn');
       return;
     }
-    this.log(`Triggering UI data refresh for component: ${componentId}, task: ${taskId}`, 'debug');
+    if (global) {
+      this.log(`Triggering global UI data refresh for component: ${componentId}, task: ${taskId}`, 'debug');
+    } else {
+      this.log(`Triggering UI data refresh for component: ${componentId}, task: ${taskId}, project: ${projectDir}`, 'debug');
+    }
     this.eventManager.sendExtensionUIRefresh({
-      projectDir: this.project?.baseDir,
+      projectDir,
       extensionId: this.extensionId,
       componentId,
       taskId,
     });
+  }
+
+  triggerUIDataRefresh(componentId?: string, taskId?: string, projectDir?: string): void {
+    const effectiveProjectDir = arguments.length >= 3 ? projectDir : this.project?.baseDir;
+    this.sendUIDataRefresh(effectiveProjectDir, componentId, taskId);
+  }
+
+  triggerGlobalUIDataRefresh(componentId?: string, taskId?: string): void {
+    this.sendUIDataRefresh(undefined, componentId, taskId, true);
   }
 
   triggerUIComponentsReload(): void {

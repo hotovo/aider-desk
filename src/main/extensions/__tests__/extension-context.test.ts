@@ -357,6 +357,76 @@ describe('ExtensionContextImpl', () => {
     });
   });
 
+  describe('project scoping of UI data refreshes', () => {
+    const componentId = 'status-bar';
+    const project = { baseDir: '/test/project' } as any;
+
+    const createContextWithEventManager = (overlay?: { store?: Store; project?: Project }) => {
+      const mockEventManager = {
+        sendExtensionUIRefresh: vi.fn(),
+      };
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        overlay?.store,
+        undefined,
+        mockEventManager as any,
+        undefined,
+        overlay?.project ?? (project as Project),
+      );
+      return { mockEventManager, contextWithEventManager };
+    };
+
+    it('scopes triggerUIDataRefresh to the context project when projectDir is omitted', () => {
+      const { mockEventManager, contextWithEventManager } = createContextWithEventManager();
+
+      contextWithEventManager.triggerUIDataRefresh(componentId);
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith(expect.objectContaining({ projectDir: '/test/project' }));
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('treats an explicitly undefined projectDir as a global refresh', () => {
+      const { mockEventManager, contextWithEventManager } = createContextWithEventManager();
+
+      contextWithEventManager.triggerUIDataRefresh(componentId, undefined, undefined);
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith(expect.objectContaining({ projectDir: undefined }));
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('always sends a global refresh from triggerGlobalUIDataRefresh', () => {
+      const { mockEventManager, contextWithEventManager } = createContextWithEventManager();
+
+      contextWithEventManager.triggerGlobalUIDataRefresh(componentId);
+
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledWith(expect.objectContaining({ projectDir: undefined, componentId }));
+      expect(mockEventManager.sendExtensionUIRefresh).toHaveBeenCalledTimes(1);
+    });
+
+    it('getActiveProjectDir returns the baseDir of the active project', () => {
+      const mockStore = {
+        getOpenProjects: vi.fn(() => [
+          { baseDir: '/project-a', active: false },
+          { baseDir: '/project-b', active: true },
+        ]),
+      } as unknown as Store;
+      const { contextWithEventManager } = createContextWithEventManager({ store: mockStore });
+
+      expect(contextWithEventManager.getActiveProjectDir()).toBe('/project-b');
+    });
+
+    it('getActiveProjectDir returns an empty string when no project is active', () => {
+      const mockStore = {
+        getOpenProjects: vi.fn(() => [{ baseDir: '/project-a', active: false }]),
+      } as unknown as Store;
+      const { contextWithEventManager } = createContextWithEventManager({ store: mockStore });
+
+      expect(contextWithEventManager.getActiveProjectDir()).toBe('');
+    });
+  });
+
   describe('triggerUIComponentsReload', () => {
     it('should call eventManager.sendExtensionUIRefresh with reloadComponents flag', () => {
       const mockEventManager = {

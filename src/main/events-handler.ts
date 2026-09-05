@@ -42,7 +42,7 @@ import {
   VoiceSession,
   ChangeRequestItem,
 } from '@common/types';
-import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
+import { compareBaseDirs } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
 import { isBinary } from 'istextorbinary';
 
@@ -213,6 +213,7 @@ export class EventsHandler {
       };
       const updatedProjects = [...projects.map((p) => ({ ...p, active: false })), newProject];
       this.store.setOpenProjects(updatedProjects);
+      this.notifyExtensionUIRefreshIfNeeded(projects, updatedProjects);
 
       this.telemetryManager.captureProjectOpened(this.store.getOpenProjects().length);
     }
@@ -221,7 +222,7 @@ export class EventsHandler {
 
   removeOpenProject(baseDir: string): ProjectData[] {
     const projects = this.store.getOpenProjects();
-    const updatedProjects = projects.filter((project) => !compareBaseDirs(project.baseDir, baseDir));
+    const updatedProjects = projects.filter((project) => !compareBaseDirs(project.baseDir, baseDir)).map((project) => ({ ...project }));
 
     if (updatedProjects.length > 0) {
       // Set the last project as active if the current active project was removed
@@ -232,6 +233,7 @@ export class EventsHandler {
 
     this.addRecentProject(baseDir);
     this.store.setOpenProjects(updatedProjects);
+    this.notifyExtensionUIRefreshIfNeeded(projects, updatedProjects);
 
     this.telemetryManager.captureProjectClosed(this.store.getOpenProjects().length);
 
@@ -240,14 +242,41 @@ export class EventsHandler {
 
   async setActiveProject(baseDir: string): Promise<ProjectData[]> {
     const projects = this.store.getOpenProjects();
+
+    // Do not touch the store if no open project matches — an unknown baseDir
+    // must not clear the active flags of the currently open projects.
+    if (!projects.some((project) => compareBaseDirs(project.baseDir, baseDir))) {
+      return projects;
+    }
+
     const updatedProjects = projects.map((project) => ({
       ...project,
-      active: normalizeBaseDir(project.baseDir) === normalizeBaseDir(baseDir),
+      active: compareBaseDirs(project.baseDir, baseDir),
     }));
 
     this.store.setOpenProjects(updatedProjects);
+    this.notifyExtensionUIRefreshIfNeeded(projects, updatedProjects);
 
     return updatedProjects;
+  }
+
+  /**
+   * Notify the renderer so extension UI components (e.g. app-level ones
+   * reading the active project) re-fetch their data.
+   * Emits when the OPEN-PROJECT LIST membership changed (add/remove, e.g. an
+   * inactive project was closed and its entry must disappear from extension
+   * dropdowns) or when the ACTIVE PROJECT (by baseDir) changed — the extra
+   * active check keeps setActiveProject in sync even when membership is the same.
+   * Empty options = global refresh (no projectDir scoping).
+   */
+  private notifyExtensionUIRefreshIfNeeded(previous: ProjectData[], updated: ProjectData[]): void {
+    const previousActiveDir = previous.find((p) => p.active)?.baseDir;
+    const updatedActiveDir = updated.find((p) => p.active)?.baseDir;
+    const membershipChanged =
+      previous.length !== updated.length || updated.some((project) => !previous.some((prev) => compareBaseDirs(prev.baseDir, project.baseDir)));
+    if (membershipChanged || !compareBaseDirs(previousActiveDir ?? '', updatedActiveDir ?? '')) {
+      this.eventManager.sendExtensionUIRefresh({});
+    }
   }
 
   updateOpenProjectsOrder(baseDirs: string[]): ProjectData[] {
