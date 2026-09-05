@@ -116,6 +116,42 @@ export const ProfileGeneralSection = ({ profile, settings, onSettingChange }: Pr
             </div>
           )}
 
+          {/* Send Images to Model Column */}
+          {profile.sendImagesToModel === undefined ? (
+            <div className="space-y-2">
+              <div className="flex items-center text-xs">
+                <span>{t('settings.agent.sendImagesToModel')}</span>
+                <InfoIcon tooltip={t('settings.agent.sendImagesToModelTooltip')} className="ml-1" />
+                <div className="flex items-center justify-end w-full">
+                  <Button variant="text" size="xs" onClick={() => onSettingChange('sendImagesToModel', true)}>
+                    {t('settings.agent.override')}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  label={
+                    <div className="flex items-center text-xs">
+                      <span>{t('settings.agent.sendImagesToModel')}</span>
+                      <InfoIcon className="ml-2" tooltip={t('settings.agent.sendImagesToModelTooltip')} />
+                    </div>
+                  }
+                  checked={profile.sendImagesToModel}
+                  onChange={(checked) => onSettingChange('sendImagesToModel', checked)}
+                />
+                <IconButton
+                  icon={<FaTimes className="w-3 h-3" />}
+                  onClick={() => onSettingChange('sendImagesToModel', undefined)}
+                  tooltip={t('settings.agent.clearOverride')}
+                  className="p-1 hover:bg-bg-tertiary-emphasis hover:text-text-error rounded-sm mt-8"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Max Tokens Column */}
           <div className="space-y-2">
             <div className="flex items-center text-xs">

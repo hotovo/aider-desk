@@ -52,6 +52,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
         cacheReadInputTokenCost: model.cacheReadInputTokenCost,
         cacheWriteInputTokenCost: model.cacheWriteInputTokenCost,
         supportsTools: model.supportsTools,
+        supportsVision: model.supportsVision,
         isHidden: model.isHidden,
       };
       const newCostDisplayValues = {
@@ -151,6 +152,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
       cacheWriteInputTokenCost:
         costDisplayValues.cacheWriteInputTokenCost !== '' ? parseFloat(costDisplayValues.cacheWriteInputTokenCost) / 1000000 : undefined,
       supportsTools: formData.supportsTools,
+      supportsVision: formData.supportsVision,
       isHidden: formData.isHidden,
       isCustom: model?.isCustom || !model,
       providerOverrides,
@@ -333,6 +335,24 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
               <Slider min={0} max={2} step={0.05} value={formData.temperature ?? 0.0} onChange={(value) => handleInputChange('temperature', value)} />
             )}
             {errors.temperature && <p className="text-error text-2xs mt-1">{errors.temperature}</p>}
+          </div>
+
+          <div>
+            <Select
+              label={
+                <div className="flex items-center text-sm">
+                  <span>{t('modelLibrary.supportsVision')}</span>
+                  <InfoIcon tooltip={t('modelLibrary.supportsVisionTooltip')} className="ml-2" />
+                </div>
+              }
+              value={formData.supportsVision === true ? 'yes' : formData.supportsVision === false ? 'no' : 'auto'}
+              onChange={(value) => handleInputChange('supportsVision', value === 'yes' ? true : value === 'no' ? false : undefined)}
+              options={[
+                { value: 'auto', label: t('modelLibrary.supportsVisionAuto') },
+                { value: 'yes', label: t('modelLibrary.supportsVisionYes') },
+                { value: 'no', label: t('modelLibrary.supportsVisionNo') },
+              ]}
+            />
           </div>
         </div>
 

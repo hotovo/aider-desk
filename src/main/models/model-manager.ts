@@ -735,6 +735,17 @@ export class ModelManager {
     return model;
   }
 
+  /**
+   * Determines whether the given model supports image (vision) input.
+   * Returns true unless the model is explicitly known to be non-vision
+   * (`supportsVision === false`). Unknown values (e.g. cloud models) are
+   * assumed to support vision.
+   */
+  modelSupportsVision(provider: ProviderProfile, model: string | Model): boolean {
+    const modelObj = typeof model === 'string' ? this.getModelSettings(provider.id, model) : model;
+    return modelObj?.supportsVision !== false;
+  }
+
   createLlm(
     provider: ProviderProfile,
     model: string | Model,

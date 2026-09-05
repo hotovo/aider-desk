@@ -37,6 +37,11 @@ This file provides guidance to AiderDesk when working with code in this reposito
 - `tsc --noEmit -p tsconfig.node.json` - Check main process files
 - `tsc --noEmit -p tsconfig.web.json` - Check renderer process files
 
+### Validation (after complete implementation)
+- `npm run validate` - Runs lint, typecheck, test:web, and test:node in parallel
+
+**Rule for Agents**: After a complete implementation, always run `npm run validate` and show a summary of the results.
+
 ## Dependency Management
 
 - All dependency versions in root `package.json`, `packages/app/package.json`, and `packages/extensions/package.json` are pinned to **exact versions** (no `^`/`~` ranges). npm strips `package-lock.json` from published tarballs, so any range would float at install time for consumers.
