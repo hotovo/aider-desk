@@ -331,6 +331,7 @@ src/
           ModelSelectorWrapper.tsx
           MultiSelect.tsx
           RadioButton.tsx
+          SearchableSelect.tsx
           Section.tsx
           Select.tsx
           Slider.tsx
@@ -855,6 +856,12 @@ max_input_tokens = model.info.get('max_input_tokens') if model.info else None
 max_output_tokens = model.info.get('max_output_tokens') if model.info else None
 ⋮----
 temperature = info.get('temperature')
+⋮----
+task_id = os.environ.get("TASK_ID")
+openai_base = os.environ.get("OPENAI_API_BASE", "")
+anthropic_base = os.environ.get("ANTHROPIC_BASE_URL", "")
+⋮----
+extra_headers = model.extra_params.setdefault("extra_headers", {})
 ⋮----
 def wait_for_async(connector, coroutine)
 ⋮----
@@ -2592,6 +2599,7 @@ async generateText(
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
+    sessionId?: string,
 ): Promise<string | undefined>
 ⋮----
 async generateObject<T>(
@@ -2603,6 +2611,7 @@ async generateObject<T>(
     messages: ContextMessage[] = [],
     abortable = true,
     abortSignal?: AbortSignal,
+    sessionId?: string,
 ): Promise<T | undefined>
 ⋮----
 async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
@@ -2703,6 +2712,7 @@ export const generateCompactedSummary = async (
     messages: ContextMessage[],
     abortable: boolean,
     abortSignal?: AbortSignal,
+    sessionId?: string,
   ) => Promise<string | undefined> = async () => undefined,
 ): Promise<ContextMessage[]> =>
 
@@ -5183,7 +5193,7 @@ async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>
 ⋮----
 async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
 ⋮----
-async applyUncommittedChanges(targetBranch?: string): Promise<void>
+async applyUncommittedChanges(): Promise<void>
 ⋮----
 async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: boolean): Promise<void>
 ⋮----
@@ -5192,6 +5202,7 @@ async resumeTask(): Promise<void>
 ================
 File: src/main/git/git-manager.ts
 ================
+import os from 'os';
 import path, { join } from 'path';
 import fs, { mkdir, rm, lstat, symlink } from 'fs/promises';
 import { existsSync, lstatSync } from 'fs';
@@ -5481,6 +5492,7 @@ private async squashAndMergeWorktreeToMain(
     mainBranch: string,
     commitMessage: string,
     baseCommit?: string,
+    checkoutless = false,
 ): Promise<void>
 ⋮----
 // SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
@@ -5504,6 +5516,12 @@ private async squashAndMergeWorktreeToMain(
 // Get the HEAD commit hash from worktree AFTER rebase (but before squashing)
 // This preserves the worktree's commit history
 ⋮----
+// Create the squashed commit via plumbing and update the target branch ref directly
+// without checking it out (the project directory is on a different branch, and git
+// guarantees the target branch cannot be checked out in any other worktree)
+⋮----
+// No-op check: nothing to squash if the trees are identical
+⋮----
 // Switch to main branch in the main repository
 ⋮----
 // SQUASH MERGE: Use git merge --squash to create a squashed staging of all changes
@@ -5519,7 +5537,7 @@ private async squashAndMergeWorktreeToMain(
 ⋮----
 // Prioritize actual error messages over lastOutput (which may contain unrelated data like commit counts)
 ⋮----
-private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string): Promise<void>
+private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mainBranch: string, checkoutless = false): Promise<void>
 ⋮----
 // SAFETY CHECK 0: A rebase left in progress (e.g. awaiting conflict resolution in the UI)
 // would block our own rebase and must not be aborted by this operation
@@ -5536,6 +5554,10 @@ private async mergeWorktreeToMain(projectPath: string, worktreePath: string, mai
 // Ignore abort errors
 ⋮----
 // Get the HEAD commit hash from worktree AFTER rebase
+⋮----
+// Update the target branch ref directly without checking it out:
+// the project directory is on a different branch, and git guarantees the target
+// branch cannot be checked out in any other worktree
 ⋮----
 // Switch to main branch in the main repository
 ⋮----
@@ -5556,7 +5578,7 @@ generateMergeCommands(mainBranch: string, branchName: string): string[]
 ⋮----
 async gitPull(worktreePath: string): Promise<
 ⋮----
-async gitPush(worktreePath: string): Promise<
+async gitPush(worktreePath: string, force?: boolean): Promise<
 ⋮----
 async updateBranch(repoPath: string, branchName: string): Promise<
 ⋮----
@@ -5652,15 +5674,21 @@ async mergeWorktreeToMainWithUncommitted(
     baseCommit?: string,
 ): Promise<MergeState>
 ⋮----
+// If the project directory is on a different branch, update the target branch ref directly
+// without checking it out (the working tree is left untouched)
+⋮----
 // 1. Track initial state
 ⋮----
 // 2. Stash uncommitted changes in worktree
 ⋮----
-// 3. Stash uncommitted changes in main branch if any
+// 3. Stash uncommitted changes in main branch if any (not needed for checkoutless merge,
+// since the project directory working tree is never touched)
 ⋮----
 // 4. Perform the merge operation (existing methods handle the actual merge)
 ⋮----
 // 5. Apply worktree stash to both branches (keeping changes uncommitted)
+// For checkoutless merge the project directory is on a different branch, so the
+// worktree's uncommitted changes are only restored into the worktree
 ⋮----
 // Drop the worktree stash after successful application
 ⋮----
@@ -5672,6 +5700,8 @@ async mergeWorktreeToMainWithUncommitted(
 // Recovery: revert main repo to pre-merge state before restoring stashes
 // Only when the merge step actually ran - otherwise the main working tree may still
 // contain un-stashed changes that a hard reset would destroy
+⋮----
+// Checkoutless merge never touched the project working tree - only move the ref back
 ⋮----
 // Abort any in-progress merge (in case merge itself failed)
 ⋮----
@@ -5876,30 +5906,29 @@ async stageResolvedFile(worktreePath: string, filePath: string, content: string)
 async listConflictedFiles(worktreePath: string): Promise<string[]>
 ⋮----
 /**
-   * Apply uncommitted changes from worktree to main branch without merging commits
+   * Apply uncommitted changes from worktree to the branch currently checked out in the
+   * project directory without merging commits or switching branches
    * This transfers work-in-progress changes while keeping them uncommitted in both branches
    */
-async applyUncommittedChangesToMain(
-    projectPath: string,
-    taskId: string,
-    worktreePath: string,
-    targetBranch?: string,
-    symlinkFolders: string[] = [],
-): Promise<void>
+async applyUncommittedChangesToMain(projectPath: string, taskId: string, worktreePath: string, symlinkFolders: string[] = []): Promise<void>
 ⋮----
 // 1. Check if there are uncommitted changes in worktree
 ⋮----
 // 2. Stash uncommitted changes from worktree
 ⋮----
-// 3. Switch main repo to target branch
+// 3. Stash uncommitted changes in the project directory to keep them safe while applying
 ⋮----
-// 4. Apply stash to target branch (keeping uncommitted)
+// 4. Apply stash to the currently checked out branch (keeping uncommitted)
 ⋮----
 // 5. Apply stash back to worktree (keeping uncommitted)
 ⋮----
 // 6. Clean up stash
 ⋮----
-// Recovery: clean up main repo from failed stash apply
+// 7. Restore project directory's original uncommitted changes if any
+⋮----
+// Recovery: clean up project directory from failed stash apply
+⋮----
+// Restore project directory's original uncommitted changes
 ⋮----
 // Restore stash to worktree
 ⋮----
@@ -5909,7 +5938,12 @@ async applyUncommittedChangesToMain(
    */
 async revertMerge(projectPath: string, taskId: string, worktreePath: string, mergeState: MergeState, symlinkFolders: string[] = []): Promise<void>
 ⋮----
+// For a checkoutless merge the ref is moved back directly, unless the user has since
+// checked out the target branch in the project directory
+⋮----
 // 1. Stash current uncommitted changes in worktree
+⋮----
+// 2. Move the target branch ref back to the pre-merge state without touching the project working tree
 ⋮----
 // 2. Stash current uncommitted changes in main repo to clean the working directory
 // This is crucial to avoid conflicts with untracked files when applying the original stash
@@ -7255,7 +7289,7 @@ const createOpenAIVoiceSession = async (profile: ProviderProfile, settings: Sett
 ================
 File: src/main/models/providers/opencode-go.ts
 ================
-import { Model, ProviderProfile, SettingsData } from '@common/types';
+import { Model, ProviderProfile, SettingsData, TlsPolicyRegistrar } from '@common/types';
 import { isOpenCodeGoProvider, LlmProvider, OpenCodeGoProvider } from '@common/agent';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createAnthropic } from '@ai-sdk/anthropic';
@@ -7264,7 +7298,7 @@ import { omit } from 'lodash';
 ⋮----
 import { getDefaultModelInfo, getDefaultUsageReport } from './default';
 ⋮----
-import type { LanguageModel, ModelMessage } from 'ai';
+import type { LanguageModel, ModelMessage, ToolSet } from 'ai';
 ⋮----
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
@@ -7297,7 +7331,17 @@ export const hasOpencodeGoEnvVars = (settings: SettingsData): boolean =>
 export const getOpencodeGoAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
 ⋮----
 // === LLM Creation Functions ===
-export const createOpencodeGoLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
+export const createOpencodeGoLlm = (
+  profile: ProviderProfile,
+  model: Model,
+  settings: SettingsData,
+  projectDir: string,
+  _toolSet?: ToolSet,
+  _systemPrompt?: string,
+  _providerMetadata?: unknown,
+  _tlsRegistrar?: TlsPolicyRegistrar,
+  sessionId?: string,
+): LanguageModel =>
 ⋮----
 // Grok's upstream rejects the `item_reference` input items that @ai-sdk/openai emits for
 // Responses history parts carrying OpenAI item IDs. Stripping that metadata makes the SDK
@@ -7908,6 +7952,7 @@ createLlm(
     toolSet?: ToolSet,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    sessionId?: string,
 ): LanguageModel | Promise<LanguageModel>
 ⋮----
 // Resolve Model object if string is provided
@@ -8019,6 +8064,7 @@ export interface LlmProviderStrategy {
     systemPrompt?: string,
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
+    sessionId?: string,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**
@@ -11320,7 +11366,7 @@ public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Pro
 ⋮----
 public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
 ⋮----
-public async applyUncommittedChanges(targetBranch?: string): Promise<void>
+public async applyUncommittedChanges(): Promise<void>
 ⋮----
 public async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted = false): Promise<void>
 ⋮----
@@ -12690,7 +12736,7 @@ async switchToWorktreeWorkingMode(
 ⋮----
 async getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<
 ⋮----
-async applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+async applyUncommittedChanges(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -12728,7 +12774,7 @@ async updateGitBranch(repoPath: string, branchName: string): Promise<
 ⋮----
 async gitPull(repoPath: string): Promise<
 ⋮----
-async gitPush(repoPath: string): Promise<
+async gitPush(repoPath: string, force?: boolean): Promise<
 ⋮----
 async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
 ⋮----
@@ -14323,7 +14369,7 @@ switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToW
 ⋮----
 getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<WorktreeUncommittedFiles>
 ⋮----
-applyUncommittedChanges(baseDir: string, taskId: string, targetBranch?: string): Promise<void>
+applyUncommittedChanges(baseDir: string, taskId: string): Promise<void>
 ⋮----
 revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -14355,7 +14401,7 @@ updateGitBranch(repoPath: string, branchName: string): Promise<
 ⋮----
 gitPull(repoPath: string): Promise<
 ⋮----
-gitPush(repoPath: string): Promise<
+gitPush(repoPath: string, force?: boolean): Promise<
 ⋮----
 getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
 ⋮----
@@ -15774,6 +15820,49 @@ export const RadioButton = (
 const handleChange = () =>
 ⋮----
 className="sr-only" // Hide the actual input but keep it accessible
+
+================
+File: src/renderer/src/components/common/SearchableSelect.tsx
+================
+import { KeyboardEvent, MouseEvent, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { HiChevronUpDown, HiCheck } from 'react-icons/hi2';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { useClickOutside } from '@/hooks/useClickOutside';
+import { useDropdownState } from '@/hooks/useDropdownState';
+import { KeyboardKeys } from '@/constants/keyboardKeys';
+import { Option } from '@/components/common/Select';
+⋮----
+type Props = {
+  label?: ReactNode;
+  options?: Option[];
+  value?: string;
+  onChange?: (value: string) => void;
+  className?: string;
+  size?: 'sm' | 'md' | 'lg';
+  disabled?: boolean;
+  placement?: 'bottom' | 'top';
+  placeholder?: string;
+};
+⋮----
+const getOptionText = (opt: Option): string
+⋮----
+const handleOpen = () =>
+⋮----
+const handleSearchChange = (search: string) =>
+⋮----
+const handleOptionSelect = (option: Option) =>
+⋮----
+const handleInputKeyDown = (e: KeyboardEvent) =>
+⋮----
+const handleBlur = () =>
+⋮----
+const handleChevronMouseDown = (e: MouseEvent<SVGSVGElement>) =>
+⋮----
+onMouseDown=
+⋮----
+onChange=
 
 ================
 File: src/renderer/src/components/common/Section.tsx
@@ -17793,13 +17882,17 @@ type Props = {
 ================
 File: src/renderer/src/components/message/StoreMemoryToolMessage.tsx
 ================
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 'react-icons/fa';
+import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTrash } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { IconButton } from '@/components/common/IconButton';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useApi } from '@/contexts/ApiContext';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -17810,7 +17903,30 @@ type Props = {
   hideMessageBar?: boolean;
 };
 ⋮----
+type StoredMemoryResult = {
+  success: boolean;
+  id: string;
+};
+⋮----
+const tryParseJson = (value: string): unknown =>
+⋮----
+// Tool results are stored JSON-stringified; versions that returned a JSON string from the tool are stored double-encoded
+⋮----
+const loadMemories = async () =>
+⋮----
+// Ignore errors loading memories
+⋮----
+const handleDeleteMemory = async () =>
+⋮----
+// Ignore errors loading memories
+⋮----
 {/* Memory Details */}
+⋮----
+onClick=
+⋮----
+title=
+⋮----
+confirmButtonText=
 
 ================
 File: src/renderer/src/components/message/StreamingToolMessage.tsx
@@ -20830,12 +20946,17 @@ import { BranchInfo, GitSyncCommits, WorktreeIntegrationStatus } from '@common/t
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Checkbox } from '@/components/common/Checkbox';
 import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { GitStatusBadges } from '@/components/project/GitStatusBadges';
 import { GitBranchesPopup } from '@/components/project/GitBranchesPopup';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
+⋮----
+const slugifyBranchName = (name: string) =>
+⋮----
+const trimBranchNameSeparators = (name: string) =>
 ⋮----
 const truncateBranchName = (name: string) =>
 ⋮----
@@ -20854,7 +20975,7 @@ type Props = {
   willShowConfirmDialog?: boolean;
   onMerge: (targetBranch?: string) => void;
   onSquash: (targetBranch?: string, commitMessage?: string) => void;
-  onOnlyUncommitted: (targetBranch?: string) => void;
+  onOnlyUncommitted: () => void;
   onRebaseFromBranch: (fromBranch?: string) => void;
   onAbortRebase: () => void;
   onContinueRebase: () => void;
@@ -20903,7 +21024,11 @@ const handlePull = async () =>
 ⋮----
 const handleUpdateBranch = async (branch: BranchInfo) =>
 ⋮----
-const handlePush = async () =>
+const handlePush = () =>
+⋮----
+const handlePushConfirm = async () =>
+⋮----
+const handlePushCancel = () =>
 ⋮----
 const handleEditBranch = () =>
 ⋮----
@@ -20921,11 +21046,11 @@ const handleSwitchToWorktree = () =>
 ⋮----
 <button onClick=
 ⋮----
+onClick=
+⋮----
 content=
 ⋮----
-onRebaseFromBranch(mainBranchName);
-⋮----
-onClick=
+onRebaseFromBranch(rebaseBranch);
 ⋮----
 title=
 ⋮----
@@ -20937,7 +21062,8 @@ onCancel=
 setBranchToRebase(null);
 void performRebase(branch);
 ⋮----
-onConfirm=
+setShowOnlyUncommittedDialog(false);
+onOnlyUncommitted();
 ⋮----
 setShowAbortRebaseConfirm(false);
 onAbortRebase();
@@ -21788,7 +21914,7 @@ import { BranchInfo } from '@common/types';
 ⋮----
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { useApi } from '@/contexts/ApiContext';
-import Select from '@/components/common/Select';
+import SearchableSelect from '@/components/common/SearchableSelect';
 import { Input } from '@/components/common/Input';
 ⋮----
 type Props = {
@@ -22241,7 +22367,7 @@ type Props = {
   task: TaskData;
   onMerge: (targetBranch?: string) => void;
   onSquash: (targetBranch?: string, commitMessage?: string) => void;
-  onOnlyUncommitted: (targetBranch?: string) => void;
+  onOnlyUncommitted: () => void;
   onRebaseFromBranch: (fromBranch?: string) => void;
   onAbortRebase: () => void;
   onContinueRebase: () => void;
