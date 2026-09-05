@@ -107,7 +107,7 @@ Installations made manually with other tools (for example antigravity) are detec
 
 - No build step: AiderDesk loads `index.ts` directly.
 - Type check: `npx tsc --noEmit`
-- Tests: `npx vitest run` (178 tests across 13 files)
+- Tests: `npx vitest run` (181 tests across 13 files)
 - Key sources: `lib/install-registry.ts` (discovery), `lib/context-preparer.ts` + `context/workflow-start.json.hbs` (execution), `lib/bmad-manager.ts` (status/install/update), `lib/help-skill-hints.ts` (bmad-help state hints), `lib/help-state.ts` (bmad-help state snapshot)
 
 ## Credits
