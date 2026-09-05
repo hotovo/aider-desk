@@ -1714,4 +1714,83 @@ describe('ExtensionManager', () => {
       expect(result[1].provider.id).toBe('provider-b');
     });
   });
+
+  describe('skill manager caching and eviction', () => {
+    let mockProject: { baseDir: string };
+
+    beforeEach(() => {
+      mockProject = { baseDir: '/test/project' };
+      // dispatchEvent waits for initialization, which these tests assume completed
+      (manager as any).initialized = true;
+    });
+
+    const skillManagerMap = () => (manager as unknown as { projectSkillManagers: Map<string, unknown> }).projectSkillManagers;
+
+    const makeExtension = (handlerName: string, onContext: (context: unknown) => void) => ({
+      id: 'skill-manager-consumer',
+      instance: {
+        [handlerName]: async (_event: unknown, context: unknown) => {
+          onContext(context);
+        },
+      },
+      metadata: { name: 'consumer', version: '1.0.0', description: 'Test', author: 'Test' },
+      filePath: '/path/consumer.ts',
+      initialized: true,
+    });
+
+    it('caches one skill manager per project across contexts', async () => {
+      const seen: unknown[] = [];
+      (mockRegistry as { getExtensions: unknown }).getExtensions = vi
+        .fn()
+        .mockReturnValue([makeExtension('onPromptStarted', (context) => seen.push((context as { getSkillContext: () => unknown }).getSkillContext()))]);
+
+      const event = { prompt: 'p', mode: 'agent' as const, promptContext: { id: '1' } };
+      await manager.dispatchEvent('onPromptStarted', event, mockProject as any);
+      expect(seen).toHaveLength(1);
+      expect(skillManagerMap().get('/test/project')).toBe(seen[0]);
+
+      await manager.dispatchEvent('onPromptStarted', event, mockProject as any);
+      expect(seen).toHaveLength(2);
+      expect(seen[0]).toBe(seen[1]);
+    });
+
+    it('evicts the project skill manager after an onProjectStopped dispatch, not before', async () => {
+      const cacheSizeInsideHandler: number[] = [];
+      (mockRegistry as { getExtensions: unknown }).getExtensions = vi.fn().mockReturnValue([
+        makeExtension('onProjectStopped', (context) => {
+          (context as { getSkillContext: () => unknown }).getSkillContext();
+          cacheSizeInsideHandler.push(skillManagerMap().size);
+        }),
+      ]);
+
+      await manager.dispatchEvent('onProjectStopped', {} as never, mockProject as any);
+      expect(cacheSizeInsideHandler).toEqual([1]);
+      expect(skillManagerMap().has('/test/project')).toBe(false);
+    });
+
+    it('evicts via the no-extensions early exit on stop', async () => {
+      skillManagerMap().set('/test/project', {});
+      await manager.dispatchEvent('onProjectStopped', {} as never, mockProject as any);
+      expect(skillManagerMap().size).toBe(0);
+    });
+
+    it('broadcasts skills-updated to every task of the project', async () => {
+      const sendSkillsUpdated = vi.fn();
+      (manager as unknown as { eventManager: unknown }).eventManager = { sendSkillsUpdated };
+      fsReaddirMock.mockResolvedValue([]);
+
+      const cached = (manager as unknown as { getProjectSkillManager: (project: unknown) => unknown }).getProjectSkillManager(mockProject);
+      expect(cached).toBeDefined();
+
+      const project = {
+        baseDir: '/test/project',
+        getTasks: vi.fn().mockResolvedValue([{ id: 'task-1' }, { id: 'task-2' }]),
+      };
+      (manager as unknown as { broadcastSkillsUpdated: (project: unknown) => void }).broadcastSkillsUpdated(project);
+
+      await vi.waitFor(() => expect(sendSkillsUpdated).toHaveBeenCalledTimes(2));
+      expect(sendSkillsUpdated).toHaveBeenCalledWith('/test/project', 'task-1', expect.any(Array));
+      expect(sendSkillsUpdated).toHaveBeenCalledWith('/test/project', 'task-2', expect.any(Array));
+    });
+  });
 });

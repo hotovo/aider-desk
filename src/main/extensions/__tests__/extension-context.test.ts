@@ -658,4 +658,32 @@ describe('ExtensionContextImpl', () => {
       expect(memoryContext).toBe(mockMemoryManager);
     });
   });
+
+  describe('getSkillContext', () => {
+    it('should throw error when skills context is not available', () => {
+      const contextWithoutSkills = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName));
+
+      expect(() => contextWithoutSkills.getSkillContext()).toThrow('SkillManager not available');
+    });
+
+    it('should return the provided skills context', () => {
+      const mockSkillsContext = { listSkills: vi.fn() };
+
+      const contextWithSkills = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        mockSkillsContext as any,
+      );
+
+      expect(contextWithSkills.getSkillContext()).toBe(mockSkillsContext);
+    });
+  });
 });
