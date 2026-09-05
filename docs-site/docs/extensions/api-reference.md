@@ -101,6 +101,7 @@ interface ExtensionContext {
   getProjectDir(): string;
   getProjectContext(): ProjectContext;
   getOpenProjectDirs(): string[];
+  getActiveProjectDir?(): string;
 
   // Task access
   getTaskContext(): TaskContext | null;
@@ -119,7 +120,8 @@ interface ExtensionContext {
   getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>>;
 
   // UI refresh
-  triggerUIDataRefresh(componentId?: string, taskId?: string): void;
+  triggerUIDataRefresh(componentId?: string, taskId?: string, projectDir?: string): void;
+  triggerGlobalUIDataRefresh(componentId?: string, taskId?: string): void;
   triggerUIComponentsReload(): void;
 
   // Navigation
@@ -136,6 +138,7 @@ interface ExtensionContext {
 | `log(message, type?)` | Log a message to AiderDesk console and log files |
 | `getProjectDir()` | Get the current project directory path |
 | `getOpenProjectDirs()` | Get the base directories of all currently open projects |
+| `getActiveProjectDir()` | Get the base directory of the active project, or an empty string if none is active. Optional: may be absent on older AiderDesk hosts — feature-detect it (`typeof context.getActiveProjectDir === 'function'`) before calling. |
 | `getTaskContext()` | Get the current task context (null if no task active) |
 | `getProjectContext()` | Get the project context for project operations |
 | `getMemoryContext()` | Get the memory context for store/retrieve/delete memory operations |
@@ -143,7 +146,8 @@ interface ExtensionContext {
 | `getSetting(key)` | Get a setting value (supports dot-notation) |
 | `updateSettings(updates)` | Update multiple settings at once |
 | `getMcpServers(projectDir?)` | Get merged MCP server configurations (global overridden by project-specific) |
-| `triggerUIDataRefresh(componentId?, taskId?)` | Trigger UI component data refresh |
+| `triggerUIDataRefresh(componentId?, taskId?, projectDir?)` | Trigger UI component data refresh. When `projectDir` is omitted, the refresh is scoped to the context's project. If `projectDir` is passed explicitly as `undefined` (e.g. `triggerUIDataRefresh(componentId, undefined, undefined)`), the refresh is global — omitting the argument and passing `undefined` are intentionally different. |
+| `triggerGlobalUIDataRefresh(componentId?, taskId?)` | Trigger a global (unscoped) UI component data refresh, regardless of the context's project |
 | `triggerUIComponentsReload()` | Reload all UI component definitions for this extension |
 | `openUrl(url, target?)` | Open URL in external browser, new window, or modal overlay |
 | `openPath(path)` | Open file or directory in system's default application |

@@ -137,9 +137,15 @@
     return years + ' year' + (years > 1 ? 's' : '') + ' ago';
   }, []);
 
+  const activeProjectDir = typeof data?.activeProjectDir === 'string' ? data.activeProjectDir : '';
+
   const projectOptions = useMemo(
-    () => (projectDirs || []).map((d) => ({ value: d, label: baseName(d) })),
-    [projectDirs, baseName],
+    () =>
+      (projectDirs || []).map((d) => ({
+        value: d,
+        label: baseName(d) + (d && activeProjectDir === d ? ' •' : ''),
+      })),
+    [projectDirs, baseName, activeProjectDir],
   );
 
   const filteredBranches = useMemo(() => {
@@ -206,15 +212,17 @@
   const handleOpen = useCallback(async () => {
     setShowModal(true);
     const dirs = Array.isArray(projectDirs) ? projectDirs : [];
-    let target = selectedProject;
-    if (!dirs.includes(target) && dirs.length > 0) target = dirs[0];
-    if (!target && data.currentProjectDir) target = data.currentProjectDir;
+    let target = '';
+    if (selectedProject && dirs.includes(selectedProject)) target = selectedProject;
+    if (!target && activeProjectDir && dirs.includes(activeProjectDir)) target = activeProjectDir;
+    if (!target && data.currentProjectDir && dirs.includes(data.currentProjectDir)) target = data.currentProjectDir;
+    if (!target && dirs.length > 0) target = dirs[0];
     if (!target) {
       setError('No open projects to inspect');
       return;
     }
     await selectProject(target);
-  }, [data.currentProjectDir, projectDirs, selectedProject, selectProject]);
+  }, [activeProjectDir, data.currentProjectDir, projectDirs, selectedProject, selectProject]);
 
   const handleClose = useCallback(() => {
     setShowModal(false);
