@@ -53,6 +53,23 @@ describe('ContextManager - atomic save and corrupt recovery', () => {
       expect(dirFiles.some((file) => file.endsWith('.tmp'))).toBe(false);
     });
 
+    it('cleans up stale temp files orphaned by a crash', async () => {
+      const manager = new ContextManager(createTask(projectDir) as never, 'task-1');
+      await manager.getContextMessages();
+
+      const dir = path.dirname(getContextPath(projectDir));
+      await fs.mkdir(dir, { recursive: true });
+      const staleTemp = path.join(dir, 'context.json.1234567890.abc.tmp');
+      await fs.writeFile(staleTemp, '{"partial": true}', 'utf8');
+
+      manager.addContextMessage(createMessage('message-1', 'Clean me'));
+      await manager.save();
+
+      await expect(fs.access(staleTemp)).rejects.toThrow();
+      const dirFiles = await fs.readdir(dir);
+      expect(dirFiles.some((file) => file.endsWith('.tmp'))).toBe(false);
+    });
+
     it('keeps context.json valid across concurrent save calls', async () => {
       const manager = new ContextManager(createTask(projectDir) as never, 'task-1');
       await manager.getContextMessages();

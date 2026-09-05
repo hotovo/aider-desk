@@ -670,7 +670,8 @@ export class ContextManager {
     // Serialize writes so concurrent saves cannot interleave and corrupt the file
     await withLock(`context-save-${this.taskId}`, async () => {
       try {
-        await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
+        const dir = path.dirname(this.storagePath);
+        await fs.mkdir(dir, { recursive: true });
 
         const contextData: TaskContext = {
           version: CURRENT_CONTEXT_VERSION,
@@ -678,9 +679,13 @@ export class ContextManager {
           contextFiles: this.files,
         };
 
+        // Remove temp files orphaned by a crash between writeFile and rename
+        await this.cleanupStaleTempFiles(dir);
+
         // Write atomically: write to a temp file, then rename over the target so a
         // crash mid-write never leaves context.json half-written.
-        const temporaryPath = `${this.storagePath}.${process.pid}.tmp`;
+        const baseName = path.basename(this.storagePath);
+        const temporaryPath = path.join(dir, `${baseName}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`);
         await fs.writeFile(temporaryPath, JSON.stringify(contextData, null, 2), 'utf8');
         await fs.rename(temporaryPath, this.storagePath);
 
@@ -695,6 +700,28 @@ export class ContextManager {
         throw error;
       }
     });
+  }
+
+  /**
+   * Removes temp files orphaned by a crash between writeFile and rename.
+   * Only safe to call while holding the save lock for this task's storage path.
+   */
+  private async cleanupStaleTempFiles(dir: string): Promise<void> {
+    try {
+      const baseName = path.basename(this.storagePath);
+      const prefix = `${baseName}.`;
+      const files = await fs.readdir(dir);
+      for (const file of files) {
+        if (file.startsWith(prefix) && file.endsWith('.tmp')) {
+          await fs.unlink(path.join(dir, file)).catch(() => undefined);
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to clean up stale task context temp files:', {
+        error,
+        taskId: this.taskId,
+      });
+    }
   }
 
   /**
