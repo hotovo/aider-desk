@@ -17,7 +17,7 @@ Open **Settings → Extensions → OpenAI Codex Auth** and choose one of the two
 
 Device code sign-in is a beta OpenAI feature and must be enabled first in your ChatGPT security settings (or by a workspace admin for business/enterprise accounts).
 
-Tokens are stored in the AiderDesk data directory (`~/.aider-desk/extensions-data/openai-codex/auth-token.json` on default installs) and are automatically refreshed when they expire; they survive extension updates. Use **Sign out** to remove them.
+Tokens are stored in the `extensions-data/openai-codex` folder under the AiderDesk home/data directory (outside the extension install folder, so they survive extension updates) and are automatically refreshed when they expire. Use **Sign out** to remove them.
 
 ## Usage Quota
 

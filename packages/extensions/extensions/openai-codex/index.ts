@@ -82,11 +82,13 @@ let currentSessionId: string | undefined;
 const clampCacheKey = (key: string): string =>
   key.length <= PROMPT_CACHE_KEY_MAX_LENGTH ? key : Array.from(key).slice(0, PROMPT_CACHE_KEY_MAX_LENGTH).join('');
 
-// Tokens live in the app data dir so they survive extension updates; the legacy location inside
-// the extension install dir is migrated on load.
+// Tokens live outside the extension install dir so they survive extension updates; the legacy
+// location inside the extension install dir is migrated on load. Mirrors the app's home-dir
+// resolution (src/main/constants.ts): AIDER_DESK_DATA_DIR → AIDER_DESK_HOME_DIR → ~/.aider-desk
+const AIDER_DESK_HOME = process.env.AIDER_DESK_HOME_DIR ?? join(homedir(), process.env.AIDER_DESK_DIR ?? '.aider-desk');
 const DATA_DIR = process.env.AIDER_DESK_DATA_DIR
   ? join(process.env.AIDER_DESK_DATA_DIR, 'extensions-data', 'openai-codex')
-  : join(homedir(), '.aider-desk', 'extensions-data', 'openai-codex');
+  : join(AIDER_DESK_HOME, 'extensions-data', 'openai-codex');
 const TOKEN_FILE = join(DATA_DIR, 'auth-token.json');
 const LEGACY_TOKEN_FILE = join(__dirname, 'auth-token.json');
 
@@ -401,7 +403,7 @@ const startOAuthServer = (expectedState: string): Promise<{ server: Server; wait
   });
 };
 
-const runBrowserOAuthFlow = async (context: ExtensionContext): Promise<void> => {
+const runBrowserOAuthFlow = async (context: ExtensionContext, signal: AbortSignal): Promise<void> => {
   context.log('Starting OpenAI browser OAuth flow...', 'info');
 
   const { verifier, challenge } = await generatePKCE();
@@ -427,8 +429,15 @@ const runBrowserOAuthFlow = async (context: ExtensionContext): Promise<void> => 
     const timeout = new Promise<never>((_, rejectTimeout) => {
       setTimeout(() => rejectTimeout(new Error('Sign-in timed out. Please try again.')), BROWSER_FLOW_TIMEOUT_MS).unref();
     });
+    const aborted = new Promise<never>((_, rejectAbort) => {
+      signal.addEventListener('abort', () => {
+        const err = new Error('Aborted');
+        err.name = abortErrorName;
+        rejectAbort(err);
+      }, { once: true });
+    });
 
-    const code = await Promise.race([waitForCode(), timeout]);
+    const code = await Promise.race([waitForCode(), timeout, aborted]);
     context.log('Received authorization code, exchanging for tokens...', 'info');
 
     await exchangeAuthorizationCode(code, verifier, redirectUri);
@@ -459,8 +468,12 @@ interface DeviceFlowState {
   abort: AbortController;
 }
 
+interface BrowserFlowState {
+  abort: AbortController;
+}
+
 let deviceFlow: DeviceFlowState | null = null;
-let browserFlowRunning = false;
+let browserFlow: BrowserFlowState | null = null;
 let lastAuthError: string | undefined;
 
 const abortErrorName = 'AbortError';
@@ -501,12 +514,23 @@ const cancelDeviceFlow = (): void => {
   }
 };
 
-// Only mutates the flow that failed — a late error from an aborted flow must not taint a newer one
-const failDeviceFlow = (message: string, context: ExtensionContext): void => {
+const cancelBrowserFlow = (): void => {
+  if (browserFlow) {
+    browserFlow.abort.abort();
+    browserFlow = null;
+  }
+};
+
+// Only mutates the flow that failed — a late error from an aborted/old flow must not taint a
+// newer one, so the caller always passes its own flow instance
+const failDeviceFlow = (flow: DeviceFlowState, message: string, context: ExtensionContext): void => {
+  if (deviceFlow !== flow) {
+    return;
+  }
   context.log(`Device code sign-in failed: ${message}`, 'warn');
   lastAuthError = message;
-  if (deviceFlow) {
-    deviceFlow.abort.abort();
+  flow.abort.abort();
+  if (deviceFlow === flow) {
     deviceFlow = null;
   }
 };
@@ -531,10 +555,14 @@ const runDeviceCodeFlow = async (context: ExtensionContext): Promise<void> => {
       throw signal.aborted ? error : networkError(error, DEVICE_USER_CODE_URL);
     }
 
-    if (userCodeResponse.status === 404) {
-      throw new Error('Device code sign-in is not enabled for this account. Enable it in ChatGPT security settings (or ask your workspace admin).');
-    }
     if (!userCodeResponse.ok) {
+      // Mirrors codex-rs: a 404 here (feature-gated endpoint) means the device flow is disabled /
+      // unsupported on this auth server
+      if (userCodeResponse.status === 404) {
+        throw new Error(
+          'Device code sign-in is not enabled for this account or not supported by the auth server. Enable it in ChatGPT security settings (or ask your workspace admin).',
+        );
+      }
       throw new Error(`Device code request failed: ${userCodeResponse.status}`);
     }
 
@@ -543,7 +571,7 @@ const runDeviceCodeFlow = async (context: ExtensionContext): Promise<void> => {
       throw new Error('Device code response missing required fields');
     }
     const parsedInterval = typeof userCodeJson.interval === 'number' ? userCodeJson.interval : parseInt(String(userCodeJson.interval ?? '5'), 10);
-    const intervalMs = Math.max(Number.isFinite(parsedInterval) ? parsedInterval! : 5, 1) * 1000;
+    let pollIntervalMs = Math.max(Number.isFinite(parsedInterval) ? parsedInterval! : 5, 1) * 1000;
 
     if (deviceFlow !== flow) {
       return;
@@ -553,7 +581,7 @@ const runDeviceCodeFlow = async (context: ExtensionContext): Promise<void> => {
 
     const deadline = Date.now() + DEVICE_FLOW_TIMEOUT_MS;
     while (Date.now() < deadline && !signal.aborted) {
-      await sleep(intervalMs, signal);
+      await sleep(pollIntervalMs, signal);
 
       let pollResponse: Response;
       try {
@@ -587,18 +615,37 @@ const runDeviceCodeFlow = async (context: ExtensionContext): Promise<void> => {
         return;
       }
 
-      // 403/404 mean "not approved yet" — keep polling until the deadline
-      if (pollResponse.status !== 403 && pollResponse.status !== 404) {
-        throw new Error(`Device code polling failed: ${pollResponse.status}`);
+      // Conservative pending semantics: the endpoint contract mirrors codex-rs (403/404 mean
+      // "not approved yet"), and standard device grants report pending via 400 with an error
+      // code. slow_down requires backing off; anything else is a real failure.
+      const status = pollResponse.status;
+      if (status === 400 || status === 403 || status === 404 || status === 408 || status >= 429) {
+        const bodyText = await pollResponse.text().catch(() => '');
+        let errorCode = '';
+        try {
+          errorCode = (JSON.parse(bodyText) as { error?: string }).error ?? '';
+        } catch {
+          // body is not JSON — no error code available
+        }
+        if (errorCode === 'slow_down') {
+          pollIntervalMs += 5_000;
+          continue;
+        }
+        if (status === 400 && errorCode && errorCode !== 'authorization_pending') {
+          throw new Error(`Device code sign-in was rejected: ${errorCode}`);
+        }
+        continue;
       }
+
+      throw new Error(`Device code polling failed: ${status}`);
     }
 
     if (!signal.aborted) {
-      failDeviceFlow('Device code sign-in timed out. Please try again.', context);
+      failDeviceFlow(flow, 'Device code sign-in timed out. Please try again.', context);
     }
   } catch (error) {
     if ((error as Error)?.name !== abortErrorName) {
-      failDeviceFlow(error instanceof Error ? error.message : String(error), context);
+      failDeviceFlow(flow, error instanceof Error ? error.message : String(error), context);
     }
   }
 };
@@ -643,7 +690,7 @@ const getAuthState = async (): Promise<AuthState> => {
       userCode: deviceFlow.userCode || undefined,
       verificationUrl: DEVICE_VERIFICATION_URL,
     };
-  } else if (browserFlowRunning) {
+  } else if (browserFlow) {
     state.pendingFlow = { type: 'browser' };
   }
   if (lastAuthError) {
@@ -652,19 +699,26 @@ const getAuthState = async (): Promise<AuthState> => {
   return state;
 };
 
+// Silent variant for background work (quota display): null on unauthenticated or refresh failure
 const getValidTokensNonInteractive = async (context: ExtensionContext): Promise<StoredTokens | null> => {
+  try {
+    return await getValidTokensForCall(context);
+  } catch (error) {
+    context.log(`Token refresh failed: ${error instanceof Error ? error.message : error}`, 'warn');
+    return null;
+  }
+};
+
+// Throwing variant for the model-call path: the two failure kinds produce distinct, actionable
+// errors instead of one "go re-auth" message
+const getValidTokensForCall = async (context: ExtensionContext): Promise<StoredTokens> => {
   const tokens = await loadTokens();
   if (!tokens) {
-    return null;
+    throw new Error('OpenAI Codex is not authenticated. Open extension settings for OpenAI Codex Auth and sign in.');
   }
 
   if (Date.now() >= tokens.expiresAt - REFRESH_TOKEN_EXPIRY_BUFFER_MS) {
-    try {
-      return await refreshAccessToken(tokens.refreshToken, context);
-    } catch (error) {
-      context.log(`Token refresh failed: ${error instanceof Error ? error.message : error}`, 'warn');
-      return null;
-    }
+    return refreshAccessToken(tokens.refreshToken, context);
   }
 
   return tokens;
@@ -833,21 +887,26 @@ export default class OpenAICodexAuthExtension implements Extension {
         return getAuthState();
 
       case 'signInBrowser': {
-        if (browserFlowRunning || deviceFlow) {
+        if (browserFlow || deviceFlow) {
           return getAuthState();
         }
-        browserFlowRunning = true;
         lastAuthError = undefined;
+        const flow: BrowserFlowState = { abort: new AbortController() };
+        browserFlow = flow;
         void (async () => {
           try {
-            await runBrowserOAuthFlow(context);
+            await runBrowserOAuthFlow(context, flow.abort.signal);
             context.log('OpenAI browser sign-in successful', 'info');
           } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            context.log(`Browser sign-in failed: ${message}`, 'warn');
-            lastAuthError = message;
+            if (browserFlow === flow && (error as Error)?.name !== abortErrorName) {
+              const message = error instanceof Error ? error.message : String(error);
+              context.log(`Browser sign-in failed: ${message}`, 'warn');
+              lastAuthError = message;
+            }
           } finally {
-            browserFlowRunning = false;
+            if (browserFlow === flow) {
+              browserFlow = null;
+            }
           }
         })();
         return getAuthState();
@@ -859,13 +918,13 @@ export default class OpenAICodexAuthExtension implements Extension {
 
       case 'cancelSignIn':
         cancelDeviceFlow();
-        browserFlowRunning = false;
+        cancelBrowserFlow();
         lastAuthError = undefined;
         return getAuthState();
 
       case 'signOut':
         cancelDeviceFlow();
-        browserFlowRunning = false;
+        cancelBrowserFlow();
         lastAuthError = undefined;
         await clearTokens();
         context.log('OpenAI Codex signed out', 'info');
@@ -878,11 +937,10 @@ export default class OpenAICodexAuthExtension implements Extension {
 
   getProviders(context: ExtensionContext): ProviderDefinition[] {
     const createLlm = async (_profile: ProviderProfile, model: Model) => {
-      // Never start OAuth here — sign-in is an explicit user action from the settings UI
-      const tokens = await getValidTokensNonInteractive(context);
-      if (!tokens) {
-        throw new Error('OpenAI Codex is not authenticated. Open extension settings for OpenAI Codex Auth and sign in.');
-      }
+      // Never start OAuth here — sign-in is an explicit user action from the settings UI.
+      // Throws distinct errors: "not authenticated" vs "refresh failed: <cause>", so a network
+      // blip doesn't send users to re-auth pointlessly.
+      const tokens = await getValidTokensForCall(context);
       const accountId = getAccountId(tokens.accessToken);
       if (!accountId) {
         throw new Error('OpenAI Codex: failed to extract account ID from token. Sign in again from extension settings.');
