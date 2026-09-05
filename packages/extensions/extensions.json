@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "legacy-system-prompt",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "destructive-command-guard",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "reasoning-selector",
