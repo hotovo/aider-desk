@@ -22,7 +22,7 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME
 
 import logger from '@/logger';
 import { Task } from '@/task';
-import { isDirectory, isFileIgnored } from '@/utils';
+import { isDirectory, isFileIgnored, withLock } from '@/utils';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -667,26 +667,34 @@ export class ContextManager {
   }
 
   async save(): Promise<void> {
-    try {
-      await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
+    // Serialize writes so concurrent saves cannot interleave and corrupt the file
+    await withLock(`context-save-${this.taskId}`, async () => {
+      try {
+        await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
 
-      const contextData: TaskContext = {
-        version: CURRENT_CONTEXT_VERSION,
-        contextMessages: this.messages,
-        contextFiles: this.files,
-      };
+        const contextData: TaskContext = {
+          version: CURRENT_CONTEXT_VERSION,
+          contextMessages: this.messages,
+          contextFiles: this.files,
+        };
 
-      await fs.writeFile(this.storagePath, JSON.stringify(contextData, null, 2), 'utf8');
-      logger.debug(`Task context saved to ${this.storagePath}`, {
-        taskId: this.taskId,
-      });
-    } catch (error) {
-      logger.error('Failed to save task context:', {
-        error,
-        taskId: this.taskId,
-      });
-      throw error;
-    }
+        // Write atomically: write to a temp file, then rename over the target so a
+        // crash mid-write never leaves context.json half-written.
+        const temporaryPath = `${this.storagePath}.${process.pid}.tmp`;
+        await fs.writeFile(temporaryPath, JSON.stringify(contextData, null, 2), 'utf8');
+        await fs.rename(temporaryPath, this.storagePath);
+
+        logger.debug(`Task context saved to ${this.storagePath}`, {
+          taskId: this.taskId,
+        });
+      } catch (error) {
+        logger.error('Failed to save task context:', {
+          error,
+          taskId: this.taskId,
+        });
+        throw error;
+      }
+    });
   }
 
   /**
@@ -832,7 +840,17 @@ export class ContextManager {
     }
 
     const content = await fs.readFile(this.storagePath, 'utf8');
-    const contextData = content ? JSON.parse(content) : null;
+    let contextData: unknown = null;
+    try {
+      contextData = content ? JSON.parse(content) : null;
+    } catch (error) {
+      logger.error('Failed to parse task context, attempting recovery:', {
+        error,
+        taskId: this.taskId,
+      });
+      const recovery = await this.recoverCorruptContext();
+      return recovery || null;
+    }
 
     if (!contextData) {
       logger.debug('Empty task context found:', { taskId: this.taskId });
@@ -843,6 +861,70 @@ export class ContextManager {
     }
 
     return this.migrateContext(contextData);
+  }
+
+  /**
+   * Recovers from a corrupt/truncated context.json by falling back to the newest
+   * backup if one exists, otherwise moving the corrupt file aside and returning an
+   * empty context so the task still loads instead of failing outright.
+   */
+  private async recoverCorruptContext(): Promise<TaskContext | null> {
+    try {
+      const dir = path.dirname(this.storagePath);
+      const files = await fs.readdir(dir);
+      const backupPattern = /^context\.backup\.(\d+)\.json$/;
+      const backups = files
+        .filter((file) => backupPattern.test(file))
+        .sort((a, b) => {
+          const numA = parseInt(backupPattern.exec(a)![1], 10);
+          const numB = parseInt(backupPattern.exec(b)![1], 10);
+          return numB - numA;
+        });
+
+      if (backups.length > 0) {
+        const backupPath = path.join(dir, backups[0]);
+        try {
+          const content = await fs.readFile(backupPath, 'utf8');
+          const data = JSON.parse(content) as TaskContext;
+          logger.warn('Recovered task context from backup:', {
+            backupPath,
+            taskId: this.taskId,
+          });
+          return this.migrateContext(data);
+        } catch (error) {
+          logger.error('Failed to parse backup task context:', {
+            error,
+            backupPath,
+            taskId: this.taskId,
+          });
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to recover task context:', {
+        error,
+        taskId: this.taskId,
+      });
+    }
+
+    // No usable backup: move the corrupt file aside so it does not keep breaking loads.
+    try {
+      const corruptPath = `${this.storagePath}.corrupt-${Date.now()}`;
+      await fs.rename(this.storagePath, corruptPath);
+      logger.warn('Moved corrupt task context aside:', {
+        corruptPath,
+        taskId: this.taskId,
+      });
+    } catch (error) {
+      logger.error('Failed to move corrupt task context aside:', {
+        error,
+        taskId: this.taskId,
+      });
+    }
+
+    return {
+      contextMessages: [],
+      contextFiles: [],
+    };
   }
 
   private async loadInternal(): Promise<void> {
