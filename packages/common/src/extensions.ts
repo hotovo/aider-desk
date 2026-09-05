@@ -1574,6 +1574,15 @@ export interface ExtensionContext {
   getMemoryContext(): MemoryContext;
 
   /**
+   * Get the skills context for listing, finding, and writing AiderDesk skills.
+   * Backed by the same SkillManager used by the built-in skills tools, so skills created here
+   * are picked up by skill activation and the workspace skills panel.
+   * @returns SkillsContext instance (the project's SkillManager)
+   * @throws Error if no SkillManager is available (e.g., outside a project context)
+   */
+  getSkillContext(): SkillsContext;
+
+  /**
    * Truncate a tool result string that exceeds size limits.
    * Checks line count, byte size, and token count against the provided limits.
    * When content exceeds any limit, it is truncated with head/tail preservation
@@ -1644,6 +1653,75 @@ export interface MemoryContext {
    * Persists the setting to the store
    */
   setMemoryEnabled(enabled: boolean): void;
+}
+
+/**
+ * Result of a skill write operation (create, update, or file write).
+ * Validation and I/O errors are reported via `success: false` and a human-readable message.
+ */
+export interface SkillWriteResult {
+  /** Whether the operation succeeded */
+  success: boolean;
+  /** Human-readable result or error message */
+  message: string;
+  /** Absolute path of the skill directory or written file (on success) */
+  path?: string;
+}
+
+/**
+ * Context providing access to AiderDesk's skill system.
+ * Backed by the project's SkillManager — the same source of truth used by
+ * skill activation, the workspace skills panel, and the REST API.
+ * Skills live in `~/.aider-desk/skills/` (global) or `<project>/.aider-desk/skills/` (project)
+ * as a directory containing a `SKILL.md` with YAML frontmatter (`name`, `description`)
+ * and optional supporting files under `references/`, `templates/`, `scripts/`, or `assets/`.
+ */
+export interface SkillsContext {
+  /**
+   * List all available skills, including extension-provided, project, global, and builtin skills,
+   * deduplicated by name (project takes precedence over global).
+   */
+  listSkills(): Promise<SkillDefinition[]>;
+
+  /**
+   * Find a skill by name. Checks project skills first, then global skills.
+   * @param name - Skill name to look up
+   */
+  findSkill(name: string): Promise<SkillDefinition | null>;
+
+  /**
+   * Get the directory where a skill with the given name would live in the given location,
+   * regardless of whether it exists yet.
+   * @param name - Skill name
+   * @param location - Write-capable location: 'global' (~/.aider-desk/skills/) or 'project' (<project>/.aider-desk/skills/)
+   */
+  resolveSkillDir(name: string, location: 'global' | 'project'): string;
+
+  /**
+   * Create a new skill from SKILL.md content. Rejects names/frontmatter that violate
+   * skill-authoring rules and skills that already exist at the target location
+   * (a project skill may deliberately shadow a global one).
+   * @param name - Skill name (lowercase-hyphenated). The frontmatter `name` must match.
+   * @param content - Full SKILL.md content including YAML frontmatter
+   * @param location - Where to save: 'global' (default) or 'project'
+   */
+  createSkill(name: string, content: string, location?: 'global' | 'project'): Promise<SkillWriteResult>;
+
+  /**
+   * Fully rewrite the SKILL.md of an existing skill (project first, then global).
+   * @param name - Skill name
+   * @param content - Full SKILL.md content including YAML frontmatter
+   */
+  updateSkill(name: string, content: string): Promise<SkillWriteResult>;
+
+  /**
+   * Write a supporting file inside an existing skill (e.g. 'references/api.md', 'scripts/deploy.sh').
+   * Creates intermediate directories as needed.
+   * @param name - Skill name
+   * @param filePath - Path within the skill, relative to the skill directory
+   * @param content - File content to write
+   */
+  writeSkillFile(name: string, filePath: string, content: string): Promise<SkillWriteResult>;
 }
 
 /**

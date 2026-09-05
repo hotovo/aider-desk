@@ -219,7 +219,7 @@ export class Task {
     };
     this.taskDataPath = path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, 'settings.json');
     this.contextManager = new ContextManager(this, this.taskId);
-    this.skillManager = new SkillManager(project.baseDir, extensionManager);
+    this.skillManager = new SkillManager(project.baseDir, extensionManager, () => this.sendSkillsUpdated());
     this.agent = new Agent(
       this.store,
       this.agentProfileManager,

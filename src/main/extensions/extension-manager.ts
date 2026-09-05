@@ -78,6 +78,7 @@ import type { MemoryManager } from '@/memory/memory-manager';
 import type { TelemetryManager } from '@/telemetry';
 import type { ToolExecutionOptions, ToolSet } from 'ai';
 
+import { SkillManager as SkillManagerImpl } from '@/skills/skill-manager';
 import { shouldUsePolling } from '@/utils/file-watch';
 import logger from '@/logger';
 import { AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_GLOBAL_EXTENSIONS_DIR } from '@/constants';
@@ -209,6 +210,7 @@ export class ExtensionManager {
   private listeners: ExtensionsChangeListener[] = [];
   private extensionMtimes: Map<string, number> = new Map();
   private readonly startedProjects = new Map<string, Project>();
+  private readonly projectSkillManagers = new Map<string, SkillManagerImpl>();
 
   private libraryLoader: ExtensionLibraryLoader;
 
@@ -800,6 +802,7 @@ export class ExtensionManager {
       throw new Error(`Cannot create context: extension '${extensionId}' not found`);
     }
     const store = this.getOrCreateDisposableStore(loaded);
+    const skillManager = task?.getSkillManager?.() ?? (project ? this.getProjectSkillManager(project) : undefined);
     return new ExtensionContextImpl(
       extensionId,
       extensionName,
@@ -811,7 +814,40 @@ export class ExtensionManager {
       project,
       task,
       this.mcpConfigManager,
+      skillManager,
     );
+  }
+
+  private getProjectSkillManager(project: Project): SkillManagerImpl {
+    const existing = this.projectSkillManagers.get(project.baseDir);
+    if (existing) {
+      return existing;
+    }
+
+    const manager = new SkillManagerImpl(project.baseDir, this, () => this.broadcastSkillsUpdated(project));
+    this.projectSkillManagers.set(project.baseDir, manager);
+
+    return manager;
+  }
+
+  /**
+   * Notify every open task of a project that its skill list changed, so workspace
+   * skill panels reload. Used by the project-scoped skill manager (no task of its own).
+   */
+  private broadcastSkillsUpdated(project: Project): void {
+    void project
+      .getTasks()
+      .then(async (projectTasks) => {
+        const skills = await this.projectSkillManagers.get(project.baseDir)?.getSkills();
+        if (!skills) {
+          return;
+        }
+
+        for (const projectTask of projectTasks) {
+          this.eventManager?.sendSkillsUpdated(project.baseDir, projectTask.id, skills);
+        }
+      })
+      .catch((error: unknown) => logger.warn(`Failed to broadcast skills updated: ${error instanceof Error ? error.message : String(error)}`));
   }
 
   private findExtensionByPath(filePath: string): LoadedExtension | undefined {
@@ -2285,6 +2321,9 @@ export class ExtensionManager {
 
     // Early exit if no extensions
     if (enabledExtensions.length === 0) {
+      if (eventName === 'onProjectStopped') {
+        this.projectSkillManagers.delete(project.baseDir);
+      }
       return event;
     }
 
@@ -2341,6 +2380,11 @@ export class ExtensionManager {
         logger.error(`[Extensions] Error in '${String(eventName)}' handler for extension '${metadata.name}':`, error);
         // Continue to next extension - errors don't stop the chain
       }
+    }
+
+    // Evict after dispatch so handlers do not re-create and re-cache a manager for a stopped project
+    if (eventName === 'onProjectStopped') {
+      this.projectSkillManagers.delete(project.baseDir);
     }
 
     return currentEvent;

@@ -2,7 +2,7 @@ import { ProjectContextImpl } from './project-context';
 import { TaskContextImpl } from './task-context';
 
 import type { DisposableStore } from './disposable-store';
-import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, TaskContext } from '@common/extensions';
+import type { ElectronApp, ExtensionContext, MemoryContext, ProjectContext, SkillsContext, TaskContext } from '@common/extensions';
 import type { McpServerConfig, Model, ProviderProfile, SettingsData } from '@common/types';
 import type { McpConfigManager } from '@/agent/mcp-config-manager';
 import type { EventManager } from '@/events';
@@ -32,6 +32,7 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly project?: Project,
     private readonly task?: Task,
     private readonly mcpConfigManager?: McpConfigManager,
+    private readonly skillsContext?: SkillsContext,
   ) {
     this.disposableStore = disposableStore;
     this.taskContext = this.task ? new TaskContextImpl(this.task) : null;
@@ -227,6 +228,13 @@ export class ExtensionContextImpl implements ExtensionContext {
       throw new Error('MemoryManager not available');
     }
     return this.memoryManager;
+  }
+
+  getSkillContext(): SkillsContext {
+    if (!this.skillsContext) {
+      throw new Error('SkillManager not available');
+    }
+    return this.skillsContext;
   }
 
   async truncateToolResult(
