@@ -88,7 +88,7 @@ const myFunction = () => {
   [POWER_TOOL_FILE_WRITE]: 'Writes content to a specified file. Can create a new file, overwrite an existing file, or append to an existing file.',
   [POWER_TOOL_GLOB]: 'Finds files and directories matching a specified glob pattern within the project. Useful for discovering files based on patterns.',
   [POWER_TOOL_GREP]:
-    'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context.',
+    'Searches for content matching a regular expression pattern within files specified by a glob pattern. Returns matching lines and their context. By default, files ignored by .gitignore are excluded; set ignoreGitignore to true to include them.',
   [POWER_TOOL_SEMANTIC_SEARCH]:
     'Search code in the repository using natural-language queries with 2-5 descriptive words including key concepts and context. Use it to locate related implementations, explore unfamiliar areas, or identify potentially affected files. It can filter results with hints such as ext:ts, dir:src, or lang:typescript.',
   [POWER_TOOL_BASH]: 'Executes a shell command. For safety, commands may be sandboxed or require user approval (approval handled by Agent).',

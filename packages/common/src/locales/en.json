@@ -1521,7 +1521,8 @@
         "contextLines": "({{count}} lines of context)",
         "matchesCount": "({{count}} matches)",
         "lineLabel": "Line {{lineNumber}}:",
-        "contextLabel": "Context:"
+        "contextLabel": "Context:",
+        "ignoreGitignore": "Including ignored files"
       },
       "bash": {
         "title": "Run command",

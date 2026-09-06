@@ -17,6 +17,7 @@
 - fixed worktree integration checks failing when worktree directory no longer exists
 - added atomic context saving and corrupt recovery
 - optmized loading of available extensions
+- added ignoreGitignore input parameter for grep tool to search inside gitignored files
 
 ## [0.81.0]
 

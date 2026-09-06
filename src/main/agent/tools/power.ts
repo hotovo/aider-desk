@@ -431,9 +431,13 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
         .describe('The number of lines of context to show before and after each matching line. Default: 0.'),
       caseSensitive: coerceBoolean.optional().default(false).describe('Whether the search should be case sensitive. Default: false.'),
       maxResults: z.coerce.number().int().min(1).optional().default(50).describe('Maximum number of results to return. Default: 50.'),
+      ignoreGitignore: coerceBoolean
+        .optional()
+        .default(false)
+        .describe('Whether to include files ignored by .gitignore, .ignore or .rgignore files. Default: false.'),
     }),
     execute: async (input, { toolCallId }) => {
-      const { filePattern, searchTerm, contextLines, caseSensitive, maxResults } = input;
+      const { filePattern, searchTerm, contextLines, caseSensitive, maxResults, ignoreGitignore } = input;
       task.addToolMessage(
         toolCallId,
         TOOL_GROUP_NAME,
@@ -444,6 +448,7 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
           contextLines,
           caseSensitive,
           maxResults,
+          ignoreGitignore,
         },
         undefined,
         undefined,
@@ -467,6 +472,10 @@ Do not use escape characters \\ in the string like \\n or \\" and others. Do not
 
       try {
         const rgArgs: string[] = ['--no-heading', '--line-number', '--color', 'never', '--max-columns', '2000', '--max-columns-preview'];
+
+        if (ignoreGitignore) {
+          rgArgs.push('--no-ignore');
+        }
 
         if (!caseSensitive) {
           rgArgs.push('-i');

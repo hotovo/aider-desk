@@ -104,6 +104,7 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
   const filePattern = (message.args.filePattern as string) || '';
   const searchTerm = (message.args.searchTerm as string) || '';
   const contextLines = (message.args.contextLines as number) ?? 0;
+  const ignoreGitignore = (message.args.ignoreGitignore as boolean) ?? false;
   const rawContent = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
   const isMarkdown = rawContent && typeof rawContent === 'string' && rawContent.startsWith('## Grep Results:');
   const isError =
@@ -169,6 +170,7 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
         <span>
           <CodeInline className="bg-bg-primary-light">{searchTerm}</CodeInline>
         </span>
+        {ignoreGitignore && <span className="text-text-muted text-2xs mt-[1px]">{t('toolMessage.power.grep.ignoreGitignore')}</span>}
       </div>
       {!rawContent && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {rawContent &&
@@ -241,6 +243,7 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
               })}
             </span>
           )}
+          {ignoreGitignore && <span className="text-text-muted">{t('toolMessage.power.grep.ignoreGitignore')}</span>}
         </div>
         {Object.entries(groupedMatches).map(([filePath, matches]) => (
           <div key={filePath} className="mb-2 border border-border-dark-light rounded py-2 px-1">

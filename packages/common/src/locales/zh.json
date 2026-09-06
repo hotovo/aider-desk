@@ -1474,7 +1474,8 @@
         "contextLines": "({{count}} 行上下文)",
         "matchesCount": "({{count}} 个匹配)",
         "lineLabel": "第 {{lineNumber}} 行:",
-        "contextLabel": "上下文:"
+        "contextLabel": "上下文:",
+        "ignoreGitignore": "包含忽略的文件"
       },
       "bash": {
         "title": "执行 shell 命令",

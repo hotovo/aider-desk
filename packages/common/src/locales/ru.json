@@ -1512,7 +1512,8 @@
         "contextLines": "({{count}} строк контекста)",
         "matchesCount": "({{count}} совпадений)",
         "lineLabel": "Строка {{lineNumber}}:",
-        "contextLabel": "Контекст:"
+        "contextLabel": "Контекст:",
+        "ignoreGitignore": "Включая игнорируемые файлы"
       },
       "bash": {
         "title": "Выполнить команду",
