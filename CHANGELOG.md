@@ -15,6 +15,7 @@
 - added distinct "Create subtask" label when creating subtasks in the create task tool message
 - added git actions to the command palette with configurable hotkeys
 - fixed worktree integration checks failing when worktree directory no longer exists
+- added atomic context saving and corrupt recovery
 
 ## [0.81.0]
 
