@@ -51,21 +51,6 @@ export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onF
   const isDenied = messageText ? messageText.includes('denied') : false;
   const memoryId = result?.success ? result.id : undefined;
 
-  console.log(
-    '[StoreMemoryToolMessage] raw content:',
-    message.content,
-    '| parsed:',
-    parsedContent,
-    '| unwrapped:',
-    unwrapped,
-    '| result:',
-    result,
-    '| messageText:',
-    messageText,
-    '| memoryId:',
-    memoryId,
-  );
-
   const [currentMemories, setCurrentMemories] = useState<Set<string>>(new Set());
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
