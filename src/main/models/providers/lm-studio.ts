@@ -1,13 +1,12 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isLmStudioProvider, LmStudioProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-
-import type { LanguageModel } from 'ai';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { normalizeError } from '@/models/providers/shared';
 
 export const loadLmStudioModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isLmStudioProvider(profile.provider)) {
@@ -19,7 +18,9 @@ export const loadLmStudioModels = async (profile: ProviderProfile, settings: Set
 
   const provider = profile.provider as LmStudioProvider;
   const baseUrl = provider.baseUrl || '';
-  const environmentVariable = getEffectiveEnvironmentVariable('LM_STUDIO_API_BASE', settings);
+  // LMSTUDIO_API_BASE (no underscore between LM and STUDIO) is the spelling already used by
+  // createLlm, hasEnvVars and the renderer's LmStudioParameters component.
+  const environmentVariable = getEffectiveEnvironmentVariable('LMSTUDIO_API_BASE', settings);
   const effectiveBaseUrl = baseUrl || environmentVariable?.value || '';
 
   if (!effectiveBaseUrl) {
@@ -47,18 +48,13 @@ export const loadLmStudioModels = async (profile: ProviderProfile, settings: Set
     logger.info(`Loaded ${models.length} LM Studio models from ${effectiveBaseUrl} for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading LM Studio models';
+    const errorMsg = normalizeError(error, 'Unknown error loading LM Studio models');
     logger.error('Error loading LM Studio models:', error);
     return { models: [], success: false, error: errorMsg };
   }
 };
 
-export const hasLmStudioEnvVars = (settings: SettingsData): boolean => {
-  const base = getEffectiveEnvironmentVariable('LMSTUDIO_API_BASE', settings, undefined)?.value;
-  return !!base;
-};
-
-export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
+const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
   const lmstudioProvider = provider.provider as LmStudioProvider;
   const envVars: Record<string, string> = {};
 
@@ -73,40 +69,17 @@ export const getLmStudioAiderMapping = (provider: ProviderProfile, modelId: stri
   };
 };
 
-// === LLM Creation Functions ===
-export const createLmStudioLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as LmStudioProvider;
-  let baseUrl = provider.baseUrl;
-
-  if (!baseUrl) {
-    const effectiveVar = getEffectiveEnvironmentVariable('LMSTUDIO_API_BASE', settings, projectDir);
-    if (effectiveVar) {
-      baseUrl = effectiveVar.value;
-      logger.debug(`Loaded LMSTUDIO_API_BASE from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!baseUrl) {
-    throw new Error('Base URL is required for LMStudio provider. Set it in Providers settings or via the LMSTUDIO_API_BASE environment variable.');
-  }
-
-  const lmStudioProvider = createOpenAICompatible({
-    name: 'lmstudio',
-    baseURL: baseUrl,
-    headers: profile.headers,
-    includeUsage: true,
-  });
-  return lmStudioProvider(model.id);
-};
-
-// === Complete Strategy Implementation ===
-export const lmStudioProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createLmStudioLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  // Model discovery functions
-  loadModels: loadLmStudioModels,
-  hasEnvVars: hasLmStudioEnvVars,
-  getAiderMapping: getLmStudioAiderMapping,
-};
+// LM Studio is local-only (base URL, no credential), so loadModels/mapping stay bespoke
+export const lmStudioProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'lmstudio',
+  label: 'LM Studio',
+  sdkFactory: createOpenAICompatible,
+  extraFactoryOptions: () => ({ name: 'lmstudio', includeUsage: true }),
+  baseUrl: {
+    envKey: 'LMSTUDIO_API_BASE',
+    required: 'Base URL is required for LMStudio provider. Set it in Providers settings or via the LMSTUDIO_API_BASE environment variable.',
+  },
+  isProvider: isLmStudioProvider,
+  hasEnvKeys: ['LMSTUDIO_API_BASE'],
+  overrides: { loadModels: loadLmStudioModels, getAiderMapping: getLmStudioAiderMapping },
+});

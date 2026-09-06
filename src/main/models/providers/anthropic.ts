@@ -5,11 +5,11 @@ import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 
-import logger from '@/logger';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy } from '@/models';
 import { LoadModelsResponse } from '@/models/types';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+import { getAnthropicAdaptiveThinkingOptions, resolveProviderCredential } from '@/models/providers/shared';
 
 export const loadAnthropicModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isAnthropicProvider(profile.provider)) {
@@ -82,19 +82,14 @@ export const getAnthropicAiderMapping = (provider: ProviderProfile, modelId: str
 // === LLM Creation Functions ===
 export const createAnthropicLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
   const provider = profile.provider as AnthropicProvider;
-  let apiKey = provider.apiKey;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('ANTHROPIC_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded ANTHROPIC_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error('Anthropic API key is required in Providers settings or Aider environment variables (ANTHROPIC_API_KEY)');
-  }
+  const apiKey = resolveProviderCredential({
+    provider,
+    field: 'apiKey',
+    settings,
+    projectDir,
+    envKey: 'ANTHROPIC_API_KEY',
+    required: 'Anthropic API key is required in Providers settings or Aider environment variables (ANTHROPIC_API_KEY)',
+  });
 
   const anthropicProvider = createAnthropic({
     apiKey,
@@ -120,14 +115,7 @@ export const getAnthropicProviderOptions = (llmProvider: LlmProvider, _model: Mo
     return undefined;
   }
 
-  // Explicitly request adaptive thinking with summarized display so reasoning/thinking
-  // text is returned via thinking_delta events. Without this, newer Claude models (opus-4-7+)
-  // default to 'omitted' display and return empty thinking blocks.
-  return {
-    anthropic: {
-      thinking: { type: 'adaptive', display: 'summarized' },
-    },
-  } satisfies SharedV4ProviderOptions;
+  return getAnthropicAdaptiveThinkingOptions();
 };
 
 // === Complete Strategy Implementation ===

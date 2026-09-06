@@ -10,6 +10,7 @@ import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
 import { calculateCost } from '@/models/providers/default';
+import { getDefaultModelTemperature, mergeModelProps, normalizeError } from '@/models/providers/shared';
 
 interface OpenRouterTopProvider {
   is_moderated: boolean;
@@ -37,22 +38,6 @@ interface OpenRouterModel {
 interface OpenRouterModelsResponse {
   data: OpenRouterModel[];
 }
-
-const getDefaultModelTemperature = (modelId: string) => {
-  if (modelId.includes('claude')) {
-    return undefined;
-  }
-  if (modelId.includes('gemini')) {
-    return 0.7;
-  }
-  if (modelId.includes('gpt-5')) {
-    return undefined;
-  }
-  if (modelId.includes('qwen')) {
-    return 0.55;
-  }
-  return undefined;
-};
 
 const loadOpenrouterModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOpenRouterProvider(profile.provider)) {
@@ -99,7 +84,7 @@ const loadOpenrouterModels = async (profile: ProviderProfile, settings: Settings
     logger.info(`Loaded ${models.length} OpenRouter models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading OpenRouter models';
+    const errorMsg = normalizeError(error, 'Unknown error loading OpenRouter models');
     logger.error('Error loading OpenRouter models:', error);
     return { models: [], success: false, error: errorMsg };
   }
@@ -140,15 +125,24 @@ export const createOpenRouterLlm = (profile: ProviderProfile, model: Model, sett
     throw new Error('OpenRouter API key is required in Providers settings or Aider environment variables (OPENROUTER_API_KEY)');
   }
 
-  const providerOverrides = model.providerOverrides as Partial<OpenRouterProvider> | undefined;
-  const requireParameters = providerOverrides?.requireParameters ?? provider.requireParameters;
-  const order = providerOverrides?.order ?? provider.order;
-  const only = providerOverrides?.only ?? provider.only;
-  const ignore = providerOverrides?.ignore ?? provider.ignore;
-  const allowFallbacks = providerOverrides?.allowFallbacks ?? provider.allowFallbacks;
-  const dataCollection = providerOverrides?.dataCollection ?? provider.dataCollection;
-  const quantizations = providerOverrides?.quantizations ?? provider.quantizations;
-  const sort = providerOverrides?.sort ?? provider.sort;
+  const overrides = mergeModelProps(model, provider, [
+    'requireParameters',
+    'order',
+    'only',
+    'ignore',
+    'allowFallbacks',
+    'dataCollection',
+    'quantizations',
+    'sort',
+  ]);
+  const requireParameters = overrides.requireParameters;
+  const order = overrides.order;
+  const only = overrides.only;
+  const ignore = overrides.ignore;
+  const allowFallbacks = overrides.allowFallbacks;
+  const dataCollection = overrides.dataCollection;
+  const quantizations = overrides.quantizations;
+  const sort = overrides.sort;
 
   const openRouter = createOpenRouter({
     apiKey,

@@ -1,13 +1,12 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { GpustackProvider, isGpustackProvider } from '@common/agent';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-
-import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { normalizeError } from '@/models/providers/shared';
 
 interface GpustackModelResponse {
   items: Array<{
@@ -18,7 +17,7 @@ interface GpustackModelResponse {
   }>;
 }
 
-const loadGpustackModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
+export const loadGpustackModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isGpustackProvider(profile.provider)) {
     return { models: [], success: false };
   }
@@ -26,7 +25,6 @@ const loadGpustackModels = async (profile: ProviderProfile, settings: SettingsDa
   const provider = profile.provider as GpustackProvider;
   const apiKey = provider.apiKey || '';
   const baseUrl = provider.baseUrl;
-
   const apiKeyEnv = getEffectiveEnvironmentVariable('GPUSTACK_API_KEY', settings);
   const baseUrlEnv = getEffectiveEnvironmentVariable('GPUSTACK_API_BASE', settings);
 
@@ -61,18 +59,13 @@ const loadGpustackModels = async (profile: ProviderProfile, settings: SettingsDa
     logger.info(`Loaded ${models.length} GPUStack models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading GPUStack models';
+    const errorMsg = normalizeError(error, 'Unknown error loading GPUStack models');
     logger.warn('Failed to fetch GPUStack models via API:', error);
     return { models: [], success: false, error: errorMsg };
   }
 };
 
-const hasGpustackEnvVars = (settings: SettingsData): boolean => {
-  const hasApiKey = !!getEffectiveEnvironmentVariable('GPUSTACK_API_KEY', settings, undefined)?.value;
-  const hasBaseUrl = !!getEffectiveEnvironmentVariable('GPUSTACK_API_BASE', settings, undefined)?.value;
-  return hasApiKey || hasBaseUrl;
-};
-
+// GPUStack is a second credential (baseUrl), so its Aider mapping is bespoke
 const getGpustackAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping => {
   const gpustackProvider = provider.provider as GpustackProvider;
   const envVars: Record<string, string> = {};
@@ -96,55 +89,21 @@ const getGpustackAiderMapping = (provider: ProviderProfile, modelId: string, set
   };
 };
 
-// === LLM Creation Functions ===
-const createGpustackLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as GpustackProvider;
-  let apiKey = provider.apiKey;
-  let baseUrl = provider.baseUrl;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('GPUSTACK_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded GPUSTACK_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (GPUSTACK_API_KEY).`);
-  }
-
-  if (!baseUrl) {
-    const effectiveVar = getEffectiveEnvironmentVariable('GPUSTACK_API_BASE', settings, projectDir);
-    if (effectiveVar) {
-      baseUrl = effectiveVar.value;
-      logger.debug(`Loaded GPUSTACK_API_BASE from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!baseUrl) {
-    throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the GPUSTACK_API_BASE environment variable.`);
-  }
-
-  // Use createOpenAICompatible to get a provider instance, then get the model
-  // GPUStack uses /v1-openai prefix for OpenAI compatibility
-  const compatibleProvider = createOpenAICompatible({
-    name: provider.name,
-    apiKey,
-    baseURL: `${baseUrl}/v1-openai`,
-    headers: profile.headers,
-  });
-  return compatibleProvider(model.id);
-};
-
-// === Complete Strategy Implementation ===
-export const gpustackProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createGpustackLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  // Model discovery functions
-  loadModels: loadGpustackModels,
-  hasEnvVars: hasGpustackEnvVars,
-  getAiderMapping: getGpustackAiderMapping,
-};
+export const gpustackProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'gpustack',
+  label: 'GPUStack',
+  sdkFactory: createOpenAICompatible,
+  apiKeyEnv: 'GPUSTACK_API_KEY',
+  apiKeyRequired: (provider) => `API key is required for ${provider.name}. Check Providers settings or Aider environment variables (GPUSTACK_API_KEY).`,
+  baseUrl: {
+    envKey: 'GPUSTACK_API_BASE',
+    required: (provider) =>
+      `Base URL is required for ${provider.name} provider. Set it in Providers settings or via the GPUSTACK_API_BASE environment variable.`,
+    // GPUStack uses /v1-openai prefix for OpenAI compatibility
+    transform: (url) => `${url}/v1-openai`,
+  },
+  extraFactoryOptions: ({ provider }) => ({ name: provider.name }),
+  isProvider: isGpustackProvider,
+  hasEnvKeys: ['GPUSTACK_API_KEY', 'GPUSTACK_API_BASE'],
+  overrides: { loadModels: loadGpustackModels, getAiderMapping: getGpustackAiderMapping },
+});

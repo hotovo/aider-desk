@@ -1,14 +1,22 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { isOllamaProvider, OllamaProvider } from '@common/agent';
 import { createOllama } from 'ollama-ai-provider-v2';
 import { simulateStreamingMiddleware, wrapLanguageModel } from 'ai';
-
-import type { LanguageModel } from 'ai';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { normalizeError } from '@/models/providers/shared';
+
+/** strips trailing slashes, then appends the Ollama REST prefix if missing */
+const normalizeOllamaBaseUrl = (baseUrl: string): string => {
+  let normalized = baseUrl.replace(/\/+$/, '');
+  if (!normalized.endsWith('/api')) {
+    normalized = `${normalized}/api`;
+  }
+  return normalized;
+};
 
 export const loadOllamaModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOllamaProvider(profile.provider)) {
@@ -25,11 +33,7 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
   }
 
   try {
-    let normalized = effectiveBaseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
-    if (!normalized.endsWith('/api')) {
-      normalized = `${normalized}/api`;
-    }
-    const response = await fetch(`${normalized}/tags`);
+    const response = await fetch(`${normalizeOllamaBaseUrl(effectiveBaseUrl)}/tags`);
     if (!response.ok) {
       const errorMsg = `Ollama models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
       logger.warn(errorMsg);
@@ -50,17 +54,13 @@ export const loadOllamaModels = async (profile: ProviderProfile, settings: Setti
     logger.info(`Loaded ${models.length} Ollama models from ${effectiveBaseUrl} for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading Ollama models';
+    const errorMsg = normalizeError(error, 'Unknown error loading Ollama models');
     logger.error('Error loading Ollama models:', error);
     return { models: [], success: false, error: errorMsg };
   }
 };
 
-export const hasOllamaEnvVars = (settings: SettingsData): boolean => {
-  return !!getEffectiveEnvironmentVariable('OLLAMA_API_BASE', settings, undefined)?.value;
-};
-
-export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
+const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
   const ollamaProvider = provider.provider as OllamaProvider;
   const envVars: Record<string, string> = {};
 
@@ -75,46 +75,18 @@ export const getOllamaAiderMapping = (provider: ProviderProfile, modelId: string
   };
 };
 
-// === LLM Creation Functions ===
-export const createOllamaLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as OllamaProvider;
-  let baseUrl = provider.baseUrl;
-
-  if (!baseUrl) {
-    const effectiveVar = getEffectiveEnvironmentVariable('OLLAMA_API_BASE', settings, projectDir);
-    if (effectiveVar) {
-      baseUrl = effectiveVar.value;
-      logger.debug(`Loaded OLLAMA_API_BASE from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!baseUrl) {
-    throw new Error('Base URL is required for Ollama provider. Set it in Providers settings or via the OLLAMA_API_BASE environment variable.');
-  }
-
-  let normalized = baseUrl.replace(/\/+$/, ''); // Remove all trailing slashes
-  if (!normalized.endsWith('/api')) {
-    normalized = `${normalized}/api`;
-  }
-
-  const ollamaInstance = createOllama({
-    baseURL: normalized,
-    headers: profile.headers,
-  });
-  return wrapLanguageModel({
-    model: ollamaInstance(model.id),
-    middleware: simulateStreamingMiddleware(),
-  });
-};
-
-// === Complete Strategy Implementation ===
-export const ollamaProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createOllamaLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  // Model discovery functions
-  loadModels: loadOllamaModels,
-  hasEnvVars: hasOllamaEnvVars,
-  getAiderMapping: getOllamaAiderMapping,
-};
+// Ollama is local-only (no credential, base URL only), so loadModels/mapping stay bespoke
+export const ollamaProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'ollama',
+  label: 'Ollama',
+  sdkFactory: createOllama,
+  baseUrl: {
+    envKey: 'OLLAMA_API_BASE',
+    required: 'Base URL is required for Ollama provider. Set it in Providers settings or via the OLLAMA_API_BASE environment variable.',
+    transform: normalizeOllamaBaseUrl,
+  },
+  wrapModel: (model) => wrapLanguageModel({ model, middleware: simulateStreamingMiddleware() }),
+  isProvider: isOllamaProvider,
+  hasEnvKeys: ['OLLAMA_API_BASE'],
+  overrides: { loadModels: loadOllamaModels, getAiderMapping: getOllamaAiderMapping },
+});

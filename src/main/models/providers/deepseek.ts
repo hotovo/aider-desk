@@ -1,99 +1,14 @@
-import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
-import { DeepseekProvider, isDeepseekProvider, LlmProvider } from '@common/agent';
+import { isDeepseekProvider, LlmProvider } from '@common/agent';
 import { createDeepSeek } from '@ai-sdk/deepseek';
+import { Model, Reasoning } from '@common/types';
 
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModel } from 'ai';
 
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
-import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+import { LlmProviderStrategy } from '@/models';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { mergeModelProps } from '@/models/providers/shared';
 
-export const loadDeepseekModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
-  if (!isDeepseekProvider(profile.provider)) {
-    return { models: [], success: false };
-  }
-
-  const provider = profile.provider as DeepseekProvider;
-  const apiKey = provider.apiKey || '';
-  const apiKeyEnv = getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', settings);
-
-  if (!apiKey && !apiKeyEnv?.value) {
-    return { models: [], success: false };
-  }
-
-  try {
-    const response = await fetch('https://api.deepseek.com/v1/models', {
-      headers: { Authorization: `Bearer ${apiKey || apiKeyEnv?.value || ''}` },
-    });
-    if (!response.ok) {
-      const errorMsg = `DeepSeek models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
-      logger.error(errorMsg, response.status, response.statusText);
-      return { models: [], success: false, error: errorMsg };
-    }
-
-    const data = await response.json();
-    const models =
-      data.data?.map((m: { id: string }) => {
-        return {
-          id: m.id,
-          providerId: profile.id,
-        } satisfies Model;
-      }) || [];
-
-    logger.info(`Loaded ${models.length} DeepSeek models for profile ${profile.id}`);
-    return { models, success: true };
-  } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading DeepSeek models';
-    logger.error('Error loading DeepSeek models:', error);
-    return { models: [], success: false, error: errorMsg };
-  }
-};
-
-export const hasDeepseekEnvVars = (settings: SettingsData): boolean => {
-  return !!getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', settings, undefined)?.value;
-};
-
-export const getDeepseekAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
-  const deepseekProvider = provider.provider as DeepseekProvider;
-  const envVars: Record<string, string> = {};
-
-  if (deepseekProvider.apiKey) {
-    envVars.DEEPSEEK_API_KEY = deepseekProvider.apiKey;
-  }
-
-  return {
-    modelName: `deepseek/${modelId}`,
-    environmentVariables: envVars,
-  };
-};
-
-// === LLM Creation Functions ===
-export const createDeepseekLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as DeepseekProvider;
-  let apiKey = provider.apiKey;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('DEEPSEEK_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded DEEPSEEK_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error('Deepseek API key is required in Providers settings or Aider environment variables (DEEPSEEK_API_KEY)');
-  }
-
-  const deepseekProvider = createDeepSeek({
-    apiKey,
-    headers: profile.headers,
-  });
-  return deepseekProvider(model.id);
-};
-
-const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
+export const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (!isDeepseekProvider(llmProvider)) {
     return undefined;
   }
@@ -111,9 +26,9 @@ const getDeepseekProviderOptions = (llmProvider: LlmProvider, model: Model, reas
     return undefined;
   }
 
-  const providerOverrides = model.providerOverrides as Partial<DeepseekProvider> | undefined;
-  const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort ?? 'high';
+  const overrides = mergeModelProps(model, llmProvider, ['thinkingEnabled', 'reasoningEffort']);
+  const thinkingEnabled = overrides.thinkingEnabled ?? true;
+  const reasoningEffort = overrides.reasoningEffort ?? 'high';
 
   return {
     deepseek: {
@@ -128,8 +43,8 @@ const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model, r
     return {};
   }
 
-  const providerOverrides = model.providerOverrides as Partial<DeepseekProvider> | undefined;
-  const configuredThinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
+  const overrides = mergeModelProps(model, llmProvider, ['thinkingEnabled']);
+  const configuredThinkingEnabled = overrides.thinkingEnabled ?? true;
   const thinkingEnabled = reasoning && reasoning !== 'provider-default' ? reasoning !== 'none' : configuredThinkingEnabled;
 
   if (thinkingEnabled) {
@@ -142,18 +57,23 @@ const getDeepseekProviderParameters = (llmProvider: LlmProvider, model: Model, r
   return {};
 };
 
-// === Complete Strategy Implementation ===
-export const deepseekProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createDeepseekLlm,
-  getUsageReport: getDefaultUsageReport,
+export const deepseekProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'deepseek',
+  // error message spells the name without the internal 'DeepSeek' casing
+  label: 'DeepSeek',
+  sdkFactory: createDeepSeek,
+  apiKeyEnv: 'DEEPSEEK_API_KEY',
+  apiKeyRequired: 'Deepseek API key is required in Providers settings or Aider environment variables (DEEPSEEK_API_KEY)',
+  isProvider: isDeepseekProvider,
+  modelsLoader: {
+    type: 'openai-compatible',
+    url: 'https://api.deepseek.com/v1/models',
+  },
+  aider: { prefix: 'deepseek', apiKeyEnv: 'DEEPSEEK_API_KEY' },
+  overrides: {
+    getProviderOptions: getDeepseekProviderOptions,
+    getProviderParameters: getDeepseekProviderParameters,
+  },
+});
 
-  // Model discovery functions
-  loadModels: loadDeepseekModels,
-  hasEnvVars: hasDeepseekEnvVars,
-  getAiderMapping: getDeepseekAiderMapping,
-  getModelInfo: getDefaultModelInfo,
-
-  getProviderOptions: getDeepseekProviderOptions,
-  getProviderParameters: getDeepseekProviderParameters,
-};
+export const loadDeepseekModels = deepseekProviderStrategy.loadModels;

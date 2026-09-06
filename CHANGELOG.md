@@ -15,6 +15,10 @@
 - added distinct "Create subtask" label when creating subtasks in the create task tool message
 - added git actions to the command palette with configurable hotkeys
 - fixed worktree integration checks failing when worktree directory no longer exists
+- improved provider model catalog enrichment so it now applies consistently to all simple/OpenAI-compatible providers, including token limits and input/output pricing where models.dev metadata is available (previously some descriptor-based providers missed these fields); enrichment now looks up models by the provider profile's canonical id first, taking precedence over the profile's name when both catalog entries exist, so a catalog provider whose id matches no longer loses its pricing and token limits to another provider whose name happens to match
+- improved zai-plan model discovery to use the ZAI_API_KEY environment variable instead of OPENAI_API_KEY (the Aider environment mapping still passes the key to the Aider process as OPENAI_API_KEY); users relying on OPENAI_API_KEY for zai-plan model discovery should rename it
+- improved Vertex AI model discovery to use the VERTEXAI_PROJECT/VERTEXAI_LOCATION environment variables instead of VERTEX_PROJECT/VERTEX_LOCATION, aligning with LLM configuration and the Aider environment mapping; users relying on the old variable names should rename them
+- improved LM Studio model discovery to use the LMSTUDIO_API_BASE environment variable instead of LM_STUDIO_API_BASE, aligning with provider creation and settings; users relying on LM_STUDIO_API_BASE for model discovery should rename it (the Aider environment mapping continues to output LM_STUDIO_API_BASE, which remains supported for provider settings)
 
 ## [0.81.0]
 

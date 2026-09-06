@@ -14,7 +14,7 @@ import type { Task } from '@/task';
 
 import logger from '@/logger';
 import { truncateToolResult } from '@/agent/utils';
-import { openUrl as openUrlUtil } from '@/utils/open-url';
+import { openUrl as openUrlUtil, redactErrorForLog, redactTokenQueryParam } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
   private readonly taskContext: TaskContext | null;
@@ -179,7 +179,7 @@ export class ExtensionContextImpl implements ExtensionContext {
   }
 
   async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void> {
-    this.log(`Opening URL: ${url} (target: ${target})`);
+    this.log(`Opening URL: ${redactTokenQueryParam(url)} (target: ${target})`);
     try {
       if (target === 'modal-overlay') {
         if (!this.eventManager) {
@@ -191,7 +191,10 @@ export class ExtensionContextImpl implements ExtensionContext {
         await openUrlUtil(url, target);
       }
     } catch (error) {
-      this.log(`Failed to open URL: ${error}`, 'error');
+      // Errors from the external-browser dispatch (execSync) embed the full
+      // command — including any token-bearing URL — in their message. Redact
+      // the log string only; the original error is rethrown untouched.
+      this.log(`Failed to open URL: ${redactErrorForLog(error)}`, 'error');
       throw error;
     }
   }

@@ -1,7 +1,6 @@
 import { createAzure } from '@ai-sdk/azure';
 import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning } from '@common/types';
 import { AzureProvider, isAzureProvider, LlmProvider } from '@common/agent';
-import { type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 
 import type { LanguageModel } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -10,6 +9,7 @@ import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+import { getOpenAiFamilyProviderOptions, mergeModelProps } from '@/models/providers/shared';
 
 const extractResourceNameFromEndpoint = (endpoint: string): string => {
   try {
@@ -92,42 +92,10 @@ export const createAzureLlm = (profile: ProviderProfile, model: Model, settings:
 
 export const getAzureProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isAzureProvider(llmProvider)) {
-    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
-    // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
-    // Keep reasoningSummary so reasoning output is still returned.
-    if (reasoning && reasoning !== 'provider-default') {
-      return {
-        openai: {
-          reasoningSummary: 'auto',
-        } satisfies OpenAIResponsesProviderOptions,
-      };
-    }
-
     // Extract reasoningEffort from model overrides or provider config
-    const providerOverrides = model.providerOverrides as Partial<AzureProvider> | undefined;
-    const reasoningEffort = providerOverrides?.reasoningEffort ?? llmProvider.reasoningEffort;
+    const { reasoningEffort } = mergeModelProps(model, llmProvider, ['reasoningEffort']);
 
-    // Map ReasoningEffort enum to AI SDK format
-    const mappedReasoningEffort =
-      reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
-        ? undefined
-        : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
-
-    const options: OpenAIResponsesProviderOptions = {};
-
-    if (mappedReasoningEffort) {
-      logger.debug('Using reasoning effort:', { mappedReasoningEffort });
-      options.reasoningEffort = mappedReasoningEffort;
-      options.reasoningSummary = 'auto';
-    }
-
-    if (Object.keys(options).length === 0) {
-      return undefined;
-    }
-
-    return {
-      openai: options,
-    };
+    return getOpenAiFamilyProviderOptions('openai', reasoningEffort, reasoning);
   }
 
   return undefined;

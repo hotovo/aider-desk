@@ -6,13 +6,16 @@ import { Task } from '@/task';
 import logger from '@/logger';
 
 export const getDefaultModelInfo = (provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined => {
-  // Try provider.name prefix first
-  let fullModelId = `${provider.name}/${modelId}`;
+  // Canonical profile identity first: modelsInfo is keyed by catalog provider
+  // ids (openai, google, ...), and profile.name is an arbitrary user-facing
+  // label that must not shadow or substitute for it (a profile merely named
+  // after another catalog provider would otherwise inherit its metadata).
+  let fullModelId = `${provider.id}/${modelId}`;
   let modelInfo = allModelInfos[fullModelId];
 
-  // If not found, try provider.id prefix
-  if (!modelInfo) {
-    fullModelId = `${provider.id}/${modelId}`;
+  // Fall back to the profile name only when the canonical id has no entry
+  if (!modelInfo && provider.name) {
+    fullModelId = `${provider.name}/${modelId}`;
     modelInfo = allModelInfos[fullModelId];
   }
 

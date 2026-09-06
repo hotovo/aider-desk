@@ -1,13 +1,13 @@
-import { Model, ProviderProfile, SettingsData } from '@common/types';
 import { ClinePassProvider, isClinePassProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-
-import type { LanguageModel } from 'ai';
+import { Model, ProviderProfile, SettingsData } from '@common/types';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { normalizeError } from '@/models/providers/shared';
+import { MINIMAX_M3_MODEL_PRICING } from '@/models/providers/minimax';
 
 const CLINEPASS_BASE_URL = 'https://api.cline.bot/api/v1';
 
@@ -72,10 +72,7 @@ const CLINEPASS_MODELS: ClinePassModelMetadata[] = [
   },
   {
     id: 'minimax-m3',
-    maxInputTokens: 1000000,
-    inputCostPerToken: 0.0000003, // $0.30 per 1M
-    outputCostPerToken: 0.0000012, // $1.20 per 1M
-    cacheReadInputTokenCost: 0.00000006, // $0.06 per 1M
+    ...MINIMAX_M3_MODEL_PRICING,
   },
   {
     id: 'qwen3.7-max',
@@ -115,6 +112,9 @@ interface ClinePassApiResponse {
   data: ClinePassApiModel[];
 }
 
+const clinePassStaticModels = (profile: ProviderProfile): Model[] => CLINEPASS_MODELS.map((m) => toClinePassModel(m, profile.id));
+
+// ClinePass consults CLINE_API_KEY even when provider.apiKey is set
 const resolveApiKey = (provider: ClinePassProvider, settings: SettingsData, projectDir?: string): string => {
   const envKey = getEffectiveEnvironmentVariable('CLINE_API_KEY', settings, projectDir);
   return provider.apiKey || envKey?.value || '';
@@ -130,7 +130,7 @@ export const loadClinePassModels = async (profile: ProviderProfile, settings: Se
 
   if (!apiKey) {
     logger.debug('ClinePass API key not available, using static model list');
-    const models = CLINEPASS_MODELS.map((m) => toClinePassModel(m, profile.id));
+    const models = clinePassStaticModels(profile);
     return { models, success: true };
   }
 
@@ -142,8 +142,7 @@ export const loadClinePassModels = async (profile: ProviderProfile, settings: Se
     if (!response.ok) {
       const errorMsg = `ClinePass models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
       logger.debug(errorMsg);
-      const models = CLINEPASS_MODELS.map((m) => toClinePassModel(m, profile.id));
-      return { models, success: true };
+      return { models: clinePassStaticModels(profile), success: true };
     }
 
     const data: ClinePassApiResponse = await response.json();
@@ -161,25 +160,19 @@ export const loadClinePassModels = async (profile: ProviderProfile, settings: Se
 
     if (models.length === 0) {
       logger.debug('No models returned from ClinePass API, using static model list');
-      const staticModels = CLINEPASS_MODELS.map((m) => toClinePassModel(m, profile.id));
-      return { models: staticModels, success: true };
+      return { models: clinePassStaticModels(profile), success: true };
     }
 
     logger.info(`Loaded ${models.length} ClinePass models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading ClinePass models';
+    const errorMsg = normalizeError(error, 'Unknown error loading ClinePass models');
     logger.warn('Failed to fetch ClinePass models via API:', error);
-    const models = CLINEPASS_MODELS.map((m) => toClinePassModel(m, profile.id));
-    return { models, success: true, error: errorMsg };
+    return { models: clinePassStaticModels(profile), success: true, error: errorMsg };
   }
 };
 
-export const hasClinePassEnvVars = (settings: SettingsData): boolean => {
-  return !!getEffectiveEnvironmentVariable('CLINE_API_KEY', settings, undefined)?.value;
-};
-
-export const getClinePassAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping => {
+const getClinePassAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping => {
   const clinePassProvider = provider.provider as ClinePassProvider;
   const envVars: Record<string, string> = {
     OPENAI_API_BASE: CLINEPASS_BASE_URL,
@@ -196,28 +189,19 @@ export const getClinePassAiderMapping = (provider: ProviderProfile, modelId: str
   };
 };
 
-export const createClinePassLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as ClinePassProvider;
-  const apiKey = resolveApiKey(provider, settings, projectDir);
-
-  if (!apiKey) {
-    throw new Error('ClinePass API key is required in Providers settings or Aider environment variables (CLINE_API_KEY)');
-  }
-
-  const compatibleProvider = createOpenAICompatible({
-    name: 'clinepass',
-    apiKey,
-    baseURL: CLINEPASS_BASE_URL,
-    headers: profile.headers,
-  });
-  return compatibleProvider(`cline-pass/${model.id}`);
-};
-
-export const clinePassProviderStrategy: LlmProviderStrategy = {
-  createLlm: createClinePassLlm,
-  getUsageReport: getDefaultUsageReport,
-  loadModels: loadClinePassModels,
-  hasEnvVars: hasClinePassEnvVars,
-  getAiderMapping: getClinePassAiderMapping,
-  getModelInfo: getDefaultModelInfo,
-};
+export const clinePassProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'clinepass',
+  label: 'ClinePass',
+  sdkFactory: createOpenAICompatible,
+  apiKeyEnv: 'CLINE_API_KEY',
+  apiKeyRequired: () => 'ClinePass API key is required in Providers settings or Aider environment variables (CLINE_API_KEY)',
+  credResolver: ({ provider, settings, projectDir }) => resolveApiKey(provider as unknown as ClinePassProvider, settings, projectDir),
+  fixedBaseURL: CLINEPASS_BASE_URL,
+  extraFactoryOptions: () => ({ name: 'clinepass' }),
+  createModelId: (model) => `cline-pass/${model.id}`,
+  isProvider: isClinePassProvider,
+  overrides: {
+    loadModels: loadClinePassModels,
+    getAiderMapping: getClinePassAiderMapping,
+  },
+});

@@ -1,118 +1,37 @@
-import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
-import { isSyntheticProvider, SyntheticProvider } from '@common/agent';
+import { isSyntheticProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 
-import { getDefaultUsageReport } from './default';
+import { LlmProviderStrategy } from '@/models';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { getModelInfoByPrefix } from '@/models/providers/shared';
 
-import type { LanguageModel } from 'ai';
+const SYNTHETIC_BASE_URL = 'https://api.synthetic.new/openai/v1';
 
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
-import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
-
-const loadSyntheticModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
-  if (!isSyntheticProvider(profile.provider)) {
-    return { models: [], success: false };
-  }
-
-  const provider = profile.provider as SyntheticProvider;
-  const apiKey = provider.apiKey || '';
-
-  const apiKeyEnv = getEffectiveEnvironmentVariable('SYNTHETIC_API_KEY', settings);
-
-  const effectiveApiKey = apiKey || apiKeyEnv?.value;
-
-  if (!effectiveApiKey) {
-    return { models: [], success: false };
-  }
-
-  try {
-    const response = await fetch('https://api.synthetic.new/openai/v1/models', {
-      headers: { Authorization: `Bearer ${effectiveApiKey}` },
-    });
-    if (!response.ok) {
-      const errorMsg = `Synthetic models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
-      logger.debug(errorMsg);
-      return { models: [], success: false, error: errorMsg };
-    }
-
-    const data = await response.json();
-    const models =
-      data.data?.map((model: { id: string }) => {
-        return {
-          id: model.id,
-          providerId: profile.id,
-        } satisfies Model;
-      }) || [];
-
-    logger.info(`Loaded ${models.length} Synthetic models for profile ${profile.id}`);
-    return { models, success: true };
-  } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading Synthetic models';
-    logger.warn('Failed to fetch Synthetic models via API:', error);
-    return { models: [], success: false, error: errorMsg };
-  }
-};
-
-const hasSyntheticEnvVars = (): boolean => false;
-
-const getSyntheticAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping => {
-  const syntheticProvider = provider.provider as SyntheticProvider;
-  const envVars: Record<string, string> = {};
-
-  if (syntheticProvider.apiKey) {
-    envVars.OPENAI_API_KEY = syntheticProvider.apiKey;
-  } else {
-    const effectiveVar = getEffectiveEnvironmentVariable('SYNTHETIC_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      envVars.OPENAI_API_KEY = effectiveVar.value;
-    }
-  }
-
-  envVars.OPENAI_API_BASE = 'https://api.synthetic.new/openai/v1';
-
-  return {
-    modelName: `openai/${modelId}`,
-    environmentVariables: envVars,
-  };
-};
-
-const createSyntheticLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as SyntheticProvider;
-  let apiKey = provider.apiKey;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('SYNTHETIC_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded SYNTHETIC_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (SYNTHETIC_API_KEY).`);
-  }
-
-  const compatibleProvider = createOpenAICompatible({
-    name: provider.name,
-    apiKey,
-    baseURL: 'https://api.synthetic.new/openai/v1',
-    headers: profile.headers,
-  });
-  return compatibleProvider(model.id);
-};
-
-const getSyntheticModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined => {
-  const fullModelId = `synthetic/${modelId}`;
-  return allModelInfos[fullModelId];
-};
-
-export const syntheticProviderStrategy: LlmProviderStrategy = {
-  createLlm: createSyntheticLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  loadModels: loadSyntheticModels,
-  hasEnvVars: hasSyntheticEnvVars,
-  getAiderMapping: getSyntheticAiderMapping,
-  getModelInfo: getSyntheticModelInfo,
-};
+export const syntheticProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'synthetic',
+  label: 'Synthetic',
+  sdkFactory: createOpenAICompatible,
+  apiKeyEnv: 'SYNTHETIC_API_KEY',
+  apiKeyRequired: (provider) => `API key is required for ${provider.name}. Check Providers settings or Aider environment variables (SYNTHETIC_API_KEY).`,
+  fixedBaseURL: SYNTHETIC_BASE_URL,
+  extraFactoryOptions: ({ provider }) => ({ name: provider.name }),
+  isProvider: isSyntheticProvider,
+  modelsLoader: {
+    type: 'openai-compatible',
+    url: `${SYNTHETIC_BASE_URL}/models`,
+    notOkLog: 'debug',
+    catchLog: 'warn',
+  },
+  // Synthetic is only configured via provider API keys; no Aider env var is checked
+  hasEnvVars: false,
+  aider: {
+    prefix: 'openai',
+    apiKeyEnv: 'OPENAI_API_KEY',
+    sourceEnvKey: 'SYNTHETIC_API_KEY',
+    readEnvFallback: true,
+    upstreamBaseUrl: SYNTHETIC_BASE_URL,
+  },
+  overrides: {
+    getModelInfo: getModelInfoByPrefix('synthetic'),
+  },
+});

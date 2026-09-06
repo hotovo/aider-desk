@@ -1,13 +1,12 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { isLitellmProvider, LitellmProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { Model, ProviderProfile, SettingsData } from '@common/types';
 
-import type { LanguageModel } from 'ai';
-
-import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { normalizeError } from '@/models/providers/shared';
 
 interface LiteLLMModelInfo {
   model_name: string;
@@ -35,6 +34,13 @@ interface LiteLLMModelInfo {
     output_cost_per_token?: number;
   };
 }
+
+const getValue = (
+  info: LiteLLMModelInfo,
+  key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token',
+) => {
+  return info[key] ?? info.model_info?.[key] ?? info.litellm_params?.[key];
+};
 
 export const loadLitellmModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isLitellmProvider(profile.provider)) {
@@ -101,14 +107,6 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
     });
 
     const models: Model[] = Object.entries(modelsByName).map(([name, infos]) => {
-      // Helper to find value in multiple places for a single info object
-      const getValue = (
-        info: LiteLLMModelInfo,
-        key: 'context_window' | 'max_input_tokens' | 'max_output_tokens' | 'max_tokens' | 'input_cost_per_token' | 'output_cost_per_token',
-      ) => {
-        return info[key] ?? info.model_info?.[key] ?? info.litellm_params?.[key];
-      };
-
       // Aggregate values across all backends for this model name
       // For limits (context window, max output), use MIN to be safe
       // For costs, use MAX to be safe/conservative
@@ -136,17 +134,13 @@ export const loadLitellmModels = async (profile: ProviderProfile, settings: Sett
     logger.info(`Loaded ${models.length} LiteLLM models from /model/info for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading LiteLLM models';
+    const errorMsg = normalizeError(error, 'Unknown error loading LiteLLM models');
     logger.error('Error loading LiteLLM models:', error);
     return { models: [], success: false, error: errorMsg };
   }
 };
 
-export const hasLitellmEnvVars = (settings: SettingsData): boolean => {
-  return !!getEffectiveEnvironmentVariable('LITELLM_API_BASE', settings, undefined)?.value;
-};
-
-export const getLitellmAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
+const getLitellmAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
   const litellmProvider = provider.provider as LitellmProvider;
   const envVars: Record<string, string> = {};
 
@@ -164,53 +158,22 @@ export const getLitellmAiderMapping = (provider: ProviderProfile, modelId: strin
   };
 };
 
-// === LLM Creation Functions ===
-export const createLitellmLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as LitellmProvider;
-  let apiKey = provider.apiKey;
-  let baseUrl = provider.baseUrl;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('LITELLM_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-    }
-  }
-
-  if (!apiKey) {
-    apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a key.
-  }
-
-  if (!baseUrl) {
-    const effectiveVar = getEffectiveEnvironmentVariable('LITELLM_API_BASE', settings, projectDir);
-    if (effectiveVar) {
-      baseUrl = effectiveVar.value;
-    }
-  }
-
-  if (!baseUrl) {
-    throw new Error('Base URL is required for LiteLLM provider');
-  }
-
-  const compatibleProvider = createOpenAICompatible({
-    name: 'litellm',
-    apiKey,
-    baseURL: baseUrl,
-    headers: profile.headers,
-    includeUsage: true,
-  });
-
-  return compatibleProvider(model.id);
-};
-
-// === Complete Strategy Implementation ===
-export const litellmProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createLitellmLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  // Model discovery functions
-  loadModels: loadLitellmModels,
-  hasEnvVars: hasLitellmEnvVars,
-  getAiderMapping: getLitellmAiderMapping,
-};
+export const litellmProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'litellm',
+  label: 'LiteLLM',
+  sdkFactory: createOpenAICompatible,
+  // dummy key for the OpenAI-compatible client, which expects a key
+  extraFactoryOptions: ({ apiKey }) => ({ name: 'litellm', includeUsage: true, ...(apiKey ? {} : { apiKey: 'sk-dummy' }) }),
+  apiKeyEnv: 'LITELLM_API_KEY',
+  // the API key is optional here; the shared client gets a dummy key when unset
+  apiKeyRequired: null,
+  baseUrl: {
+    envKey: 'LITELLM_API_BASE',
+    required: 'Base URL is required for LiteLLM provider',
+  },
+  hasEnvKeys: ['LITELLM_API_BASE'],
+  overrides: {
+    loadModels: loadLitellmModels,
+    getAiderMapping: getLitellmAiderMapping,
+  },
+});

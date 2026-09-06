@@ -1,8 +1,7 @@
-import { ContextUserMessage, Model, ModelInfo, ProviderProfile, SettingsData, UsageReportData, VoiceSession, Reasoning } from '@common/types';
+import { Model, ProviderProfile, SettingsData, UsageReportData, VoiceSession, Reasoning } from '@common/types';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, GeminiProvider, GeminiVoiceModel, isGeminiProvider, LlmProvider } from '@common/agent';
-import { createGoogle, google, type GoogleLanguageModelOptions } from '@ai-sdk/google';
+import { createGoogle, google } from '@ai-sdk/google';
 import { Modality } from '@google/genai';
-import { v4 as uuidv4 } from 'uuid';
 
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -11,7 +10,8 @@ import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/mo
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
-import { calculateCost } from '@/models/providers/default';
+import { appendContinueUserMessage, getModelInfoByPrefix, normalizeError } from '@/models/providers/shared';
+import { getGoogleFamilyProviderOptions, getGoogleFamilyUsageReport } from '@/models/providers/google-family';
 
 const loadGeminiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isGeminiProvider(profile.provider)) {
@@ -59,7 +59,7 @@ const loadGeminiModels = async (profile: ProviderProfile, settings: SettingsData
     logger.info(`Loaded ${models.length} Gemini models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading Gemini models';
+    const errorMsg = normalizeError(error, 'Unknown error loading Gemini models');
     logger.error('Error loading Gemini models:', error);
     return { models: [], success: false, error: errorMsg };
   }
@@ -121,72 +121,21 @@ const createGeminiLlm = (profile: ProviderProfile, model: Model, settings: Setti
   return googleProvider(model.id);
 };
 
-type GoogleMetadata = {
-  google: {
-    cachedContentTokenCount?: number;
-  };
-};
-
-const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-
-  // Extract cache read tokens from provider metadata or usage
-  const { google } = (providerMetadata as GoogleMetadata) || {};
-  const cacheReadTokens = google?.cachedContentTokenCount ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
-
-  // Calculate sentTokens after deducting cached tokens
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
+const getGeminiUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage, providerMetadata?: unknown): UsageReportData =>
+  getGoogleFamilyUsageReport('google', task, provider, model, usage, providerMetadata);
 
 const getGeminiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
-  if (isGeminiProvider(llmProvider)) {
-    const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
-
-    // Use model-specific overrides, falling back to provider defaults
-    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
-    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
-
-    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
-    // omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
-    // Keep includeThoughts if set so reasoning output is still returned.
-    if (reasoning && reasoning !== 'provider-default') {
-      return {
-        google: {
-          ...(includeThoughts && {
-            thinkingConfig: {
-              includeThoughts: true,
-            },
-          }),
-        } satisfies GoogleLanguageModelOptions,
-      };
-    }
-
-    return {
-      google: {
-        ...((includeThoughts || thinkingBudget) && {
-          thinkingConfig: {
-            includeThoughts: includeThoughts && (thinkingBudget ?? 0) > 0,
-            thinkingBudget,
-          },
-        }),
-      } satisfies GoogleLanguageModelOptions,
-    };
+  if (!isGeminiProvider(llmProvider)) {
+    return undefined;
   }
 
-  return undefined;
+  const providerOverrides = model.providerOverrides as Partial<GeminiProvider> | undefined;
+
+  // Use model-specific overrides, falling back to provider defaults
+  const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
+  const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
+
+  return getGoogleFamilyProviderOptions('google', includeThoughts, thinkingBudget, reasoning);
 };
 
 // === Provider Tools Functions ===
@@ -208,31 +157,8 @@ const getGeminiProviderTools = (provider: LlmProvider, model: Model): ToolSet =>
   } as ToolSet;
 };
 
-const getGeminiModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined => {
-  const fullModelId = `google/${modelId}`;
-  return allModelInfos[fullModelId];
-};
-
-const normalizeGeminiMessages = (_provider: LlmProvider, _model: Model, messages: ModelMessage[]): ModelMessage[] => {
-  if (messages.length === 0) {
-    return messages;
-  }
-
-  const lastMessage = messages[messages.length - 1];
-
-  if (lastMessage.role !== 'user') {
-    const continueMessage: ContextUserMessage = {
-      id: uuidv4(),
-      role: 'user',
-      content: 'Continue',
-    };
-
-    logger.debug('Added "Continue" user message for Gemini provider (last message was not a user message)');
-    return [...messages, continueMessage];
-  }
-
-  return messages;
-};
+const normalizeGeminiMessages = (_provider: LlmProvider, _model: Model, messages: ModelMessage[]): ModelMessage[] =>
+  appendContinueUserMessage(messages, 'Gemini provider');
 
 const createGeminiVoiceSession = async (profile: ProviderProfile, settings: SettingsData): Promise<VoiceSession> => {
   if (!isGeminiProvider(profile.provider)) {
@@ -337,7 +263,7 @@ export const geminiProviderStrategy: LlmProviderStrategy = {
 
   getProviderOptions: getGeminiProviderOptions,
   getProviderTools: getGeminiProviderTools,
-  getModelInfo: getGeminiModelInfo,
+  getModelInfo: getModelInfoByPrefix('google'),
   createVoiceSession: createGeminiVoiceSession,
 
   // Message normalization

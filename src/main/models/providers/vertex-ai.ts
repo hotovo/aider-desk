@@ -1,6 +1,6 @@
 import { v1beta1 } from '@google-cloud/aiplatform';
 import { GoogleAuth } from 'google-auth-library';
-import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, Reasoning, SettingsData, UsageReportData } from '@common/types';
 import { isVertexAiProvider, LlmProvider, VertexAiProvider } from '@common/agent';
 import { createVertex } from '@ai-sdk/google-vertex';
 
@@ -11,7 +11,8 @@ import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/mo
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
-import { calculateCost } from '@/models/providers/default';
+import { getGoogleFamilyProviderOptions, getGoogleFamilyUsageReport } from '@/models/providers/google-family';
+import { getModelInfoByPrefix, mergeModelProps } from '@/models/providers/shared';
 
 export const loadVertexAIModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isVertexAiProvider(profile.provider)) {
@@ -20,8 +21,9 @@ export const loadVertexAIModels = async (profile: ProviderProfile, settings: Set
 
   const provider = profile.provider as VertexAiProvider;
 
-  const projectEnv = getEffectiveEnvironmentVariable('VERTEX_PROJECT', settings);
-  const locationEnv = getEffectiveEnvironmentVariable('VERTEX_LOCATION', settings);
+  // VERTEXAI_* is the spelling already used by createLlm and the Aider mapping.
+  const projectEnv = getEffectiveEnvironmentVariable('VERTEXAI_PROJECT', settings);
+  const locationEnv = getEffectiveEnvironmentVariable('VERTEXAI_LOCATION', settings);
   const credentialsEnv = getEffectiveEnvironmentVariable('GOOGLE_APPLICATION_CREDENTIALS', settings);
 
   const project = provider.project || projectEnv?.value || '';
@@ -161,84 +163,26 @@ export const createVertexAiLlm = (profile: ProviderProfile, model: Model, settin
   return vertexProvider(model.id);
 };
 
-type VertexGoogleMetadata = {
-  vertex: {
-    cachedContentTokenCount?: number;
-  };
-};
-
-const getVertexAiUsageReport = (
+export const getVertexAiUsageReport = (
   task: Task,
   provider: ProviderProfile,
   model: Model,
   usage: LanguageModelUsage,
   providerMetadata?: unknown,
-): UsageReportData => {
-  const totalSentTokens = usage.inputTokens || 0;
-  const receivedTokens = usage.outputTokens || 0;
-
-  // Extract cache read tokens from provider metadata
-  const { vertex } = (providerMetadata as VertexGoogleMetadata) || {};
-  const cacheReadTokens = vertex?.cachedContentTokenCount ?? usage.inputTokenDetails?.cacheReadTokens ?? 0;
-
-  // Calculate sentTokens after deducting cached tokens
-  const sentTokens = totalSentTokens - cacheReadTokens;
-
-  // Calculate cost internally with already deducted sentTokens
-  const messageCost = calculateCost(model, sentTokens, receivedTokens, cacheReadTokens);
-
-  return {
-    model: `${provider.id}/${model.id}`,
-    sentTokens,
-    receivedTokens,
-    cacheReadTokens,
-    messageCost,
-    agentTotalCost: task.task.agentTotalCost + messageCost,
-  };
-};
+): UsageReportData => getGoogleFamilyUsageReport('vertex', task, provider, model, usage, providerMetadata);
 
 export const getVertexAiProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
-  if (isVertexAiProvider(llmProvider)) {
-    const providerOverrides = model.providerOverrides as Partial<VertexAiProvider> | undefined;
-
-    // Use model-specific overrides, falling back to provider defaults
-    const includeThoughts = providerOverrides?.includeThoughts ?? llmProvider.includeThoughts;
-    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget;
-
-    // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
-    // omit thinkingBudget from thinkingConfig so the AI SDK's portable reasoning takes effect.
-    // Keep includeThoughts if set so reasoning output is still returned.
-    if (reasoning && reasoning !== 'provider-default') {
-      return {
-        vertex: {
-          ...(includeThoughts && {
-            thinkingConfig: {
-              includeThoughts: true,
-            },
-          }),
-        },
-      };
-    }
-
-    return {
-      vertex: {
-        ...((includeThoughts || thinkingBudget) && {
-          thinkingConfig: {
-            includeThoughts: includeThoughts && (thinkingBudget ?? 0) > 0,
-            thinkingBudget,
-          },
-        }),
-      },
-    };
+  if (!isVertexAiProvider(llmProvider)) {
+    return undefined;
   }
 
-  return undefined;
+  // Use model-specific overrides, falling back to provider defaults
+  const overrides = mergeModelProps(model, llmProvider, ['includeThoughts', 'thinkingBudget']);
+
+  return getGoogleFamilyProviderOptions('vertex', overrides.includeThoughts, overrides.thinkingBudget, reasoning);
 };
 
-const getVertexAiModelInfo = (_provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined => {
-  const fullModelId = `google-vertex/${modelId}`;
-  return allModelInfos[fullModelId];
-};
+const getVertexAiModelInfo = getModelInfoByPrefix('google-vertex');
 
 // === Complete Strategy Implementation ===
 export const vertexAiProviderStrategy: LlmProviderStrategy = {

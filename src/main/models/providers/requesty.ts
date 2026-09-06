@@ -1,12 +1,12 @@
-import { ContextUserMessage, Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
+import { Model, ProviderProfile, ReasoningEffort, SettingsData, UsageReportData } from '@common/types';
 import { isRequestyProvider, LlmProvider, RequestyProvider } from '@common/agent';
 import { createRequesty, type RequestyProviderMetadata } from '@requesty/ai-sdk';
-import { v4 as uuidv4 } from 'uuid';
 
 import type { LanguageModel, LanguageModelUsage, ModelMessage } from 'ai';
 
 import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
 import { AiderModelMapping, CacheControl, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { appendContinueUserMessage, getDefaultModelTemperature, mergeModelProps, normalizeError } from '@/models/providers/shared';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { Task } from '@/task/task';
@@ -31,22 +31,6 @@ interface RequestyModel {
 interface RequestyModelsResponse {
   data: RequestyModel[];
 }
-
-const getDefaultModelTemperature = (modelId: string) => {
-  if (modelId.includes('claude')) {
-    return undefined;
-  }
-  if (modelId.includes('gemini')) {
-    return 0.7;
-  }
-  if (modelId.includes('gpt-5')) {
-    return undefined;
-  }
-  if (modelId.includes('qwen')) {
-    return 0.55;
-  }
-  return undefined;
-};
 
 const loadRequestyModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isRequestyProvider(profile.provider)) {
@@ -92,7 +76,7 @@ const loadRequestyModels = async (profile: ProviderProfile, settings: SettingsDa
     logger.info(`Loaded ${models.length} Requesty models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading Requesty models';
+    const errorMsg = normalizeError(error, 'Unknown error loading Requesty models');
     logger.warn('Failed to fetch Requesty models via API:', error);
     return { models: [], success: false, error: errorMsg };
   }
@@ -141,9 +125,9 @@ export const createRequestyLlm = (profile: ProviderProfile, model: Model, settin
     throw new Error('Requesty API key is required in Providers settings or Aider environment variables (REQUESTY_API_KEY)');
   }
 
-  const providerOverrides = model.providerOverrides as Partial<RequestyProvider> | undefined;
-  const useAutoCache = providerOverrides?.useAutoCache ?? provider.useAutoCache;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? provider.reasoningEffort;
+  const overrides = mergeModelProps(model, provider, ['useAutoCache', 'reasoningEffort']);
+  const useAutoCache = overrides.useAutoCache;
+  const reasoningEffort = overrides.reasoningEffort;
 
   const requestyProvider = createRequesty({
     apiKey,
@@ -226,22 +210,7 @@ export const getRequestyUsageReport = (
 export const normalizeRequestyMessages = (_provider: LlmProvider, model: Model, messages: ModelMessage[]): ModelMessage[] => {
   // Apply Gemini normalization for Google/Gemini models
   if (model.id.includes('gemini')) {
-    if (messages.length === 0) {
-      return messages;
-    }
-
-    const lastMessage = messages[messages.length - 1];
-
-    if (lastMessage.role !== 'user') {
-      const continueMessage: ContextUserMessage = {
-        id: uuidv4(),
-        role: 'user',
-        content: 'Continue',
-      };
-
-      logger.debug('Added "Continue" user message for Requesty provider with Gemini model (last message was not a user message)');
-      return [...messages, continueMessage];
-    }
+    return appendContinueUserMessage(messages, 'Requesty provider with Gemini model');
   }
 
   return messages;

@@ -1,14 +1,13 @@
-import { Model, ProviderProfile, Reasoning, SettingsData } from '@common/types';
-import { isAlibabaPlanProvider, AlibabaPlanProvider, LlmProvider } from '@common/agent';
+import { isAlibabaPlanProvider, LlmProvider } from '@common/agent';
 import { createAlibaba } from '@ai-sdk/alibaba';
+import { Model, ProviderProfile, Reasoning } from '@common/types';
 
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModel } from 'ai';
 
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { LlmProviderStrategy } from '@/models';
 import logger from '@/logger';
-import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { mergeModelProps } from '@/models/providers/shared';
 
 const ALIBABA_PLAN_BASE_URL = 'https://coding-intl.dashscope.aliyuncs.com/v1';
 
@@ -23,93 +22,17 @@ const ALIBABA_PLAN_MODELS = [
   { id: 'kimi-k2.5', maxInputTokens: 262144, maxOutputTokensLimit: 32768 },
 ];
 
-const loadAlibabaPlanModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
-  if (!isAlibabaPlanProvider(profile.provider)) {
-    return { models: [], success: false };
-  }
-
-  const provider = profile.provider as AlibabaPlanProvider;
-  const apiKey = provider.apiKey || '';
-  const apiKeyEnv = getEffectiveEnvironmentVariable('ALIBABA_PLAN_API_KEY', settings);
-  const effectiveApiKey = apiKey || apiKeyEnv?.value;
-
-  if (!effectiveApiKey) {
-    return { models: [], success: false };
-  }
-
-  const models: Model[] = ALIBABA_PLAN_MODELS.map((model) => ({
-    id: model.id,
-    providerId: profile.id,
-    maxInputTokens: model.maxInputTokens,
-    maxOutputTokensLimit: model.maxOutputTokensLimit,
-  }));
-
-  logger.info(`Loaded ${models.length} Alibaba plan models for profile ${profile.id}`);
-  return { models, success: true };
-};
-
-const hasAlibabaPlanEnvVars = (settings: SettingsData): boolean => {
-  return !!getEffectiveEnvironmentVariable('ALIBABA_PLAN_API_KEY', settings, undefined)?.value;
-};
-
-const getAlibabaPlanAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping => {
-  const alibabaPlanProvider = provider.provider as AlibabaPlanProvider;
-  const envVars: Record<string, string> = {};
-
-  let apiKey = alibabaPlanProvider.apiKey;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('ALIBABA_PLAN_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-    }
-  }
-
-  if (apiKey) {
-    envVars.OPENAI_API_KEY = apiKey;
-  }
-  envVars.OPENAI_API_BASE = ALIBABA_PLAN_BASE_URL;
-
-  return {
-    modelName: `openai/${modelId}`,
-    environmentVariables: envVars,
-  };
-};
-
-const createAlibabaPlanLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel => {
-  const provider = profile.provider as AlibabaPlanProvider;
-  let apiKey = provider.apiKey;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('ALIBABA_PLAN_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded ALIBABA_PLAN_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!apiKey) {
-    throw new Error(`API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ALIBABA_PLAN_API_KEY).`);
-  }
-
-  const alibabaPlanProvider = createAlibaba({
-    apiKey,
-    baseURL: ALIBABA_PLAN_BASE_URL,
-    headers: profile.headers,
-  });
-  return alibabaPlanProvider(model.id);
-};
+const alibabaPlanStaticModels = (profile: ProviderProfile): Model[] => ALIBABA_PLAN_MODELS.map((model) => ({ ...model, providerId: profile.id }));
 
 const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (isAlibabaPlanProvider(llmProvider)) {
-    const providerOverrides = model.providerOverrides as Partial<AlibabaPlanProvider> | undefined;
-
     if (reasoning && reasoning !== 'provider-default') {
       return undefined;
     }
 
-    const thinkingEnabled = providerOverrides?.thinkingEnabled ?? llmProvider.thinkingEnabled ?? true;
-    const thinkingBudget = providerOverrides?.thinkingBudget ?? llmProvider.thinkingBudget ?? 8192;
+    const overrides = mergeModelProps(model, llmProvider, ['thinkingEnabled', 'thinkingBudget']);
+    const thinkingEnabled = overrides.thinkingEnabled ?? true;
+    const thinkingBudget = overrides.thinkingBudget ?? 8192;
 
     logger.info(`Alibaba Plan provider options: thinkingEnabled=${thinkingEnabled}, thinkingBudget=${thinkingBudget}`);
 
@@ -124,11 +47,21 @@ const getAlibabaPlanProviderOptions = (llmProvider: LlmProvider, model: Model, r
   return undefined;
 };
 
-export const alibabaPlanProviderStrategy: LlmProviderStrategy = {
-  createLlm: createAlibabaPlanLlm,
-  getUsageReport: getDefaultUsageReport,
-  loadModels: loadAlibabaPlanModels,
-  hasEnvVars: hasAlibabaPlanEnvVars,
-  getAiderMapping: getAlibabaPlanAiderMapping,
-  getProviderOptions: getAlibabaPlanProviderOptions,
-};
+export const alibabaPlanProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'alibaba-plan',
+  label: 'Alibaba Plan',
+  sdkFactory: createAlibaba,
+  apiKeyEnv: 'ALIBABA_PLAN_API_KEY',
+  apiKeyRequired: (provider) => `API key is required for ${provider.name}. Check Providers settings or Aider environment variables (ALIBABA_PLAN_API_KEY).`,
+  fixedBaseURL: ALIBABA_PLAN_BASE_URL,
+  isProvider: isAlibabaPlanProvider,
+  modelsLoader: { type: 'static', apiKeyEnv: 'ALIBABA_PLAN_API_KEY', items: alibabaPlanStaticModels },
+  aider: {
+    prefix: 'openai',
+    apiKeyEnv: 'OPENAI_API_KEY',
+    sourceEnvKey: 'ALIBABA_PLAN_API_KEY',
+    readEnvFallback: true,
+    upstreamBaseUrl: ALIBABA_PLAN_BASE_URL,
+  },
+  overrides: { getProviderOptions: getAlibabaPlanProviderOptions },
+});

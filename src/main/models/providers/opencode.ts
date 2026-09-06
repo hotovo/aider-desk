@@ -10,6 +10,7 @@ import { getDefaultModelInfo, getDefaultUsageReport } from './default';
 import type { LanguageModel } from 'ai';
 
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { getDefaultModelTemperature as getBaseDefaultModelTemperature, normalizeError } from '@/models/providers/shared';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 
 const ENDPOINT_BASE_URL = 'https://opencode.ai/zen/v1';
@@ -41,24 +42,11 @@ const getModelEndpointType = (modelId: string): ModelEndpointType => {
   return 'openai-compatible';
 };
 
-const getDefaultModelTemperature = (modelId: string) => {
-  if (modelId.includes('claude')) {
-    return undefined;
-  }
-  if (modelId.includes('gemini')) {
-    return 0.7;
-  }
-  if (modelId.includes('gpt-5') || modelId.startsWith('gpt5')) {
-    return undefined;
-  }
-  if (modelId.includes('qwen')) {
-    return 0.55;
-  }
-  if (modelId.includes('glm-')) {
-    return 0.7;
-  }
-  return undefined;
-};
+const getDefaultModelTemperature = (modelId: string) =>
+  getBaseDefaultModelTemperature(modelId, [
+    { match: (id) => id.includes('glm-'), temperature: 0.7 },
+    { match: (id) => id.startsWith('gpt5'), temperature: undefined },
+  ]);
 
 const loadOpencodeModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOpenCodeProvider(profile.provider)) {
@@ -97,7 +85,7 @@ const loadOpencodeModels = async (profile: ProviderProfile, settings: SettingsDa
 
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading OpenCode models';
+    const errorMsg = normalizeError(error, 'Unknown error loading OpenCode models');
     return { models: [], success: false, error: errorMsg };
   }
 };

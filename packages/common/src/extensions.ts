@@ -175,10 +175,10 @@ export interface ExtensionProviderStrategy {
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
-  getProviderOptions?: (model: Model, reasoning?: Reasoning) => Record<string, Record<string, JSONValue | undefined>> | undefined;
-  getCacheControl?: (model: Model) => CacheControl | undefined;
-  getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
-  getProviderParameters?: (model: Model, reasoning?: Reasoning) => Record<string, unknown>;
+  getProviderOptions?: (model: Model, reasoning?: Reasoning, profile?: ProviderProfile) => Record<string, Record<string, JSONValue | undefined>> | undefined;
+  getCacheControl?: (model: Model, profile?: ProviderProfile) => CacheControl | undefined;
+  getProviderTools?: (model: Model, profile?: ProviderProfile) => Record<string, Tool> | Promise<Record<string, Tool>>;
+  getProviderParameters?: (model: Model, reasoning?: Reasoning, profile?: ProviderProfile) => Record<string, unknown>;
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
   isRetryable?: (error: unknown) => boolean;
 }

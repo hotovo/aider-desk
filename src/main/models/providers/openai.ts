@@ -1,6 +1,6 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { DEFAULT_VOICE_SYSTEM_INSTRUCTIONS, isOpenAiProvider, LlmProvider, OpenAiProvider, OpenAiVoiceModel } from '@common/agent';
-import { Reasoning, Model, ProviderProfile, ReasoningEffort, SettingsData, VoiceSession } from '@common/types';
+import { Reasoning, Model, ProviderProfile, SettingsData, VoiceSession } from '@common/types';
 
 import type { LanguageModel, ToolSet } from 'ai';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
@@ -9,6 +9,7 @@ import logger from '@/logger';
 import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import { getEffectiveEnvironmentVariable } from '@/utils';
 import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
+import { getOpenAiFamilyProviderOptions, mergeModelProps, normalizeError } from '@/models/providers/shared';
 
 export const loadOpenAiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> => {
   if (!isOpenAiProvider(profile.provider)) {
@@ -70,7 +71,7 @@ export const loadOpenAiModels = async (profile: ProviderProfile, settings: Setti
     logger.info(`Loaded ${models.length} OpenAI models for profile ${profile.id}`);
     return { models, success: true };
   } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading OpenAI models';
+    const errorMsg = normalizeError(error, 'Unknown error loading OpenAI models');
     logger.error('Error loading OpenAI models:', error);
     return { models: [], success: false, error: errorMsg };
   }
@@ -129,38 +130,10 @@ export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, re
 
   const openAiProvider = provider as OpenAiProvider;
 
-  // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
-  // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
-  // Keep reasoningSummary so reasoning output is still returned.
-  if (reasoning && reasoning !== 'provider-default') {
-    return {
-      openai: {
-        reasoningSummary: 'auto',
-      },
-    };
-  }
-
   // Extract reasoningEffort from model overrides or provider config
-  const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? openAiProvider.reasoningEffort;
+  const { reasoningEffort } = mergeModelProps(model, openAiProvider, ['reasoningEffort']);
 
-  // Map ReasoningEffort enum to AI SDK format
-  const mappedReasoningEffort =
-    reasoningEffort === undefined || reasoningEffort === ReasoningEffort.None
-      ? undefined
-      : (reasoningEffort.toLowerCase() as 'minimal' | 'low' | 'medium' | 'high' | 'xhigh');
-
-  if (mappedReasoningEffort) {
-    logger.debug('Using reasoning effort:', { mappedReasoningEffort });
-    return {
-      openai: {
-        reasoningSummary: 'auto',
-        reasoningEffort: mappedReasoningEffort,
-      },
-    };
-  }
-
-  return undefined;
+  return getOpenAiFamilyProviderOptions('openai', reasoningEffort, reasoning);
 };
 
 // === Provider Tools Functions ===

@@ -999,16 +999,18 @@ export class ModelManager {
             | LanguageModel
             | Promise<LanguageModel>,
         getUsageReport: provider.strategy.getUsageReport || getDefaultUsageReport,
+        // All four callbacks pass the registered profile as the trailing argument so
+        // extensions have access to the same context the core strategies receive.
         getProviderOptions: provider.strategy.getProviderOptions
-          ? (_provider, model, reasoning) => provider.strategy.getProviderOptions!(model, reasoning)
+          ? (_provider, model, reasoning) => provider.strategy.getProviderOptions!(model, reasoning, profile)
           : undefined,
         getProviderTools: provider.strategy.getProviderTools
-          ? (_provider, model) => provider.strategy.getProviderTools!(model) as ToolSet | Promise<ToolSet>
+          ? (_provider, model) => provider.strategy.getProviderTools!(model, profile) as ToolSet | Promise<ToolSet>
           : undefined,
         getProviderParameters: provider.strategy.getProviderParameters
-          ? (_provider, model, reasoning) => provider.strategy.getProviderParameters!(model, reasoning)
+          ? (_provider, model, reasoning) => provider.strategy.getProviderParameters!(model, reasoning, profile)
           : undefined,
-        getCacheControl: provider.strategy.getCacheControl ? (_provider, model) => provider.strategy.getCacheControl!(model) : undefined,
+        getCacheControl: provider.strategy.getCacheControl ? (_provider, model) => provider.strategy.getCacheControl!(model, profile) : undefined,
         hasEnvVars: () => false,
         getAiderMapping: provider.strategy.getAiderMapping
           ? provider.strategy.getAiderMapping

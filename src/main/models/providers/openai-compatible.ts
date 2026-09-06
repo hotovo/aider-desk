@@ -1,15 +1,15 @@
-import { Model, ProviderProfile, ReasoningEffort, SettingsData, Reasoning, TlsPolicyRegistrar } from '@common/types';
 import { isOpenAiCompatibleProvider, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { Model, ProviderProfile, Reasoning, ReasoningEffort, SettingsData, TlsPolicyRegistrar } from '@common/types';
 
 import type { JSONValue, SharedV4ProviderOptions } from '@ai-sdk/provider';
-import type { LanguageModel, ToolSet } from 'ai';
 
-import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import { LlmProviderStrategy, LoadModelsResponse } from '@/models';
 import logger from '@/logger';
 import { getEffectiveEnvironmentVariable } from '@/utils';
-import { getDefaultUsageReport } from '@/models/providers/default';
 import { syncProviderTlsRule } from '@/models/utils';
+import { createStrategyFromDescriptor } from '@/models/providers/strategy-factory';
+import { loadOpenAiCompatibleModels, mergeModelProps } from '@/models/providers/shared';
 
 const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar): Promise<LoadModelsResponse> => {
   if (!isOpenAiCompatibleProvider(profile.provider)) {
@@ -32,130 +32,34 @@ const loadOpenaiCompatibleModels = async (profile: ProviderProfile, settings: Se
 
   syncProviderTlsRule(tlsRegistrar, effectiveBaseUrl, provider.sslVerify, provider.caCertPath);
 
-  try {
-    const response = await fetch(
-      `${effectiveBaseUrl}/models`,
-      effectiveApiKey
-        ? {
-            headers: { Authorization: `Bearer ${effectiveApiKey}` },
-          }
-        : {},
-    );
-    if (!response.ok) {
-      const errorMsg = `OpenAI-compatible models API response failed: ${response.status} ${response.statusText} ${await response.text()}`;
-      logger.debug(errorMsg);
-      return { models: [], success: false, error: errorMsg };
-    }
+  return loadOpenAiCompatibleModels({
+    url: `${effectiveBaseUrl}/models`,
+    headers: effectiveApiKey ? { Authorization: `Bearer ${effectiveApiKey}` } : {},
+    profile,
+    label: 'OpenAI-compatible',
+    notOkLog: 'debug',
+    catchLog: 'warn',
+    mapper: (id, item) => {
+      const model = item as {
+        max_model_len?: number;
+        context_length?: number;
+        num_ctx?: number;
+        context_window?: number;
+        max_completion_tokens?: number;
+        max_tokens?: number;
+      };
+      const maxInputTokens = model.max_model_len ?? model.context_length ?? model.num_ctx ?? model.context_window;
+      const maxOutputTokensLimit = model.max_completion_tokens ?? model.max_tokens;
 
-    const data = await response.json();
-    const models =
-      data.data?.map(
-        (model: {
-          id: string;
-          max_model_len?: number;
-          context_length?: number;
-          num_ctx?: number;
-          context_window?: number;
-          max_completion_tokens?: number;
-          max_tokens?: number;
-        }) => {
-          const maxInputTokens = model.max_model_len ?? model.context_length ?? model.num_ctx ?? model.context_window;
-          const maxOutputTokensLimit = model.max_completion_tokens ?? model.max_tokens;
-
-          return {
-            id: model.id,
-            providerId: profile.id,
-            ...(maxInputTokens != null && { maxInputTokens }),
-            ...(maxOutputTokensLimit != null && { maxOutputTokensLimit }),
-          } satisfies Model;
-        },
-      ) || [];
-
-    logger.info(`Loaded ${models.length} OpenAI-compatible models for profile ${profile.id}`);
-    return { models, success: true };
-  } catch (error) {
-    const errorMsg = typeof error === 'string' ? error : error instanceof Error ? error.message : 'Unknown error loading OpenAI-compatible models';
-    logger.warn('Failed to fetch OpenAI-compatible models via API:', error);
-    return { models: [], success: false, error: errorMsg };
-  }
-};
-
-const hasOpenAiCompatibleEnvVars = (settings: SettingsData): boolean => {
-  const hasApiKey = !!getEffectiveEnvironmentVariable('OPENAI_API_KEY', settings, undefined)?.value;
-  const hasBaseUrl = !!getEffectiveEnvironmentVariable('OPENAI_API_BASE', settings, undefined)?.value;
-  return hasApiKey || hasBaseUrl;
-};
-
-const getOpenAiCompatibleAiderMapping = (provider: ProviderProfile, modelId: string): AiderModelMapping => {
-  const compatibleProvider = provider.provider as OpenAiCompatibleProvider;
-  const envVars: Record<string, string> = {};
-
-  if (compatibleProvider.apiKey) {
-    envVars.OPENAI_API_KEY = compatibleProvider.apiKey;
-  }
-  if (compatibleProvider.baseUrl) {
-    envVars.OPENAI_API_BASE = compatibleProvider.baseUrl;
-  }
-
-  // Use openai prefix for OpenAI-compatible providers
-  return {
-    modelName: `openai/${modelId}`,
-    environmentVariables: envVars,
-  };
-};
-
-// === LLM Creation Functions ===
-const createOpenAiCompatibleLlm = (
-  profile: ProviderProfile,
-  model: Model,
-  settings: SettingsData,
-  projectDir: string,
-  _toolSet?: ToolSet,
-  _systemPrompt?: string,
-  _providerMetadata?: unknown,
-  tlsRegistrar?: TlsPolicyRegistrar,
-): LanguageModel => {
-  const provider = profile.provider as OpenAiCompatibleProvider;
-  let apiKey = provider.apiKey;
-  let baseUrl = provider.baseUrl;
-
-  if (!apiKey) {
-    const effectiveVar = getEffectiveEnvironmentVariable('OPENAI_API_KEY', settings, projectDir);
-    if (effectiveVar) {
-      apiKey = effectiveVar.value;
-      logger.debug(`Loaded OPENAI_API_KEY from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!baseUrl) {
-    const effectiveVar = getEffectiveEnvironmentVariable('OPENAI_API_BASE', settings, projectDir);
-    if (effectiveVar) {
-      baseUrl = effectiveVar.value;
-      logger.debug(`Loaded OPENAI_API_BASE from ${effectiveVar.source}`);
-    }
-  }
-
-  if (!baseUrl) {
-    throw new Error(`Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`);
-  }
-
-  syncProviderTlsRule(tlsRegistrar, baseUrl, provider.sslVerify, provider.caCertPath);
-
-  const providerOverrides = model.providerOverrides as Partial<OpenAiCompatibleProvider> | undefined;
-  const trackTokenUsage = providerOverrides?.trackTokenUsage ?? provider.trackTokenUsage;
-
-  // Use createOpenAICompatible to get a provider instance, then get the model
-  const compatibleProvider = createOpenAICompatible({
-    name: provider.name,
-    apiKey,
-    baseURL: baseUrl,
-    headers: profile.headers,
-    includeUsage: trackTokenUsage !== false,
+      return {
+        id,
+        ...(maxInputTokens != null && { maxInputTokens }),
+        ...(maxOutputTokensLimit != null && { maxOutputTokensLimit }),
+      } satisfies Partial<Model>;
+    },
   });
-  return compatibleProvider(model.id);
 };
 
-// === Configuration Helper Functions ===
 const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined => {
   if (!isOpenAiCompatibleProvider(provider)) {
     return undefined;
@@ -164,9 +68,9 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model,
   const openAiCompatibleProvider = provider as OpenAiCompatibleProvider;
 
   // Extract reasoningEffort from model overrides or provider config
-  const providerOverrides = model.providerOverrides as Partial<OpenAiCompatibleProvider> | undefined;
-  const reasoningEffort = providerOverrides?.reasoningEffort ?? openAiCompatibleProvider.reasoningEffort;
-  const extraBody = providerOverrides?.extraBody ?? openAiCompatibleProvider.extraBody;
+  const overrides = mergeModelProps(model, openAiCompatibleProvider, ['reasoningEffort', 'extraBody']);
+  const reasoningEffort = overrides.reasoningEffort;
+  const extraBody = overrides.extraBody;
 
   const providerOptions: Record<string, JSONValue> = {};
 
@@ -201,17 +105,31 @@ const getOpenAiCompatibleProviderOptions = (provider: LlmProvider, model: Model,
   return undefined;
 };
 
-// === Complete Strategy Implementation ===
-export const openaiCompatibleProviderStrategy: LlmProviderStrategy = {
-  // Core LLM functions
-  createLlm: createOpenAiCompatibleLlm,
-  getUsageReport: getDefaultUsageReport,
-
-  // Model discovery functions
-  loadModels: loadOpenaiCompatibleModels,
-  hasEnvVars: hasOpenAiCompatibleEnvVars,
-  getAiderMapping: getOpenAiCompatibleAiderMapping,
-
-  // Configuration helper functions
-  getProviderOptions: getOpenAiCompatibleProviderOptions,
-};
+// loadModels keeps its bespoke flow: base URL required, key optional, TLS sync
+export const openaiCompatibleProviderStrategy: LlmProviderStrategy = createStrategyFromDescriptor({
+  name: 'openai-compatible',
+  label: 'OpenAI-compatible',
+  sdkFactory: createOpenAICompatible,
+  apiKeyEnv: 'OPENAI_API_KEY',
+  // the API key is optional here; only the base URL is required
+  apiKeyRequired: null,
+  baseUrl: {
+    envKey: 'OPENAI_API_BASE',
+    required: (provider) => `Base URL is required for ${provider.name} provider. Set it in Providers settings or via the OPENAI_API_BASE environment variable.`,
+  },
+  extraFactoryOptions: ({ provider, model }) => {
+    const openAiCompatibleProvider = provider as unknown as OpenAiCompatibleProvider;
+    return {
+      name: openAiCompatibleProvider.name,
+      includeUsage: mergeModelProps(model, openAiCompatibleProvider, ['trackTokenUsage']).trackTokenUsage !== false,
+    };
+  },
+  tlsSync: true,
+  isProvider: isOpenAiCompatibleProvider,
+  hasEnvKeys: ['OPENAI_API_KEY', 'OPENAI_API_BASE'],
+  aider: { prefix: 'openai', apiKeyEnv: 'OPENAI_API_KEY', baseUrlField: 'baseUrl' },
+  overrides: {
+    loadModels: loadOpenaiCompatibleModels,
+    getProviderOptions: getOpenAiCompatibleProviderOptions,
+  },
+});
