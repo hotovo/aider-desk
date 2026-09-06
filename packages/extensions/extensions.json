@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "external-rules",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "sandbox",
@@ -220,7 +220,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "chunkhound-search",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "bmad",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "codegraph",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "kanban",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "git-log",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 21
+      "installCount": 22
     }
   ]
 }
