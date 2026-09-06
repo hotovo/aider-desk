@@ -816,8 +816,8 @@ export class EventsHandler {
     return await this.getTaskOrThrow(baseDir, taskId).gitPull(rebase);
   }
 
-  async gitPush(baseDir: string, taskId: string, force?: boolean): Promise<{ output: string }> {
-    return await this.getTaskOrThrow(baseDir, taskId).gitPush(force);
+  async gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
+    return await this.getTaskOrThrow(baseDir, taskId).gitPush(force, setUpstream);
   }
 
   async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string) {

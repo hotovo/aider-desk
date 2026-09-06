@@ -2130,6 +2130,7 @@
     "confirmPushMessage_one": "Push {{count}} commit to remote?",
     "confirmPushMessage_other": "Push {{count}} commits to remote?",
     "noCommitsToPush": "No commits to push",
+    "confirmPushSetUpstreamMessage": "Branch '{{branch}}' has no upstream. Push it to the remote and set the remote branch as its upstream?",
     "force": "Force",
     "aheadCommits_one": "{{count}} commit ahead",
     "aheadCommits_other": "{{count}} commits ahead",

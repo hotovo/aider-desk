@@ -4993,10 +4993,10 @@ ${error.stderr}`,
     return await this.runGitAction('pull', () => this.gitManager.gitPull(this.getTaskDir(), rebase));
   }
 
-  public async gitPush(force?: boolean): Promise<{ output: string }> {
+  public async gitPush(force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
     return await this.runGitAction(
       'push',
-      () => this.gitManager.gitPush(this.getTaskDir(), force),
+      () => this.gitManager.gitPush(this.getTaskDir(), force, setUpstream),
       (error) => error instanceof Error && /fetch first|non-fast-forward|rejected because the tip|remote contains work/i.test(error.message),
     );
   }

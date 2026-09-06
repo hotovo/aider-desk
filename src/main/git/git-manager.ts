@@ -1576,9 +1576,20 @@ export class GitManager {
     }
   }
 
-  async gitPush(worktreePath: string, force?: boolean): Promise<{ output: string }> {
+  async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
     try {
-      const command = force ? 'git push --force' : 'git push';
+      let command = force ? 'git push --force' : 'git push';
+      if (setUpstream) {
+        const { stdout: branchOut } = await execWithShellPath('git rev-parse --abbrev-ref HEAD', {
+          cwd: worktreePath,
+        });
+        const branch = branchOut.trim();
+        if (!branch || branch === 'HEAD') {
+          throw new Error('Cannot determine current branch for push.');
+        }
+        const remote = await this.getDefaultRemote(worktreePath);
+        command = `git push ${force ? '--force ' : ''}--set-upstream ${remote} ${branch}`;
+      }
       const { stdout, stderr } = await execWithShellPath(command, {
         cwd: worktreePath,
       });
@@ -1592,6 +1603,18 @@ export class GitManager {
       gitError.workingDirectory = worktreePath;
       throw gitError;
     }
+  }
+
+  private async getDefaultRemote(repoPath: string): Promise<string> {
+    const { stdout } = await execWithShellPath('git remote', { cwd: repoPath });
+    const remotes = stdout
+      .split('\n')
+      .map((remote) => remote.trim())
+      .filter(Boolean);
+    if (remotes.length === 0) {
+      throw new Error('No git remote configured.');
+    }
+    return remotes.includes('origin') ? 'origin' : remotes[0];
   }
 
   async updateBranch(repoPath: string, branchName: string): Promise<{ output: string }> {

@@ -447,6 +447,7 @@ const GitPushSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   force: z.boolean().optional(),
+  setUpstream: z.boolean().optional(),
 });
 
 const ResolveGitErrorSchema = z.object({
@@ -1367,8 +1368,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, force } = parsed;
-        const result = await this.eventsHandler.gitPush(projectDir, taskId, force);
+        const { projectDir, taskId, force, setUpstream } = parsed;
+        const result = await this.eventsHandler.gitPush(projectDir, taskId, force, setUpstream);
         res.status(200).json(result);
       }),
     );

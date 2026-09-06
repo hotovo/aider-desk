@@ -250,7 +250,12 @@ describe('Task - git actions', () => {
 
     it('gitPush delegates with task repo path and force flag', async () => {
       await task.gitPush(true);
-      expect(mockGitManager.gitPush).toHaveBeenCalledWith(baseDir, true);
+      expect(mockGitManager.gitPush).toHaveBeenCalledWith(baseDir, true, undefined);
+    });
+
+    it('gitPush delegates with setUpstream flag', async () => {
+      await task.gitPush(false, true);
+      expect(mockGitManager.gitPush).toHaveBeenCalledWith(baseDir, false, true);
     });
 
     it('deleteGitBranch delegates with task repo path and force flag', async () => {

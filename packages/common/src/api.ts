@@ -332,7 +332,7 @@ export interface ApplicationAPI {
   rebaseOntoBranch: (baseDir: string, taskId: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
   updateGitBranch: (baseDir: string, taskId: string, branchName: string) => Promise<{ output: string }>;
   gitPull: (baseDir: string, taskId: string, rebase?: boolean) => Promise<{ output: string }>;
-  gitPush: (baseDir: string, taskId: string, force?: boolean) => Promise<{ output: string }>;
+  gitPush: (baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean) => Promise<{ output: string }>;
   resolveGitErrorWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations

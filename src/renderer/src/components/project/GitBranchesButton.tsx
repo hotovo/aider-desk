@@ -165,6 +165,7 @@ export const GitBranchesButton = ({
   useClickOutside(dropdownRef, () => setIsOpen(false), isOpen);
 
   const currentBranch = branches.find((b) => b.isCurrent)?.name || status?.currentBranch || '';
+  const hasUpstream = Boolean(branches.find((b) => b.isCurrent)?.upstream);
   const isWorktree = Boolean(worktreePath);
   const worktreeBaseBranch = isWorktree ? status?.baseBranch || status?.targetBranch : undefined;
 
@@ -502,18 +503,18 @@ export const GitBranchesButton = ({
   };
 
   const handlePush = useCallback(() => {
-    if (disabled || outgoingCount === 0) {
+    if (disabled || !currentBranch || (outgoingCount === 0 && hasUpstream)) {
       return;
     }
     handleCloseDropdown();
     setForcePush(false);
     setShowPushConfirm(true);
-  }, [disabled, outgoingCount, handleCloseDropdown]);
+  }, [disabled, currentBranch, outgoingCount, hasUpstream, handleCloseDropdown]);
 
   const handlePushConfirm = async () => {
     setShowPushConfirm(false);
     try {
-      await api.gitPush(baseDir, taskId, forcePush);
+      await api.gitPush(baseDir, taskId, forcePush, !hasUpstream);
       showInfoNotification(t('git.pushSuccess'));
       await loadSyncCommits();
     } catch (error) {
@@ -951,7 +952,7 @@ export const GitBranchesButton = ({
                 {t('git.updateProject')}
                 {incomingCount > 0 && outgoingCount > 0 ? '...' : ''}
               </button>
-              <button onClick={handlePush} className={menuItemClass} disabled={disabled || outgoingCount === 0}>
+              <button onClick={handlePush} className={menuItemClass} disabled={disabled || !currentBranch || (outgoingCount === 0 && hasUpstream)}>
                 <FaUpload className="w-3 h-3" />
                 {t('git.push')}...
               </button>
@@ -1169,14 +1170,20 @@ export const GitBranchesButton = ({
           closeOnEscape
         >
           <div className="flex flex-col gap-3">
-            <p className="text-sm">{t('git.confirmPushMessage', { count: outgoingCount })}</p>
-            <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-2xs text-text-secondary">
-              {syncCommits.outgoing.commits.map((commit, index) => (
-                <div key={index} className="truncate">
-                  {commit}
-                </div>
-              ))}
-            </div>
+            {!hasUpstream ? (
+              <p className="text-sm">{t('git.confirmPushSetUpstreamMessage', { branch: currentBranch })}</p>
+            ) : (
+              <p className="text-sm">{t('git.confirmPushMessage', { count: outgoingCount })}</p>
+            )}
+            {outgoingCount > 0 && (
+              <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-2xs text-text-secondary">
+                {syncCommits.outgoing.commits.map((commit, index) => (
+                  <div key={index} className="truncate">
+                    {commit}
+                  </div>
+                ))}
+              </div>
+            )}
             <Checkbox label={t('git.force')} checked={forcePush} onChange={setForcePush} />
           </div>
         </ConfirmDialog>

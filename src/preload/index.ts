@@ -760,7 +760,7 @@ const api: ApplicationAPI = {
   rebaseOntoBranch: (baseDir, taskId, branch) => ipcRenderer.invoke('rebase-onto-branch', baseDir, taskId, branch),
   updateGitBranch: (baseDir, taskId, branchName) => ipcRenderer.invoke('update-git-branch', baseDir, taskId, branchName),
   gitPull: (baseDir, taskId, rebase) => ipcRenderer.invoke('git-pull', baseDir, taskId, rebase),
-  gitPush: (baseDir, taskId, force) => ipcRenderer.invoke('git-push', baseDir, taskId, force),
+  gitPush: (baseDir, taskId, force, setUpstream) => ipcRenderer.invoke('git-push', baseDir, taskId, force, setUpstream),
   resolveGitErrorWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-git-error-with-agent', baseDir, taskId),
 
   // Agent profile operations

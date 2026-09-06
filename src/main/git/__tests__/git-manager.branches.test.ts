@@ -446,5 +446,65 @@ describe('GitManager - branch operations', () => {
       expect(execWithShellPath).toHaveBeenCalledWith('git push --force', { cwd: projectPath });
       expect(result.output).toBe('forced update');
     });
+
+    it('pushes with --set-upstream and prefers origin when setUpstream is true', async () => {
+      (execWithShellPath as Mock).mockImplementation((command: string) => {
+        if (command === 'git rev-parse --abbrev-ref HEAD') {
+          return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
+        }
+        if (command === 'git remote') {
+          return Promise.resolve({ stdout: 'upstream\norigin\n', stderr: '' });
+        }
+        return Promise.resolve({ stdout: 'branch set up to track', stderr: '' });
+      });
+
+      const result = await gitManager.gitPush(projectPath, false, true);
+
+      expect(execWithShellPath).toHaveBeenCalledWith('git push --set-upstream origin feature-x', { cwd: projectPath });
+      expect(result.output).toBe('branch set up to track');
+    });
+
+    it('uses the first remote when origin is missing', async () => {
+      (execWithShellPath as Mock).mockImplementation((command: string) => {
+        if (command === 'git rev-parse --abbrev-ref HEAD') {
+          return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
+        }
+        if (command === 'git remote') {
+          return Promise.resolve({ stdout: 'gitlab\nupstream\n', stderr: '' });
+        }
+        return Promise.resolve({ stdout: 'pushed', stderr: '' });
+      });
+
+      await gitManager.gitPush(projectPath, false, true);
+
+      expect(execWithShellPath).toHaveBeenCalledWith('git push --set-upstream gitlab feature-x', { cwd: projectPath });
+    });
+
+    it('combines --force with --set-upstream', async () => {
+      (execWithShellPath as Mock).mockImplementation((command: string) => {
+        if (command === 'git rev-parse --abbrev-ref HEAD') {
+          return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
+        }
+        if (command === 'git remote') {
+          return Promise.resolve({ stdout: 'origin\n', stderr: '' });
+        }
+        return Promise.resolve({ stdout: 'forced update', stderr: '' });
+      });
+
+      await gitManager.gitPush(projectPath, true, true);
+
+      expect(execWithShellPath).toHaveBeenCalledWith('git push --force --set-upstream origin feature-x', { cwd: projectPath });
+    });
+
+    it('throws when no remote is configured', async () => {
+      (execWithShellPath as Mock).mockImplementation((command: string) => {
+        if (command === 'git rev-parse --abbrev-ref HEAD') {
+          return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
+        }
+        return Promise.resolve({ stdout: '', stderr: '' });
+      });
+
+      await expect(gitManager.gitPush(projectPath, false, true)).rejects.toThrow('No git remote configured.');
+    });
   });
 });

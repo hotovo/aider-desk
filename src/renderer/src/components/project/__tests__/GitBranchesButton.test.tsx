@@ -110,7 +110,7 @@ describe('GitBranchesButton', () => {
 
   describe('push action', () => {
     it('disables push button when outgoing commit count is 0', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
       mockApi.getSyncCommits = vi.fn().mockResolvedValue({
         outgoing: { count: 0, commits: [] },
         incoming: { count: 0, commits: [] },
@@ -130,8 +130,43 @@ describe('GitBranchesButton', () => {
       expect(pushBtn).toBeDisabled();
     });
 
-    it('opens push confirm dialog with commit summary, commit list, and force checkbox unchecked by default', async () => {
+    it('enables push for a branch without upstream and pushes with set-upstream', async () => {
       mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.getSyncCommits = vi.fn().mockResolvedValue({
+        outgoing: { count: 0, commits: [] },
+        incoming: { count: 0, commits: [] },
+      });
+
+      render(<GitBranchesButton {...defaultProps} />);
+
+      await waitFor(() => {
+        expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', 'task-123', undefined);
+      });
+
+      // Open menu
+      fireEvent.click(screen.getByRole('button', { name: /main/i }));
+
+      // Push button should be enabled even with no outgoing commits
+      const pushBtn = screen.getByRole('button', { name: 'git.push...' });
+      expect(pushBtn).toBeEnabled();
+
+      fireEvent.click(pushBtn);
+
+      // Dialog should show the set-upstream message instead of the commit count
+      expect(screen.getByText('git.confirmPushTitle')).toBeInTheDocument();
+      expect(screen.getByText('git.confirmPushSetUpstreamMessage:main')).toBeInTheDocument();
+      expect(screen.queryByText('git.confirmPushMessage:0')).not.toBeInTheDocument();
+
+      // Confirm push
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+
+      await waitFor(() => {
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false, true);
+      });
+    });
+
+    it('opens push confirm dialog with commit summary, commit list, and force checkbox unchecked by default', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
 
       render(<GitBranchesButton {...defaultProps} />);
 
@@ -159,13 +194,13 @@ describe('GitBranchesButton', () => {
       fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
 
       await waitFor(() => {
-        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false);
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false, false);
       });
       expect(screen.queryByText('git.confirmPushTitle')).not.toBeInTheDocument();
     });
 
     it('force pushes when force checkbox is checked', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
 
       render(<GitBranchesButton {...defaultProps} />);
 
@@ -188,12 +223,12 @@ describe('GitBranchesButton', () => {
       fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
 
       await waitFor(() => {
-        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', true);
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', true, false);
       });
     });
 
     it('does not show an error notification when push fails (backend logs the error to the task chat)', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
       mockApi.gitPush = vi.fn().mockRejectedValue(new Error('push failed'));
 
       render(<GitBranchesButton {...defaultProps} />);
@@ -208,14 +243,14 @@ describe('GitBranchesButton', () => {
       fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
 
       await waitFor(() => {
-        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false);
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false, false);
       });
 
       expect(showErrorNotification).not.toHaveBeenCalled();
     });
 
     it('cancels push dialog without calling gitPush', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
 
       render(<GitBranchesButton {...defaultProps} />);
 
@@ -280,7 +315,7 @@ describe('GitBranchesButton', () => {
     });
 
     it('opens the push confirm dialog from the palette action and pushes on confirm', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
 
       render(<GitBranchesButton {...defaultProps} />);
 
@@ -297,12 +332,12 @@ describe('GitBranchesButton', () => {
       fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
 
       await waitFor(() => {
-        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false);
+        expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false, false);
       });
     });
 
     it('does not push when outgoing count is 0', async () => {
-      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false }]);
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
       mockApi.getSyncCommits = vi.fn().mockResolvedValue(mockNoSyncCommits);
 
       render(<GitBranchesButton {...defaultProps} />);

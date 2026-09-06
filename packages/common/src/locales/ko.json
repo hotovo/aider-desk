@@ -84,10 +84,11 @@
     "expand": "펼치기",
     "enabled": "사용",
     "noFiles": "파일 없음",
-      "loadingFiles": "파일 로드 중...",
+    "loadingFiles": "파일 로드 중...",
     "closeTasks": "작업 닫기",
     "toggleTasks": "작업 토글",
-    "submit": "제출"
+    "submit": "제출",
+    "clone": "복제"
   },
   "search": {
     "placeholder": "검색...",
@@ -195,7 +196,8 @@
     "openProject": "프로젝트 열기",
     "addFile": "파일 추가",
     "projectView": "프로젝트 보기",
-    "recentProjects": "최근 프로젝트"
+    "recentProjects": "최근 프로젝트",
+    "loadingProjects": "프로젝트를 불러오는 중..."
   },
   "tips": {
     "multipleProjects": "팁: 여러 프로젝트를 열고 상단 탭(또는 CTRL+Tab)을 사용하여 전환할 수 있습니다."
@@ -226,7 +228,8 @@
     "renderFailed": "다이어그램 렌더링 실패:"
   },
   "clinepass": {
-    "getApiKeyLink": "ClinePass API 키 받기"
+    "getApiKeyLink": "ClinePass API 키 받기",
+    "apiKey": "API 키"
   },
   "modelLibrary": {
     "enableVoiceControl": "음성 제어 사용",
@@ -491,7 +494,8 @@
     "synthetic": "Synthetic",
     "vertex-ai": "Vertex AI",
     "zai-plan": "Z.ai Coding Plan",
-    "azure": "Azure"
+    "azure": "Azure",
+    "clinepass": "ClinePass"
   },
   "select": {
     "placeholder": "옵션 선택",
@@ -569,7 +573,8 @@
         "install": "{{name}}을(를) 성공적으로 설치했습니다",
         "update": "{{name}}을(를) 성공적으로 업데이트했습니다",
         "uninstall": "{{name}}을(를) 성공적으로 제거했습니다",
-        "saveSettings": "{{name}}의 설정을 성공적으로 저장했습니다"
+        "saveSettings": "{{name}}의 설정을 성공적으로 저장했습니다",
+        "reload": "{{name}}을(를) 다시 불러왔습니다"
       },
       "errors": {
         "loadInstalled": "설치된 확장을 불러오지 못했습니다",
@@ -582,7 +587,8 @@
         "settingsNotAvailable": "확장 설정을 사용할 수 없습니다",
         "repositoryExists": "이 저장소는 이미 추가되어 있습니다",
         "cannotRemoveDefault": "기본 저장소는 제거할 수 없습니다",
-        "npmNotFound": "시스템에 npm이 설치되어 있지 않습니다. 이 확장은 종속성을 설치하기 위해 npm이 필요합니다. Node.js(npm 포함)를 설치한 후 다시 시도하세요."
+        "npmNotFound": "시스템에 npm이 설치되어 있지 않습니다. 이 확장은 종속성을 설치하기 위해 npm이 필요합니다. Node.js(npm 포함)를 설치한 후 다시 시도하세요.",
+        "reload": "확장을 다시 불러오지 못했습니다"
       },
       "previousContext": "이전 컨텍스트",
       "nextContext": "다음 컨텍스트",
@@ -591,7 +597,9 @@
         "title": "{{name}} 설정"
       },
       "expandReadme": "README 펼치기",
-      "collapseReadme": "README 접기"
+      "collapseReadme": "README 접기",
+      "reload": "다시 불러오기",
+      "reloading": "다시 불러오는 중..."
     },
     "hotkeys": {
       "projectHotkeys": "프로젝트",
@@ -839,7 +847,15 @@
       "resetProfileTitle": "'{{name}}'을(를) 기본값으로 재설정하시겠습니까?",
       "resetProfileConfirm": "'{{name}}'이(가) 원래 기본 설정으로 복원됩니다. 사용자 지정 수정 사항은 모두 사라집니다.",
       "restoreProfile": "복원",
-      "restoreProfileTooltip": "이 기본 프로필 복원"
+      "restoreProfileTooltip": "이 기본 프로필 복원",
+      "configureMcpServers": "MCP 서버 구성",
+      "systemPromptPlaceholders": {
+        "projectDir": "프로젝트 루트 디렉터리의 절대 경로",
+        "taskDir": "이 작업의 작업 디렉터리 (프로젝트 루트 또는 워크트리 사용 시 워크트리 경로)",
+        "currentDate": "현재 날짜 문자열",
+        "osName": "호스트 운영 체제 이름",
+        "projectGitRootDirectory": "작업이 워크트리를 사용하는 경우 프로젝트 git 루트, 그 외에는 비어 있음"
+      }
     },
     "aider": {
       "options": "옵션",
@@ -892,7 +908,8 @@
       "fresh": "Fresh",
       "botanical-garden": "Botanical Garden",
       "botanical-garden-dark": "Botanical Garden (다크)",
-      "obsidian": "Obsidian"
+      "obsidian": "Obsidian",
+      "crimson": "Crimson"
     },
     "aiderRestartConfirm": {
       "title": "재시작 필요",
@@ -991,7 +1008,9 @@
       "corsOrigins": "허용된 출처",
       "corsOriginPlaceholder": "https://example.com",
       "addCorsOrigin": "출처 추가",
-      "corsOriginsDescription": "API에 접근할 수 있는 출처 목록입니다 (예: https://your-dashboard.example.com)."
+      "corsOriginsDescription": "API에 접근할 수 있는 출처 목록입니다 (예: https://your-dashboard.example.com).",
+      "enableReadonlyExtensionUi": "확장 UI 구성 요소 활성화",
+      "enableReadonlyExtensionUiDescription": "읽기 전용 뷰에서 확장 UI 구성 요소를 렌더링합니다. 브라우저를 새로 고치면 적용됩니다."
     },
     "messages": {
       "title": "메시지 표시",
@@ -1052,7 +1071,8 @@
     },
     "notificationsAndFiles": {
       "title": "알림 및 파일"
-    }
+    },
+    "navigation": "탐색"
   },
   "messages": {
     "thinking": "생각하는 중...",
@@ -1118,7 +1138,15 @@
     "openButton": "열기",
     "browseFoldersTooltip": "폴더 찾아보기",
     "projectAlreadyOpenWarning": "이 프로젝트는 이미 열려 있습니다.",
-    "cantOpenProject": "이 프로젝트를 열 수 없습니다."
+    "cantOpenProject": "이 프로젝트를 열 수 없습니다.",
+    "openLocalProject": "로컬 열기",
+    "cloneFromGit": "Git에서 복제",
+    "repositoryUrlPlaceholder": "예: https://github.com/owner/repo.git 또는 git@github.com:owner/repo.git",
+    "cloneDestinationPlaceholder": "기본값: ~/.aider-desk/projects",
+    "repositoryUrlLabel": "저장소 URL",
+    "cloneDestinationLabel": "대상 폴더",
+    "cloningProject": "저장소를 복제하는 중...",
+    "cloneProjectFailed": "프로젝트를 복제하지 못했습니다"
   },
   "mode": {
     "code": "코드",
@@ -1492,7 +1520,8 @@
         "contextLines": "(컨텍스트 {{count}}줄)",
         "matchesCount": "({{count}}개 일치)",
         "lineLabel": "{{lineNumber}}번째 줄:",
-        "contextLabel": "컨텍스트:"
+        "contextLabel": "컨텍스트:",
+        "ignoreGitignore": "무시된 파일 포함"
       },
       "bash": {
         "title": "명령 실행",
@@ -1500,7 +1529,8 @@
         "stdout": "표준 출력",
         "stderr": "표준 오류",
         "commandFailed": "명령 실패",
-        "timeout": "제한 시간 초과"
+        "timeout": "제한 시간 초과",
+        "workingDir": "작업 디렉터리"
       },
       "semanticSearch": {
         "title": "시맨틱 검색:",
@@ -1561,7 +1591,8 @@
     "errors": {
       "noSuchTool": "알 수 없는 도구를 사용하려고 했습니다: {{toolName}}",
       "invalidToolArguments": "도구의 인수가 잘못되었습니다: {{toolName}}"
-    }
+    },
+    "preparing": "도구를 준비하는 중..."
   },
   "codeBlock": {
     "revertChanges": "변경 사항 되돌리기"
@@ -1747,7 +1778,8 @@
     "web": "웹 페이지를 스크랩하여 파일에 저장합니다. [file]은 선택 사항이며 /web url [file]과 같이 사용하세요.",
     "handoff": "포커스를 지정하여 대화를 새 작업으로 핸드오프",
     "subtask": "현재 작업의 새 하위 작업을 만들고 전환",
-    "skill": "스킬을 활성화합니다. 스킬 이름 뒤의 텍스트는 프롬프트로 사용됩니다"
+    "skill": "스킬을 활성화합니다. 스킬 이름 뒤의 텍스트는 프롬프트로 사용됩니다",
+    "subagent": "특정 서브에이전트에서 프롬프트를 실행합니다. /subagent <subagent-id> <prompt> 사용"
   },
   "telemetry": {
     "title": "텔레메트리 정보",
@@ -1831,7 +1863,8 @@
     "close": "닫기",
     "closeOtherTabs": "다른 탭 닫기",
     "closeAllTabs": "모든 탭 닫기",
-    "openInNewWindow": "새 창에서 열기"
+    "openInNewWindow": "새 창에서 열기",
+    "copyLink": "링크 복사"
   },
   "menu": {
     "file": {
@@ -1879,7 +1912,9 @@
     "generatingName": "이름 생성 중...",
     "changeState": "상태 변경",
     "createSubtask": "하위 작업 만들기",
-    "deleteConfirmWithSubtasks": "이 작업에는 {{count}}개의 하위 작업이 있습니다. 그래도 삭제하시겠습니까?"
+    "deleteConfirmWithSubtasks": "이 작업에는 {{count}}개의 하위 작업이 있습니다. 그래도 삭제하시겠습니까?",
+    "dropToRoot": "여기에 놓으면 최상위 수준으로 이동합니다",
+    "dropToSubtask": "하위 작업으로 만들기"
   },
   "taskInfo": {
     "createdAt": "생성일",
@@ -1917,7 +1952,61 @@
     "pushRejectedPullFirst": "푸시가 거부되었습니다: 원격 브랜치에 새 커밋이 있습니다. 먼저 변경 사항을 가져온 후 다시 시도하세요.",
     "resolveWithAI": "AI로 해결",
     "outgoingCommitsTooltip": "보낼 커밋 ({{count}}개):",
-    "incomingCommitsTooltip": "가져올 커밋 ({{count}}개):"
+    "incomingCommitsTooltip": "가져올 커밋 ({{count}}개):",
+    "gitBranchLabel": "Git 브랜치: {{branch}}",
+    "upToDate": "최신 상태",
+    "noCurrentBranch": "브랜치 없음",
+    "searchBranches": "브랜치 검색",
+    "noBranchesFound": "브랜치를 찾을 수 없습니다",
+    "localBranches": "로컬",
+    "remoteBranches": "원격",
+    "newBranch": "새 브랜치",
+    "newBranchNamePlaceholder": "새 브랜치 이름",
+    "branchCreated": "'{{branch}}' 브랜치가 생성되었습니다",
+    "checkedOutBranch": "'{{branch}}' 브랜치로 전환했습니다",
+    "confirmCheckoutTitle": "브랜치 체크아웃",
+    "confirmCheckoutMessage": "이 브랜치는 다른 작업의 워크트리에서 체크아웃되어 있습니다. 확인하면 그곳에서 브랜치가 분리되고(해당 워크트리가 detached HEAD로 전환되며 변경 사항은 유지됨) 여기서 체크아웃할 수 있게 됩니다. 계속하시겠습니까?",
+    "checkout": "체크아웃",
+    "mergeIntoCurrent": "현재 브랜치에 병합",
+    "rebaseCurrentOnto": "현재 브랜치를 이 브랜치 위로 리베이스",
+    "merge": "병합",
+    "rebase": "리베이스",
+    "confirmMergeTitle": "브랜치 병합",
+    "confirmMergeMessage": "'{{branch}}' 브랜치를 현재 브랜치에 병합하시겠습니까?",
+    "mergedIntoCurrent": "'{{branch}}' 브랜치를 현재 브랜치에 병합했습니다",
+    "mergeConflicts": "다음 파일에서 병합 충돌 발생: {{files}}",
+    "confirmRebaseTitle": "브랜치 리베이스",
+    "confirmRebaseMessage": "현재 브랜치를 '{{branch}}' 위로 리베이스하시겠습니까?",
+    "rebasedOnto": "'{{branch}}' 위로 리베이스했습니다",
+    "rebaseConflicts": "다음 파일에서 리베이스 충돌 발생: {{files}}. 이전 상태로 돌아가려면 리베이스를 중단하세요.",
+    "deleteBranch": "브랜치 삭제",
+    "deleteForce": "강제 삭제",
+    "confirmDeleteTitle": "브랜치 삭제",
+    "confirmDeleteMessage": "'{{branch}}' 브랜치를 삭제하시겠습니까?",
+    "confirmForceDeleteMessage": "'{{branch}}' 브랜치에 병합되지 않은 커밋이 있습니다. 강제로 삭제하고 해당 커밋을 버리시겠습니까?",
+    "branchDeleted": "'{{branch}}' 브랜치가 삭제되었습니다",
+    "updateProject": "프로젝트 업데이트 (가져오기)",
+    "push": "푸시",
+    "confirmPushTitle": "커밋 푸시",
+    "confirmPushMessage_one": "커밋 {{count}}개를 원격에 푸시하시겠습니까?",
+    "confirmPushMessage_other": "커밋 {{count}}개를 원격에 푸시하시겠습니까?",
+    "noCommitsToPush": "푸시할 커밋이 없습니다",
+    "confirmPushSetUpstreamMessage": "'{{branch}}' 브랜치에 업스트림이 없습니다. 원격에 푸시하고 원격 브랜치를 업스트림으로 설정하시겠습니까?",
+    "force": "강제",
+    "aheadCommits_one": "{{count}}개 커밋 앞섬",
+    "aheadCommits_other": "{{count}}개 커밋 앞섬",
+    "behindCommits_one": "{{count}}개 커밋 뒤처짐",
+    "behindCommits_other": "{{count}}개 커밋 뒤처짐",
+    "recentBranches": "최근",
+    "checkoutBranch": "'{{branch}}' 체크아웃",
+    "newBranchFrom": "'{{branch}}'에서 새 브랜치...",
+    "mergeBranchInto": "'{{branch}}' 브랜치를 '{{current}}'에 병합",
+    "rebaseOnto": "'{{current}}' 브랜치를 '{{branch}}' 위로 리베이스",
+    "deleteBranchName": "'{{branch}}' 삭제",
+    "rebaseWorktreeOnto": "워크트리를 '{{branch}}' 위로 리베이스",
+    "actionNotAvailableInWorktree": "이 작업은 워크트리 모드에서 사용할 수 없습니다",
+    "updateFromRemote": "'{{upstream}}'에서 업데이트",
+    "branchUpdated": "'{{branch}}' 브랜치가 원격에서 업데이트되었습니다"
   },
   "worktree": {
     "uncommittedFiles": "파일 {{count}}개",
@@ -2049,5 +2138,13 @@
     "projectError": "이 프로젝트를 불러올 수 없습니다.",
     "projects": "프로젝트",
     "openTasks": "작업 열기"
+  },
+  "providerTls": {
+    "title": "TLS 설정",
+    "disableCertificateVerification": "인증서 검증 비활성화",
+    "disableCertificateVerificationInfo": "이 공급자 엔드포인트에 대한 TLS 인증서 검증을 건너뜁니다. 자체 서명 인증서를 사용하는 신뢰할 수 있는 서버(예: 로컬 모델 서버)에만 사용하세요.",
+    "caCertPath": "CA 인증서 경로",
+    "caCertPathInfo": "공급자 엔드포인트를 검증하는 데 사용되는 CA 인증서 파일(PEM)의 절대 경로입니다. 자체 서명 또는 사설 CA 인증서를 사용할 때는 검증 비활성화보다 이 방법을 권장합니다.",
+    "caCertPathPlaceholder": "/path/to/ca.pem"
   }
 }

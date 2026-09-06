@@ -85,7 +85,7 @@
     "expand": "Развернуть",
     "enabled": "Включено",
     "noFiles": "Нет файлов",
-      "loadingFiles": "Загрузка файлов...",
+    "loadingFiles": "Загрузка файлов...",
     "closeTasks": "Закрыть задачи",
     "toggleTasks": "Переключить задачи",
     "submit": "Отправить"
@@ -228,7 +228,8 @@
     "renderFailed": "Не удалось отобразить диаграмму:"
   },
   "neuralwatt": {
-    "getApiKeyLink": "Получить API-ключ Neuralwatt"
+    "getApiKeyLink": "Получить API-ключ Neuralwatt",
+    "apiKey": "API-ключ"
   },
   "modelLibrary": {
     "enableVoiceControl": "Включить голосовое управление",
@@ -316,7 +317,9 @@
     "extraBodyErrorInvalid": "Неверный JSON. Введите корректный JSON-объект.",
     "disable": "Отключить",
     "enable": "Включить",
-    "providerDisabled": "Этот провайдер отключён. Его модели будут недоступны."
+    "providerDisabled": "Этот провайдер отключён. Его модели будут недоступны.",
+    "trackTokenUsage": "Учитывать использование токенов",
+    "trackTokenUsageInfo": "Включать информацию об использовании токенов в потоковые ответы. Отключите, если провайдер не поддерживает поле usage в фрагментах потока."
   },
   "openai": {
     "getApiKeyLink": "Получить API-ключ OpenAI",
@@ -491,7 +494,8 @@
     "synthetic": "Синтетический",
     "vertex-ai": "Vertex AI",
     "zai-plan": "Z.ai Coding Plan",
-    "azure": "Azure"
+    "azure": "Azure",
+    "neuralwatt": "Neuralwatt"
   },
   "select": {
     "placeholder": "Выберите опцию",
@@ -851,7 +855,8 @@
       "resetProfileTitle": "Сбросить «{{name}}» до значений по умолчанию?",
       "resetProfileConfirm": "Это восстановит «{{name}}» до исходных настроек. Все пользовательские изменения будут потеряны.",
       "restoreProfile": "Восстановить",
-      "restoreProfileTooltip": "Восстановить профиль по умолчанию"
+      "restoreProfileTooltip": "Восстановить профиль по умолчанию",
+      "configureMcpServers": "Настроить MCP-серверы"
     },
     "aider": {
       "options": "Параметры",
@@ -904,7 +909,8 @@
       "fresh": "Свежесть",
       "botanical-garden": "Ботанический сад",
       "botanical-garden-dark": "Ботанический сад (тёмная)",
-      "obsidian": "Обсидиан"
+      "obsidian": "Обсидиан",
+      "crimson": "Багровый"
     },
     "aiderRestartConfirm": {
       "title": "Требуется перезапуск",
@@ -1466,7 +1472,9 @@
       "assistant": "Ассистент",
       "readOnly": "Только для чтения",
       "createdAt": "Создана",
-      "updatedAt": "Обновлена"
+      "updatedAt": "Обновлена",
+      "runPrompt": "Запустить запрос на задаче",
+      "result": "Результат"
     },
     "aider": {
       "addContextFiles": "Добавить файл(ы) в контекст Aider:\n{{paths}}",
@@ -1583,7 +1591,8 @@
     "errors": {
       "noSuchTool": "Попытка использовать неизвестный инструмент: {{toolName}}",
       "invalidToolArguments": "Недопустимые аргументы для инструмента: {{toolName}}"
-    }
+    },
+    "preparing": "Подготовка инструмента..."
   },
   "codeBlock": {
     "revertChanges": "Отменить изменения"
@@ -1663,7 +1672,8 @@
     "undoContextChange": "Восстановить сообщения до предыдущего состояния",
     "agentModeOnly": "Доступно только в режиме Агент",
     "handoffError": "Передача не удалась: {{error}}",
-    "taskInfo": "Показать информацию о задаче"
+    "taskInfo": "Показать информацию о задаче",
+    "pastedImage": "Вставленное изображение {{index}}"
   },
   "agentProfiles": {
     "title": "Агенты",
@@ -1942,7 +1952,61 @@
     "pushRejectedPullFirst": "Отправка отклонена: в удалённой ветке есть новые коммиты. Сначала загрузите изменения и повторите попытку.",
     "resolveWithAI": "Решить с помощью ИИ",
     "outgoingCommitsTooltip": "Исходящие коммиты ({{count}}):",
-    "incomingCommitsTooltip": "Входящие коммиты ({{count}}):"
+    "incomingCommitsTooltip": "Входящие коммиты ({{count}}):",
+    "gitBranchLabel": "Git-ветка: {{branch}}",
+    "upToDate": "Актуальна",
+    "noCurrentBranch": "Нет ветки",
+    "searchBranches": "Поиск веток",
+    "noBranchesFound": "Ветки не найдены",
+    "localBranches": "Локальные",
+    "remoteBranches": "Удалённые",
+    "newBranch": "Новая ветка",
+    "newBranchNamePlaceholder": "Имя новой ветки",
+    "branchCreated": "Ветка '{{branch}}' создана",
+    "checkedOutBranch": "Переключено на '{{branch}}'",
+    "confirmCheckoutTitle": "Переключение ветки",
+    "confirmCheckoutMessage": "Эта ветка уже используется в рабочем дереве другой задачи. После подтверждения она будет отсоединена там (это рабочее дерево перейдёт в состояние detached HEAD с сохранением изменений), чтобы её можно было переключить здесь. Продолжить?",
+    "checkout": "Переключить",
+    "mergeIntoCurrent": "Слить в текущую ветку",
+    "rebaseCurrentOnto": "Перебазировать текущую ветку на эту",
+    "merge": "Слить",
+    "rebase": "Перебазировать",
+    "confirmMergeTitle": "Слияние ветки",
+    "confirmMergeMessage": "Слить '{{branch}}' в текущую ветку?",
+    "mergedIntoCurrent": "'{{branch}}' слита в текущую ветку",
+    "mergeConflicts": "Конфликты слияния в: {{files}}",
+    "confirmRebaseTitle": "Перебазирование ветки",
+    "confirmRebaseMessage": "Перебазировать текущую ветку на '{{branch}}'?",
+    "rebasedOnto": "Перебазировано на '{{branch}}'",
+    "rebaseConflicts": "Конфликты перебазирования в: {{files}}. Прервите перебазирование, чтобы вернуться в предыдущее состояние.",
+    "deleteBranch": "Удалить ветку",
+    "deleteForce": "Удалить принудительно",
+    "confirmDeleteTitle": "Удаление ветки",
+    "confirmDeleteMessage": "Удалить ветку '{{branch}}'?",
+    "confirmForceDeleteMessage": "Ветка '{{branch}}' содержит неслитые коммиты. Удалить её принудительно и потерять эти коммиты?",
+    "branchDeleted": "Ветка '{{branch}}' удалена",
+    "updateProject": "Обновить проект (Pull)",
+    "push": "Отправить",
+    "confirmPushTitle": "Отправка коммитов",
+    "confirmPushMessage_one": "Отправить {{count}} коммит на удалённый репозиторий?",
+    "confirmPushMessage_other": "Отправить {{count}} коммитов на удалённый репозиторий?",
+    "noCommitsToPush": "Нет коммитов для отправки",
+    "confirmPushSetUpstreamMessage": "У ветки '{{branch}}' нет вышестоящей ветки. Отправить её на удалённый репозиторий и назначить удалённую ветку вышестоящей?",
+    "force": "Принудительно",
+    "aheadCommits_one": "На {{count}} коммит впереди",
+    "aheadCommits_other": "На {{count}} коммитов впереди",
+    "behindCommits_one": "На {{count}} коммит позади",
+    "behindCommits_other": "На {{count}} коммитов позади",
+    "recentBranches": "Недавние",
+    "checkoutBranch": "Переключиться на '{{branch}}'",
+    "newBranchFrom": "Новая ветка от '{{branch}}'...",
+    "mergeBranchInto": "Слить '{{branch}}' в '{{current}}'",
+    "rebaseOnto": "Перебазировать '{{current}}' на '{{branch}}'",
+    "deleteBranchName": "Удалить '{{branch}}'",
+    "rebaseWorktreeOnto": "Перебазировать рабочее дерево на '{{branch}}'",
+    "actionNotAvailableInWorktree": "Это действие недоступно в режиме рабочего дерева",
+    "updateFromRemote": "Обновить из '{{upstream}}'",
+    "branchUpdated": "Ветка '{{branch}}' обновлена из удалённого репозитория"
   },
   "worktree": {
     "uncommittedFiles": "{{count}} файлов",

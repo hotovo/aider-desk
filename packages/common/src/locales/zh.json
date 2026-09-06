@@ -2138,6 +2138,7 @@
     "confirmPushMessage_one": "推送 {{count}} 个提交到远程？",
     "confirmPushMessage_other": "推送 {{count}} 个提交到远程？",
     "noCommitsToPush": "没有要推送的提交",
+    "confirmPushSetUpstreamMessage": "分支 '{{branch}}' 尚无上游分支。将其推送到远程并设置远程分支为上游？",
     "force": "强制",
     "aheadCommits_one": "领先 {{count}} 个提交",
     "aheadCommits_other": "领先 {{count}} 个提交",
