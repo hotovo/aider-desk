@@ -6,6 +6,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { ExtensionFetcher } from '../extension-fetcher';
 
+vi.mock('typescript', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('typescript')>();
+  return {
+    ...actual,
+    createProgram: vi.fn(),
+  };
+});
+
 // Mock the shell utility
 vi.mock('@/utils/shell', () => ({
   execWithShellPath: vi.fn(),
@@ -45,8 +53,8 @@ describe('ExtensionFetcher', () => {
       try {
         const testFetcher = new ExtensionFetcher();
         // Access private method via type assertion
-        const getStaticMetadata = (testFetcher as unknown as { getStaticMetadata: (filePath: string) => unknown }).getStaticMetadata.bind(testFetcher);
-        return getStaticMetadata(extFile);
+        const getStaticMetadata = (testFetcher as unknown as { getStaticMetadata: (filePath: string) => Promise<unknown> }).getStaticMetadata.bind(testFetcher);
+        return await getStaticMetadata(extFile);
       } finally {
         await fsPromises.rm(realTempDir, { recursive: true, force: true });
       }
@@ -283,8 +291,8 @@ describe('ExtensionFetcher', () => {
 
       try {
         const testFetcher = new ExtensionFetcher();
-        const getStaticMetadata = (testFetcher as unknown as { getStaticMetadata: (filePath: string) => unknown }).getStaticMetadata.bind(testFetcher);
-        const metadata = getStaticMetadata(extFile);
+        const getStaticMetadata = (testFetcher as unknown as { getStaticMetadata: (filePath: string) => Promise<unknown> }).getStaticMetadata.bind(testFetcher);
+        const metadata = await getStaticMetadata(extFile);
 
         expect(metadata).toEqual({
           name: 'JS Extension',
@@ -294,6 +302,49 @@ describe('ExtensionFetcher', () => {
       } finally {
         await fsPromises.rm(realTempDir, { recursive: true, force: true });
       }
+    });
+
+    it('should parse with createSourceFile instead of createProgram', async () => {
+      const { createProgram } = (await import('typescript')) as unknown as { createProgram: ReturnType<typeof vi.fn> };
+
+      const mockFileContent = `
+        export class ParseModeExtension implements Extension {
+          static metadata = {
+            name: 'Parse Mode Extension',
+            version: '1.0.0',
+            capabilities: ['tools'],
+          };
+        }
+      `;
+
+      const metadata = await createAndTestMetadata(mockFileContent);
+
+      expect(metadata).toEqual({
+        name: 'Parse Mode Extension',
+        version: '1.0.0',
+        capabilities: ['tools'],
+      });
+      expect(createProgram).not.toHaveBeenCalled();
+    });
+
+    it('should extract metadata from a standalone file without TypeScript program resolution', async () => {
+      const mockFileContent = `
+        export class IndependentExtension implements Extension {
+          static metadata = {
+            name: 'Independent Extension',
+            version: '1.0.0',
+            capabilities: ['commands'],
+          };
+        }
+      `;
+
+      const metadata = await createAndTestMetadata(mockFileContent);
+
+      expect(metadata).toEqual({
+        name: 'Independent Extension',
+        version: '1.0.0',
+        capabilities: ['commands'],
+      });
     });
   });
 

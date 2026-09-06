@@ -348,7 +348,7 @@ export class ExtensionFetcher {
 
   private async extractMetadataFromLocalFile(filePath: string): Promise<ExtensionMetadata | null> {
     try {
-      const metadata = this.getStaticMetadata(filePath);
+      const metadata = await this.getStaticMetadata(filePath);
 
       if (!metadata) {
         logger.error(`[ExtensionFetcher] No metadata found in ${filePath}`);
@@ -362,17 +362,9 @@ export class ExtensionFetcher {
     }
   }
 
-  private getStaticMetadata(filePath: string): ExtensionMetadata | null {
-    const program = ts.createProgram([filePath], {
-      allowJs: true,
-      target: ts.ScriptTarget.ESNext,
-      module: ts.ModuleKind.ESNext,
-    });
-
-    const sourceFile = program.getSourceFile(filePath);
-    if (!sourceFile) {
-      return null;
-    }
+  private async getStaticMetadata(filePath: string): Promise<ExtensionMetadata | null> {
+    const fileContent = await fs.readFile(filePath, 'utf-8');
+    const sourceFile = ts.createSourceFile(filePath, fileContent, ts.ScriptTarget.ESNext, true);
 
     let metadata: ExtensionMetadata | null = null;
     const enumValues = this.collectEnumValues(sourceFile);
