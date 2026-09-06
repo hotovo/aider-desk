@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "protected-paths",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "legacy-system-prompt",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "plannotator",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "seek",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "kanban",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "wigolo",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 22
+      "installCount": 24
     }
   ]
 }
