@@ -103,6 +103,16 @@ interface StoredTokens {
 const CODEX_MODELS: Model[] = [
   // Recommended
   {
+    id: 'gpt-6-astra',
+    providerId: '',
+    maxInputTokens: 1050000,
+    maxOutputTokensLimit: 128000,
+    inputCostPerToken: 0.00001,
+    outputCostPerToken: 0.00005,
+    cacheReadInputTokenCost: 0.000001,
+    cacheWriteInputTokenCost: 0.0000125,
+  },
+  {
     id: 'gpt-5.6-sol',
     providerId: '',
     maxInputTokens: 1050000,
@@ -798,7 +808,7 @@ const PROVIDER_ID = 'openai-codex';
 export default class OpenAICodexAuthExtension implements Extension {
   static metadata = {
     name: 'OpenAI Codex Auth',
-    version: '1.1.0',
+    version: '1.2.0',
     description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with a dedicated sign-in UI (browser or device code)',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/openai-codex/icon.png',
     author: 'wladimiiir',
