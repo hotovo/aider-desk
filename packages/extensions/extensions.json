@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "protected-paths",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "task-scheduler",
