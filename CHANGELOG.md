@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.82.0]
 
 - improved create task tool description and worktree inheritance
 - added git branch management
