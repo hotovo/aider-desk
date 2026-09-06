@@ -16,6 +16,7 @@
 - added git actions to the command palette with configurable hotkeys
 - fixed worktree integration checks failing when worktree directory no longer exists
 - added atomic context saving and corrupt recovery
+- optmized loading of available extensions
 
 ## [0.81.0]
 
