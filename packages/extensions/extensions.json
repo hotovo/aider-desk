@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "ultrathink",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 24
+      "installCount": 26
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "bmad",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 4
+      "installCount": 6
     },
     {
       "id": "auggie-sdk",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "doom",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "reasoning-selector",
