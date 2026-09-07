@@ -31,6 +31,8 @@
     "exportTaskImage": "导出任务为图片",
     "exportTaskMarkdown": "导出任务为Markdown",
     "copyTaskMarkdown": "复制任务为Markdown",
+    "copyTaskId": "复制任务 ID",
+    "copyTaskIdFailed": "复制任务 ID 失败",
     "interruptResponse": "中断响应",
     "restartConnector": "重启Aider连接器",
     "togglePin": "切换固定",

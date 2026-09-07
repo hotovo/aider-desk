@@ -37,6 +37,7 @@ export const UI_ACTIONS = [
   { id: 'task.exportImage', labelKey: 'uiActions.exportTaskImage' },
   { id: 'task.exportMarkdown', labelKey: 'uiActions.exportTaskMarkdown' },
   { id: 'task.copyMarkdown', labelKey: 'uiActions.copyTaskMarkdown' },
+  { id: 'task.copyId', labelKey: 'uiActions.copyTaskId' },
   { id: 'task.interrupt', labelKey: 'uiActions.interruptResponse' },
   { id: 'task.restartConnector', labelKey: 'uiActions.restartConnector' },
   { id: 'task.togglePin', labelKey: 'uiActions.togglePin' },
