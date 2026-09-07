@@ -17,7 +17,7 @@ Open **Settings → Extensions → OpenAI Codex Auth** and choose one of the two
 
 Device code sign-in is a beta OpenAI feature and must be enabled first in your ChatGPT security settings (or by a workspace admin for business/enterprise accounts).
 
-Tokens are stored in the `extensions-data/openai-codex` folder under the AiderDesk home/data directory (outside the extension install folder, so they survive extension updates) and are automatically refreshed when they expire. Use **Sign out** to remove them.
+Tokens are stored locally in `~/.aider-desk/extensions/openai-codex/auth-token.json` (inside the extension folder) and are automatically refreshed when they expire. Use **Sign out** to remove them.
 
 ## Usage Quota
 
@@ -43,7 +43,7 @@ Since Codex OAuth tokens cannot access the `/v1/models` API, the available model
 
 - **Browser doesn't open** — Check that AiderDesk has permission to open external URLs, or use the device code method.
 - **Device code link leads to login without a code field** — Enable device code login in your ChatGPT security settings first (workspace users may need an admin).
-- **Authentication keeps failing** — Sign out from the extension settings (or delete `~/.aider-desk/extensions-data/openai-codex/auth-token.json`) and sign in again.
+- **Authentication keeps failing** — Sign out from the extension settings (or delete `~/.aider-desk/extensions/openai-codex/auth-token.json`) and sign in again.
 - **Session expired errors on every prompt** — Sign in again from extension settings.
 
 ## Requirements

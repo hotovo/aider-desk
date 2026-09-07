@@ -1,7 +1,7 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { readFile, writeFile, mkdir, unlink } from 'node:fs/promises';
+import { readFile, writeFile, unlink } from 'node:fs/promises';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -82,15 +82,20 @@ let currentSessionId: string | undefined;
 const clampCacheKey = (key: string): string =>
   key.length <= PROMPT_CACHE_KEY_MAX_LENGTH ? key : Array.from(key).slice(0, PROMPT_CACHE_KEY_MAX_LENGTH).join('');
 
-// Tokens live outside the extension install dir so they survive extension updates; the legacy
-// location inside the extension install dir is migrated on load. Mirrors the app's home-dir
-// resolution (src/main/constants.ts): AIDER_DESK_DATA_DIR → AIDER_DESK_HOME_DIR → ~/.aider-desk
-const AIDER_DESK_HOME = process.env.AIDER_DESK_HOME_DIR ?? join(homedir(), process.env.AIDER_DESK_DIR ?? '.aider-desk');
-const DATA_DIR = process.env.AIDER_DESK_DATA_DIR
+// Token storage
+const TOKEN_FILE = join(__dirname, 'auth-token.json');
+
+// Tokens written by versions that stored them outside the extension dir (extensions-data/openai-codex
+// under the AiderDesk data dir) are migrated back on load. Mirrors the app's home-dir resolution
+// (src/main/constants.ts): AIDER_DESK_DATA_DIR → AIDER_DESK_HOME_DIR → ~/.aider-desk
+const LEGACY_DATA_DIR = process.env.AIDER_DESK_DATA_DIR
   ? join(process.env.AIDER_DESK_DATA_DIR, 'extensions-data', 'openai-codex')
-  : join(AIDER_DESK_HOME, 'extensions-data', 'openai-codex');
-const TOKEN_FILE = join(DATA_DIR, 'auth-token.json');
-const LEGACY_TOKEN_FILE = join(__dirname, 'auth-token.json');
+  : join(
+      process.env.AIDER_DESK_HOME_DIR ?? join(homedir(), process.env.AIDER_DESK_DIR ?? '.aider-desk'),
+      'extensions-data',
+      'openai-codex',
+    );
+const LEGACY_TOKEN_FILE = join(LEGACY_DATA_DIR, 'auth-token.json');
 
 interface StoredTokens {
   accessToken: string;
@@ -198,7 +203,6 @@ const loadTokens = async (): Promise<StoredTokens | null> => {
 };
 
 const saveTokens = async (tokens: StoredTokens): Promise<void> => {
-  await mkdir(DATA_DIR, { recursive: true });
   await writeFile(TOKEN_FILE, JSON.stringify(tokens, null, 2), { encoding: 'utf-8', mode: 0o600 });
 };
 
