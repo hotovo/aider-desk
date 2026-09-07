@@ -16,40 +16,33 @@
  * AiderDesk's project-skill support — the extension does not intercept chat.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
-import { BmadManager, getBmadPackage } from './lib/bmad-manager';
-import { generateSuggestions } from './lib/bmad-suggestions';
-import { computeProgressSummary } from './lib/progress';
-import { buildProjectOverview, computePhaseStepper } from './lib/ui-overview';
-import { listInstalledSkills, resolveSkillsDir } from './lib/skills';
-import { balanceFences, getPreprocessedSkillContent } from './lib/skill-preprocessor';
-import { hasContextMessages } from './lib/context-preparer';
-import { orderedPhases } from './lib/install-registry';
-import { phaseDisplayName } from './lib/progress';
-import {
-  containsBarePythonInvocation,
-  isAutoApprovedBashCommand,
-  isAutoApprovedReadPath,
-  isAutoApprovedWritePath,
-  skillReadDirs,
-} from './lib/tool-approval';
-import { BmadAction, UpdateInfo } from './lib/types';
+import { BmadManager, getBmadPackage } from "./lib/bmad-manager";
+import { generateSuggestions } from "./lib/bmad-suggestions";
+import { computeProgressSummary, phaseDisplayName } from "./lib/progress";
+import { buildProjectOverview, computePhaseStepper } from "./lib/ui-overview";
+import { listInstalledSkills, resolveSkillsDir } from "./lib/skills";
+import { balanceFences, getPreprocessedSkillContent } from "./lib/skill-preprocessor";
+import { hasContextMessages } from "./lib/context-preparer";
+import { orderedPhases } from "./lib/install-registry";
+import { containsBarePythonInvocation, isAutoApprovedBashCommand, isAutoApprovedReadPath, isAutoApprovedWritePath, skillReadDirs } from "./lib/tool-approval";
+import { BmadAction, UpdateInfo } from "./lib/types";
 
 import type {
+  AgentStartedEvent,
+  ContextMessage,
   Extension,
   ExtensionContext,
   ModeDefinition,
-  UIComponentDefinition,
   TaskUpdatedEvent,
-  AgentStartedEvent,
-  ContextMessage,
   ToolApprovalEvent,
-} from '@aiderdesk/extensions';
+  UIComponentDefinition
+} from "@aiderdesk/extensions";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -69,7 +62,7 @@ const BMAD_ACTIONS: Array<{ letter: string; label: string }> = [
 // Component IDs
 const WELCOME_PAGE_ID = 'bmad-welcome-page';
 const TASK_ACTIONS_ID = 'bmad-task-actions';
-const EXTENSION_VERSION = '2.0.0';
+
 
 /** Cap a Map to its most recent `max` entries (memory hygiene). */
 const boundedSet = <K, V>(map: Map<K, V>, key: K, value: V, max = 50): void => {
@@ -209,7 +202,7 @@ const getManager = (projectDir: string, context: ExtensionContext): BmadManager 
 export default class BmadExtension implements Extension {
   static metadata = {
     name: 'BMAD Method',
-    version: EXTENSION_VERSION,
+    version: '2.0.0',
     description: 'Lean backend for a standard bmad-method installation: discovers its menu, starts original workflows, tracks progress',
     author: '777marvin',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
@@ -474,7 +467,7 @@ export default class BmadExtension implements Extension {
           expectedVersion: manager.getExpectedVersion(),
           uvAvailable: await manager.checkUvAvailable(),
           updateInfo: updateInfo ?? null,
-          extensionVersion: EXTENSION_VERSION,
+          extensionVersion: '2.0.0',
           phases,
           isLoading: false,
           error: null,
