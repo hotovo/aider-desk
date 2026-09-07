@@ -69,20 +69,7 @@ const BMAD_ACTIONS: Array<{ letter: string; label: string }> = [
 // Component IDs
 const WELCOME_PAGE_ID = 'bmad-welcome-page';
 const TASK_ACTIONS_ID = 'bmad-task-actions';
-
-// Single source for the extension version - package.json remains the
-// canonical version record and is read once at module load. Shown in the UI
-// header and used by the metadata below.
-const EXTENSION_VERSION = (() => {
-  try {
-    return (
-      (JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf-8')) as { version?: string })
-        .version ?? 'unknown'
-    );
-  } catch {
-    return 'unknown';
-  }
-})();
+const EXTENSION_VERSION = '2.0.0';
 
 /** Cap a Map to its most recent `max` entries (memory hygiene). */
 const boundedSet = <K, V>(map: Map<K, V>, key: K, value: V, max = 50): void => {
