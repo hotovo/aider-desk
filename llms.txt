@@ -4271,7 +4271,7 @@ private async fileExists(filePath: string): Promise<boolean>
 ⋮----
 private async extractMetadataFromLocalFile(filePath: string): Promise<ExtensionMetadata | null>
 ⋮----
-private getStaticMetadata(filePath: string): ExtensionMetadata | null
+private async getStaticMetadata(filePath: string): Promise<ExtensionMetadata | null>
 ⋮----
 const visitor = (node: ts.Node) =>
 ⋮----
@@ -5579,7 +5579,9 @@ generateMergeCommands(mainBranch: string, branchName: string): string[]
 ⋮----
 async gitPull(worktreePath: string, rebase?: boolean): Promise<
 ⋮----
-async gitPush(worktreePath: string, force?: boolean): Promise<
+async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean): Promise<
+⋮----
+private async getDefaultRemote(repoPath: string): Promise<string>
 ⋮----
 async updateBranch(repoPath: string, branchName: string): Promise<
 ⋮----
@@ -10268,7 +10270,7 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME
 ⋮----
 import logger from '@/logger';
 import { Task } from '@/task';
-import { isDirectory, isFileIgnored } from '@/utils';
+import { isDirectory, isFileIgnored, withLock } from '@/utils';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -10368,6 +10370,19 @@ toConnectorMessages(contextMessages: ContextMessage[] = this.messages): Connecto
 ⋮----
 async save(): Promise<void>
 ⋮----
+// Serialize writes so concurrent saves cannot interleave and corrupt the file
+⋮----
+// Remove temp files orphaned by a crash between writeFile and rename
+⋮----
+// Write atomically: write to a temp file, then rename over the target so a
+// crash mid-write never leaves context.json half-written.
+⋮----
+/**
+   * Removes temp files orphaned by a crash between writeFile and rename.
+   * Only safe to call while holding the save lock for this task's storage path.
+   */
+private async cleanupStaleTempFiles(dir: string): Promise<void>
+⋮----
 /**
    * Creates a backup of the current context.json file before a destructive operation
    * (e.g., smart compaction). Backups are named context.backup.001.json, context.backup.002.json, etc.
@@ -10394,6 +10409,15 @@ async load(): Promise<void>
 async reloadFromDisk(): Promise<boolean>
 ⋮----
 private async readContextFromDisk(): Promise<TaskContext | null>
+⋮----
+/**
+   * Recovers from a corrupt/truncated context.json by falling back to the newest
+   * backup if one exists, otherwise moving the corrupt file aside and returning an
+   * empty context so the task still loads instead of failing outright.
+   */
+private async recoverCorruptContext(): Promise<TaskContext | null>
+⋮----
+// No usable backup: move the corrupt file aside so it does not keep breaking loads.
 ⋮----
 private async loadInternal(): Promise<void>
 ⋮----
@@ -11452,7 +11476,7 @@ public async updateGitBranch(branchName: string): Promise<
 ⋮----
 public async gitPull(rebase?: boolean): Promise<
 ⋮----
-public async gitPush(force?: boolean): Promise<
+public async gitPush(force?: boolean, setUpstream?: boolean): Promise<
 ⋮----
 public async renameGitBranch(newBranchName: string): Promise<void>
 ⋮----
@@ -12875,7 +12899,7 @@ async updateGitBranch(baseDir: string, taskId: string, branchName: string): Prom
 ⋮----
 async gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<
 ⋮----
-async gitPush(baseDir: string, taskId: string, force?: boolean): Promise<
+async gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean): Promise<
 ⋮----
 async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
 ⋮----
@@ -17240,6 +17264,8 @@ type Props = {
 ⋮----
 const parseMarkdownResults = (md: string): Array<Match> | null =>
 ⋮----
+
+⋮----
 if (
     prevProps.compact !== nextProps.compact ||
     prevProps.hideMessageBar !== nextProps.hideMessageBar ||
@@ -21189,6 +21215,8 @@ onCancel=
 setBranchToRebase(null);
 void performRebase(branch);
 ⋮----
+onConfirm=
+⋮----
 setShowOnlyUncommittedDialog(false);
 onOnlyUncommitted();
 ⋮----
@@ -21204,6 +21232,8 @@ onResolveConflictsWithAgent();
 confirmButtonText=
 ⋮----
 label=
+⋮----
+<Checkbox label=
 
 ================
 File: src/renderer/src/components/project/GitBranchesPopup.tsx
