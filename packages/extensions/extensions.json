@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "context-autocompletion-words",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "fff",
