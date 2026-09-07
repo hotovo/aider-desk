@@ -105,7 +105,16 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
   const searchTerm = (message.args.searchTerm as string) || '';
   const contextLines = (message.args.contextLines as number) ?? 0;
   const ignoreGitignore = (message.args.ignoreGitignore as boolean) ?? false;
-  const rawContent = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
+  const rawContent = useMemo(() => {
+    if (!message.content) {
+      return null;
+    }
+    try {
+      return JSON.parse(message.content);
+    } catch {
+      return message.content;
+    }
+  }, [message.content]);
   const isMarkdown = rawContent && typeof rawContent === 'string' && rawContent.startsWith('## Grep Results:');
   const isError =
     rawContent &&

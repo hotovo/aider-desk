@@ -336,7 +336,7 @@ function transformCursorResult(
         ? String((cursorResult as { error: unknown }).error)
         : String(cursorResult ?? '');
     return {
-      resultStr: errorStr,
+      resultStr: JSON.stringify(errorStr),
       output: { type: 'error-text', value: errorStr },
     };
   }
@@ -400,7 +400,8 @@ function transformCursorResult(
         diffString?: string;
       };
       const str = v?.diffString ?? JSON.stringify(v ?? {});
-      return { resultStr: str, output: { type: 'text', value: str } };
+      const resultStr = v?.diffString ? JSON.stringify(str) : str;
+      return { resultStr, output: { type: 'text', value: str } };
     }
     case 'glob': {
       const v = value as { files: string[]; totalFiles: number };
@@ -540,7 +541,7 @@ function transformCursorResult(
       const rawValue = extractResultValue(cursorResult);
       const str = rawValue !== undefined ? (typeof rawValue === 'string' ? rawValue : JSON.stringify(rawValue)) : undefined;
       return {
-        resultStr: str,
+        resultStr: str !== undefined ? JSON.stringify(str) : undefined,
         output: str ? { type: 'text', value: str } : { type: 'text', value: '' },
       };
     }
@@ -559,7 +560,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.5.1',
+    version: '4.5.2',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -776,7 +777,7 @@ export default class CursorSdkExtension implements Extension {
 
       const result = await run.wait();
       context.log(`Cursor run finished: ${result.status}`, 'info');
-      context.log(`[cursor-sdk] run.wait() result.usage: ${result.usage ? JSON.stringify(result.usage) : 'undefined'}`, 'info');
+      context.log(`[cursor-sdk] run.wait() result.usage: ${result.usage ? JSON.stringify(result.usage) : 'undefined'}`, 'debug');
 
       const contextMessages = await streamProcessor.finish(result.usage ?? undefined);
 
@@ -1606,20 +1607,20 @@ function createStreamProcessor(
   const onStep = async (step: ConversationStep) => {
     switch (step.type) {
       case 'assistantMessage':
-        context.log(`[cursor-sdk] Step finished. Type: assistantMessage, text: ${step.message.text.substring(0, 100)}`, 'info');
+        context.log(`[cursor-sdk] Step finished. Type: assistantMessage, text: ${step.message.text.substring(0, 100)}`, 'debug');
         break;
 
       case 'thinkingMessage':
         context.log(
           `[cursor-sdk] Step finished. Type: thinkingMessage, text: ${step.message.text.substring(0, 100)}, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`,
-          'info',
+          'debug',
         );
         break;
 
       case 'toolCall': {
         const tc = step.message;
         const resultStatus = tc.result?.status ?? 'pending';
-        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}, ${JSON.stringify(tc.result)}`, 'info');
+        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}, ${JSON.stringify(tc.result)}`, 'debug');
 
         if (tc.type === 'task') {
           const pendingTask = findPendingTask(tc as ToolCall);
