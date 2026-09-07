@@ -32,7 +32,7 @@ import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
-import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
+import { showErrorNotification, showInfoNotification, showWarningNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
@@ -568,6 +568,20 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
     [api, projectDir, t],
   );
 
+  const handleCopyTaskId = useCallback(
+    async (taskId: string) => {
+      try {
+        await api.writeToClipboard(taskId);
+        showInfoNotification(t('taskSidebar.taskIdCopied', { taskId }));
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to copy task id:', error);
+        showWarningNotification(t('uiActions.copyTaskIdFailed'));
+      }
+    },
+    [api, t],
+  );
+
   const handleDuplicateTask = useCallback(
     async (taskId: string) => {
       try {
@@ -645,6 +659,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
           void handleCopyTaskAsMarkdown(activeTaskId);
         }
       },
+      'task.copyId': () => {
+        if (activeTaskId) {
+          void handleCopyTaskId(activeTaskId);
+        }
+      },
       'task.interrupt': () => {
         if (activeTaskId) {
           void api.interruptResponse(projectDir, activeTaskId);
@@ -694,6 +713,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
     handleExportTaskToImage,
     handleExportTaskToMarkdown,
     handleCopyTaskAsMarkdown,
+    handleCopyTaskId,
     api,
     handleUpdateOptimisticTaskState,
     optimisticTasks,

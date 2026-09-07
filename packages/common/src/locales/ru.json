@@ -31,6 +31,8 @@
     "exportTaskImage": "Экспортировать задачу как изображение",
     "exportTaskMarkdown": "Экспортировать задачу как Markdown",
     "copyTaskMarkdown": "Копировать задачу как Markdown",
+    "copyTaskId": "Копировать ID задачи",
+    "copyTaskIdFailed": "Не удалось скопировать ID задачи",
     "interruptResponse": "Прервать ответ",
     "restartConnector": "Перезапустить коннектор Aider",
     "togglePin": "Переключить закрепление",

@@ -31,6 +31,8 @@
     "exportTaskImage": "작업을 이미지로 내보내기",
     "exportTaskMarkdown": "작업을 Markdown으로 내보내기",
     "copyTaskMarkdown": "작업을 Markdown으로 복사",
+    "copyTaskId": "작업 ID 복사",
+    "copyTaskIdFailed": "작업 ID 복사 실패",
     "interruptResponse": "응답 중단",
     "restartConnector": "Aider 커넥터 재시작",
     "togglePin": "고정 전환",
