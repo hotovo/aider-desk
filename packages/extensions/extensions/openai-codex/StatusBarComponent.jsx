@@ -15,28 +15,37 @@
     return null;
   }
 
+  const fiveHourWindowSeconds = 5 * 3600;
   const weeklyWindowSeconds = 7 * 86400;
-  const weeklyUsage = [data?.primary, data?.secondary].find(
+  const usageWindows = [data?.primary, data?.secondary];
+  const fiveHourUsage = usageWindows.find(
+    (window) => window?.limit_window_seconds === fiveHourWindowSeconds,
+  );
+  const weeklyUsage = usageWindows.find(
     (window) => window?.limit_window_seconds === weeklyWindowSeconds,
   );
 
-  if (!weeklyUsage) {
+  const renderWindow = (label, usageWindow, withRemaining) => (
+    <ui.Tooltip content={usageWindow.reset_at ? `Resets at ${formatResetTime(usageWindow.reset_at)}` : ''}>
+      <span>{label}: {100 - usageWindow.used_percent}%{withRemaining ? ' remaining' : ''}</span>
+    </ui.Tooltip>
+  );
+
+  if (!weeklyUsage && !fiveHourUsage) {
     return (
-      <div className="flex items-center gap-2 pt-1 justify-between w-full">
-        <span>Weekly usage limit:</span>
+      <div className="flex items-center gap-2 pt-1 justify-end w-full">
         <span>Usage unavailable</span>
       </div>
     );
   }
 
-  const remainingPercentage = 100 - weeklyUsage.used_percent;
-
   return (
-    <div className="flex items-center gap-2 pt-1 justify-between w-full">
-      <span>Weekly usage limit:</span>
-      <ui.Tooltip content={weeklyUsage.reset_at ? `Resets at ${formatResetTime(weeklyUsage.reset_at)}` : ''}>
-        <span>{remainingPercentage}% remaining</span>
-      </ui.Tooltip>
+    <div className="flex items-center gap-2 pt-1 justify-end w-full">
+      <div className="flex items-center gap-2">
+        {fiveHourUsage && renderWindow('5 Hours', fiveHourUsage, false)}
+        {fiveHourUsage && weeklyUsage && <span>|</span>}
+        {weeklyUsage && renderWindow('Weekly', weeklyUsage, true)}
+      </div>
     </div>
   );
 }
