@@ -1205,10 +1205,28 @@ export interface BranchInfo {
   ahead?: number;
   behind?: number;
 }
+/**
+ * Machine-readable notification category.
+ * Producers map their events to a known kind so consumers (remote sound
+ * delivery, extensions) can route or select sounds without parsing text.
+ */
+export type NotificationKind = 'task-finished' | 'input-needed' | 'generic';
+
 export interface NotificationData {
   baseDir: string;
   title: string;
   body: string;
+  /**
+   * Stable unique notification ID used to deduplicate redeliveries across reconnects.
+   * Optional at the type level for third-party source compatibility — the delivery
+   * boundary (EventManager.sendNotificationData) always populates it before transport
+   * so the browser-side deduplication by `id` always sees a fully-formed contract.
+   */
+  id?: string;
+  /** Unix epoch (ms) when the notification was created. Always populated by the delivery boundary. */
+  timestamp?: number;
+  /** Machine-readable category for delivery/sound routing (defaults to 'generic' via the delivery boundary) */
+  kind?: NotificationKind;
 }
 
 export interface InstalledExtension {

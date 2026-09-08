@@ -20,6 +20,7 @@ import {
   Model,
   ModelCallSettings,
   ModelCallTimeout,
+  NotificationData,
   OS,
   ProjectSettings,
   PromptContext,
@@ -545,6 +546,14 @@ export interface ResponseChunkEvent {
 
 export interface ResponseCompletedEvent {
   response: ResponseCompletedData;
+}
+
+/** Event payload for notification events (desktop/remote notification delivery) */
+export interface NotificationEvent {
+  /** The notification contract object delivered to windows, browser clients, and extensions */
+  notification: NotificationData;
+  /** Set blocked = true to prevent default notification delivery (Electron windows + browser clients) */
+  blocked?: boolean;
 }
 
 export interface HandleApprovalEvent {
@@ -2015,6 +2024,28 @@ export interface Extension {
    * @returns void or partial event to modify message
    */
   onResponseCompleted?(event: ResponseCompletedEvent, context: ExtensionContext): Promise<void | Partial<ResponseCompletedEvent>>;
+
+  // Notification Events
+
+  /**
+   * Called when a notification is about to be delivered to the user (desktop and remote browser clients)
+   * Dispatched by the task notification pipeline (Task.notifyIfEnabled); the low-level
+   * EventManager transport (sendNotification/sendNotificationData) does not dispatch extension hooks
+   * The hook fires REGARDLESS of the notificationsEnabled setting — only the built-in
+   * delivery (socket event + desktop notification) is gated by that setting, so sound/relay
+   * extensions can observe or self-deliver notifications even when built-in ones are off.
+   * Modify event.notification to change the title, body, or kind before delivery — returning
+   * a PARTIAL notification (e.g. only { title }) is safe: the returned fields are merged
+   * over the running notification, so unaffected fields such as baseDir/body are never dropped
+   * Set event.blocked = true to prevent default notification delivery
+   * (useful for extensions that handle notification delivery themselves, e.g., custom sound or relay forwarding)
+   * The dispatch is bounded (NOTIFICATION_HOOK_TIMEOUT_MS, 2s): a hung handler cannot
+   * suppress core delivery — the unmodified notification is delivered when it elapses.
+   * Delivery is serialized per project (FIFO in dispatch order); ordering across
+   * different projects is not guaranteed.
+   * @returns void or partial event to modify the notification
+   */
+  onNotification?(event: NotificationEvent, context: ExtensionContext): Promise<void | Partial<NotificationEvent>>;
 
   // Approval Events
 

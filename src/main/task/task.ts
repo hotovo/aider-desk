@@ -27,6 +27,8 @@ import {
   Mode,
   ModelInfo,
   ModelsData,
+  NotificationData,
+  NotificationKind,
   ProjectSettings,
   PromptContext,
   QuestionData,
@@ -128,6 +130,17 @@ import { CompactionLevel, extractSummary, smartCompactMessages } from '@/agent/c
 export const INTERNAL_TASK_ID = 'internal';
 export const RESPONSE_CHUNK_FLUSH_INTERVAL_MS = 10;
 export const TOOL_INPUT_FLUSH_INTERVAL_MS = 50;
+/**
+ * Bounded wait for the `onNotification` extension hook before core notification delivery
+ * proceeds. A hung extension must never suppress core delivery indefinitely.
+ */
+export const NOTIFICATION_HOOK_TIMEOUT_MS = 2_000;
+
+/**
+ * Per-project FIFO queues serializing notification delivery (see Task.notifyIfEnabled).
+ * Keyed by project baseDir; entries are removed as soon as their tail settles.
+ */
+const projectNotificationQueues = new Map<string, Promise<void>>();
 
 export const EMPTY_TASK_DATA: TaskData = {
   id: '',
@@ -1115,7 +1128,7 @@ export class Task {
     responses.push(...nextResponses);
 
     if (sendNotification) {
-      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+      void this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task), 'task-finished');
     }
 
     return responses;
@@ -1206,7 +1219,7 @@ export class Task {
     }
 
     if (sendNotification) {
-      this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task));
+      void this.notifyIfEnabled('Task finished', getTaskFinishedNotificationText(this.task), 'task-finished');
     }
 
     return [];
@@ -1706,28 +1719,141 @@ export class Task {
     this.eventManager.sendToolInputChunk(data);
   }
 
-  private notifyIfEnabled(title: string, text: string) {
-    const settings = this.store.getSettings();
-    if (!settings.notificationsEnabled) {
-      return;
-    }
+  /**
+   * Serializes per-project notification delivery. Notifications for the same project are
+   * delivered FIFO in dispatch order; different projects are independent. Queues are
+   * cleaned up as soon as their tail settles to avoid unbounded growth.
+   */
+  private notifyIfEnabled(title: string, text: string, kind: NotificationKind = 'generic') {
+    const projectDir = this.getProjectDir();
+    const previous = projectNotificationQueues.get(projectDir) ?? Promise.resolve();
+    // Run the delivery regardless of whether the previous tail rejected (it never should:
+    // deliverNotification swallows its own errors, but stay defensive).
+    const delivery = previous.then(
+      () => this.deliverNotification(title, text, kind),
+      () => this.deliverNotification(title, text, kind),
+    );
+    const tail = delivery.then(
+      () => {
+        if (projectNotificationQueues.get(projectDir) === tail) {
+          projectNotificationQueues.delete(projectDir);
+        }
+      },
+      () => {
+        if (projectNotificationQueues.get(projectDir) === tail) {
+          projectNotificationQueues.delete(projectDir);
+        }
+      },
+    );
+    projectNotificationQueues.set(projectDir, tail);
+    return delivery;
+  }
 
-    this.eventManager.sendNotification(this.getProjectDir(), title, text);
-
-    const app = getElectronApp();
-    if (!app) {
-      return;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Notification } = require('electron');
-    if (Notification.isSupported()) {
-      const notification = new Notification({
+  /**
+   * Fire-and-forget notification pipeline body (call sites use `void notifyIfEnabled`, so
+   * failures must never escape as unhandled rejections): swallows and logs any error
+   * instead of throwing.
+   */
+  private async deliverNotification(title: string, text: string, kind: NotificationKind) {
+    try {
+      let notification: NotificationData = {
+        baseDir: this.getProjectDir(),
         title,
         body: text,
-      });
-      notification.show();
-    } else {
-      logger.warn('Notifications are not supported on this platform.');
+        kind,
+        id: uuidv4(),
+        timestamp: Date.now(),
+      };
+
+      // Let extensions observe, modify, or block the notification before default delivery.
+      // The hook fires REGARDLESS of the notificationsEnabled setting: sound/relay
+      // extensions must be able to observe (or self-deliver) notifications even when the
+      // user disabled the built-in core delivery. Core delivery (transport + Electron)
+      // below remains gated by that setting.
+      // An extension result of {notification: undefined, blocked: false} must preserve the
+      // original notification instead of sending undefined downstream.
+      // The hook receives a CLONE of the notification: handlers get the payload by reference
+      // and may mutate it in place, so if the dispatch below races to its timeout (a hung
+      // hook), the pristine original is delivered instead of a half-mutated object.
+      // The dispatch is raced against a bounded timeout so an indefinitely pending hook
+      // cannot suppress core delivery (the timeout delivers the unmodified notification).
+      const dispatchPayload: NotificationData = { ...notification };
+      const dispatchPromise = this.extensionManager.dispatchEvent('onNotification', { notification: dispatchPayload }, this.project, this);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const dispatchOutcome = await Promise.race([
+        dispatchPromise.then(
+          (value) => ({ value }) as const,
+          (error: unknown) => ({ error }) as const,
+        ),
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), NOTIFICATION_HOOK_TIMEOUT_MS);
+        }),
+      ]);
+      if (timer) {
+        clearTimeout(timer);
+      }
+
+      if (dispatchOutcome === null) {
+        logger.warn('onNotification extension hook did not settle in time; delivering the unmodified notification', {
+          title: notification.title,
+          timeoutMs: NOTIFICATION_HOOK_TIMEOUT_MS,
+        });
+      } else if ('error' in dispatchOutcome) {
+        logger.error('onNotification extension hook failed to dispatch:', dispatchOutcome.error);
+        return;
+      } else {
+        // Extension result handling: a returned notification is merged field-by-field over
+        // the original. dispatchEvent already performs this merge for chained handlers, but
+        // the delivery boundary must never drop core fields (baseDir/body/id) even if a
+        // partial notification somehow reaches this point; undefined-valued fields in the
+        // returned object are ignored rather than clobbering the original.
+        const returnedNotification = dispatchOutcome.value.notification;
+        if (returnedNotification) {
+          notification = {
+            ...notification,
+            ...Object.fromEntries(Object.entries(returnedNotification).filter(([, value]) => value !== undefined)),
+          };
+        }
+
+        if (dispatchOutcome.value.blocked) {
+          logger.debug('Notification delivery blocked by extension', {
+            title: notification.title,
+            kind: notification.kind,
+          });
+          return;
+        }
+      }
+
+      // Default delivery gating: extension observation above is decoupled from this
+      // setting — the hook always runs, but the built-in transport (socket event +
+      // Electron notification) is skipped when the user disabled notifications.
+      const settings = this.store.getSettings();
+      if (!settings.notificationsEnabled) {
+        return;
+      }
+
+      this.eventManager.sendNotificationData(notification);
+
+      const app = getElectronApp();
+      if (!app) {
+        return;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { Notification } = require('electron');
+      if (Notification.isSupported()) {
+        const electronNotification = new Notification({
+          title: notification.title,
+          body: notification.body,
+        });
+        electronNotification.show();
+      } else {
+        logger.warn('Notifications are not supported on this platform.');
+      }
+    } catch (error) {
+      // All call sites are `void` fire-and-forget: log and swallow so former synchronous
+      // throws (settings access, Electron notification, transport) never become unhandled
+      // rejections.
+      logger.error('Failed to deliver notification:', error);
     }
   }
 
@@ -2235,7 +2361,7 @@ export class Task {
       return Promise.resolve([storedAnswer, undefined]);
     }
 
-    this.notifyIfEnabled('Waiting for your input', questionData.text);
+    void this.notifyIfEnabled('Waiting for your input', questionData.text, 'input-needed');
 
     // Store the resolve function for the promise
     return new Promise<[string, string | undefined]>((resolve) => {

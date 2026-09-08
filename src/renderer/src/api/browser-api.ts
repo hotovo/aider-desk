@@ -86,6 +86,8 @@ import { io, Socket } from 'socket.io-client';
 import { compareBaseDirs } from '@common/utils';
 import { v4 as uuidv4 } from 'uuid';
 
+import { createNotificationDeduplicator } from '@/utils/notification-dedup';
+
 type EventDataMap = {
   'settings-updated': SettingsData;
   'response-chunk': ResponseChunkData;
@@ -154,6 +156,7 @@ export class BrowserApi implements ApplicationAPI {
   };
   private readonly apiClient: AxiosInstance;
   private appOS: OS | null = null;
+  private readonly notificationDeduplicator = createNotificationDeduplicator();
 
   constructor() {
     // Allow overriding the API port via query param (e.g. when opening the dev renderer in a browser against a dev server)
@@ -251,9 +254,19 @@ export class BrowserApi implements ApplicationAPI {
     this.socket.on('event', (eventData: { type: string; data: unknown }) => {
       const { type, data } = eventData;
       const eventType = type as keyof EventDataMap;
+
+      // Suppress redelivered notifications (reconnect re-subscription / duplicate broadcast) by
+      // per-project (baseDir + id) key. Runs BEFORE the listener-exists check so a notification
+      // delivered while no `notification` listener is registered still records its id — otherwise
+      // it could be redelivered later (e.g., after fix-up/re-subscription) and play twice.
+      if (eventType === 'notification' && this.notificationDeduplicator.isDuplicate(data)) {
+        return;
+      }
+
       const eventListeners = this.listeners[eventType];
       if (eventListeners) {
         const typedData = data as EventDataMap[typeof eventType];
+
         eventListeners.forEach((entry) => {
           const baseDir = (typedData as { baseDir?: string })?.baseDir;
           const taskId = (typedData as { taskId?: string })?.taskId;
@@ -1432,7 +1445,8 @@ export class BrowserApi implements ApplicationAPI {
 
   addNotificationListener(baseDir: string, callback: (data: NotificationData) => void): () => void {
     return this.addListener('notification', (data: NotificationData) => {
-      if (data.baseDir === baseDir) {
+      // Optional chaining: raw socket wire data may be malformed
+      if ((data as NotificationData | null | undefined)?.baseDir === baseDir) {
         callback(data);
       }
     });

@@ -30,6 +30,7 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   McpServersData,
+  NotificationKind,
   WorktreeIntegrationStatus,
   WorktreeIntegrationStatusUpdatedData,
   TaskCreatedData,
@@ -44,6 +45,7 @@ import {
   ModalOverlayUrlData,
   ContextInfoData,
 } from '@common/types';
+import { v4 as uuidv4 } from 'uuid';
 
 import type { WindowManager } from '@/window-manager';
 
@@ -387,14 +389,47 @@ export class EventManager {
     this.broadcastToEventConnectors('message-removed', data);
   }
 
-  sendNotification(baseDir: string, title: string, body: string): void {
+  /**
+   * Convenience that enriches the notification contract (id, timestamp, kind) and
+   * delivers it immediately to windows and event connectors.
+   *
+   * NOTE: The EventManager is a pure transport layer and does NOT dispatch the
+   * `onNotification` extension hook (it has no Project/Task context for the
+   * extension dispatch). The hook is dispatched by the high-level task notification
+   * pipeline — `Task.notifyIfEnabled` — before it hands the (potentially
+   * extension-modified or blocked) notification to `sendNotificationData`.
+   * Never use this method as a second delivery hop after the hook.
+   */
+  sendNotification(baseDir: string, title: string, body: string, kind: NotificationKind = 'generic'): NotificationData {
     const data: NotificationData = {
+      baseDir,
       title,
       body,
-      baseDir,
+      kind,
+      id: uuidv4(),
+      timestamp: Date.now(),
     };
-    this.sendToWindows('notification', data);
-    this.broadcastToEventConnectors('notification', data);
+    this.sendNotificationData(data);
+    return data;
+  }
+
+  /**
+   * Low-level delivery primitive: does NOT dispatch extension hooks (see sendNotification).
+   * Normalizes partial payloads at the delivery boundary: `NotificationData.id`, `timestamp`,
+   * and `kind` are optional at the type level (third-party source compatibility), but the
+   * wire contract — and the browser-side deduplication keyed by `id` — requires them, so
+   * missing or empty-string values are filled in here. Provided non-empty values are never
+   * regenerated.
+   */
+  sendNotificationData(data: NotificationData): void {
+    const normalized: NotificationData = {
+      ...data,
+      id: data.id || uuidv4(),
+      timestamp: data.timestamp ?? Date.now(),
+      kind: data.kind || 'generic',
+    };
+    this.sendToWindows('notification', normalized);
+    this.broadcastToEventConnectors('notification', normalized);
   }
 
   subscribe(socket: Socket, config: EventsConnectorConfig): void {

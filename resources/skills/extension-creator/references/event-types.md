@@ -38,6 +38,7 @@ Every Extension interface method dispatches a specific event type. All handlers 
 | `onRuleFilesRetrieved` | `RuleFilesRetrievedEvent` | — |
 | `onResponseChunk` | `ResponseChunkEvent` | — |
 | `onResponseCompleted` | `ResponseCompletedEvent` | — |
+| `onNotification` | `NotificationEvent` | ✅ Yes |
 | `onHandleApproval` | `HandleApprovalEvent` | ✅ Yes |
 | `onSubagentStarted` | `SubagentStartedEvent` | ✅ Yes |
 | `onSubagentFinished` | `SubagentFinishedEvent` | — |
@@ -58,7 +59,7 @@ Events with a `blocked?: boolean` field allow extensions to **block** the operat
 
 | Capability | Events |
 |---|---|
-| **Can Block** (have `blocked?` field) | `PromptStartedEvent`, `AgentStartedEvent`, `InterruptedEvent`, `ToolApprovalEvent`, `ToolCalledEvent`, `HandleApprovalEvent`, `SubagentStartedEvent`, `CommandExecutedEvent`, `CustomCommandExecutedEvent`, `AiderPromptStartedEvent`, `BeforeCommitEvent`, `TaskDeletedEvent` |
+| **Can Block** (have `blocked?` field) | `PromptStartedEvent`, `AgentStartedEvent`, `InterruptedEvent`, `ToolApprovalEvent`, `HandleApprovalEvent`, `SubagentStartedEvent`, `CommandExecutedEvent`, `CustomCommandExecutedEvent`, `AiderPromptStartedEvent`, `BeforeCommitEvent`, `TaskDeletedEvent`, `NotificationEvent` |
 | **Read-Only** (all fields `readonly`) | `TaskInitializedEvent`, `TaskClosedEvent`, `ProjectStartedEvent`, `ProjectStoppedEvent`, `AfterCommitEvent` |
 
 ---
@@ -402,6 +403,52 @@ Dispatched when a response is completed.
 ```typescript
 interface ResponseCompletedEvent {
   response: ResponseCompletedData;
+}
+```
+
+---
+
+## Notification Events
+
+### NotificationEvent (Can Block)
+
+Dispatched when a notification is about to be delivered to the user (desktop and remote
+browser clients). Extensions can modify the title, body, or kind (e.g., `'task-finished'`,
+`'input-needed'`, `'generic'`) before delivery, or set `blocked: true` to prevent default
+delivery — useful for extensions that handle notification delivery themselves (custom
+sounds, relay forwarding).
+
+> **Dispatch point:** `onNotification` is dispatched by the task notification pipeline
+> (`Task.notifyIfEnabled`) before delivery. The low-level `EventManager` transport
+> (`sendNotification` / `sendNotificationData`) is a pure delivery layer and does **not**
+> dispatch extension hooks — it only carries the already-filtered notification.
+>
+> **Always observed:** the hook fires regardless of the `notificationsEnabled` setting —
+> only the **built-in** delivery (socket event + desktop notification) is gated by it, so
+> sound/relay extensions can observe or self-deliver notifications even when built-in
+> notifications are disabled. Returning `blocked: true` skips only default delivery.
+>
+> **Ordering:** per project, notifications are delivered FIFO in dispatch order; ordering
+> across different projects is not guaranteed.
+
+> **Bounded dispatch:** the hook is awaited for at most `NOTIFICATION_HOOK_TIMEOUT_MS`
+> (2 s, `src/main/task/task.ts`). A hung or slow hook cannot suppress core delivery —
+> when the deadline passes, the original (pre-dispatch) notification is delivered: the
+> hook receives a snapshot of the payload, so in-place mutations by a hung handler are
+> discarded. Handler errors are **isolated**: a hook that **throws** is logged and the
+> dispatch chain continues (remaining handlers still run), so default delivery
+> **proceeds** — throwing is not the same as blocking; only `blocked: true` (or a
+> dispatch-level failure, e.g. the extension system erroring before handlers run) skips
+> default delivery. Returning a partial `notification` object is safe: the returned fields
+> are merged over the running notification field-by-field (unaffected fields such as
+> `baseDir`/`body` are never dropped, explicit `undefined` values are ignored), and missing
+> `id`/`timestamp`/`kind` — including empty-string values — are filled in at the delivery
+> boundary (`EventManager.sendNotificationData`) before transport.
+
+```typescript
+interface NotificationEvent {
+  notification: NotificationData;
+  blocked?: boolean;
 }
 ```
 

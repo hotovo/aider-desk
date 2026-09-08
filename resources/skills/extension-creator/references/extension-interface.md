@@ -216,6 +216,15 @@ interface Extension {
 }
 ```
 
+### Notification Events
+
+```typescript
+interface Extension {
+  /** Called when a notification is about to be delivered (desktop + remote browser clients). Dispatched by the task notification pipeline (Task.notifyIfEnabled) — the low-level EventManager transport does NOT dispatch extension hooks. The hook fires regardless of the `notificationsEnabled` setting (only built-in delivery is gated), so sound/relay extensions observe events even when native notifications are off. Modify `event.notification` (title, body, kind — a partial return is merged field-by-field and never drops unrelated fields) or set `event.blocked = true` to prevent default delivery — e.g., for custom sound or relay-forwarding extensions. The dispatch is bounded (2 s timeout): a hung handler cannot suppress core delivery (the original pre-dispatch payload is delivered on timeout, so in-place mutations by a hung handler are discarded), and a throwing handler is logged and isolated — the dispatch chain continues and default delivery still proceeds (only `blocked: true` or a dispatch-level failure skips it). Delivery is serialized per project (FIFO); ordering across projects is not guaranteed. */
+  onNotification?(event: NotificationEvent, context: ExtensionContext): Promise<void | Partial<NotificationEvent>>;
+}
+```
+
 ### Approval Events
 
 ```typescript

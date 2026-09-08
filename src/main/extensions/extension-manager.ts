@@ -45,6 +45,7 @@ import type {
   ImportantRemindersEvent,
   InterruptedEvent,
   ModeDefinition,
+  NotificationEvent,
   OptimizeMessagesEvent,
   ProjectStartedEvent,
   ProjectStoppedEvent,
@@ -157,6 +158,7 @@ export type ExtensionEventMap = {
   onRuleFilesRetrieved: RuleFilesRetrievedEvent;
   onResponseChunk: ResponseChunkEvent;
   onResponseCompleted: ResponseCompletedEvent;
+  onNotification: NotificationEvent;
   onHandleApproval: HandleApprovalEvent;
   onSubagentStarted: SubagentStartedEvent;
   onSubagentFinished: SubagentFinishedEvent;
@@ -2329,7 +2331,26 @@ export class ExtensionManager {
         if (result && typeof result === 'object') {
           // Merge partial event modifications
           const partialEvent = result as Partial<ExtensionEventMap[K]>;
-          currentEvent = { ...currentEvent, ...partialEvent };
+          if (eventName === 'onNotification') {
+            // Field-level merge for notifications: an extension may return a PARTIAL
+            // notification (e.g. only { title }) to update a single field. Spreading it
+            // wholesale over the previous event would drop unaffected fields such as
+            // baseDir/body — merge the defined fields of the returned partial over the
+            // running notification instead (also preserves earlier handlers' edits).
+            const currentNotification = (currentEvent as unknown as NotificationEvent).notification;
+            const returnedNotification = (partialEvent as unknown as Partial<NotificationEvent>).notification;
+            if (returnedNotification && currentNotification) {
+              const mergedNotification = {
+                ...currentNotification,
+                ...Object.fromEntries(Object.entries(returnedNotification).filter(([, value]) => value !== undefined)),
+              };
+              currentEvent = { ...currentEvent, notification: mergedNotification } as unknown as ExtensionEventMap[K];
+            } else {
+              currentEvent = { ...currentEvent, ...partialEvent };
+            }
+          } else {
+            currentEvent = { ...currentEvent, ...partialEvent };
+          }
 
           // Check for blocking
           if ('blocked' in currentEvent && currentEvent.blocked) {

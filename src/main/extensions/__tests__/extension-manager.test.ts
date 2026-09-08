@@ -10,6 +10,7 @@ import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
 import type { FSWatcher } from 'chokidar';
+import type { NotificationEvent } from '@common/extensions';
 
 import { TelemetryManager } from '@/telemetry';
 import logger from '@/logger';
@@ -1028,6 +1029,154 @@ describe('ExtensionManager', () => {
       expect(handler1).toHaveBeenCalled();
       expect(handler2).toHaveBeenCalled();
       expect(result.prompt).toBe('modified');
+      expect(result.blocked).toBeUndefined();
+    });
+
+    it('should isolate a throwing onNotification handler and return the event unblocked so delivery proceeds', async () => {
+      const throwingHandler = vi.fn().mockRejectedValue(new Error('hook blew up'));
+      const passingHandler = vi.fn().mockImplementation(async (event: NotificationEvent) => {
+        // Extensions modify the event's notification in place (per the documented contract)
+        event.notification.title = 'Modified notification';
+      });
+
+      const ext1 = {
+        instance: { onNotification: throwingHandler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      const ext2 = {
+        instance: { onNotification: passingHandler },
+        metadata: { name: 'ext2', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const event = { notification: { baseDir: '/test/project', title: 'Task finished', body: 'all done' } };
+      const result = await manager.dispatchEvent('onNotification', event, mockProject as any, mockTask as any);
+
+      // The throwing handler is logged and skipped; the chain continues and the event
+      // is delivered (not blocked) — a throwing hook never suppresses notification delivery.
+      expect(throwingHandler).toHaveBeenCalled();
+      expect(passingHandler).toHaveBeenCalled();
+      expect(result.notification).toEqual({ baseDir: '/test/project', title: 'Modified notification', body: 'all done' });
+      expect(result.blocked).toBeUndefined();
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Error in 'onNotification' handler"), expect.any(Error));
+    });
+
+    it('merges a PARTIAL notification returned by onNotification field-by-field instead of dropping unrelated fields', async () => {
+      const partialHandler = vi.fn().mockImplementation(async () => ({
+        // Extension returns only the field(s) it wants to change
+        notification: { title: 'Renamed by extension' } as NotificationEvent['notification'],
+      }));
+
+      const ext1 = {
+        instance: { onNotification: partialHandler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const event = {
+        notification: {
+          baseDir: '/test/project',
+          title: 'Task finished',
+          body: 'all done',
+          kind: 'task-finished' as const,
+          id: 'fixed-id',
+          timestamp: 123,
+        },
+      };
+      const result = await manager.dispatchEvent('onNotification', event, mockProject as any, mockTask as any);
+
+      // Updated field wins; unaffected fields (baseDir/body/kind/id/timestamp) survive
+      expect(result.notification).toEqual({
+        baseDir: '/test/project',
+        title: 'Renamed by extension',
+        body: 'all done',
+        kind: 'task-finished',
+        id: 'fixed-id',
+        timestamp: 123,
+      });
+      expect(result.blocked).toBeUndefined();
+    });
+
+    it("merges a partial onNotification result over the previous handlers' edits when chained", async () => {
+      const firstHandler = vi.fn().mockImplementation(async (event: NotificationEvent) => ({
+        notification: { ...event.notification, title: 'Set by first', body: 'Body by first' },
+      }));
+      const secondHandler = vi.fn().mockImplementation(async () => ({ notification: { title: 'Set by second' } }));
+
+      const ext1 = {
+        instance: { onNotification: firstHandler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+      const ext2 = {
+        instance: { onNotification: secondHandler },
+        metadata: { name: 'ext2', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext2.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1, ext2]);
+
+      const event = { notification: { baseDir: '/test/project', title: 'Task finished', body: 'all done' } };
+      const result = await manager.dispatchEvent('onNotification', event, mockProject as any, mockTask as any);
+
+      // Second handler's partial is merged over the first handler's complete edit,
+      // not over the original payload
+      expect(result.notification.title).toBe('Set by second');
+      expect(result.notification.body).toBe('Body by first');
+      expect(result.notification.baseDir).toBe('/test/project');
+    });
+
+    it('does not let undefined-valued fields in a returned partial notification clobber existing values', async () => {
+      const partialHandler = vi.fn().mockImplementation(async () => ({
+        notification: { title: 'Renamed by extension', body: undefined },
+      }));
+
+      const ext1 = {
+        instance: { onNotification: partialHandler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const event = { notification: { baseDir: '/test/project', title: 'Task finished', body: 'all done' } };
+      const result = await manager.dispatchEvent('onNotification', event, mockProject as any, mockTask as any);
+
+      expect(result.notification.title).toBe('Renamed by extension');
+      expect(result.notification.body).toBe('all done');
+    });
+
+    it('still replaces the notification wholesale when a handler returns a complete notification object', async () => {
+      const replaceHandler = vi.fn().mockImplementation(async (event: NotificationEvent) => ({
+        notification: { ...event.notification, title: 'Full replacement' },
+      }));
+
+      const ext1 = {
+        instance: { onNotification: replaceHandler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext1]);
+
+      const event = { notification: { baseDir: '/test/project', title: 'Task finished', body: 'all done' } };
+      const result = await manager.dispatchEvent('onNotification', event, mockProject as any, mockTask as any);
+
+      expect(result.notification.title).toBe('Full replacement');
+      expect(result.notification.body).toBe('all done');
       expect(result.blocked).toBeUndefined();
     });
 
