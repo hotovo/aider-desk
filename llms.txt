@@ -21572,7 +21572,7 @@ import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
 import { showNotification } from '@/utils/browser-notifications';
-import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
+import { showErrorNotification, showInfoNotification, showWarningNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
@@ -21637,6 +21637,8 @@ const initProject = async () =>
 // eslint-disable-next-line no-console
 ⋮----
 // Close current task
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -31757,7 +31759,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.82.0-dev",
+  "version": "0.83.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
