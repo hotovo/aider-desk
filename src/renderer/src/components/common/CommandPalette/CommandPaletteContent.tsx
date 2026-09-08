@@ -1,6 +1,7 @@
 import { ChangeEvent, KeyboardEvent, MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
+import { useLocalStorage } from '@reactuses/core';
 
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
@@ -60,7 +61,8 @@ export const CommandPaletteContent = () => {
   const items = useCommandPaletteStore((state) => state.items);
   const recentlyUsed = useCommandPaletteStore((state) => state.recentlyUsed);
   const addRecentlyUsed = useCommandPaletteStore((state) => state.addRecentlyUsed);
-  const [activeTab, setActiveTab] = useState(PaletteTab.All);
+  const [storedActiveTab, setActiveTab] = useLocalStorage<PaletteTab>('command-palette-active-tab', PaletteTab.All);
+  const activeTab = storedActiveTab ?? PaletteTab.All;
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -170,13 +172,16 @@ export const CommandPaletteContent = () => {
     [addRecentlyUsed, closePalette],
   );
 
-  const selectTab = useCallback((tab: PaletteTab) => {
-    setActiveTab(tab);
-    shouldScrollSelectionIntoViewRef.current = true;
-    setSelectedIndex(0);
-    setVisibleCount(PAGE_SIZE);
-    inputRef.current?.focus();
-  }, []);
+  const selectTab = useCallback(
+    (tab: PaletteTab) => {
+      setActiveTab(tab);
+      shouldScrollSelectionIntoViewRef.current = true;
+      setSelectedIndex(0);
+      setVisibleCount(PAGE_SIZE);
+      inputRef.current?.focus();
+    },
+    [setActiveTab],
+  );
 
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value);

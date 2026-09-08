@@ -1,6 +1,21 @@
 import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, DragEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
+import {
+  MouseEvent,
+  DragEvent,
+  useState,
+  useRef,
+  useEffect,
+  useOptimistic,
+  startTransition,
+  Activity,
+  memo,
+  useCallback,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  ForwardedRef,
+} from 'react';
 import { HiPlus } from 'react-icons/hi';
 import { RiMenuUnfold4Line, RiMenuFold2Line } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
@@ -54,28 +69,35 @@ type Props = {
   contentRef?: React.RefObject<HTMLDivElement | null>;
 };
 
-const TaskSidebarComponent = ({
-  loading,
-  tasks,
-  readonly = false,
-  activeTaskId,
-  onTaskSelect,
-  createNewTask,
-  className,
-  isCollapsed,
-  onToggleCollapse,
-  updateTask,
-  deleteTask,
-  onCopyAsMarkdown,
-  onExportToMarkdown,
-  onExportToImage,
-  onDuplicateTask,
-  isMobile = false,
-  onClose,
-  width,
-  onResize,
-  contentRef,
-}: Props) => {
+export type TaskSidebarRef = {
+  startRenaming: (taskId: string) => void;
+};
+
+const TaskSidebarComponent = (
+  {
+    loading,
+    tasks,
+    readonly = false,
+    activeTaskId,
+    onTaskSelect,
+    createNewTask,
+    className,
+    isCollapsed,
+    onToggleCollapse,
+    updateTask,
+    deleteTask,
+    onCopyAsMarkdown,
+    onExportToMarkdown,
+    onExportToImage,
+    onDuplicateTask,
+    isMobile = false,
+    onClose,
+    width,
+    onResize,
+    contentRef,
+  }: Props,
+  ref: ForwardedRef<TaskSidebarRef>,
+) => {
   const { t } = useTranslation();
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -244,35 +266,49 @@ const TaskSidebarComponent = ({
     [setExpandedIds],
   );
 
-  const prevActiveTaskIdRef = useRef<string | null>(null);
+  const expandedForActiveTaskRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (activeTaskId === prevActiveTaskIdRef.current) {
+    if (!activeTaskId) {
+      expandedForActiveTaskRef.current = null;
       return;
     }
-    prevActiveTaskIdRef.current = activeTaskId;
-
-    if (activeTaskId && tasks.length > 0) {
-      const hasActiveSubtask = (taskId: string): boolean => {
-        const childTasks = tasks.filter((t) => t.parentId === taskId);
-        if (childTasks.some((t) => t.id === activeTaskId)) {
-          return true;
-        }
-        return childTasks.some((child) => hasActiveSubtask(child.id));
-      };
-
-      const parentWithActiveSubtask = tasks.find((task) => hasActiveSubtask(task.id));
-      const parentId = parentWithActiveSubtask?.id;
-      if (parentId) {
-        setExpandedIds((prev) => {
-          const prevArr = prev ?? [];
-          if (prevArr.includes(parentId)) {
-            return prevArr;
-          }
-          return [...prevArr, parentId];
-        });
-      }
+    if (tasks.length === 0 || expandedForActiveTaskRef.current === activeTaskId) {
+      return;
     }
+
+    const tasksById = new Map(tasks.map((task) => [task.id, task]));
+    const activeTask = tasksById.get(activeTaskId);
+    // the active task may be activated before the task list update arrives, retry on the next tasks update
+    if (!activeTask) {
+      return;
+    }
+
+    const ancestors: string[] = [];
+    const visited = new Set<string>();
+    let current = activeTask;
+    while (current.parentId && !visited.has(current.parentId)) {
+      visited.add(current.parentId);
+      const parent = tasksById.get(current.parentId);
+      if (!parent) {
+        break;
+      }
+      ancestors.push(parent.id);
+      current = parent;
+    }
+
+    if (ancestors.length > 0) {
+      setExpandedIds((prev) => {
+        const newSet = new Set(prev ?? []);
+        const missingAncestors = ancestors.filter((id) => !newSet.has(id));
+        if (missingAncestors.length === 0) {
+          return prev ?? [];
+        }
+        missingAncestors.forEach((id) => newSet.add(id));
+        return Array.from(newSet);
+      });
+    }
+    expandedForActiveTaskRef.current = activeTaskId;
   }, [activeTaskId, tasks, setExpandedIds]);
 
   useEffect(() => {
@@ -318,6 +354,10 @@ const TaskSidebarComponent = ({
     setEditingTaskId(taskId);
     setDeleteConfirmTaskId(null);
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    startRenaming: handleEditClick,
+  }));
 
   const handleEditConfirm = useCallback(
     async (taskId: string, newName: string) => {
@@ -1098,4 +1138,4 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
 
 TaskSidebarComponent.displayName = 'TaskSidebar';
 
-export const TaskSidebar = memo(TaskSidebarComponent, arePropsEqual);
+export const TaskSidebar = memo(forwardRef(TaskSidebarComponent), arePropsEqual);

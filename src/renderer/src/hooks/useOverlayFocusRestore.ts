@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 
 import { useOverlayStore } from '@/stores/overlayStore';
 
+const isEditableElement = (element: Element | null): element is HTMLElement =>
+  element instanceof HTMLElement && (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.isContentEditable);
+
 export const useOverlayRegistration = (id: string, isOpen: boolean) => {
   const openOverlay = useOverlayStore((state) => state.openOverlay);
   const closeOverlay = useOverlayStore((state) => state.closeOverlay);
@@ -30,7 +33,12 @@ export const useOverlayFocusRestore = (focus: () => void, enabled: boolean) => {
     }
     previousRequest.current = focusRequest;
     if (enabled) {
-      requestAnimationFrame(() => focus());
+      requestAnimationFrame(() => {
+        if (isEditableElement(document.activeElement)) {
+          return;
+        }
+        focus();
+      });
     }
   }, [focusRequest, enabled, focus]);
 };

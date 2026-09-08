@@ -28,8 +28,10 @@ export const UI_ACTIONS = [
   { id: 'view.showLogs', labelKey: 'uiActions.showLogs' },
 
   // Task
-  { id: 'task.new', labelKey: 'settings.hotkeys.newTask' },
+  { id: 'task.new', labelKey: 'uiActions.createNewTask' },
+  { id: 'task.newSubtask', labelKey: 'uiActions.createNewSubtask' },
   { id: 'task.focusPrompt', labelKey: 'settings.hotkeys.focusPrompt' },
+  { id: 'task.rename', labelKey: 'uiActions.renameTask' },
   { id: 'task.archive', labelKey: 'uiActions.archiveTask' },
   { id: 'task.unarchive', labelKey: 'uiActions.unarchiveTask' },
   { id: 'task.delete', labelKey: 'uiActions.deleteTask' },
@@ -55,6 +57,13 @@ export const UI_ACTIONS = [
   // Task: working mode
   { id: 'task.workingMode.local', labelKey: 'uiActions.switchToLocal', descriptionKey: 'uiActions.switchWorkingMode' },
   { id: 'task.workingMode.worktree', labelKey: 'uiActions.switchToWorktree', descriptionKey: 'uiActions.switchWorkingMode' },
+
+  // Task: state
+  { id: 'task.state.todo', labelKey: 'taskState.TODO', descriptionKey: 'taskSidebar.changeState' },
+  { id: 'task.state.readyForImplementation', labelKey: 'taskState.READY_FOR_IMPLEMENTATION', descriptionKey: 'taskSidebar.changeState' },
+  { id: 'task.state.readyForReview', labelKey: 'taskState.READY_FOR_REVIEW', descriptionKey: 'taskSidebar.changeState' },
+  { id: 'task.state.moreInfoNeeded', labelKey: 'taskState.MORE_INFO_NEEDED', descriptionKey: 'taskSidebar.changeState' },
+  { id: 'task.state.done', labelKey: 'taskState.DONE', descriptionKey: 'taskSidebar.changeState' },
 
   // Git
   { id: 'git.pull', labelKey: 'git.updateProject', descriptionKey: 'uiActions.gitAction' },

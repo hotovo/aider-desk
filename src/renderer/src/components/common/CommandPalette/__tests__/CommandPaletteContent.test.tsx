@@ -120,6 +120,26 @@ describe('CommandPaletteContent keyboard pagination', () => {
     expect(scrollIntoView).not.toHaveBeenCalled();
   });
 
+  it('remembers the last selected tab when the palette is reopened', () => {
+    const { items } = createItems();
+    useCommandPaletteStore.setState({
+      isOpen: true,
+      items,
+      recentlyUsed: [],
+      itemIdsByScope: new Map(),
+    });
+    const { unmount } = render(<CommandPaletteContent />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'commandPalette.tabs.action' }));
+    expect(localStorage.getItem('command-palette-active-tab')).toBe('action');
+
+    unmount();
+    useCommandPaletteStore.setState({ isOpen: true });
+    render(<CommandPaletteContent />);
+
+    expect(screen.getByRole('button', { name: 'commandPalette.tabs.action' })).toHaveClass('bg-bg-tertiary');
+  });
+
   it('shows archived tasks only when no active task matches the search', () => {
     const items = new Map<string, PaletteItem>([
       ['task.active', { id: 'task.active', label: 'Active matching task', type: PaletteItemType.Task, action: vi.fn() }],

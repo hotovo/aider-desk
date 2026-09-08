@@ -110,6 +110,31 @@ describe('ModalOverlayLayout', () => {
     expect(focus).toHaveBeenCalledOnce();
   });
 
+  it('skips focus restore when an editable element is already focused', async () => {
+    const focus = vi.fn();
+    render(
+      <div>
+        <FocusRestoreConsumer focus={focus} />
+        <input data-testid="edit-input" />
+      </div>,
+    );
+    const { unmount } = render(
+      <ModalOverlayLayout title="Overlay">
+        <div>Content</div>
+      </ModalOverlayLayout>,
+    );
+
+    screen.getByTestId('edit-input').focus();
+    unmount();
+
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(null)));
+    });
+
+    expect(focus).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(screen.getByTestId('edit-input'));
+  });
+
   it('does not request focus restore while another overlay remains open', () => {
     const focus = vi.fn();
     render(<FocusRestoreConsumer focus={focus} />);

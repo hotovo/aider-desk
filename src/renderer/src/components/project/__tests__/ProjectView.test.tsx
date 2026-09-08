@@ -7,6 +7,7 @@ import { ProjectView } from '../ProjectView';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
+import { invokeAction } from '@/stores/actionsStore';
 import { createMockApi } from '@/__tests__/mocks/api';
 
 const commandPaletteStoreMock = vi.hoisted(() => {
@@ -97,6 +98,10 @@ vi.mock('@/stores/commandPaletteStore', () => ({
   },
 }));
 
+const taskSidebarMock = vi.hoisted(() => ({
+  startRenaming: vi.fn(),
+}));
+
 interface TaskSidebarMockProps {
   tasks: TaskData[];
   onTaskSelect: (taskId: string) => void;
@@ -104,19 +109,24 @@ interface TaskSidebarMockProps {
 }
 
 // Mock components
-vi.mock('@/components/project/TaskSidebar/TaskSidebar', () => ({
-  TaskSidebar: ({ tasks, onTaskSelect }: TaskSidebarMockProps) => (
-    <div data-testid="task-sidebar">
-      {tasks.map((task) => (
-        <button key={task.id} onClick={() => onTaskSelect(task.id)} data-testid={`task-${task.id}`}>
-          {task.name}
-        </button>
-      ))}
-    </div>
-  ),
-  COLLAPSED_WIDTH: 44,
-  EXPANDED_WIDTH: 256,
-}));
+vi.mock('@/components/project/TaskSidebar/TaskSidebar', async () => {
+  const { forwardRef, useImperativeHandle } = await import('react');
+  const TaskSidebar = forwardRef(({ tasks, onTaskSelect }: TaskSidebarMockProps, ref) => {
+    useImperativeHandle(ref, () => ({
+      startRenaming: taskSidebarMock.startRenaming,
+    }));
+    return (
+      <div data-testid="task-sidebar">
+        {tasks.map((task) => (
+          <button key={task.id} onClick={() => onTaskSelect(task.id)} data-testid={`task-${task.id}`}>
+            {task.name}
+          </button>
+        ))}
+      </div>
+    );
+  });
+  return { TaskSidebar, COLLAPSED_WIDTH: 44, EXPANDED_WIDTH: 256 };
+});
 
 vi.mock('../TaskView', () => ({
   TaskView: ({ task }: { task: TaskData }) => <div data-testid="task-view">{task.name}</div>,
@@ -230,6 +240,91 @@ describe('ProjectView', () => {
 
     await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Task 2'));
     expect(screen.getByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
+  });
+
+  const setupSettings = (startupMode: string) => {
+    vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
+      selector({
+        settings: { startupMode },
+        theme: 'dark',
+        font: 'Sono',
+        fontSize: 14,
+        setSettingsState: vi.fn(),
+        setThemeValue: vi.fn(),
+        setFontValue: vi.fn(),
+        setFontSizeValue: vi.fn(),
+      })) as never);
+  };
+
+  const setupSubtaskProject = async (activeTaskName: string) => {
+    setupSettings('last');
+    mockApi.getTasks.mockResolvedValue([
+      { id: 'parent-1', name: 'Parent Task', baseDir: projectDir, parentId: null, createdAt: '2023-01-01T00:00:00Z', updatedAt: '2023-01-01T00:00:00Z' },
+      { id: 'child-1', name: 'Child Task', baseDir: projectDir, parentId: 'parent-1', createdAt: '2023-01-02T00:00:00Z', updatedAt: '2023-01-02T00:00:00Z' },
+    ] as TaskData[]);
+
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent(activeTaskName));
+  };
+
+  it('creates a subtask of the active task from the palette action', async () => {
+    await setupSubtaskProject('Child Task');
+
+    act(() => invokeAction('task.newSubtask'));
+
+    await waitFor(() => expect(mockApi.createNewTask).toHaveBeenCalledWith(projectDir, { parentId: 'child-1' }));
+  });
+
+  it('registers a sibling task palette action only when the active task is a subtask', async () => {
+    await setupSubtaskProject('Child Task');
+
+    const siblingItem = commandPaletteStoreMock.items.get('task.newSibling');
+    expect(siblingItem).toBeDefined();
+
+    act(() => siblingItem!.action());
+
+    await waitFor(() => expect(mockApi.createNewTask).toHaveBeenCalledWith(projectDir, { parentId: 'parent-1' }));
+  });
+
+  it('does not register a sibling task palette action when the active task is top-level', async () => {
+    setupSettings('last');
+    mockApi.getTasks.mockResolvedValue([
+      { id: 'parent-1', name: 'Parent Task', baseDir: projectDir, parentId: null, createdAt: '2023-01-01T00:00:00Z', updatedAt: '2023-01-01T00:00:00Z' },
+    ] as TaskData[]);
+
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Parent Task'));
+
+    expect(commandPaletteStoreMock.items.get('task.newSibling')).toBeUndefined();
+  });
+
+  it('renames the active task through the sidebar from the palette action', async () => {
+    await setupSubtaskProject('Child Task');
+
+    act(() => invokeAction('task.rename'));
+
+    expect(taskSidebarMock.startRenaming).toHaveBeenCalledWith('child-1');
+  });
+
+  it('changes the task state through the palette action', async () => {
+    await setupSubtaskProject('Child Task');
+
+    act(() => invokeAction('task.state.done'));
+
+    await waitFor(() => expect(mockApi.updateTask).toHaveBeenCalledWith(projectDir, 'child-1', { state: 'DONE' }));
+  });
+
+  it('registers a pin palette action with state-aware label', async () => {
+    await setupSubtaskProject('Child Task');
+
+    const pinItem = commandPaletteStoreMock.items.get('task.togglePin');
+    expect(pinItem).toMatchObject({ label: 'taskSidebar.pinTask' });
+
+    act(() => pinItem!.action());
+
+    await waitFor(() => expect(mockApi.updateTask).toHaveBeenCalledWith(projectDir, 'child-1', { pinned: true }));
   });
 
   it('creates a new task when the active task is deleted', async () => {

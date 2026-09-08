@@ -168,10 +168,12 @@ export const TaskBar = forwardRef<TaskBarRef, Props>(
 
     useImperativeHandle(ref, () => ({
       openMainModelSelector: (model) => {
-        if (mode === 'architect') {
-          architectModelSelectorRef.current?.open(model);
+        if (mode === 'architect' && architectModelSelectorRef.current) {
+          architectModelSelectorRef.current.open(model);
+        } else if (mainModelSelectorRef.current) {
+          mainModelSelectorRef.current.open(model);
         } else {
-          mainModelSelectorRef.current?.open(model);
+          agentModelSelectorRef.current?.open(model);
         }
       },
       openAgentModelSelector: (model) => {

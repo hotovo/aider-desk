@@ -5,7 +5,7 @@ import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
 
-import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
+import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar, TaskSidebarRef } from './TaskSidebar/TaskSidebar';
 
 import {
   useProjectTasks,
@@ -37,8 +37,8 @@ import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
-import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
-import { registerAction, unregisterAction } from '@/stores/actionsStore';
+import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { invokeAction, registerAction, unregisterAction } from '@/stores/actionsStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 
 type Props = {
@@ -70,6 +70,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
   const [isTaskSidebarOpen, , hideTaskSidebar, toggleTaskSidebar] = useBooleanState();
   const [shouldFocusNewTask, setShouldFocusNewTask] = useState(false);
   const taskViewRef = useRef<TaskViewRef>(null);
+  const taskSidebarRef = useRef<TaskSidebarRef>(null);
   const taskContentRef = useRef<HTMLDivElement>(null);
   const creatingTaskRef = useRef(false);
   const hasActivatedTaskRef = useRef(false);
@@ -533,8 +534,43 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
         }
       },
     }));
-    replaceItems(`project:${projectDir}`, [...tasks, ...files]);
-  }, [isProjectActive, replaceItems, clearItems, activeTaskFiles, activeTaskId, handleTaskSelect, optimisticTasks, openFile, projectDir]);
+    const activeTaskParentId = activeTask?.parentId;
+    const siblingAction: PaletteItem[] = activeTaskParentId
+      ? [
+          {
+            id: 'task.newSibling',
+            label: t('uiActions.createNewSiblingTask'),
+            type: PaletteItemType.Action,
+            action: () => void createNewTask(activeTaskParentId),
+          },
+        ]
+      : [];
+    const pinAction: PaletteItem[] =
+      activeTaskId && activeTask?.createdAt
+        ? [
+            {
+              id: 'task.togglePin',
+              label: activeTask.pinned ? t('taskSidebar.unpinTask') : t('taskSidebar.pinTask'),
+              type: PaletteItemType.Action,
+              action: () => invokeAction('task.togglePin'),
+            },
+          ]
+        : [];
+    replaceItems(`project:${projectDir}`, [...tasks, ...files, ...siblingAction, ...pinAction]);
+  }, [
+    isProjectActive,
+    replaceItems,
+    clearItems,
+    activeTaskFiles,
+    activeTaskId,
+    activeTask,
+    handleTaskSelect,
+    optimisticTasks,
+    openFile,
+    createNewTask,
+    t,
+    projectDir,
+  ]);
 
   useEffect(() => {
     return () => clearItems(`project:${projectDir}`);
@@ -621,7 +657,17 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
 
     const actions: Record<string, () => void> = {
       'task.new': () => void createNewTask(),
+      'task.newSubtask': () => {
+        if (activeTaskId) {
+          void createNewTask(activeTaskId);
+        }
+      },
       'task.focusPrompt': focusActiveTaskPrompt,
+      'task.rename': () => {
+        if (activeTaskId) {
+          taskSidebarRef.current?.startRenaming(activeTaskId);
+        }
+      },
       'editor.open': () => openEditor(projectDir),
       'task.modelSelector': () => taskViewRef.current?.openMainModelSelector(),
       'task.agentProfileSelector': () => taskViewRef.current?.openAgentProfileSelector(),
@@ -638,6 +684,31 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       'task.autonomy.autonomous': () => {
         if (activeTaskId) {
           void handleUpdateTask(activeTaskId, { autonomyMode: AutonomyMode.Autonomous });
+        }
+      },
+      'task.state.todo': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { state: DefaultTaskState.Todo });
+        }
+      },
+      'task.state.readyForImplementation': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { state: DefaultTaskState.ReadyForImplementation });
+        }
+      },
+      'task.state.readyForReview': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { state: DefaultTaskState.ReadyForReview });
+        }
+      },
+      'task.state.moreInfoNeeded': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { state: DefaultTaskState.MoreInfoNeeded });
+        }
+      },
+      'task.state.done': () => {
+        if (activeTaskId) {
+          void handleUpdateTask(activeTaskId, { state: DefaultTaskState.Done });
         }
       },
       'task.archive': () => void handleArchiveActiveTask(),
@@ -741,6 +812,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
 
           {(isTaskSidebarOpen || !isMobile) && (
             <TaskSidebar
+              ref={taskSidebarRef}
               loading={tasksLoading}
               tasks={optimisticTasks}
               activeTaskId={activeTaskId}
