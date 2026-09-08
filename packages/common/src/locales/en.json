@@ -35,7 +35,7 @@
     "exportTaskImage": "Export Task as Image",
     "exportTaskMarkdown": "Export Task as Markdown",
     "copyTaskMarkdown": "Copy Task as Markdown",
-    "copyTaskId": "Copy task id",
+    "copyTaskId": "Copy Task ID",
     "copyTaskIdFailed": "Failed to copy task id",
     "interruptResponse": "Interrupt Response",
     "restartConnector": "Restart Aider Connector",

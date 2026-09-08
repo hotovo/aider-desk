@@ -6,6 +6,7 @@
 - added optional description for bash tool commands displayed in tool messages
 - improved add file to Git action to update file state optimistically without refetching
 - added task management actions to command palette (create subtask/sibling, rename, change state)
+- fixed Copy Task ID label capitalization
 
 ## [0.82.0]
 
