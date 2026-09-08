@@ -16,7 +16,7 @@
  * AiderDesk's project-skill support — the extension does not intercept chat.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
