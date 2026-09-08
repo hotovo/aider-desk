@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "auggie-sdk",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "doom",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 24
+      "installCount": 25
     }
   ]
 }
