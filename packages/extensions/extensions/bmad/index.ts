@@ -62,6 +62,7 @@ const BMAD_ACTIONS: Array<{ letter: string; label: string }> = [
 // Component IDs
 const WELCOME_PAGE_ID = 'bmad-welcome-page';
 const TASK_ACTIONS_ID = 'bmad-task-actions';
+const MODE_SWITCHER_ID = 'bmad-mode-switcher';
 
 
 /** Cap a Map to its most recent `max` entries (memory hygiene). */
@@ -87,7 +88,7 @@ const managers = new Map<string, BmadManager>();
 // UI component sources are static per extension build - read them once and
 // reuse the strings across getUIComponents calls (hot reload re-instantiates
 // the module anyway).
-let uiSources: { welcomePage: string; taskActions: string } | undefined;
+let uiSources: { welcomePage: string; taskActions: string; modeSwitcher: string } | undefined;
 
 /**
  * Build the continuation context message injected on agent start. The
@@ -248,27 +249,44 @@ export default class BmadExtension implements Extension {
       return [];
     }
 
-    // Gate on the project's BMAD installation (any module combination):
-    // non-BMAD projects keep the default AiderDesk welcome screen.
-    const installed = getManager(projectDir, context).checkInstallation();
-    if (!installed) {
-      return [];
-    }
-
     // Read JSX templates from files (cached at module level)
     uiSources ??= {
       welcomePage: readFileSync(join(__dirname, './ui/WelcomePage.jsx'), 'utf-8'),
       taskActions: readFileSync(join(__dirname, './ui/TaskActions.jsx'), 'utf-8'),
+      modeSwitcher: readFileSync(join(__dirname, './ui/ModeSwitcher.jsx'), 'utf-8'),
     };
 
+    const welcomePageComponent: UIComponentDefinition = {
+      id: WELCOME_PAGE_ID,
+      placement: 'welcome-page',
+      jsx: uiSources.welcomePage,
+      loadData: true,
+      noDataCache: true,
+    };
+
+    // Gate on the project's BMAD installation (any module combination).
+    // Non-BMAD projects restore the pre-v2 install experience: in BMAD mode
+    // the welcome page offers the installation, in all other modes a small
+    // mode switcher sends the user to BMAD mode first.
+    const installed = getManager(projectDir, context).checkInstallation();
+    if (!installed) {
+      const activeMode = context.getTaskContext()?.data?.currentMode;
+      if (activeMode === 'bmad') {
+        return [welcomePageComponent];
+      }
+      return [
+        {
+          id: MODE_SWITCHER_ID,
+          placement: 'welcome-page',
+          jsx: uiSources.modeSwitcher,
+          loadData: false,
+          noDataCache: true,
+        },
+      ];
+    }
+
     return [
-      {
-        id: WELCOME_PAGE_ID,
-        placement: 'welcome-page',
-        jsx: uiSources.welcomePage,
-        loadData: true,
-        noDataCache: true
-      },
+      welcomePageComponent,
       {
         id: TASK_ACTIONS_ID,
         placement: 'task-state-actions-all',
@@ -630,6 +648,21 @@ export default class BmadExtension implements Extension {
           // Trigger UI refresh after installation
           context.triggerUIDataRefresh(WELCOME_PAGE_ID);
           return result;
+        }
+
+        case 'switch-to-bmad': {
+          // Mode switcher on non-BMAD projects: jump into BMAD mode so the
+          // welcome page (install prompt) shows. The mode change persists via
+          // updateTask and the following onTaskUpdated reload swaps the
+          // switcher for the welcome page.
+          if (!taskContext) {
+            return { success: false, error: 'Task context is required' };
+          }
+
+          await taskContext.updateTask({ currentMode: 'bmad' });
+          context.log('Switched task mode to BMAD', 'info');
+          context.triggerUIComponentsReload();
+          return { success: true };
         }
 
         case 'reset-workflow': {

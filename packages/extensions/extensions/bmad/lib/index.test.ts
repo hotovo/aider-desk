@@ -26,9 +26,20 @@ const context = (projectDir: string | undefined, currentMode?: string): any => (
 });
 
 describe('getUIComponents gate', () => {
-  it('returns [] for a project without BMAD installed', () => {
+  it('returns the mode switcher for a project without BMAD installed (non-BMAD mode)', () => {
     const ext: any = new BmadExtension();
-    expect(ext.getUIComponents(context(tmpProject(false)))).toEqual([]);
+    expect(ext.getUIComponents(context(tmpProject(false))).map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
+  });
+
+  it('returns the welcome page (install prompt) in bmad mode even without installation', () => {
+    const ext: any = new BmadExtension();
+    expect(ext.getUIComponents(context(tmpProject(false), 'bmad')).map((c: any) => c.id)).toEqual(['bmad-welcome-page']);
+  });
+
+  it('returns the mode switcher in agent/code mode without installation', () => {
+    const ext: any = new BmadExtension();
+    expect(ext.getUIComponents(context(tmpProject(false), 'agent')).map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
+    expect(ext.getUIComponents(context(tmpProject(false), 'code')).map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
   });
 
   it('returns [] when no project directory is available', () => {
@@ -59,6 +70,33 @@ describe('getUIComponents gate', () => {
     expect(ext.getUIComponents(context(dir)).length).toBe(2);
     expect(() => ext.onUnload()).not.toThrow();
     expect(ext.getUIComponents(context(dir)).length).toBe(2);
+  });
+});
+
+describe('switch-to-bmad mode switch', () => {
+  it('switches the task mode to bmad via TaskContext.updateTask', async () => {
+    const ext: any = new BmadExtension();
+    const updateTask = vi.fn().mockResolvedValue({});
+    const reload = vi.fn();
+    const ctx: any = {
+      ...context(tmpProject(false), 'agent'),
+      triggerUIComponentsReload: reload,
+      getTaskContext: () => ({ data: { currentMode: 'agent' }, updateTask }),
+    };
+    const result = await ext.executeUIExtensionAction('bmad-mode-switcher', 'switch-to-bmad', [], ctx);
+    expect(result).toEqual({ success: true });
+    expect(updateTask).toHaveBeenCalledWith({ currentMode: 'bmad' });
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it('reports failure when no task context is available', async () => {
+    const ext: any = new BmadExtension();
+    const ctx: any = {
+      ...context(tmpProject(false), 'agent'),
+      getTaskContext: () => null,
+    };
+    const result = await ext.executeUIExtensionAction('bmad-mode-switcher', 'switch-to-bmad', [], ctx);
+    expect(result).toEqual({ success: false, error: 'Task context is required' });
   });
 });
 
