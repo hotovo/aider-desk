@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "wakatime",
@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 23
+      "installCount": 25
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "context-autocompletion-words",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "plannotator",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "ui-placement-demo",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "kanban",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "reasoning-selector",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 25
+      "installCount": 26
     }
   ]
 }
