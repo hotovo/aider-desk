@@ -16,33 +16,40 @@
  * AiderDesk's project-skill support — the extension does not intercept chat.
  */
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4 } from 'uuid';
 
-import { BmadManager, getBmadPackage } from "./lib/bmad-manager";
-import { generateSuggestions } from "./lib/bmad-suggestions";
-import { computeProgressSummary, phaseDisplayName } from "./lib/progress";
-import { buildProjectOverview, computePhaseStepper } from "./lib/ui-overview";
-import { listInstalledSkills, resolveSkillsDir } from "./lib/skills";
-import { balanceFences, getPreprocessedSkillContent } from "./lib/skill-preprocessor";
-import { hasContextMessages } from "./lib/context-preparer";
-import { orderedPhases } from "./lib/install-registry";
-import { containsBarePythonInvocation, isAutoApprovedBashCommand, isAutoApprovedReadPath, isAutoApprovedWritePath, skillReadDirs } from "./lib/tool-approval";
-import { BmadAction, UpdateInfo } from "./lib/types";
+import { BmadManager, getBmadPackage } from './lib/bmad-manager';
+import { generateSuggestions } from './lib/bmad-suggestions';
+import { computeProgressSummary } from './lib/progress';
+import { buildProjectOverview, computePhaseStepper } from './lib/ui-overview';
+import { listInstalledSkills, resolveSkillsDir } from './lib/skills';
+import { balanceFences, getPreprocessedSkillContent } from './lib/skill-preprocessor';
+import { hasContextMessages } from './lib/context-preparer';
+import { orderedPhases } from './lib/install-registry';
+import { phaseDisplayName } from './lib/progress';
+import {
+  containsBarePythonInvocation,
+  isAutoApprovedBashCommand,
+  isAutoApprovedReadPath,
+  isAutoApprovedWritePath,
+  skillReadDirs,
+} from './lib/tool-approval';
+import { BmadAction, UpdateInfo } from './lib/types';
 
 import type {
-  AgentStartedEvent,
-  ContextMessage,
   Extension,
   ExtensionContext,
   ModeDefinition,
+  UIComponentDefinition,
   TaskUpdatedEvent,
+  AgentStartedEvent,
+  ContextMessage,
   ToolApprovalEvent,
-  UIComponentDefinition
-} from "@aiderdesk/extensions";
+} from '@aiderdesk/extensions';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -64,6 +71,19 @@ const WELCOME_PAGE_ID = 'bmad-welcome-page';
 const TASK_ACTIONS_ID = 'bmad-task-actions';
 const MODE_SWITCHER_ID = 'bmad-mode-switcher';
 
+// Single source for the extension version - package.json remains the
+// canonical version record and is read once at module load. Shown in the UI
+// header and used by the metadata below.
+const EXTENSION_VERSION = (() => {
+  try {
+    return (
+      (JSON.parse(readFileSync(join(__dirname, 'package.json'), 'utf-8')) as { version?: string })
+        .version ?? 'unknown'
+    );
+  } catch {
+    return 'unknown';
+  }
+})();
 
 /** Cap a Map to its most recent `max` entries (memory hygiene). */
 const boundedSet = <K, V>(map: Map<K, V>, key: K, value: V, max = 50): void => {
@@ -203,7 +223,7 @@ const getManager = (projectDir: string, context: ExtensionContext): BmadManager 
 export default class BmadExtension implements Extension {
   static metadata = {
     name: 'BMAD Method',
-    version: '2.0.0',
+    version: EXTENSION_VERSION,
     description: 'Lean backend for a standard bmad-method installation: discovers its menu, starts original workflows, tracks progress',
     author: '777marvin',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
@@ -265,19 +285,24 @@ export default class BmadExtension implements Extension {
     };
 
     // Gate on the project's BMAD installation (any module combination).
-    // Non-BMAD projects restore the pre-v2 install experience: in BMAD mode
-    // the welcome page offers the installation, in all other modes a small
-    // mode switcher sends the user to BMAD mode first.
+    // Non-BMAD projects keep the default AiderDesk welcome screen intact: in
+    // BMAD mode the welcome page offers the installation, in all other modes
+    // a compact top-bar button ('task-top-bar-right' is an append-only slot
+    // and never replaces UI) switches the task to BMAD mode. Without a task
+    // context the mode is unknown, so no components are returned.
     const installed = getManager(projectDir, context).checkInstallation();
     if (!installed) {
-      const activeMode = context.getTaskContext()?.data?.currentMode;
-      if (activeMode === 'bmad') {
+      const taskContext = context.getTaskContext();
+      if (!taskContext) {
+        return [];
+      }
+      if (taskContext.data?.currentMode === 'bmad') {
         return [welcomePageComponent];
       }
       return [
         {
           id: MODE_SWITCHER_ID,
-          placement: 'welcome-page',
+          placement: 'task-top-bar-right',
           jsx: uiSources.modeSwitcher,
           loadData: false,
           noDataCache: true,
@@ -485,7 +510,7 @@ export default class BmadExtension implements Extension {
           expectedVersion: manager.getExpectedVersion(),
           uvAvailable: await manager.checkUvAvailable(),
           updateInfo: updateInfo ?? null,
-          extensionVersion: '2.0.0',
+          extensionVersion: EXTENSION_VERSION,
           phases,
           isLoading: false,
           error: null,

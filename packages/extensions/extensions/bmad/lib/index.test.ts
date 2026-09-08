@@ -38,8 +38,16 @@ describe('getUIComponents gate', () => {
 
   it('returns the mode switcher in agent/code mode without installation', () => {
     const ext: any = new BmadExtension();
-    expect(ext.getUIComponents(context(tmpProject(false), 'agent')).map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
+    const agent = ext.getUIComponents(context(tmpProject(false), 'agent'));
+    expect(agent.map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
+    expect(agent[0].placement).toBe('task-top-bar-right');
     expect(ext.getUIComponents(context(tmpProject(false), 'code')).map((c: any) => c.id)).toEqual(['bmad-mode-switcher']);
+  });
+
+  it('returns [] without a task context (mode unknown)', () => {
+    const ext: any = new BmadExtension();
+    const ctx: any = { ...context(tmpProject(false)), getTaskContext: () => null };
+    expect(ext.getUIComponents(ctx)).toEqual([]);
   });
 
   it('returns [] when no project directory is available', () => {
