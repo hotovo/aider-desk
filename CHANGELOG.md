@@ -4,6 +4,7 @@
 
 - added Copy Task ID to command palette
 - added optional description for bash tool commands displayed in tool messages
+- improved add file to Git action to update file state optimistically without refetching
 
 ## [0.82.0]
 

@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 
-import { createFileTree } from './types';
+import { createFileTree, normalizePath } from './types';
 import { SectionLoading } from './SectionLoading';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
@@ -296,13 +296,18 @@ export const UpdatedFilesSection = ({
 
   const handleAddFileToGit = useCallback(
     async (filePath: string) => {
+      // Optimistically mark the file as tracked; authoritative data arrives via the updatedFilesUpdated event
+      const previousFile = updatedFiles.find((file) => normalizePath(file.path) === normalizePath(filePath));
+      setUpdatedFiles((prev) => prev.map((file) => (normalizePath(file.path) === normalizePath(filePath) ? { ...file, isUntracked: false } : file)));
       setAddingFilesToGit((prev) => new Set(prev).add(filePath));
       try {
         await api.addFileToGit(baseDir, taskId, filePath);
-        await fetchUpdatedFiles();
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to add file to Git:', error);
+        if (previousFile) {
+          setUpdatedFiles((prev) => prev.map((file) => (normalizePath(file.path) === normalizePath(filePath) ? previousFile : file)));
+        }
       } finally {
         setAddingFilesToGit((prev) => {
           const next = new Set(prev);
@@ -311,7 +316,7 @@ export const UpdatedFilesSection = ({
         });
       }
     },
-    [api, baseDir, taskId, fetchUpdatedFiles],
+    [api, baseDir, taskId, updatedFiles],
   );
 
   const handleRevertFile = useCallback((filePath: string) => {
