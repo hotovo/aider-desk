@@ -437,9 +437,10 @@ sounds, relay forwarding).
 > hook receives a snapshot of the payload, so in-place mutations by a hung handler are
 > discarded. Handler errors are **isolated**: a hook that **throws** is logged and the
 > dispatch chain continues (remaining handlers still run), so default delivery
-> **proceeds** — throwing is not the same as blocking; only `blocked: true` (or a
-> dispatch-level failure, e.g. the extension system erroring before handlers run) skips
-> default delivery. Returning a partial `notification` object is safe: the returned fields
+> **proceeds** — throwing is not the same as blocking. A dispatch-level failure (e.g. the
+> extension system erroring before handlers run) behaves the same way: it is logged and
+> default delivery proceeds with the pristine original notification, like the timeout
+> path. Only an explicit `blocked: true` skips default delivery. Returning a partial `notification` object is safe: the returned fields
 > are merged over the running notification field-by-field (unaffected fields such as
 > `baseDir`/`body` are never dropped, explicit `undefined` values are ignored), and missing
 > `id`/`timestamp`/`kind` — including empty-string values — are filled in at the delivery

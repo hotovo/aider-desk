@@ -2,6 +2,12 @@
 
 ## [UNRELEASED]
 
+- added notification contract with stable notification ids and browser-side notification deduplication (dedupe key scoped by project baseDir)
+- added remote browser sound delivery to the Sound Notification extension: new delivery mode (local/browser/both) that plays synthesized chimes in open browser tabs via an in-memory queue with atomic playback claims and per-tab snapshot/acknowledge protocol, with volume and per-kind sound settings
+- fixed Sound Notification browser panel not re-offering queued notification sounds after a tab re-enables sounds or becomes visible again
+- fixed the Sound Notification browser panel mounting an empty floating panel in the Electron desktop app
+- fixed browser sound notifications not playing for background projects: the Sound Notification panel now registers in the global app-floating placement, works inside the Electron desktop app for remote browser tabs, and queued notifications replay after enabling sounds or returning to a tab (per-refresh payloads include a nonce)
+- reduced duplicate sound chimes across devices by atomically claiming each browser delivery for one consumer — normally only the primary tab plays; rare duplicates are possible after the playback claim's lease expires before acknowledgement
 - improved create task tool description and worktree inheritance
 - added git branch management
 - added support for checkoutless merge/squash for worktree operations

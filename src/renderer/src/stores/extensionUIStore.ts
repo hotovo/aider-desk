@@ -206,7 +206,12 @@ export const useExtensionUIStore = createWithEqualityFn<ExtensionUIStore>()(
           return;
         }
 
-        if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
+        // Same routing rule as useExtensionComponentsWrapper: only a
+        // project-scoped mount (mounted with a projectDir) drops refreshes
+        // stamped with a different projectDir. A globally mounted placement
+        // (projectDir undefined, e.g. 'app-floating') has no project scope and
+        // must not drop project-stamped refresh events.
+        if (currentProjectDir !== undefined && data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
           return;
         }
 

@@ -1799,8 +1799,12 @@ export class Task {
           timeoutMs: NOTIFICATION_HOOK_TIMEOUT_MS,
         });
       } else if ('error' in dispatchOutcome) {
-        logger.error('onNotification extension hook failed to dispatch:', dispatchOutcome.error);
-        return;
+        // A rejected hook dispatch behaves like the timeout branch above: core
+        // delivery still proceeds with the pristine original notification (the
+        // hook received a clone, so nothing a handler may have mutated leaks
+        // out), and only an explicit { blocked: true } result suppresses
+        // delivery. A dispatch error must not silently drop the notification.
+        logger.error('onNotification extension hook failed to dispatch; delivering the unmodified notification:', dispatchOutcome.error);
       } else {
         // Extension result handling: a returned notification is merged field-by-field over
         // the original. dispatchEvent already performs this merge for chained handlers, but

@@ -18,7 +18,7 @@ Ready-to-use extensions that add functionality to AiderDesk.
 | [external-rules.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/external-rules.ts)                        | Includes rule files from Cursor, Claude Code, and Roo Code | `onLoad`, `onRuleFilesRetrieved` |
 | [learn](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/learn/)                                               | Adds `/learn` command that creates reusable skills from any source — directories, URLs, conversation history, or pasted notes | `onLoad`, `getCommands`, `getTools`, `TaskContext.runPrompt` |
 | [legacy-system-prompt](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/legacy-system-prompt/)                 | Restores the verbose pre-optimization system prompt and workflow — ideal for less capable models | `onLoad`, `onPromptTemplate` |
-| [sound-notification.ts](https://github.com/hotovo/aider-desk/blob/main/packages/extensions/extensions/sound-notification.ts)                | Plays a "Jobs Done" sound when a prompt finishes | `onLoad`, `onPromptFinished` |
+| [sound-notification](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/sound-notification/)                       | Plays sound notifications using og-packs packs on the AiderDesk host, and synthesized Web Audio chimes in open remote browser tabs (configurable delivery mode `local`/`browser`/`both`, per-kind chime mapping, opt-in per tab via "Enable sounds", primary visible tab only) | `onLoad`, `onPromptFinished`, `onQuestionAsked`, `onNotification`, `getUIComponents`, `getUIExtensionData`, `getConfigComponent`, `executeUIExtensionAction` |
 | [sandbox](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/sandbox/)                                           | OS-level sandboxing for bash commands using `@anthropic-ai/sandbox-runtime` | `onLoad`, `onToolCalled` |
 | [rtk](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/rtk/)                                                   | Rewrites shell commands to RTK equivalents, reducing token usage by 60-90% | `onLoad`, `getCommands`, `onToolCalled` |
 | [searxng-search](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/searxng-search/)                           | Web search tool using SearXNG with auto-starting Docker container support | `onLoad`, `onUnload`, `getTools`, `getConfigComponent`, `onProjectStarted`, `onProjectStopped` |
@@ -127,8 +127,8 @@ Alternatively, you can manually download extensions:
 
 ```bash
 # Download to global extensions
-curl -o ~/.aider-desk/extensions/sound-notification.ts \
-  https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/sound-notification.ts
+curl -o ~/.aider-desk/extensions/pirate.ts \
+  https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/pirate.ts
 ```
 
 #### Folder-Based Extension

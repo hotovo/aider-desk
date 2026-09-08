@@ -325,7 +325,9 @@ describe('Task - notifyIfEnabled', () => {
     });
 
     it('a failed delivery does not stall subsequent notifications for the same project', async () => {
-      // First delivery fails at the dispatch level; second must still deliver
+      // First delivery's hook dispatch rejects; core delivery of BOTH
+      // notifications still occurs (the error falls through to delivery, like
+      // the timeout branch), and the second is not stalled behind it.
       mockExtensionManager.dispatchEvent.mockImplementationOnce(() => Promise.reject(new Error('hook blew up')));
 
       const first = notifyIfEnabled('first', 'one');
@@ -334,8 +336,8 @@ describe('Task - notifyIfEnabled', () => {
       await Promise.all([first, second]);
 
       const titles = mockEventManager.sendNotificationData.mock.calls.map((call) => (call[0] as NotificationData).title);
-      expect(titles).toEqual(['second']);
-      expect(logger.error).toHaveBeenCalled();
+      expect(titles).toEqual(['first', 'second']);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('failed to dispatch'), expect.any(Error));
     });
   });
 
@@ -360,11 +362,17 @@ describe('Task - notifyIfEnabled', () => {
       expect(mockExtensionManager.dispatchEvent).toHaveBeenCalled();
     });
 
-    it('resolves when the extension hook dispatch throws', async () => {
+    it('resolves when the extension hook dispatch throws — and still delivers the pristine original notification', async () => {
       mockExtensionManager.dispatchEvent = vi.fn(() => Promise.reject(new Error('extension hook blew up')));
 
       await expect(notifyIfEnabled('Task finished', 'all done')).resolves.toBeUndefined();
-      expect(mockEventManager.sendNotificationData).not.toHaveBeenCalled();
+      // Like the timeout branch, a rejected hook dispatch must not suppress core
+      // delivery: the unmodified notification is delivered.
+      expect(mockEventManager.sendNotificationData).toHaveBeenCalledWith(
+        expect.objectContaining({ baseDir, title: 'Task finished', body: 'all done', id: expect.any(String) }),
+      );
+      const delivered = mockEventManager.sendNotificationData.mock.calls[0][0] as NotificationData;
+      expect(delivered.id).toBeTruthy();
     });
   });
 

@@ -1,12 +1,35 @@
 ({ config, updateConfig, executeExtensionAction, ui, icons }) => {
   const { useState, useCallback, useMemo } = React;
-  const { Select, IconButton } = ui;
+  const { Select, IconButton, Checkbox, Slider } = ui;
   const FiPlay = icons.Fi.FiPlay;
   const FiRefreshCw = icons.Fi.FiRefreshCw;
+  const FiVolume2 = icons.Fi.FiVolume2;
 
   const packs = config?.packs || [];
   const agentFinished = config?.agentFinished || { pack: 'peasant', sound: 'PeasantJobDone' };
   const questionAsked = config?.questionAsked || { pack: 'peasant', sound: '' };
+  const delivery = config?.delivery || 'local';
+  const browser = config?.browser || {};
+  const browserVolume = typeof browser.volume === 'number' ? browser.volume : 0.5;
+  const browserKinds = {
+    'task-finished': true,
+    'input-needed': true,
+    generic: false,
+    ...(browser.kinds || {}),
+  };
+  const browserPresets = {
+    'task-finished': 'bell',
+    'input-needed': 'ding',
+    generic: 'chime',
+    ...(browser.presets || {}),
+  };
+
+  const updateBrowser = (patch) => {
+    updateConfig({
+      ...config,
+      browser: { ...browser, ...patch },
+    });
+  };
 
   const executeAction = useCallback(
     async (action, ...args) => {
@@ -68,6 +91,26 @@
     executeAction('refresh-packs');
   };
 
+  const deliveryOptions = [
+    { value: 'local', label: 'Local (OS player on AiderDesk host)' },
+    { value: 'browser', label: 'Remote browser (open tab required)' },
+    { value: 'both', label: 'Both local and remote browser' },
+  ];
+
+  const presetOptions = [
+    { value: 'bell', label: 'Bell' },
+    { value: 'ding', label: 'Ding' },
+    { value: 'chime', label: 'Chime' },
+    { value: 'soft', label: 'Soft' },
+    { value: 'none', label: 'Silent' },
+  ];
+
+  const browserKindRows = [
+    { key: 'task-finished', label: 'Task finished' },
+    { key: 'input-needed', label: 'Input needed' },
+    { key: 'generic', label: 'Other' },
+  ];
+
   return (
     <div className="relative flex flex-col gap-4">
       <div className="absolute top-1 right-1">
@@ -76,6 +119,61 @@
           tooltip="Refresh Packs"
           onClick={handleRefresh}
         />
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold text-text-primary">Delivery</h3>
+        <div className="flex-1 max-w-md">
+          <Select
+            label="Delivery Mode"
+            value={delivery}
+            onChange={(value) => updateConfig({ ...config, delivery: value })}
+            options={deliveryOptions}
+          />
+        </div>
+
+        <div className="flex flex-col gap-2 pl-1">
+          <div className="flex items-center gap-2 max-w-md">
+            <FiVolume2 className="w-4 h-4 text-text-secondary" />
+            <div className="flex-1">
+              <Slider
+                label="Browser sound volume"
+                min={0}
+                max={100}
+                step={1}
+                value={Math.round(browserVolume * 100)}
+                onChange={(value) => updateBrowser({ volume: (Number(value) || 0) / 100 })}
+                formatValue={(value) => `${value}%`}
+              />
+            </div>
+          </div>
+
+          {browserKindRows.map((row) => (
+            <div key={row.key} className="flex items-center gap-3">
+              <div className="w-28 shrink-0">
+                <Checkbox
+                  label={row.label}
+                  size="xs"
+                  checked={!!browserKinds[row.key]}
+                  onChange={(checked) => updateBrowser({ kinds: { ...browserKinds, [row.key]: checked } })}
+                />
+              </div>
+              <div className="flex-1 max-w-48">
+                <Select
+                  value={browserPresets[row.key] || 'chime'}
+                  onChange={(value) => updateBrowser({ presets: { ...browserPresets, [row.key]: value } })}
+                  options={presetOptions}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-2xs text-text-muted">
+          Remote browser sounds are synthesized via Web Audio in each open AiderDesk tab after the
+          user clicks "Enable sounds" in the Remote Sounds panel (browsers only allow audio after a
+          user gesture). Multiple tabs elect a single primary tab, so each notification normally chimes in one tab (rare duplicates are possible when the primary lock expires or a tab disappears).
+        </div>
       </div>
 
       <div className="flex flex-col gap-1">

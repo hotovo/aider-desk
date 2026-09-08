@@ -117,7 +117,15 @@ export const useExtensionComponentsWrapper = ({
 
   useEffect(() => {
     return api.onExtensionUIRefresh((data) => {
-      if (data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
+      // The refresh's projectDir is provenance of where the refresh originated
+      // (e.g. a background project's onNotification), not an address every
+      // mount must match. Only project-scoped mounts (mounted with a
+      // projectDir) filter on it: a globally mounted wrapper (e.g. the
+      // always-mounted 'app-floating' FloatingExtensionPanels in Home, mounted
+      // without a projectDir) has no project scope and must receive
+      // project-stamped refreshes too — just like it already receives
+      // refreshes without a projectDir.
+      if (currentProjectDir !== undefined && data.projectDir !== undefined && data.projectDir !== currentProjectDir) {
         return;
       }
 
