@@ -4196,17 +4196,26 @@ ${error.stderr}`,
   }
 
   private async sendWorktreeIntegrationStatusUpdated() {
-    this.eventManager.sendWorktreeIntegrationStatusUpdated(this.project.baseDir, this.taskId, await this.getWorktreeIntegrationStatus());
+    // These methods are often invoked fire-and-forget (void); never let them produce unhandled rejections
+    try {
+      this.eventManager.sendWorktreeIntegrationStatusUpdated(this.project.baseDir, this.taskId, await this.getWorktreeIntegrationStatus());
+    } catch (error) {
+      logger.error('Failed to send worktree integration status update:', error);
+    }
   }
 
   public async sendUpdatedFilesUpdated() {
-    const updatedFiles = await this.getUpdatedFiles();
-    logger.debug('Sending updated files', {
-      baseDir: this.project.baseDir,
-      taskId: this.taskId,
-      updatedFiles: updatedFiles.map((f) => f.path),
-    });
-    this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
+    try {
+      const updatedFiles = await this.getUpdatedFiles();
+      logger.debug('Sending updated files', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        updatedFiles: updatedFiles.map((f) => f.path),
+      });
+      this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
+    } catch (error) {
+      logger.error('Failed to send updated files update:', error);
+    }
   }
 
   public async sendSkillsUpdated(): Promise<void> {
@@ -4768,7 +4777,15 @@ ${error.stderr}`,
       return null;
     }
 
-    const effectiveTargetBranch = targetBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
+    const effectiveTargetBranch =
+      targetBranch || this.task.worktree.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir).catch(() => undefined));
+    if (!effectiveTargetBranch) {
+      logger.warn('Unable to determine target branch for worktree integration status, skipping check', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+      });
+      return null;
+    }
     const worktreePath = this.task.worktree.path;
     if (!(await isDirectory(worktreePath))) {
       logger.debug(`Worktree ${worktreePath} no longer exists, skipping integration status check`);
@@ -4966,6 +4983,9 @@ ${error.stderr}`,
   }
 
   public async checkoutGitBranch(branch: string, createTracking?: boolean, takeOver?: boolean): Promise<void> {
+    if (takeOver && this.task.workingMode === 'worktree') {
+      throw new Error('Taking over a branch is not available in worktree mode');
+    }
     await this.runGitAction('checkout', () => this.gitManager.checkoutBranch(this.getTaskDir(), branch, createTracking, takeOver));
   }
 

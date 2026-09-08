@@ -35,6 +35,11 @@ export interface ManagersResult {
 }
 
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> => {
+  // Prevent unhandled promise rejections from crashing the process
+  process.on('unhandledRejection', (reason) => {
+    logger.error('Unhandled promise rejection:', reason);
+  });
+
   // Initialize network manager FIRST — must be before any network calls
   const networkManager = new NetworkManager();
   networkManager.init(store.getSettings());

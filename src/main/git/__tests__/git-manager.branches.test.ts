@@ -168,7 +168,7 @@ describe('GitManager - branch operations', () => {
       (execWithShellPath as Mock).mockImplementation((command: string) => {
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({
-            stdout: 'worktree /other/task/worktree\nHEAD abc1234\nbranch refs/heads/feature-b\n\nworktree /main/repo\nHEAD def5678\nbranch refs/heads/master\n',
+            stdout: 'worktree /main/repo\nHEAD def5678\nbranch refs/heads/master\n\nworktree /other/task/worktree\nHEAD abc1234\nbranch refs/heads/feature-b\n',
             stderr: '',
           });
         }
@@ -179,6 +179,23 @@ describe('GitManager - branch operations', () => {
 
       expect(execWithShellPath).toHaveBeenCalledWith('git checkout --detach', { cwd: '/other/task/worktree' });
       expect(execWithShellPath).toHaveBeenCalledWith("git checkout 'feature-b'", { cwd: projectPath });
+    });
+
+    it('should refuse to take over a branch held by the main working tree', async () => {
+      (execWithShellPath as Mock).mockImplementation((command: string) => {
+        if (command.startsWith('git worktree list')) {
+          return Promise.resolve({
+            stdout:
+              'worktree /main/repo\nHEAD def5678\nbranch refs/heads/feature-b\n\nworktree /other/task/worktree\nHEAD abc1234\nbranch refs/heads/feature-b\n',
+            stderr: '',
+          });
+        }
+        return Promise.resolve({ stdout: '', stderr: '' });
+      });
+
+      await expect(gitManager.checkoutBranch('/other/task/worktree', 'feature-b', false, true)).rejects.toThrow('main repository');
+      expect(execWithShellPath).not.toHaveBeenCalledWith('git checkout --detach', expect.anything());
+      expect(execWithShellPath).not.toHaveBeenCalledWith("git checkout 'feature-b'", expect.anything());
     });
 
     it('should not detach anything when takeOver is not set', async () => {

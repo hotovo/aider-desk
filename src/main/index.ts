@@ -23,6 +23,11 @@ import { WindowManager } from '@/window-manager';
 let windowManager: WindowManager;
 let store: Store;
 
+// Prevent unhandled promise rejections from crashing the process
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled promise rejection:', reason);
+});
+
 const setupCustomMenu = (createWindowFn: () => void): void => {
   const menuTemplate: Electron.MenuItemConstructorOptions[] = [
     // File menu

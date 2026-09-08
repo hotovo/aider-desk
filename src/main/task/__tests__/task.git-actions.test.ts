@@ -36,6 +36,7 @@ vi.mock('fs/promises', () => ({
 vi.mock('@/utils', () => ({
   fileExists: vi.fn().mockResolvedValue(false),
   filterIgnoredFiles: vi.fn().mockResolvedValue([]),
+  isDirectory: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/constants', () => ({
@@ -132,11 +133,11 @@ describe('Task - git actions', () => {
   let mockGitManager: any;
   let mockEventManager: any;
 
-  const createTask = (workingMode?: 'local' | 'worktree') =>
+  const createTask = (workingMode?: 'local' | 'worktree', worktreeOverrides?: Record<string, unknown>) =>
     new Task(
       mockProject,
       'test-task-id',
-      { getSettings: vi.fn(() => ({ language: 'en', aider: { autoCommits: true } })) } as any,
+      { getSettings: vi.fn(() => ({ language: 'en', aider: { autoCommits: true }, taskSettings: {} })) } as any,
       {} as any,
       {} as any,
       {} as any,
@@ -153,7 +154,7 @@ describe('Task - git actions', () => {
       workingMode === 'worktree'
         ? {
             workingMode: 'worktree',
-            worktree: { path: worktreePath, branch: worktreeBranch },
+            worktree: { path: worktreePath, branch: worktreeBranch, ...worktreeOverrides },
           }
         : undefined,
     );
@@ -177,6 +178,7 @@ describe('Task - git actions', () => {
       sendTaskCreated: vi.fn(),
       sendTaskDeleted: vi.fn(),
       sendWorktreeIntegrationStatusUpdated: vi.fn(),
+      sendUpdatedFilesUpdated: vi.fn(),
     };
 
     mockGitManager = {
@@ -282,6 +284,80 @@ describe('Task - git actions', () => {
       await vi.waitFor(() => {
         expect(mockEventManager.sendWorktreeIntegrationStatusUpdated).toHaveBeenCalledWith(baseDir, 'test-task-id', null);
       });
+    });
+  });
+
+  describe('checkoutGitBranch takeOver guard', () => {
+    it('delegates takeOver checkout for local task', async () => {
+      await task.checkoutGitBranch('feature', false, true);
+      expect(mockGitManager.checkoutBranch).toHaveBeenCalledWith(baseDir, 'feature', false, true);
+    });
+
+    it('rejects takeOver checkout for worktree task', async () => {
+      const worktreeTask = createTask('worktree');
+
+      await expect(worktreeTask.checkoutGitBranch('feature', false, true)).rejects.toThrow('not available in worktree mode');
+      expect(mockGitManager.checkoutBranch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getWorktreeIntegrationStatus', () => {
+    beforeEach(() => {
+      mockGitManager.checkWorktreeForUnmergedWork = vi.fn().mockResolvedValue({ unmergedCommitCount: 0, unmergedCommits: [], uncommittedFiles: [] });
+      mockGitManager.checkForRebaseConflicts = vi.fn().mockResolvedValue(null);
+      mockGitManager.getRebaseState = vi.fn().mockResolvedValue(undefined);
+    });
+
+    it('uses the stored worktree baseBranch as target branch', async () => {
+      mockGitManager.getProjectMainBranch = vi.fn();
+      const worktreeTask = createTask('worktree', { baseBranch: 'main' });
+
+      const status = await worktreeTask.getWorktreeIntegrationStatus();
+
+      expect(mockGitManager.getProjectMainBranch).not.toHaveBeenCalled();
+      expect(mockGitManager.checkWorktreeForUnmergedWork).toHaveBeenCalledWith(baseDir, worktreePath, 'main', []);
+      expect(status?.targetBranch).toBe('main');
+      expect(status?.baseBranch).toBe('main');
+    });
+
+    it('falls back to the project main branch when baseBranch is missing', async () => {
+      mockGitManager.getProjectMainBranch = vi.fn().mockResolvedValue('main');
+      const worktreeTask = createTask('worktree');
+
+      const status = await worktreeTask.getWorktreeIntegrationStatus();
+
+      expect(mockGitManager.getProjectMainBranch).toHaveBeenCalledWith(baseDir);
+      expect(status?.targetBranch).toBe('main');
+    });
+
+    it('returns null when no target branch can be determined', async () => {
+      mockGitManager.getProjectMainBranch = vi.fn().mockRejectedValue(new Error('detached HEAD'));
+      const worktreeTask = createTask('worktree');
+
+      const status = await worktreeTask.getWorktreeIntegrationStatus();
+
+      expect(status).toBeNull();
+      expect(mockGitManager.checkWorktreeForUnmergedWork).not.toHaveBeenCalled();
+    });
+
+    it('prefers the explicitly provided target branch', async () => {
+      mockGitManager.getProjectMainBranch = vi.fn();
+      const worktreeTask = createTask('worktree', { baseBranch: 'main' });
+
+      const status = await worktreeTask.getWorktreeIntegrationStatus('develop');
+
+      expect(mockGitManager.getProjectMainBranch).not.toHaveBeenCalled();
+      expect(status?.targetBranch).toBe('develop');
+    });
+  });
+
+  describe('crash-proof event senders', () => {
+    it('sendUpdatedFilesUpdated resolves instead of rejecting when the main branch cannot be determined', async () => {
+      mockGitManager.getProjectMainBranch = vi.fn().mockRejectedValue(new Error('detached HEAD'));
+      const worktreeTask = createTask('worktree');
+
+      await expect(worktreeTask.sendUpdatedFilesUpdated()).resolves.toBeUndefined();
+      expect(mockEventManager.sendUpdatedFilesUpdated).not.toHaveBeenCalled();
     });
   });
 

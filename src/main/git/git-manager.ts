@@ -611,7 +611,17 @@ export class GitManager {
 
   private async detachBranchFromOtherWorktrees(projectPath: string, branch: string): Promise<void> {
     const worktrees = await this.listWorktrees(projectPath);
-    const holders = worktrees.filter((w) => w.branch === branch && w.path && path.resolve(w.path) !== path.resolve(projectPath));
+    // The first worktree is always the main working tree. Detaching it would leave the main repository
+    // in a detached HEAD state, breaking project-level git operations, so it must never be detached.
+    const mainWorktree = worktrees[0];
+    const isMainWorktree = (w: Worktree) => Boolean(mainWorktree?.path && path.resolve(w.path) === path.resolve(mainWorktree.path));
+    const isTargetMainWorktree = Boolean(mainWorktree?.path && path.resolve(mainWorktree.path) === path.resolve(projectPath));
+
+    if (mainWorktree?.branch === branch && !isTargetMainWorktree) {
+      throw new GitError(`Cannot checkout '${branch}': it is checked out in the main repository. Switch the main repository to a different branch first.`);
+    }
+
+    const holders = worktrees.filter((w) => w.branch === branch && w.path && path.resolve(w.path) !== path.resolve(projectPath) && !isMainWorktree(w));
 
     for (const worktree of holders) {
       await execWithShellPath('git checkout --detach', { cwd: worktree.path });
