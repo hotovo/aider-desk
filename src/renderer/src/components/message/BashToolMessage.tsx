@@ -39,6 +39,7 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
 
   const command = (message.args.command as string) || '';
   const isMultilineCommand = command.includes('\n');
+  const description = message.args.description as string | undefined;
   const timeout = message.args.timeout as number | undefined;
   const cwd = message.args.cwd as string | undefined;
   const content = message.content && JSON.parse(message.content);
@@ -90,14 +91,20 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
         <div className="text-text-muted">
           <RiTerminalLine className="w-4 h-4" />
         </div>
-        <div className="text-xs text-text-primary flex flex-wrap gap-1">
-          <span>{t('toolMessage.power.bash.title')}</span>
-          {!isMultilineCommand && (
-            <span>
-              <CodeInline className="bg-bg-primary-light">{command}</CodeInline>
-            </span>
+        <div className="text-xs text-text-primary flex flex-wrap gap-1 items-center">
+          <span>{description ? `${t('toolMessage.power.bash.title')}:` : t('toolMessage.power.bash.title')}</span>
+          {description ? (
+            <span className="text-text-tertiary">{description}</span>
+          ) : (
+            !isMultilineCommand && (
+              <>
+                <span>
+                  <CodeInline className="bg-bg-primary-light">{command}</CodeInline>
+                </span>
+                <CopyMessageButton content={command} alwaysShow={true} className="w-3.5 h-3.5" />
+              </>
+            )
           )}
-          {!isMultilineCommand && <CopyMessageButton content={command} alwaysShow={true} className="w-3.5 h-3.5" />}
         </div>
         {!isFinished && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
         {isFinished &&
@@ -114,10 +121,17 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
             <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
           ))}
       </div>
-      {isMultilineCommand && (
+      {isMultilineCommand ? (
         <CodeBlock baseDir="" language="bash" isComplete={!message.isStreaming} className="mb-0 text-2xs py-1 px-2 [&_pre]:!py-0 [&_pre]:!px-1">
           {command}
         </CodeBlock>
+      ) : (
+        description && (
+          <div className="mt-1 flex items-center flex-wrap gap-1">
+            <CodeInline className="bg-bg-primary-light">{command}</CodeInline>
+            <CopyMessageButton content={command} alwaysShow={true} className="w-3.5 h-3.5" />
+          </div>
+        )
       )}
     </div>
   );

@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added Copy Task ID to command palette
+- added optional description for bash tool commands displayed in tool messages
 
 ## [0.82.0]
 
