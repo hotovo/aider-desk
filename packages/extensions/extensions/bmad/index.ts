@@ -468,7 +468,7 @@ export default class BmadExtension implements Extension {
           expectedVersion: manager.getExpectedVersion(),
           uvAvailable: await manager.checkUvAvailable(),
           updateInfo: updateInfo ?? null,
-          extensionVersion: '2.0.0',
+          extensionVersion: '2.1.0',
           phases,
           isLoading: false,
           error: null,
