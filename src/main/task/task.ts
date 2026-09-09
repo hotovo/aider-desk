@@ -549,7 +549,16 @@ export class Task {
 
     if (workingMode === 'worktree') {
       if (existingWorktree) {
-        this.task.worktree = existingWorktree;
+        // getTaskWorktree reports baseCommit as the worktree's current HEAD, so preserve
+        // the stored rebase fork-point when re-adopting an existing worktree
+        this.task.worktree = this.task.worktree
+          ? {
+              ...this.task.worktree,
+              path: existingWorktree.path,
+              branch: existingWorktree.branch,
+              baseCommit: this.task.worktree.baseCommit ?? existingWorktree.baseCommit,
+            }
+          : existingWorktree;
       } else if (this.task.worktree) {
         // Worktree is already set (e.g. inherited from parent)
         logger.info('Using inherited worktree for task', {
@@ -582,7 +591,14 @@ export class Task {
         currentWorktree: existingWorktree,
       });
       if (existingWorktree) {
-        this.task.worktree = existingWorktree;
+        this.task.worktree = this.task.worktree
+          ? {
+              ...this.task.worktree,
+              path: existingWorktree.path,
+              branch: existingWorktree.branch,
+              baseCommit: this.task.worktree.baseCommit ?? existingWorktree.baseCommit,
+            }
+          : existingWorktree;
         this.task.workingMode = 'worktree';
       } else {
         this.task.worktree = undefined;

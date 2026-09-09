@@ -1070,9 +1070,12 @@ export class GitManager {
         // If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
         let effectiveBaseCommit = baseCommit;
         if (baseCommit) {
-          const isValid = await this.isCommitAncestorOf(worktreePath, baseCommit);
-          if (!isValid) {
-            logger.warn(`baseCommit ${baseCommit} is not an ancestor of HEAD, falling back to simple rebase`, { worktreePath, mainBranch });
+          const [isValid, headCommit] = await Promise.all([this.isCommitAncestorOf(worktreePath, baseCommit), this.getHeadCommit(worktreePath)]);
+          if (!isValid || baseCommit === headCommit) {
+            logger.warn(`baseCommit ${baseCommit} is not a valid rebase base (stale or equal to HEAD), falling back to simple rebase`, {
+              worktreePath,
+              mainBranch,
+            });
             effectiveBaseCommit = undefined;
           }
         }
@@ -1229,9 +1232,12 @@ export class GitManager {
       // If baseCommit is stale (e.g., user rebased externally), fall back to simple rebase
       let effectiveBaseCommit = baseCommit;
       if (baseCommit) {
-        const isValid = await this.isCommitAncestorOf(worktreePath, baseCommit);
-        if (!isValid) {
-          logger.warn(`baseCommit ${baseCommit} is not an ancestor of HEAD, falling back to simple rebase`, { worktreePath, mainBranch });
+        const [isValid, headCommit] = await Promise.all([this.isCommitAncestorOf(worktreePath, baseCommit), this.getHeadCommit(worktreePath)]);
+        if (!isValid || baseCommit === headCommit) {
+          logger.warn(`baseCommit ${baseCommit} is not a valid rebase base (stale or equal to HEAD), falling back to simple rebase`, {
+            worktreePath,
+            mainBranch,
+          });
           effectiveBaseCommit = undefined;
         }
       }

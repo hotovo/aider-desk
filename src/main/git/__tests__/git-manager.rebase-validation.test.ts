@@ -187,6 +187,8 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns true (valid)
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
+    // getHeadCommit - HEAD differs from baseCommit
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'head456\n', stderr: '' });
     // rebase command
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
@@ -211,6 +213,33 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
     // isCommitAncestorOf - returns false (stale)
     (execWithShellPath as Mock).mockRejectedValueOnce(new Error('exit code 1'));
+    // getHeadCommit
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'head456\n', stderr: '' });
+    // rebase command (should be simple rebase)
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
+
+    await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
+
+    expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
+  });
+
+  it('should fall back to simple rebase when baseCommit equals HEAD (empty --onto range would silently drop commits)', async () => {
+    const baseCommit = 'head123';
+
+    // getRebaseState - no rebase in progress
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-merge', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '/test/worktree/.git/rebase-apply', stderr: '' });
+    (execWithShellPath as Mock).mockRejectedValueOnce(new Error('no such file'));
+    // resolve rebase target
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'main123\n', stderr: '' });
+    // hasUncommittedChanges - no changes
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
+    // isCommitAncestorOf - returns true (self-ancestor)
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
+    // getHeadCommit - HEAD equals baseCommit
+    (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'head123\n', stderr: '' });
     // rebase command (should be simple rebase)
     (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: 'Successfully rebased', stderr: '' });
 
