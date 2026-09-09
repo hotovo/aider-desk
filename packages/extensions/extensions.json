@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "plannotator",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "fff",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "kanban",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 29
+      "installCount": 30
     }
   ]
 }
