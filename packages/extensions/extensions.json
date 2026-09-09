@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "protected-paths",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "ultrathink",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "context-autocompletion-words",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "kanban",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "task-scheduler",
