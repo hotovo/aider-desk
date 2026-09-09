@@ -1999,6 +1999,7 @@
     "confirmOnlyUncommittedMessage": "您确定要将工作树中的未提交更改应用到当前检出的分支 {{branch}} 吗？不会执行 git 合并操作，项目目录将保持在当前分支。",
     "mergeConflicts": "由于工作树与目标分支之间存在冲突，合并失败。请先对工作树进行变基以解决冲突。",
     "applyUncommittedConflicts": "由于与目标分支存在冲突，无法应用未提交的更改。请先对工作树进行变基以对齐您的更改。",
+    "switchToLocalApplyUncommittedConflicts": "由于存在冲突，无法将工作树中的未提交更改应用到项目目录。已中止切换到本地模式——工作树及其更改已保留。",
     "dontAskAgain": "不再询问",
     "confirmRevertTitle": "确认撤销",
     "confirmRevertMessage": "您确定要撤销最后一次合并吗？这将撤销从工作树合并回主分支的更改。",

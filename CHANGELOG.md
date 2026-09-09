@@ -9,6 +9,7 @@
 - fixed Copy Task ID label capitalization
 - fixed worktree rebase silently dropping commits when the tracked base commit is stale
 - fixed unhandled promise rejections crashing the app and prevented checkout from detaching the main repository branch
+- carry over uncommitted changes when switching to local after checkoutless merge
 
 ## [0.82.0]
 

@@ -1991,6 +1991,7 @@
     "confirmOnlyUncommittedMessage": "Are you sure you want to apply uncommitted changes from worktree to the currently checked out branch {{branch}}? No git merge will be performed and the project directory will stay on its current branch.",
     "mergeConflicts": "Merge failed due to conflicts between your worktree and the target branch. Please rebase your worktree first to resolve them.",
     "applyUncommittedConflicts": "Failed to apply uncommitted changes due to conflicts with the target branch. Please rebase your worktree first to align your changes.",
+    "switchToLocalApplyUncommittedConflicts": "Failed to apply worktree uncommitted changes to the project directory due to conflicts. The switch to local mode was aborted - the worktree and its changes are preserved.",
     "dontAskAgain": "Don't ask me again",
     "confirmRevertTitle": "Confirm Revert",
     "confirmRevertMessage": "Are you sure you want to revert the last merge? This will undo the changes that were merged from the worktree back to the main branch.",

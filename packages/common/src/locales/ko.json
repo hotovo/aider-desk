@@ -2057,6 +2057,7 @@
     "confirmOnlyUncommittedMessage": "워크트리의 커밋되지 않은 변경 사항을 프로젝트 디렉토리에 현재 체크아웃된 브랜치 {{branch}}에 적용하시겠습니까? git 병합은 수행되지 않으며 프로젝트 디렉토리는 현재 브랜치에 유지됩니다.",
     "mergeConflicts": "워크트리와 대상 브랜치 간의 충돌로 인해 병합에 실패했습니다. 먼저 워크트리를 리베이스하여 충돌을 해결하세요.",
     "applyUncommittedConflicts": "대상 브랜치와의 충돌로 인해 커밋되지 않은 변경 사항을 적용하지 못했습니다. 먼저 워크트리를 리베이스하여 변경 사항을 맞추세요.",
+    "switchToLocalApplyUncommittedConflicts": "충돌로 인해 워크트리의 커밋되지 않은 변경 사항을 프로젝트 디렉토리에 적용하지 못했습니다. 로컬 모드 전환이 중단되었습니다 - 워크트리와 그 변경 사항은 그대로 유지됩니다.",
     "dontAskAgain": "다시 묻지 않기",
     "confirmRevertTitle": "되돌리기 확인",
     "confirmRevertMessage": "마지막 병합을 되돌리시겠습니까? 워크트리에서 메인 브랜치로 병합되었던 변경 사항이 취소됩니다.",

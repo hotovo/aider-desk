@@ -23,6 +23,7 @@ import {
   GitSyncCommits,
   LogData,
   LogLevel,
+  MergeState,
   MessageRole,
   Mode,
   ModelInfo,
@@ -4415,6 +4416,8 @@ ${error.stderr}`,
     }
 
     if (options?.mergeBeforeSwitch && this.task.worktree) {
+      let mergeState: MergeState | undefined;
+
       try {
         const effectiveTargetBranch =
           options.targetBranch || this.task.worktree.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
@@ -4424,7 +4427,7 @@ ${error.stderr}`,
         const settings = this.store.getSettings();
         const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
 
-        const mergeState = await this.gitManager.mergeWorktreeToMainWithUncommitted(
+        mergeState = await this.gitManager.mergeWorktreeToMainWithUncommitted(
           this.project.baseDir,
           this.task.id,
           this.task.worktree.path,
@@ -4458,6 +4461,41 @@ ${error.stderr}`,
         await this.sendWorktreeIntegrationStatusUpdated();
 
         throw error;
+      }
+
+      // When the merge was checkoutless (project directory is on a different branch than the merge
+      // target), the uncommitted changes were left in the worktree. Carry them over to the project
+      // directory before the worktree is removed below, otherwise they would be destroyed with it.
+      if (mergeState?.checkoutless) {
+        try {
+          this.addLogMessage('loading', 'Applying worktree uncommitted changes to the project directory...');
+
+          const settings = this.store.getSettings();
+          const symlinkFolders = settings.taskSettings.worktreeSymlinkFolders || [];
+
+          await this.gitManager.applyUncommittedChangesToMain(this.project.baseDir, this.task.id, this.task.worktree.path, symlinkFolders);
+
+          this.addLogMessage('info', 'Successfully applied worktree uncommitted changes to the project directory', true);
+        } catch (error) {
+          logger.error('Failed to carry worktree uncommitted changes to project directory, aborting switch to local:', { error });
+
+          const isConflict = this.isConflictError(error);
+
+          this.addLogMessage(
+            'error',
+            isConflict
+              ? 'worktree.switchToLocalApplyUncommittedConflicts'
+              : error instanceof GitError
+                ? error.getErrorDetails()
+                : `Failed to apply worktree uncommitted changes: ${error instanceof Error ? error.message : String(error)}`,
+            true,
+            undefined,
+            isConflict ? ['rebase-worktree'] : undefined,
+          );
+
+          // Abort the switch so the worktree is preserved together with its uncommitted changes
+          throw error;
+        }
       }
     }
 
