@@ -202,7 +202,7 @@ const getManager = (projectDir: string, context: ExtensionContext): BmadManager 
 export default class BmadExtension implements Extension {
   static metadata = {
     name: 'BMAD Method',
-    version: '2.0.0',
+    version: '2.1.0',
     description: 'Lean backend for a standard bmad-method installation: discovers its menu, starts original workflows, tracks progress',
     author: '777marvin',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
@@ -248,10 +248,11 @@ export default class BmadExtension implements Extension {
       return [];
     }
 
-    // Gate on the project's BMAD installation (any module combination):
-    // non-BMAD projects keep the default AiderDesk welcome screen.
-    const installed = getManager(projectDir, context).checkInstallation();
-    if (!installed) {
+    // Only provide components when the task is in 'bmad' mode; the
+    // WelcomePage itself renders the install flow when BMAD is not
+    // installed (matching the pre-v2 gating behavior).
+    const taskContext = context.getTaskContext();
+    if (taskContext?.data?.currentMode !== 'bmad') {
       return [];
     }
 
