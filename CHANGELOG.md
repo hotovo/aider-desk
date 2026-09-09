@@ -10,6 +10,7 @@
 - fixed worktree rebase silently dropping commits when the tracked base commit is stale
 - fixed unhandled promise rejections crashing the app and prevented checkout from detaching the main repository branch
 - carry over uncommitted changes when switching to local after checkoutless merge
+- fixed chat auto-scroll to pause only on upward scrolling and reliably resume when returning to the bottom
 
 ## [0.82.0]
 
