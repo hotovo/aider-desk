@@ -202,6 +202,46 @@ const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projec
     isDestroyed: () => newWindow.isDestroyed(),
   });
 
+  // Renderer crash recovery: reload from the main process side, since a crashed/hung
+  // renderer cannot process user-triggered reloads (e.g. Ctrl+R)
+  const MAX_CONSECUTIVE_CRASHES = 5;
+  const CRASH_LOOP_RESET_MS = 30_000;
+  let consecutiveRendererCrashes = 0;
+  let lastCrashTimestamp = 0;
+
+  newWindow.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason === 'clean-exit' || newWindow.isDestroyed()) {
+      return;
+    }
+
+    const now = Date.now();
+    consecutiveRendererCrashes = now - lastCrashTimestamp < CRASH_LOOP_RESET_MS ? consecutiveRendererCrashes + 1 : 1;
+    lastCrashTimestamp = now;
+
+    if (consecutiveRendererCrashes > MAX_CONSECUTIVE_CRASHES) {
+      logger.error(
+        `Renderer process crashed ${consecutiveRendererCrashes} times in quick succession (reason: ${details.reason}, exit code: ${details.exitCode}); giving up auto-reload`,
+      );
+      return;
+    }
+
+    logger.warn(
+      `Renderer process gone (reason: ${details.reason}, exit code: ${details.exitCode}), reloading window (consecutive crash ${consecutiveRendererCrashes}/${MAX_CONSECUTIVE_CRASHES})`,
+    );
+    setTimeout(() => {
+      if (!newWindow.isDestroyed()) {
+        newWindow.webContents.reload();
+      }
+    }, 1000);
+  });
+
+  newWindow.webContents.on('unresponsive', () => {
+    logger.warn('Renderer process became unresponsive, reloading window');
+    if (!newWindow.isDestroyed()) {
+      newWindow.webContents.reload();
+    }
+  });
+
   newWindow.webContents.on('did-fail-load', (_event, errorCode, _errorDescription, validatedURL, isMainFrame) => {
     void loadRetry.onDidFailLoad(errorCode, isMainFrame, validatedURL);
   });

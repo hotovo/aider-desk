@@ -10,6 +10,8 @@
 - fixed worktree rebase silently dropping commits when the tracked base commit is stale
 - fixed unhandled promise rejections crashing the app and prevented checkout from detaching the main repository branch
 - carry over uncommitted changes when switching to local after checkoutless merge
+- added automatic renderer crash recovery with reloading and crash loop protection
+- fixed event delivery errors when sending to destroyed or crashed windows
 - fixed chat auto-scroll to pause only on upward scrolling and reliably resume when returning to the bottom
 - added interactive authentication and passphrase prompts for Git operations
 

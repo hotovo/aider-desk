@@ -15,12 +15,14 @@ describe('EventManager - sendTaskMessageRemoved', () => {
   let mockWebContents: {
     send: ReturnType<typeof vi.fn>;
     isDestroyed: ReturnType<typeof vi.fn>;
+    isCrashed: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     mockWebContents = {
       send: vi.fn(),
       isDestroyed: vi.fn(() => false),
+      isCrashed: vi.fn(() => false),
     };
 
     mockMainWindow = {
