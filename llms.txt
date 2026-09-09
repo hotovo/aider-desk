@@ -14790,6 +14790,7 @@ File: src/renderer/src/components/common/CommandPalette/CommandPaletteContent.ts
 import { ChangeEvent, KeyboardEvent, MouseEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
+import { useLocalStorage } from '@reactuses/core';
 ⋮----
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
@@ -20745,7 +20746,22 @@ File: src/renderer/src/components/project/TaskSidebar/TaskSidebar.tsx
 ================
 import { DefaultTaskState, TaskData } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { MouseEvent, DragEvent, useState, useRef, useEffect, useOptimistic, startTransition, Activity, memo, useCallback, useMemo } from 'react';
+import {
+  MouseEvent,
+  DragEvent,
+  useState,
+  useRef,
+  useEffect,
+  useOptimistic,
+  startTransition,
+  Activity,
+  memo,
+  useCallback,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+  ForwardedRef,
+} from 'react';
 import { HiPlus } from 'react-icons/hi';
 import { RiMenuUnfold4Line, RiMenuFold2Line } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
@@ -20794,6 +20810,10 @@ type Props = {
   contentRef?: React.RefObject<HTMLDivElement | null>;
 };
 ⋮----
+export type TaskSidebarRef = {
+  startRenaming: (taskId: string) => void;
+};
+⋮----
 // eslint-disable-next-line react-compiler/react-compiler
 ⋮----
 const handleMouseMove = (moveEvent: globalThis.MouseEvent) =>
@@ -20812,7 +20832,7 @@ const handleKeyDown = (e: globalThis.KeyboardEvent) =>
 ⋮----
 // eslint-disable-next-line react-hooks/incompatible-library
 ⋮----
-const hasActiveSubtask = (taskId: string): boolean =>
+// the active task may be activated before the task list update arrives, retry on the next tasks update
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -21545,7 +21565,7 @@ import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
 ⋮----
-import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar } from './TaskSidebar/TaskSidebar';
+import { COLLAPSED_WIDTH, EXPANDED_WIDTH, MIN_WIDTH, MAX_WIDTH, TaskSidebar, TaskSidebarRef } from './TaskSidebar/TaskSidebar';
 ⋮----
 import {
   useProjectTasks,
@@ -21577,8 +21597,8 @@ import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 import { useActiveAgentProfile } from '@/utils/agents';
-import { PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
-import { registerAction, unregisterAction } from '@/stores/actionsStore';
+import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { invokeAction, registerAction, unregisterAction } from '@/stores/actionsStore';
 import { FileEditorModal } from '@/components/Workspace/FileEditorModal';
 ⋮----
 type Props = {
@@ -25629,7 +25649,7 @@ import { useTranslation } from 'react-i18next';
 import { TbGitCommit, TbGitPullRequestDraft } from 'react-icons/tb';
 import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
 ⋮----
-import { createFileTree } from './types';
+import { createFileTree, normalizePath } from './types';
 import { SectionLoading } from './SectionLoading';
 import { SectionContent } from './SectionContent';
 import { UpdatedFilesDiffModal } from './UpdatedFilesDiffModal';
@@ -25684,6 +25704,8 @@ className=
 // eslint-disable-next-line no-console
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+// Optimistically mark the file as tracked; authoritative data arrives via the updatedFilesUpdated event
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -26711,6 +26733,8 @@ File: src/renderer/src/hooks/useOverlayFocusRestore.ts
 import { useEffect, useRef } from 'react';
 ⋮----
 import { useOverlayStore } from '@/stores/overlayStore';
+⋮----
+const isEditableElement = (element: Element | null): element is HTMLElement
 ⋮----
 export const useOverlayRegistration = (id: string, isOpen: boolean) =>
 ⋮----
