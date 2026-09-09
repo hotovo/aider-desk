@@ -74,6 +74,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
     const scrollingPausedRef = useRef(false);
     const isProgrammaticScrollRef = useRef(false);
     const prevScrollTopRef = useRef(0);
+    const pointerDownRef = useRef(false);
 
     const updateScrollingPaused = useCallback((paused: boolean) => {
       scrollingPausedRef.current = paused;
@@ -121,14 +122,28 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         }
       };
 
+      const handlePointerDown = () => {
+        pointerDownRef.current = true;
+      };
+
+      const handlePointerUp = () => {
+        pointerDownRef.current = false;
+      };
+
       element.addEventListener('wheel', handleWheel);
       element.addEventListener('touchstart', handleTouchStart, { passive: true });
       element.addEventListener('touchmove', handleTouchMove, { passive: true });
+      element.addEventListener('pointerdown', handlePointerDown);
+      window.addEventListener('pointerup', handlePointerUp);
+      window.addEventListener('pointercancel', handlePointerUp);
 
       return () => {
         element.removeEventListener('wheel', handleWheel);
         element.removeEventListener('touchstart', handleTouchStart);
         element.removeEventListener('touchmove', handleTouchMove);
+        element.removeEventListener('pointerdown', handlePointerDown);
+        window.removeEventListener('pointerup', handlePointerUp);
+        window.removeEventListener('pointercancel', handlePointerUp);
       };
     }, [scrollContainer, updateScrollingPaused]);
 
@@ -196,7 +211,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       const distanceFromEnd = element.scrollHeight - tempPaddingBottom - scrollTop - element.clientHeight;
       if (distanceFromEnd <= 2) {
         updateScrollingPaused(false);
-      } else if (scrolledUp && distanceFromEnd > 30) {
+      } else if (scrolledUp && distanceFromEnd > 30 && pointerDownRef.current) {
         updateScrollingPaused(true);
       }
     }, [scrollContainer, updateScrollingPaused]);
