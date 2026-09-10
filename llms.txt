@@ -5349,6 +5349,11 @@ async checkoutBranch(projectPath: string, branch: string, createTracking = false
 ⋮----
 private async detachBranchFromOtherWorktrees(projectPath: string, branch: string): Promise<void>
 ⋮----
+// The first worktree is always the main working tree. Detaching it would leave the main repository
+// in a detached HEAD state, breaking project-level git operations, so it must never be detached.
+⋮----
+const isMainWorktree = (w: Worktree)
+⋮----
 async deleteBranch(projectPath: string, branch: string, force = false): Promise<void>
 ⋮----
 async mergeIntoCurrent(projectPath: string, branch: string): Promise<
@@ -10553,6 +10558,7 @@ import {
   GitSyncCommits,
   LogData,
   LogLevel,
+  MergeState,
   MessageRole,
   Mode,
   ModelInfo,
@@ -10747,6 +10753,9 @@ private async initInternal(readonly: boolean)
 // Readonly init must not mutate worktrees, spawn connectors, or run expensive scans
 ⋮----
 // Check if worktree is enabled for this task
+⋮----
+// getTaskWorktree reports baseCommit as the worktree's current HEAD, so preserve
+// the stored rebase fork-point when re-adopting an existing worktree
 ⋮----
 // Worktree is already set (e.g. inherited from parent)
 ⋮----
@@ -11391,6 +11400,8 @@ public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
 private async sendWorktreeIntegrationStatusUpdated()
 ⋮----
+// These methods are often invoked fire-and-forget (void); never let them produce unhandled rejections
+⋮----
 public async sendUpdatedFilesUpdated()
 ⋮----
 public async sendSkillsUpdated(): Promise<void>
@@ -11414,6 +11425,12 @@ public async mergeWorktreeToMain(squash: boolean, targetBranch?: string, commitM
 // Store merge state for potential revert
 ⋮----
 public async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>
+⋮----
+// When the merge was checkoutless (project directory is on a different branch than the merge
+// target), the uncommitted changes were left in the worktree. Carry them over to the project
+// directory before the worktree is removed below, otherwise they would be destroyed with it.
+⋮----
+// Abort the switch so the worktree is preserved together with its uncommitted changes
 ⋮----
 public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
@@ -13116,6 +13133,8 @@ import { WindowManager } from '@/window-manager';
 ⋮----
 // Global instances shared across all windows
 ⋮----
+// Prevent unhandled promise rejections from crashing the process
+⋮----
 const setupCustomMenu = (createWindowFn: () => void): void =>
 ⋮----
 // File menu
@@ -13315,6 +13334,8 @@ export interface ManagersResult {
 }
 ⋮----
 export const initManagers = async (store: Store, windowManager?: WindowManager): Promise<ManagersResult> =>
+⋮----
+// Prevent unhandled promise rejections from crashing the process
 ⋮----
 // Initialize network manager FIRST — must be before any network calls
 ⋮----
@@ -18620,6 +18641,10 @@ const handleWheel = (e: WheelEvent) =>
 const handleTouchStart = (e: TouchEvent) =>
 ⋮----
 const handleTouchMove = (e: TouchEvent) =>
+⋮----
+const handlePointerDown = () =>
+⋮----
+const handlePointerUp = () =>
 ⋮----
 const scrollToEndIfFollowing = () =>
 ⋮----
