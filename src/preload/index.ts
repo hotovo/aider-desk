@@ -42,6 +42,7 @@ import {
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
   AiderConnectorStatus,
+  InputPromptData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -184,6 +185,16 @@ const api: ApplicationAPI = {
       ipcRenderer.removeListener('modal-overlay-url', listener);
     };
   },
+  onInputPrompt: (callback: (data: InputPromptData) => void) => {
+    const listener = (_: Electron.IpcRendererEvent, data: InputPromptData) => {
+      callback(data);
+    };
+    ipcRenderer.on('input-prompt', listener);
+    return () => {
+      ipcRenderer.removeListener('input-prompt', listener);
+    };
+  },
+  respondInputPrompt: (id: string, value: string | null, rememberSession?: boolean) => ipcRenderer.invoke('respond-input-prompt', id, value, rememberSession),
   loadExtensionLibrary: (librarySpec: string) => ipcRenderer.invoke('load-extension-library', librarySpec),
   // Extension config operations (per-extension settings)
   getExtensionConfigComponent: (extensionId: string, projectDir?: string) => ipcRenderer.invoke('get-extension-config-component', extensionId, projectDir),

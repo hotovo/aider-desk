@@ -53,6 +53,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     void eventsHandler.answerQuestion(baseDir, taskId, answer);
   });
 
+  ipcMain.handle('respond-input-prompt', (_, id: string, value: string | null, rememberSession?: boolean) => {
+    eventsHandler.respondInputPrompt(id, value, rememberSession);
+  });
+
   ipcMain.on('remove-queued-prompt', (_, baseDir: string, taskId: string, promptId: string) => {
     eventsHandler.removeQueuedPrompt(baseDir, taskId, promptId);
   });

@@ -94,7 +94,9 @@
       "loadingFiles": "正在加载文件...",
     "closeTasks": "关闭任务",
     "toggleTasks": "切换任务",
-    "submit": "提交"
+    "submit": "提交",
+    "inputPrompt": "需要输入",
+    "rememberSession": "在本次会话中记住"
   },
   "search": {
     "placeholder": "查找...",
@@ -2097,6 +2099,12 @@
     "caCertPathPlaceholder": "/path/to/ca.pem"
   },
   "git": {
+    "askpass": {
+      "passwordTitle": "Git 身份验证",
+      "usernameTitle": "Git 用户名",
+      "confirmationTitle": "Git 确认",
+      "rememberSession": "在本次会话中记住"
+    },
     "gitBranchLabel": "Git 分支：{{branch}}",
     "upToDate": "已是最新",
     "outgoingCommitsTooltip": "传出提交（{{count}}）：",

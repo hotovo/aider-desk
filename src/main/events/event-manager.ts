@@ -42,6 +42,7 @@ import {
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  InputPromptData,
   ContextInfoData,
 } from '@common/types';
 
@@ -146,6 +147,11 @@ export class EventManager {
   }
 
   // Question events
+  sendInputPrompt(data: InputPromptData): void {
+    this.sendToWindows('input-prompt', data);
+    this.broadcastToEventConnectors('input-prompt', data);
+  }
+
   sendAskQuestion(questionData: QuestionData): void {
     this.sendToWindows('ask-question', questionData);
     this.broadcastToEventConnectors('ask-question', questionData);

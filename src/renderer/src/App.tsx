@@ -19,6 +19,7 @@ import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { McpServersProvider } from '@/contexts/McpServersContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { InputPromptDialog } from '@/components/common/InputPromptDialog';
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
@@ -167,6 +168,7 @@ const NormalApp = () => {
                           <AnimatedRoutes />
                           <ToastContainer />
                           <ModalOverlayUrlHandler />
+                          <InputPromptDialog />
                           <CommandPalette />
                         </DiffsWorkerPoolProvider>
                       </ExtensionsProvider>

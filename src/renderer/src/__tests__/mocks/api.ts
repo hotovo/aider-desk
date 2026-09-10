@@ -327,6 +327,8 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     editQueuedPrompt: vi.fn((): void => undefined),
     addQueuedPromptsUpdatedListener: vi.fn(() => vi.fn()),
     onModalOverlayUrl: vi.fn(() => vi.fn()),
+    onInputPrompt: vi.fn(() => vi.fn()),
+    respondInputPrompt: vi.fn((): Promise<void> => Promise.resolve()),
     loadExtensionLibrary: vi.fn((): Promise<string> => Promise.resolve('')),
     addShowViewListener: vi.fn(() => vi.fn()),
 

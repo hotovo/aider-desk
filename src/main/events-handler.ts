@@ -48,6 +48,7 @@ import { isBinary } from 'istextorbinary';
 
 import type { ModeDefinition, ExtensionConfigComponent, ExtensionOperationResult, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
+import type { GitAskpassManager } from '@/git/git-askpass-manager';
 
 import { McpManager, McpConfigManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
@@ -97,6 +98,7 @@ export class EventsHandler {
     private readonly networkManager: NetworkManager,
     private readonly promptsManager: PromptsManager,
     private readonly windowManager?: WindowManager,
+    private readonly gitAskpassManager?: GitAskpassManager,
   ) {}
 
   private cloneAbortController: AbortController | null = null;
@@ -461,6 +463,10 @@ export class EventsHandler {
 
   async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void> {
     await this.projectManager.getProject(baseDir).getTask(taskId)?.answerQuestion(answer);
+  }
+
+  respondInputPrompt(id: string, value: string | null, rememberSession?: boolean): void {
+    this.gitAskpassManager?.respond(id, value, rememberSession);
   }
 
   removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void {

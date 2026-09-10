@@ -94,6 +94,8 @@
     "closeTasks": "작업 닫기",
     "toggleTasks": "작업 토글",
     "submit": "제출",
+    "inputPrompt": "입력 필요",
+    "rememberSession": "이 세션 동안 기억",
     "clone": "복제"
   },
   "search": {
@@ -1949,6 +1951,12 @@
     "TODO": "할 일"
   },
   "git": {
+    "askpass": {
+      "passwordTitle": "Git 인증",
+      "usernameTitle": "Git 사용자 이름",
+      "confirmationTitle": "Git 확인",
+      "rememberSession": "이 세션 동안 기억"
+    },
     "pullUpToDate": "프로젝트가 이미 최신 상태입니다 — 가져올 변경 사항이 없습니다",
     "pullSuccess": "프로젝트가 성공적으로 업데이트되었습니다",
     "confirmPullTitle": "변경 사항 가져오기",

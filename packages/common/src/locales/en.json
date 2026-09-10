@@ -94,7 +94,9 @@
       "loadingFiles": "Loading files...",
     "closeTasks": "Close Tasks",
     "toggleTasks": "Toggle Tasks",
-    "submit": "Submit"
+    "submit": "Submit",
+    "inputPrompt": "Input Required",
+    "rememberSession": "Remember for this session"
   },
   "search": {
     "placeholder": "Search...",
@@ -2089,6 +2091,12 @@
     "caCertPathPlaceholder": "/path/to/ca.pem"
   },
   "git": {
+    "askpass": {
+      "passwordTitle": "Git Authentication",
+      "usernameTitle": "Git Username",
+      "confirmationTitle": "Git Confirmation",
+      "rememberSession": "Remember for this session"
+    },
     "gitBranchLabel": "Git branch: {{branch}}",
     "upToDate": "Up to date",
     "outgoingCommitsTooltip": "Outgoing commits ({{count}}):",

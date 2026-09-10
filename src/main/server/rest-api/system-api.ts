@@ -18,6 +18,12 @@ const GetSystemLogsSchema = z.object({
   levels: z.array(z.string()).optional(),
 });
 
+const RespondInputPromptSchema = z.object({
+  id: z.string().min(1, 'ID is required'),
+  value: z.string().nullable(),
+  rememberSession: z.boolean().optional(),
+});
+
 export class SystemApi extends BaseApi {
   constructor(
     private readonly eventsHandler: EventsHandler,
@@ -79,6 +85,21 @@ export class SystemApi extends BaseApi {
       this.handleRequest(async (_req, res) => {
         const status = this.pythonInstaller.getStatus();
         res.status(200).json(status);
+      }),
+    );
+
+    // Respond to input prompt
+    router.post(
+      '/input-prompt/respond',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(RespondInputPromptSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { id, value, rememberSession } = parsed;
+        this.eventsHandler.respondInputPrompt(id, value, rememberSession);
+        res.status(200).json({ success: true });
       }),
     );
   }

@@ -19,6 +19,8 @@ import {
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
 
+import type { GitAskpassManager } from '@/git/git-askpass-manager';
+
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 import logger from '@/logger';
@@ -76,6 +78,8 @@ const isAbortError = (error: unknown): boolean => {
 export class GitManager {
   private commitCancelControllers = new Map<string, AbortController>();
   private remoteFetchTimestamps = new Map<string, number>();
+
+  constructor(private readonly gitAskpassManager?: GitAskpassManager) {}
 
   private getWorktreePath(projectPath: string, taskId: string): string {
     return join(projectPath, AIDER_DESK_TASKS_DIR, taskId, 'worktree');
@@ -1579,6 +1583,7 @@ export class GitManager {
       const command = rebase ? 'git pull --rebase --autostash' : 'git pull --no-rebase';
       const { stdout, stderr } = await execWithShellPath(command, {
         cwd: worktreePath,
+        env: this.gitAskpassManager?.getEnv(),
       });
       const output = stdout || stderr || 'Pull completed successfully';
 
@@ -1608,6 +1613,7 @@ export class GitManager {
       }
       const { stdout, stderr } = await execWithShellPath(command, {
         cwd: worktreePath,
+        env: this.gitAskpassManager?.getEnv(),
       });
       const output = stdout || stderr || 'Push completed successfully';
 
@@ -1655,6 +1661,7 @@ export class GitManager {
 
       await execWithShellPath(`git fetch ${remote} ${remoteBranch}`, {
         cwd: repoPath,
+        env: this.gitAskpassManager?.getEnv(),
       });
 
       let isCurrentInRepo = false;
@@ -1687,6 +1694,7 @@ export class GitManager {
 
       const { stdout, stderr } = await execWithShellPath(`git fetch ${remote} ${remoteBranch}:${branchName}`, {
         cwd: repoPath,
+        env: this.gitAskpassManager?.getEnv(),
       });
       const output = stdout || stderr || 'Branch updated successfully';
       return { output };

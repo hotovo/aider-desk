@@ -12,7 +12,7 @@ import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
-import { GitManager } from '@/git';
+import { GitManager, GitAskpassManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
@@ -96,7 +96,12 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     logger.error('[Prompts] Prompts system initialization failed:', error);
   });
 
-  const gitManager = new GitManager();
+  const gitAskpassManager = new GitAskpassManager(eventManager);
+  await gitAskpassManager.init().catch((error) => {
+    logger.error('[GitAskpass] Git askpass manager initialization failed:', error);
+  });
+
+  const gitManager = new GitManager(gitAskpassManager);
 
   // Initialize agent profile manager with extension manager for unified profile access
   const agentProfileManager = new AgentProfileManager(eventManager, extensionManager, store);
@@ -152,6 +157,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
     networkManager,
     promptsManager,
     windowManager,
+    gitAskpassManager,
   );
 
   // Create and initialize REST API controller with the server
@@ -186,6 +192,7 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
         agentProfileManager.dispose(),
         promptsManager.dispose(),
         extensionManager.dispose(),
+        gitAskpassManager.close(),
       ]);
     } catch (error) {
       logger.error('Error during cleanup:', {

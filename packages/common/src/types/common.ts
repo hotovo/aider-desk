@@ -1315,6 +1315,23 @@ export interface ModalOverlayUrlData {
   url: string;
 }
 
+export type InputPromptType = 'password' | 'text' | 'confirmation';
+
+export interface InputPromptData {
+  id: string;
+  title?: string;
+  titleParams?: Record<string, string | number>;
+  message: string;
+  messageParams?: Record<string, string | number>;
+  type?: InputPromptType;
+  placeholder?: string;
+  defaultValue?: string;
+  allowRememberSession?: boolean;
+  rememberSessionLabel?: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+}
+
 export type AiderConnectorStatus =
   | { state: 'idle' }
   | { state: 'checking-uv' }

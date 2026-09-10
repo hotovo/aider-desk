@@ -75,6 +75,7 @@ import {
   ExtensionUIComponent,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  InputPromptData,
   AiderConnectorStatus,
   ChangeRequestItem,
   SkillDefinition,
@@ -203,6 +204,8 @@ export interface ApplicationAPI {
   saveExtensionConfig: (extensionId: string, configData: unknown, projectDir?: string) => Promise<unknown>;
   onExtensionUIRefresh: (callback: (data: ExtensionUIRefreshData) => void) => () => void;
   onModalOverlayUrl: (callback: (data: ModalOverlayUrlData) => void) => () => void;
+  onInputPrompt: (callback: (data: InputPromptData) => void) => () => void;
+  respondInputPrompt: (id: string, value: string | null, rememberSession?: boolean) => Promise<void>;
   isWebViewSupported: () => boolean;
   loadExtensionLibrary: (librarySpec: string) => Promise<string>;
 

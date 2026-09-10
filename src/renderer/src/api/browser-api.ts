@@ -74,6 +74,7 @@ import {
   ExtensionToolInfo,
   ExtensionUIComponent,
   ModalOverlayUrlData,
+  InputPromptData,
   AiderConnectorStatus,
   ChangeRequestItem,
   SkillDefinition,
@@ -129,6 +130,7 @@ type EventDataMap = {
   'terminal-exit': TerminalExitData;
   'extension-ui-refresh': ExtensionUIRefreshData;
   'modal-overlay-url': ModalOverlayUrlData;
+  'input-prompt': InputPromptData;
   'aider-connector-status': { baseDir?: string; taskId?: string; status: AiderConnectorStatus };
 };
 
@@ -213,6 +215,7 @@ export class BrowserApi implements ApplicationAPI {
       'queued-prompts-updated': new Map(),
       'extension-ui-refresh': new Map(),
       'modal-overlay-url': new Map(),
+      'input-prompt': new Map(),
       'aider-connector-status': new Map(),
     };
     this.apiClient = create({
@@ -1544,6 +1547,14 @@ export class BrowserApi implements ApplicationAPI {
 
   onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void {
     return this.addListener('modal-overlay-url', callback);
+  }
+
+  onInputPrompt(callback: (data: InputPromptData) => void): () => void {
+    return this.addListener('input-prompt', callback);
+  }
+
+  respondInputPrompt(id: string, value: string | null, rememberSession?: boolean): Promise<void> {
+    return this.post('/input-prompt/respond', { id, value, rememberSession });
   }
 
   loadExtensionLibrary(librarySpec: string): Promise<string> {
