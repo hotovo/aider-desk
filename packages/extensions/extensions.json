@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "external-rules",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "learn",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "verifier",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "auggie-sdk",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "codegraph",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 31
+      "installCount": 32
     }
   ]
 }
