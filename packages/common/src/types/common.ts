@@ -385,6 +385,10 @@ export interface QueuedPromptData {
   mode: Mode;
   timestamp: number;
   images?: string[];
+  customCommand?: {
+    name: string;
+    args: string[];
+  };
 }
 
 export interface QueuedPromptsUpdatedData {

@@ -1031,9 +1031,13 @@ export class Task {
     if (this.queuedPrompts.length > 0) {
       const nextPrompt = this.queuedPrompts.shift();
       if (nextPrompt) {
-        this.addUserMessage(nextPrompt.id, nextPrompt.text, undefined, nextPrompt.images);
         this.addLogMessage('loading');
         this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+        if (nextPrompt.customCommand) {
+          await this.runCustomCommand(nextPrompt.customCommand.name, nextPrompt.customCommand.args, nextPrompt.mode);
+          return [];
+        }
+        this.addUserMessage(nextPrompt.id, nextPrompt.text, undefined, nextPrompt.images);
         return this.runPrompt(nextPrompt.text, nextPrompt.mode, true, nextPrompt.id, false, nextPrompt.images);
       }
     }
@@ -3065,7 +3069,9 @@ export class Task {
     }
 
     // interrupting to allow the next queued prompt to be sent
-    this.addUserMessage(queuedPrompt.id, queuedPrompt.text, undefined, queuedPrompt.images);
+    if (!queuedPrompt.customCommand) {
+      this.addUserMessage(queuedPrompt.id, queuedPrompt.text, undefined, queuedPrompt.images);
+    }
     this.findMessageConnectors('interrupt-response').forEach((connector) => connector.sendInterruptResponseMessage());
     this.agent.interrupt();
   }
@@ -4035,6 +4041,20 @@ export class Task {
   }
 
   public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
+    if (this.isPromptRunning()) {
+      // Queue the custom command for later execution
+      const queuedPrompt: QueuedPromptData = {
+        id: uuidv4(),
+        text: `/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`,
+        mode,
+        timestamp: Date.now(),
+        customCommand: { name: commandName, args },
+      };
+      this.queuedPrompts.push(queuedPrompt);
+      this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
+      return;
+    }
+
     // First, check if this is an extension command
     const extensionCommand = this.extensionManager.getCommands(this.project).find((c) => c.command.name === commandName);
 

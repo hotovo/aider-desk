@@ -14,6 +14,7 @@
 - fixed event delivery errors when sending to destroyed or crashed windows
 - fixed chat auto-scroll to pause only on upward scrolling and reliably resume when returning to the bottom
 - added interactive authentication and passphrase prompts for Git operations
+- fixed queued custom commands appearing as user prompts; they now run directly from the queue and queue correctly while another prompt is running
 
 ## [0.82.0]
 
