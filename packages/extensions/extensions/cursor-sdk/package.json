@@ -7,7 +7,7 @@
     "postinstall": "node patch-cursor-sdk.mjs"
   },
   "dependencies": {
-    "@cursor/sdk": "^1.0.23"
+    "@cursor/sdk": "1.0.31"
   },
   "overrides": {
     "undici": "^6.27.0"

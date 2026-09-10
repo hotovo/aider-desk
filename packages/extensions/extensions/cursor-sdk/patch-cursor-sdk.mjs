@@ -2,8 +2,8 @@ import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const SDK_VERSION = '1.0.23';
-const PATCH_VERSION = '1.0.23-shell-cwd-1';
+const SDK_VERSION = '1.0.31';
+const PATCH_VERSION = '1.0.31-shell-cwd-1';
 const extensionDir = dirname(fileURLToPath(import.meta.url));
 const sdkDir = join(extensionDir, 'node_modules', '@cursor', 'sdk');
 const sdkPackage = JSON.parse(readFileSync(join(sdkDir, 'package.json'), 'utf8'));
