@@ -1536,6 +1536,7 @@
       },
       "bash": {
         "title": "명령 실행",
+        "titleWithDescription": "다음을 위해 명령 실행:",
         "exitCode": "종료 코드",
         "stdout": "표준 출력",
         "stderr": "표준 오류",

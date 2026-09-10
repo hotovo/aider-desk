@@ -92,9 +92,9 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
           <RiTerminalLine className="w-4 h-4" />
         </div>
         <div className="text-xs text-text-primary flex flex-wrap gap-1 items-center">
-          <span>{description ? `${t('toolMessage.power.bash.title')}:` : t('toolMessage.power.bash.title')}</span>
+          <span>{description ? t('toolMessage.power.bash.titleWithDescription') : t('toolMessage.power.bash.title')}</span>
           {description ? (
-            <span className="text-text-tertiary">{description}</span>
+            <span className="text-text-tertiary ml-1">{description}</span>
           ) : (
             !isMultilineCommand && (
               <>

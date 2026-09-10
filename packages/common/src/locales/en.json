@@ -1537,6 +1537,7 @@
       },
       "bash": {
         "title": "Run command",
+        "titleWithDescription": "Run command to",
         "exitCode": "Exit Code",
         "stdout": "Stdout",
         "stderr": "Stderr",

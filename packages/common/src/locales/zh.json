@@ -1490,6 +1490,7 @@
       },
       "bash": {
         "title": "执行 shell 命令",
+        "titleWithDescription": "执行 shell 命令以",
         "exitCode": "退出码",
         "stdout": "标准输出",
         "stderr": "标准错误",
