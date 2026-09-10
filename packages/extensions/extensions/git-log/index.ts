@@ -29,11 +29,23 @@ export default class GitLogExtension implements Extension {
   }
 
   async onProjectStarted(_event: ProjectStartedEvent, context: ExtensionContext): Promise<void> {
-    context.triggerUIDataRefresh(COMPONENT_ID);
+    this.refreshUIData(context);
   }
 
   async onProjectStopped(_event: ProjectStoppedEvent, context: ExtensionContext): Promise<void> {
-    context.triggerUIDataRefresh(COMPONENT_ID);
+    this.refreshUIData(context);
+  }
+
+  private refreshUIData(context: ExtensionContext): void {
+    try {
+      if (typeof context.triggerGlobalUIDataRefresh === 'function') {
+        context.triggerGlobalUIDataRefresh(COMPONENT_ID);
+      } else {
+        context.triggerUIDataRefresh(COMPONENT_ID, undefined, undefined);
+      }
+    } catch (err) {
+      context.log(`Failed to trigger UI data refresh: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+    }
   }
 
   getUIComponents(_context: ExtensionContext): UIComponentDefinition[] {
@@ -52,8 +64,19 @@ export default class GitLogExtension implements Extension {
 
     return {
       openProjectDirs: this.getOpenProjectDirsSafe(context),
+      activeProjectDir: this.getActiveProjectDirSafe(context),
       currentProjectDir: context.getProjectDir(),
     };
+  }
+
+  private getActiveProjectDirSafe(context: ExtensionContext): string {
+    try {
+      if (typeof context.getActiveProjectDir !== 'function') return '';
+      return context.getActiveProjectDir() ?? '';
+    } catch (err) {
+      context.log(`getActiveProjectDir is unavailable: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+      return '';
+    }
   }
 
   private getOpenProjectDirsSafe(context: ExtensionContext): string[] | null {
