@@ -45,7 +45,7 @@
         "commands",
         "example"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "questions",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "permission-gate",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "legacy-system-prompt",
@@ -220,7 +220,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "chunkhound-search",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "plannotator",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "fff",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "seek",
@@ -443,7 +443,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "claude-agent-sdk",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "codegraph",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "doom",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 13
+      "installCount": 15
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "destructive-command-guard",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "git-log",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 45
+      "installCount": 47
     },
     {
       "id": "task-scheduler",
