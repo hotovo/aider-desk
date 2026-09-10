@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "external-rules",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "redact-secrets",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 31
+      "installCount": 33
     },
     {
       "id": "verifier",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 20
+      "installCount": 22
     },
     {
       "id": "destructive-command-guard",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "task-scheduler",
