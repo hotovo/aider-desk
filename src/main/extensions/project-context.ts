@@ -1,7 +1,7 @@
 import { TaskContextImpl } from './task-context';
 
 import type { DisposableStore } from './disposable-store';
-import type { ProjectContext, TaskContext } from '@common/extensions';
+import type { ProjectContext, SkillsContext, TaskContext } from '@common/extensions';
 import type { AgentProfile, CommandsData, CreateTaskParams, ProjectSettings, TaskData } from '@common/types';
 import type { Project } from '@/project';
 
@@ -9,6 +9,7 @@ export class ProjectContextImpl implements ProjectContext {
   constructor(
     private readonly project: Project,
     private readonly disposableStore: DisposableStore,
+    private readonly skillsContext?: SkillsContext,
   ) {}
 
   addDisposable(setup: () => (() => void | Promise<void>) | void): void {
@@ -70,5 +71,19 @@ export class ProjectContextImpl implements ProjectContext {
 
   async getInputHistory(): Promise<string[]> {
     return this.project.loadInputHistory();
+  }
+
+  /**
+   * Get the skills context for listing, finding, and writing AiderDesk skills.
+   * Backed by the same SkillManager used by the built-in skills tools, so skills created here
+   * are picked up by skill activation and the workspace skills panel.
+   * @returns SkillsContext instance (the project's SkillManager)
+   * @throws Error if no SkillManager is available
+   */
+  getSkillContext(): SkillsContext {
+    if (!this.skillsContext) {
+      throw new Error('SkillManager not available');
+    }
+    return this.skillsContext;
   }
 }
