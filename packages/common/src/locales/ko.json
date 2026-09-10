@@ -96,6 +96,9 @@
     "submit": "제출",
     "inputPrompt": "입력 필요",
     "rememberSession": "이 세션 동안 기억",
+    "enterPassword": "비밀번호 입력...",
+    "showPassword": "비밀번호 표시",
+    "hidePassword": "비밀번호 숨기기",
     "clone": "복제"
   },
   "search": {

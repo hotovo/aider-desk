@@ -96,7 +96,10 @@
     "toggleTasks": "切换任务",
     "submit": "提交",
     "inputPrompt": "需要输入",
-    "rememberSession": "在本次会话中记住"
+    "rememberSession": "在本次会话中记住",
+    "enterPassword": "输入密码...",
+    "showPassword": "显示密码",
+    "hidePassword": "隐藏密码"
   },
   "search": {
     "placeholder": "查找...",

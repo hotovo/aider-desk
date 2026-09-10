@@ -96,7 +96,10 @@
     "toggleTasks": "Переключить задачи",
     "submit": "Отправить",
     "inputPrompt": "Требуется ввод",
-    "rememberSession": "Запомнить на время этой сессии"
+    "rememberSession": "Запомнить на время этой сессии",
+    "enterPassword": "Введите пароль...",
+    "showPassword": "Показать пароль",
+    "hidePassword": "Скрыть пароль"
   },
   "search": {
     "placeholder": "Поиск...",

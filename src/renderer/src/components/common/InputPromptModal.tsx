@@ -110,10 +110,11 @@ export const InputPromptModal = ({ promptData, onRespond }: Props) => {
         {resolvedMessage && <div className="text-sm text-text-primary whitespace-pre-wrap break-words">{resolvedMessage}</div>}
 
         {!isConfirmation && (
-          <div className="relative flex items-center">
+          <div className="relative w-full flex items-center">
             <Input
               autoFocus
-              className="w-full pr-10"
+              wrapperClassName="w-full"
+              className={promptType === 'password' ? 'w-full pr-10' : 'w-full'}
               type={promptType === 'password' && !showPassword ? 'password' : 'text'}
               value={value}
               onChange={handleChange}
@@ -126,7 +127,7 @@ export const InputPromptModal = ({ promptData, onRespond }: Props) => {
                 tabIndex={-1}
                 aria-label={showPassword ? t('common.hidePassword') : t('common.showPassword')}
                 onClick={handleToggleShowPassword}
-                className="absolute right-2.5 text-text-muted hover:text-text-primary transition-colors focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors focus:outline-none flex items-center justify-center"
               >
                 {showPassword ? <RiEyeOffLine size={18} /> : <RiEyeLine size={18} />}
               </button>

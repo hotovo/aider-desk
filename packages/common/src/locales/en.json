@@ -96,7 +96,10 @@
     "toggleTasks": "Toggle Tasks",
     "submit": "Submit",
     "inputPrompt": "Input Required",
-    "rememberSession": "Remember for this session"
+    "rememberSession": "Remember for this session",
+    "enterPassword": "Enter password...",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password"
   },
   "search": {
     "placeholder": "Search...",
