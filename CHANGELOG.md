@@ -16,6 +16,7 @@
 - added interactive authentication and passphrase prompts for Git operations
 - fixed queued custom commands appearing as user prompts; they now run directly from the queue and queue correctly while another prompt is running
 - prevent Escape key from interrupting task processing while typing in the prompt field
+- improved terminal sessions to persist when switching tasks or projects, with output replay on reattach, restart after session exit, and touch input support
 
 ## [0.82.0]
 

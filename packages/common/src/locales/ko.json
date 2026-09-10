@@ -1867,7 +1867,8 @@
     "tabLabel": "터미널",
     "copyOutput": "터미널 출력을 프롬프트로 복사",
     "minimize": "터미널 최소화",
-    "addTerminal": "새 터미널 추가"
+    "addTerminal": "새 터미널 추가",
+    "restartHint": "세션이 종료되었습니다. 아무 키나 눌러 재시작하세요."
   },
   "contextMenu": {
     "copy": "복사",

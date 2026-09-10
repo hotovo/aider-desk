@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback, ChangeEvent } from 'react';
 import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import './Terminal.scss';
 import { useApi } from '@/contexts/ApiContext';
+import { setTabPtyId } from '@/stores/terminalStore';
 
 export type TerminalRef = {
   focus: () => void;
@@ -15,30 +16,86 @@ export type TerminalRef = {
 };
 
 type Props = {
+  sessionKey: string;
+  tabId: string;
   baseDir: string;
   taskId: string;
   visible: boolean;
+  ptyId: string | null;
   className?: string;
-  onExit?: () => void;
 };
 
-export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visible, className, onExit }, ref) => {
+const useIsTouchDevice = (): boolean => {
+  const [isTouch, setIsTouch] = useState(() => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches);
+
+  useEffect(() => {
+    const query = window.matchMedia('(pointer: coarse)');
+    const listener = (e: MediaQueryListEvent) => {
+      setIsTouch(e.matches);
+    };
+    query.addEventListener('change', listener);
+    return () => query.removeEventListener('change', listener);
+  }, []);
+
+  return isTouch;
+};
+
+// Load the ghostty WASM module once per app, not once per terminal instance
+let ghosttyLoadPromise: Promise<InstanceType<typeof Ghostty>> | null = null;
+const loadGhostty = (): Promise<InstanceType<typeof Ghostty>> => {
+  if (!ghosttyLoadPromise) {
+    ghosttyLoadPromise = Ghostty.load();
+  }
+  return ghosttyLoadPromise;
+};
+
+const KEY_SEQUENCES: Record<string, string> = {
+  Enter: '\r',
+  Backspace: '\x7f',
+  ArrowUp: '\x1b[A',
+  ArrowDown: '\x1b[B',
+  ArrowRight: '\x1b[C',
+  ArrowLeft: '\x1b[D',
+  Escape: '\x1b',
+  Tab: '\t',
+};
+
+export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, baseDir, taskId, visible, ptyId, className }, ref) => {
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<GhosttyTerminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const [terminalId, setTerminalId] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const ptyIdRef = useRef<string | null>(ptyId);
+  const creatingRef = useRef(false);
+  const skipReplayRef = useRef(false);
+  const touchInputRef = useRef<HTMLTextAreaElement>(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isEmulatorReady, setIsEmulatorReady] = useState(false);
+  const [exited, setExited] = useState(false);
+  const [creationEpoch, setCreationEpoch] = useState(0);
+  const isTouch = useIsTouchDevice();
   const ghosttyInstanceRef = useRef<InstanceType<typeof Ghostty> | null>(null);
   const api = useApi();
 
-  // Show connecting overlay when WASM is ready but no PTY process exists yet
   const { t } = useTranslation();
-  const isConnecting = isInitialized && visible && !terminalId;
+  const isConnecting = isInitialized && visible && !ptyId && !exited;
+
+  const writeToPty = useCallback(
+    (data: string) => {
+      const currentPtyId = ptyIdRef.current;
+      if (currentPtyId) {
+        void api.writeToTerminal(currentPtyId, data);
+      }
+    },
+    [api],
+  );
 
   useImperativeHandle(ref, () => ({
     focus: () => {
-      terminalRef.current?.focus();
+      if (isTouch) {
+        touchInputRef.current?.focus();
+      } else {
+        terminalRef.current?.focus();
+      }
     },
     clear: () => {
       terminalRef.current?.clear();
@@ -68,16 +125,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
   // Initialize ghostty-web WASM once
   useEffect(() => {
     let cancelled = false;
-    let ghosttyInitPromise: Promise<InstanceType<typeof Ghostty>> | null = null;
 
-    const getGhosttyInit = (): Promise<InstanceType<typeof Ghostty>> => {
-      if (!ghosttyInitPromise) {
-        ghosttyInitPromise = Ghostty.load();
-      }
-      return ghosttyInitPromise;
-    };
-
-    getGhosttyInit()
+    loadGhostty()
       .then((instance) => {
         if (!cancelled) {
           ghosttyInstanceRef.current = instance;
@@ -94,7 +143,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     };
   }, []);
 
-  // Initialize terminal
+  // Initialize terminal emulator once - its lifetime is independent of the PTY session
   useEffect(() => {
     if (!isInitialized || !terminalContainerRef.current) {
       return;
@@ -141,114 +190,174 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
 
     // Handle terminal input
     terminal.onData((data) => {
-      if (terminalId) {
-        void api.writeToTerminal(terminalId, data);
-      }
+      writeToPty(data);
     });
 
     // Handle terminal resize
     terminal.onResize(({ cols, rows }) => {
-      if (terminalId) {
-        void api.resizeTerminal(terminalId, cols, rows);
+      const currentPtyId = ptyIdRef.current;
+      if (currentPtyId) {
+        void api.resizeTerminal(currentPtyId, cols, rows);
       }
     });
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
+    setIsEmulatorReady(true);
 
     return () => {
       terminal.dispose();
       terminalRef.current = null;
       fitAddonRef.current = null;
+      setIsEmulatorReady(false);
     };
-  }, [terminalId, api, isInitialized]);
+  }, [isInitialized, api, writeToPty]);
 
-  // Create terminal process
+  // Create the PTY process when visible and no session is attached
   useEffect(() => {
-    if (!visible || terminalId || !isInitialized) {
+    if (!visible || ptyId || exited || !isInitialized || creatingRef.current) {
       return;
     }
 
+    const term = terminalRef.current;
+
+    if (!term) {
+      return;
+    }
+
+    let cancelled = false;
+    creatingRef.current = true;
+
     const createTerminal = async () => {
-      const term = terminalRef.current;
-
-      if (!term) {
-        return;
-      }
-
       try {
         const cols = term.cols || 160;
         const rows = term.rows || 10;
         const id = await api.createTerminal(baseDir, taskId, cols, rows);
 
-        // Handle terminal input
-        term.onData((data) => {
-          void api.writeToTerminal(id, data);
-        });
+        if (cancelled) {
+          void api.closeTerminal(id);
+          setCreationEpoch((epoch) => epoch + 1);
+          return;
+        }
 
-        // Handle terminal resize
-        term.onResize(({ cols, rows }) => {
-          void api.resizeTerminal(id, cols, rows);
-        });
-
-        setTerminalId(id);
-        setIsConnected(true);
+        ptyIdRef.current = id;
+        skipReplayRef.current = true;
+        setTabPtyId(sessionKey, tabId, id);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to create terminal:', error);
         terminalRef.current?.writeln('\x1b[31mFailed to create terminal process\x1b[0m');
+      } finally {
+        creatingRef.current = false;
       }
     };
 
     void createTerminal();
-  }, [baseDir, terminalId, visible, api, taskId, isInitialized]);
 
-  // Handle terminal data and exit/restart
+    return () => {
+      cancelled = true;
+    };
+  }, [baseDir, taskId, sessionKey, tabId, ptyId, visible, exited, isInitialized, api, creationEpoch]);
+
+  // Attach to the PTY session: reset the emulator, replay the recent output,
+  // and only then subscribe to live events so no output is rendered twice
   useEffect(() => {
-    if (!terminalId) {
+    ptyIdRef.current = ptyId;
+
+    if (!isEmulatorReady || !ptyId) {
       return;
     }
 
+    setExited(false);
+
+    let cancelled = false;
+    let removeDataListener: (() => void) | null = null;
+    let removeExitListener: (() => void) | null = null;
+
     const handleTerminalData = (data: TerminalData) => {
-      if (data.terminalId === terminalId && terminalRef.current) {
+      if (data.terminalId === ptyIdRef.current && terminalRef.current) {
         terminalRef.current.write(data.data);
       }
     };
 
     const handleTerminalExit = (data: TerminalExitData) => {
-      if (data.terminalId === terminalId) {
-        setIsConnected(false);
-        onExit?.();
+      if (data.terminalId === ptyIdRef.current) {
+        ptyIdRef.current = null;
+        setTabPtyId(sessionKey, tabId, null);
+        setExited(true);
       }
     };
 
-    const removeTerminalDataListener = api.addTerminalDataListener(baseDir, handleTerminalData);
-    const removeTerminalExitListener = api.addTerminalExitListener(baseDir, handleTerminalExit);
+    const subscribe = () => {
+      if (cancelled || removeDataListener) {
+        return;
+      }
+
+      removeDataListener = api.addTerminalDataListener(baseDir, handleTerminalData);
+      removeExitListener = api.addTerminalExitListener(baseDir, handleTerminalExit);
+    };
+
+    const attach = async () => {
+      try {
+        const buffer = await api.getTerminalBuffer(ptyId);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!buffer.exists) {
+          setTabPtyId(sessionKey, tabId, null);
+          setExited(true);
+          return;
+        }
+
+        terminalRef.current?.reset();
+        terminalRef.current?.write(buffer.data);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to fetch terminal buffer:', error);
+      }
+
+      subscribe();
+    };
+
+    // A freshly created PTY has an empty buffer - subscribe directly without a replay round trip
+    if (skipReplayRef.current) {
+      skipReplayRef.current = false;
+      terminalRef.current?.reset();
+      subscribe();
+
+      return () => {
+        cancelled = true;
+        removeDataListener?.();
+        removeExitListener?.();
+      };
+    }
+
+    void attach();
 
     return () => {
-      removeTerminalDataListener();
-      removeTerminalExitListener();
+      cancelled = true;
+      removeDataListener?.();
+      removeExitListener?.();
     };
-  }, [terminalId, baseDir, api, onExit]);
+  }, [ptyId, isEmulatorReady, api, baseDir, sessionKey, tabId]);
 
   // Handle restart on keypress after exit
   useEffect(() => {
-    if (isConnected || !terminalRef.current) {
+    if (!exited || !terminalRef.current) {
       return undefined;
     }
 
-    const handleRestartInput = () => {
-      // Clear terminalId to trigger re-creation via the createTerminal effect
-      terminalRef.current?.clear();
-      setTerminalId(null);
-    };
-
-    const disposable = terminalRef.current.onData(handleRestartInput);
+    const disposable = terminalRef.current.onData(() => {
+      terminalRef.current?.reset();
+      setExited(false);
+    });
 
     return () => {
       disposable.dispose();
     };
-  }, [isConnected, terminalId]);
+  }, [exited, isInitialized]);
 
   // Handle resize when visibility changes
   useEffect(() => {
@@ -261,14 +370,89 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
     return undefined;
   }, [visible]);
 
-  // Cleanup on unmount
+  // Touch input: forward soft keyboard input to the PTY
   useEffect(() => {
-    return () => {
-      if (terminalId) {
-        void api.closeTerminal(terminalId);
+    if (!isTouch) {
+      return undefined;
+    }
+
+    const input = touchInputRef.current;
+
+    if (!input) {
+      return undefined;
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const sequence = KEY_SEQUENCES[e.key];
+
+      if (sequence) {
+        e.preventDefault();
+        writeToPty(sequence);
+        return;
+      }
+
+      if (e.ctrlKey && e.key.length === 1) {
+        const charCode = e.key.toUpperCase().charCodeAt(0);
+        if (charCode >= 64 && charCode <= 95) {
+          e.preventDefault();
+          writeToPty(String.fromCharCode(charCode & 0x1f));
+        }
       }
     };
-  }, [terminalId, api]);
+
+    const handleBeforeInput = (e: InputEvent) => {
+      if (e.inputType === 'deleteContentBackward') {
+        e.preventDefault();
+        writeToPty('\x7f');
+      } else if (e.inputType === 'deleteContentForward') {
+        e.preventDefault();
+        writeToPty('\x1b[3~');
+      }
+    };
+
+    input.addEventListener('keydown', handleKeyDown);
+    input.addEventListener('beforeinput', handleBeforeInput);
+
+    return () => {
+      input.removeEventListener('keydown', handleKeyDown);
+      input.removeEventListener('beforeinput', handleBeforeInput);
+    };
+  }, [isTouch, isInitialized, writeToPty]);
+
+  const restartSession = () => {
+    terminalRef.current?.reset();
+    setExited(false);
+  };
+
+  const handleTouchInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    e.target.value = '';
+
+    if (exited) {
+      restartSession();
+      return;
+    }
+
+    if (!text) {
+      return;
+    }
+
+    writeToPty(text.replace(/\n/g, '\r'));
+  };
+
+  const handleContainerPointerDown = () => {
+    if (!isTouch) {
+      return;
+    }
+
+    if (exited) {
+      restartSession();
+    }
+
+    setTimeout(() => {
+      touchInputRef.current?.focus();
+    }, 0);
+  };
 
   const handleTerminalFocus = () => {
     terminalRef.current?.renderer?.setCursorStyle('block');
@@ -285,16 +469,34 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ baseDir, taskId, visib
   };
 
   return (
-    <div key={terminalId} className={clsx('absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'block z-20' : 'hidden', className)}>
+    <div className={clsx('absolute inset-0 overflow-hidden bg-[#0a0a0a]', visible ? 'block z-20' : 'hidden', className)}>
       <div
         ref={terminalContainerRef}
         className="ghostty-terminal-container absolute top-2 left-0 right-0 bottom-2"
         onBlur={handleTerminalBlur}
         onFocus={handleTerminalFocus}
+        onPointerDown={handleContainerPointerDown}
       />
+      {isTouch && (
+        <textarea
+          ref={touchInputRef}
+          className="absolute bottom-0 left-0 h-px w-px resize-none border-none bg-transparent opacity-0 outline-none"
+          autoCapitalize="off"
+          autoCorrect="off"
+          autoComplete="off"
+          spellCheck={false}
+          onChange={handleTouchInputChange}
+          aria-hidden="true"
+        />
+      )}
       {isConnecting && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-text-muted-light text-xs">{t('terminal.connecting')}</div>
+        </div>
+      )}
+      {exited && visible && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-text-muted-light text-xs">{t('terminal.restartHint')}</div>
         </div>
       )}
     </div>

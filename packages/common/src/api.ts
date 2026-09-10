@@ -307,7 +307,8 @@ export interface ApplicationAPI {
   resizeTerminal: (terminalId: string, cols: number, rows: number) => Promise<boolean>;
   closeTerminal: (terminalId: string) => Promise<boolean>;
   getTerminalForTask: (taskId: string) => Promise<string | null>;
-  getAllTerminalsForTask: (taskId: string) => Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>>;
+  getAllTerminalsForTask: (taskId: string) => Promise<Array<{ id: string; taskId: string; baseDir: string; cols: number; rows: number }>>;
+  getTerminalBuffer: (terminalId: string) => Promise<{ exists: boolean; data: string }>;
 
   // Worktree merge operations
   mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => Promise<void>;

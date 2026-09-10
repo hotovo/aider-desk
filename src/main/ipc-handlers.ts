@@ -539,6 +539,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.closeTerminal(terminalId);
   });
 
+  ipcMain.handle('terminal-get-buffer', async (_, terminalId: string) => {
+    return eventsHandler.getTerminalBuffer(terminalId);
+  });
+
   ipcMain.handle('terminal-get-for-task', async (_, taskId: string) => {
     return eventsHandler.getTerminalForTask(taskId);
   });

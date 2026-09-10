@@ -22,12 +22,14 @@ import {
   isAddMessageMessage,
   isSubscribeEventsMessage,
   isUnsubscribeEventsMessage,
+  isWriteToTerminalMessage,
   isReadonlySubscribeEventsMessage,
   isReadonlyUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { EventManager } from '@/events';
+import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { createCorsOriginValidator } from '@/server/cors';
 import { READONLY_MODE } from '@/constants';
@@ -63,6 +65,7 @@ export class ConnectorManager {
     private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
     private readonly store: Store,
+    private readonly eventsHandler: EventsHandler,
   ) {
     this.init(httpServer);
   }
@@ -361,6 +364,8 @@ export class ConnectorManager {
       } else if (isUnsubscribeEventsMessage(message)) {
         logger.info('Unsubscribing from events');
         this.eventManager.unsubscribe(socket);
+      } else if (isWriteToTerminalMessage(message)) {
+        this.eventsHandler.writeToTerminal(message.terminalId, message.data);
       } else {
         logger.warn('Unknown message type: ', message);
       }

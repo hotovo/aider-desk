@@ -7,6 +7,8 @@ import logger from '@/logger';
 import { TelemetryManager } from '@/telemetry';
 import { EventManager } from '@/events';
 
+const MAX_OUTPUT_BUFFER_LENGTH = 100_000;
+
 export interface TerminalInstance {
   id: string;
   baseDir: string;
@@ -14,6 +16,7 @@ export interface TerminalInstance {
   ptyProcess: pty.IPty;
   cols: number;
   rows: number;
+  outputBuffer: string;
 }
 
 export class TerminalManager {
@@ -78,10 +81,16 @@ export class TerminalManager {
         ptyProcess,
         cols,
         rows,
+        outputBuffer: '',
       };
 
       // Handle data from terminal
       ptyProcess.onData((data) => {
+        const trackedTerminal = this.terminals.get(terminalId);
+        if (trackedTerminal) {
+          trackedTerminal.outputBuffer = (trackedTerminal.outputBuffer + data).slice(-MAX_OUTPUT_BUFFER_LENGTH);
+        }
+
         this.eventManager.sendTerminalData({
           terminalId,
           baseDir,
@@ -172,8 +181,25 @@ export class TerminalManager {
     }
   }
 
+  public getTerminalBuffer(terminalId: string): { exists: boolean; data: string } {
+    const terminal = this.terminals.get(terminalId);
+    if (!terminal) {
+      return { exists: false, data: '' };
+    }
+
+    return { exists: true, data: terminal.outputBuffer };
+  }
+
   public closeTerminalForProject(baseDir: string): void {
     const terminalsToClose = Array.from(this.terminals.values()).filter((terminal) => terminal.baseDir === baseDir);
+
+    for (const terminal of terminalsToClose) {
+      this.closeTerminal(terminal.id);
+    }
+  }
+
+  public closeTerminalsForTask(taskId: string): void {
+    const terminalsToClose = Array.from(this.terminals.values()).filter((terminal) => terminal.taskId === taskId);
 
     for (const terminal of terminalsToClose) {
       this.closeTerminal(terminal.id);

@@ -91,7 +91,7 @@
     "expand": "Expand",
     "enabled": "Enabled",
     "noFiles": "No files",
-      "loadingFiles": "Loading files...",
+    "loadingFiles": "Loading files...",
     "closeTasks": "Close Tasks",
     "toggleTasks": "Toggle Tasks",
     "submit": "Submit",
@@ -1867,7 +1867,8 @@
     "tabLabel": "Terminal",
     "copyOutput": "Copy terminal output to prompt",
     "minimize": "Minimize terminal",
-    "addTerminal": "Add new terminal"
+    "addTerminal": "Add new terminal",
+    "restartHint": "Session ended. Press any key to restart."
   },
   "contextMenu": {
     "copy": "Copy",

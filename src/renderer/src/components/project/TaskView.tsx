@@ -71,6 +71,7 @@ import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
 import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
 import { registerAction, unregisterAction } from '@/stores/actionsStore';
+import { getSessionKey, useTerminalVisible, toggleTerminalVisible, setTerminalVisible } from '@/stores/terminalStore';
 
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -174,7 +175,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const editedMessage = editingMessageIndex !== null ? displayedMessages[editingMessageIndex] : undefined;
     const canSaveEditedPrompt = messages.length === 1 && isUserMessage(messages[0]) && messages[0]?.id === editedMessage?.id;
     const [searchContainer, setSearchContainer] = useState<HTMLElement | null>(null);
-    const [terminalVisible, setTerminalVisible] = useState(false);
+    const terminalSessionKey = getSessionKey(projectDir, task.id);
+    const terminalVisible = useTerminalVisible(terminalSessionKey);
     const [showTaskInfoPanel, setShowTaskInfoPanel] = useState(false);
     const [showSidebar, setShowSidebar] = useState(isMobile);
     const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir);
@@ -297,8 +299,8 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     );
 
     const toggleTerminal = useCallback(() => {
-      setTerminalVisible(!terminalVisible);
-    }, [terminalVisible]);
+      toggleTerminalVisible(terminalSessionKey);
+    }, [terminalSessionKey]);
 
     const clearLogMessages = useCallback(() => {
       setMessages(task.id, (prevMessages) => prevMessages.filter((message) => !isLogMessage(message)));
@@ -926,7 +928,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                 taskId={task.id}
                 visible={terminalVisible}
                 className="border-t border-border-dark-light flex-grow"
-                onClose={() => setTerminalVisible(false)}
+                onClose={() => setTerminalVisible(terminalSessionKey, false)}
                 onCopyOutput={handleCopyTerminalOutput}
               />
             </ResizableBox>

@@ -91,7 +91,7 @@
     "expand": "展开",
     "enabled": "已启用",
     "noFiles": "没有找到文件",
-      "loadingFiles": "正在加载文件...",
+    "loadingFiles": "正在加载文件...",
     "closeTasks": "关闭任务",
     "toggleTasks": "切换任务",
     "submit": "提交",
@@ -1875,7 +1875,8 @@
     "tabLabel": "终端",
     "copyOutput": "复制终端输出到提示",
     "minimize": "最小化终端",
-    "addTerminal": "添加新终端"
+    "addTerminal": "添加新终端",
+    "restartHint": "会话已结束。按任意键重新启动。"
   },
   "contextMenu": {
     "copy": "复制",

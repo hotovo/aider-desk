@@ -254,7 +254,8 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     resizeTerminal: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     closeTerminal: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     getTerminalForTask: vi.fn((): Promise<string | null> => Promise.resolve(null)),
-    getAllTerminalsForTask: vi.fn((): Promise<Array<{ id: string; taskId: string; cols: number; rows: number }>> => Promise.resolve([])),
+    getTerminalBuffer: vi.fn((): Promise<{ exists: boolean; data: string }> => Promise.resolve({ exists: false, data: '' })),
+    getAllTerminalsForTask: vi.fn((): Promise<Array<{ id: string; taskId: string; baseDir: string; cols: number; rows: number }>> => Promise.resolve([])),
 
     // Worktree merge operations
     mergeWorktreeToMain: vi.fn((): Promise<void> => Promise.resolve()),

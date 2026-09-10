@@ -66,6 +66,16 @@ node-pty is the industry-standard way to embed a real terminal in an Electron ap
 - Never send raw ANSI capture to LLMs without sanitization/limits — use the established context extraction paths
 - Never assume a terminal session exists — consumers must handle absence and exit events
 
+## Amendment (2026-09): Renderer-Decoupled Sessions, Replay Buffer, Store-Based UI State
+
+The original decision was violated in practice: the renderer closed the PTY on component unmount, so switching tasks or projects killed running shells. This amendment restores and extends the "sessions outlive the UI" principle:
+
+- **PTY lifetime is fully decoupled from renderer/component lifetime.** Unmounting a terminal component never closes the PTY. Explicit close only: user closes a tab, task deletion (`closeTerminalsForTask`), project stop (`closeTerminalForProject`), or app shutdown.
+- **Replay buffer.** `TerminalManager` keeps a capped (100k chars) recent-output ring buffer per PTY, exposed via `getTerminalBuffer`. Clients re-attach by fetching the buffer and continuing on the live `terminal-data` stream — this restores sessions after task switches, panel close/reopen, and full page reloads (browser mode).
+- **Zustand store for UI state.** Terminal tabs, active tab, PTY id, and panel visibility live in `terminalStore` keyed by `baseDir:taskId` (module-level actions, per the established store pattern). Components are stateless renderers; UI state survives task/project switches.
+- **Terminal input over Socket.IO.** Browser clients send batched (`~25ms` coalesced) input via the `write-to-terminal` socket message instead of one HTTP POST per keystroke; HTTP POST remains the fallback. Electron uses IPC as before.
+- **Touch input.** On coarse-pointer devices the renderer overlays a focusable hidden textarea and forwards soft-keyboard input (`beforeinput`/`change` + key sequences) to the PTY, since emulator-native key capture does not work reliably in mobile webviews.
+
 ## Related Decisions
 
 - [ADR-0003: Socket.IO Event Bus](../core-architecture/0003-socket-io-event-bus.md)

@@ -40,7 +40,8 @@ export type MessageAction =
   | 'unsubscribe-events'
   | 'readonly-subscribe-events'
   | 'readonly-unsubscribe-events'
-  | 'update-models-info';
+  | 'update-models-info'
+  | 'write-to-terminal';
 
 export interface Message {
   action: MessageAction;
@@ -272,6 +273,16 @@ export interface RequestContextInfoMessage extends Message {
 
 export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage => {
   return message.action === 'request-context-info';
+};
+
+export interface WriteToTerminalMessage extends Message {
+  action: 'write-to-terminal';
+  terminalId: string;
+  data: string;
+}
+
+export const isWriteToTerminalMessage = (message: Message): message is WriteToTerminalMessage => {
+  return message.action === 'write-to-terminal';
 };
 
 export interface SubscribeEventsMessage extends Message {

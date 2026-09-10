@@ -742,6 +742,7 @@ const api: ApplicationAPI = {
   closeTerminal: (terminalId) => ipcRenderer.invoke('terminal-close', terminalId),
   getTerminalForTask: (taskId) => ipcRenderer.invoke('terminal-get-for-task', taskId),
   getAllTerminalsForTask: (taskId) => ipcRenderer.invoke('terminal-get-all-for-task', taskId),
+  getTerminalBuffer: (terminalId) => ipcRenderer.invoke('terminal-get-buffer', terminalId),
 
   // Worktree merge operations
   mergeWorktreeToMain: (baseDir, taskId, squash, targetBranch, commitMessage) =>

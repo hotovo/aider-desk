@@ -149,6 +149,8 @@ class UnsupportedError extends Error {
   }
 }
 
+const TERMINAL_WRITE_FLUSH_INTERVAL_MS = 25;
+
 export class BrowserApi implements ApplicationAPI {
   private readonly socket: Socket;
   private readonly listeners: {
@@ -156,6 +158,8 @@ export class BrowserApi implements ApplicationAPI {
   };
   private readonly apiClient: AxiosInstance;
   private appOS: OS | null = null;
+  private readonly terminalWriteQueue = new Map<string, string>();
+  private readonly terminalWriteTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   constructor() {
     // Allow overriding the API port via query param (e.g. when opening the dev renderer in a browser against a dev server)
@@ -1055,11 +1059,45 @@ export class BrowserApi implements ApplicationAPI {
     return response.data.terminalId;
   }
   async writeToTerminal(terminalId: string, data: string): Promise<boolean> {
-    await this.apiClient.post('/terminal/write', {
-      terminalId,
-      data,
-    });
+    const queued = (this.terminalWriteQueue.get(terminalId) ?? '') + data;
+    this.terminalWriteQueue.set(terminalId, queued);
+
+    if (!this.terminalWriteTimers.has(terminalId)) {
+      this.terminalWriteTimers.set(
+        terminalId,
+        setTimeout(() => {
+          void this.flushTerminalWrite(terminalId);
+        }, TERMINAL_WRITE_FLUSH_INTERVAL_MS),
+      );
+    }
+
     return true;
+  }
+
+  private flushTerminalWrite(terminalId: string): Promise<boolean> {
+    this.terminalWriteTimers.delete(terminalId);
+    const data = this.terminalWriteQueue.get(terminalId);
+    this.terminalWriteQueue.delete(terminalId);
+
+    if (!data) {
+      return Promise.resolve(true);
+    }
+
+    if (this.socket.connected) {
+      this.socket.emit('message', {
+        action: 'write-to-terminal',
+        terminalId,
+        data,
+      });
+      return Promise.resolve(true);
+    }
+
+    return this.apiClient
+      .post('/terminal/write', {
+        terminalId,
+        data,
+      })
+      .then(() => true);
   }
   async resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean> {
     await this.apiClient.post('/terminal/resize', {
@@ -1082,6 +1120,10 @@ export class BrowserApi implements ApplicationAPI {
   async getAllTerminalsForTask(taskId: string): Promise<Array<{ id: string; taskId: string; cols: number; rows: number; baseDir: string }>> {
     const response = await this.apiClient.get(`/terminal/${taskId}/all`);
     return response.data.terminals || [];
+  }
+  async getTerminalBuffer(terminalId: string): Promise<{ exists: boolean; data: string }> {
+    const response = await this.apiClient.get(`/terminal/buffer/${encodeURIComponent(terminalId)}`);
+    return response.data;
   }
   isManageServerSupported(): boolean {
     return false;

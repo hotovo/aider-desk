@@ -663,6 +663,10 @@ export class EventsHandler {
     return terminal ? terminal.id : null;
   }
 
+  getTerminalBuffer(terminalId: string): { exists: boolean; data: string } {
+    return this.terminalManager.getTerminalBuffer(terminalId);
+  }
+
   getTerminalsForTask(taskId: string): {
     id: string;
     taskId: string;
@@ -945,6 +949,7 @@ export class EventsHandler {
   }
 
   async deleteTask(baseDir: string, id: string): Promise<void> {
+    this.terminalManager.closeTerminalsForTask(id);
     await this.projectManager.getProject(baseDir).deleteTask(id);
   }
 

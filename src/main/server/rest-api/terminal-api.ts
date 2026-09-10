@@ -89,6 +89,15 @@ export class TerminalApi extends BaseApi {
       }),
     );
 
+    // Get recent terminal output buffer (for re-attaching clients)
+    router.get(
+      '/terminal/buffer/:terminalId',
+      this.handleRequest(async (req, res) => {
+        const buffer = this.eventsHandler.getTerminalBuffer(req.params.terminalId);
+        res.status(200).json(buffer);
+      }),
+    );
+
     // Get terminal for task
     router.get(
       '/terminal/:taskId',
