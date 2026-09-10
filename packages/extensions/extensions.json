@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "ultrathink",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "learn",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "redact-secrets",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "context-autocompletion-words",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "kanban",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 30
+      "installCount": 31
     }
   ]
 }
