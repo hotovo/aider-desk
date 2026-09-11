@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 8
+      "installCount": 10
     },
     {
       "id": "auggie-sdk",
@@ -493,7 +493,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "github-copilot",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "codegraph",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 32
+      "installCount": 33
     }
   ]
 }
