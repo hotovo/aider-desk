@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 35
+      "installCount": 37
     },
     {
       "id": "protected-paths",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "programmatic-tool-calls",
@@ -480,7 +480,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "cursor-sdk",
@@ -493,7 +493,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "github-copilot",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "checkpoints",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "doom",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "task-scheduler",
