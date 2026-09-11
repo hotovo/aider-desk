@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "context-autocompletion-words",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "verifier",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "doom",
