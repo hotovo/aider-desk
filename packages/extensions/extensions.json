@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "context-autocompletion-words",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "claude-agent-sdk",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 33
+      "installCount": 36
     }
   ]
 }
