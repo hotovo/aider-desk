@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 37
+      "installCount": 39
     },
     {
       "id": "protected-paths",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 30
+      "installCount": 32
     },
     {
       "id": "legacy-system-prompt",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "redact-secrets",
@@ -346,7 +346,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 0
+      "installCount": 1
     },
     {
       "id": "openai-codex",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "fff",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "bmad",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "checkpoints",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "destructive-command-guard",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 49
+      "installCount": 51
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 36
+      "installCount": 37
     }
   ]
 }
