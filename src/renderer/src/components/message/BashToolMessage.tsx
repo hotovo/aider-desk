@@ -120,16 +120,22 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
           ) : (
             <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />
           ))}
+        {(isMultilineCommand || description) && <CopyMessageButton content={command} alwaysShow={true} className="w-3.5 h-3.5" />}
       </div>
       {isMultilineCommand ? (
-        <CodeBlock baseDir="" language="bash" isComplete={!message.isStreaming} className="mb-0 text-2xs py-1 px-2 [&_pre]:!py-0 [&_pre]:!px-1">
+        <CodeBlock
+          baseDir=""
+          language="bash"
+          isComplete={!message.isStreaming}
+          hideCopyButton
+          className="ml-6 mb-0 text-2xs py-1 px-2 [&_pre]:!py-0 [&_pre]:!px-1"
+        >
           {command}
         </CodeBlock>
       ) : (
         description && (
-          <div className="mt-1 flex items-center flex-wrap gap-1">
+          <div className="ml-6 mt-1 flex items-center flex-wrap gap-1">
             <CodeInline className="bg-bg-primary-light">{command}</CodeInline>
-            <CopyMessageButton content={command} alwaysShow={true} className="w-3.5 h-3.5" />
           </div>
         )
       )}

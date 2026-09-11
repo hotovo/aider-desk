@@ -71,9 +71,10 @@ type Props = {
   oldValue?: string;
   newValue?: string;
   className?: string;
+  hideCopyButton?: boolean;
 };
 
-export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplete = true, oldValue, newValue, className }: Props) => {
+export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplete = true, oldValue, newValue, className, hideCopyButton = false }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
@@ -221,7 +222,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
                     />
                   </div>
                 )}
-                <CopyMessageButton content={stringToCopy} className="opacity-0 group-hover:opacity-100" />
+                {!hideCopyButton && <CopyMessageButton content={stringToCopy} className="opacity-0 group-hover:opacity-100" />}
                 {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
                 {(displayAsDiff || displayAsUdiff) && !isMobile && (
                   <div onClick={(e) => e.stopPropagation()}>
@@ -243,7 +244,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
         ) : (
           <div className="relative">
             <div className="absolute right-0 top-1 flex items-center gap-2 z-10">
-              <CopyMessageButton content={stringToCopy} />
+              {!hideCopyButton && <CopyMessageButton content={stringToCopy} />}
               {(displayAsDiff || displayAsUdiff) && !isMobile && (
                 <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
               )}
