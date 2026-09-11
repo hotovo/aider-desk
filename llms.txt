@@ -111,6 +111,7 @@ src/
       project-context.ts
       task-context.ts
     git/
+      git-askpass-manager.ts
       git-manager.ts
       index.ts
     logger/
@@ -322,6 +323,8 @@ src/
           InfoIcon.tsx
           InlineEditPanel.tsx
           Input.tsx
+          InputPromptDialog.tsx
+          InputPromptModal.tsx
           ItemSelector.tsx
           LoadingOverlay.tsx
           LoadingText.tsx
@@ -751,6 +754,7 @@ src/
         settingsStore.ts
         taskFilesStore.ts
         taskStore.ts
+        terminalStore.ts
       themes/
         theme-aurora.scss
         theme-botanical-garden-dark.scss
@@ -3594,12 +3598,14 @@ import {
   isAddMessageMessage,
   isSubscribeEventsMessage,
   isUnsubscribeEventsMessage,
+  isWriteToTerminalMessage,
   isReadonlySubscribeEventsMessage,
   isReadonlyUnsubscribeEventsMessage,
 } from '@/messages';
 import { Connector } from '@/connector/connector';
 import { ProjectManager } from '@/project';
 import { EventManager } from '@/events';
+import { EventsHandler } from '@/events-handler';
 import { Store } from '@/store';
 import { createCorsOriginValidator } from '@/server/cors';
 import { READONLY_MODE } from '@/constants';
@@ -3612,6 +3618,7 @@ constructor(
     private readonly projectManager: ProjectManager,
     private readonly eventManager: EventManager,
     private readonly store: Store,
+    private readonly eventsHandler: EventsHandler,
 )
 ⋮----
 private get isReadonlyMode(): boolean
@@ -3917,6 +3924,7 @@ import {
   CommandsData,
   ExtensionUIRefreshData,
   ModalOverlayUrlData,
+  InputPromptData,
   ContextInfoData,
 } from '@common/types';
 ⋮----
@@ -3962,6 +3970,8 @@ sendResponseChunk(data: ResponseChunkData): void
 sendResponseCompleted(data: ResponseCompletedData): void
 ⋮----
 // Question events
+sendInputPrompt(data: InputPromptData): void
+⋮----
 sendAskQuestion(questionData: QuestionData): void
 ⋮----
 sendQuestionAnswered(baseDir: string, taskId: string, question: QuestionData, answer: string, userInput?: string): void
@@ -4054,6 +4064,9 @@ unsubscribe(socket: Socket, log = true): void
 private sendToWindows(eventType: string, data: unknown): void
 ⋮----
 // Send event to all open windows
+⋮----
+// Sending to a disposed/crashed render frame can throw synchronously; skip it
+// without breaking delivery to other windows or the code that triggered the event
 ⋮----
 private broadcastToEventConnectors(eventType: string, data: unknown, log = true): void
 ⋮----
@@ -5201,6 +5214,60 @@ async mergeWorktreeToWorktree(targetWorktreeDir: string, includeUncommitted?: bo
 async resumeTask(): Promise<void>
 
 ================
+File: src/main/git/git-askpass-manager.ts
+================
+import { createServer, Server, IncomingMessage, ServerResponse } from 'http';
+import { AddressInfo } from 'net';
+⋮----
+import { randomUUID } from 'crypto';
+⋮----
+import { InputPromptData } from '@common/types';
+⋮----
+import { EventManager } from '@/events';
+import { AIDER_DESK_DATA_DIR } from '@/constants';
+import logger from '@/logger';
+⋮----
+interface PendingRequest {
+  resolve: (answer: string) => void;
+  reject: (err: Error) => void;
+  timer: NodeJS.Timeout;
+  prompt: string;
+}
+⋮----
+export class GitAskpassManager
+⋮----
+constructor(
+    private readonly eventManager?: EventManager,
+    customAskpassDir?: string,
+)
+⋮----
+async init(): Promise<void>
+⋮----
+// Export askpass environment variables to process.env so all git commands inherit them
+⋮----
+private writeAskpassFiles(): void
+⋮----
+private async startServer(): Promise<void>
+⋮----
+private handleHttpRequest(req: IncomingMessage, res: ServerResponse): void
+⋮----
+// Check if there is a cached answer for this prompt
+⋮----
+private promptUser(prompt: string): Promise<string>
+⋮----
+// Check if there is already another request active for this exact prompt text
+⋮----
+private buildPromptData(id: string, prompt: string): InputPromptData
+⋮----
+respond(id: string, value: string | null, rememberSession?: boolean): boolean
+⋮----
+getEnv(): NodeJS.ProcessEnv
+⋮----
+clearSessionCache(): void
+⋮----
+async close(): Promise<void>
+
+================
 File: src/main/git/git-manager.ts
 ================
 import os from 'os';
@@ -5223,6 +5290,8 @@ import {
 } from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
+⋮----
+import type { GitAskpassManager } from '@/git/git-askpass-manager';
 ⋮----
 import { execWithShellPath, withLock } from '@/utils';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -5247,6 +5316,8 @@ interface RawCommitData {
 const isAbortError = (error: unknown): boolean =>
 ⋮----
 export class GitManager
+⋮----
+constructor(private readonly gitAskpassManager?: GitAskpassManager)
 ⋮----
 private getWorktreePath(projectPath: string, taskId: string): string
 ⋮----
@@ -9419,6 +9490,8 @@ registerRoutes(router: Router): void
 // Clear system logs
 ⋮----
 // Get aider connector status
+⋮----
+// Respond to input prompt
 
 ================
 File: src/main/server/rest-api/terminal-api.ts
@@ -9443,6 +9516,8 @@ registerRoutes(router: Router): void
 // Resize terminal
 ⋮----
 // Close terminal
+⋮----
+// Get recent terminal output buffer (for re-attaching clients)
 ⋮----
 // Get terminal for task
 ⋮----
@@ -11368,6 +11443,8 @@ private async runExtensionCommand(extensionCommand: RegisteredCommand, args: str
 ⋮----
 public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void>
 ⋮----
+// Queue the custom command for later execution
+⋮----
 // First, check if this is an extension command
 ⋮----
 // Handle extension command execution
@@ -11683,6 +11760,7 @@ export interface TerminalInstance {
   ptyProcess: pty.IPty;
   cols: number;
   rows: number;
+  outputBuffer: string;
 }
 ⋮----
 export class TerminalManager
@@ -11711,7 +11789,11 @@ public resizeTerminal(terminalId: string, cols: number, rows: number): boolean
 ⋮----
 public closeTerminal(terminalId: string): boolean
 ⋮----
+public getTerminalBuffer(terminalId: string):
+⋮----
 public closeTerminalForProject(baseDir: string): void
+⋮----
+public closeTerminalsForTask(taskId: string): void
 ⋮----
 public getTerminalForTask(taskId: string): TerminalInstance | undefined
 ⋮----
@@ -12666,6 +12748,7 @@ import { isBinary } from 'istextorbinary';
 ⋮----
 import type { ModeDefinition, ExtensionConfigComponent, ExtensionOperationResult, ExtensionUIComponent } from '@common/types';
 import type { WindowManager } from '@/window-manager';
+import type { GitAskpassManager } from '@/git/git-askpass-manager';
 ⋮----
 import { McpManager, McpConfigManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
@@ -12796,6 +12879,8 @@ async saveEditedPrompt(baseDir: string, taskId: string, messageId: string, promp
 ⋮----
 async answerQuestion(baseDir: string, taskId: string, answer: string): Promise<void>
 ⋮----
+respondInputPrompt(id: string, value: string | null, rememberSession?: boolean): void
+⋮----
 removeQueuedPrompt(baseDir: string, taskId: string, promptId: string): void
 ⋮----
 reorderQueuedPrompts(baseDir: string, taskId: string, prompts: QueuedPromptData[]): void
@@ -12857,6 +12942,8 @@ resizeTerminal(terminalId: string, cols: number, rows: number): void
 closeTerminal(terminalId: string): void
 ⋮----
 getTerminalForTask(taskId: string): string | null
+⋮----
+getTerminalBuffer(terminalId: string):
 ⋮----
 getTerminalsForTask(taskId: string):
 ⋮----
@@ -13154,6 +13241,9 @@ const initWindow = async (windowMgr: WindowManager, storeInstance: Store, projec
 // Retry transient network failures (e.g. ERR_NETWORK_CHANGED during dev server loading)
 // so a network change doesn't leave a blank white window
 ⋮----
+// Renderer crash recovery: reload from the main process side, since a crashed/hung
+// renderer cannot process user-triggered reloads (e.g. Ctrl+R)
+⋮----
 const saveWindowState = (): void =>
 ⋮----
 // Only save state if this is the main window
@@ -13311,7 +13401,7 @@ import { DataManager } from '@/data-manager';
 import { TerminalManager } from '@/terminal';
 import { VersionsManager } from '@/versions';
 import { TelemetryManager } from '@/telemetry';
-import { GitManager } from '@/git';
+import { GitManager, GitAskpassManager } from '@/git';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ExtensionManager } from '@/extensions/extension-manager';
 import { Store } from '@/store';
@@ -13430,7 +13520,8 @@ export type MessageAction =
   | 'unsubscribe-events'
   | 'readonly-subscribe-events'
   | 'readonly-unsubscribe-events'
-  | 'update-models-info';
+  | 'update-models-info'
+  | 'write-to-terminal';
 ⋮----
 export interface Message {
   action: MessageAction;
@@ -13631,6 +13722,14 @@ export interface RequestContextInfoMessage extends Message {
 }
 ⋮----
 export const isRequestContextInfoMessage = (message: Message): message is RequestContextInfoMessage =>
+⋮----
+export interface WriteToTerminalMessage extends Message {
+  action: 'write-to-terminal';
+  terminalId: string;
+  data: string;
+}
+⋮----
+export const isWriteToTerminalMessage = (message: Message): message is WriteToTerminalMessage =>
 ⋮----
 export interface SubscribeEventsMessage extends Message {
   action: 'subscribe-events';
@@ -14024,6 +14123,7 @@ import {
   VersionsInfo,
   WorktreeIntegrationStatusUpdatedData,
   AiderConnectorStatus,
+  InputPromptData,
 } from '@common/types';
 import { electronAPI } from '@electron-toolkit/preload';
 import { contextBridge, ipcRenderer, webUtils } from 'electron';
@@ -14193,6 +14293,7 @@ import {
   ExtensionToolInfo,
   ExtensionUIComponent,
   ModalOverlayUrlData,
+  InputPromptData,
   AiderConnectorStatus,
   ChangeRequestItem,
   SkillDefinition,
@@ -14248,6 +14349,7 @@ type EventDataMap = {
   'terminal-exit': TerminalExitData;
   'extension-ui-refresh': ExtensionUIRefreshData;
   'modal-overlay-url': ModalOverlayUrlData;
+  'input-prompt': InputPromptData;
   'aider-connector-status': { baseDir?: string; taskId?: string; status: AiderConnectorStatus };
 };
 ⋮----
@@ -14495,10 +14597,13 @@ runCustomCommand(baseDir: string, taskId: string, commandName: string, args: str
 isTerminalSupported(): boolean
 async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string>
 async writeToTerminal(terminalId: string, data: string): Promise<boolean>
+⋮----
+private flushTerminalWrite(terminalId: string): Promise<boolean>
 async resizeTerminal(terminalId: string, cols: number, rows: number): Promise<boolean>
 async closeTerminal(terminalId: string): Promise<boolean>
 async getTerminalForTask(taskId: string): Promise<string | null>
 async getAllTerminalsForTask(taskId: string): Promise<Array<
+async getTerminalBuffer(terminalId: string): Promise<
 isManageServerSupported(): boolean
 ⋮----
 startServer(username?: string, password?: string): Promise<boolean>
@@ -14645,6 +14750,10 @@ saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: strin
 onExtensionUIRefresh(callback: (data: ExtensionUIRefreshData) => void): () => void
 ⋮----
 onModalOverlayUrl(callback: (data: ModalOverlayUrlData) => void): () => void
+⋮----
+onInputPrompt(callback: (data: InputPromptData) => void): () => void
+⋮----
+respondInputPrompt(id: string, value: string | null, rememberSession?: boolean): Promise<void>
 ⋮----
 loadExtensionLibrary(librarySpec: string): Promise<string>
 ⋮----
@@ -15740,6 +15849,52 @@ export type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   label?: ReactNode;
   size?: InputSize;
 };
+
+================
+File: src/renderer/src/components/common/InputPromptDialog.tsx
+================
+import { useCallback, useEffect, useState } from 'react';
+import { InputPromptData } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+import { InputPromptModal } from '@/components/common/InputPromptModal';
+⋮----
+type Props = {
+  promptData?: InputPromptData | null;
+  onRespond?: (id: string, value: string | null, rememberSession?: boolean) => void;
+};
+
+================
+File: src/renderer/src/components/common/InputPromptModal.tsx
+================
+import { ChangeEvent, FormEvent, KeyboardEvent, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { RiEyeLine, RiEyeOffLine } from 'react-icons/ri';
+import { InputPromptData } from '@common/types';
+⋮----
+import { BaseDialog } from '@/components/common/BaseDialog';
+import { Button } from '@/components/common/Button';
+import { Checkbox } from '@/components/common/Checkbox';
+import { Input } from '@/components/common/Input';
+⋮----
+type Props = {
+  promptData: InputPromptData;
+  onRespond: (id: string, value: string | null, rememberSession?: boolean) => void;
+};
+⋮----
+const handleClose = () =>
+⋮----
+const handleSubmit = (e?: FormEvent<HTMLFormElement>) =>
+⋮----
+const handleConfirmChoice = (answer: string) =>
+⋮----
+const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) =>
+⋮----
+const handleChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+const handleToggleShowPassword = () =>
+⋮----
+const handleToggleRemember = (checked: boolean) =>
 
 ================
 File: src/renderer/src/components/common/ItemSelector.tsx
@@ -21901,6 +22056,7 @@ import { useSearchText } from '@/hooks/useSearchText';
 import { TaskStateActions } from '@/components/message/TaskStateActions';
 import { TaskInfoPanel } from '@/components/message/TaskInfoPanel';
 import { registerAction, unregisterAction } from '@/stores/actionsStore';
+import { getSessionKey, useTerminalVisible, toggleTerminalVisible, setTerminalVisible } from '@/stores/terminalStore';
 ⋮----
 type AddFileDialogOptions = {
   readOnly: boolean;
@@ -24359,13 +24515,14 @@ File: src/renderer/src/components/terminal/Terminal.scss
 ================
 File: src/renderer/src/components/terminal/Terminal.tsx
 ================
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback, ChangeEvent } from 'react';
 import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
+import { setTabPtyId } from '@/stores/terminalStore';
 ⋮----
 export type TerminalRef = {
   focus: () => void;
@@ -24375,77 +24532,100 @@ export type TerminalRef = {
 };
 ⋮----
 type Props = {
+  sessionKey: string;
+  tabId: string;
   baseDir: string;
   taskId: string;
   visible: boolean;
+  ptyId: string | null;
   className?: string;
-  onExit?: () => void;
 };
 ⋮----
-// Show connecting overlay when WASM is ready but no PTY process exists yet
+const useIsTouchDevice = (): boolean =>
+⋮----
+const listener = (e: MediaQueryListEvent) =>
+⋮----
+// Load the ghostty WASM module once per app, not once per terminal instance
+⋮----
+const loadGhostty = (): Promise<InstanceType<typeof Ghostty>> =>
 ⋮----
 // Initialize ghostty-web WASM once
 ⋮----
-const getGhosttyInit = (): Promise<InstanceType<typeof Ghostty>> =>
-⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Initialize terminal
+// Initialize terminal emulator once - its lifetime is independent of the PTY session
 ⋮----
 // Handle terminal input
 ⋮----
 // Handle terminal resize
 ⋮----
-// Create terminal process
+// Create the PTY process when visible and no session is attached
 ⋮----
 const createTerminal = async () =>
 ⋮----
-// Handle terminal input
-⋮----
-// Handle terminal resize
-⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Handle terminal data and exit/restart
+// Attach to the PTY session: reset the emulator, replay the recent output,
+// and only then subscribe to live events so no output is rendered twice
 ⋮----
 const handleTerminalData = (data: TerminalData) =>
 ⋮----
 const handleTerminalExit = (data: TerminalExitData) =>
 ⋮----
+const subscribe = () =>
+⋮----
+const attach = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// A freshly created PTY has an empty buffer - subscribe directly without a replay round trip
+⋮----
 // Handle restart on keypress after exit
-⋮----
-const handleRestartInput = () =>
-⋮----
-// Clear terminalId to trigger re-creation via the createTerminal effect
 ⋮----
 // Handle resize when visibility changes
 ⋮----
-// Cleanup on unmount
+// Touch input: forward soft keyboard input to the PTY
+⋮----
+const handleKeyDown = (e: KeyboardEvent) =>
+⋮----
+const handleBeforeInput = (e: InputEvent) =>
+⋮----
+const restartSession = () =>
+⋮----
+const handleTouchInputChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
+⋮----
+const handleContainerPointerDown = () =>
 ⋮----
 const handleTerminalFocus = () =>
 ⋮----
 const handleTerminalBlur = () =>
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/terminal/TerminalView.tsx
 ================
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
+import { useRef, useEffect, forwardRef, useImperativeHandle, useCallback } from 'react';
 import { IoMdAdd, IoMdClose, IoMdRemove } from 'react-icons/io';
 import { BiCopy } from 'react-icons/bi';
 import { clsx } from 'clsx';
-import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 ⋮----
 import { Terminal as TerminalComponent, TerminalRef } from '@/components/terminal/Terminal';
 import { IconButton } from '@/components/common/IconButton';
+import {
+  getSessionKey,
+  useTerminalStore,
+  useTerminalTabs,
+  useActiveTerminalTabId,
+  addTerminalTab,
+  removeTerminalTab,
+  setActiveTerminalTab,
+} from '@/stores/terminalStore';
+import { useApi } from '@/contexts/ApiContext';
 ⋮----
 export type TerminalViewRef = {
   resize: () => void;
-};
-⋮----
-type TerminalTab = {
-  id: string;
-  terminalId: string | null;
 };
 ⋮----
 type Props = {
@@ -24461,16 +24641,16 @@ type Props = {
 ⋮----
 // Create a new terminal tab
 ⋮----
-// Close a terminal tab
+// Close a terminal tab and kill its PTY process
 const closeTerminalTab = (tabId: string) =>
 ⋮----
-// If we're closing the active tab, activate the previous one
+// Ensure there is at least one tab when the terminal view becomes visible
+⋮----
+// Only react to visibility changes, not to tab count changes
 ⋮----
 // Focus the active terminal when the terminal view becomes visible
 ⋮----
 // Small delay to ensure terminal is rendered
-⋮----
-// eslint-disable-next-line react-hooks/set-state-in-effect
 ⋮----
 // Handle copying terminal output
 const handleCopyOutput = () =>
@@ -24481,8 +24661,6 @@ const handleCopyOutput = () =>
 onClick=
 ⋮----
 {/* Terminal content */}
-⋮----
-onExit=
 
 ================
 File: src/renderer/src/components/ui/Tooltip.tsx
@@ -28737,6 +28915,61 @@ export const useTaskMessages = (taskId: string)
 export const useTaskLoaded = (taskId: string)
 
 ================
+File: src/renderer/src/stores/terminalStore.ts
+================
+import { useShallow } from 'zustand/react/shallow';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { shallow } from 'zustand/vanilla/shallow';
+import { devtools } from 'zustand/middleware';
+import { v4 as uuidv4 } from 'uuid';
+⋮----
+export type TerminalTab = {
+  id: string;
+  ptyId: string | null;
+};
+⋮----
+export const getSessionKey = (baseDir: string, taskId: string): string => `$
+⋮----
+interface TerminalState {
+  tabsMap: Map<string, TerminalTab[]>;
+  activeTabMap: Map<string, string | null>;
+  visibleMap: Map<string, boolean>;
+}
+⋮----
+interface TerminalActions {
+  addTab: (sessionKey: string) => string;
+  removeTab: (sessionKey: string, tabId: string) => void;
+  setActiveTab: (sessionKey: string, tabId: string) => void;
+  setVisible: (sessionKey: string, visible: boolean) => void;
+  setTabPtyId: (sessionKey: string, tabId: string, ptyId: string | null) => void;
+  handlePtyExit: (ptyId: string) => void;
+}
+⋮----
+type TerminalStore = TerminalState & TerminalActions;
+⋮----
+// Module-level action functions (no hook subscription required)
+export const addTerminalTab = (sessionKey: string)
+⋮----
+export const removeTerminalTab = (sessionKey: string, tabId: string)
+⋮----
+export const setActiveTerminalTab = (sessionKey: string, tabId: string)
+⋮----
+export const setTerminalVisible = (sessionKey: string, visible: boolean)
+⋮----
+export const toggleTerminalVisible = (sessionKey: string)
+⋮----
+export const setTabPtyId = (sessionKey: string, tabId: string, ptyId: string | null)
+⋮----
+export const handlePtyExit = (ptyId: string)
+⋮----
+// Selector hooks for optimized re-renders
+export const useTerminalTabs = (sessionKey: string): TerminalTab[]
+⋮----
+export const useActiveTerminalTabId = (sessionKey: string): string | null
+⋮----
+export const useTerminalVisible = (sessionKey: string): boolean
+
+================
 File: src/renderer/src/themes/theme-aurora.scss
 ================
 .theme-aurora {
@@ -31333,6 +31566,7 @@ import { ModelProviderProvider } from '@/contexts/ModelProviderContext';
 import { AgentsProvider } from '@/contexts/AgentsContext';
 import { McpServersProvider } from '@/contexts/McpServersContext';
 import { ModalOverlayUrlViewer } from '@/components/common/ModalOverlayUrlViewer';
+import { InputPromptDialog } from '@/components/common/InputPromptDialog';
 import { UpdatedFilesDiff } from '@/pages/UpdatedFilesDiff';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
 import { DiffsWorkerPoolProvider } from '@/contexts/DiffsWorkerPoolContext';
