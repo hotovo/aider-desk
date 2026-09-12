@@ -787,7 +787,7 @@ export const GitBranchesButton = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="flex items-center min-w-0 gap-0.5">
-        <Tooltip content={branchesTooltip}>
+        <Tooltip content={branchesTooltip} maxWidth="450px">
           <button
             onClick={handleToggle}
             disabled={disabled}
