@@ -18,6 +18,7 @@
 - prevent Escape key from interrupting task processing while typing in the prompt field
 - improved terminal sessions to persist when switching tasks or projects, with output replay on reattach, restart after session exit, and touch input support
 - fixed tool message status icons shrinking when the message content is long
+- fixed subtask inheriting parent worktree when working mode is overridden to local
 
 ## [0.82.0]
 

@@ -151,6 +151,11 @@ export class Project {
       Object.assign(taskData, extResult.task);
     }
 
+    // Local mode must never carry a worktree (e.g. inherited from parent while workingMode was overridden to local)
+    if (taskData.workingMode === 'local') {
+      taskData.worktree = undefined;
+    }
+
     const task = await this.prepareTask(undefined, taskData);
     if (params?.sendEvent !== false) {
       this.eventManager.sendTaskCreated(task.task, params?.activate);
