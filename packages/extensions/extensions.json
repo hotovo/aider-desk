@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "legacy-system-prompt",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "kanban",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "destructive-command-guard",
