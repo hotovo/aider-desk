@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "learn",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "plannotator",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 40
+      "installCount": 41
     }
   ]
 }
