@@ -21,6 +21,7 @@ import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { GitStatusBadges } from '@/components/project/GitStatusBadges';
 import { GitBranchesPopup } from '@/components/project/GitBranchesPopup';
+import { GitBranchesTooltipContent } from '@/components/project/GitBranchesTooltipContent';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
 
@@ -56,22 +57,6 @@ const truncateBranchName = (name: string) => {
 
   const headLength = MAX_BRANCH_NAME_LENGTH - 3 - TRUNCATED_TAIL_LENGTH;
   return `${name.slice(0, headLength)}...${name.slice(-TRUNCATED_TAIL_LENGTH)}`;
-};
-
-const MAX_TOOLTIP_ITEMS = 20;
-
-const formatTruncatedList = (items: string[]) => {
-  if (items.length <= MAX_TOOLTIP_ITEMS) {
-    return items;
-  }
-
-  const remaining = items.length - MAX_TOOLTIP_ITEMS;
-  return [...items.slice(0, MAX_TOOLTIP_ITEMS), `...and ${remaining} more`];
-};
-
-const buildCommitsTooltip = (label: string, commits: string[]) => {
-  const list = formatTruncatedList(commits);
-  return `${label}\n${list.join('\n')}`;
 };
 
 type Props = {
@@ -174,21 +159,6 @@ export const GitBranchesButton = ({
 
   const incomingCount = syncCommits.incoming.count;
   const outgoingCount = syncCommits.outgoing.count;
-  const commitChanges: string[] = [];
-  if (outgoingCount > 0) {
-    const label = worktreeBaseBranch
-      ? t('worktree.aheadCommitsTooltip', { count: outgoingCount, branch: worktreeBaseBranch })
-      : t('git.outgoingCommitsTooltip', { count: outgoingCount });
-    commitChanges.push(buildCommitsTooltip(label, syncCommits.outgoing.commits));
-  }
-  if (incomingCount > 0) {
-    const label = worktreeBaseBranch
-      ? t('worktree.behindCommitsTooltip', { count: incomingCount, branch: worktreeBaseBranch })
-      : t('git.incomingCommitsTooltip', { count: incomingCount });
-    commitChanges.push(buildCommitsTooltip(label, syncCommits.incoming.commits));
-  }
-  const branchesTooltip = `${t('git.gitBranchLabel', { branch: currentBranch || t('git.noCurrentBranch') })}\n${commitChanges.length > 0 ? `\n${commitChanges.join('\n\n')}` : t('git.upToDate')}`;
-
   const recentBranchesWithCurrent = currentBranch ? [currentBranch, ...recentBranches.filter((name) => name !== currentBranch)] : recentBranches;
 
   const [mainBranchName, setMainBranchName] = useState<string | null>(null);
@@ -787,7 +757,10 @@ export const GitBranchesButton = ({
   return (
     <div className="relative" ref={dropdownRef}>
       <div className="flex items-center min-w-0 gap-0.5">
-        <Tooltip content={branchesTooltip} maxWidth="450px">
+        <Tooltip
+          content={<GitBranchesTooltipContent currentBranch={currentBranch} syncCommits={syncCommits} worktreeBaseBranch={worktreeBaseBranch} />}
+          maxWidth="450px"
+        >
           <button
             onClick={handleToggle}
             disabled={disabled}

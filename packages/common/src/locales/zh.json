@@ -2026,7 +2026,8 @@
     "applyUncommittedChangesTooltip": "仅将此工作树的未提交更改应用到项目目录当前检出的分支，不合并任何提交。",
     "rebaseFromCurrentBranchTooltip": "在 '{{branch}}' 之上重放工作树提交并更新基准引用。",
     "aheadCommitsTooltip": "领先 '{{branch}}' 的提交（{{count}}）：",
-    "behindCommitsTooltip": "落后 '{{branch}}' 的提交（{{count}}）："
+    "behindCommitsTooltip": "落后 '{{branch}}' 的提交（{{count}}）：",
+    "behindCommitsSyncHint": "使用从 '{{branch}}' 变基来同步"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

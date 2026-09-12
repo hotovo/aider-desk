@@ -2089,7 +2089,8 @@
     "applyUncommittedChangesTooltip": "Применяет только незакоммиченные изменения из этого рабочего дерева к ветке, которая сейчас проверена в директории проекта, без слияния коммитов.",
     "rebaseFromCurrentBranchTooltip": "Переносит коммиты рабочего дерева поверх '{{branch}}' и обновляет базовую ссылку.",
     "aheadCommitsTooltip": "Коммиты впереди '{{branch}}' ({{count}}):",
-    "behindCommitsTooltip": "Коммиты позади '{{branch}}' ({{count}}):"
+    "behindCommitsTooltip": "Коммиты позади '{{branch}}' ({{count}}):",
+    "behindCommitsSyncHint": "Используйте «Перебазировать из '{{branch}}'» для синхронизации"
   },
   "welcomeMessage": {
     "title": "AiderDesk",

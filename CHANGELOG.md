@@ -22,6 +22,7 @@
 - added ability to select which changed files to commit in the updated files diff view
 - fixed branches dropdown not refreshing after branch switch or rebase completion
 - added ability to copy chat messages as an image to clipboard
+- improved git branches tooltip with icons and added rebase hint for worktrees behind their base branch
 
 ## [0.82.0]
 
