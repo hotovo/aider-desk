@@ -161,10 +161,13 @@ export const GitBranchesButton = ({
   const [showPullConfirm, setShowPullConfirm] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const rebaseInProgress = status?.rebaseState.inProgress ?? false;
+  const prevRebaseInProgress = useRef(rebaseInProgress);
 
   useClickOutside(dropdownRef, () => setIsOpen(false), isOpen);
 
-  const currentBranch = branches.find((b) => b.isCurrent)?.name || status?.currentBranch || '';
+  const statusCurrentBranch = status?.currentBranch;
+  const currentBranch = branches.find((b) => b.isCurrent)?.name || statusCurrentBranch || '';
   const hasUpstream = Boolean(branches.find((b) => b.isCurrent)?.upstream);
   const isWorktree = Boolean(worktreePath);
   const worktreeBaseBranch = isWorktree ? status?.baseBranch || status?.targetBranch : undefined;
@@ -231,12 +234,26 @@ export const GitBranchesButton = ({
   }, [loadBranches]);
 
   useEffect(() => {
+    if (statusCurrentBranch) {
+      void loadBranches();
+    }
+  }, [statusCurrentBranch, loadBranches]);
+
+  useEffect(() => {
     void loadMainBranch();
   }, [loadMainBranch]);
 
   useEffect(() => {
     void loadSyncCommits();
   }, [loadSyncCommits]);
+
+  useEffect(() => {
+    if (prevRebaseInProgress.current && !rebaseInProgress) {
+      void loadBranches();
+      void loadSyncCommits();
+    }
+    prevRebaseInProgress.current = rebaseInProgress;
+  }, [rebaseInProgress, loadBranches, loadSyncCommits]);
 
   useEffect(() => {
     if (isOpen) {

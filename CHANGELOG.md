@@ -20,6 +20,7 @@
 - fixed tool message status icons shrinking when the message content is long
 - fixed subtask inheriting parent worktree when working mode is overridden to local
 - added ability to select which changed files to commit in the updated files diff view
+- fixed branches dropdown not refreshing after branch switch or rebase completion
 
 ## [0.82.0]
 
