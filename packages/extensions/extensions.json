@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "protected-paths",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "external-rules",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "sandbox",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "redact-secrets",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "destructive-command-guard",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "reasoning-selector",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 37
+      "installCount": 40
     }
   ]
 }
