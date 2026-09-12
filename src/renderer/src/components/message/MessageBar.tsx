@@ -1,8 +1,9 @@
 import { useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { toPng } from 'html-to-image';
 import { UsageReportData, Message } from '@common/types';
-import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdRedo } from 'react-icons/md';
+import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdImage, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,6 +12,7 @@ import { IconButton } from '../common/IconButton';
 import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 
+import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { includeMessageProperty } from '@/components/message/utils';
@@ -36,6 +38,7 @@ type Props = {
 
 export const MessageBar = ({ className, content, usageReport, message, remove, redo, edit, onFork, onRemoveUpTo }: Props) => {
   const { t } = useTranslation();
+  const api = useApi();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -97,6 +100,22 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
     setMenuPosition(null);
   };
 
+  const handleCopyAsImageClick = async () => {
+    setIsMenuOpen(false);
+    setMenuPosition(null);
+    const messageElement = buttonRef.current?.closest('[data-message-block]');
+    if (!messageElement) {
+      return;
+    }
+    try {
+      const dataUrl = await toPng(messageElement as HTMLElement, { cacheBust: true, pixelRatio: 2 });
+      await api.writeImageToClipboard(dataUrl);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to copy message as image', err);
+    }
+  };
+
   return (
     <div className={twMerge('mt-3 pt-3 h-[30px] flex items-center justify-end gap-3 border-t border-border-dark-light px-1 relative', className)}>
       <ExtensionComponentWrapper placement="task-message-bar" additionalProps={additionalProps} />
@@ -153,6 +172,13 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
                   <span className="whitespace-nowrap">{t('messages.forkFromHere')}</span>
                 </li>
               )}
+              <li
+                className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"
+                onClick={handleCopyAsImageClick}
+              >
+                <MdImage className="w-4 h-4" />
+                <span className="whitespace-nowrap">{t('messages.copyAsImage')}</span>
+              </li>
               {onRemoveUpTo && (
                 <li
                   className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors"

@@ -354,6 +354,7 @@ export interface ApplicationAPI {
 
   // Clipboard operations
   writeToClipboard: (text: string) => Promise<void>;
+  writeImageToClipboard: (dataUrl: string) => Promise<void>;
   openPath: (path: string) => Promise<boolean>;
   openUrlInWindow: (url: string, title?: string) => Promise<void>;
   openUrlExternally: (url: string) => Promise<void>;

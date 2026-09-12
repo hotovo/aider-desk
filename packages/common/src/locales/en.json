@@ -1090,6 +1090,7 @@
     "loading": "Loading...",
     "copy": "Copy",
     "copied": "Copied!",
+    "copyAsImage": "Copy as image",
     "interrupted": "Interrupted by user.",
     "taskInterrupted": "Task Interrupted",
     "taskInterruptedDescription": "The task was interrupted by the user while in progress.",

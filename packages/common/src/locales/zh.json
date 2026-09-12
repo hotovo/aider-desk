@@ -1023,6 +1023,7 @@
     "loading": "加载中...",
     "copy": "复制",
     "copied": "已复制!",
+    "copyAsImage": "复制为图片",
     "interrupted": "被用户中断。",
     "taskInterrupted": "任务中断",
     "taskInterruptedDescription": "任务在进行过程中被用户中断。",

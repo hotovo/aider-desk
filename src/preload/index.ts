@@ -789,6 +789,7 @@ const api: ApplicationAPI = {
   getMemoryEmbeddingProgress: () => ipcRenderer.invoke('get-memory-embedding-progress'),
 
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),
+  writeImageToClipboard: (dataUrl: string) => ipcRenderer.invoke('clipboard-write-image', dataUrl),
   openPath: (path: string) => ipcRenderer.invoke('open-path', path),
   openUrlInWindow: (url: string, title?: string) => ipcRenderer.invoke('open-url-in-window', url, title),
   openUrlExternally: (url: string) => ipcRenderer.invoke('open-url-externally', url),

@@ -4,6 +4,9 @@ import { UsageReportData, ResponseMessage } from '@common/types';
 
 import { MessageBar } from '../MessageBar';
 
+import { createMockApi } from '@/__tests__/mocks/api';
+import { useApi } from '@/contexts/ApiContext';
+
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -18,6 +21,11 @@ vi.mock('@/hooks/useClickOutside', () => ({
     mockClickOutsideCallbacks.push(callback);
     // Don't actually register click outside handler in tests
   },
+}));
+
+// Mock ApiContext to avoid provider requirement
+vi.mock('@/contexts/ApiContext', () => ({
+  useApi: vi.fn(),
 }));
 
 // Mock CopyMessageButton to avoid ApiContext requirement
@@ -60,6 +68,8 @@ const mockMessage: ResponseMessage = {
 };
 
 describe('MessageBar', () => {
+  const mockApi = createMockApi();
+
   const mockUsageReport: UsageReportData = {
     model: 'gpt-4',
     sentTokens: 100,
@@ -72,6 +82,7 @@ describe('MessageBar', () => {
   beforeEach(() => {
     mockClickOutsideCallbacks.length = 0;
     vi.clearAllMocks();
+    vi.mocked(useApi).mockReturnValue(mockApi);
   });
 
   describe('Remove button with tooltip', () => {

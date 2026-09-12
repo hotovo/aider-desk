@@ -315,6 +315,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     deleteMemory: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     deleteProjectMemories: vi.fn((): Promise<number> => Promise.resolve(0)),
     writeToClipboard: vi.fn((): Promise<void> => Promise.resolve()),
+    writeImageToClipboard: vi.fn((): Promise<void> => Promise.resolve()),
     openPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),
     openUrlInWindow: vi.fn((): Promise<void> => Promise.resolve()),
     openUrlExternally: vi.fn((): Promise<void> => Promise.resolve()),

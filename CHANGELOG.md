@@ -21,6 +21,7 @@
 - fixed subtask inheriting parent worktree when working mode is overridden to local
 - added ability to select which changed files to commit in the updated files diff view
 - fixed branches dropdown not refreshing after branch switch or rebase completion
+- added ability to copy chat messages as an image to clipboard
 
 ## [0.82.0]
 

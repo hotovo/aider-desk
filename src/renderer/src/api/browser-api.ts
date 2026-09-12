@@ -1435,6 +1435,12 @@ export class BrowserApi implements ApplicationAPI {
     }
   }
 
+  async writeImageToClipboard(dataUrl: string): Promise<void> {
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+  }
+
   async openPath(): Promise<boolean> {
     // Not available in browser context
     return false;

@@ -41,6 +41,7 @@ export const ResponseMessageBlock = ({
 
   return (
     <div
+      data-message-block
       className={clsx(
         baseClasses,
         'relative flex flex-col group',

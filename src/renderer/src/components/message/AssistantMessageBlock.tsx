@@ -80,6 +80,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
   return (
     <div
       ref={containerRef}
+      data-message-block
       className={clsx(
         'rounded-md max-w-full text-xs bg-bg-secondary text-text-primary',
         'relative flex flex-col group',
