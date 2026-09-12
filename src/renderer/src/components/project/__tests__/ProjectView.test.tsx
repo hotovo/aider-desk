@@ -129,7 +129,11 @@ vi.mock('@/components/project/TaskSidebar/TaskSidebar', async () => {
 });
 
 vi.mock('../TaskView', () => ({
-  TaskView: ({ task }: { task: TaskData }) => <div data-testid="task-view">{task.name}</div>,
+  TaskView: ({ task, isActive }: { task: TaskData; isActive?: boolean }) => (
+    <div data-testid="task-view" data-active={isActive ? 'true' : 'false'}>
+      {task.name}
+    </div>
+  ),
 }));
 
 vi.mock('@/components/extensions/FloatingExtensionPanels', () => ({
@@ -238,7 +242,11 @@ describe('ProjectView', () => {
 
     fireEvent.click(screen.getByTestId('task-task-2'));
 
-    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Task 2'));
+    // Recently-active tasks stay mounted (keep-alive), so assert on the active (visible) task view.
+    await waitFor(() => {
+      const activeView = screen.getAllByTestId('task-view').find((el) => el.getAttribute('data-active') === 'true');
+      expect(activeView).toHaveTextContent('Task 2');
+    });
     expect(screen.getByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
   });
 

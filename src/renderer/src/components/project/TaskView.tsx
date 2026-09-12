@@ -153,18 +153,22 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const [displayedMessages, setDisplayedMessages] = useOptimistic(deferredMessages);
     const messagesPending = task.updatedAt && messages.length !== displayedMessages.length;
 
-    // ProjectView keys TaskView by task.id, so switching tasks remounts this component. Defer the
-    // heavy message list until after the shell has painted: the first commit renders the shell +
-    // LoadingOverlay (renderReady=false), then a rAF flips renderReady inside a transition so the
-    // messages render without blocking the switch.
+    // On first mount, defer the heavy message list until after the shell has painted: the first
+    // commit renders the shell + LoadingOverlay (renderReady=false), then a rAF flips renderReady
+    // inside a transition so the messages render without blocking the initial load. Guarded by
+    // renderReady so re-running the effect (e.g. a project-level <Activity> becoming visible again)
+    // does not re-trigger the transition and flash the loading overlay on an already-rendered task.
     const [renderReady, setRenderReady] = useState(false);
     const [isRenderPending, startRenderTransition] = useTransition();
     useEffect(() => {
+      if (renderReady) {
+        return;
+      }
       const rafId = requestAnimationFrame(() => {
         startRenderTransition(() => setRenderReady(true));
       });
       return () => cancelAnimationFrame(rafId);
-    }, []);
+    }, [renderReady]);
     const isSwitchingTask = !renderReady || isRenderPending;
     const visibleMessages = isSwitchingTask ? [] : displayedMessages;
 
