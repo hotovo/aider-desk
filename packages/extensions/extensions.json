@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "redact-secrets",
@@ -346,7 +346,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "openai-codex",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 41
+      "installCount": 42
     }
   ]
 }
