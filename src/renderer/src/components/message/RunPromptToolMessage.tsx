@@ -39,14 +39,14 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
     if (isError || isNotFound) {
       return (
         <Tooltip content={content}>
-          <RiErrorWarningFill className="w-3 h-3 text-error" />
+          <RiErrorWarningFill className="w-3 h-3 text-error shrink-0" />
         </Tooltip>
       );
     }
     if (isDenied) {
       return (
         <Tooltip content={content}>
-          <RiCloseCircleFill className="w-3 h-3 text-warning" />
+          <RiCloseCircleFill className="w-3 h-3 text-warning shrink-0" />
         </Tooltip>
       );
     }

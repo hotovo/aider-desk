@@ -47,7 +47,7 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemo
         <span>{getToolName()}</span>
         {error && (
           <Tooltip content={error}>
-            <FaExclamationTriangle className="w-3 h-3 text-text-error" />
+            <FaExclamationTriangle className="w-3 h-3 text-text-error shrink-0" />
           </Tooltip>
         )}
         {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}

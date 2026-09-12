@@ -111,11 +111,11 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
           content &&
           (isError ? (
             <Tooltip content={typeof content === 'string' ? content : hasError ? content.error : content.stderr || t('toolMessage.power.bash.commandFailed')}>
-              <RiErrorWarningFill className="w-3 h-3 text-error" />
+              <RiErrorWarningFill className="w-3 h-3 text-error shrink-0" />
             </Tooltip>
           ) : isDenied ? (
             <Tooltip content={typeof content === 'string' ? content : hasDenied ? content.denied : ''}>
-              <RiCloseCircleFill className="w-3 h-3 text-warning" />
+              <RiCloseCircleFill className="w-3 h-3 text-warning shrink-0" />
             </Tooltip>
           ) : (
             <RiCheckboxCircleFill className="w-3 h-3 text-success flex-shrink-0" />

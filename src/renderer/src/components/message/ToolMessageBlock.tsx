@@ -210,7 +210,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
             {getToolLabel(message)}
           </div>
           {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-          {!isExecuting && parsedResult?.isError === true && <VscError className="text-error" />}
+          {!isExecuting && parsedResult?.isError === true && <VscError className="text-error shrink-0" />}
         </div>
       </div>
       {/* Tool Specific Content */}

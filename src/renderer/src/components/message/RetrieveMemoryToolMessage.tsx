@@ -93,11 +93,11 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
       {content &&
         (isError ? (
           <Tooltip content={content}>
-            <FaExclamationTriangle className="w-3 h-3 text-error" />
+            <FaExclamationTriangle className="w-3 h-3 text-error shrink-0" />
           </Tooltip>
         ) : isDenied ? (
           <Tooltip content={content}>
-            <FaTimesCircle className="w-3 h-3 text-warning" />
+            <FaTimesCircle className="w-3 h-3 text-warning shrink-0" />
           </Tooltip>
         ) : (
           <FaCheckCircle className="w-3 h-3 text-success flex-shrink-0" />
