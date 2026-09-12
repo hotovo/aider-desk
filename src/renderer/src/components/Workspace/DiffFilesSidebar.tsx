@@ -163,6 +163,8 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect, selectedFi
     const groupId = gt.group.id ?? UNCOMMITTED_GROUP_ID;
     const treeId = `diff-sidebar-tree-${groupId}`;
     const expandedItems = expandedItemsPerGroup[groupId] || [];
+    // Only uncommitted files can be selected for commit, so checkboxes are shown only for the uncommitted group
+    const isUncommittedGroup = !gt.group.commitHash;
 
     const handleExpandItem = (item: TreeItem) => {
       setExpandedItemsPerGroup((prev) => ({
@@ -230,7 +232,7 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect, selectedFi
       return (
         <>
           <div ref={selected ? selectedItemRef : undefined} className={clsx('flex items-center w-full pr-1 h-6 cursor-pointer')} onClick={handleClick}>
-            <TriStateCheckbox state={checkboxState} onChange={handleToggleSelection} className="shrink-0 mr-0.5" />
+            {isUncommittedGroup && <TriStateCheckbox state={checkboxState} onChange={handleToggleSelection} className="shrink-0 mr-0.5" />}
             {renderChevron()}
             <span
               className={clsx(

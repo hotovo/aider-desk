@@ -87,15 +87,18 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
     return groups.flatMap((group) => group.files);
   }, [groups]);
 
-  // Files selected for commit: all files minus explicitly deselected ones
-  const selectedFiles = useMemo(() => flatFiles.filter((f) => !deselectedFilePaths.has(f.path)), [flatFiles, deselectedFilePaths]);
+  // Files eligible for commit: only uncommitted files (committed files are shown for reference only)
+  const committableFiles = useMemo(() => groups.filter((g) => !g.commitHash).flatMap((g) => g.files), [groups]);
+
+  // Files selected for commit: all committable files minus explicitly deselected ones
+  const selectedFiles = useMemo(() => committableFiles.filter((f) => !deselectedFilePaths.has(f.path)), [committableFiles, deselectedFilePaths]);
   const selectedFilePaths = useMemo(() => new Set(selectedFiles.map((f) => f.path)), [selectedFiles]);
 
-  // Reset selection to all files whenever the file list changes (e.g. after a commit)
-  const flatFilePathsKey = useMemo(() => flatFiles.map((f) => f.path).join('\n'), [flatFiles]);
+  // Reset selection to all files whenever the committable file list changes (e.g. after a commit)
+  const committableFilePathsKey = useMemo(() => committableFiles.map((f) => f.path).join('\n'), [committableFiles]);
   useEffect(() => {
     setDeselectedFilePaths(new Set());
-  }, [flatFilePathsKey]);
+  }, [committableFilePathsKey]);
 
   const handleToggleFileSelection = useCallback((filePath: string, selected: boolean) => {
     setDeselectedFilePaths((prev) => {
@@ -712,9 +715,9 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
             </div>
           )}
 
-          {selectedFiles.length < flatFiles.length && (
+          {selectedFiles.length < committableFiles.length && (
             <div className="text-xs text-text-secondary">
-              {t('contextFiles.selectedFilesToCommit', { count: selectedFiles.length, total: flatFiles.length })}
+              {t('contextFiles.selectedFilesToCommit', { count: selectedFiles.length, total: committableFiles.length })}
             </div>
           )}
 
