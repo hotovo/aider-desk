@@ -771,14 +771,14 @@ export class EventsHandler {
     }
   }
 
-  async generateCommitMessage(baseDir: string, taskId: string): Promise<string> {
+  async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    return await task.generateCommitMessage();
+    return await task.generateCommitMessage(filePaths);
   }
 
-  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void> {
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    await task.commitChanges(message, amend);
+    await task.commitChanges(message, amend, filePaths);
   }
 
   cancelCommitChanges(baseDir: string, taskId: string): void {

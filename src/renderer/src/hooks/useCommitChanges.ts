@@ -7,7 +7,7 @@ import { showErrorNotification, showSuccessNotification } from '@/utils/notifica
 
 type UseCommitChanges = {
   isCommitting: boolean;
-  commit: (message: string, amend: boolean) => Promise<void>;
+  commit: (message: string, amend: boolean, filePaths?: string[]) => Promise<void>;
   cancelCommit: () => void;
 };
 
@@ -18,10 +18,10 @@ export const useCommitChanges = (baseDir: string, taskId: string): UseCommitChan
   const isCommitting = useIsCommitting(baseDir, taskId);
 
   const commit = useCallback(
-    async (message: string, amend: boolean) => {
+    async (message: string, amend: boolean, filePaths?: string[]) => {
       setCommitting(baseDir, taskId, true);
       try {
-        await api.commitChanges(baseDir, taskId, message, amend);
+        await api.commitChanges(baseDir, taskId, message, amend, filePaths);
         showSuccessNotification(t('contextFiles.commitSuccess'));
       } catch (error) {
         showErrorNotification(`${t('contextFiles.commitError')}: ${error instanceof Error ? error.message : String(error)}`);

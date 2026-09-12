@@ -1216,6 +1216,7 @@
     "cancelCommit": "取消提交",
     "commitSuccess": "提交成功",
     "commitError": "提交错误",
+    "selectedFilesToCommit": "已选择 {{count}}/{{total}} 个文件将被提交",
     "groupByCommit": "按提交分组",
     "flatView": "平铺视图（与基线的差异）",
     "uncommitted": "未提交",

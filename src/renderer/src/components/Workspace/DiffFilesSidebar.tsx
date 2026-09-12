@@ -17,6 +17,7 @@ import type { TreeItem } from './types';
 
 import { Input } from '@/components/common/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox, type TriState } from '@/components/common/TriStateCheckbox';
 
 type GroupTree = {
   group: DiffModalGroup;
@@ -28,13 +29,27 @@ const MIN_WIDTH = 180;
 const MAX_WIDTH = 400;
 const DEFAULT_WIDTH = 240;
 
+const collectDescendantFilePaths = (treeData: Record<string, TreeItem>, nodeId: string): string[] => {
+  const node = treeData[nodeId];
+  if (!node) {
+    return [];
+  }
+  if (!node.isFolder) {
+    return node.file ? [node.file.path] : [];
+  }
+  return (node.children ?? []).flatMap((childId) => collectDescendantFilePaths(treeData, String(childId)));
+};
+
 type Props = {
   groups: DiffModalGroup[];
   currentFile: UpdatedFile | null;
   onFileSelect: (file: UpdatedFile) => void;
+  selectedFilePaths: Set<string>;
+  onToggleFileSelection: (filePath: string, selected: boolean) => void;
+  onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
 };
 
-export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect }: Props) => {
+export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect, selectedFilePaths, onToggleFileSelection, onToggleFolderSelection }: Props) => {
   const { t } = useTranslation();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,9 +205,32 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect }: Props) =
 
       const matchedFile = !isFolder && props.item.file ? gt.files.find((f) => normalizePath(f.path) === normalizePath(props.item.file!.path)) : undefined;
 
+      const filePath = !isFolder && props.item.file ? props.item.file.path : undefined;
+      const descendantPaths = isFolder ? collectDescendantFilePaths(gt.treeData, String(props.item.index)) : [];
+      const fileSelected = filePath !== undefined && selectedFilePaths.has(filePath);
+      const selectedDescendantsCount = descendantPaths.filter((p) => selectedFilePaths.has(p)).length;
+      const checkboxState: TriState = isFolder
+        ? selectedDescendantsCount === 0
+          ? 'unchecked'
+          : selectedDescendantsCount === descendantPaths.length
+            ? 'checked'
+            : 'indeterminate'
+        : fileSelected
+          ? 'checked'
+          : 'unchecked';
+
+      const handleToggleSelection = () => {
+        if (isFolder) {
+          onToggleFolderSelection(descendantPaths, checkboxState !== 'checked');
+        } else if (filePath) {
+          onToggleFileSelection(filePath, !fileSelected);
+        }
+      };
+
       return (
         <>
           <div ref={selected ? selectedItemRef : undefined} className={clsx('flex items-center w-full pr-1 h-6 cursor-pointer')} onClick={handleClick}>
+            <TriStateCheckbox state={checkboxState} onChange={handleToggleSelection} className="shrink-0 mr-0.5" />
             {renderChevron()}
             <span
               className={clsx(

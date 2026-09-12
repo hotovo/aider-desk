@@ -4762,14 +4762,14 @@ ${error.stderr}`,
     await this.sendWorktreeIntegrationStatusUpdated();
   }
 
-  public async generateCommitMessage(): Promise<string> {
+  public async generateCommitMessage(filePaths?: string[]): Promise<string> {
     logger.info('Generating commit message', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
 
     const taskDir = this.getTaskDir();
-    const diff = await this.gitManager.getUncommittedDiff(taskDir);
+    const diff = await this.gitManager.getUncommittedDiff(taskDir, filePaths);
 
     if (!diff) {
       throw new Error('No uncommitted changes to commit');
@@ -4814,7 +4814,7 @@ ${error.stderr}`,
     return commitMessage.trim();
   }
 
-  public async commitChanges(message: string, amend: boolean): Promise<void> {
+  public async commitChanges(message: string, amend: boolean, filePaths?: string[]): Promise<void> {
     logger.info('Committing changes', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -4830,7 +4830,7 @@ ${error.stderr}`,
     amend = beforeResult.amend;
 
     const taskDir = this.getTaskDir();
-    const committed = await this.gitManager.commitChanges(taskDir, message, amend);
+    const committed = await this.gitManager.commitChanges(taskDir, message, amend, filePaths);
     await this.sendUpdatedFilesUpdated();
     await this.sendWorktreeIntegrationStatusUpdated();
 

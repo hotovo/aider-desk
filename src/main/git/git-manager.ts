@@ -2988,9 +2988,10 @@ export class GitManager {
     }
   }
 
-  async getUncommittedDiff(worktreePath: string): Promise<string | null> {
+  async getUncommittedDiff(worktreePath: string, filePaths?: string[]): Promise<string | null> {
     try {
-      const { stdout } = await execWithShellPath('git diff HEAD', { cwd: worktreePath });
+      const pathspecs = (filePaths ?? []).map((filePath) => ` -- "${filePath.replace(/"/g, '\\"')}"`).join('');
+      const { stdout } = await execWithShellPath(`git diff HEAD${pathspecs}`, { cwd: worktreePath });
       return stdout || null;
     } catch (error) {
       logger.error('Failed to get uncommitted diff:', error);
@@ -3007,7 +3008,7 @@ export class GitManager {
     return true;
   }
 
-  async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<boolean> {
+  async commitChanges(worktreePath: string, message: string, amend: boolean, filePaths?: string[]): Promise<boolean> {
     const cancelController = new AbortController();
     this.commitCancelControllers.set(worktreePath, cancelController);
     const options = { cwd: worktreePath, signal: cancelController.signal, killSignal: 'SIGINT' as const };
@@ -3017,15 +3018,16 @@ export class GitManager {
 
       // Get the list of updated files (unstaged changes that are shown in the UI)
       const updatedFiles = await this.getUpdatedFiles(worktreePath);
+      const selectedFiles = filePaths ? updatedFiles.filter((file) => filePaths.includes(file.path)) : updatedFiles;
 
-      if (updatedFiles.length === 0 && !amend) {
+      if (selectedFiles.length === 0 && !amend) {
         logger.info('No updated files to commit');
         return true;
       }
 
-      // Stage all updated files before committing
-      if (updatedFiles.length > 0) {
-        for (const file of updatedFiles) {
+      // Stage updated files before committing
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
           if (cancelController.signal.aborted) {
             logger.info('Commit cancelled while staging files', { worktreePath });
             return false;
@@ -3033,7 +3035,7 @@ export class GitManager {
           const escapedPath = file.path.replace(/"/g, '\\"');
           await execWithShellPath(`git add -- "${escapedPath}"`, options);
         }
-        logger.info(`Staged ${updatedFiles.length} file(s) for commit`);
+        logger.info(`Staged ${selectedFiles.length} file(s) for commit`);
       }
 
       if (cancelController.signal.aborted) {

@@ -1283,6 +1283,7 @@
     "cancelCommit": "Cancel commit",
     "commitSuccess": "Changes committed successfully",
     "commitError": "Commit Error",
+    "selectedFilesToCommit": "{{count}} of {{total}} files selected to be committed",
     "groupByCommit": "Switch to group by commit view",
     "flatView": "Switch to flat view (diff from base)",
     "uncommitted": "Uncommitted",

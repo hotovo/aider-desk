@@ -598,12 +598,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.saveFile(baseDir, taskId, filePath, content);
   });
 
-  ipcMain.handle('generate-commit-message', async (_, baseDir: string, taskId: string) => {
-    return await eventsHandler.generateCommitMessage(baseDir, taskId);
+  ipcMain.handle('generate-commit-message', async (_, baseDir: string, taskId: string, filePaths?: string[]) => {
+    return await eventsHandler.generateCommitMessage(baseDir, taskId, filePaths);
   });
 
-  ipcMain.handle('commit-changes', async (_, baseDir: string, taskId: string, message: string, amend: boolean) => {
-    await eventsHandler.commitChanges(baseDir, taskId, message, amend);
+  ipcMain.handle('commit-changes', async (_, baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]) => {
+    await eventsHandler.commitChanges(baseDir, taskId, message, amend, filePaths);
   });
 
   ipcMain.handle('cancel-commit-changes', async (_, baseDir: string, taskId: string) => {

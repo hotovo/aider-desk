@@ -543,19 +543,24 @@ export class BrowserApi implements ApplicationAPI {
   getUpdatedFiles(baseDir: string, taskId: string): Promise<{ path: string; additions: number; deletions: number }[]> {
     return this.post('/get-updated-files', { projectDir: baseDir, taskId });
   }
-  async generateCommitMessage(baseDir: string, taskId: string): Promise<string> {
-    const res = await this.post<{ projectDir: string; taskId: string }, { message: string }>('/project/worktree/generate-commit-message', {
-      projectDir: baseDir,
-      taskId,
-    });
+  async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string> {
+    const res = await this.post<{ projectDir: string; taskId: string; filePaths?: string[] }, { message: string }>(
+      '/project/worktree/generate-commit-message',
+      {
+        projectDir: baseDir,
+        taskId,
+        filePaths,
+      },
+    );
     return res.message;
   }
-  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void> {
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void> {
     await this.post('/project/worktree/commit-changes', {
       projectDir: baseDir,
       taskId,
       message,
       amend,
+      filePaths,
     });
   }
   async cancelCommitChanges(baseDir: string, taskId: string): Promise<void> {
