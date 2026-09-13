@@ -4268,6 +4268,51 @@ ${error.stderr}`,
     if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
       await this.gitManager.createSymlinks(this.project.baseDir, this.task.worktree.path, settings.taskSettings.worktreeSymlinkFolders);
     }
+
+    const postCreateCommand = settings.taskSettings.worktreePostCreateCommand?.trim();
+    if (postCreateCommand) {
+      await this.runWorktreePostCreateCommand(postCreateCommand);
+    }
+  }
+
+  private async runWorktreePostCreateCommand(command: string): Promise<void> {
+    const worktree = this.task.worktree;
+    if (!worktree) {
+      return;
+    }
+
+    logger.info('Running worktree post-create command:', { baseDir: this.project.baseDir, taskId: this.taskId, command });
+    this.addLogMessage('loading', 'Running worktree post-create command...');
+    try {
+      const result = await execWithShellPath(command, {
+        cwd: worktree.path,
+        env: {
+          AIDERDESK_PROJECT_PATH: this.project.baseDir,
+          AIDERDESK_WORKTREE_PATH: worktree.path,
+          AIDERDESK_TASK_ID: this.taskId,
+          AIDERDESK_BRANCH: worktree.branch,
+        },
+      });
+      const output = [result.stdout, result.stderr].filter(Boolean).join('\n').trim();
+      if (output) {
+        this.addLogMessage('info', `Worktree post-create command output:\n${output}`);
+      }
+      this.addLogMessage('loading', 'Worktree post-create command completed.', true);
+    } catch (error) {
+      const err = error as Error & { stdout?: string; stderr?: string };
+      const output = [err.stdout, err.stderr].filter(Boolean).join('\n').trim();
+      logger.error('Worktree post-create command failed:', {
+        baseDir: this.project.baseDir,
+        taskId: this.taskId,
+        command,
+        error: err.message,
+        output,
+      });
+      if (output) {
+        this.addLogMessage('warning', `Worktree post-create command output:\n${output}`);
+      }
+      this.addLogMessage('error', `Worktree post-create command failed: ${err.message}`);
+    }
   }
 
   private async applyWorkingMode(mode: WorkingMode) {

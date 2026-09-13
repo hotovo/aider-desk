@@ -91,6 +91,16 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleWorktreePostCreateCommandChange = (command: string) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        worktreePostCreateCommand: command,
+      },
+    });
+  };
+
   const handleCompactingThresholdPercentageChange = (value: number) => {
     setSettings({
       ...settings,
@@ -436,6 +446,21 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
                 addLabel={t('settings.tasks.addSymlinkFolder')}
                 removeTooltip={t('settings.tasks.removeSymlinkFolder')}
                 emptyLabel={t('settings.tasks.noSymlinkFolders')}
+              />
+            </div>
+
+            <div className="mt-2">
+              <Input
+                label={
+                  <div className="flex items-center gap-1">
+                    <label className="text-xs text-text-primary font-medium">{t('settings.tasks.worktreePostCreateCommandLabel')}</label>
+                    <InfoIcon tooltip={t('settings.tasks.worktreePostCreateCommandTooltip')} />
+                  </div>
+                }
+                value={settings.taskSettings.worktreePostCreateCommand || ''}
+                onChange={(e) => handleWorktreePostCreateCommandChange(e.target.value)}
+                placeholder={t('settings.tasks.worktreePostCreateCommandPlaceholder')}
+                size="sm"
               />
             </div>
           </div>

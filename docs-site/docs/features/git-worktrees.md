@@ -49,6 +49,7 @@ Each project's task settings control how worktrees behave (see `TaskSettings` in
 - **Symlink folders** (`worktreeSymlinkFolders`): Folders that are symlinked from the project root into each task worktree instead of being duplicated — useful for large dependencies like `node_modules`
 - **Branch prefix** (`worktreeBranchPrefix`): Prefix used when creating worktree branch names
 - **Rename branch on name generation** (`renameBranchOnNameGeneration`): When enabled, the worktree branch is automatically renamed to match the AI-generated task name
+- **Post-create command** (`worktreePostCreateCommand`): Optional shell command executed inside the new worktree directory right after creation (and after symlinking), before the task starts. Useful for initializing submodules (`git submodule update --init --recursive`), fetching data with [datalad](https://www.datalad.org) (`datalad get .`), or any other per-worktree setup. The command runs with the user's shell `PATH` and receives the environment variables `AIDERDESK_PROJECT_PATH`, `AIDERDESK_WORKTREE_PATH`, `AIDERDESK_TASK_ID`, and `AIDERDESK_BRANCH`. Its output is shown in the task log; a non-zero exit is logged as an error but does not abort the task.
 
 ## Worktree Lifecycle Operations
 

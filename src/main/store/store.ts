@@ -103,6 +103,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
     autoGenerateTaskName: true,
     showTaskStateActions: true,
     worktreeSymlinkFolders: ['node_modules', 'vendor', '__pycache__', '.venv', 'venv'],
+    worktreePostCreateCommand: '',
     contextCompactingThreshold: { percentage: 90, tokens: 100000 },
     contextCompactionType: ContextCompactionType.Compact,
     defaultWorkingMode: 'local',

@@ -727,6 +727,7 @@ export interface TaskSettings {
   autoGenerateTaskName: boolean;
   showTaskStateActions: boolean;
   worktreeSymlinkFolders: string[];
+  worktreePostCreateCommand?: string;
   contextCompactingThreshold: { percentage: number; tokens: number };
   contextCompactionType: ContextCompactionType;
   taskNameModel?: string | null;
