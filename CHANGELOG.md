@@ -23,6 +23,7 @@
 - fixed branches dropdown not refreshing after branch switch or rebase completion
 - added ability to copy chat messages as an image to clipboard
 - improved git branches tooltip with icons and added rebase hint for worktrees behind their base branch
+- using merge-base for worktree flat diff to avoid reverse diffs
 
 ## [0.82.0]
 

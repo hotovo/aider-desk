@@ -95,6 +95,7 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
 
     useMockSeq(
       createMockSeq([
+        { stdout: 'abc123\n', stderr: '' },
         { stdout: '5\t1\tsrc/app.ts\0-\t-\tnode_modules\0', stderr: '' },
         { stdout: 'diff content', stderr: '' },
       ]),
@@ -109,6 +110,25 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/app.ts');
+    expect(execWithShellPath).toHaveBeenCalledWith('git merge-base HEAD main', { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith('git diff --numstat -z abc123', { cwd: testPath });
+  });
+
+  it('should fall back to mainBranch when merge-base fails in worktree flat mode', async () => {
+    const mainBranch = 'main';
+
+    useMockSeq(createMockSeq([new Error('fatal: ambiguous argument'), { stdout: '5\t1\tsrc/app.ts\0', stderr: '' }, { stdout: 'diff content', stderr: '' }]));
+    (lstatSync as Mock).mockImplementation(() => ({
+      isSymbolicLink: () => false,
+    }));
+    (fs.default.access as Mock).mockResolvedValue(undefined);
+    (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
+
+    const result = await gitManager.getUpdatedFiles(testPath, 'worktree', mainBranch, 'flat' as never);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].path).toBe('src/app.ts');
+    expect(execWithShellPath).toHaveBeenCalledWith('git diff --numstat -z main', { cwd: testPath });
   });
 
   it('should filter out symlink paths in worktree grouped uncommitted changes', async () => {

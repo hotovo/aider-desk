@@ -2675,10 +2675,22 @@ export class GitManager {
   private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]> {
     const files: UpdatedFile[] = [];
 
+    // Diff from the merge-base instead of the mainBranch tip, so commits on main that are not
+    // yet in this branch don't show up as reverse diffs.
+    let base = mainBranch;
     try {
-      // git diff (without ...) compares mainBranch directly to the working tree,
+      const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+      if (mergeBase.trim()) {
+        base = mergeBase.trim();
+      }
+    } catch {
+      // No HEAD or unrelated histories: fall back to mainBranch
+    }
+
+    try {
+      // git diff (without ...) compares the base directly to the working tree,
       // including both committed and uncommitted changes.
-      const { stdout: numstatOutput } = await execWithShellPath(`git diff --numstat -z ${mainBranch}`, {
+      const { stdout: numstatOutput } = await execWithShellPath(`git diff --numstat -z ${base}`, {
         cwd: worktreePath,
       });
 
@@ -2720,7 +2732,7 @@ export class GitManager {
           }
 
           const escapedPath = filePath.replace(/"/g, '\\"');
-          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${mainBranch} -- "${escapedPath}"`, {
+          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${base} -- "${escapedPath}"`, {
             cwd: worktreePath,
             maxBuffer: 10 * 1024 * 1024,
           });
