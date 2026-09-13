@@ -38,7 +38,7 @@ export const DiffsWorkerPoolProvider = ({ children }: Props) => {
   );
 
   return (
-    <WorkerPoolContextProvider poolOptions={{ workerFactory }} highlighterOptions={highlighterOptions}>
+    <WorkerPoolContextProvider poolOptions={{ workerFactory, poolSize: 2, totalASTLRUCacheSize: 25 }} highlighterOptions={highlighterOptions}>
       <DiffsThemeSync />
       {children}
     </WorkerPoolContextProvider>

@@ -25,6 +25,7 @@
 - improved git branches tooltip with icons and added rebase hint for worktrees behind their base branch
 - using merge-base for worktree flat diff to avoid reverse diffs
 - added optional worktree post-create command executed in the new worktree with project, worktree, task, and branch environment variables
+- improved diffs rendering to limit the worker pool size and AST cache, reducing memory usage
 
 ## [0.82.0]
 
