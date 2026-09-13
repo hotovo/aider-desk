@@ -6,7 +6,6 @@
 - added optional description for bash tool commands displayed in tool messages
 - improved add file to Git action to update file state optimistically without refetching
 - added task management actions to command palette (create subtask/sibling, rename, change state)
-- fixed Copy Task ID label capitalization
 - fixed worktree rebase silently dropping commits when the tracked base commit is stale
 - fixed unhandled promise rejections crashing the app and prevented checkout from detaching the main repository branch
 - carry over uncommitted changes when switching to local after checkoutless merge
@@ -24,8 +23,9 @@
 - added ability to copy chat messages as an image to clipboard
 - improved git branches tooltip with icons and added rebase hint for worktrees behind their base branch
 - using merge-base for worktree flat diff to avoid reverse diffs
-- added optional worktree post-create command executed in the new worktree with project, worktree, task, and branch environment variables
+- added support for worktree post-create command executed in the new worktree
 - improved diffs rendering to limit the worker pool size and AST cache, reducing memory usage
+- keep recently-active tasks mounted for instant switching
 
 ## [0.82.0]
 
