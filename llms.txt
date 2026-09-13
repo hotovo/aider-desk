@@ -505,8 +505,10 @@ src/
           FilesContextInfoContent.tsx
           GitBranchesButton.tsx
           GitBranchesPopup.tsx
+          GitBranchesTooltipContent.tsx
           GitStatusBadges.tsx
           MobileSidebar.tsx
+          MountedTaskView.tsx
           NoProjectsOpen.tsx
           OpenProjectDialog.tsx
           ProjectTabContent.tsx
@@ -5940,15 +5942,15 @@ async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
 // File might not be in the index
 ⋮----
-async getUncommittedDiff(worktreePath: string): Promise<string | null>
+async getUncommittedDiff(worktreePath: string, filePaths?: string[]): Promise<string | null>
 ⋮----
 cancelCommitChanges(worktreePath: string): boolean
 ⋮----
-async commitChanges(worktreePath: string, message: string, amend: boolean): Promise<boolean>
+async commitChanges(worktreePath: string, message: string, amend: boolean, filePaths?: string[]): Promise<boolean>
 ⋮----
 // Get the list of updated files (unstaged changes that are shown in the UI)
 ⋮----
-// Stage all updated files before committing
+// Stage updated files before committing
 ⋮----
 // Escape the commit message for shell
 ⋮----
@@ -8487,6 +8489,8 @@ public async createNewTask(params?: CreateTaskParams)
 // Allow extensions to modify initial task data before task is created
 ⋮----
 // Apply modifications from extension
+⋮----
+// Local mode must never carry a worktree (e.g. inherited from parent while workingMode was overridden to local)
 ⋮----
 // adding files from internal task that keeps track of files to new task
 ⋮----
@@ -11525,13 +11529,13 @@ public async addFileToGit(filePath: string): Promise<void>
 ⋮----
 public async restoreFile(filePath: string): Promise<void>
 ⋮----
-public async generateCommitMessage(): Promise<string>
+public async generateCommitMessage(filePaths?: string[]): Promise<string>
 ⋮----
 // Get last 10 commit messages for context
 ⋮----
 // Continue without commit history
 ⋮----
-public async commitChanges(message: string, amend: boolean): Promise<void>
+public async commitChanges(message: string, amend: boolean, filePaths?: string[]): Promise<void>
 ⋮----
 public cancelCommitChanges(): void
 ⋮----
@@ -12977,9 +12981,9 @@ async readFile(baseDir: string, taskId: string, filePath: string): Promise<strin
 ⋮----
 async saveFile(baseDir: string, taskId: string, filePath: string, content: string): Promise<void>
 ⋮----
-async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
+async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
 ⋮----
-async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
+async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
 ⋮----
 cancelCommitChanges(baseDir: string, taskId: string): void
 ⋮----
@@ -13327,7 +13331,7 @@ import {
   AgentProfile,
   ChangeRequestItem,
 } from '@common/types';
-import { ipcMain, clipboard } from 'electron';
+import { ipcMain, clipboard, nativeImage } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
 ⋮----
@@ -14449,8 +14453,8 @@ getAddableFiles(baseDir: string, taskId: string): Promise<string[]>
 getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]>
 refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
-async generateCommitMessage(baseDir: string, taskId: string): Promise<string>
-async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean): Promise<void>
+async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
+async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
 async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
 addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void
 async isValidPath(baseDir: string, path: string): Promise<boolean>
@@ -14691,6 +14695,8 @@ async deleteProjectMemories(projectId: string): Promise<number>
 async writeToClipboard(text: string): Promise<void>
 ⋮----
 // Fallback for mobile browsers and non-secure contexts
+⋮----
+async writeImageToClipboard(dataUrl: string): Promise<void>
 ⋮----
 async openPath(): Promise<boolean>
 ⋮----
@@ -15555,6 +15561,7 @@ type Props = {
   oldValue?: string;
   newValue?: string;
   className?: string;
+  hideCopyButton?: boolean;
 };
 ⋮----
 const handleDiffViewModeChange = (value: string) =>
@@ -17686,8 +17693,9 @@ File: src/renderer/src/components/message/MessageBar.tsx
 import { useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
+import { toPng } from 'html-to-image';
 import { UsageReportData, Message } from '@common/types';
-import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdRedo } from 'react-icons/md';
+import { MdCallSplit, MdDeleteForever, MdDeleteSweep, MdEdit, MdImage, MdRedo } from 'react-icons/md';
 import { FaEllipsisVertical } from 'react-icons/fa6';
 import { twMerge } from 'tailwind-merge';
 ⋮----
@@ -17696,6 +17704,7 @@ import { IconButton } from '../common/IconButton';
 import { CopyMessageButton } from './CopyMessageButton';
 import { UsageInfo } from './UsageInfo';
 ⋮----
+import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { includeMessageProperty } from '@/components/message/utils';
@@ -17730,6 +17739,10 @@ const handleEditClick = () =>
 const handleForkClick = () =>
 ⋮----
 const handleRemoveUpToClick = () =>
+⋮----
+const handleCopyAsImageClick = async () =>
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 <div className=
 
@@ -18058,8 +18071,6 @@ export const ResponseMessageBlock = ({
   onFork,
   onRemoveUpTo,
 }: Props) =>
-⋮----
-className=
 
 ================
 File: src/renderer/src/components/message/RetrieveMemoryToolMessage.tsx
@@ -21299,6 +21310,7 @@ import { InlineEditPanel } from '@/components/common/InlineEditPanel';
 import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { GitStatusBadges } from '@/components/project/GitStatusBadges';
 import { GitBranchesPopup } from '@/components/project/GitBranchesPopup';
+import { GitBranchesTooltipContent } from '@/components/project/GitBranchesTooltipContent';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
 ⋮----
@@ -21312,10 +21324,6 @@ const slugifyBranchName = (name: string) =>
 const trimBranchNameSeparators = (name: string) =>
 ⋮----
 const truncateBranchName = (name: string) =>
-⋮----
-const formatTruncatedList = (items: string[]) =>
-⋮----
-const buildCommitsTooltip = (label: string, commits: string[]) =>
 ⋮----
 type Props = {
   baseDir: string;
@@ -21498,6 +21506,23 @@ item.action();
 className=
 
 ================
+File: src/renderer/src/components/project/GitBranchesTooltipContent.tsx
+================
+import { CgArrowBottomLeft, CgArrowTopRight } from 'react-icons/cg';
+import { IoGitBranch } from 'react-icons/io5';
+import { TiTick } from 'react-icons/ti';
+import { useTranslation } from 'react-i18next';
+import { GitSyncCommits } from '@common/types';
+⋮----
+type Props = {
+  currentBranch: string;
+  syncCommits: GitSyncCommits;
+  worktreeBaseBranch?: string;
+};
+⋮----
+const renderCommitList = (commits: string[]) =>
+
+================
 File: src/renderer/src/components/project/GitStatusBadges.tsx
 ================
 import { useMemo } from 'react';
@@ -21575,6 +21600,38 @@ className=
 <div onClick=
 ⋮----
 showFileDialog=
+
+================
+File: src/renderer/src/components/project/MountedTaskView.tsx
+================
+import { TaskData } from '@common/types';
+import { forwardRef } from 'react';
+import { clsx } from 'clsx';
+⋮----
+import { TaskView, TaskViewRef } from '@/components/project/TaskView';
+import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
+import { FloatingExtensionPanels } from '@/components/extensions/FloatingExtensionPanels';
+import { useActiveAgentProfile } from '@/utils/agents';
+⋮----
+type Props = {
+  projectDir: string;
+  task: TaskData;
+  isActive: boolean;
+  inputHistory: string[];
+  shouldFocusPrompt: boolean;
+  updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
+  updateOptimisticTaskState: (taskId: string, taskState: string) => void;
+  onArchiveTask?: () => void;
+  onUnarchiveTask?: () => void;
+  onDeleteTask?: () => void;
+  onToggleTaskSidebar?: () => void;
+};
+⋮----
+// Inactive pooled tasks are hidden with CSS (display:none) rather than unmounted or wrapped in a
+// hidden <Activity>. This keeps the TaskView fully mounted with its effects/subscriptions intact,
+// so switching back is instant with no message reload and no sidebar re-fetch.
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/project/NoProjectsOpen.tsx
@@ -21740,7 +21797,7 @@ File: src/renderer/src/components/project/ProjectView.tsx
 ================
 import { AutonomyMode, InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -21759,12 +21816,13 @@ import {
 import { unloadTasks } from '@/stores/taskStore';
 import { releaseTaskFiles, useTaskAllFiles } from '@/stores/taskFilesStore';
 import { getTaskDir, getSortedVisibleTasks } from '@/utils/task-utils';
-import { cleanupProjectCache } from '@/stores/extensionUIStore';
+import { cleanupProjectCache, cleanupTaskCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage } from '@/hooks/useTaskResponseHandlers';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { LoadingOverlay } from '@/components/common/LoadingOverlay';
-import { TaskView, TaskViewRef } from '@/components/project/TaskView';
+import { TaskViewRef } from '@/components/project/TaskView';
+import { MountedTaskView } from '@/components/project/MountedTaskView';
 import { useApi } from '@/contexts/ApiContext';
 import { TasksProvider } from '@/contexts/TasksContext';
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
@@ -21786,6 +21844,9 @@ type Props = {
   isProjectActive?: boolean;
   initialTaskId?: string;
 };
+⋮----
+// Keep recently-active tasks mounted (LRU) so switching back is instant. The active task is
+// always at the front and therefore never evicted.
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -21827,6 +21888,8 @@ const initProject = async () =>
 ⋮----
 // Self-healing fallback: if the project became active and finished loading but no task was ever
 // activated (e.g., lost startup race or a failed task creation), activate an existing task.
+⋮----
+// Release backend/store state for tasks evicted from the mount pool (mirrors unmount cleanup).
 ⋮----
 // Switch to specific task tabs (Ctrl + 1-9)
 ⋮----
@@ -22083,10 +22146,11 @@ type Props = {
   onToggleTaskSidebar?: () => void;
 };
 ⋮----
-// ProjectView keys TaskView by task.id, so switching tasks remounts this component. Defer the
-// heavy message list until after the shell has painted: the first commit renders the shell +
-// LoadingOverlay (renderReady=false), then a rAF flips renderReady inside a transition so the
-// messages render without blocking the switch.
+// On first mount, defer the heavy message list until after the shell has painted: the first
+// commit renders the shell + LoadingOverlay (renderReady=false), then a rAF flips renderReady
+// inside a transition so the messages render without blocking the initial load. Guarded by
+// renderReady so re-running the effect (e.g. a project-level <Activity> becoming visible again)
+// does not re-trigger the transition and flash the loading overlay on an already-rendered task.
 ⋮----
 // Focus prompt field
 ⋮----
@@ -25200,6 +25264,7 @@ import type { TreeItem } from './types';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox, type TriState } from '@/components/common/TriStateCheckbox';
 ⋮----
 type GroupTree = {
   group: DiffModalGroup;
@@ -25207,13 +25272,20 @@ type GroupTree = {
   files: UpdatedFile[];
 };
 ⋮----
+const collectDescendantFilePaths = (treeData: Record<string, TreeItem>, nodeId: string): string[] =>
+⋮----
 type Props = {
   groups: DiffModalGroup[];
   currentFile: UpdatedFile | null;
   onFileSelect: (file: UpdatedFile) => void;
+  selectedFilePaths: Set<string>;
+  onToggleFileSelection: (filePath: string, selected: boolean) => void;
+  onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
 };
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
+⋮----
+// Only uncommitted files can be selected for commit, so checkboxes are shown only for the uncommitted group
 ⋮----
 const handleExpandItem = (item: TreeItem) =>
 ⋮----
@@ -25223,6 +25295,7 @@ const handleClick = () =>
 ⋮----
 const renderChevron = () =>
 ⋮----
+const handleToggleSelection = () =>
 
 ================
 File: src/renderer/src/components/Workspace/EmptyContextInfo.tsx
@@ -25785,6 +25858,12 @@ type Props = {
 ⋮----
 // Flatten groups into a single file list for navigation
 ⋮----
+// Files eligible for commit: only uncommitted files (committed files are shown for reference only)
+⋮----
+// Files selected for commit: all committable files minus explicitly deselected ones
+⋮----
+// Reset selection to all files whenever the committable file list changes (e.g. after a commit)
+⋮----
 // Cumulative file counts per group for rendering offsets in all-files view
 ⋮----
 // Find the position of a file in the flat list, matching by path and commitHash.
@@ -25825,8 +25904,6 @@ title=
 className=
 ⋮----
 {/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
-⋮----
-{/* Diff viewer with its own scroll - scrollbar right next to the file */}
 ⋮----
 comments=
 ⋮----
@@ -26778,7 +26855,7 @@ import { showErrorNotification, showSuccessNotification } from '@/utils/notifica
 ⋮----
 type UseCommitChanges = {
   isCommitting: boolean;
-  commit: (message: string, amend: boolean) => Promise<void>;
+  commit: (message: string, amend: boolean, filePaths?: string[]) => Promise<void>;
   cancelCommit: () => void;
 };
 ⋮----
