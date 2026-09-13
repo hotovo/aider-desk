@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "legacy-system-prompt",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "plannotator",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "searxng-search",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "destructive-command-guard",
