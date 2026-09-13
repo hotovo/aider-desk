@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.83.0]
 
 - added Copy Task ID to command palette
 - added optional description for bash tool commands displayed in tool messages
