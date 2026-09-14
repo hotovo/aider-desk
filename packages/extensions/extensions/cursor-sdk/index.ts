@@ -47,6 +47,26 @@ interface CursorConfig {
 
 const CURSOR_PROVIDER_ID = 'cursor-sdk';
 const AGENT_ID_METADATA_KEY = 'cursorAgentId';
+
+const configureVendoredRipgrepPath = (context: ExtensionContext): void => {
+  if (process.env.CURSOR_RIPGREP_PATH) {
+    context.log(`Cursor SDK: using CURSOR_RIPGREP_PATH from env: ${process.env.CURSOR_RIPGREP_PATH}`, 'info');
+    return;
+  }
+  try {
+    const binaryName = process.platform === 'win32' ? 'rg.exe' : 'rg';
+    const platformDir = `sdk-${process.platform}-${process.arch}`;
+    const rgPath = join(__dirname, 'node_modules', '@cursor', platformDir, 'bin', binaryName);
+    if (existsSync(rgPath)) {
+      process.env.CURSOR_RIPGREP_PATH = rgPath;
+      context.log(`Cursor SDK: set CURSOR_RIPGREP_PATH to vendored ripgrep: ${rgPath}`, 'info');
+    } else {
+      context.log(`Cursor SDK: vendored ripgrep not found at ${rgPath}`, 'warn');
+    }
+  } catch (err) {
+    context.log(`Cursor SDK: failed to resolve vendored ripgrep: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+  }
+};
 const POWER_TOOL_SERVER_NAME = 'power';
 const CURSOR_SERVER_NAME = 'cursor';
 const TOOL_SEPARATOR = '---';
@@ -560,7 +580,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.6.0',
+    version: '4.6.1',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -655,6 +675,8 @@ export default class CursorSdkExtension implements Extension {
     if (!taskContext) {
       return undefined;
     }
+
+    configureVendoredRipgrepPath(context);
 
     const prompt = event.prompt || 'Continue where you left off.';
     if (!event.prompt) {
