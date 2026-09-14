@@ -5897,7 +5897,12 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
    */
 private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: string): Promise<UpdatedFile[]>
 ⋮----
-// git diff (without ...) compares mainBranch directly to the working tree,
+// Diff from the merge-base instead of the mainBranch tip, so commits on main that are not
+// yet in this branch don't show up as reverse diffs.
+⋮----
+// No HEAD or unrelated histories: fall back to mainBranch
+⋮----
+// git diff (without ...) compares the base directly to the working tree,
 // including both committed and uncommitted changes.
 ⋮----
 // Skip symlink paths (worktree infrastructure artifacts)
@@ -11488,6 +11493,8 @@ public async sendUpdatedFilesUpdated()
 public async sendSkillsUpdated(): Promise<void>
 ⋮----
 private async initWorktree(): Promise<void>
+⋮----
+private async runWorktreePostCreateCommand(command: string): Promise<void>
 ⋮----
 private async applyWorkingMode(mode: WorkingMode)
 ⋮----
@@ -24440,6 +24447,8 @@ const handleShowTaskStateActionsChange = (checked: boolean) =>
 const handleAddSymlinkFolder = (folder: string) =>
 ⋮----
 const handleRemoveSymlinkFolder = (folder: string) =>
+⋮----
+const handleWorktreePostCreateCommandChange = (command: string) =>
 ⋮----
 const handleCompactingThresholdPercentageChange = (value: number) =>
 ⋮----
