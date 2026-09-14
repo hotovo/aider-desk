@@ -1,5 +1,10 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved updated files diff performance by loading diffs lazily on demand instead of computing them with the file list
+
+
 ## [0.83.0]
 
 - added Copy Task ID to command palette

@@ -173,6 +173,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getUpdatedFiles(baseDir, taskId);
   });
 
+  ipcMain.handle('get-updated-file-diff', async (_, baseDir: string, taskId: string, filePath: string, commitHash?: string) => {
+    return await eventsHandler.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash);
+  });
+
   ipcMain.handle('refresh-context-files', async (_, baseDir: string, taskId: string) => {
     await eventsHandler.refreshContextFiles(baseDir, taskId);
   });

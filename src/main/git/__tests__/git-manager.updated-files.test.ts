@@ -71,13 +71,15 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
   });
 
   it('should filter out symlink paths in non-worktree mode (getNonWorktreeUpdatedFiles)', async () => {
-    useMockSeq(
-      createMockSeq([
-        { stdout: 'abc123\n', stderr: '' },
-        { stdout: '3\t2\tsrc/main/file.ts\0-\t-\tresources/linux\0', stderr: '' },
-        { stdout: 'diff content', stderr: '' },
-      ]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git rev-parse HEAD') {
+        return { stdout: 'abc123\n', stderr: '' };
+      }
+      if (command === 'git diff --numstat -z HEAD') {
+        return { stdout: '3\t2\tsrc/main/file.ts\0-\t-\tresources/linux\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation((p: string) => ({
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
@@ -93,13 +95,18 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
   it('should filter out symlink paths in worktree flat mode (getWorktreeFlatUpdatedFiles)', async () => {
     const mainBranch = 'main';
 
-    useMockSeq(
-      createMockSeq([
-        { stdout: 'abc123\n', stderr: '' },
-        { stdout: '5\t1\tsrc/app.ts\0-\t-\tnode_modules\0', stderr: '' },
-        { stdout: 'diff content', stderr: '' },
-      ]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git rev-parse HEAD') {
+        return { stdout: 'abc123\n', stderr: '' };
+      }
+      if (command === 'git merge-base HEAD main') {
+        return { stdout: 'abc123\n', stderr: '' };
+      }
+      if (command === 'git diff --numstat -z abc123') {
+        return { stdout: '5\t1\tsrc/app.ts\0-\t-\tnode_modules\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation((p: string) => ({
       isSymbolicLink: () => p.includes('node_modules'),
     }));
@@ -117,7 +124,15 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
   it('should fall back to mainBranch when merge-base fails in worktree flat mode', async () => {
     const mainBranch = 'main';
 
-    useMockSeq(createMockSeq([new Error('fatal: ambiguous argument'), { stdout: '5\t1\tsrc/app.ts\0', stderr: '' }, { stdout: 'diff content', stderr: '' }]));
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.startsWith('git merge-base HEAD')) {
+        throw new Error('fatal: ambiguous argument');
+      }
+      if (command === 'git diff --numstat -z main') {
+        return { stdout: '5\t1\tsrc/app.ts\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation(() => ({
       isSymbolicLink: () => false,
     }));
@@ -133,19 +148,22 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
 
   it('should filter out symlink paths in worktree grouped uncommitted changes', async () => {
     const mainBranch = 'main';
-    const commitDiff = 'diff --git a/src/main/file.ts b/src/main/file.ts\n--- a/src/main/file.ts\n+++ b/src/main/file.ts\n@@ -1 +1 @@\n-old\n+new';
 
-    useMockSeq(
-      createMockSeq([
-        { stdout: 'abc123|Test commit\n', stderr: '' },
-        { stdout: '2\t1\tsrc/main/file.ts\n-\t-\tresources/linux\n', stderr: '' },
-        { stdout: commitDiff, stderr: '' },
-        { stdout: 'abc123\n', stderr: '' },
-        { stdout: '1\t1\tsrc/uncommitted.ts\0-\t-\tresources/linux\0', stderr: '' },
-        { stdout: 'diff content', stderr: '' },
-        { stdout: '', stderr: '' },
-      ]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.startsWith('git log')) {
+        return { stdout: 'abc123|Test commit\n', stderr: '' };
+      }
+      if (command.startsWith('git diff-tree --no-commit-id -r --numstat abc123')) {
+        return { stdout: '2\t1\tsrc/main/file.ts\n-\t-\tresources/linux\n', stderr: '' };
+      }
+      if (command === 'git rev-parse HEAD') {
+        return { stdout: 'abc123\n', stderr: '' };
+      }
+      if (command === 'git diff --numstat -z HEAD') {
+        return { stdout: '1\t1\tsrc/uncommitted.ts\0-\t-\tresources/linux\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation((p: string) => ({
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
@@ -162,19 +180,19 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
 
   it('should filter out symlink paths in worktree grouped committed changes', async () => {
     const mainBranch = 'main';
-    const commitDiff =
-      'diff --git a/resources/linux b/resources/linux\n--- a/resources/linux\n+++ b/resources/linux\n@@ -1 +1 @@\n-old\n+new\ndiff --git a/src/main/file.ts b/src/main/file.ts\n--- a/src/main/file.ts\n+++ b/src/main/file.ts\n@@ -1 +1 @@\n-old\n+new';
 
-    useMockSeq(
-      createMockSeq([
-        { stdout: 'abc123|Test commit\n', stderr: '' },
-        { stdout: '2\t1\tsrc/main/file.ts\n-\t-\tresources/linux\n', stderr: '' },
-        { stdout: commitDiff, stderr: '' },
-        { stdout: 'abc123\n', stderr: '' },
-        { stdout: '', stderr: '' },
-        { stdout: '', stderr: '' },
-      ]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.startsWith('git log')) {
+        return { stdout: 'abc123|Test commit\n', stderr: '' };
+      }
+      if (command.startsWith('git diff-tree --no-commit-id -r --numstat abc123')) {
+        return { stdout: '2\t1\tsrc/main/file.ts\n-\t-\tresources/linux\n', stderr: '' };
+      }
+      if (command === 'git rev-parse HEAD') {
+        return { stdout: 'abc123\n', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation((p: string) => ({
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
@@ -219,7 +237,7 @@ describe('GitManager - untracked files', () => {
     expect(result[0].isUntracked).toBeUndefined();
   });
 
-  it('should include untracked text files with stats and a diff', async () => {
+  it('should include untracked text files with stats (diff lazily loaded)', async () => {
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('first line\nsecond line'));
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
       if (command === 'git ls-files --others --exclude-standard -z') {
@@ -235,10 +253,9 @@ describe('GitManager - untracked files', () => {
       path: 'src/new file.ts',
       additions: 2,
       deletions: 0,
+      diff: '',
       isUntracked: true,
     });
-    expect(result[0].diff).toContain('new file mode 100644');
-    expect(result[0].diff).toContain('+second line');
   });
 
   it('should skip untracked directory entries', async () => {
@@ -283,10 +300,15 @@ describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
   });
 
   it('should return staged files when there are no commits (non-worktree mode)', async () => {
-    const diffContent =
-      'diff --git a/src/main.ts b/src/main.ts\nnew file mode 100644\n--- /dev/null\n+++ b/src/main.ts\n@@ -0,0 +1,3 @@\n+line1\n+line2\n+line3';
-
-    useMockSeq(createMockSeq([new Error('HEAD not found'), { stdout: '3\t0\tsrc/main.ts\0', stderr: '' }, { stdout: diffContent, stderr: '' }]));
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.includes('git rev-parse HEAD')) {
+        throw new Error('HEAD not found');
+      }
+      if (command.includes('4b825dc642cb6eb9a060e54bf8d69288fbee4904')) {
+        return { stdout: '3\t0\tsrc/main.ts\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
@@ -297,17 +319,19 @@ describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
     expect(result[0].path).toBe('src/main.ts');
     expect(result[0].additions).toBe(3);
     expect(result[0].deletions).toBe(0);
-    expect(result[0].diff).toBe(diffContent);
+    expect(result[0].diff).toBe('');
   });
 
   it('should filter symlink paths in no-HEAD mode', async () => {
-    useMockSeq(
-      createMockSeq([
-        new Error('HEAD not found'),
-        { stdout: '3\t0\tsrc/main.ts\0-\t-\tresources/linux\0', stderr: '' },
-        { stdout: 'diff content', stderr: '' },
-      ]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.includes('git rev-parse HEAD')) {
+        throw new Error('HEAD not found');
+      }
+      if (command.includes('4b825dc642cb6eb9a060e54bf8d69288fbee4904')) {
+        return { stdout: '3\t0\tsrc/main.ts\0-\t-\tresources/linux\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockImplementation((p: string) => ({
       isSymbolicLink: () => p.includes('resources/linux'),
     }));
@@ -341,11 +365,19 @@ describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
 
   it('should return staged files in worktree mode when no HEAD exists', async () => {
     const mainBranch = 'main';
-    const diffContent = 'diff --git a/src/app.ts b/src/app.ts\nnew file mode 100644\n--- /dev/null\n+++ b/src/app.ts\n@@ -0,0 +1,2 @@\n+hello\n+world';
 
-    useMockSeq(
-      createMockSeq([new Error('log failed'), new Error('HEAD not found'), { stdout: '2\t0\tsrc/app.ts\0', stderr: '' }, { stdout: diffContent, stderr: '' }]),
-    );
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command.startsWith('git log')) {
+        throw new Error('log failed');
+      }
+      if (command.includes('git rev-parse HEAD')) {
+        throw new Error('HEAD not found');
+      }
+      if (command.includes('4b825dc642cb6eb9a060e54bf8d69288fbee4904')) {
+        return { stdout: '2\t0\tsrc/app.ts\0', stderr: '' };
+      }
+      return { stdout: '', stderr: '' };
+    });
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false });
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('hello'));
@@ -355,6 +387,6 @@ describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
     expect(result).toHaveLength(1);
     expect(result[0].path).toBe('src/app.ts');
     expect(result[0].additions).toBe(2);
-    expect(result[0].diff).toBe(diffContent);
+    expect(result[0].diff).toBe('');
   });
 });

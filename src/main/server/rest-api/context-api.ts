@@ -35,6 +35,13 @@ const GetUpdatedFilesSchema = z.object({
   taskId: z.string().min(1, 'Task ID is required'),
 });
 
+const GetUpdatedFileDiffSchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task ID is required'),
+  filePath: z.string().min(1, 'File path is required'),
+  commitHash: z.string().optional(),
+});
+
 const RefreshContextFilesSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task ID is required'),
@@ -141,6 +148,20 @@ export class ContextApi extends BaseApi {
         const { projectDir, taskId } = parsed;
         const updatedFiles = await this.eventsHandler.getUpdatedFiles(projectDir, taskId);
         res.status(200).json(updatedFiles);
+      }),
+    );
+
+    router.post(
+      '/get-updated-file-diff',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetUpdatedFileDiffSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, filePath, commitHash } = parsed;
+        const diff = await this.eventsHandler.getUpdatedFileDiff(projectDir, taskId, filePath, commitHash);
+        res.status(200).json({ diff });
       }),
     );
 

@@ -2470,8 +2470,26 @@ export class GitManager {
     }
 
     const additions = content.length === 0 ? 0 : lines.length;
+    return { path: filePath, additions, deletions: 0, diff: '', isUntracked: true };
+  }
+
+  /**
+   * Build the synthetic unified diff for an untracked (new) file.
+   */
+  private buildUntrackedFileDiff(fileContentBuffer: Buffer, filePath: string): string {
+    if (isBinary(filePath, fileContentBuffer)) {
+      return '';
+    }
+
+    const content = fileContentBuffer.toString('utf8');
+    const lines = content.split('\n');
+    if (content.endsWith('\n')) {
+      lines.pop();
+    }
+
+    const additions = content.length === 0 ? 0 : lines.length;
     if (additions === 0) {
-      return { path: filePath, additions, deletions: 0, diff: '', isUntracked: true };
+      return '';
     }
 
     const oldPath = this.formatDiffPath(`a/${filePath}`);
@@ -2490,7 +2508,7 @@ export class GitManager {
       diffLines.push('\\ No newline at end of file');
     }
 
-    return { path: filePath, additions, deletions: 0, diff: diffLines.join('\n'), isUntracked: true };
+    return diffLines.join('\n');
   }
 
   private formatDiffPath(filePath: string): string {
@@ -2520,7 +2538,7 @@ export class GitManager {
       logger.warn('Failed to get commit list for worktree updated files:', logError);
     }
 
-    // 2. For each commit, get its files with per-commit diffs
+    // 2. For each commit, get its files (diffs are lazy loaded via getFileDiff)
     for (const commit of commits) {
       try {
         // Get numstat for this specific commit
@@ -2544,51 +2562,18 @@ export class GitManager {
           }
         }
 
-        // Get full patch for this commit (all files at once for efficiency)
-        const { stdout: fullPatch } = await execWithShellPath(`git diff-tree -p -r --unified=3 ${commit.hash}`, {
-          cwd: worktreePath,
-          maxBuffer: 50 * 1024 * 1024,
-        });
-
-        // Split unified diff into per-file diffs
-        const fileDiffs = this.parseCommitDiff(fullPatch);
-
-        // Emit one UpdatedFile per file in this commit
-        for (const [filePath, diff] of fileDiffs) {
-          const stats = fileStats.get(filePath);
-          if (!stats) {
-            continue;
-          }
-
+        // Emit one UpdatedFile per file in this commit (diff not included - lazy loaded via getFileDiff)
+        for (const [filePath, stats] of fileStats.entries()) {
           // Skip symlink paths (worktree infrastructure artifacts)
           if (this.isSymlinkPath(worktreePath, filePath)) {
             continue;
-          }
-
-          const absoluteFilePath = join(worktreePath, filePath);
-
-          // Check binary - skip diff for binary files
-          let finalDiff = diff;
-          try {
-            const fileExists = await fs
-              .access(absoluteFilePath)
-              .then(() => true)
-              .catch(() => false);
-            if (fileExists) {
-              const buf = await fs.readFile(absoluteFilePath);
-              if (isBinary(filePath, buf)) {
-                finalDiff = '';
-              }
-            }
-          } catch {
-            // If we can't check, keep the diff as-is
           }
 
           files.push({
             path: filePath,
             additions: stats.additions,
             deletions: stats.deletions,
-            diff: finalDiff,
+            diff: '',
             commitHash: commit.hash,
             commitMessage: commit.message,
           });
@@ -2631,35 +2616,7 @@ export class GitManager {
           continue;
         }
 
-        const absoluteFilePath = join(worktreePath, filePath);
-
-        let diff = '';
-        try {
-          const fileExists = await fs
-            .access(absoluteFilePath)
-            .then(() => true)
-            .catch(() => false);
-
-          if (fileExists) {
-            const fileContentBuffer = await fs.readFile(absoluteFilePath);
-            if (isBinary(filePath, fileContentBuffer)) {
-              files.push({ path: filePath, additions, deletions, diff });
-              continue;
-            }
-          }
-
-          const escapedPath = filePath.replace(/"/g, '\\"');
-          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
-            cwd: worktreePath,
-            maxBuffer: 10 * 1024 * 1024,
-          });
-          diff = diffOutput;
-        } catch (diffError) {
-          logger.warn(`Failed to get uncommitted diff for file ${filePath}:`, diffError);
-          diff = '';
-        }
-
-        files.push({ path: filePath, additions, deletions, diff });
+        files.push({ path: filePath, additions, deletions, diff: '' });
       }
     } catch (uncommittedError) {
       logger.warn('Failed to get uncommitted changes:', uncommittedError);
@@ -2714,35 +2671,7 @@ export class GitManager {
           continue;
         }
 
-        const absoluteFilePath = join(worktreePath, filePath);
-
-        let diff = '';
-        try {
-          const fileExists = await fs
-            .access(absoluteFilePath)
-            .then(() => true)
-            .catch(() => false);
-
-          if (fileExists) {
-            const fileContentBuffer = await fs.readFile(absoluteFilePath);
-            if (isBinary(filePath, fileContentBuffer)) {
-              files.push({ path: filePath, additions, deletions, diff });
-              continue;
-            }
-          }
-
-          const escapedPath = filePath.replace(/"/g, '\\"');
-          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${base} -- "${escapedPath}"`, {
-            cwd: worktreePath,
-            maxBuffer: 10 * 1024 * 1024,
-          });
-          diff = diffOutput;
-        } catch (diffError) {
-          logger.warn(`Failed to get base diff for file ${filePath}:`, diffError);
-          diff = '';
-        }
-
-        files.push({ path: filePath, additions, deletions, diff });
+        files.push({ path: filePath, additions, deletions, diff: '' });
       }
     } catch (baseDiffError) {
       logger.warn('Failed to get base diff for worktree:', baseDiffError);
@@ -2784,37 +2713,7 @@ export class GitManager {
           continue;
         }
 
-        const absoluteFilePath = join(worktreePath, filePath);
-
-        let diff = '';
-        try {
-          const fileExists = await fs
-            .access(absoluteFilePath)
-            .then(() => true)
-            .catch(() => false);
-
-          if (fileExists) {
-            const fileContentBuffer = await fs.readFile(absoluteFilePath);
-            if (isBinary(filePath, fileContentBuffer)) {
-              files.push({ path: filePath, additions, deletions, diff });
-              continue;
-            }
-          }
-
-          const escapedPath = filePath.replace(/"/g, '\\"');
-          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 HEAD -- "${escapedPath}"`, {
-            cwd: worktreePath,
-            maxBuffer: 10 * 1024 * 1024,
-          });
-          diff = diffOutput;
-        } catch (diffError) {
-          logger.warn(`Failed to get diff for file ${filePath}:`, {
-            error: diffError instanceof Error ? diffError.message : String(diffError),
-          });
-          diff = '';
-        }
-
-        files.push({ path: filePath, additions, deletions, diff });
+        files.push({ path: filePath, additions, deletions, diff: '' });
       }
     }
 
@@ -2856,37 +2755,7 @@ export class GitManager {
           continue;
         }
 
-        const absoluteFilePath = join(worktreePath, filePath);
-
-        let diff = '';
-        try {
-          const fileExists = await fs
-            .access(absoluteFilePath)
-            .then(() => true)
-            .catch(() => false);
-
-          if (fileExists) {
-            const fileContentBuffer = await fs.readFile(absoluteFilePath);
-            if (isBinary(filePath, fileContentBuffer)) {
-              files.push({ path: filePath, additions, deletions, diff });
-              continue;
-            }
-          }
-
-          const escapedPath = filePath.replace(/"/g, '\\"');
-          const { stdout: diffOutput } = await execWithShellPath(`git diff --unified=3 ${EMPTY_TREE_HASH} -- "${escapedPath}"`, {
-            cwd: worktreePath,
-            maxBuffer: 10 * 1024 * 1024,
-          });
-          diff = diffOutput;
-        } catch (diffError) {
-          logger.warn(`Failed to get diff for file ${filePath}:`, {
-            error: diffError instanceof Error ? diffError.message : String(diffError),
-          });
-          diff = '';
-        }
-
-        files.push({ path: filePath, additions, deletions, diff });
+        files.push({ path: filePath, additions, deletions, diff: '' });
       }
     } catch (error) {
       logger.warn('Failed to get updated files for repo with no commits:', {
@@ -2898,32 +2767,97 @@ export class GitManager {
   }
 
   /**
-   * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
-   * Splits on "diff --git" boundaries to isolate per-file patches.
+   * Lazy load the diff for a single updated file.
+   *
+   * - commitHash provided: per-commit diff for the file.
+   * - No commitHash: untracked file diff (synthesized) or file diff against HEAD,
+   *   merge-base (worktree flat mode) or the empty tree hash (no commits yet).
    */
-  private parseCommitDiff(patchOutput: string): Map<string, string> {
-    const fileDiffs = new Map<string, string>();
-
-    // Split into segments starting with "diff --git"
-    const segments = patchOutput.split(/(?=^diff --git )/m);
-
-    for (const segment of segments) {
-      const trimmed = segment.trim();
-      if (!trimmed.startsWith('diff --git ')) {
-        continue;
-      }
-
-      // Extract file path from "diff --git a/path b/path"
-      const match = trimmed.match(/^diff --git a\/(\S+) b\/\S+/m);
-      if (!match) {
-        continue;
-      }
-      const filePath = match[1];
-
-      fileDiffs.set(filePath, trimmed);
+  async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string, filePath?: string, commitHash?: string): Promise<string> {
+    if (!filePath) {
+      return '';
     }
 
-    return fileDiffs;
+    try {
+      const escapedPath = filePath.replace(/"/g, '\\"');
+
+      if (commitHash) {
+        if (await this.checkBinaryOrSkip(worktreePath, filePath)) {
+          return '';
+        }
+        const { stdout } = await execWithShellPath(`git diff-tree -p -r --unified=3 ${commitHash} -- "${escapedPath}"`, {
+          cwd: worktreePath,
+          maxBuffer: 10 * 1024 * 1024,
+        });
+        return stdout;
+      }
+
+      // Untracked file: synthesize the diff from the file content
+      let isTracked = false;
+      try {
+        await execWithShellPath(`git ls-files --error-unmatch -- "${escapedPath}"`, { cwd: worktreePath });
+        isTracked = true;
+      } catch {
+        isTracked = false;
+      }
+      if (!isTracked) {
+        const fileContentBuffer = await fs.readFile(join(worktreePath, filePath));
+        return this.buildUntrackedFileDiff(fileContentBuffer, filePath);
+      }
+
+      // resolve diff base
+      let base = 'HEAD';
+      if (workingMode === 'worktree' && mainBranch) {
+        try {
+          const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+          if (mergeBase.trim()) {
+            base = mergeBase.trim();
+          } else {
+            base = mainBranch;
+          }
+        } catch {
+          base = mainBranch;
+        }
+      } else {
+        try {
+          await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+        } catch {
+          base = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+        }
+      }
+
+      if (await this.checkBinaryOrSkip(worktreePath, filePath)) {
+        return '';
+      }
+
+      const { stdout } = await execWithShellPath(`git diff --unified=3 ${base} -- "${escapedPath}"`, {
+        cwd: worktreePath,
+        maxBuffer: 10 * 1024 * 1024,
+      });
+      return stdout;
+    } catch (error) {
+      logger.warn(`Failed to get diff for file ${filePath}:`, error);
+      return '';
+    }
+  }
+
+  /**
+   * Check if the file at the given path (relative to worktreePath) is binary.
+   */
+  private async checkBinaryOrSkip(worktreePath: string, filePath: string): Promise<boolean> {
+    try {
+      const fileExists = await fs
+        .access(join(worktreePath, filePath))
+        .then(() => true)
+        .catch(() => false);
+      if (fileExists) {
+        const fileContentBuffer = await fs.readFile(join(worktreePath, filePath));
+        return isBinary(filePath, fileContentBuffer);
+      }
+    } catch {
+      // If we can't check, assume regular (text) file
+    }
+    return false;
   }
 
   private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]> {

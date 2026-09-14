@@ -22,6 +22,7 @@ import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
+import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
 
 type PendingComment = {
   id: string;
@@ -126,17 +127,6 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
     });
   }, []);
 
-  // Cumulative file counts per group for rendering offsets in all-files view
-  const groupFileOffsets = useMemo(() => {
-    const offsets: number[] = [];
-    let offset = 0;
-    for (const group of groups) {
-      offsets.push(offset);
-      offset += group.files.length;
-    }
-    return offsets;
-  }, [groups]);
-
   // Find the position of a file in the flat list, matching by path and commitHash.
   // When commitHash is undefined/null, the file belongs to the uncommitted group.
   const findFilePosition = useCallback(
@@ -148,6 +138,17 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
 
   // Derive current position from the active file object
   const currentPosition = currentFile ? findFilePosition(currentFile) : -1;
+
+  // Cumulative file counts per group for rendering offsets in all-files view
+  const groupFileOffsets = useMemo(() => {
+    const offsets: number[] = [];
+    let offset = 0;
+    for (const group of groups) {
+      offsets.push(offset);
+      offset += group.files.length;
+    }
+    return offsets;
+  }, [groups]);
 
   // Derive current group by matching commitHash — uncommitted when commitHash is absent
   const currentGroup = currentFile ? (groups.find((g) => (currentFile.commitHash ? g.commitHash === currentFile.commitHash : !g.commitHash)) ?? null) : null;
@@ -371,14 +372,42 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
         if (isAllFilesView) {
           const container = scrollContainerRef.current;
           if (container) {
+            // Place the file header right below the sticky group header at the
+            // top of the scroll view (viewport-rect based, so it is stable even
+            // for deep nesting)
+            const computeTargetTop = (): number => {
+              const rect = element.getBoundingClientRect();
+              const containerRect = container.getBoundingClientRect();
+              const header = container.querySelector<HTMLElement>('.sticky.top-0');
+              const headerHeight = header?.getBoundingClientRect().height ?? 0;
+              return container.scrollTop + rect.top - containerRect.top - headerHeight - 8;
+            };
+
             programmaticScrollRef.current = true;
-            const header = container.querySelector<HTMLElement>('.sticky.top-0');
-            const headerHeight = header?.getBoundingClientRect().height ?? 0;
-            const targetTop = element.offsetTop - container.offsetTop - headerHeight - 8;
-            container.scrollTo({ top: targetTop });
-            setTimeout(() => {
-              programmaticScrollRef.current = false;
-            }, 500);
+
+            // Pin the file header at the top while diffs above it are lazily
+            // loading (they grow the content and would otherwise push the
+            // target file down). The pin is cancelled as soon as the user
+            // scrolls manually.
+            let isCancelled = false;
+            const cancelPin = () => {
+              isCancelled = true;
+            };
+            container.addEventListener('wheel', cancelPin, { once: true, passive: true });
+
+            const startTime = performance.now();
+            const pinScroll = () => {
+              if (isCancelled || performance.now() - startTime > 1500) {
+                container.removeEventListener('wheel', cancelPin);
+                programmaticScrollRef.current = false;
+                return;
+              }
+              container.scrollTo({ top: computeTargetTop() });
+              requestAnimationFrame(pinScroll);
+            };
+
+            container.scrollTo({ top: computeTargetTop() });
+            requestAnimationFrame(pinScroll);
           }
         } else {
           element.scrollIntoView({ block: 'start' });
@@ -419,6 +448,13 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
     ],
     [t],
   );
+
+  // Lazily fetched diff for the current file (single-file view)
+  const currentFileDiff = useUpdatedFileDiff(baseDir, taskId, currentFile);
+
+  const handleLoadLargeDiff = useCallback(() => {
+    currentFileDiff.load();
+  }, [currentFileDiff]);
 
   const currentFileComments = useMemo<DiffComment[]>(
     () => pendingComments.filter((c) => c.filePath === currentFile?.path).map((c) => ({ id: c.id, lineNumber: c.lineNumber, comment: c.comment })),
@@ -661,6 +697,8 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                             key={`${file.path}-${gi}`}
                             file={file}
                             index={flatIdx}
+                            baseDir={baseDir}
+                            taskId={taskId}
                             diffViewMode={diffViewMode || DiffViewMode.SideBySide}
                             selectedLineNumber={activeLineInfo?.filePath === file.path ? activeLineInfo.lineInfo.lineNumber : null}
                             onLineClick={handleLineClick}
@@ -677,16 +715,31 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
               </div>
             ) : (
               <div className="select-text bg-bg-code-block rounded-lg px-4 py-2 text-xs relative">
-                <PierreDiffViewer
-                  udiff={currentFile.diff || ''}
-                  viewMode={diffViewMode || DiffViewMode.SideBySide}
-                  showFilename={false}
-                  selectedLineNumber={activeLineInfo?.filePath === currentFile.path ? activeLineInfo.lineInfo.lineNumber : null}
-                  onLineClick={(lineInfo) => handleLineClick(lineInfo, currentFile.path)}
-                  comments={currentFileComments}
-                  onEditComment={handleEditCommentFromDiffViewer}
-                  onRemoveComment={handleRemoveComment}
-                />
+                {currentFileDiff.isLarge && currentFileDiff.diff === null && !currentFileDiff.loading ? (
+                  <div className="flex flex-col items-center gap-2 py-10">
+                    <p className="text-xs text-text-muted">
+                      {t('contextFiles.largeDiffMessage', { count: (currentFile?.additions ?? 0) + (currentFile?.deletions ?? 0) })}
+                    </p>
+                    <Button variant="contained" size="sm" onClick={handleLoadLargeDiff}>
+                      {t('contextFiles.largeDiffLoad')}
+                    </Button>
+                  </div>
+                ) : currentFileDiff.loading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <CgSpinner className="text-3xl text-text-muted animate-spin" />
+                  </div>
+                ) : (
+                  <PierreDiffViewer
+                    udiff={currentFileDiff.diff ?? ''}
+                    viewMode={diffViewMode || DiffViewMode.SideBySide}
+                    showFilename={false}
+                    selectedLineNumber={activeLineInfo?.filePath === currentFile.path ? activeLineInfo.lineInfo.lineNumber : null}
+                    onLineClick={(lineInfo) => handleLineClick(lineInfo, currentFile.path)}
+                    comments={currentFileComments}
+                    onEditComment={handleEditCommentFromDiffViewer}
+                    onRemoveComment={handleRemoveComment}
+                  />
+                )}
               </div>
             )}
           </div>

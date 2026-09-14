@@ -1293,6 +1293,8 @@
     "uncommitted": "Uncommitted",
     "group": "Group {{hash}}",
     "updatedFilesWindowTitle": "Updated Files - {{name}}",
+    "largeDiffMessage": "This file has {{count}} changed lines - loading the full diff may be slow.",
+    "largeDiffLoad": "Load diff",
     "commentsPanel": "Change Requests",
     "noComments": "No change requests yet. Click on a line in the diff viewer to add one.",
     "editComment": "Edit",

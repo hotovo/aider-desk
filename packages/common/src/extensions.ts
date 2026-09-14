@@ -832,6 +832,14 @@ export interface TaskContext {
   getUpdatedFiles(): Promise<UpdatedFile[]>;
 
   /**
+   * Get the diff for a single updated file (lazily loaded from the backend)
+   * @param filePath Path of the file (as returned by getUpdatedFiles)
+   * @param commitHash Optional commit hash for per-commit diffs in grouped worktree mode
+   * @returns Unified diff string (empty for binary files or on error)
+   */
+  getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>;
+
+  /**
    * Get the cached repository map string.
    * The repo map summarizes the codebase structure and is maintained by the Aider manager.
    * @returns Repository map as a formatted string

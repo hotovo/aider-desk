@@ -1226,6 +1226,8 @@
     "uncommitted": "未提交",
     "group": "分组 {{hash}}",
     "updatedFilesWindowTitle": "已更新文件 - {{name}}",
+    "largeDiffMessage": "该文件有 {{count}} 行变更，加载完整差异可能较慢。",
+    "largeDiffLoad": "加载差异",
     "commentsPanel": "变更请求",
     "noComments": "暂无变更请求。点击差异查看器中的行以添加请求。",
     "editComment": "编辑",
