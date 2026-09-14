@@ -8,6 +8,8 @@ import { useLocalStorage } from '@reactuses/core';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { clsx } from 'clsx';
 
+import { sortFilesByTreeOrder } from './group-files';
+
 import { IconButton } from '@/components/common/IconButton';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -83,13 +85,17 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   const programmaticScrollRef = useRef(false);
   const isScrollDrivenUpdateRef = useRef(false);
 
+  // Sort each group's files to match the sidebar tree order so the all-files view,
+  // navigation and scroll spy agree with the sidebar
+  const orderedGroups = useMemo(() => groups.map((group) => ({ ...group, files: sortFilesByTreeOrder(group.files) })), [groups]);
+
   // Flatten groups into a single file list for navigation
   const flatFiles = useMemo(() => {
-    return groups.flatMap((group) => group.files);
-  }, [groups]);
+    return orderedGroups.flatMap((group) => group.files);
+  }, [orderedGroups]);
 
   // Files eligible for commit: only uncommitted files (committed files are shown for reference only)
-  const committableFiles = useMemo(() => groups.filter((g) => !g.commitHash).flatMap((g) => g.files), [groups]);
+  const committableFiles = useMemo(() => orderedGroups.filter((g) => !g.commitHash).flatMap((g) => g.files), [orderedGroups]);
 
   // Files selected for commit: all committable files minus explicitly deselected ones
   const selectedFiles = useMemo(() => committableFiles.filter((f) => !deselectedFilePaths.has(f.path)), [committableFiles, deselectedFilePaths]);
@@ -143,15 +149,17 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   const groupFileOffsets = useMemo(() => {
     const offsets: number[] = [];
     let offset = 0;
-    for (const group of groups) {
+    for (const group of orderedGroups) {
       offsets.push(offset);
       offset += group.files.length;
     }
     return offsets;
-  }, [groups]);
+  }, [orderedGroups]);
 
   // Derive current group by matching commitHash — uncommitted when commitHash is absent
-  const currentGroup = currentFile ? (groups.find((g) => (currentFile.commitHash ? g.commitHash === currentFile.commitHash : !g.commitHash)) ?? null) : null;
+  const currentGroup = currentFile
+    ? (orderedGroups.find((g) => (currentFile.commitHash ? g.commitHash === currentFile.commitHash : !g.commitHash)) ?? null)
+    : null;
 
   const resetLineState = useCallback(() => {
     setActiveLineInfo(null);
@@ -543,7 +551,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   }, [resetLineState, currentFile]);
 
   // Whether data is in flat mode (single group with no commit hashes)
-  const isFlatMode = groups.length === 1 && !groups[0].commitHash;
+  const isFlatMode = orderedGroups.length === 1 && !orderedGroups[0].commitHash;
 
   // Render a group section header for the all-files view
   const renderGroupHeader = useCallback(
@@ -686,7 +694,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
           <div className="p-4 pr-0">
             {isAllFilesView ? (
               <div className="space-y-4">
-                {groups.map((group, gi) => (
+                {orderedGroups.map((group, gi) => (
                   <div key={group.id}>
                     {renderGroupHeader(group)}
                     <div className={isFlatMode ? 'space-y-3' : 'space-y-3 mt-3'}>
