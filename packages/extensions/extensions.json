@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "permission-gate",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "doom",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "destructive-command-guard",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 43
+      "installCount": 45
     }
   ]
 }
