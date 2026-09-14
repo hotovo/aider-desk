@@ -118,12 +118,28 @@ export const parseMessageContent = (
   let currentFile: string | undefined;
   let foundClosingFence = false;
 
+  const normalizeListBlocks = (text: string): string => {
+    const lines = text.split('\n');
+    const result: string[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*\d+\.\s/.test(line) && result.length > 0) {
+        const prev = result[result.length - 1];
+        if (prev.trim() && !/^\s*\d+\.\s/.test(prev)) {
+          result.push('');
+        }
+      }
+      result.push(line);
+    }
+    return result.join('\n');
+  };
+
   const processTextBlock = () => {
     if (currentText.trimEnd()) {
       if (renderMarkdown) {
         parts.push(
           <ReactMarkdown key={parts.length} remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
-            {currentText.trimEnd()}
+            {normalizeListBlocks(currentText.trimEnd())}
           </ReactMarkdown>,
         );
       } else {
