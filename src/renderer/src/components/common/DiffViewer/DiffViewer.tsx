@@ -86,6 +86,10 @@ export const DiffViewer = ({ oldValue, newValue, language, isComplete = false, v
 
   if (!diffFile || !diffFile.hunks || diffFile.hunks.length === 0) {
     // No error, but no diff file (e.g., identical content)
+    // While streaming, args may be partial/identical - show nothing until completed
+    if (!isComplete) {
+      return null;
+    }
     return <div className="flex w-full justify-center items-center py-4 text-text-muted-light text-xs">{t('diffViewer.noChanges')}</div>;
   }
 
