@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "protected-paths",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "external-rules",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "plannotator",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "bmad",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "destructive-command-guard",
