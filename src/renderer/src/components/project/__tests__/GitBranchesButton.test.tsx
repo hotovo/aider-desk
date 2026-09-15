@@ -306,6 +306,8 @@ describe('GitBranchesButton', () => {
         expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', 'task-123', undefined);
       });
 
+      await act(async () => {});
+
       act(() => {
         invokeAction('git.pull');
       });
@@ -322,6 +324,8 @@ describe('GitBranchesButton', () => {
       await waitFor(() => {
         expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', 'task-123', undefined);
       });
+
+      await act(async () => {});
 
       act(() => {
         invokeAction('git.push');
@@ -413,6 +417,8 @@ describe('GitBranchesButton', () => {
       await waitFor(() => {
         expect(mockApi.getSyncCommits).toHaveBeenCalledWith('/project', 'task-123', undefined);
       });
+
+      await act(async () => {});
 
       act(() => {
         invokeAction('git.renameBranch');
