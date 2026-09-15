@@ -15,7 +15,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
-  container: HTMLDivElement | null;
   scrollToBottom: () => void;
 };
 
@@ -26,6 +25,7 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
+  onContainerRef?: (container: HTMLDivElement | null) => void;
   removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt?: (messageId: string) => void;
@@ -44,6 +44,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       messages,
       allFiles = [],
       renderMarkdown,
+      onContainerRef,
       removeMessage,
       removeGroup,
       redoUserPrompt,
@@ -85,8 +86,13 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       listRef.current = node;
       const element = node?.getScrollableNode();
       prevScrollTopRef.current = element?.scrollTop ?? 0;
-      setScrollContainer(element ? (element as HTMLDivElement) : null);
+      const nextContainer = (element as HTMLDivElement) ?? null;
+      setScrollContainer((prev) => (prev === nextContainer ? prev : nextContainer));
     }, []);
+
+    useEffect(() => {
+      onContainerRef?.(scrollContainer);
+    }, [onContainerRef, scrollContainer]);
 
     const scrollContainerRef = useMemo(() => ({ current: scrollContainer }) as RefObject<HTMLDivElement | null>, [scrollContainer]);
 
@@ -258,7 +264,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       buttonClassName: 'hidden group-hover:block',
     });
 
-    const exportToImage = async () => {
+    const exportToImage = useCallback(async () => {
       const scrollNode = listRef.current?.getScrollableNode();
       if (!scrollNode) {
         return;
@@ -278,13 +284,9 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
         // eslint-disable-next-line no-console
         console.error('Failed to export chat as PNG', err);
       }
-    };
+    }, []);
 
-    useImperativeHandle(ref, () => ({
-      exportToImage,
-      container: scrollContainer,
-      scrollToBottom,
-    }));
+    useImperativeHandle(ref, () => ({ exportToImage, scrollToBottom }), [exportToImage, scrollToBottom]);
 
     const extraData = useMemo(
       () => ({

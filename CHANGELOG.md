@@ -13,6 +13,7 @@
 - fixed switching to local mode silently discarding changes by blocking the switch when the worktree has uncommitted changes
 - added OpenAI store responses setting to support Zero Data Retention organizations by running requests in stateless mode
 - fixed model library temperature column being too narrow to fit its values
+- fixed messages scroll container not always detected for in-chat search by reporting it via a dedicated callback instead of the ref
 
 ## [0.83.0]
 
