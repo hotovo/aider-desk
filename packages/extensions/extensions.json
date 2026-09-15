@@ -405,7 +405,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "tps-counter",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "verifier",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 4
+      "installCount": 6
     },
     {
       "id": "checkpoints",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "kanban",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 45
+      "installCount": 46
     }
   ]
 }
