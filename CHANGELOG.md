@@ -8,6 +8,7 @@
 - improved background projects to not load a task until the first activation
 - improved tooltips rendering performance
 - fixed agent stopping when model finished with 'stop' but produced no messages by retrying the step
+- fixed creating a task worktree when its branch is already checked out in another worktree by creating a unique sibling branch
 
 ## [0.83.0]
 

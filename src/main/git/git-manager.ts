@@ -85,6 +85,24 @@ export class GitManager {
     return join(projectPath, AIDER_DESK_TASKS_DIR, taskId, 'worktree');
   }
 
+  private async isBranchCheckedOutInOtherWorktree(projectPath: string, branch: string, worktreePath: string): Promise<boolean> {
+    try {
+      const result = await execWithShellPath('git worktree list --porcelain', { cwd: projectPath });
+      let currentPath = '';
+      for (const line of result.stdout.split(/\r?\n/)) {
+        if (line.startsWith('worktree ')) {
+          currentPath = line.slice('worktree '.length);
+        } else if (line === `branch refs/heads/${branch}`) {
+          return currentPath !== worktreePath;
+        }
+      }
+      return false;
+    } catch (error) {
+      logger.warn(`Failed to list worktrees to check branch ${branch}:`, error);
+      return false;
+    }
+  }
+
   private async initializeWorktree(projectPath: string, taskId: string): Promise<void> {
     const worktreePath = this.getWorktreePath(projectPath, taskId);
     try {
@@ -165,15 +183,23 @@ export class GitManager {
 
           if (branchExists) {
             // A1. Use existing branch
-            await execWithShellPath(`git worktree add "${worktreePath}" ${branch}`, { cwd: projectPath });
+            let branchToAdd = branch;
+            if (await this.isBranchCheckedOutInOtherWorktree(projectPath, branch, worktreePath)) {
+              // git refuses to check out a branch that is already used by another worktree;
+              // fall back to a unique sibling branch created from the original branch's tip
+              branchToAdd = await this.findUniqueBranchName(projectPath, branch);
+              await execWithShellPath(`git worktree add -b ${branchToAdd} "${worktreePath}" ${branch}`, { cwd: projectPath });
+            } else {
+              await execWithShellPath(`git worktree add "${worktreePath}" ${branch}`, { cwd: projectPath });
+            }
 
             // Get the base commit (the tip of the existing branch)
             baseCommit = (
-              await execWithShellPath(`git rev-parse ${branch}`, {
+              await execWithShellPath(`git rev-parse ${branchToAdd}`, {
                 cwd: projectPath,
               })
             ).stdout.trim();
-            newBranchName = branch;
+            newBranchName = branchToAdd;
           } else {
             // A2. Create new branch from baseRef (which defaults to 'HEAD')
 
