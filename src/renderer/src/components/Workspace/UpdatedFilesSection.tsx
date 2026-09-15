@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
-import { Activity, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, MouseEvent, ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
@@ -104,7 +104,7 @@ type Props = {
   showBorderTop?: boolean;
 };
 
-export const UpdatedFilesSection = ({
+export const UpdatedFilesSectionComponent = ({
   baseDir,
   taskId,
   isOpen,
@@ -122,6 +122,8 @@ export const UpdatedFilesSection = ({
   const { t } = useTranslation();
   const api = useApi();
   const { projectSettings, saveProjectSettings } = useProjectSettings();
+
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [updatedFiles, setUpdatedFiles] = useState<UpdatedFile[]>([]);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
@@ -345,6 +347,8 @@ export const UpdatedFilesSection = ({
     setFileToRevert(null);
   }, []);
 
+  const noopRevertFile = useCallback(() => {}, []);
+
   const toggleGroup = useCallback((groupId: string) => {
     setExpandedGroups((prev) => (prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId]));
   }, []);
@@ -445,7 +449,10 @@ export const UpdatedFilesSection = ({
 
         {/* Content area */}
         <Activity mode={isOpen ? 'visible' : 'hidden'}>
-          <div className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative">
+          <div
+            ref={scrollContainerRef}
+            className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative"
+          >
             {isLoadingUpdated ? (
               <SectionLoading label={t('common.loadingFiles')} />
             ) : hasAnyContent ? (
@@ -479,13 +486,10 @@ export const UpdatedFilesSection = ({
                               onFileDiffClick={handleFileDiffClick}
                               onAddFileToGit={isUncommitted ? handleAddFileToGit : undefined}
                               addingFilesToGit={addingFilesToGit}
-                              onRevertFile={(filePath) => {
-                                if (isUncommitted) {
-                                  handleRevertFile(filePath);
-                                }
-                              }}
+                              onRevertFile={isUncommitted ? handleRevertFile : noopRevertFile}
                               onDropFile={dropFile}
                               onAddFile={addFile}
+                              scrollContainerRef={scrollContainerRef}
                             />
                           )}
                         </div>
@@ -507,6 +511,7 @@ export const UpdatedFilesSection = ({
                         onRevertFile={handleRevertFile}
                         onDropFile={dropFile}
                         onAddFile={addFile}
+                        scrollContainerRef={scrollContainerRef}
                       />
                     )}
               </>
@@ -546,3 +551,5 @@ export const UpdatedFilesSection = ({
     </>
   );
 };
+
+export const UpdatedFilesSection = memo(UpdatedFilesSectionComponent);

@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost } from '@common/types';
-import { MouseEvent, useCallback, useMemo, useState } from 'react';
+import { MouseEvent, memo, useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
@@ -38,7 +38,7 @@ type Props = {
   showBorderTop?: boolean;
 };
 
-export const ProjectFilesSection = ({
+export const ProjectFilesSectionComponent = ({
   baseDir,
   taskId,
   allFiles,
@@ -237,3 +237,5 @@ export const ProjectFilesSection = ({
     </>
   );
 };
+
+export const ProjectFilesSection = memo(ProjectFilesSectionComponent);

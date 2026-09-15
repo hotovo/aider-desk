@@ -1,4 +1,6 @@
-import { ContextFile } from '@common/types';
+import { ContextFile, UpdatedFile } from '@common/types';
+
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
 
 export interface TreeItem {
   index: string | number;
@@ -9,6 +11,14 @@ export interface TreeItem {
 }
 
 export type SectionType = 'updated' | 'project' | 'context' | 'rules' | 'skills';
+
+export type GroupTree = {
+  group: DiffModalGroup;
+  treeData: Record<string, TreeItem>;
+  files: UpdatedFile[];
+};
+
+export const INDENT_PX = 8;
 
 export const normalizePath = (path: string): string => {
   return path.replace(/\\/g, '/');

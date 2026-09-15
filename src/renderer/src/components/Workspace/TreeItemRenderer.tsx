@@ -1,5 +1,5 @@
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { MouseEvent, useCallback, useMemo } from 'react';
+import { memo, MouseEvent, useCallback, useMemo } from 'react';
 import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
 import { MdUndo, MdOutlinePublic } from 'react-icons/md';
 import { TbPencilOff } from 'react-icons/tb';
@@ -8,41 +8,21 @@ import { VscFileCode } from 'react-icons/vsc';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 
-import { normalizePath } from './types';
+import { INDENT_PX, normalizePath } from './types';
 
 import type { SectionType, TreeItem } from './types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 
-const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] => {
-  const node = treeData[String(nodeId)];
-  if (!node?.children) {
-    return [];
-  }
-  const result: string[] = [];
-  for (const childId of node.children) {
-    const child = treeData[String(childId)];
-    if (!child) {
-      continue;
-    }
-    if (child.isFolder) {
-      result.push(...getDescendantRuleFiles(treeData, childId));
-    } else if (child.file?.path) {
-      result.push(child.file.path);
-    }
-  }
-  return result;
-};
-
 type Props = {
   item: TreeItem;
-  title: React.ReactNode;
-  children: React.ReactNode;
+  title: string;
+  level: number;
+  isExpanded: boolean;
+  onToggleFolder: (itemId: string | number) => void;
   type: SectionType;
   treeData: Record<string, TreeItem>;
-  expandedItems: string[];
-  setExpandedItems: (items: string[]) => void;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
   fileTokensInfo?: Record<string, TokensCost> | null;
@@ -58,14 +38,34 @@ type Props = {
   onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
+const getDescendantRuleFilesLocal = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] => {
+  const node = treeData[String(nodeId)];
+  if (!node?.children) {
+    return [];
+  }
+  const result: string[] = [];
+  for (const childId of node.children) {
+    const child = treeData[String(childId)];
+    if (!child) {
+      continue;
+    }
+    if (child.isFolder) {
+      result.push(...getDescendantRuleFilesLocal(treeData, childId));
+    } else if (child.file?.path) {
+      result.push(child.file.path);
+    }
+  }
+  return result;
+};
+
 export const TreeItemRenderer = ({
   item,
   title,
-  children,
+  level,
+  isExpanded,
+  onToggleFolder,
   type,
   treeData,
-  expandedItems,
-  setExpandedItems,
   contextFilesMap,
   updatedFiles,
   fileTokensInfo,
@@ -93,7 +93,7 @@ export const TreeItemRenderer = ({
     if (!showFolderCheckbox) {
       return [];
     }
-    return getDescendantRuleFiles(treeData, item.index);
+    return getDescendantRuleFilesLocal(treeData, item.index);
   }, [showFolderCheckbox, treeData, item.index]);
 
   const folderCheckState = useMemo((): TriState => {
@@ -138,35 +138,40 @@ export const TreeItemRenderer = ({
   const fileTokenTooltip = fileTokenInfo ? `${fileTokenInfo.tokens || 0} ${t('usageDashboard.charts.tokens')}, $${(fileTokenInfo.cost || 0).toFixed(5)}` : '';
 
   const toggleFolder = useCallback(() => {
-    const isExpanded = expandedItems.includes(String(item.index));
-    if (isExpanded) {
-      setExpandedItems(expandedItems.filter((id) => id !== String(item.index)));
-    } else {
-      setExpandedItems([...expandedItems, String(item.index)]);
-    }
-  }, [expandedItems, item.index, setExpandedItems]);
+    onToggleFolder(item.index);
+  }, [item.index, onToggleFolder]);
 
   const handleChevronClick = useCallback(
     (e: MouseEvent) => {
       e.stopPropagation();
+      e.preventDefault();
       toggleFolder();
     },
     [toggleFolder],
   );
 
-  const handleTitleClick = useCallback(() => {
-    if (item.isFolder) {
-      toggleFolder();
-    } else if (!item.isFolder && filePath && (type === 'project' || type === 'context') && onFilePreviewClick) {
-      onFilePreviewClick(filePath);
-    }
-  }, [item.isFolder, toggleFolder, type, filePath, onFilePreviewClick]);
+  const handleTitleClick = useCallback(
+    (e: MouseEvent) => {
+      if (item.isFolder) {
+        e.stopPropagation();
+        toggleFolder();
+      } else if (filePath && (type === 'project' || type === 'context') && onFilePreviewClick) {
+        e.stopPropagation();
+        onFilePreviewClick(filePath);
+      }
+    },
+    [item.isFolder, toggleFolder, type, filePath, onFilePreviewClick],
+  );
 
-  const handleUpdatedFileClick = useCallback(() => {
-    if (updatedFile) {
-      onFileDiffClick(updatedFile);
-    }
-  }, [updatedFile, onFileDiffClick]);
+  const handleUpdatedFileClick = useCallback(
+    (e: MouseEvent) => {
+      e.stopPropagation();
+      if (updatedFile) {
+        onFileDiffClick(updatedFile);
+      }
+    },
+    [updatedFile, onFileDiffClick],
+  );
 
   const handleAddToGitClick = useCallback(
     (e: MouseEvent) => {
@@ -190,15 +195,11 @@ export const TreeItemRenderer = ({
 
   const renderChevron = () => {
     if (!item.isFolder) {
-      return <span className="w-3 h-3 inline-block" />;
+      return <span className="w-3 h-3 inline-block flex-shrink-0" />;
     }
     return (
       <span className="flex items-center justify-center cursor-pointer" onClick={handleChevronClick}>
-        {expandedItems.includes(String(item.index)) ? (
-          <HiChevronDown className="w-3 h-3 text-text-muted-dark" />
-        ) : (
-          <HiChevronRight className="w-3 h-3 text-text-muted-dark" />
-        )}
+        {isExpanded ? <HiChevronDown className="w-3 h-3 text-text-muted-dark" /> : <HiChevronRight className="w-3 h-3 text-text-muted-dark" />}
       </span>
     );
   };
@@ -255,78 +256,77 @@ export const TreeItemRenderer = ({
   };
 
   return (
-    <>
-      <div className="flex space-between items-center w-full pr-1 h-6 group/item">
-        <div className="flex items-center flex-grow min-w-0">
-          {renderChevron()}
-          {renderTitle()}
-        </div>
-
-        <div className="flex items-center gap-1 flex-shrink-0 group">
-          {isRuleFile && (
-            <>
-              {source === 'global-rule' && (
-                <Tooltip content={t('contextFiles.globalRule')}>
-                  <MdOutlinePublic className="w-4 h-4 text-text-muted-light mr-1" />
-                </Tooltip>
-              )}
-              {source === 'project-rule' && (
-                <Tooltip content={t('contextFiles.projectRule')}>
-                  <VscFileCode className="w-4 h-4 text-text-muted-light mr-1" />
-                </Tooltip>
-              )}
-              {source === 'agent-rule' && (
-                <Tooltip content={t('contextFiles.agentRule')}>
-                  <RiRobot2Line className="w-4 h-4 text-text-muted-light mr-1" />
-                </Tooltip>
-              )}
-            </>
-          )}
-          {showFolderCheckbox && folderRuleFiles.length > 0 && <TriStateCheckbox state={folderCheckState} onChange={handleFolderCheckboxToggle} />}
-          {showRuleCheckbox && <TriStateCheckbox state={isRuleDisabled ? 'unchecked' : 'checked'} onChange={handleFileCheckboxToggle} />}
-          {showConflictWarning && (
-            <Tooltip content={t('contextFiles.fileHasConflicts')}>
-              <RiAlertLine className="w-4 h-4 text-warning" />
-            </Tooltip>
-          )}
-          {item.file?.readOnly && !isRuleFile && (
-            <Tooltip content={t('contextFiles.readOnly')}>
-              <TbPencilOff className="w-4 h-4 text-text-muted-light" />
-            </Tooltip>
-          )}
-          {showRemove && (
-            <button onClick={onDropFile(item)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark">
-              <HiX className="w-4 h-4" />
-            </button>
-          )}
-          {showAdd && (
-            <Tooltip content={t('contextFiles.addFileTooltip.cmd')}>
-              <button onClick={onAddFile(item)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
-                <HiPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          )}
-          {showAddToGit && (
-            <Tooltip content={t('contextFiles.addFileToGit')}>
-              <button
-                onClick={handleAddToGitClick}
-                disabled={isAddingToGit}
-                className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted-light hover:text-text-primary disabled:opacity-50"
-              >
-                <HiPlus className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          )}
-          {showRevert && (
-            <Tooltip content={t('contextFiles.revertFile')}>
-              <button onClick={handleRevertClick} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
-                <MdUndo className="w-4 h-4" />
-              </button>
-            </Tooltip>
-          )}
-        </div>
+    <div className="flex space-between items-center w-full pr-1 h-6 group/item" style={{ paddingLeft: `${level * INDENT_PX}px` }}>
+      <div className="flex items-center flex-grow min-w-0">
+        {renderChevron()}
+        {renderTitle()}
       </div>
-      {children}
-    </>
+
+      <div className="flex items-center gap-1 flex-shrink-0 group">
+        {isRuleFile && (
+          <>
+            {source === 'global-rule' && (
+              <Tooltip content={t('contextFiles.globalRule')}>
+                <MdOutlinePublic className="w-4 h-4 text-text-muted-light mr-1" />
+              </Tooltip>
+            )}
+            {source === 'project-rule' && (
+              <Tooltip content={t('contextFiles.projectRule')}>
+                <VscFileCode className="w-4 h-4 text-text-muted-light mr-1" />
+              </Tooltip>
+            )}
+            {source === 'agent-rule' && (
+              <Tooltip content={t('contextFiles.agentRule')}>
+                <RiRobot2Line className="w-4 h-4 text-text-muted-light mr-1" />
+              </Tooltip>
+            )}
+          </>
+        )}
+        {showFolderCheckbox && folderRuleFiles.length > 0 && <TriStateCheckbox state={folderCheckState} onChange={handleFolderCheckboxToggle} />}
+        {showRuleCheckbox && <TriStateCheckbox state={isRuleDisabled ? 'unchecked' : 'checked'} onChange={handleFileCheckboxToggle} />}
+        {showConflictWarning && (
+          <Tooltip content={t('contextFiles.fileHasConflicts')}>
+            <RiAlertLine className="w-4 h-4 text-warning" />
+          </Tooltip>
+        )}
+        {item.file?.readOnly && !isRuleFile && (
+          <Tooltip content={t('contextFiles.readOnly')}>
+            <TbPencilOff className="w-4 h-4 text-text-muted-light" />
+          </Tooltip>
+        )}
+        {showRemove && (
+          <button onClick={onDropFile(item)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-error-dark">
+            <HiX className="w-4 h-4" />
+          </button>
+        )}
+        {showAdd && (
+          <Tooltip content={t('contextFiles.addFileTooltip.cmd')}>
+            <button onClick={onAddFile(item)} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
+              <HiPlus className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        )}
+        {showAddToGit && (
+          <Tooltip content={t('contextFiles.addFileToGit')}>
+            <button
+              onClick={handleAddToGitClick}
+              disabled={isAddingToGit}
+              className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted-light hover:text-text-primary disabled:opacity-50"
+            >
+              <HiPlus className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        )}
+        {showRevert && (
+          <Tooltip content={t('contextFiles.revertFile')}>
+            <button onClick={handleRevertClick} className="px-1 py-1 rounded hover:bg-bg-primary-light text-text-muted hover:text-text-primary">
+              <MdUndo className="w-4 h-4" />
+            </button>
+          </Tooltip>
+        )}
+      </div>
+    </div>
   );
 };
+
+export const MemoizedTreeItemRenderer = memo(TreeItemRenderer);

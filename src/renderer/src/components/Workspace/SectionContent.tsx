@@ -1,10 +1,9 @@
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { Dispatch, MouseEvent, ReactNode, SetStateAction, useCallback } from 'react';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { Dispatch, MouseEvent, ReactNode, RefObject, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 
-import { TreeItemRenderer } from './TreeItemRenderer';
+import { Tree } from './Tree';
 import { SectionLoading } from './SectionLoading';
 
 import type { SectionType, TreeItem } from './types';
@@ -30,127 +29,53 @@ type Props = {
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 };
 
-export const SectionContent = ({
-  section,
-  treeData,
-  expandedItems,
-  setExpandedItems,
-  contextFilesMap,
-  updatedFiles,
-  fileTokensInfo,
-  os,
-  searchField,
-  emptyContent,
-  isLoading,
-  disabledRuleFiles,
-  onToggleRuleFile,
-  onFileDiffClick,
-  onFilePreviewClick,
-  onAddFileToGit,
-  addingFilesToGit,
-  onRevertFile,
-  onDropFile,
-  onAddFile,
-}: Props) => {
+export const SectionContent = ({ ...props }: Props) => {
   const { t } = useTranslation();
-  const treeId = `tree-${section}`;
-
-  const renderItem = useCallback(
-    (props: { item: TreeItem; title: ReactNode; children: ReactNode; context: unknown }) => (
-      <TreeItemRenderer
-        item={props.item}
-        title={props.title}
-        type={section}
-        treeData={treeData}
-        expandedItems={expandedItems}
-        setExpandedItems={setExpandedItems}
-        contextFilesMap={contextFilesMap}
-        updatedFiles={updatedFiles}
-        fileTokensInfo={fileTokensInfo}
-        os={os}
-        disabledRuleFiles={disabledRuleFiles}
-        onToggleRuleFile={onToggleRuleFile}
-        onFileDiffClick={onFileDiffClick}
-        onFilePreviewClick={onFilePreviewClick}
-        onAddFileToGit={onAddFileToGit}
-        addingFilesToGit={addingFilesToGit}
-        onRevertFile={onRevertFile}
-        onDropFile={onDropFile}
-        onAddFile={onAddFile}
-      >
-        {props.children}
-      </TreeItemRenderer>
-    ),
-    [
-      section,
-      treeData,
-      expandedItems,
-      setExpandedItems,
-      contextFilesMap,
-      updatedFiles,
-      fileTokensInfo,
-      os,
-      disabledRuleFiles,
-      onToggleRuleFile,
-      onFileDiffClick,
-      onFilePreviewClick,
-      onAddFileToGit,
-      addingFilesToGit,
-      onRevertFile,
-      onDropFile,
-      onAddFile,
-    ],
-  );
-
-  const handleExpandItem = useCallback((item: TreeItem) => setExpandedItems([...expandedItems, String(item.index)]), [expandedItems, setExpandedItems]);
-
-  const handleCollapseItem = useCallback(
-    (item: TreeItem) => setExpandedItems(expandedItems.filter((id) => id !== String(item.index))),
-    [expandedItems, setExpandedItems],
-  );
-
-  const hasContent = Object.keys(treeData).length > 1;
+  const hasContent = Object.keys(props.treeData).length > 1;
 
   return (
     <>
-      {searchField && (
+      {props.searchField && (
         <div className="px-2 py-2 border-b border-border-dark-light bg-bg-primary-light" onClick={(e) => e.stopPropagation()}>
-          {searchField}
+          {props.searchField}
         </div>
       )}
 
       <motion.div
-        className="flex-grow w-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded pl-1 py-1 bg-bg-primary-light-strong relative"
+        className="flex-grow w-full flex flex-col overflow-hidden scrollbar-thin scrollbar-thumb-bg-tertiary scrollbar-track-bg-primary-light scrollbar-rounded bg-bg-primary-light-strong relative"
         initial={{ opacity: 0, height: 0 }}
         animate={{ opacity: 1, height: 'auto' }}
         exit={{ opacity: 0, height: 0 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
       >
-        {isLoading ? (
+        {props.isLoading ? (
           <SectionLoading label={t('common.loadingFiles')} />
         ) : hasContent ? (
-          <ControlledTreeEnvironment
-            items={treeData}
-            getItemTitle={(item) => item.data}
-            renderItemTitle={({ title }) => title}
-            viewState={{
-              [treeId]: {
-                expandedItems,
-              },
-            }}
-            onExpandItem={handleExpandItem}
-            onCollapseItem={handleCollapseItem}
-            renderItem={renderItem}
-            canDragAndDrop={false}
-            canDropOnFolder={false}
-            canReorderItems={false}
-          >
-            <Tree treeId={treeId} rootItem="root" />
-          </ControlledTreeEnvironment>
-        ) : emptyContent ? (
-          emptyContent
+          <Tree
+            section={props.section}
+            treeData={props.treeData}
+            expandedItems={props.expandedItems}
+            setExpandedItems={props.setExpandedItems}
+            contextFilesMap={props.contextFilesMap}
+            updatedFiles={props.updatedFiles}
+            fileTokensInfo={props.fileTokensInfo}
+            os={props.os}
+            disabledRuleFiles={props.disabledRuleFiles}
+            onToggleRuleFile={props.onToggleRuleFile}
+            onFileDiffClick={props.onFileDiffClick}
+            onFilePreviewClick={props.onFilePreviewClick}
+            onAddFileToGit={props.onAddFileToGit}
+            addingFilesToGit={props.addingFilesToGit}
+            onRevertFile={props.onRevertFile}
+            onDropFile={props.onDropFile}
+            onAddFile={props.onAddFile}
+            scrollContainerRef={props.scrollContainerRef}
+          />
+        ) : props.emptyContent ? (
+          props.emptyContent
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-center text-text-muted text-2xs">{t('common.noFiles')}</div>
         )}

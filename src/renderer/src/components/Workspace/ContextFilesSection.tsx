@@ -1,5 +1,5 @@
 import { ContextFile, Mode, OS, TokensCost } from '@common/types';
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 
@@ -33,7 +33,7 @@ type Props = {
   showBorderTop?: boolean;
 };
 
-export const ContextFilesSection = ({
+export const ContextFilesSectionComponent = ({
   mode,
   baseDir,
   taskId,
@@ -154,3 +154,5 @@ export const ContextFilesSection = ({
     </>
   );
 };
+
+export const ContextFilesSection = memo(ContextFilesSectionComponent);
