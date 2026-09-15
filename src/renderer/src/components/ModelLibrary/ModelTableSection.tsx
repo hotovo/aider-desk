@@ -243,7 +243,7 @@ export const ModelTableSection = ({
           </Tooltip>
         ),
         align: 'center',
-        maxWidth: 50,
+        maxWidth: 100,
         cellClassName: 'text-xs',
         sort: (a, b) => {
           if (a.temperature === undefined && b.temperature === undefined) {
