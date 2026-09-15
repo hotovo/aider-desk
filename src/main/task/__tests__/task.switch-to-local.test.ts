@@ -192,6 +192,7 @@ describe('Task - switchToLocalWorkingMode with merge', () => {
       getProjectMainBranch: vi.fn().mockResolvedValue('main'),
       mergeWorktreeToMainWithUncommitted: vi.fn(),
       applyUncommittedChangesToMain: vi.fn().mockResolvedValue(undefined),
+      getUncommittedFiles: vi.fn().mockResolvedValue({ count: 0, files: [] }),
     };
   });
 
@@ -236,5 +237,39 @@ describe('Task - switchToLocalWorkingMode with merge', () => {
 
     expect(updateTaskSpy).not.toHaveBeenCalled();
     expect(updateAutocompletionSpy).not.toHaveBeenCalled();
+  });
+
+  it('aborts the switch without merging when the worktree has uncommitted changes', async () => {
+    const { t, updateTaskSpy, updateAutocompletionSpy } = prepareTask(mergeState(false));
+    mockGitManager.getUncommittedFiles.mockResolvedValue({ count: 2, files: ['a.ts', 'b.ts'] });
+
+    await expect(t.switchToLocalWorkingMode()).rejects.toThrow('uncommitted');
+
+    expect(mockGitManager.mergeWorktreeToMainWithUncommitted).not.toHaveBeenCalled();
+    expect(mockGitManager.applyUncommittedChangesToMain).not.toHaveBeenCalled();
+    expect(updateTaskSpy).not.toHaveBeenCalled();
+    expect(updateAutocompletionSpy).not.toHaveBeenCalled();
+  });
+
+  it('switches without merging when the worktree is clean', async () => {
+    const { t, updateTaskSpy, updateAutocompletionSpy } = prepareTask(mergeState(false));
+    mockGitManager.getUncommittedFiles.mockResolvedValue({ count: 0, files: [] });
+
+    await t.switchToLocalWorkingMode();
+
+    expect(mockGitManager.getUncommittedFiles).toHaveBeenCalledWith(worktreePath);
+    expect(updateTaskSpy).toHaveBeenCalledWith({ workingMode: 'local' });
+    expect(updateAutocompletionSpy).toHaveBeenCalledWith(undefined, true);
+  });
+
+  it('switches without merging despite uncommitted changes when discarding is explicit', async () => {
+    const { t, updateTaskSpy, updateAutocompletionSpy } = prepareTask(mergeState(false));
+    mockGitManager.getUncommittedFiles.mockResolvedValue({ count: 2, files: ['a.ts', 'b.ts'] });
+
+    await t.switchToLocalWorkingMode({ discardWorktreeChanges: true });
+
+    expect(mockGitManager.getUncommittedFiles).not.toHaveBeenCalled();
+    expect(updateTaskSpy).toHaveBeenCalledWith({ workingMode: 'local' });
+    expect(updateAutocompletionSpy).toHaveBeenCalledWith(undefined, true);
   });
 });

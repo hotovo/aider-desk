@@ -708,7 +708,7 @@ export class EventsHandler {
   async switchToLocalWorkingMode(
     baseDir: string,
     taskId: string,
-    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean },
+    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean; discardWorktreeChanges?: boolean },
   ): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
     await task.switchToLocalWorkingMode(options);

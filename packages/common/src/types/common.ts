@@ -1017,6 +1017,7 @@ export interface SwitchToLocalOptions {
   mergeBeforeSwitch?: boolean;
   targetBranch?: string;
   switchAllInWorktree?: boolean;
+  discardWorktreeChanges?: boolean;
 }
 
 export interface SwitchToWorktreeOptions {

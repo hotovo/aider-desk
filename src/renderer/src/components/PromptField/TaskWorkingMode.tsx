@@ -103,13 +103,13 @@ export const TaskWorkingMode = ({
   const willShowConfirmDialog = isWorktree ? hasWorktreeChanges : hasLocalChanges;
 
   const performSwitch = useCallback(
-    async (mode: WorkingMode) => {
+    async (mode: WorkingMode, discardWorktreeChanges = false) => {
       setShowConfirmLocal(false);
       setShowConfirmWorktree(false);
       setIsSwitching(true);
       try {
         if (mode === 'local') {
-          await api.switchToLocalWorkingMode(task.baseDir, task.id);
+          await api.switchToLocalWorkingMode(task.baseDir, task.id, { discardWorktreeChanges });
         } else {
           await api.switchToWorktreeWorkingMode(task.baseDir, task.id);
         }
@@ -186,7 +186,7 @@ export const TaskWorkingMode = ({
 
   const handleLocalConfirm = async () => {
     if (localOption === LocalSwitchOption.Remove) {
-      await performSwitch('local');
+      await performSwitch('local', true);
     } else if (localOption === LocalSwitchOption.MergeAll) {
       await performMergeAndSwitchAll();
     } else {

@@ -317,6 +317,7 @@ const SwitchToLocalWorkingModeSchema = z.object({
   mergeBeforeSwitch: z.boolean().optional(),
   targetBranch: z.string().optional(),
   switchAllInWorktree: z.boolean().optional(),
+  discardWorktreeChanges: z.boolean().optional(),
 });
 
 const SwitchToWorktreeWorkingModeSchema = z.object({
@@ -1046,8 +1047,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, mergeBeforeSwitch, targetBranch, switchAllInWorktree } = parsed;
-        await this.eventsHandler.switchToLocalWorkingMode(projectDir, taskId, { mergeBeforeSwitch, targetBranch, switchAllInWorktree });
+        const { projectDir, taskId, mergeBeforeSwitch, targetBranch, switchAllInWorktree, discardWorktreeChanges } = parsed;
+        await this.eventsHandler.switchToLocalWorkingMode(projectDir, taskId, { mergeBeforeSwitch, targetBranch, switchAllInWorktree, discardWorktreeChanges });
         res.status(200).json({ message: 'Switched to local working mode' });
       }),
     );

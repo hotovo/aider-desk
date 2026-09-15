@@ -4487,6 +4487,22 @@ ${error.stderr}`,
         this.addLogMessage('error', 'worktree.switchToLocalRebaseInProgress', true);
         throw new Error('Cannot switch to local mode while a rebase is in progress. Continue or abort the rebase first.');
       }
+
+      if (!options?.mergeBeforeSwitch && !options?.discardWorktreeChanges) {
+        const uncommittedFiles = await this.gitManager.getUncommittedFiles(this.task.worktree.path);
+        if (uncommittedFiles.count > 0) {
+          logger.warn('Refusing to switch to local mode because the worktree has uncommitted changes', {
+            baseDir: this.project.baseDir,
+            taskId: this.taskId,
+            uncommittedFiles: uncommittedFiles.files,
+          });
+
+          this.addLogMessage('error', 'worktree.switchToLocalUncommittedChanges', true);
+          throw new Error(
+            `Cannot switch to local mode: worktree has ${uncommittedFiles.count} uncommitted file(s). Merge first or explicitly discard the changes.`,
+          );
+        }
+      }
     }
 
     if (options?.mergeBeforeSwitch && this.task.worktree) {

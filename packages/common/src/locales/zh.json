@@ -1986,6 +1986,7 @@
     "rebasePausedDueToConflicts": "变基因冲突而暂停。请解决冲突后继续变基，或中止变基以恢复工作树。",
     "rebaseConflictsResolvedDescription": "冲突已解决并暂存。你现在可以继续变基。",
     "switchToLocalRebaseInProgress": "变基进行中时无法切换到本地模式。请先继续或中止变基。",
+    "switchToLocalUncommittedChanges": "工作树有未提交的更改。请先合并它们，或在切换到本地模式前明确丢弃这些更改。",
     "confirmRebaseTitle": "变基工作树",
     "confirmRebaseMessage": "这将把工作树变基到所选分支上。如有冲突，需要你进行解决。",
     "confirmAbortRebaseTitle": "中止变基",

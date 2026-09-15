@@ -1184,6 +1184,7 @@ export class BrowserApi implements ApplicationAPI {
       mergeBeforeSwitch: options?.mergeBeforeSwitch,
       targetBranch: options?.targetBranch,
       switchAllInWorktree: options?.switchAllInWorktree,
+      discardWorktreeChanges: options?.discardWorktreeChanges,
     });
   }
 

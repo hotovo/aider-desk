@@ -1978,6 +1978,7 @@
     "rebasePausedDueToConflicts": "Rebase paused due to conflicts. Resolve them and continue the rebase, or abort it to restore the worktree.",
     "rebaseConflictsResolvedDescription": "Conflicts have been resolved and staged. You can now continue the rebase.",
     "switchToLocalRebaseInProgress": "Cannot switch to local mode while a rebase is in progress. Continue or abort the rebase first.",
+    "switchToLocalUncommittedChanges": "Worktree has uncommitted changes. Merge them first or explicitly discard them before switching to local mode.",
     "confirmRebaseTitle": "Rebase worktree",
     "confirmRebaseMessage": "This will rebase your worktree onto the selected branch. If there are conflicts, you will need to resolve them.",
     "confirmAbortRebaseTitle": "Abort rebase",
