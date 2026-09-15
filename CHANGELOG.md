@@ -7,7 +7,7 @@
 - fixed markdown numbered lists starting mid-paragraph being rendered as plain text by inserting required blank lines
 - improved background projects to not load a task until the first activation
 - improved tooltips rendering performance
-
+- fixed agent stopping when model finished with 'stop' but produced no messages by retrying the step
 
 ## [0.83.0]
 

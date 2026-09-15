@@ -1247,9 +1247,28 @@ export class Agent {
           continue;
         }
 
+        // Check for 'stop' with empty response (model generated tokens, but no usable messages)
+        if (finishReason === 'stop' && currentStepMessages.length === 0 && retryCount < MAX_RETRIES) {
+          logger.warn('Finish reason is "stop" but the step produced no messages. Retrying...');
+          retryCount++;
+          continue;
+        }
+        if (finishReason === 'stop' && currentStepMessages.length === 0) {
+          logger.warn('Finish reason is "stop" but the step produced no messages. Max retries reached, stopping.');
+        }
+
         // Check for 'stop' with trailing tool message
         const lastMessage = currentStepMessages[currentStepMessages.length - 1];
-        if (finishReason === 'stop' && lastMessage?.role === 'tool') {
+        if (finishReason === 'stop') {
+          // Dump the last 2 message roles to diagnose why the trailing tool message check may not match
+          const lastTwo = currentStepMessages.slice(-2).map((m) => ({
+            role: m.role,
+            id: (m as { id?: string }).id,
+            contentTypes: Array.isArray(m.content) ? m.content.map((p) => (p as { type?: string }).type) : undefined,
+          }));
+          logger.info(`Finish reason is "stop". Last two step messages: ${JSON.stringify(lastTwo)}`);
+        }
+        if (finishReason === 'stop' && lastMessage?.role === 'tool' && retryCount < MAX_RETRIES) {
           logger.debug('Finish reason is "stop" but last message is a tool call. Retrying...');
           retryCount++;
           continue;
