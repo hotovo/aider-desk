@@ -262,12 +262,15 @@ describe('Home', () => {
   });
 
   describe('URL Navigation', () => {
-    it('activates existing project from URL', async () => {
+    it('mirrors the deep-linked open project to the backend even if another project is backend-active', async () => {
       const mockProjects = [
         { baseDir: '/project/existing', active: false },
         { baseDir: '/project/other', active: true },
       ] as ProjectData[];
       mockApi.getOpenProjects.mockResolvedValue(mockProjects);
+      mockApi.setActiveProject.mockImplementation((baseDir) => {
+        return Promise.resolve(mockProjects.map((p) => ({ ...p, active: p.baseDir === baseDir })));
+      });
 
       render(
         <MemoryRouter initialEntries={['/home?project=%2Fproject%2Fexisting']}>
@@ -288,9 +291,10 @@ describe('Home', () => {
         expect(screen.getAllByTestId('project-view').length).toBeGreaterThan(0);
       });
 
-      // setActiveProject should NOT be called for existing projects from URL
-      // (the URL parameter now drives the active state per-window)
-      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
+      // The focused (deep-linked) project is mirrored to main exactly once,
+      // even though the store's backend-active project is a different one
+      expect(mockApi.setActiveProject).toHaveBeenCalledTimes(1);
+      expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/existing');
     });
 
     it('adds and activates new project from URL', async () => {
@@ -321,8 +325,13 @@ describe('Home', () => {
         expect(mockApi.addOpenProject).toHaveBeenCalledWith('/project/new');
       });
 
-      // setActiveProject should NOT be called - URL drives the active state
-      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
+      // The one-shot mirror targets the deep-linked project; for a project not
+      // yet open, setActiveProject is a no-op in main until the deep-link flow
+      // adds the project and flips active
+      await waitFor(() => {
+        expect(mockApi.setActiveProject).toHaveBeenCalledTimes(1);
+      });
+      expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/new');
 
       // Project views should be rendered after projects are updated
       await waitFor(() => {
@@ -367,8 +376,10 @@ describe('Home', () => {
       // Wait a bit more to ensure no additional calls happen
       await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Should not call setActiveProject since the project is already active
-      expect(mockApi.setActiveProject).not.toHaveBeenCalled();
+      // The one-shot mirror calls setActiveProject exactly once (the URL project
+      // is the focused one) and never re-triggers
+      expect(mockApi.setActiveProject).toHaveBeenCalledTimes(1);
+      expect(mockApi.setActiveProject).toHaveBeenCalledWith('/project/existing');
     });
   });
 });

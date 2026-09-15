@@ -112,6 +112,30 @@ export const Home = () => {
     void loadProjects();
   }, [api]);
 
+  // Mirrors the window's focused project tab to the backend (once per mount) so
+  // main-process state (e.g., active flags on open projects) matches the window's
+  // focus at startup — including deep links, whose URL project may differ from
+  // the store's active project; later tab switches are handled by setActiveProject.
+  // For a deep link to a project not yet open, setActiveProject may be a no-op in
+  // main — the deep-link flow adds the project and flips active on its own.
+  const mirroredProjectRef = useRef(false);
+  useEffect(() => {
+    if (!projectsLoaded || closingProjectRef.current) {
+      return;
+    }
+    const mirrorTarget = urlProjectBaseDir || storeActiveProject;
+    if (mirroredProjectRef.current || !mirrorTarget) {
+      return;
+    }
+    mirroredProjectRef.current = true;
+    // One-shot: on failure we don't reset the flag — state resyncs on the next
+    // explicit tab switch, which calls setActiveProject on its own
+    void api.setActiveProject(mirrorTarget).catch((error) => {
+      // eslint-disable-next-line no-console
+      console.error('Error mirroring active project:', error);
+    });
+  }, [api, projectsLoaded, urlProjectBaseDir, storeActiveProject]);
+
   useEffect(() => {
     const handleShowView = (viewId: string) => {
       if (viewId.startsWith('settings/')) {
@@ -160,12 +184,16 @@ export const Home = () => {
           const removedIndex = optimisticOpenProjects.findIndex((project) => project.baseDir === projectBaseDir);
           const remaining = optimisticOpenProjects.filter((project) => project.baseDir !== projectBaseDir);
 
+          let nextActiveBaseDir: string | undefined;
           // Only change selection if we're closing the currently active project
           if (compareBaseDirs(projectBaseDir, activeProject, os ?? undefined) && remaining.length > 0) {
             // Pick adjacent from remaining array (not original!) to avoid re-selecting the closed project
             const nextIndex = removedIndex >= remaining.length ? removedIndex - 1 : removedIndex;
             const nextProject = remaining[nextIndex];
-            setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(nextProject.baseDir) }, { replace: true });
+            nextActiveBaseDir = nextProject?.baseDir;
+            if (nextActiveBaseDir) {
+              setSearchParams({ [URL_PARAMS.PROJECT]: encodeBaseDir(nextActiveBaseDir) }, { replace: true });
+            }
           } else if (remaining.length === 0) {
             setSearchParams({}, { replace: true });
           }
@@ -173,7 +201,21 @@ export const Home = () => {
 
           setOptimisticOpenProjects(remaining);
           const updatedProjects = await api.removeOpenProject(projectBaseDir);
-          setOpenProjects(updatedProjects);
+          if (nextActiveBaseDir) {
+            try {
+              setOpenProjects(await api.setActiveProject(nextActiveBaseDir));
+            } catch (error) {
+              // eslint-disable-next-line no-console
+              console.error('Error setting active project after close:', error);
+              setOpenProjects(updatedProjects);
+              // nextActiveBaseDir was already written to the URL above; revert to
+              // whichever project is actually active after the failed call.
+              const fallbackBaseDir = updatedProjects.find((p) => p.active)?.baseDir;
+              setSearchParams(fallbackBaseDir ? { [URL_PARAMS.PROJECT]: encodeBaseDir(fallbackBaseDir) } : {}, { replace: true });
+            }
+          } else {
+            setOpenProjects(updatedProjects);
+          }
         } finally {
           closingProjectRef.current = null;
         }
