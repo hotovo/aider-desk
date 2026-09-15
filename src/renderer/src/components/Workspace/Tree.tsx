@@ -46,10 +46,8 @@ export const Tree = ({ expandedItems, setExpandedItems, scrollContainerRef, tree
     getItemName: (item) => item.getItemData().data,
     isItemFolder: (item) => item.getItemData().isFolder === true,
     dataLoader: {
-      getItem: (itemId) =>
-        treeData[String(itemId)] ?? { index: itemId, isFolder: false, data: String(itemId), children: [] },
-      getChildren: (itemId) =>
-        (treeData[String(itemId)]?.children ?? []).filter((childId) => treeData[childId]).map(String),
+      getItem: (itemId) => treeData[String(itemId)] ?? { index: itemId, isFolder: false, data: String(itemId), children: [] },
+      getChildren: (itemId) => (treeData[String(itemId)]?.children ?? []).filter((childId) => treeData[childId]).map(String),
     },
     state: {
       expandedItems,
