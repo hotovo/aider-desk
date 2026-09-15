@@ -339,7 +339,9 @@
     "modelName": "모델 이름",
     "baseUrlPlaceholder": "예: http://localhost:8080/v1",
     "useWebSearch": "웹 검색 사용",
-    "useWebSearchTooltip": "활성화하면 모델이 OpenAI의 웹 검색 도구를 사용하여 인터넷에서 최신 정보를 가져옵니다."
+    "useWebSearchTooltip": "활성화하면 모델이 OpenAI의 웹 검색 도구를 사용하여 인터넷에서 최신 정보를 가져옵니다.",
+    "storeResponses": "응답 저장",
+    "storeResponsesTooltip": "활성화하면 OpenAI가 서버 측에 응답을 저장하고, 작업을 재개할 때 대화가 ID로 이를 참조합니다. OpenAI 조직이 제로 데이터 보존(ZDR)을 사용하는 경우 이 옵션을 비활성화하세요. ZDR 조직에서는 저장된 항목이 유지되지 않아 작업 재개 시 \"해당 id의 항목을 찾을 수 없음\" 오류가 발생합니다. 비활성화하면 요청이 상태 비저장 모드로 실행되며 추론은 암호화된 콘텐츠를 통해 재생됩니다."
   },
   "ollama": {
     "baseUrl": "기본 URL",

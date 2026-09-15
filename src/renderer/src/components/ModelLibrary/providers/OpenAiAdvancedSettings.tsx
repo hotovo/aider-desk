@@ -16,6 +16,7 @@ export const OpenAiAdvancedSettings = ({ provider, onChange }: Props) => {
 
   const reasoningEffort = provider.reasoningEffort || ReasoningEffort.None;
   const useWebSearch = provider.useWebSearch ?? false;
+  const store = provider.store ?? true;
 
   const reasoningOptions: Option[] = [
     { value: ReasoningEffort.None, label: t('reasoningEffort.none') },
@@ -40,6 +41,13 @@ export const OpenAiAdvancedSettings = ({ provider, onChange }: Props) => {
     });
   };
 
+  const handleStoreChange = (checked: boolean) => {
+    onChange({
+      ...provider,
+      store: checked,
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Select label={t('reasoningEffort.label')} value={reasoningEffort} onChange={handleReasoningEffortChange} options={reasoningOptions} />
@@ -47,6 +55,11 @@ export const OpenAiAdvancedSettings = ({ provider, onChange }: Props) => {
       <div className="flex items-center space-x-2">
         <Checkbox label={<span className="text-sm">{t('openai.useWebSearch')}</span>} checked={useWebSearch} onChange={handleUseWebSearchChange} />
         <InfoIcon tooltip={t('openai.useWebSearchTooltip')} />
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox label={<span className="text-sm">{t('openai.storeResponses')}</span>} checked={store} onChange={handleStoreChange} />
+        <InfoIcon tooltip={t('openai.storeResponsesTooltip')} />
       </div>
     </div>
   );

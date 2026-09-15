@@ -334,7 +334,9 @@
     "modelName": "模型",
     "baseUrlPlaceholder": "例如 http://localhost:8080/v1",
     "useWebSearch": "使用网络搜索",
-    "useWebSearchTooltip": "启用后，模型将使用 OpenAI 的网络搜索工具来访问互联网上的当前信息。"
+    "useWebSearchTooltip": "启用后，模型将使用 OpenAI 的网络搜索工具来访问互联网上的当前信息。",
+    "storeResponses": "存储响应",
+    "storeResponsesTooltip": "启用后，OpenAI 会在服务端存储响应，恢复任务时将通过 ID 引用这些响应。如果您的 OpenAI 组织使用零数据保留（ZDR），请禁用此选项——ZDR 组织不会持久化存储的项目，恢复任务将失败并提示“找不到具有该 ID 的项目”。禁用后，请求将以无状态模式运行，通过加密内容回放推理数据。"
   },
   "ollama": {
     "baseUrl": "基础 URL",

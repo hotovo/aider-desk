@@ -24,6 +24,7 @@ export const OpenAiModelOverrides = ({ provider, overrides, onChange }: Props) =
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
       useWebSearch: updatedProvider.useWebSearch,
+      store: updatedProvider.store,
       disableStreaming: updatedProvider.disableStreaming,
       disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };

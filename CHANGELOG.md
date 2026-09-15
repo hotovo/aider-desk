@@ -11,6 +11,7 @@
 - fixed creating a task worktree when its branch is already checked out in another worktree by creating a unique sibling branch
 - fixed diff viewer showing 'no changes' while streaming by hiding content until diff is complete
 - fixed switching to local mode silently discarding changes by blocking the switch when the worktree has uncommitted changes
+- added OpenAI store responses setting to support Zero Data Retention organizations by running requests in stateless mode
 
 ## [0.83.0]
 

@@ -129,6 +129,7 @@ export interface OpenAiProvider extends LlmProviderBase {
   apiKey: string;
   reasoningEffort?: ReasoningEffort;
   useWebSearch: boolean;
+  store?: boolean;
   voice?: Partial<OpenAiVoiceControlSettings>;
 }
 export const isOpenAiProvider = (provider: LlmProviderBase): provider is OpenAiProvider => provider.name === 'openai';

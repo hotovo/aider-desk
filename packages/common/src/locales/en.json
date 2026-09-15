@@ -335,7 +335,9 @@
     "modelName": "Model Name",
     "baseUrlPlaceholder": "e.g. http://localhost:8080/v1",
     "useWebSearch": "Use Web Search",
-    "useWebSearchTooltip": "When enabled, the model will use OpenAI's web search tool to access current information from the internet."
+    "useWebSearchTooltip": "When enabled, the model will use OpenAI's web search tool to access current information from the internet.",
+    "storeResponses": "Store responses",
+    "storeResponsesTooltip": "When enabled, OpenAI stores responses server-side and conversations reference them by ID when resuming. Disable this if your OpenAI organization uses Zero Data Retention (ZDR) — stored items are not persisted for ZDR organizations and resuming tasks would fail with 'Item with id not found'. When disabled, requests run in stateless mode and reasoning is replayed via encrypted content instead."
   },
   "ollama": {
     "baseUrl": "Base URL",

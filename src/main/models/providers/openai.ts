@@ -129,6 +129,12 @@ export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, re
 
   const openAiProvider = provider as OpenAiProvider;
 
+  // Extract store setting from model overrides or provider config.
+  // Defaults to true (AI SDK default). Set to false for stateless/ZDR mode so
+  // resuming tasks does not reference server-side items that are not persisted.
+  const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;
+  const store = providerOverrides?.store ?? openAiProvider.store ?? true;
+
   // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
   // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
   // Keep reasoningSummary so reasoning output is still returned.
@@ -136,12 +142,12 @@ export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, re
     return {
       openai: {
         reasoningSummary: 'auto',
+        store,
       },
     };
   }
 
   // Extract reasoningEffort from model overrides or provider config
-  const providerOverrides = model.providerOverrides as Partial<OpenAiProvider> | undefined;
   const reasoningEffort = providerOverrides?.reasoningEffort ?? openAiProvider.reasoningEffort;
 
   // Map ReasoningEffort enum to AI SDK format
@@ -156,11 +162,16 @@ export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, re
       openai: {
         reasoningSummary: 'auto',
         reasoningEffort: mappedReasoningEffort,
+        store,
       },
     };
   }
 
-  return undefined;
+  return {
+    openai: {
+      store,
+    },
+  };
 };
 
 // === Provider Tools Functions ===
