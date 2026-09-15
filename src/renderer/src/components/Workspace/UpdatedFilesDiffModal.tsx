@@ -728,7 +728,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                     <p className="text-xs text-text-muted">
                       {t('contextFiles.largeDiffMessage', { count: (currentFile?.additions ?? 0) + (currentFile?.deletions ?? 0) })}
                     </p>
-                    <Button variant="contained" size="sm" onClick={handleLoadLargeDiff}>
+                    <Button variant="contained" size="xs" onClick={handleLoadLargeDiff}>
                       {t('contextFiles.largeDiffLoad')}
                     </Button>
                   </div>

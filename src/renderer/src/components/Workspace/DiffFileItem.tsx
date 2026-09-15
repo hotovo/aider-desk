@@ -131,7 +131,7 @@ export const DiffFileItem = ({
               {isLarge && diff === null && !loading ? (
                 <div className="flex flex-col items-center gap-2 py-8">
                   <p className="text-xs text-text-muted">{t('contextFiles.largeDiffMessage', { count: file.additions + file.deletions })}</p>
-                  <Button variant="contained" size="sm" onClick={handleLoadLargeDiff}>
+                  <Button variant="contained" size="xs" onClick={handleLoadLargeDiff}>
                     {t('contextFiles.largeDiffLoad')}
                   </Button>
                 </div>
