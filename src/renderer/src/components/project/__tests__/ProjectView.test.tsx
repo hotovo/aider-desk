@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { TaskData, TaskStateData } from '@common/types';
+import { TaskCreatedData, TaskData, TaskStateData } from '@common/types';
 
 import { ProjectView } from '../ProjectView';
 
@@ -209,6 +209,55 @@ describe('ProjectView', () => {
 
     // Task 1 should be in the mocked TaskSidebar (appears twice: once from mock sidebar and once from mock task view)
     expect(screen.getAllByText('Task 1')).toHaveLength(2);
+  });
+
+  it('does not load any task in a background project until first-time activation', async () => {
+    mockApi.getTasks.mockResolvedValue([
+      { id: 'task-1', name: 'Task 1', baseDir: projectDir },
+      { id: 'task-2', name: 'Task 2', baseDir: projectDir },
+    ] as TaskData[]);
+
+    const { rerender } = render(<ProjectView projectDir={projectDir} isProjectActive={false} />);
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalledWith(projectDir));
+
+    expect(mockApi.createNewTask).not.toHaveBeenCalled();
+    expect(mockApi.loadTask).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('task-view')).not.toBeInTheDocument();
+
+    rerender(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => {
+      const activeView = screen.getAllByTestId('task-view').find((el) => el.getAttribute('data-active') === 'true');
+      expect(activeView).toHaveTextContent('Task 1');
+    });
+  });
+
+  it('creates a new task on first-time activation for background projects in Empty mode', async () => {
+    mockApi.getTasks.mockResolvedValue([{ id: 'task-1', name: 'Task 1', baseDir: projectDir, createdAt: '2023-01-01T00:00:00Z' }] as TaskData[]);
+    let taskCreatedHandler: (data: TaskCreatedData) => void = () => {};
+    mockApi.addTaskCreatedListener.mockImplementation((_projectDir: string, handler: (data: TaskCreatedData) => void) => {
+      taskCreatedHandler = handler;
+      return () => undefined;
+    });
+    mockApi.createNewTask.mockImplementation(async () => {
+      const newTask = { id: 'task-2', name: 'Task 2', baseDir: projectDir } as TaskData;
+      taskCreatedHandler({ task: newTask, baseDir: projectDir, activate: true });
+      return newTask;
+    });
+    const { rerender } = render(<ProjectView projectDir={projectDir} isProjectActive={false} />);
+    await waitFor(() => expect(mockApi.getTasks).toHaveBeenCalledWith(projectDir));
+    expect(mockApi.createNewTask).not.toHaveBeenCalled();
+
+    rerender(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    await waitFor(() => expect(mockApi.createNewTask).toHaveBeenCalledWith(projectDir));
+    await waitFor(() => {
+      const activeView = screen.getAllByTestId('task-view').find((el) => el.getAttribute('data-active') === 'true');
+      expect(activeView).toHaveTextContent('Task 2');
+    });
+
+    mockApi.createNewTask.mockImplementation(() => Promise.resolve({ id: 'task-2', name: 'Task 2' } as TaskData));
+    mockApi.addTaskCreatedListener.mockImplementation(() => () => undefined);
   });
 
   it('excludes archived tasks from the command palette metadata', async () => {

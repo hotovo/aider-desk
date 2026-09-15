@@ -5,6 +5,7 @@
 - improved updated files diff performance by loading diffs lazily on demand instead of computing them with the file list
 - fixed updated files diff modal file ordering to match the sidebar tree order
 - fixed markdown numbered lists starting mid-paragraph being rendered as plain text by inserting required blank lines
+- improved background projects to not load a task until the first activation
 
 
 ## [0.83.0]

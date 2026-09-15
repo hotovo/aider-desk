@@ -78,6 +78,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
   const taskContentRef = useRef<HTMLDivElement>(null);
   const creatingTaskRef = useRef(false);
   const hasActivatedTaskRef = useRef(false);
+  const startupAppliedRef = useRef(false);
   const activeTask = activeTaskId ? optimisticTasks.find((task) => task.id === activeTaskId) : null;
   const activeTaskFiles = useTaskAllFiles(activeTask ? getTaskDir(activeTask) : undefined);
   const editorOpenFiles = useFileEditorStore((state) => state.projectsMap.get(projectDir)?.openFiles ?? []);
@@ -117,6 +118,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
     },
     [focusActiveTaskPrompt],
   );
+
+  const isProjectActiveRef = useRef(isProjectActive);
+  useEffect(() => {
+    isProjectActiveRef.current = isProjectActive;
+  }, [isProjectActive]);
 
   const createNewTask = useCallback(
     async (parentId?: string) => {
@@ -164,8 +170,8 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
     [TASK_HOTKEYS.NEW_TASK, createNewTask, isProjectActive],
   );
 
-  useEffect(() => {
-    const handleStartupMode = async (tasks: TaskData[]) => {
+  const handleStartupMode = useCallback(
+    async (tasks: TaskData[]) => {
       // Check if URL specifies a task to activate
       if (initialTaskId) {
         const initialTask = tasks.find((task) => task.id === initialTaskId);
@@ -212,11 +218,16 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
         }
       }
 
-      if (startupTask) {
+      // Only mount/load the task when the project is currently active; startup mode is
+      // re-applied by the first-activation effect for background projects.
+      if (startupTask && isProjectActiveRef.current) {
         activateTask(startupTask.id);
       }
-    };
+    },
+    [initialTaskId, startupMode, api, projectDir, activateTask],
+  );
 
+  useEffect(() => {
     const handleProjectStarted = () => {
       setStarting(false);
     };
@@ -299,8 +310,12 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
         setProjectTasks(projectDir, tasks);
         setTasksLoading(false);
 
-        // Handle startup mode
-        await handleStartupMode(tasks);
+        // Handle startup mode only for currently-active projects; background projects defer it
+        // to their first activation (startup-on-first-activation effect below).
+        if (isProjectActiveRef.current) {
+          startupAppliedRef.current = true;
+          await handleStartupMode(tasks);
+        }
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to load tasks:', error);
@@ -333,26 +348,18 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       taskIds.forEach(cleanupProcessingResponseMessage);
       cleanupProjectCache(projectDir);
     };
-  }, [activateTask, api, projectDir, startupMode, initialTaskId]);
+  }, [activateTask, api, projectDir, handleStartupMode]);
 
-  // Self-healing fallback: if the project became active and finished loading but no task was ever
-  // activated (e.g., lost startup race or a failed task creation), activate an existing task.
+  // Startup-on-first-activation: background projects do not load any task until they are first
+  // activated, then the configured startup mode is applied once (also serving as a self-healing
+  // fallback if the startup race was lost or task creation failed).
   useEffect(() => {
-    if (!isProjectActive || starting || tasksLoading || activeTaskId || hasActivatedTaskRef.current) {
+    if (!isProjectActive || starting || tasksLoading || hasActivatedTaskRef.current || startupAppliedRef.current) {
       return;
     }
-
-    const existingNewTask = optimisticTasks.find((task) => !task.createdAt && !task.archived);
-    const candidate =
-      existingNewTask ??
-      [...optimisticTasks]
-        .filter((task) => !task.archived)
-        .sort((first, second) => (second.updatedAt ?? second.createdAt ?? '').localeCompare(first.updatedAt ?? first.createdAt ?? ''))[0];
-
-    if (candidate) {
-      activateTask(candidate.id, false);
-    }
-  }, [isProjectActive, starting, tasksLoading, activeTaskId, optimisticTasks, activateTask]);
+    startupAppliedRef.current = true;
+    void handleStartupMode(optimisticTasks);
+  }, [isProjectActive, starting, tasksLoading, optimisticTasks, handleStartupMode]);
 
   // Release backend/store state for tasks evicted from the mount pool (mirrors unmount cleanup).
   const prevMountedTaskIdsRef = useRef<string[]>([]);
