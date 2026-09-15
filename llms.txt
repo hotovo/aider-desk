@@ -701,6 +701,7 @@ src/
         useTaskResponseHandlers.ts
         useTaskToolHandlers.ts
         useTypingAnimation.ts
+        useUpdatedFileDiff.ts
         useUserMessageNavigation.tsx
         useVersions.ts
         useWorktreeIntegrationStatus.ts
@@ -5110,6 +5111,8 @@ async getAllFiles(useGit = true): Promise<string[]>
 ⋮----
 async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
+async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
+⋮----
 getRepoMap(): string
 ⋮----
 async addToGit(path: string): Promise<void>
@@ -5858,6 +5861,11 @@ private async includeUntrackedFiles(worktreePath: string, files: UpdatedFile[]):
 ⋮----
 private async createUntrackedUpdatedFile(worktreePath: string, filePath: string): Promise<UpdatedFile>
 ⋮----
+/**
+   * Build the synthetic unified diff for an untracked (new) file.
+   */
+private buildUntrackedFileDiff(fileContentBuffer: Buffer, filePath: string): string
+⋮----
 private formatDiffPath(filePath: string): string
 ⋮----
 /**
@@ -5867,23 +5875,15 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 ⋮----
 // 1. Get commits in order (oldest first) between mainBranch and HEAD
 ⋮----
-// 2. For each commit, get its files with per-commit diffs
+// 2. For each commit, get its files (diffs are lazy loaded via getFileDiff)
 ⋮----
 // Get numstat for this specific commit
 ⋮----
 // Build a map of filePath -> {additions, deletions} from numstat
 ⋮----
-// Get full patch for this commit (all files at once for efficiency)
-⋮----
-// Split unified diff into per-file diffs
-⋮----
-// Emit one UpdatedFile per file in this commit
+// Emit one UpdatedFile per file in this commit (diff not included - lazy loaded via getFileDiff)
 ⋮----
 // Skip symlink paths (worktree infrastructure artifacts)
-⋮----
-// Check binary - skip diff for binary files
-⋮----
-// If we can't check, keep the diff as-is
 ⋮----
 // 3. Get uncommitted changes (diff against HEAD, not merge-base)
 ⋮----
@@ -5924,14 +5924,24 @@ private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedF
 private async getNoHeadUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
 ⋮----
 /**
-   * Parse the output of `git diff-tree -p -r` into a map of filePath -> diff text.
-   * Splits on "diff --git" boundaries to isolate per-file patches.
+   * Lazy load the diff for a single updated file.
+   *
+   * - commitHash provided: per-commit diff for the file.
+   * - No commitHash: untracked file diff (synthesized) or file diff against HEAD,
+   *   merge-base (worktree flat mode) or the empty tree hash (no commits yet).
    */
-private parseCommitDiff(patchOutput: string): Map<string, string>
+async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string, filePath?: string, commitHash?: string): Promise<string>
 ⋮----
-// Split into segments starting with "diff --git"
+// Untracked file: synthesize the diff from the file content
 ⋮----
-// Extract file path from "diff --git a/path b/path"
+// resolve diff base
+⋮----
+/**
+   * Check if the file at the given path (relative to worktreePath) is binary.
+   */
+private async checkBinaryOrSkip(worktreePath: string, filePath: string): Promise<boolean>
+⋮----
+// If we can't check, assume regular (text) file
 ⋮----
 private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]>
 ⋮----
@@ -11140,6 +11150,8 @@ public async getAllFiles(useGit = true): Promise<string[]>
 ⋮----
 public async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
+public async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
+⋮----
 public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]>
 ⋮----
 public async getRuleFilesAsContextFiles(profile?: AgentProfile, includeDisabled = false): Promise<ContextFile[]>
@@ -12870,6 +12882,8 @@ async refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]>
 ⋮----
+async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
+⋮----
 async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void>
 ⋮----
 dropFile(baseDir: string, taskId: string, filePath: string): void
@@ -14460,6 +14474,7 @@ getAddableFiles(baseDir: string, taskId: string): Promise<string[]>
 getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]>
 refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
+getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
 async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
 async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
@@ -25223,21 +25238,26 @@ File: src/renderer/src/components/Workspace/ContextFilesSectionInner.tsx
 ================
 File: src/renderer/src/components/Workspace/DiffFileItem.tsx
 ================
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, MouseEvent } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MdOutlineCommit } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
 import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { Button } from '@/components/common/Button';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
+import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
 ⋮----
 type Props = {
   file: UpdatedFile;
   index: number;
+  baseDir: string;
+  taskId: string;
   diffViewMode: DiffViewMode;
   selectedLineNumber?: number | null;
   onLineClick: (lineInfo: PierreLineClickInfo, filePath: string) => void;
@@ -25247,7 +25267,21 @@ type Props = {
   stickyHeader?: boolean;
 };
 ⋮----
-export const DiffFileItem = (
+export const DiffFileItem = ({
+  file,
+  index,
+  baseDir,
+  taskId,
+  diffViewMode,
+  selectedLineNumber,
+  onLineClick,
+  comments,
+  onEditComment,
+  onRemoveComment,
+  stickyHeader,
+}: Props) =>
+⋮----
+// Diffs are fetched lazily only when the file item scrolls into the viewport
 ⋮----
 className=
 
@@ -25513,7 +25547,14 @@ File: src/renderer/src/components/Workspace/group-files.ts
 ================
 import { UpdatedFile } from '@common/types';
 ⋮----
+import { createFileTree, normalizePath } from './types';
+⋮----
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
+⋮----
+// Sort files to match the sidebar tree order (folders first, alphabetical within each folder, depth-first)
+export const sortFilesByTreeOrder = (files: UpdatedFile[]): UpdatedFile[] =>
+⋮----
+const walk = (nodeId: string): void =>
 ⋮----
 export const groupFilesByCommit = (files: UpdatedFile[]): DiffModalGroup[] =>
 ⋮----
@@ -25825,6 +25866,8 @@ import { useLocalStorage } from '@reactuses/core';
 import { DiffViewMode, UpdatedFile } from '@common/types';
 import { clsx } from 'clsx';
 ⋮----
+import { sortFilesByTreeOrder } from './group-files';
+⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -25839,6 +25882,7 @@ import { DiffFilesSidebar } from '@/components/Workspace/DiffFilesSidebar';
 import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
+import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
 ⋮----
 type PendingComment = {
   id: string;
@@ -25865,6 +25909,9 @@ type Props = {
   openInWindowTitle?: string;
 };
 ⋮----
+// Sort each group's files to match the sidebar tree order so the all-files view,
+// navigation and scroll spy agree with the sidebar
+⋮----
 // Flatten groups into a single file list for navigation
 ⋮----
 // Files eligible for commit: only uncommitted files (committed files are shown for reference only)
@@ -25873,12 +25920,12 @@ type Props = {
 ⋮----
 // Reset selection to all files whenever the committable file list changes (e.g. after a commit)
 ⋮----
-// Cumulative file counts per group for rendering offsets in all-files view
-⋮----
 // Find the position of a file in the flat list, matching by path and commitHash.
 // When commitHash is undefined/null, the file belongs to the uncommitted group.
 ⋮----
 // Derive current position from the active file object
+⋮----
+// Cumulative file counts per group for rendering offsets in all-files view
 ⋮----
 // Derive current group by matching commitHash — uncommitted when commitHash is absent
 ⋮----
@@ -25891,6 +25938,22 @@ type Props = {
 // Allow empty message only when amending
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+// Place the file header right below the sticky group header at the
+// top of the scroll view (viewport-rect based, so it is stable even
+// for deep nesting)
+const computeTargetTop = (): number =>
+⋮----
+// Pin the file header at the top while diffs above it are lazily
+// loading (they grow the content and would otherwise push the
+// target file down). The pin is cancelled as soon as the user
+// scrolls manually.
+⋮----
+const cancelPin = () =>
+⋮----
+const pinScroll = () =>
+⋮----
+// Lazily fetched diff for the current file (single-file view)
 ⋮----
 // Sync currentFile when initialFile prop changes (user clicks a different file)
 ⋮----
@@ -27335,6 +27398,50 @@ export const useTypingAnimation = (text: string, typingSpeed: number = 60, pause
 // When we reach end, wait before restarting
 ⋮----
 // Letter-by-letter typing animation
+
+================
+File: src/renderer/src/hooks/useUpdatedFileDiff.ts
+================
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { UpdatedFile } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+// Files with more changed lines than this show a "load diff" placeholder instead of auto-fetching
+⋮----
+type CachedDiff = {
+  diff: string;
+  timestamp: number;
+};
+⋮----
+type UseUpdatedFileDiffResult = {
+  diff: string | null;
+  loading: boolean;
+  isLarge: boolean;
+  load: () => void;
+};
+⋮----
+const fileDiffKey = (file: UpdatedFile): string => `$
+⋮----
+/**
+ * Lazily fetches the diff for an updated file from the backend on demand.
+ * Small diffs are fetched automatically; files above LARGE_DIFF_THRESHOLD wait
+ * for an explicit load() call (GitHub-style "large file" gate).
+ */
+export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: UpdatedFile | null | undefined, enabled = true): UseUpdatedFileDiffResult =>
+⋮----
+// New file (or first mount): reset loaded state. Once a diff is loaded
+// for the current key it stays loaded until the file/modal changes.
+⋮----
+// Already fetched for this key: keep it (no refetch when disabled/toggled)
+⋮----
+// Large files wait for an explicit user request
+⋮----
+const fetchDiff = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
 
 ================
 File: src/renderer/src/hooks/useUserMessageNavigation.tsx
@@ -32128,7 +32235,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.83.0-dev",
+  "version": "0.84.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
