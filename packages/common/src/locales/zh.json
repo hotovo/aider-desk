@@ -1059,7 +1059,8 @@
     "unarchive": "取消归档",
     "confirmDelete": "确认删除",
     "remove": "移除消息",
-    "deleteUpToHere": "删除到此为止"
+    "deleteUpToHere": "删除到此为止",
+    "ephemeralGroupTooltip": "此线程/群组是临时性的——不会随任务保存，重新加载后将消失"
   },
   "errors": {
     "frozenTitle": "AIDER冻结了?",

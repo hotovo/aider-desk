@@ -2,6 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useCallback, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { FaRegHourglass } from 'react-icons/fa';
+import { FiLayers } from 'react-icons/fi';
 import {
   LocalizedString,
   UsageReportData,
@@ -22,6 +24,7 @@ import { areMessagesEqual, groupAssistantMessages } from './utils';
 
 import { Accordion } from '@/components/common/Accordion';
 import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 type Props = {
@@ -168,8 +171,17 @@ const GroupMessageBlockComponent = ({
   }, [onFork, message.children]);
 
   const header = (
-    <div className={clsx('w-full px-3 py-1 group flex items-center justify-between', !message.group.finished && 'animate-pulse')}>
-      <div className="text-xs text-left">{getGroupDisplayName(message.group.name)}</div>
+    <div className={clsx('w-full px-2 py-1 group flex items-center justify-between', !message.group.finished && 'animate-pulse')}>
+      <div className="flex items-center gap-2 text-xs text-left">
+        {message.group.ephemeral ? (
+          <Tooltip content={t('messages.ephemeralGroupTooltip')}>
+            <FaRegHourglass className="w-3.5 h-3.5 text-text-muted shrink-0" />
+          </Tooltip>
+        ) : (
+          <FiLayers className="w-3.5 h-3.5 text-text-muted shrink-0" />
+        )}
+        {getGroupDisplayName(message.group.name)}
+      </div>
       {!message.group.finished && message.group.interruptId && (
         <Button onClick={handleInterrupt} size="xs" variant="outline" color="danger">
           {t('common.cancel')}

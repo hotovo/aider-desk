@@ -5225,6 +5225,7 @@ ${error.stderr}`,
             name: `Resolving ${filePath}...`,
             finished: false,
             interruptId,
+            ephemeral: true,
           },
         };
 

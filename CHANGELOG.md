@@ -15,6 +15,7 @@
 - added OpenAI store responses setting to support Zero Data Retention organizations by running requests in stateless mode
 - fixed model library temperature column being too narrow to fit its values
 - fixed messages scroll container not always detected for in-chat search by reporting it via a dedicated callback instead of the ref
+- added ephemeral indicator for transient message groups
 
 ## [0.83.0]
 

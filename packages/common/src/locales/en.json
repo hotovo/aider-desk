@@ -1126,7 +1126,8 @@
     "unarchive": "Unarchive",
     "confirmDelete": "Confirm Delete",
     "remove": "Remove message",
-    "deleteUpToHere": "Delete up to here"
+    "deleteUpToHere": "Delete up to here",
+    "ephemeralGroupTooltip": "This thread/group is ephemeral — it won't be saved with the task and will disappear after reload"
   },
   "errors": {
     "frozenTitle": "AIDER FROZEN?",

@@ -1125,7 +1125,8 @@
     "unarchive": "보관 해제",
     "confirmDelete": "삭제 확인",
     "remove": "메시지 제거",
-    "deleteUpToHere": "여기까지 삭제"
+    "deleteUpToHere": "여기까지 삭제",
+    "ephemeralGroupTooltip": "이 스레드/그룹은 임시 항목입니다 — 작업과 함께 저장되지 않으며 다시 로드하면 사라집니다"
   },
   "errors": {
     "frozenTitle": "AIDER가 멈췄나요?",
