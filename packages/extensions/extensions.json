@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "permission-gate",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "codegraph",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "git-log",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "skill-gallery",
