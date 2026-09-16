@@ -414,6 +414,33 @@ describe('Task - git actions', () => {
     });
   });
 
+  describe('renameWorktreeBranchIfNeeded', () => {
+    const worktreeTaskSettings = { language: 'en', aider: { autoCommits: true }, taskSettings: { renameBranchOnNameGeneration: true } };
+
+    it('skips renaming when the worktree is shared with another task', async () => {
+      mockProject.isWorktreeSharedWithOtherTasks = vi.fn(() => true);
+      const worktreeTask = createTask('worktree');
+      (worktreeTask as any).store.getSettings = vi.fn(() => worktreeTaskSettings);
+      const renameSpy = vi.spyOn(worktreeTask, 'renameWorktreeBranch').mockResolvedValue(undefined);
+
+      await (worktreeTask as any).renameWorktreeBranchIfNeeded();
+
+      expect(mockProject.isWorktreeSharedWithOtherTasks).toHaveBeenCalledWith(worktreePath, 'test-task-id');
+      expect(renameSpy).not.toHaveBeenCalled();
+    });
+
+    it('renames the branch when the worktree is not shared', async () => {
+      mockProject.isWorktreeSharedWithOtherTasks = vi.fn(() => false);
+      const worktreeTask = createTask('worktree');
+      (worktreeTask as any).store.getSettings = vi.fn(() => worktreeTaskSettings);
+      const renameSpy = vi.spyOn(worktreeTask, 'renameWorktreeBranch').mockResolvedValue(undefined);
+
+      await (worktreeTask as any).renameWorktreeBranchIfNeeded();
+
+      expect(renameSpy).toHaveBeenCalledWith('aider-desk/task/test-task-id');
+    });
+  });
+
   describe('renameGitBranch', () => {
     it('renames the current branch of the project repo', async () => {
       mockGitManager.listBranches.mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false }]);

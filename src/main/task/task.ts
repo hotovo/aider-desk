@@ -403,6 +403,11 @@ export class Task {
       return;
     }
 
+    // Don't rename a branch owned by another task sharing this worktree (e.g. parent set it)
+    if (this.project.isWorktreeSharedWithOtherTasks(this.task.worktree.path, this.taskId)) {
+      return;
+    }
+
     const settings = this.store.getSettings();
     if (!settings.taskSettings.renameBranchOnNameGeneration) {
       return;

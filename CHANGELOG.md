@@ -17,6 +17,7 @@
 - fixed messages scroll container not always detected for in-chat search by reporting it via a dedicated callback instead of the ref
 - added ephemeral indicator for transient message groups
 - added bulk tool approval setting for MCP servers with an "All" select in the server tools list
+- fixed task branch being renamed when its worktree is shared with other tasks
 
 ## [0.83.0]
 
