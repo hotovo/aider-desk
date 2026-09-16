@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 24
+      "installCount": 26
     },
     {
       "id": "context-autocompletion-words",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "wigolo",
