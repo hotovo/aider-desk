@@ -615,7 +615,9 @@ src/
           SectionContent.tsx
           SectionHeader.tsx
           SectionLoading.tsx
+          SidebarGroupTree.tsx
           SkillsSection.tsx
+          Tree.tsx
           TreeItemRenderer.tsx
           types.ts
           UpdatedFilesDiffModal.tsx
@@ -2544,7 +2546,11 @@ const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // Persist new messages incrementally after each iteration
 ⋮----
+// Check for 'stop' with empty response (model generated tokens, but no usable messages)
+⋮----
 // Check for 'stop' with trailing tool message
+⋮----
+// Dump the last 2 message roles to diagnose why the trailing tool message check may not match
 ⋮----
 // if response messages have been modified by other means (e.g. hooks), we need to continue when the last message is a user message
 ⋮----
@@ -5326,6 +5332,8 @@ constructor(private readonly gitAskpassManager?: GitAskpassManager)
 ⋮----
 private getWorktreePath(projectPath: string, taskId: string): string
 ⋮----
+private async isBranchCheckedOutInOtherWorktree(projectPath: string, branch: string, worktreePath: string): Promise<boolean>
+⋮----
 private async initializeWorktree(projectPath: string, taskId: string): Promise<void>
 ⋮----
 async createWorktree(projectPath: string, taskId: string, branch?: string, baseBranch = 'HEAD'): Promise<Worktree>
@@ -5355,6 +5363,9 @@ const baseRef = baseBranch; // Will be 'HEAD' if not provided
 // Branch doesn't exist, it will be created from baseRef
 ⋮----
 // A1. Use existing branch
+⋮----
+// git refuses to check out a branch that is already used by another worktree;
+// fall back to a unique sibling branch created from the original branch's tip
 ⋮----
 // Get the base commit (the tip of the existing branch)
 ⋮----
@@ -7352,6 +7363,10 @@ export const createOpenAiLlm = (profile: ProviderProfile, model: Model, settings
 ⋮----
 // === Configuration Helper Functions ===
 export const getOpenAiProviderOptions = (provider: LlmProvider, model: Model, reasoning?: Reasoning): SharedV4ProviderOptions | undefined =>
+⋮----
+// Extract store setting from model overrides or provider config.
+// Defaults to true (AI SDK default). Set to false for stateless/ZDR mode so
+// resuming tasks does not reference server-side items that are not persisted.
 ⋮----
 // When the top-level reasoning parameter is set (not undefined or 'provider-default'),
 // omit reasoningEffort from providerOptions so the AI SDK's portable reasoning takes effect.
@@ -12979,7 +12994,7 @@ async mergeWorktreeToMain(baseDir: string, taskId: string, squash: boolean, targ
 async switchToLocalWorkingMode(
     baseDir: string,
     taskId: string,
-    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean },
+    options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean; discardWorktreeChanges?: boolean },
 ): Promise<void>
 ⋮----
 async switchToWorktreeWorkingMode(
@@ -15126,6 +15141,8 @@ type Props = {
 // eslint-disable-next-line no-console
 ⋮----
 // No error, but no diff file (e.g., identical content)
+// While streaming, args may be partial/identical - show nothing until completed
+if (!isComplete)
 
 ================
 File: src/renderer/src/components/common/DiffViewer/index.tsx
@@ -17950,7 +17967,7 @@ handleExpandedClick();
 ================
 File: src/renderer/src/components/message/Messages.tsx
 ================
-import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
@@ -17966,7 +17983,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 export type MessagesRef = {
   exportToImage: () => void;
-  container: HTMLDivElement | null;
   scrollToBottom: () => void;
 };
 ⋮----
@@ -17977,6 +17993,7 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
+  onContainerRef?: (container: HTMLDivElement | null) => void;
   removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt?: (messageId: string) => void;
@@ -17989,8 +18006,6 @@ type Props = {
 // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
 ⋮----
 // Get all user message IDs
-⋮----
-const exportToImage = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -18621,20 +18636,23 @@ if (reasoning)
 ⋮----
 // Fallback: check if the content matches the thinking/answer format (for legacy messages)
 ⋮----
-const processTextBlock = () =>
+const normalizeListBlocks = (text: string): string =>
 ⋮----
-if (codeContent.length > 0)
+if (currentText.trimEnd())
+⋮----
+const processCodeBlock = () =>
 ⋮----
 // Check if the line is just a filepath
 ⋮----
 // Check if line ends with a filepath
+⋮----
+const findFileInNextLine = (currentLine: number):
 ⋮----
 // Check if the next line is just a filepath
 ⋮----
 // Check if the next line starts with a filepath
 ⋮----
 // Check for custom-command-bash blocks
-if (line.trim() === '<custom-command-bash>')
 ⋮----
 // Process any accumulated text first
 ⋮----
@@ -18645,8 +18663,6 @@ if (line.trim() === '<custom-command-bash>')
 // Skip to after the closing tag
 ⋮----
 // Check for <file-edited> compaction placeholder tags
-⋮----
-processTextBlock();
 ⋮----
 // Check if line starts a code block
 ⋮----
@@ -18666,8 +18682,6 @@ processTextBlock();
 ⋮----
 // Handle any remaining content
 ⋮----
-processCodeBlock();
-⋮----
 export const parseThinkingAnswerFormat = (
   content: string,
   baseDir: string = '',
@@ -18679,6 +18693,8 @@ export const parseThinkingAnswerFormat = (
 // Check for the thinking section first
 ⋮----
 // Check if the answer section exists
+⋮----
+export const parseCustomCommandBashFormat = (baseDir: string, content: string): ReactNode | null =>
 ⋮----
 // Find the opening tag
 ⋮----
@@ -18693,11 +18709,37 @@ export const parseThinkingAnswerFormat = (
 // Extract command and output content
 ⋮----
 // --- Tool Message Parsing ---
+interface ParsedToolContentItem {
+  type: string;
+  text?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any; // Allow other properties
+}
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 [key: string]: any; // Allow other properties
 ⋮----
+interface ParsedToolMessage {
+  content: ParsedToolContentItem[];
+  isError: boolean;
+}
+⋮----
+export interface ToolResultImage {
+  data: string;
+  mediaType: string;
+}
+⋮----
+export interface ToolContentResult {
+  extractedText: string | null;
+  json: object | null;
+  isError: boolean | null;
+  rawContent: string;
+  images: ToolResultImage[];
+}
+⋮----
 const extractImagesFromContentArray = (content: ParsedToolContentItem[]): ToolResultImage[] =>
+⋮----
+const processContentArray = (content: ParsedToolContentItem[], result: ToolContentResult) =>
 ⋮----
 // Extract images from the content array
 ⋮----
@@ -18715,6 +18757,7 @@ const extractImagesFromContentArray = (content: ParsedToolContentItem[]): ToolRe
  * 3. Wrapped ToolResultOutput: { type: 'content', value: [...] }
  * 4. Wrapped JSON: { type: 'json', value: { content: [...] } }
  */
+export const parseToolContent = (rawContent: string): ToolContentResult =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -18760,6 +18803,8 @@ const flushCurrentGroup = () =>
 ⋮----
 // Flush any remaining group
 ⋮----
+export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): boolean =>
+⋮----
 // Check basic message properties
 ⋮----
 // Check reasoning for ResponseMessage
@@ -18767,10 +18812,6 @@ const flushCurrentGroup = () =>
 // Check usageReport for ResponseMessage and ToolMessage
 ⋮----
 // Check args for ToolMessage
-⋮----
-if (!areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage))
-⋮----
-if (!areMessagesEqual(prevMessage.toolMessages[i], nextMessage.toolMessages[i]))
 ⋮----
 export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 ⋮----
@@ -18802,7 +18843,6 @@ import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
-  container: HTMLDivElement | null;
   scrollToBottom: () => void;
 };
 ⋮----
@@ -18813,6 +18853,7 @@ type Props = {
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
+  onContainerRef?: (container: HTMLDivElement | null) => void;
   removeMessage?: (message: Message) => void;
   removeGroup?: (group: GroupMessage) => void;
   redoUserPrompt?: (messageId: string) => void;
@@ -18835,8 +18876,6 @@ const handlePointerDown = () =>
 const handlePointerUp = () =>
 ⋮----
 const scrollToEndIfFollowing = () =>
-⋮----
-const exportToImage = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -19505,11 +19544,11 @@ type Props = {
   onChange: (updated: OpenAiProvider) => void;
 };
 ⋮----
-export const OpenAiAdvancedSettings = (
-⋮----
 const handleReasoningEffortChange = (value: string) =>
 ⋮----
 const handleUseWebSearchChange = (checked: boolean) =>
+⋮----
+const handleStoreChange = (checked: boolean) =>
 ⋮----
 <Select label=
 
@@ -21872,9 +21911,10 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const handleStartupMode = async (tasks: TaskData[]) =>
-⋮----
 // Check if URL specifies a task to activate
+⋮----
+// Only mount/load the task when the project is currently active; startup mode is
+// re-applied by the first-activation effect for background projects.
 ⋮----
 const handleProjectStarted = () =>
 ⋮----
@@ -21904,12 +21944,14 @@ const initProject = async () =>
 ⋮----
 // Load tasks
 ⋮----
-// Handle startup mode
+// Handle startup mode only for currently-active projects; background projects defer it
+// to their first activation (startup-on-first-activation effect below).
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-// Self-healing fallback: if the project became active and finished loading but no task was ever
-// activated (e.g., lost startup race or a failed task creation), activate an existing task.
+// Startup-on-first-activation: background projects do not load any task until they are first
+// activated, then the configured startup mode is applied once (also serving as a self-healing
+// fallback if the startup race was lost or task creation failed).
 ⋮----
 // Release backend/store state for tasks evicted from the mount pool (mirrors unmount cleanup).
 ⋮----
@@ -24753,80 +24795,88 @@ onClick=
 ================
 File: src/renderer/src/components/ui/Tooltip.tsx
 ================
-import { ReactNode } from 'react';
+import {
+  CSSProperties,
+  FocusEvent,
+  PointerEvent,
+  ReactElement,
+  Ref,
+  ReactNode,
+  cloneElement,
+  isValidElement,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import { clsx } from 'clsx';
+⋮----
+type TooltipSide = 'top' | 'right' | 'bottom' | 'left';
+type TooltipAlign = 'start' | 'center' | 'end';
+⋮----
+type TooltipState = {
+  content: ReactNode;
+  anchorEl: Element;
+  side: TooltipSide;
+  align: TooltipAlign;
+  maxWidth: number | string;
+};
+⋮----
+const emitChange = () =>
+⋮----
+export const showTooltip = (next: Omit<TooltipState, 'side' | 'align'> &
+⋮----
+export const hideTooltip = (anchorEl?: Element) =>
+⋮----
+const subscribe = (listener: () => void) =>
+⋮----
+const getSnapshot = ()
+const getServerSnapshot = ()
+⋮----
+type Placement = {
+  top: number;
+  left: number;
+  side: TooltipSide;
+  arrowOffset: number;
+};
+⋮----
+const computePosition = (anchorRect: DOMRect, side: TooltipSide, align: TooltipAlign, bubbleSize:
+⋮----
+const placementFor = (s: TooltipSide):
+⋮----
+// Flip to the opposite side when the bubble would overflow the viewport.
+⋮----
+type ArrowProps = { side: TooltipSide; offset: number };
+⋮----
+{/* Outer triangle with border color */}
+⋮----
+{/* Inner triangle with background color to create border effect */}
+⋮----
+const handleReposition = ()
 ⋮----
 type TooltipProps = {
   content: ReactNode;
   children: ReactNode;
-  side?: 'top' | 'right' | 'bottom' | 'left';
-  align?: 'start' | 'center' | 'end';
+  side?: TooltipSide;
+  align?: TooltipAlign;
   delayDuration?: number;
   maxWidth?: number | string;
 };
 ⋮----
 export const TooltipProvider = ({ children, ...props }: TooltipPrimitive.TooltipProviderProps) => (
   <TooltipPrimitive.Provider delayDuration={200} skipDelayDuration={100} {...props}>
+    <TooltipHost />
     {children}
   </TooltipPrimitive.Provider>
 );
 ⋮----
-// Simple arrow component using Radix's Arrow primitive
-type ArrowProps = { side?: string };
+export const Tooltip = (
 ⋮----
-const Arrow = ({ side = 'top' }: ArrowProps) => (
-  <TooltipPrimitive.Arrow
-    asChild
-    width={16}
-    height={8}
-    className={clsx(
-      'overflow-visible',
-      side === 'top' && 'data-[side=top]',
-      side === 'bottom' && 'data-[side=bottom]',
-      side === 'left' && 'data-[side=left]',
-      side === 'right' && 'data-[side=right]',
-    )}
-  >
-    <svg width="16" height="8" viewBox="0 0 16 8" preserveAspectRatio="none" className="overflow-visible">
-      {/* Outer triangle with border color */}
-      <polygon points="0,0 16,0 8,8" fill={borderColor} />
-      {/* Inner triangle with background color to create border effect */}
-      <polygon points="1,0 15,0 8,7" fill="var(--color-bg-primary-light)" />
-    </svg>
-  </TooltipPrimitive.Arrow>
-);
+const showFromEvent = (e: PointerEvent<HTMLElement> | FocusEvent<HTMLElement>) =>
 ⋮----
-className=
-⋮----
-{/* Outer triangle with border color */}
-⋮----
-{/* Inner triangle with background color to create border effect */}
-⋮----
-export const Tooltip = ({ content, children, side, align, delayDuration, maxWidth = '300px' }: TooltipProps) => (
-  <TooltipPrimitive.Root delayDuration={delayDuration}>
-    <TooltipPrimitive.Trigger asChild>{children}</TooltipPrimitive.Trigger>
-    <TooltipPrimitive.Portal>
-      <TooltipPrimitive.Content
-        side={side}
-        align={align}
-        className={clsx(
-          'relative',
-          '!bg-bg-primary-light !text-text-secondary !text-2xs !py-1.5 !px-2.5 !opacity-100',
-          '!rounded-md z-50 whitespace-pre-wrap select-none',
-          // Use CSS border instead of outline
-          'border',
-        )}
-        style={{ borderColor, maxWidth }}
-        sideOffset={8}
-      >
-        {content}
-        <Arrow side={side} />
-      </TooltipPrimitive.Content>
-    </TooltipPrimitive.Portal>
-  </TooltipPrimitive.Root>
-);
-⋮----
-// Use CSS border instead of outline
+const chain =
+<E,>(first: ((e: E)
 
 ================
 File: src/renderer/src/components/usage/CacheHitRateTrendChart.tsx
@@ -25188,7 +25238,7 @@ onStartEdit=
 File: src/renderer/src/components/Workspace/ContextFilesSection.tsx
 ================
 import { ContextFile, Mode, OS, TokensCost } from '@common/types';
-import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { HiOutlineTrash, HiPlus } from 'react-icons/hi';
 import { useTranslation } from 'react-i18next';
 ⋮----
@@ -25289,33 +25339,21 @@ className=
 File: src/renderer/src/components/Workspace/DiffFilesSidebar.tsx
 ================
 import { ContextFile, UpdatedFile } from '@common/types';
-import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { useCallback, useMemo, useState } from 'react';
 import { MdOutlineCommit } from 'react-icons/md';
-import { RiAlertLine } from 'react-icons/ri';
 import { useTranslation } from 'react-i18next';
 import { useDebounce, useLocalStorage } from '@reactuses/core';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
 import { ResizableBox } from 'react-resizable';
-import { clsx } from 'clsx';
 ⋮----
+import { SidebarGroupTree } from './SidebarGroupTree';
 import { createFileTree, normalizePath } from './types';
 import { UNCOMMITTED_GROUP_ID } from './group-files';
 ⋮----
 import type { DiffModalGroup } from './UpdatedFilesDiffModal';
-import type { TreeItem } from './types';
+import type { GroupTree } from './types';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { TriStateCheckbox, type TriState } from '@/components/common/TriStateCheckbox';
-⋮----
-type GroupTree = {
-  group: DiffModalGroup;
-  treeData: Record<string, TreeItem>;
-  files: UpdatedFile[];
-};
-⋮----
-const collectDescendantFilePaths = (treeData: Record<string, TreeItem>, nodeId: string): string[] =>
 ⋮----
 type Props = {
   groups: DiffModalGroup[];
@@ -25326,19 +25364,11 @@ type Props = {
   onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
 };
 ⋮----
-// eslint-disable-next-line react-hooks/set-state-in-effect
+export const DiffFilesSidebar = (
 ⋮----
-// Only uncommitted files can be selected for commit, so checkboxes are shown only for the uncommitted group
+onChange=
 ⋮----
-const handleExpandItem = (item: TreeItem) =>
-⋮----
-const handleCollapseItem = (item: TreeItem) =>
-⋮----
-const handleClick = () =>
-⋮----
-const renderChevron = () =>
-⋮----
-const handleToggleSelection = () =>
+currentFilePath=
 
 ================
 File: src/renderer/src/components/Workspace/EmptyContextInfo.tsx
@@ -25591,7 +25621,7 @@ const handleMouseDown = (event: MouseEvent<HTMLButtonElement>) =>
 File: src/renderer/src/components/Workspace/ProjectFilesSection.tsx
 ================
 import { ContextFile, OS, TokensCost } from '@common/types';
-import { MouseEvent, useCallback, useMemo, useState } from 'react';
+import { MouseEvent, memo, useCallback, useMemo, useState } from 'react';
 import { HiX } from 'react-icons/hi';
 import { BiCollapseVertical, BiExpandVertical } from 'react-icons/bi';
 import { MdOutlineSearch, MdOutlineRefresh } from 'react-icons/md';
@@ -25668,12 +25698,11 @@ className=
 File: src/renderer/src/components/Workspace/SectionContent.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { Dispatch, MouseEvent, ReactNode, SetStateAction, useCallback } from 'react';
-import { ControlledTreeEnvironment, Tree } from 'react-complex-tree';
+import { Dispatch, MouseEvent, ReactNode, RefObject, SetStateAction } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 ⋮----
-import { TreeItemRenderer } from './TreeItemRenderer';
+import { Tree } from './Tree';
 import { SectionLoading } from './SectionLoading';
 ⋮----
 import type { SectionType, TreeItem } from './types';
@@ -25699,6 +25728,7 @@ type Props = {
   onRevertFile: (filePath: string) => void;
   onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
 };
 ⋮----
 <SectionLoading label=
@@ -25749,6 +25779,48 @@ export const SectionLoading = ({ label }: Props) => (
 );
 
 ================
+File: src/renderer/src/components/Workspace/SidebarGroupTree.tsx
+================
+import { UpdatedFile } from '@common/types';
+import { MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { RiAlertLine } from 'react-icons/ri';
+import { useTranslation } from 'react-i18next';
+import { useTree } from '@headless-tree/react';
+import { hotkeysCoreFeature, propMemoizationFeature, syncDataLoaderFeature } from '@headless-tree/core';
+import { clsx } from 'clsx';
+⋮----
+import { normalizePath, INDENT_PX } from './types';
+⋮----
+import type { TreeItem, GroupTree } from './types';
+import type { ItemInstance } from '@headless-tree/core';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox, type TriState } from '@/components/common/TriStateCheckbox';
+⋮----
+const collectDescendantFilePaths = (treeData: Record<string, TreeItem>, nodeId: string): string[] =>
+⋮----
+type SidebarGroupTreeProps = {
+  groupTree: GroupTree;
+  showCheckboxes: boolean;
+  currentFilePath?: string;
+  selectedFilePaths: Set<string>;
+  onFileSelect: (file: UpdatedFile) => void;
+  onToggleFileSelection: (filePath: string, selected: boolean) => void;
+  onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
+};
+⋮----
+// eslint-disable-next-line react-hooks/set-state-in-effect -- merge auto-expanded folders into external state
+⋮----
+const handleClick = () =>
+⋮----
+const handleToggleSelection = () =>
+⋮----
+const handleChevronClick = (e: MouseEvent<HTMLSpanElement>) =>
+⋮----
+<div key=
+
+================
 File: src/renderer/src/components/Workspace/SkillsSection.tsx
 ================
 import { SkillDefinition } from '@common/types';
@@ -25778,35 +25850,22 @@ openFile(baseDir, `$
 onClick=
 
 ================
-File: src/renderer/src/components/Workspace/TreeItemRenderer.tsx
+File: src/renderer/src/components/Workspace/Tree.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
-import { MouseEvent, useCallback, useMemo } from 'react';
-import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
-import { MdUndo, MdOutlinePublic } from 'react-icons/md';
-import { TbPencilOff } from 'react-icons/tb';
-import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
-import { VscFileCode } from 'react-icons/vsc';
-import { useTranslation } from 'react-i18next';
-import { twMerge } from 'tailwind-merge';
+import { Dispatch, MouseEvent, RefObject, SetStateAction, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useTree } from '@headless-tree/react';
+import { hotkeysCoreFeature, propMemoizationFeature, syncDataLoaderFeature } from '@headless-tree/core';
+import { useVirtualizer } from '@tanstack/react-virtual';
 ⋮----
-import { normalizePath } from './types';
+import { MemoizedTreeItemRenderer } from './TreeItemRenderer';
 ⋮----
+import type { Virtualizer } from '@tanstack/react-virtual';
 import type { SectionType, TreeItem } from './types';
 ⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
-⋮----
-const getDescendantRuleFiles = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] =>
-⋮----
-type Props = {
-  item: TreeItem;
-  title: React.ReactNode;
-  children: React.ReactNode;
-  type: SectionType;
+type SharedRowProps = {
+  section: SectionType;
   treeData: Record<string, TreeItem>;
-  expandedItems: string[];
-  setExpandedItems: (items: string[]) => void;
   contextFilesMap: Map<string, ContextFile>;
   updatedFiles: UpdatedFile[];
   fileTokensInfo?: Record<string, TokensCost> | null;
@@ -25821,6 +25880,61 @@ type Props = {
   onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
   onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
 };
+⋮----
+type TreeProps = SharedRowProps & {
+  expandedItems: string[];
+  setExpandedItems: Dispatch<SetStateAction<string[]>>;
+  scrollContainerRef?: RefObject<HTMLDivElement | null>;
+};
+⋮----
+key=
+⋮----
+itemInstanceProps.ref?.(el);
+
+================
+File: src/renderer/src/components/Workspace/TreeItemRenderer.tsx
+================
+import { ContextFile, OS, TokensCost, UpdatedFile } from '@common/types';
+import { memo, MouseEvent, useCallback, useMemo } from 'react';
+import { HiChevronDown, HiChevronRight, HiPlus, HiX } from 'react-icons/hi';
+import { MdUndo, MdOutlinePublic } from 'react-icons/md';
+import { TbPencilOff } from 'react-icons/tb';
+import { RiAlertLine, RiRobot2Line } from 'react-icons/ri';
+import { VscFileCode } from 'react-icons/vsc';
+import { useTranslation } from 'react-i18next';
+import { twMerge } from 'tailwind-merge';
+⋮----
+import { INDENT_PX, normalizePath } from './types';
+⋮----
+import type { SectionType, TreeItem } from './types';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+import { TriState, TriStateCheckbox } from '@/components/common/TriStateCheckbox';
+⋮----
+type Props = {
+  item: TreeItem;
+  title: string;
+  level: number;
+  isExpanded: boolean;
+  onToggleFolder: (itemId: string | number) => void;
+  type: SectionType;
+  treeData: Record<string, TreeItem>;
+  contextFilesMap: Map<string, ContextFile>;
+  updatedFiles: UpdatedFile[];
+  fileTokensInfo?: Record<string, TokensCost> | null;
+  os: OS | null;
+  disabledRuleFiles?: string[];
+  onToggleRuleFile?: (filePaths: string[], disabled: boolean) => void;
+  onFileDiffClick: (file: UpdatedFile) => void;
+  onFilePreviewClick?: (filePath: string) => void;
+  onAddFileToGit?: (filePath: string) => void;
+  addingFilesToGit?: Set<string>;
+  onRevertFile: (filePath: string) => void;
+  onDropFile: (item: TreeItem) => (e: MouseEvent<HTMLButtonElement>) => void;
+  onAddFile: (item: TreeItem) => (event: MouseEvent<HTMLButtonElement>) => void;
+};
+⋮----
+const getDescendantRuleFilesLocal = (treeData: Record<string, TreeItem>, nodeId: string | number): string[] =>
 ⋮----
 const renderChevron = () =>
 ⋮----
@@ -25837,7 +25951,9 @@ const renderFile = () =>
 ================
 File: src/renderer/src/components/Workspace/types.ts
 ================
-import { ContextFile } from '@common/types';
+import { ContextFile, UpdatedFile } from '@common/types';
+⋮----
+import type { DiffModalGroup } from './UpdatedFilesDiffModal';
 ⋮----
 export interface TreeItem {
   index: string | number;
@@ -25848,6 +25964,12 @@ export interface TreeItem {
 }
 ⋮----
 export type SectionType = 'updated' | 'project' | 'context' | 'rules' | 'skills';
+⋮----
+export type GroupTree = {
+  group: DiffModalGroup;
+  treeData: Record<string, TreeItem>;
+  files: UpdatedFile[];
+};
 ⋮----
 export const normalizePath = (path: string): string =>
 ⋮----
@@ -25992,7 +26114,7 @@ isGeneratingMessage
 File: src/renderer/src/components/Workspace/UpdatedFilesSection.tsx
 ================
 import { ContextFile, OS, TokensCost, UpdatedFile, UpdatedFilesGroupMode } from '@common/types';
-import { Activity, MouseEvent, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, MouseEvent, ReactNode, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { MdDragIndicator, MdOutlineDifference, MdOutlineRefresh } from 'react-icons/md';
 import { motion } from 'framer-motion';
@@ -26089,12 +26211,6 @@ title=
 ================
 File: src/renderer/src/components/Workspace/Workspace.css
 ================
-.rct-tree-items-container {
-⋮----
-.rct-tree-root {
-⋮----
-@apply p-0;
-⋮----
 .context-dimmed {
 ⋮----
 @apply text-text-muted;
@@ -32358,7 +32474,7 @@ File: package.json
     "diff": "8.0.4",
     "electron-updater": "6.8.9",
     "env-paths": "3.0.0",
-    "express": "4.22.2",
+    "express": "4.22.3",
     "file-type": "21.3.4",
     "filenamify": "7.0.1",
     "focus-trap-react": "11.0.6",
@@ -32386,8 +32502,9 @@ File: package.json
     "os-name": "6.1.0",
     "patch-package": "8.0.1",
     "posthog-node": "5.29.1",
+    "@headless-tree/core": "1.7.0",
+    "@headless-tree/react": "1.7.0",
     "prismjs": "1.30.0",
-    "react-complex-tree": "2.6.1",
     "react-country-flag": "3.1.0",
     "react-datepicker": "8.10.0",
     "react-diff-view": "3.3.2",
@@ -32446,9 +32563,9 @@ File: package.json
     "@types/tmp": "0.2.6",
     "@types/yaml-front-matter": "4.1.3",
     "@vitejs/plugin-react": "5.2.0",
-    "@vitest/coverage-v8": "4.1.8",
-    "@vitest/ui": "4.1.8",
-    "adm-zip": "0.6.0",
+    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/ui": "4.1.11",
+    "adm-zip": "0.6.1",
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.4",
     "dts-bundle-generator": "9.5.1",
@@ -32481,7 +32598,7 @@ File: package.json
     "typescript-eslint": "8.57.2",
     "vite": "7.3.6",
     "vite-tsconfig-paths": "5.1.4",
-    "vitest": "4.1.8"
+    "vitest": "4.1.11"
   },
   "overrides": {
     "@ai-sdk/provider": "4.0.7",
