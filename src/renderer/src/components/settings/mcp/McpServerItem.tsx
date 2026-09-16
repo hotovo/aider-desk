@@ -8,11 +8,14 @@ import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { McpToolItem } from './McpToolItem';
 import { McpOAuthControls } from './McpOAuthControls';
 
+import { Select } from '@/components/common/Select';
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
 import { useApi } from '@/contexts/ApiContext';
 import { Tooltip } from '@/components/ui/Tooltip';
+
+const MIXED_VALUE = '-';
 
 type Props = {
   serverName: string;
@@ -20,7 +23,7 @@ type Props = {
   onRemove?: () => void;
   onEdit?: () => void;
   toolApprovals?: Record<string, ToolApprovalState>;
-  onApprovalChange?: (toolId: string, approval: ToolApprovalState) => void;
+  onApprovalChange?: (toolId: string | string[], approval: ToolApprovalState) => void;
   reloadTrigger?: number;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
@@ -103,6 +106,29 @@ export const McpServerItem = ({
     }
   }, []);
 
+  const approvalOptions = [
+    { value: ToolApprovalState.Always, label: t('tool.approval.always') },
+    { value: ToolApprovalState.Never, label: t('tool.approval.never') },
+    { value: ToolApprovalState.Ask, label: t('tool.approval.ask') },
+  ];
+
+  const getApproval = (tool: McpTool) => toolApprovals?.[`${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`] || ToolApprovalState.Always;
+
+  const commonApproval = tools && tools.length > 0 && tools.every((tool) => getApproval(tool) === getApproval(tools[0])) ? getApproval(tools[0]) : null;
+
+  const handleBulkApprovalChange = useCallback(
+    (value: string) => {
+      if (!onApprovalChange || !tools || value === MIXED_VALUE) {
+        return;
+      }
+      onApprovalChange(
+        tools.map((tool) => `${serverName}${TOOL_GROUP_NAME_SEPARATOR}${tool.name}`),
+        value as ToolApprovalState,
+      );
+    },
+    [onApprovalChange, tools, serverName],
+  );
+
   const renderTitle = () => {
     const enabledCount =
       tools &&
@@ -178,7 +204,21 @@ export const McpServerItem = ({
         ) : tools && tools.length > 0 ? (
           <div>
             <div className="text-xs p-2 pt-1 rounded mt-1 space-y-2">
-              <div className="text-xs text-text-muted-light ml-1">{t('mcp.tools')}</div>
+              {onApprovalChange && toolApprovals && (
+                <div className="flex items-center">
+                  <div className="flex-1 text-xs ml-1 text-text-muted-light">{t('mcp.tools')}</div>
+                  <div className="flex items-center">
+                    <span className="text-xs text-text-muted-light mr-2">{t('mcp.all')}</span>
+                    <Select
+                      options={approvalOptions}
+                      size="sm"
+                      value={commonApproval ?? MIXED_VALUE}
+                      notFoundLabel={MIXED_VALUE}
+                      onChange={handleBulkApprovalChange}
+                    />
+                  </div>
+                </div>
+              )}
               {tools.map((tool) => (
                 <McpToolItem key={tool.name} tool={tool} toolApprovals={toolApprovals} onApprovalChange={onApprovalChange} serverName={serverName} />
               ))}

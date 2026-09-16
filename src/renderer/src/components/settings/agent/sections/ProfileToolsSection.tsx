@@ -207,7 +207,7 @@ type Props = {
   mcpServers: Record<string, McpServerConfig>;
   extensionToolsInfo: ExtensionToolInfo[];
   onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
-  onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
+  onApprovalChange: (toolId: string | string[], approval: ToolApprovalState) => void;
   onToggleServerEnabled: (serverKey: string, checked: boolean) => void;
   onOpenMcpServers?: () => void;
 };

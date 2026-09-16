@@ -1357,6 +1357,7 @@
     "reloadServer": "Reload server",
     "reload": "Reload",
     "tools": "Tools",
+    "all": "All",
     "oauth": {
       "connect": "Connect",
       "reopen": "Reopen",

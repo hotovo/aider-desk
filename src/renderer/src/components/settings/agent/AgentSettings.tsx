@@ -442,12 +442,12 @@ export const AgentSettings = ({
     }
   };
 
-  const handleToolApprovalChange = (toolId: string, approval: ToolApprovalState) => {
+  const handleToolApprovalChange = (toolId: string | string[], approval: ToolApprovalState) => {
     if (selectedProfile) {
-      const newToolApprovals = {
-        ...(selectedProfile.toolApprovals || {}),
-        [toolId]: approval,
-      };
+      const newToolApprovals = { ...(selectedProfile.toolApprovals || {}) };
+      (Array.isArray(toolId) ? toolId : [toolId]).forEach((id) => {
+        newToolApprovals[id] = approval;
+      });
       handleProfileSettingChange('toolApprovals', newToolApprovals);
     }
   };

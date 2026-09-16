@@ -46,7 +46,7 @@ describe('McpServerItem', () => {
         serverName="sentry"
         config={{ url: 'https://mcp.sentry.dev/mcp' }}
         toolApprovals={{}}
-        onApprovalChange={vi.fn<(toolId: string, approval: ToolApprovalState) => void>()}
+        onApprovalChange={vi.fn<(toolId: string | string[], approval: ToolApprovalState) => void>()}
       />,
     );
 

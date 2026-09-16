@@ -16,6 +16,7 @@
 - fixed model library temperature column being too narrow to fit its values
 - fixed messages scroll container not always detected for in-chat search by reporting it via a dedicated callback instead of the ref
 - added ephemeral indicator for transient message groups
+- added bulk tool approval setting for MCP servers with an "All" select in the server tools list
 
 ## [0.83.0]
 

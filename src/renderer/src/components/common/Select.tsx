@@ -22,9 +22,10 @@ type Props = {
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   placement?: 'bottom' | 'top';
+  notFoundLabel?: string;
 };
 
-export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false, placement = 'bottom' }: Props) => {
+export const Select = ({ label, className = '', options = [], value, onChange, size = 'md', disabled = false, placement = 'bottom', notFoundLabel }: Props) => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -116,7 +117,7 @@ export const Select = ({ label, className = '', options = [], value, onChange, s
           className={`flex w-full min-w-[8rem] bg-bg-secondary-light border-2 border-border-default rounded focus:outline-none focus:border-border-light text-text-primary placeholder-text-muted pl-2 pr-1 ${sizeClasses[size]} ${className}`}
         >
           <span className="col-start-1 row-start-1 flex items-center flex-1 min-w-0">
-            <span className="block truncate">{selectedOption?.label || t('select.placeholder')}</span>
+            <span className="block truncate">{selectedOption?.label || notFoundLabel || t('select.placeholder')}</span>
           </span>
           {!disabled && <HiChevronUpDown className="col-start-1 row-start-1 size-5 self-center justify-self-end text-text-muted" />}
         </button>
