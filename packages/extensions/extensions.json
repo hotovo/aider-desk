@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "permission-gate",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "legacy-system-prompt",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "sandbox",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "redact-secrets",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "plannotator",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "programmatic-tool-calls",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "seek",
@@ -405,7 +405,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "tps-counter",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 40
+      "installCount": 42
     },
     {
       "id": "verifier",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 57
+      "installCount": 58
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 48
+      "installCount": 49
     }
   ]
 }
