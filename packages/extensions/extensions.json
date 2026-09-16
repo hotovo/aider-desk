@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "wakatime",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "context-autocompletion-words",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "plannotator",
@@ -346,7 +346,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "openai-codex",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "fff",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "kanban",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 55
+      "installCount": 57
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 46
+      "installCount": 48
     }
   ]
 }
