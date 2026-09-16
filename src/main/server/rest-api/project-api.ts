@@ -446,6 +446,11 @@ const GitPullSchema = z.object({
   rebase: z.boolean().optional(),
 });
 
+const GitRepositorySchema = z.object({
+  projectDir: z.string().min(1, 'Project directory is required'),
+  taskId: z.string().min(1, 'Task id is required'),
+});
+
 const UpdateGitBranchSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
@@ -1365,6 +1370,36 @@ export class ProjectApi extends BaseApi {
         const { projectDir, taskId, rebase } = parsed;
         const result = await this.eventsHandler.gitPull(projectDir, taskId, rebase);
         res.status(200).json(result);
+      }),
+    );
+
+    // Check whether the project has a git repository
+    router.get(
+      '/project/git/is-repo',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GitRepositorySchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        const isRepo = await this.eventsHandler.isGitRepository(projectDir, taskId);
+        res.status(200).json(isRepo);
+      }),
+    );
+
+    // Initialize a git repository for the project
+    router.post(
+      '/project/git/init',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GitRepositorySchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.initializeGitRepository(projectDir, taskId);
+        res.status(200).json({ success: true });
       }),
     );
 

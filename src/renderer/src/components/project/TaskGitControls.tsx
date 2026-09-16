@@ -9,6 +9,7 @@ import { registerAction, unregisterAction } from '@/stores/actionsStore';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { GitBranchesButton } from '@/components/project/GitBranchesButton';
+import { GitInitButton } from '@/components/project/GitInitButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
@@ -43,7 +44,7 @@ type Props = {
   isMerging: boolean;
 };
 
-export const TaskWorkingMode = ({
+export const TaskGitControls = ({
   task,
   onMerge,
   onSquash,
@@ -68,6 +69,31 @@ export const TaskWorkingMode = ({
   const isWorktree = task.workingMode === 'worktree';
   const { worktreeStatus } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
   const { isCommitting, cancelCommit } = useCommitChanges(task.baseDir, task.id);
+
+  const [isGitRepo, setIsGitRepo] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .isGitRepository(task.baseDir, task.id)
+      .then((result) => {
+        if (!cancelled) {
+          setIsGitRepo(result);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsGitRepo(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [api, task.baseDir, task.id]);
+
+  const handleGitInitialized = useCallback(() => {
+    setIsGitRepo(true);
+  }, []);
 
   const isWorktreeShared = useMemo(() => {
     if (!task.worktree?.path) {
@@ -307,28 +333,34 @@ export const TaskWorkingMode = ({
       ) : (
         <>
           {task.workingMode === 'worktree' && task.lastMergeState && <WorktreeRevertButton onRevert={onRevert} disabled={isMerging} />}
-          <GitBranchesButton
-            baseDir={task.baseDir}
-            taskId={task.id}
-            worktreePath={task.workingMode === 'worktree' ? task.worktree?.path : undefined}
-            status={worktreeStatus}
-            taskName={task.name}
-            disabled={isMerging}
-            onSwitchToLocal={handleSwitchToLocal}
-            onSwitchToWorktree={handleSwitchToWorktree}
-            willShowConfirmDialog={willShowConfirmDialog}
-            onMerge={onMerge}
-            onSquash={onSquash}
-            onOnlyUncommitted={onOnlyUncommitted}
-            onRebaseFromBranch={onRebaseFromBranch}
-            onAbortRebase={onAbortRebase}
-            onContinueRebase={onContinueRebase}
-            onResolveConflictsWithAgent={onResolveConflictsWithAgent}
-            onRenameBranch={onRenameBranch}
-            canAbortRebase={worktreeStatus?.rebaseState.inProgress}
-            canContinueRebase={worktreeStatus?.rebaseState.inProgress}
-            canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}
-          />
+          {isGitRepo === false ? (
+            <GitInitButton baseDir={task.baseDir} taskId={task.id} disabled={isMerging} onInitialized={handleGitInitialized} />
+          ) : (
+            isGitRepo && (
+              <GitBranchesButton
+                baseDir={task.baseDir}
+                taskId={task.id}
+                worktreePath={task.workingMode === 'worktree' ? task.worktree?.path : undefined}
+                status={worktreeStatus}
+                taskName={task.name}
+                disabled={isMerging}
+                onSwitchToLocal={handleSwitchToLocal}
+                onSwitchToWorktree={handleSwitchToWorktree}
+                willShowConfirmDialog={willShowConfirmDialog}
+                onMerge={onMerge}
+                onSquash={onSquash}
+                onOnlyUncommitted={onOnlyUncommitted}
+                onRebaseFromBranch={onRebaseFromBranch}
+                onAbortRebase={onAbortRebase}
+                onContinueRebase={onContinueRebase}
+                onResolveConflictsWithAgent={onResolveConflictsWithAgent}
+                onRenameBranch={onRenameBranch}
+                canAbortRebase={worktreeStatus?.rebaseState.inProgress}
+                canContinueRebase={worktreeStatus?.rebaseState.inProgress}
+                canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}
+              />
+            )
+          )}
         </>
       )}
       {showConfirmLocal && (

@@ -802,6 +802,14 @@ export class EventsHandler {
     return await this.getTaskOrThrow(baseDir, taskId).listGitBranches(includeRemote);
   }
 
+  async isGitRepository(baseDir: string, taskId: string): Promise<boolean> {
+    return await this.getTaskOrThrow(baseDir, taskId).isGitRepository();
+  }
+
+  async initializeGitRepository(baseDir: string, taskId: string): Promise<void> {
+    await this.getTaskOrThrow(baseDir, taskId).initializeGitRepository();
+  }
+
   async getSyncCommits(baseDir: string, taskId: string, targetBranch?: string): Promise<GitSyncCommits> {
     return await this.getTaskOrThrow(baseDir, taskId).getSyncCommits(targetBranch);
   }

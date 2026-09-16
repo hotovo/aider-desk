@@ -18,6 +18,7 @@
 - added ephemeral indicator for transient message groups
 - added bulk tool approval setting for MCP servers with an "All" select in the server tools list
 - fixed task branch being renamed when its worktree is shared with other tasks
+- added initializing a git repository for non-git projects to enable branches, worktrees and version tracking
 
 ## [0.83.0]
 

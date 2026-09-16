@@ -68,6 +68,7 @@ describe('GitManager - getUpdatedFiles symlink filtering', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
   });
 
   it('should filter out symlink paths in non-worktree mode (getNonWorktreeUpdatedFiles)', async () => {
@@ -214,6 +215,7 @@ describe('GitManager - untracked files', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
     (lstatSync as Mock).mockReturnValue({ isSymbolicLink: () => false, isDirectory: () => false });
     (fs.default.access as Mock).mockResolvedValue(undefined);
     (fs.default.readFile as Mock).mockResolvedValue(Buffer.from('updated'));
@@ -297,6 +299,7 @@ describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
   });
 
   it('should return staged files when there are no commits (non-worktree mode)', async () => {

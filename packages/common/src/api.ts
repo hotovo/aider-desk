@@ -336,6 +336,8 @@ export interface ApplicationAPI {
   mergeIntoCurrentBranch: (baseDir: string, taskId: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
   rebaseOntoBranch: (baseDir: string, taskId: string, branch: string) => Promise<{ conflictedFiles?: string[] }>;
   updateGitBranch: (baseDir: string, taskId: string, branchName: string) => Promise<{ output: string }>;
+  isGitRepository: (baseDir: string, taskId: string) => Promise<boolean>;
+  initializeGitRepository: (baseDir: string, taskId: string) => Promise<void>;
   gitPull: (baseDir: string, taskId: string, rebase?: boolean) => Promise<{ output: string }>;
   gitPush: (baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean) => Promise<{ output: string }>;
   resolveGitErrorWithAgent: (baseDir: string, taskId: string) => Promise<void>;

@@ -656,6 +656,14 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.updateGitBranch(baseDir, taskId, branchName);
   });
 
+  ipcMain.handle('git-is-repo', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.isGitRepository(baseDir, taskId);
+  });
+
+  ipcMain.handle('git-init-repo', async (_, baseDir: string, taskId: string) => {
+    return await eventsHandler.initializeGitRepository(baseDir, taskId);
+  });
+
   ipcMain.handle('git-pull', async (_, baseDir: string, taskId: string, rebase?: boolean) => {
     return await eventsHandler.gitPull(baseDir, taskId, rebase);
   });

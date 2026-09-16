@@ -78,6 +78,7 @@ describe('GitManager - createWorktree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
   });
 
   it('prunes stale worktree registrations and removes existing worktree before adding', async () => {

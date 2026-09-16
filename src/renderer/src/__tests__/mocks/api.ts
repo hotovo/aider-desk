@@ -267,6 +267,8 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     revertLastMerge: vi.fn((): Promise<void> => Promise.resolve()),
     listBranches: vi.fn((): Promise<BranchInfo[]> => Promise.resolve([])),
     listGitBranches: vi.fn((): Promise<BranchInfo[]> => Promise.resolve([])),
+    isGitRepository: vi.fn((): Promise<boolean> => Promise.resolve(true)),
+    initializeGitRepository: vi.fn((): Promise<void> => Promise.resolve()),
     getSyncCommits: vi.fn((): Promise<GitSyncCommits> => Promise.resolve({ outgoing: { count: 0, commits: [] }, incoming: { count: 0, commits: [] } })),
     createGitBranch: vi.fn((): Promise<void> => Promise.resolve()),
     checkoutGitBranch: vi.fn((): Promise<void> => Promise.resolve()),

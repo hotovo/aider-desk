@@ -2,7 +2,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { homedir } from 'os';
 
-import { simpleGit } from 'simple-git';
 import {
   AgentProfile,
   AIDER_COMMANDS,
@@ -88,7 +87,6 @@ import { isEqual } from 'lodash';
 
 import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
-import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
@@ -168,7 +166,6 @@ export class Task {
   private runPromptResolves: ((value: ResponseCompletedData[]) => void)[] = [];
   private autocompletionAllFiles: string[] | null = null;
   private agentRunResolves: (() => void)[] = [];
-  private git: SimpleGit | null = null;
   private responseChunkMap: Map<string, { contentBuffer: string; reasoningBuffer: string; interval: NodeJS.Timeout }> = new Map();
   private toolInputChunkMap: Map<
     string,
@@ -537,10 +534,6 @@ export class Task {
   private async initInternal(readonly: boolean) {
     if (readonly) {
       // Readonly init must not mutate worktrees, spawn connectors, or run expensive scans
-      if (await fileExists(this.getTaskDir())) {
-        this.git = simpleGit(this.getTaskDir());
-      }
-
       await this.loadContext();
       this.eventManager.sendTaskInitialized(this.task);
 
@@ -616,10 +609,6 @@ export class Task {
 
     if (worktreeBaseBranchResolved && this.task.worktree) {
       void this.sendWorktreeIntegrationStatusUpdated();
-    }
-
-    if (await fileExists(this.getTaskDir())) {
-      this.git = simpleGit(this.getTaskDir());
     }
 
     await this.loadContext();
@@ -1899,20 +1888,11 @@ export class Task {
   }
 
   public async addToGit(absolutePath: string): Promise<void> {
-    if (!this.git) {
-      return;
-    }
-
     try {
-      // Check if the project is a git repository before attempting to add
-      const isRepo = await this.git.checkIsRepo();
-      if (!isRepo) {
-        return;
+      const staged = await this.gitManager.stageFile(this.getTaskDir(), absolutePath);
+      if (staged) {
+        await this.updateAutocompletionData(undefined, true);
       }
-
-      // Add the new file to git staging
-      await this.git.add(absolutePath);
-      await this.updateAutocompletionData(undefined, true);
     } catch (gitError) {
       const gitErrorMessage = gitError instanceof Error ? gitError.message : String(gitError);
       logger.warn(`Failed to add new file ${absolutePath} to git staging area: ${gitErrorMessage}`, {
@@ -1973,40 +1953,18 @@ export class Task {
     if (command.trim() === 'undo') {
       sendToConnectors = false;
       try {
-        // Get the Git root directory to handle monorepo scenarios
-        const gitRoot = (await this.git?.revparse(['--show-toplevel'])) || this.project.baseDir;
-        const gitRootDir = simpleGit(gitRoot);
+        const undoResult = await this.gitManager.undoLastCommit(this.getTaskDir());
+        if (undoResult) {
+          const { commitHash, commitMessage } = undoResult;
 
-        // Get the current HEAD commit hash before undoing
-        const commitHash = await gitRootDir.revparse(['HEAD']);
-        const commitMessage = await gitRootDir.show(['--format=%s', '--no-patch', 'HEAD']);
-
-        // Get all files from the last commit
-        const lastCommitFiles = await gitRootDir.show(['--name-only', '--pretty=format:', 'HEAD']);
-        const files = lastCommitFiles.split('\n').filter((file) => file.trim() !== '');
-
-        // For each file, check if it exists at HEAD~1 before attempting checkout
-        for (const file of files) {
-          try {
-            // Check if file exists at HEAD~1
-            await gitRootDir.show(['HEAD~1', '--', file]);
-            // If it exists, checkout the previous version
-            await gitRootDir.checkout(['HEAD~1', '--', file]);
-          } catch {
-            await gitRootDir.rm(file);
+          void this.sendUpdatedFilesUpdated();
+          if (this.task.worktree) {
+            void this.sendWorktreeIntegrationStatusUpdated();
           }
+
+          logger.info(`Reverted: ${commitMessage} (${commitHash.substring(0, 7)})`);
+          this.addLogMessage('info', `Reverted ${commitHash.substring(0, 7)}: ${commitMessage}`);
         }
-
-        // Reset --soft HEAD~1
-        await gitRootDir.reset(['--soft', 'HEAD~1']);
-
-        void this.sendUpdatedFilesUpdated();
-        if (this.task.worktree) {
-          void this.sendWorktreeIntegrationStatusUpdated();
-        }
-
-        logger.info(`Reverted: ${commitMessage} (${commitHash.substring(0, 7)})`);
-        this.addLogMessage('info', `Reverted ${commitHash.substring(0, 7)}: ${commitMessage}`);
       } catch (error) {
         logger.error('Failed to undo last commit:', {
           error: error instanceof Error ? error.message : String(error),
@@ -4357,7 +4315,6 @@ ${error.stderr}`,
       this.task.workingMode = mode;
     }
 
-    this.git = simpleGit(this.getTaskDir());
     if (await this.shouldStartAider()) {
       await this.aiderManager.start(true);
     }
@@ -5121,6 +5078,16 @@ ${error.stderr}`,
 
   public async listGitBranches(includeRemote?: boolean): Promise<BranchInfo[]> {
     return this.gitManager.listBranches(this.getTaskDir(), includeRemote);
+  }
+
+  public async isGitRepository(): Promise<boolean> {
+    return this.gitManager.isGitRepository(this.project.baseDir);
+  }
+
+  public async initializeGitRepository(): Promise<void> {
+    await this.gitManager.initRepository(this.project.baseDir);
+    void this.sendUpdatedFilesUpdated();
+    void this.sendWorktreeIntegrationStatusUpdated();
   }
 
   public async getSyncCommits(targetBranch?: string): Promise<GitSyncCommits> {

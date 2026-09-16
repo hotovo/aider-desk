@@ -16,7 +16,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
-import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
+import { TaskGitControls } from '@/components/project/TaskGitControls';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useApi } from '@/contexts/ApiContext';
@@ -654,7 +654,7 @@ export const TaskBar = forwardRef<TaskBarRef, Props>(
           </div>
           <div className="flex items-center space-x-1 mr-2">
             <ExtensionComponentWrapper placement="task-top-bar-right" />
-            <TaskWorkingMode
+            <TaskGitControls
               task={task}
               onMerge={handleMergeNormal}
               onSquash={handleMergeSquash}

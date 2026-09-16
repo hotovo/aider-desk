@@ -18,6 +18,7 @@ import {
 } from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
+import { simpleGit } from 'simple-git';
 
 import type { GitAskpassManager } from '@/git/git-askpass-manager';
 
@@ -286,6 +287,10 @@ export class GitManager {
   }
 
   async renameBranch(projectPath: string, oldBranch: string, newBranch: string): Promise<string> {
+    if (!(await this.ensureGitRepository(projectPath, 'rename branch'))) {
+      return newBranch;
+    }
+
     const finalBranchName = await this.findUniqueBranchName(projectPath, newBranch);
     await execWithShellPath(`git branch -m ${oldBranch} ${finalBranchName}`, { cwd: projectPath });
     logger.info(`Renamed branch: ${oldBranch} -> ${finalBranchName}`);
@@ -459,6 +464,10 @@ export class GitManager {
   }
 
   async listBranches(projectPath: string, includeRemote = false): Promise<BranchInfo[]> {
+    if (!(await this.ensureGitRepository(projectPath, 'list branches'))) {
+      return [];
+    }
+
     try {
       // Get all local branches
       const { stdout: branchOutput } = await execWithShellPath('git branch', {
@@ -584,6 +593,10 @@ export class GitManager {
   }
 
   async createBranch(projectPath: string, name: string, startPoint?: string, checkout = true): Promise<void> {
+    if (!(await this.ensureGitRepository(projectPath, 'create branch'))) {
+      return;
+    }
+
     try {
       await execWithShellPath(`git check-ref-format --branch ${this.quoteArg(name)}`, { cwd: projectPath });
     } catch {
@@ -601,6 +614,10 @@ export class GitManager {
   }
 
   async checkoutBranch(projectPath: string, branch: string, createTracking = false, takeOver = false): Promise<void> {
+    if (!(await this.ensureGitRepository(projectPath, 'checkout branch'))) {
+      return;
+    }
+
     return await withLock(`git-checkout-${projectPath}`, async () => {
       let command: string;
 
@@ -659,6 +676,10 @@ export class GitManager {
   }
 
   async deleteBranch(projectPath: string, branch: string, force = false): Promise<void> {
+    if (!(await this.ensureGitRepository(projectPath, 'delete branch'))) {
+      return;
+    }
+
     const worktrees = await this.listWorktrees(projectPath);
     if (worktrees.some((w) => w.branch === branch)) {
       throw new GitError(`Cannot delete '${branch}': it is checked out in a worktree.`);
@@ -685,6 +706,10 @@ export class GitManager {
   }
 
   async mergeIntoCurrent(projectPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    if (!(await this.ensureGitRepository(projectPath, 'merge'))) {
+      return {};
+    }
+
     return await withLock(`git-merge-into-current-${projectPath}`, async () => {
       const command = `git merge --no-edit ${this.quoteArg(branch)}`;
 
@@ -708,6 +733,10 @@ export class GitManager {
   }
 
   async rebaseOnto(projectPath: string, branch: string): Promise<{ conflictedFiles?: string[] }> {
+    if (!(await this.ensureGitRepository(projectPath, 'rebase'))) {
+      return {};
+    }
+
     return await withLock(`git-rebase-onto-${projectPath}`, async () => {
       if (await this.hasUncommittedChanges(projectPath)) {
         throw new GitError(`Cannot rebase onto '${branch}': you have uncommitted changes. Commit or stash them first.`);
@@ -791,6 +820,66 @@ export class GitManager {
   async getEffectiveMainBranch(project: { path: string; main_branch?: string }): Promise<string> {
     logger.warn('getEffectiveMainBranch is deprecated, use getProjectMainBranch instead');
     return await this.getProjectMainBranch(project.path);
+  }
+
+  async isGitRepository(projectPath: string): Promise<boolean> {
+    try {
+      await execWithShellPath('git rev-parse --git-dir', { cwd: projectPath });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async initRepository(projectPath: string): Promise<void> {
+    return await withLock(`git-init-${projectPath}`, async () => {
+      try {
+        await execWithShellPath(`git init -b ${this.quoteArg('main')}`, { cwd: projectPath });
+      } catch {
+        // Fallback for older git versions without `-b` support
+        await execWithShellPath('git init', { cwd: projectPath });
+        try {
+          await execWithShellPath('git symbolic-ref HEAD refs/heads/main', { cwd: projectPath });
+        } catch {
+          logger.warn('Failed to set initial branch to main after git init', { projectPath });
+        }
+      }
+
+      await this.ensureGitignoreEntry(projectPath);
+    });
+  }
+
+  private async ensureGitignoreEntry(projectPath: string): Promise<void> {
+    const gitignorePath = path.join(projectPath, '.gitignore');
+
+    try {
+      const existing = await fs.readFile(gitignorePath, 'utf8').catch(() => null);
+
+      if (existing === null) {
+        await fs.writeFile(gitignorePath, '.aider-desk/\n', 'utf8');
+        return;
+      }
+
+      const hasEntry = existing.split('\n').some((line) => {
+        const trimmed = line.trim();
+        return trimmed === '.aider-desk/' || trimmed === '.aider-desk';
+      });
+      if (!hasEntry) {
+        const separator = existing.length > 0 && !existing.endsWith('\n') ? '\n' : '';
+        await fs.appendFile(gitignorePath, `${separator}.aider-desk/\n`, 'utf8');
+      }
+    } catch (error) {
+      logger.warn('Failed to add .aider-desk/ to .gitignore:', { error });
+    }
+  }
+
+  private async ensureGitRepository(projectPath: string, action: string): Promise<boolean> {
+    if (await this.isGitRepository(projectPath)) {
+      return true;
+    }
+
+    logger.debug(`Skipping git action '${action}': directory is not a git repository`, { projectPath });
+    return false;
   }
 
   async getCommitHash(worktreePath: string, ref: string): Promise<string | undefined> {
@@ -1605,6 +1694,10 @@ export class GitManager {
   }
 
   async gitPull(worktreePath: string, rebase?: boolean): Promise<{ output: string }> {
+    if (!(await this.ensureGitRepository(worktreePath, 'pull'))) {
+      return { output: '' };
+    }
+
     try {
       const command = rebase ? 'git pull --rebase --autostash' : 'git pull --no-rebase';
       const { stdout, stderr } = await execWithShellPath(command, {
@@ -1624,6 +1717,10 @@ export class GitManager {
   }
 
   async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
+    if (!(await this.ensureGitRepository(worktreePath, 'push'))) {
+      return { output: '' };
+    }
+
     try {
       let command = force ? 'git push --force' : 'git push';
       if (setUpstream) {
@@ -1666,6 +1763,10 @@ export class GitManager {
   }
 
   async updateBranch(repoPath: string, branchName: string): Promise<{ output: string }> {
+    if (!(await this.ensureGitRepository(repoPath, 'update branch'))) {
+      return { output: '' };
+    }
+
     try {
       let upstream = '';
       try {
@@ -2326,6 +2427,10 @@ export class GitManager {
    * Fetches the remote first (throttled per repository) so un-fetched remote commits are counted too.
    */
   async getSyncCommits(repoPath: string, targetBranch?: string): Promise<GitSyncCommits> {
+    if (!(await this.ensureGitRepository(repoPath, 'get sync commits'))) {
+      return { outgoing: { count: 0, commits: [] }, incoming: { count: 0, commits: [] } };
+    }
+
     let baseRef = targetBranch;
 
     if (!baseRef) {
@@ -2382,6 +2487,10 @@ export class GitManager {
   }
 
   async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles> {
+    if (!(await this.ensureGitRepository(worktreePath, 'get uncommitted files'))) {
+      return { count: 0, files: [] };
+    }
+
     const { stdout } = await execWithShellPath('git status --porcelain=v1 -z', {
       cwd: worktreePath,
     });
@@ -2436,6 +2545,10 @@ export class GitManager {
     mainBranch?: string,
     groupMode: UpdatedFilesGroupMode = UpdatedFilesGroupMode.Grouped,
   ): Promise<UpdatedFile[]> {
+    if (!(await this.ensureGitRepository(worktreePath, 'get updated files'))) {
+      return [];
+    }
+
     try {
       let files: UpdatedFile[];
       if (workingMode === 'worktree' && mainBranch) {
@@ -2800,6 +2913,10 @@ export class GitManager {
    *   merge-base (worktree flat mode) or the empty tree hash (no commits yet).
    */
   async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string, filePath?: string, commitHash?: string): Promise<string> {
+    if (!(await this.ensureGitRepository(worktreePath, 'get file diff'))) {
+      return '';
+    }
+
     if (!filePath) {
       return '';
     }
@@ -2907,11 +3024,62 @@ export class GitManager {
   }
 
   async addFileToGit(worktreePath: string, filePath: string): Promise<void> {
+    if (!(await this.ensureGitRepository(worktreePath, 'add file to git'))) {
+      return;
+    }
+
     const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
     await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
   }
 
+  async stageFile(worktreePath: string, filePath: string): Promise<boolean> {
+    if (!(await this.ensureGitRepository(worktreePath, 'stage file'))) {
+      return false;
+    }
+
+    const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
+    await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
+    return true;
+  }
+
+  async undoLastCommit(worktreePath: string): Promise<{ commitHash: string; commitMessage: string } | null> {
+    if (!(await this.ensureGitRepository(worktreePath, 'undo last commit'))) {
+      return null;
+    }
+
+    // Use the git root directory to handle monorepo scenarios
+    const { stdout: gitRootOutput } = await execWithShellPath('git rev-parse --show-toplevel', { cwd: worktreePath });
+    const gitRoot = gitRootOutput.trim() || worktreePath;
+    const gitRootDir = simpleGit(gitRoot);
+
+    const commitHash = await gitRootDir.revparse(['HEAD']);
+    const commitMessage = await gitRootDir.show(['--format=%s', '--no-patch', 'HEAD']);
+
+    const lastCommitFiles = await gitRootDir.show(['--name-only', '--pretty=format:', 'HEAD']);
+    const files = lastCommitFiles.split('\n').filter((file) => file.trim() !== '');
+
+    for (const file of files) {
+      try {
+        // Check if file exists at HEAD~1
+        await gitRootDir.show(['HEAD~1', '--', file]);
+        // If it exists, checkout the previous version
+        await gitRootDir.checkout(['HEAD~1', '--', file]);
+      } catch {
+        await gitRootDir.rm(file);
+      }
+    }
+
+    // Reset --soft HEAD~1
+    await gitRootDir.reset(['--soft', 'HEAD~1']);
+
+    return { commitHash: commitHash.trim(), commitMessage: commitMessage.trim() };
+  }
+
   async restoreFile(worktreePath: string, filePath: string): Promise<void> {
+    if (!(await this.ensureGitRepository(worktreePath, 'restore file'))) {
+      return;
+    }
+
     try {
       logger.info(`Restoring file: ${filePath}`, { worktreePath });
       const escapedPath = filePath.replace(/"/g, '\\"');
@@ -2981,6 +3149,10 @@ export class GitManager {
   }
 
   async commitChanges(worktreePath: string, message: string, amend: boolean, filePaths?: string[]): Promise<boolean> {
+    if (!(await this.ensureGitRepository(worktreePath, 'commit changes'))) {
+      return false;
+    }
+
     const cancelController = new AbortController();
     this.commitCancelControllers.set(worktreePath, cancelController);
     const options = { cwd: worktreePath, signal: cancelController.signal, killSignal: 'SIGINT' as const };

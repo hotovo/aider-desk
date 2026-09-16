@@ -1327,6 +1327,20 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
+  isGitRepository(baseDir: string, taskId: string): Promise<boolean> {
+    return this.get('/project/git/is-repo', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
+  initializeGitRepository(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/git/init', {
+      projectDir: baseDir,
+      taskId,
+    });
+  }
+
   gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<{ output: string }> {
     return this.post('/project/git/pull', {
       projectDir: baseDir,

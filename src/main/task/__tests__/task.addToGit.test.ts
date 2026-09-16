@@ -122,12 +122,9 @@ vi.mock('uuid', () => ({
 
 import { Task } from '../task';
 
-import type { SimpleGit } from 'simple-git';
-
 import logger from '@/logger';
 
 describe('Task - addToGit', () => {
-  let mockGit: Partial<SimpleGit>;
   let task: Task;
   let mockProject: any;
   let mockStore: any;
@@ -148,12 +145,6 @@ describe('Task - addToGit', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-
-    // Create mock git instance
-    mockGit = {
-      checkIsRepo: vi.fn(),
-      add: vi.fn(),
-    };
 
     // Create minimal mock dependencies
     mockProject = {
@@ -189,7 +180,9 @@ describe('Task - addToGit', () => {
       sendTaskDeleted: vi.fn(),
     };
     mockModelManager = {};
-    mockGitManager = {};
+    mockGitManager = {
+      stageFile: vi.fn(),
+    };
     mockMemoryManager = {};
     mockPromptsManager = {};
     mockExtensionManager = {
@@ -219,10 +212,7 @@ describe('Task - addToGit', () => {
 
   describe('when project IS a git repository', () => {
     beforeEach(() => {
-      // Set the git property to the mock
-      (task as any).git = mockGit;
-      // Mock checkIsRepo to return true
-      vi.mocked(mockGit.checkIsRepo!).mockResolvedValue(true);
+      vi.mocked(mockGitManager.stageFile).mockResolvedValue(true);
     });
 
     it('should add the file to git staging', async () => {
@@ -233,8 +223,7 @@ describe('Task - addToGit', () => {
 
       await task.addToGit(filePath);
 
-      expect(mockGit.checkIsRepo).toHaveBeenCalledTimes(1);
-      expect(mockGit.add).toHaveBeenCalledWith(filePath);
+      expect(mockGitManager.stageFile).toHaveBeenCalledWith(expect.any(String), filePath);
     });
 
     it('should call updateAutocompletionData after adding', async () => {
@@ -253,7 +242,7 @@ describe('Task - addToGit', () => {
       (task as any).addLogMessage = mockAddLogMessage;
       (task as any).updateAutocompletionData = vi.fn().mockResolvedValue(undefined);
 
-      vi.mocked(mockGit.add!).mockRejectedValue(new Error('git add failed'));
+      vi.mocked(mockGitManager.stageFile).mockRejectedValue(new Error('git add failed'));
 
       await task.addToGit(filePath);
 
@@ -264,19 +253,7 @@ describe('Task - addToGit', () => {
 
   describe('when project is NOT a git repository', () => {
     beforeEach(() => {
-      // Set the git property to the mock
-      (task as any).git = mockGit;
-      // Mock checkIsRepo to return false
-      vi.mocked(mockGit.checkIsRepo!).mockResolvedValue(false);
-    });
-
-    it('should skip adding the file without calling git add', async () => {
-      const filePath = '/test/project/src/new-file.ts';
-
-      await task.addToGit(filePath);
-
-      expect(mockGit.checkIsRepo).toHaveBeenCalledTimes(1);
-      expect(mockGit.add).not.toHaveBeenCalled();
+      vi.mocked(mockGitManager.stageFile).mockResolvedValue(false);
     });
 
     it('should not call updateAutocompletionData', async () => {
@@ -297,20 +274,6 @@ describe('Task - addToGit', () => {
       await task.addToGit(filePath);
 
       expect(mockAddLogMessage).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('when git is not initialized (null)', () => {
-    beforeEach(() => {
-      // Set git to null
-      (task as any).git = null;
-    });
-
-    it('should return early without errors', async () => {
-      const filePath = '/test/project/src/new-file.ts';
-
-      // Should not throw
-      await expect(task.addToGit(filePath)).resolves.toBeUndefined();
     });
   });
 });

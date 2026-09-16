@@ -32,6 +32,7 @@ describe('GitManager - hasUncommittedChanges', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
   });
 
   it('should return false when no uncommitted changes', async () => {
@@ -124,6 +125,7 @@ describe('GitManager - getUncommittedFiles', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.spyOn(gitManager, 'isGitRepository').mockResolvedValue(true);
   });
 
   it('should return empty when no uncommitted changes', async () => {
