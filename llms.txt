@@ -17504,6 +17504,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { memo, useMemo, useState, useCallback, MouseEvent } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { FaRegHourglass } from 'react-icons/fa';
+import { FiLayers } from 'react-icons/fi';
 import {
   LocalizedString,
   UsageReportData,
@@ -17524,6 +17526,7 @@ import { areMessagesEqual, groupAssistantMessages } from './utils';
 ⋮----
 import { Accordion } from '@/components/common/Accordion';
 import { Button } from '@/components/common/Button';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { useSettingsStore } from '@/stores/settingsStore';
 ⋮----
 type Props = {
