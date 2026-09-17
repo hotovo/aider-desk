@@ -146,32 +146,32 @@ const AppContent = () => {
 
   return (
     <Router useTransitions={false}>
-        <TooltipProvider>
-          <ApiProvider>
-            <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
-              <ModelProviderProvider>
-                <SettingsInitializer />
-                <AgentsProvider>
-                  <McpServersProvider>
-                    <ContextMenuProvider>
-                      <ExtensionsProvider>
-                        <DiffsWorkerPoolProvider>
-                          <ThemeAndFontManager />
-                          <AnimatedRoutes />
-                          <ToastContainer />
-                          <ModalOverlayUrlHandler />
-                          <InputPromptDialog />
-                          <CommandPalette />
-                        </DiffsWorkerPoolProvider>
-                      </ExtensionsProvider>
-                    </ContextMenuProvider>
-                  </McpServersProvider>
-                </AgentsProvider>
-              </ModelProviderProvider>
-            </IconContext.Provider>
-          </ApiProvider>
-        </TooltipProvider>
-      </Router>
+      <TooltipProvider>
+        <ApiProvider>
+          <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
+            <ModelProviderProvider>
+              <SettingsInitializer />
+              <AgentsProvider>
+                <McpServersProvider>
+                  <ContextMenuProvider>
+                    <ExtensionsProvider>
+                      <DiffsWorkerPoolProvider>
+                        <ThemeAndFontManager />
+                        <AnimatedRoutes />
+                        <ToastContainer />
+                        <ModalOverlayUrlHandler />
+                        <InputPromptDialog />
+                        <CommandPalette />
+                      </DiffsWorkerPoolProvider>
+                    </ExtensionsProvider>
+                  </ContextMenuProvider>
+                </McpServersProvider>
+              </AgentsProvider>
+            </ModelProviderProvider>
+          </IconContext.Provider>
+        </ApiProvider>
+      </TooltipProvider>
+    </Router>
   );
 };
 

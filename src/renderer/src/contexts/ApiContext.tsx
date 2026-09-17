@@ -24,9 +24,7 @@ export const ApiProvider = ({ children }: Props) => {
     };
   }, [api]);
 
-  return (
-    <ApiContext.Provider value={api}>{children}</ApiContext.Provider>
-  );
+  return <ApiContext.Provider value={api}>{children}</ApiContext.Provider>;
 };
 
 export const useOptionalApi = (): ApplicationAPI | undefined => useContext(ApiContext);
