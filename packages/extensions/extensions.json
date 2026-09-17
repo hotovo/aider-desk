@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "protected-paths",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "external-rules",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "plannotator",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "kanban",
@@ -556,7 +556,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "my-minions",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "task-scheduler",
