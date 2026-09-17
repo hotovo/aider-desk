@@ -190,7 +190,7 @@ jobs:
 
   release-macos-x64:
     name: Release macOS x64 packages
-    runs-on: macos-latest
+    runs-on: macos-15
 
     steps:
       - uses: "actions/checkout@v1"
