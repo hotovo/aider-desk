@@ -1247,14 +1247,14 @@ export class Agent {
           continue;
         }
 
-        // Check for 'stop' with empty response (model generated tokens, but no usable messages)
-        if (finishReason === 'stop' && currentStepMessages.length === 0 && retryCount < MAX_RETRIES) {
-          logger.warn('Finish reason is "stop" but the step produced no messages. Retrying...');
-          retryCount++;
-          continue;
-        }
-        if (finishReason === 'stop' && currentStepMessages.length === 0) {
-          logger.warn('Finish reason is "stop" but the step produced no messages. Max retries reached, stopping.');
+        // Check for 'stop' with no usable output (model generated tokens, but no messages or reasoning-only message)
+        if (finishReason === 'stop' && this.stepShouldContinue(currentStepMessages)) {
+          if (retryCount < MAX_RETRIES) {
+            logger.warn('Finish reason is "stop" but the step produced no usable output. Retrying...');
+            retryCount++;
+            continue;
+          }
+          logger.warn('Finish reason is "stop" but the step produced no usable output. Max retries reached, stopping.');
         }
 
         // Check for 'stop' with trailing tool message
@@ -1354,6 +1354,21 @@ export class Agent {
     }
 
     return resultMessages;
+  }
+
+  private stepShouldContinue(stepMessages: ContextMessage[]): boolean {
+    if (stepMessages.length === 0) {
+      return true;
+    }
+
+    // A single assistant message with only reasoning parts and no text or tool calls is not a usable output
+    const assistantMessages = stepMessages.filter((message) => message.role === 'assistant');
+    const hasUsableOutput = stepMessages.some(
+      (message) =>
+        message.role !== 'assistant' || !Array.isArray(message.content) || message.content.some((part) => part.type === 'text' || part.type === 'tool-call'),
+    );
+
+    return assistantMessages.length > 0 && !hasUsableOutput;
   }
 
   private filterResultMessages(resultMessages: ContextMessage[]) {
