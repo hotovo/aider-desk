@@ -11,3 +11,14 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <App />
   </AppErrorBoundary>,
 );
+
+const registerServiceWorker = () => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to register service worker:', error);
+    });
+  }
+};
+
+window.addEventListener('load', registerServiceWorker);
