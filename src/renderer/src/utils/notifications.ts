@@ -17,7 +17,7 @@ const baseOptions: ToastOptions = {
   style: {
     backgroundColor: 'var(--color-bg-secondary-light)',
     color: 'var(--color-text-primary)',
-    border: '1.5px solid var(--color-border-default-dark)',
+    border: '1.5px solid var(--color-border-light)',
     borderRadius: '0.375rem',
     fontFamily: '"Sono", monospace',
     fontSize: '0.75rem',
