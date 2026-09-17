@@ -2,6 +2,7 @@ import '@/themes/themes.scss';
 import { AnimatePresence, motion } from 'framer-motion';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { BrowserBootstrap, THEMES } from '@common/types';
@@ -139,21 +140,12 @@ const AnimatedRoutes = () => {
   );
 };
 
-const NormalApp = () => {
-  const [isVisible, setIsVisible] = useState(false);
-
+const AppContent = () => {
   useCommandPaletteHotkeys();
   usePaletteCommands();
 
-  useEffect(() => {
-    setTimeout(() => {
-      setIsVisible(true);
-    }, 100);
-  }, []);
-
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
-      <Router useTransitions={false}>
+    <Router useTransitions={false}>
         <TooltipProvider>
           <ApiProvider>
             <IconContext.Provider value={ICON_CONTEXT_DEFAULT_VALUE}>
@@ -180,6 +172,23 @@ const NormalApp = () => {
           </ApiProvider>
         </TooltipProvider>
       </Router>
+  );
+};
+
+const NormalApp = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+  }, []);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: isVisible ? 1 : 0 }} transition={{ duration: 0.5, ease: 'easeIn' }}>
+      <HotkeysProvider initiallyActiveScopes={['home', 'task', 'dialog', 'modal']}>
+        <AppContent />
+      </HotkeysProvider>
     </motion.div>
   );
 };

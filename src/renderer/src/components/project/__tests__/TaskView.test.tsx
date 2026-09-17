@@ -1,4 +1,4 @@
-import { screen, fireEvent, act } from '@testing-library/react';
+import { screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TaskData, ModelsData, Message } from '@common/types';
 import { toast } from 'react-toastify';
@@ -371,7 +371,9 @@ describe('TaskView', () => {
         });
 
         // All messages should be present initially
-        expect(screen.queryByText('First message')).toBeInTheDocument();
+        await waitFor(() => {
+          expect(screen.queryByText('First message')).toBeInTheDocument();
+        });
         expect(screen.queryByText('Second message')).toBeInTheDocument();
         expect(screen.queryByText('Third message')).toBeInTheDocument();
 
