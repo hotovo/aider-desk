@@ -1,5 +1,5 @@
-// Minimal service worker for PWA recognition
-// No caching - just exists to enable PWA features
+// Minimal service worker for PWA recognition.
+// No caching and no fetch interception - just exists to enable PWA features.
 
 self.addEventListener('install', (event) => {
   // Skip waiting to activate immediately
@@ -11,11 +11,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Pass through all fetch requests without caching
-// Skip socket.io requests to avoid interfering with long-polling transport
-self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('socket.io')) {
-    return;
-  }
-  event.respondWith(fetch(event.request));
-});
+// Do not intercept fetch requests. A pass-through respondWith(fetch()) here adds a
+// service worker round-trip to every module load and turns transient network failures
+// into hard ERR_FAILED errors. Leaving fetches untouched keeps PWA install eligibility
+// without the failure amplification.
