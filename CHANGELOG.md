@@ -20,6 +20,7 @@
 - fixed task branch being renamed when its worktree is shared with other tasks
 - added initializing a git repository for non-git projects to enable branches, worktrees and version tracking
 - fixed uncommitted diff missing in repositories with no commits yet by diffing against the empty tree and including untracked files
+- fixed React "missing key" console warning when rendering custom command blocks by wrapping parsed content in a keyed fragment
 
 ## [0.83.0]
 

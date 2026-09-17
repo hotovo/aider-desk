@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { Fragment, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -235,7 +235,7 @@ export const parseMessageContent = (
           const customCommandBashContent = parseCustomCommandBashFormat(baseDir, blockContent);
 
           if (customCommandBashContent) {
-            parts.push(customCommandBashContent);
+            parts.push(<Fragment key={parts.length}>{customCommandBashContent}</Fragment>);
           }
 
           // Skip to after the closing tag
