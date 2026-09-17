@@ -17,7 +17,7 @@ const baseOptions: ToastOptions = {
   style: {
     backgroundColor: 'var(--color-bg-secondary-light)',
     color: 'var(--color-text-primary)',
-    border: '1px solid var(--color-border-dark-light-strong)',
+    border: '1.5px solid var(--color-border-default-dark)',
     borderRadius: '0.375rem',
     fontFamily: '"Sono", monospace',
     fontSize: '0.75rem',
@@ -48,6 +48,7 @@ export const showErrorNotification = (message: string, autoClose: number | false
     style: {
       ...options.style,
       color: 'var(--color-error)',
+      borderColor: 'var(--color-error)',
     },
   });
 };
