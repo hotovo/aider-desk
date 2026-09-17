@@ -35,6 +35,8 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
   const [activeKey, setActiveKey] = useState<string | null>(null);
 
   const key = file ? fileDiffKey(file) : null;
+  const filePath = file?.path ?? null;
+  const commitHash = file?.commitHash ?? undefined;
   const isLarge = !!file && file.additions + file.deletions > LARGE_DIFF_THRESHOLD;
 
   const load = useCallback(() => {
@@ -57,7 +59,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
   }, [key, activeKey]);
 
   useEffect(() => {
-    if (!file || !key || !taskId || !baseDir) {
+    if (!filePath || !key || !taskId || !baseDir) {
       return;
     }
 
@@ -79,7 +81,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
     }
 
     // Large files wait for an explicit user request
-    if (file.additions + file.deletions > LARGE_DIFF_THRESHOLD && !userRequestedLarge) {
+    if (isLarge && !userRequestedLarge) {
       return;
     }
 
@@ -89,7 +91,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
     const fetchDiff = async () => {
       setLoading(true);
       try {
-        const result = await api.getUpdatedFileDiff(baseDir, taskId, file.path, file.commitHash);
+        const result = await api.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash);
         if (!cancelled) {
           cacheRef.current.set(key, { diff: result, timestamp: fetchTimestamp });
           setDiff(result);
@@ -113,8 +115,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [api, baseDir, taskId, key, enabled, userRequestedLarge, diff]);
+  }, [api, baseDir, taskId, key, enabled, userRequestedLarge, diff, filePath, commitHash, isLarge]);
 
   return { diff, loading, isLarge, load };
 };

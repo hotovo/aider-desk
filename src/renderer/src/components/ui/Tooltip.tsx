@@ -207,15 +207,16 @@ const TooltipHost = () => {
   }, []);
 
   useEffect(() => {
-    updatePosition();
+    const frame = requestAnimationFrame(updatePosition);
     if (!state) {
-      return;
+      return () => cancelAnimationFrame(frame);
     }
     const handleReposition = () => updatePosition();
     window.addEventListener('scroll', handleReposition, true);
     window.addEventListener('resize', handleReposition);
     const interval = window.setInterval(handleReposition, 500);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener('scroll', handleReposition, true);
       window.removeEventListener('resize', handleReposition);
       window.clearInterval(interval);
@@ -330,17 +331,32 @@ export const Tooltip = ({ content, children, side, align, delayDuration, maxWidt
     onBlur?: (e: FocusEvent<HTMLElement>) => void;
   };
 
-  const chain =
-    <E,>(first: ((e: E) => void) | undefined, second: (e: E) => void) =>
-    (e: E) => {
-      first?.(e);
-      second(e);
-    };
+  const handleChildPointerEnter = (e: PointerEvent<HTMLElement>) => {
+    childProps.onPointerEnter?.(e);
+    showFromEvent(e);
+  };
 
+  const handleChildPointerLeave = (e: PointerEvent<HTMLElement>) => {
+    childProps.onPointerLeave?.(e);
+    handleHide();
+  };
+
+  const handleChildFocus = (e: FocusEvent<HTMLElement>) => {
+    childProps.onFocus?.(e);
+    showFromEvent(e);
+  };
+
+  const handleChildBlur = (e: FocusEvent<HTMLElement>) => {
+    childProps.onBlur?.(e);
+    handleHide();
+  };
+
+  // Handlers only touch anchorRef at event time; the rule cannot see this through cloneElement's props argument.
+  // eslint-disable-next-line react-hooks/refs
   return cloneElement(child as ReactElement<Record<string, unknown>>, {
-    onPointerEnter: chain(childProps.onPointerEnter, showFromEvent),
-    onPointerLeave: chain(childProps.onPointerLeave, handleHide),
-    onFocus: chain(childProps.onFocus, showFromEvent),
-    onBlur: chain(childProps.onBlur, handleHide),
+    onPointerEnter: handleChildPointerEnter,
+    onPointerLeave: handleChildPointerLeave,
+    onFocus: handleChildFocus,
+    onBlur: handleChildBlur,
   });
 };

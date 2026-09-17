@@ -74,9 +74,13 @@ export const Tree = ({ expandedItems, setExpandedItems, scrollContainerRef, tree
     if (!scrollEl || !listEl) {
       return;
     }
-    setScrollMargin(listEl.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop);
-  });
+    const margin = listEl.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop;
+    setScrollMargin((prev) => (Math.abs(prev - margin) < 0.5 ? prev : margin));
+  }, [scrollContainerRef]);
 
+  // useVirtualizer returns a stateful instance with methods, which React Compiler cannot memoize;
+  // Tree is skipped by the compiler, rows are already memoized via MemoizedTreeItemRenderer.
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: visibleItems.length,
     getScrollElement: () => scrollContainerRef?.current ?? (innerScrollRef.current as HTMLDivElement | null),
