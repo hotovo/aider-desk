@@ -21,7 +21,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "pirate",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "external-skills",
@@ -232,7 +232,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "searxng-search",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "codegraph",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "wigolo",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 49
+      "installCount": 50
     }
   ]
 }
