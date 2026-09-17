@@ -962,6 +962,7 @@ export const GitBranchesButton = ({
             onRebaseOnto={handleRebaseOnto}
             onRebaseWorktreeOnto={handleRebaseWorktreeOnto}
             onDelete={handleDelete}
+            onRequestClose={handleCloseDropdown}
           />
         </div>
       )}

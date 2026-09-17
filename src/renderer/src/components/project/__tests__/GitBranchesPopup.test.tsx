@@ -31,11 +31,18 @@ type PopupProps = typeof defaultProps & {
   worktreeMode?: boolean;
   onRebaseWorktreeOnto?: (branch: BranchInfo) => void;
   onUpdateBranch?: (branch: BranchInfo) => void;
+  onRequestClose?: () => void;
 };
 
 const openSubmenuFor = (branchName: string) => {
   fireEvent.click(screen.getByText(branchName));
 };
+
+const pressKey = (key: string, target?: Node | null) => {
+  fireEvent.keyDown(target ?? window, { key });
+};
+
+const getSearchInput = () => screen.getByPlaceholderText('git.searchBranches');
 
 describe('GitBranchesPopup', () => {
   beforeEach(() => {
@@ -50,7 +57,7 @@ describe('GitBranchesPopup', () => {
       openSubmenuFor('feature-x');
 
       expect(screen.getByText('git.checkoutBranch')).toBeInTheDocument();
-      expect(screen.getByText('git.newBranchFrom')).toBeInTheDocument();
+      expect(screen.getByText('git.newBranchFrom').closest('button')).toBeInTheDocument();
       expect(screen.getByText('git.rebaseOnto')).toBeInTheDocument();
       expect(screen.getByText('git.mergeBranchInto')).toBeInTheDocument();
     });
@@ -95,9 +102,9 @@ describe('GitBranchesPopup', () => {
       });
       openSubmenuFor('feature-x');
 
-      expect(screen.getByText('git.updateFromRemote')).toBeInTheDocument();
+      expect(screen.getByText('git.updateFromRemote').closest('button')).toBeInTheDocument();
 
-      fireEvent.click(screen.getByText('git.updateFromRemote'));
+      fireEvent.click(screen.getByText('git.updateFromRemote').closest('button')!);
       expect(onUpdateBranch).toHaveBeenCalledWith(expect.objectContaining({ name: 'feature-x' }));
     });
 
@@ -132,6 +139,100 @@ describe('GitBranchesPopup', () => {
       openSubmenuFor('feature-x');
 
       expect(screen.queryByText('git.deleteBranchName')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('keyboard navigation', () => {
+    it('filters branches from the search field and opens the submenu with Enter', () => {
+      renderPopup({ branches: [makeBranch({ name: 'feature-x' }), makeBranch({ name: 'main' })] });
+
+      const input = getSearchInput();
+      fireEvent.change(input, { target: { value: 'main' } });
+
+      pressKey('ArrowDown', input);
+      pressKey('Enter', input);
+
+      expect(screen.getByText('git.checkoutBranch')).toBeInTheDocument();
+    });
+
+    it('clears the highlight when the filter changes', () => {
+      renderPopup({ branches: [makeBranch({ name: 'feature-a' }), makeBranch({ name: 'feature-b' })] });
+
+      const input = getSearchInput();
+      pressKey('ArrowDown', input);
+      expect(screen.getByText('feature-a').closest('div[class*="cursor-pointer"]')).toHaveClass('bg-bg-tertiary');
+
+      fireEvent.change(input, { value: 'a', target: { value: 'a' } });
+      expect(screen.getByText('feature-a').closest('div[class*="cursor-pointer"]')).not.toHaveClass('bg-bg-tertiary');
+    });
+
+    it('navigates the submenu with arrows and invokes the action with Enter', () => {
+      const onSelect = vi.fn();
+      renderPopup({ onSelect, branches: [makeBranch({ name: 'main' }), makeBranch({ name: 'feat' })] });
+
+      const input = getSearchInput();
+      fireEvent.change(input, { target: { value: 'feat' } });
+      pressKey('ArrowDown', input);
+      pressKey('Enter', input);
+      expect(screen.getByText('git.checkoutBranch').closest('button')).toHaveClass('bg-bg-tertiary');
+      pressKey('ArrowDown');
+      expect(screen.getByText('git.newBranchFrom').closest('button')).toHaveClass('bg-bg-tertiary');
+
+      pressKey('ArrowUp');
+      expect(screen.getByText('git.checkoutBranch').closest('button')).toHaveClass('bg-bg-tertiary');
+
+      pressKey('Enter');
+
+      expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'feat' }));
+      expect(screen.queryByText('git.newBranchFrom')).not.toBeInTheDocument();
+    });
+
+    it('skips disabled submenu items when navigating', () => {
+      renderPopup({
+        branches: [makeBranch({ name: 'feature-x', upstream: 'origin/feature-x' })],
+        currentBranch: 'feature-x',
+        onUpdateBranch: vi.fn(),
+      });
+
+      const input = getSearchInput();
+      pressKey('ArrowDown', input);
+      pressKey('Enter', input);
+
+      // checkout is disabled (current branch), so the highlight starts on the first enabled item
+      expect(screen.getByText('git.newBranchFrom').closest('button')).toHaveClass('bg-bg-tertiary');
+      pressKey('ArrowDown');
+      expect(screen.getByText('git.updateFromRemote').closest('button')).toHaveClass('bg-bg-tertiary');
+    });
+
+    it('closes the submenu with Escape and the dropdown with another Escape', () => {
+      const onRequestClose = vi.fn();
+      renderPopup({ onRequestClose, branches: [makeBranch({ name: 'main' })] });
+
+      const input = getSearchInput();
+      pressKey('ArrowDown', input);
+      pressKey('Enter', input);
+      expect(screen.getByText('git.checkoutBranch')).toBeInTheDocument();
+
+      pressKey('Escape');
+      expect(screen.queryByText('git.checkoutBranch')).not.toBeInTheDocument();
+
+      pressKey('Escape');
+      expect(onRequestClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('moves the highlight with arrow keys and back', () => {
+      renderPopup({ branches: [makeBranch({ name: 'feature-a' }), makeBranch({ name: 'feature-b' })] });
+
+      const input = getSearchInput();
+      pressKey('ArrowDown', input);
+      expect(screen.getByText('feature-a').closest('div[class*="cursor-pointer"]')).toHaveClass('bg-bg-tertiary');
+
+      pressKey('ArrowDown');
+      expect(screen.getByText('feature-b').closest('div[class*="cursor-pointer"]')).toHaveClass('bg-bg-tertiary');
+      expect(screen.getByText('feature-a').closest('div[class*="cursor-pointer"]')).not.toHaveClass('bg-bg-tertiary');
+
+      pressKey('ArrowUp');
+      expect(screen.getByText('feature-a').closest('div[class*="cursor-pointer"]')).toHaveClass('bg-bg-tertiary');
     });
   });
 });
