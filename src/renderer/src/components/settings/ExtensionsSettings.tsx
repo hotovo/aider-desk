@@ -1,5 +1,5 @@
 import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
-import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMount } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
@@ -68,6 +68,12 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
   const api = useApi();
 
   const [activeTab, setActiveTab] = useState<Tab>(Tab.Installed);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    searchInputRef.current?.focus();
+  };
   const [installedExtensions, setInstalledExtensions] = useState<InstalledExtension[]>([]);
   const [availableExtensions, setAvailableExtensions] = useState<AvailableExtension[]>([]);
   const [loadingInstalled, setLoadingInstalled] = useState(false);
@@ -649,7 +655,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex gap-1 p-1 bg-bg-primary rounded-lg border border-border-default flex-shrink-0">
           <button
-            onClick={() => setActiveTab(Tab.Installed)}
+            onClick={() => handleTabChange(Tab.Installed)}
             className={clsx(
               'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
               activeTab === Tab.Installed ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
@@ -661,7 +667,7 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
             )}
           </button>
           <button
-            onClick={() => setActiveTab(Tab.Available)}
+            onClick={() => handleTabChange(Tab.Available)}
             className={clsx(
               'px-4 py-2 text-sm font-medium rounded-md transition-all duration-200',
               activeTab === Tab.Available ? 'bg-bg-tertiary text-text-primary shadow-sm' : 'text-text-muted hover:text-text-secondary hover:bg-bg-tertiary',
@@ -702,8 +708,10 @@ export const ExtensionsSettings = ({ settings, setSettings, openProjects = [], s
           <div className="relative flex-1">
             <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" />
             <Input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              autoFocus
               placeholder={t('settings.extensions.search.placeholder')}
               className="pl-10 bg-bg-primary border w-full"
               wrapperClassName="w-full"
