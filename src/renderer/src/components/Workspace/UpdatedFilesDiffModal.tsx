@@ -355,7 +355,9 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to commit changes:', error);
-      setCommitError(error instanceof Error ? error.message : String(error));
+      // Strip the Electron IPC wrapper prefix so only the actual backend error is shown
+      const rawError = error instanceof Error ? error.message : String(error);
+      setCommitError(rawError.replace(/^Error invoking remote method 'commit-changes':\s*(Error:\s*)?/, ''));
     }
   }, [commit, commitMessage, amend, onClose, selectedFiles]);
 
@@ -813,7 +815,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
           {commitError && (
             <div className="border border-border-default bg-bg-primary-light rounded-md p-3 max-h-40 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
               <div className="text-xs font-medium text-error mb-1">{t('contextFiles.commitError')}</div>
-              <div className="text-xs text-error whitespace-pre-wrap font-mono">{commitError}</div>
+              <div className="text-xs text-error whitespace-pre-wrap font-mono select-text">{commitError}</div>
             </div>
           )}
 

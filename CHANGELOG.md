@@ -18,6 +18,7 @@
 - added ephemeral indicator for transient message groups
 - added bulk tool approval setting for MCP servers with an "All" select in the server tools list
 - fixed task branch being renamed when its worktree is shared with other tasks
+- improved commit error messages in updated files diff modal by stripping the IPC wrapper prefix and making the error text selectable
 - added initializing a git repository for non-git projects to enable branches, worktrees and version tracking
 - fixed uncommitted diff missing in repositories with no commits yet by diffing against the empty tree and including untracked files
 - fixed React "missing key" console warning when rendering custom command blocks by wrapping parsed content in a keyed fragment
