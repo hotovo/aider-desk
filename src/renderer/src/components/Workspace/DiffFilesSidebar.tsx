@@ -88,6 +88,7 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect, selectedFi
             placeholder={t('contextFiles.searchPlaceholder')}
             size="sm"
             autoFocus={false}
+            wrapperClassName="flex-1 min-w-0"
           />
         </div>
 
