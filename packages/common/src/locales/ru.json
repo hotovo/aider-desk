@@ -1271,6 +1271,8 @@
     "useGitEnabled": "Git включён — нажмите для использования файловой системы",
     "useGitDisabled": "Файловая система включена — нажмите для использования Git",
     "revertFile": "Отменить изменения",
+    "expandContext": "Развернуть контекст",
+    "collapseContext": "Свернуть контекст",
     "addFileToGit": "Добавить файл в Git",
     "fileHasConflicts": "Файл содержит конфликты слияния",
     "confirmRevertTitle": "Отменить изменения файла?",

@@ -1205,6 +1205,8 @@
     "useGitEnabled": "Git 已启用 - 点击使用文件系统",
     "useGitDisabled": "文件系统已启用 - 点击使用 Git",
     "revertFile": "恢复更改",
+    "expandContext": "展开上下文",
+    "collapseContext": "折叠上下文",
     "addFileToGit": "添加文件到 Git",
     "fileHasConflicts": "文件存在合并冲突",
     "confirmRevertTitle": "恢复文件更改？",

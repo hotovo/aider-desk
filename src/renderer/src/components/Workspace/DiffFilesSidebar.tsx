@@ -81,7 +81,7 @@ export const DiffFilesSidebar = ({ groups, currentFile, onFileSelect, selectedFi
       onResize={handleResize}
     >
       <div className="flex flex-col h-full border-r border-border-default bg-bg-primary-light-strong overflow-hidden">
-        <div className="px-2 py-1.5 border-b border-border-default bg-bg-primary-light shrink-0">
+        <div className="px-2 h-11 flex items-center border-b border-border-default bg-bg-primary-light shrink-0">
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

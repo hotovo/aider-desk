@@ -31,6 +31,9 @@ type Props = {
   comments?: DiffComment[];
   onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
   onRemoveComment?: (commentId: string) => void;
+  /** Full file contents; when provided together with expandContext, renders the whole-file diff with expandable context */
+  contents?: { oldContent: string; newContent: string } | null;
+  expandContext?: boolean;
 };
 
 export const PierreDiffViewer = ({
@@ -45,6 +48,8 @@ export const PierreDiffViewer = ({
   comments,
   onEditComment,
   onRemoveComment,
+  contents,
+  expandContext = false,
 }: Props) => {
   const handleLineClick = useCallback(
     (props: OnDiffLineClickProps) => {
@@ -114,9 +119,10 @@ export const PierreDiffViewer = ({
         diffStyle: (viewMode === DiffViewMode.SideBySide ? 'split' : 'unified') as 'split' | 'unified',
         disableLineNumbers: !udiff,
         overflow: 'wrap',
+        ...(expandContext ? { expansionLineCount: 30 } : {}),
         ...(onLineClick ? { onLineClick: handleLineClick } : {}),
       }) as MultiFileDiffProps<unknown>['options'],
-    [showFilename, udiff, viewMode, onLineClick, handleLineClick],
+    [showFilename, udiff, viewMode, onLineClick, handleLineClick, expandContext],
   );
 
   const selectedLines = useMemo<SelectedLineRange | null>(
@@ -125,6 +131,22 @@ export const PierreDiffViewer = ({
   );
 
   const annotationProps = comments && comments.length > 0 ? { lineAnnotations, renderAnnotation } : {};
+
+  if (expandContext && contents) {
+    const ensureTrailingNewline = (s: string) => (s.endsWith('\n') ? s : s + '\n');
+    const oldContents = ensureTrailingNewline(contents.oldContent);
+    const newContents = ensureTrailingNewline(contents.newContent);
+
+    return (
+      <MultiFileDiff
+        oldFile={{ name: fileName || 'file.txt', contents: oldContents }}
+        newFile={{ name: fileName || 'file.txt', contents: newContents }}
+        options={options}
+        selectedLines={selectedLines}
+        {...annotationProps}
+      />
+    );
+  }
 
   if (udiff) {
     return <PatchDiff patch={udiff} options={options} selectedLines={selectedLines} {...annotationProps} />;

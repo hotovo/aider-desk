@@ -101,6 +101,7 @@ const api: ApplicationAPI = {
   refreshContextFiles: (baseDir, taskId) => ipcRenderer.invoke('refresh-context-files', baseDir, taskId),
   getUpdatedFiles: (baseDir, taskId) => ipcRenderer.invoke('get-updated-files', baseDir, taskId),
   getUpdatedFileDiff: (baseDir, taskId, filePath, commitHash) => ipcRenderer.invoke('get-updated-file-diff', baseDir, taskId, filePath, commitHash),
+  getUpdatedFileContents: (baseDir, taskId, filePath, commitHash) => ipcRenderer.invoke('get-updated-file-contents', baseDir, taskId, filePath, commitHash),
   addFileToGit: (baseDir, taskId, filePath) => ipcRenderer.invoke('add-file-to-git', baseDir, taskId, filePath),
   restoreFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('restore-file', baseDir, taskId, filePath),
   readFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('read-file', baseDir, taskId, filePath),

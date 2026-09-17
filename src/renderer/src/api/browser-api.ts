@@ -551,6 +551,17 @@ export class BrowserApi implements ApplicationAPI {
       commitHash,
     }).then((res) => res.diff);
   }
+  getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+    return this.post<{ projectDir: string; taskId: string; filePath: string; commitHash?: string }, { oldContent: string; newContent: string }>(
+      '/get-updated-file-contents',
+      {
+        projectDir: baseDir,
+        taskId,
+        filePath,
+        commitHash,
+      },
+    );
+  }
   async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string> {
     const res = await this.post<{ projectDir: string; taskId: string; filePaths?: string[] }, { message: string }>(
       '/project/worktree/generate-commit-message',

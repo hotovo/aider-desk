@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, MouseEvent } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MdOutlineCommit } from 'react-icons/md';
+import { MdOutlineCommit, MdUnfoldLess, MdUnfoldMore } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
@@ -10,8 +10,10 @@ import { clsx } from 'clsx';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
+import { useUpdatedFileContents } from '@/hooks/useUpdatedFileContents';
 
 type Props = {
   file: UpdatedFile;
@@ -42,10 +44,13 @@ export const DiffFileItem = ({
 }: Props) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
+  // Full file context with expandable unchanged regions, loaded on demand via the header button
+  const [showFullContext, setShowFullContext] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   // Diffs are fetched lazily only when the file item scrolls into the viewport
   const [isVisible, setIsVisible] = useState(false);
   const { diff, loading, isLarge, load: loadLargeDiff } = useUpdatedFileDiff(baseDir, taskId, file, isVisible);
+  const { contents, loading: contentsLoading, load: loadContents } = useUpdatedFileContents(baseDir, taskId, file);
 
   useEffect(() => {
     const element = containerRef.current;
@@ -68,6 +73,18 @@ export const DiffFileItem = ({
   const handleToggle = useCallback(() => {
     setIsExpanded((prev) => !prev);
   }, []);
+
+  const handleToggleFullContext = useCallback(
+    (e?: MouseEvent<HTMLButtonElement>) => {
+      e?.stopPropagation();
+      const next = !showFullContext;
+      if (next) {
+        loadContents();
+      }
+      setShowFullContext(next);
+    },
+    [showFullContext, loadContents],
+  );
 
   const handleLoadLargeDiff = useCallback(
     (e: MouseEvent<HTMLButtonElement>) => {
@@ -92,11 +109,18 @@ export const DiffFileItem = ({
       id={`diff-file-${index}`}
       className={clsx('select-text bg-bg-code-block rounded-lg text-xs relative', stickyHeader && !isExpanded ? 'overflow-hidden' : '')}
     >
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleToggle();
+          }
+        }}
         onClick={handleToggle}
         className={clsx(
-          'w-full flex items-center gap-2 p-3 hover:bg-bg-tertiary transition-colors',
+          'w-full flex items-center gap-2 px-3 py-1.5 hover:bg-bg-fourth-muted transition-colors cursor-pointer',
           stickyHeader && 'sticky top-0 z-[5] bg-bg-code-block rounded-t-lg',
         )}
       >
@@ -104,6 +128,25 @@ export const DiffFileItem = ({
           <HiChevronDown className="h-4 w-4 text-text-secondary" />
         </motion.div>
         <span className="text-xs font-medium text-text-primary truncate text-left flex-1">{file.path}</span>
+        {isExpanded && (
+          <IconButton
+            icon={
+              contentsLoading && showFullContext ? (
+                <CgSpinner className="h-4 w-4 animate-spin" />
+              ) : showFullContext ? (
+                <MdUnfoldLess className="h-4 w-4" />
+              ) : (
+                <MdUnfoldMore className="h-4 w-4" />
+              )
+            }
+            onClick={handleToggleFullContext}
+            tooltip={showFullContext ? t('contextFiles.collapseContext') : t('contextFiles.expandContext')}
+            className={clsx(
+              'p-1.5 rounded-md transition-colors shrink-0',
+              showFullContext ? 'text-text-primary hover:bg-bg-tertiary-emphasis' : 'text-text-secondary hover:bg-bg-tertiary-emphasis',
+            )}
+          />
+        )}
         {file.additions > 0 && <span className="text-xs font-medium text-success shrink-0">+{file.additions}</span>}
         {file.deletions > 0 && <span className="text-xs font-medium text-error shrink-0">-{file.deletions}</span>}
         {file.commitHash && (
@@ -117,7 +160,7 @@ export const DiffFileItem = ({
             <RiAlertLine className="h-4 w-4 text-warning shrink-0" />
           </Tooltip>
         )}
-      </button>
+      </div>
       <AnimatePresence initial={false}>
         {isExpanded && (
           <motion.div
@@ -142,6 +185,9 @@ export const DiffFileItem = ({
               ) : (
                 <PierreDiffViewer
                   udiff={diff ?? ''}
+                  contents={contents}
+                  expandContext={showFullContext && !!contents}
+                  fileName={file.path}
                   viewMode={diffViewMode}
                   showFilename={false}
                   selectedLineNumber={selectedLineNumber}

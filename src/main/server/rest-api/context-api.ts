@@ -166,6 +166,20 @@ export class ContextApi extends BaseApi {
     );
 
     router.post(
+      '/get-updated-file-contents',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(GetUpdatedFileDiffSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, filePath, commitHash } = parsed;
+        const contents = await this.eventsHandler.getUpdatedFileContents(projectDir, taskId, filePath, commitHash);
+        res.status(200).json(contents);
+      }),
+    );
+
+    router.post(
       '/refresh-context-files',
       this.handleRequest(async (req, res) => {
         const parsed = this.validateRequest(RefreshContextFilesSchema, req.body, res);

@@ -105,6 +105,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     refreshContextFiles: vi.fn((): Promise<void> => Promise.resolve()),
     getUpdatedFiles: vi.fn((): Promise<Array<{ path: string; additions: number; deletions: number; diff: string }>> => Promise.resolve([])),
     getUpdatedFileDiff: vi.fn((): Promise<string> => Promise.resolve('')),
+    getUpdatedFileContents: vi.fn((): Promise<{ oldContent: string; newContent: string }> => Promise.resolve({ oldContent: '', newContent: '' })),
     addFileToGit: vi.fn((): Promise<void> => Promise.resolve()),
     restoreFile: vi.fn((): Promise<void> => Promise.resolve()),
     generateCommitMessage: vi.fn((): Promise<string> => Promise.resolve('')),

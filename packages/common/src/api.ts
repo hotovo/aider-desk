@@ -137,6 +137,7 @@ export interface ApplicationAPI {
   refreshContextFiles: (baseDir: string, taskId: string) => Promise<void>;
   getUpdatedFiles: (baseDir: string, taskId: string) => Promise<UpdatedFile[]>;
   getUpdatedFileDiff: (baseDir: string, taskId: string, filePath: string, commitHash?: string) => Promise<string>;
+  getUpdatedFileContents: (baseDir: string, taskId: string, filePath: string, commitHash?: string) => Promise<{ oldContent: string; newContent: string }>;
   addFileToGit: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
   restoreFile: (baseDir: string, taskId: string, filePath: string) => Promise<void>;
   readFile: (baseDir: string, taskId: string, filePath: string) => Promise<string>;

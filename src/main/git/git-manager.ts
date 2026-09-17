@@ -2985,6 +2985,80 @@ export class GitManager {
   }
 
   /**
+   * Get full old and new contents of a file for a diff group.
+   * commitHash group: old = parent commit version, new = commit version.
+   * Uncommitted group: old = base (merge-base/HEAD) version, new = working tree.
+   */
+  async getFileContents(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    filePath?: string,
+    commitHash?: string,
+  ): Promise<{ oldContent: string; newContent: string }> {
+    const emptyContents = { oldContent: '', newContent: '' };
+    if (!filePath) {
+      return emptyContents;
+    }
+
+    try {
+      const escapedPath = filePath.replace(/"/g, '\\"');
+
+      if (await this.checkBinaryOrSkip(worktreePath, filePath)) {
+        return emptyContents;
+      }
+
+      if (commitHash) {
+        const { stdout: parent } = await execWithShellPath(`git rev-parse ${commitHash}^`, { cwd: worktreePath });
+        const parentHash = parent.trim();
+        const newContent = await this.safeGitShow(worktreePath, `${commitHash}`, escapedPath);
+        const oldContent = await this.safeGitShow(worktreePath, parentHash, escapedPath);
+        return { oldContent, newContent };
+      }
+
+      // Resolve the base the same way as getFileDiff
+      let base = 'HEAD';
+      if (workingMode === 'worktree' && mainBranch) {
+        try {
+          const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+          if (mergeBase.trim()) {
+            base = mergeBase.trim();
+          } else {
+            base = mainBranch;
+          }
+        } catch {
+          base = mainBranch;
+        }
+      } else {
+        try {
+          await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
+        } catch {
+          base = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
+        }
+      }
+
+      const newContent = await fs
+        .readFile(join(worktreePath, filePath))
+        .then((data) => data.toString('utf8'))
+        .catch(() => '');
+      const oldContent = await this.safeGitShow(worktreePath, base, escapedPath);
+      return { oldContent, newContent };
+    } catch (error) {
+      logger.warn(`Failed to get file contents for ${filePath}:`, error);
+      return emptyContents;
+    }
+  }
+
+  private async safeGitShow(worktreePath: string, ref: string, escapedPath: string): Promise<string> {
+    try {
+      const { stdout } = await execWithShellPath(`git show ${ref}:"${escapedPath}"`, { cwd: worktreePath, maxBuffer: 10 * 1024 * 1024 });
+      return stdout;
+    } catch {
+      return '';
+    }
+  }
+
+  /**
    * Check if the file at the given path (relative to worktreePath) is binary.
    */
   private async checkBinaryOrSkip(worktreePath: string, filePath: string): Promise<boolean> {

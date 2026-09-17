@@ -778,32 +778,34 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
         }
       />
       <div className="flex-1 flex overflow-hidden">
-        <div className="flex-1 overflow-hidden bg-bg-code-block relative">
-          {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
-          {editCommentInfo && (
-            <DiffLineCommentPanel
-              initialText={editCommentInfo.initialText}
-              onSubmit={handleEditCommentSubmit}
-              onCancel={handleEditCommentCancel}
-              anchorRect={editCommentInfo.viewportRect}
-            />
-          )}
-          {!activeFile && renderLoading()}
-          {activeFile && activeTab?.isLoading && renderLoading()}
-          {activeFile && activeTab && !activeTab.isLoading && activeTab.error && renderError()}
-          {activeFile && activeTab && !activeTab.isLoading && !activeTab.error && activeTab.editorContent !== null && (
-            <CodeMirror
-              key={activePath}
-              value={activeTab.editorContent}
-              onChange={handleEditorChange}
-              onCreateEditor={handleCreateEditor}
-              theme={EDITOR_THEME}
-              basicSetup={BASIC_SETUP}
-              extensions={editorExtensions}
-              indentWithTab={true}
-              className="h-full text-xs"
-            />
-          )}
+        <div className="flex-1 overflow-hidden bg-bg-primary-light relative p-2 pr-4">
+          <div className="h-full bg-bg-code-block rounded-lg overflow-hidden relative">
+            {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
+            {editCommentInfo && (
+              <DiffLineCommentPanel
+                initialText={editCommentInfo.initialText}
+                onSubmit={handleEditCommentSubmit}
+                onCancel={handleEditCommentCancel}
+                anchorRect={editCommentInfo.viewportRect}
+              />
+            )}
+            {!activeFile && renderLoading()}
+            {activeFile && activeTab?.isLoading && renderLoading()}
+            {activeFile && activeTab && !activeTab.isLoading && activeTab.error && renderError()}
+            {activeFile && activeTab && !activeTab.isLoading && !activeTab.error && activeTab.editorContent !== null && (
+              <CodeMirror
+                key={activePath}
+                value={activeTab.editorContent}
+                onChange={handleEditorChange}
+                onCreateEditor={handleCreateEditor}
+                theme={EDITOR_THEME}
+                basicSetup={BASIC_SETUP}
+                extensions={editorExtensions}
+                indentWithTab={true}
+                className="h-full text-xs"
+              />
+            )}
+          </div>
         </div>
 
         <CommentsPanel

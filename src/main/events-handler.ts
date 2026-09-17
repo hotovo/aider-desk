@@ -367,6 +367,14 @@ export class EventsHandler {
     return await task.getUpdatedFileDiff(filePath, commitHash);
   }
 
+  async getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+    const task = this.projectManager.getProject(baseDir).getTask(taskId);
+    if (!task) {
+      return { oldContent: '', newContent: '' };
+    }
+    return await task.getUpdatedFileContents(filePath, commitHash);
+  }
+
   async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void> {
     void this.projectManager.getProject(baseDir).getTask(taskId)?.addFiles({ path: filePath, readOnly });
   }

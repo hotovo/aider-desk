@@ -23,6 +23,7 @@
 - fixed React "missing key" console warning when rendering custom command blocks by wrapping parsed content in a keyed fragment
 - added auto-focus to the extensions search field when opening extensions settings
 - added keyboard navigation to the git branches dropdown with arrow keys, submenu controls, and Escape to close
+- added fetching full old and new file contents on demand for the updated files diff modal
 
 ## [0.83.0]
 

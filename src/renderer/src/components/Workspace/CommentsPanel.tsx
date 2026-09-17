@@ -129,14 +129,14 @@ export const CommentsPanel = memo(
     );
 
     return (
-      <div className={clsx('flex-shrink-0 bg-bg-primary-light', isCollapsed ? '' : 'w-80')}>
-        <div className="p-4">
-          <div className="bg-bg-secondary border border-border-default rounded-lg overflow-hidden flex flex-col max-h-[calc(100vh-190px)]">
+      <div className={clsx('flex flex-col shrink-0 bg-bg-secondary border-l border-border-default', isCollapsed ? 'w-9' : 'w-80')}>
+        <div>
+          <div className="flex flex-col h-full">
             {/* Panel header */}
-            <div className={clsx('flex items-center justify-between p-2 shrink-0', !isCollapsed && 'border-b border-border-default')}>
+            <div className={clsx('flex items-center justify-between px-2 h-11 shrink-0 transition-all', !isCollapsed && 'border-b border-border-default')}>
               {!isCollapsed && (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-xs font-medium text-text-primary truncate">
+                  <span className="text-xs font-medium uppercase text-text-primary truncate">
                     {t('contextFiles.commentsPanel')}
                     {pendingComments.length > 0 && <span className="ml-1.5 text-text-secondary font-normal">({pendingComments.length})</span>}
                   </span>
@@ -152,7 +152,7 @@ export const CommentsPanel = memo(
 
             {!isCollapsed && (
               <>
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-tertiary">
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-fourth hover:scrollbar-thumb-bg-tertiary min-h-0">
                   {pendingComments.length === 0 ? (
                     <div className="px-3 py-6 text-center">
                       <p className="text-2xs text-text-muted leading-relaxed">{t('contextFiles.noComments')}</p>

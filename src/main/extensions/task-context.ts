@@ -133,6 +133,10 @@ export class TaskContextImpl implements TaskContext {
     return this.task.getUpdatedFileDiff(filePath, commitHash);
   }
 
+  async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+    return this.task.getUpdatedFileContents(filePath, commitHash);
+  }
+
   getRepoMap(): string {
     return this.task.getRepoMap();
   }

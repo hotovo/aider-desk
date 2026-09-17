@@ -2495,6 +2495,15 @@ export class Task {
     return await this.gitManager.getFileDiff(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash);
   }
 
+  public async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+    const worktreePath = this.getTaskDir();
+    let mainBranch: string | undefined = undefined;
+    if (this.task.workingMode === 'worktree') {
+      mainBranch = this.task.worktree?.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
+    }
+    return await this.gitManager.getFileContents(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash);
+  }
+
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {
     const contextFiles = await this.contextManager.getContextFilesEnsureLoaded();
 

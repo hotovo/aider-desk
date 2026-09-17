@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { MdClose, MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { MdClose, MdOutlineCommit, MdUndo, MdUnfoldLess, MdUnfoldMore } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -25,6 +25,7 @@ import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
+import { useUpdatedFileContents } from '@/hooks/useUpdatedFileContents';
 
 type PendingComment = {
   id: string;
@@ -460,6 +461,22 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
   // Lazily fetched diff for the current file (single-file view)
   const currentFileDiff = useUpdatedFileDiff(baseDir, taskId, currentFile);
 
+  // Full file context for the current file (single-file view), loaded on demand via the header button.
+  // Tracks which file is expanded so switching files collapses automatically.
+  const [expandedFileKey, setExpandedFileKey] = useState<string | null>(null);
+  const currentFileKey = currentFile ? `${currentFile.commitHash ?? 'uncommitted'}:${currentFile.path}` : null;
+  const showFullContext = expandedFileKey !== null && expandedFileKey === currentFileKey;
+  const { contents: currentFileContents, loading: contentsLoading, load: loadCurrentFileContents } = useUpdatedFileContents(baseDir, taskId, currentFile);
+
+  const handleToggleExpandContext = useCallback(() => {
+    if (!showFullContext) {
+      loadCurrentFileContents();
+      setExpandedFileKey(currentFileKey);
+    } else {
+      setExpandedFileKey(null);
+    }
+  }, [showFullContext, loadCurrentFileContents, currentFileKey]);
+
   const handleLoadLargeDiff = useCallback(() => {
     currentFileDiff.load();
   }, [currentFileDiff]);
@@ -593,78 +610,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
       openInWindowUrl={openInWindowUrl}
       openInWindowTitle={openInWindowTitle}
     >
-      <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary min-h-[44px] px-4">
-        <div className="flex items-center justify-between w-full">
-          <div className="flex items-center gap-3 min-w-0">
-            {/* Group badge in single-file mode */}
-            {!isAllFilesView && currentGroup && (
-              <span
-                className={clsx(
-                  'text-2xs font-medium px-1.5 py-0.5 rounded shrink-0',
-                  !currentGroup.commitHash ? 'bg-bg-tertiary text-text-secondary' : 'bg-accent-primary/10 text-accent-primary',
-                )}
-              >
-                {!currentGroup.commitHash ? t('contextFiles.uncommitted') : currentGroup.commitHash?.slice(0, 7)}
-              </span>
-            )}
-            <span className="text-3xs sm:text-xs font-medium text-text-primary truncate">{currentFile.path}</span>
-            <>
-              {currentFile.additions > 0 && <span className="text-3xs sm:text-xs font-medium text-success shrink-0">+{currentFile.additions}</span>}
-              {currentFile.deletions > 0 && <span className="text-3xs sm:text-xs font-medium text-error shrink-0">-{currentFile.deletions}</span>}
-            </>
-            {(!currentFile.commitHash || isFlatMode) && (
-              <IconButton
-                icon={<MdUndo className="h-4 w-4" />}
-                onClick={handleRevertClick}
-                tooltip={t('contextFiles.revertFile')}
-                className="p-1.5 rounded-md transition-colors hover:bg-bg-tertiary text-text-secondary"
-              />
-            )}
-          </div>
-          <div className="flex items-center gap-3 shrink-0 ml-4">
-            <div className="hidden sm:block">
-              <CompactSelect options={diffViewOptions} value={diffViewMode || DiffViewMode.SideBySide} onChange={handleDiffViewModeChange} />
-            </div>
-            {flatFiles.length > 1 && (
-              <div className="flex items-center gap-2">
-                <IconButton
-                  icon={<HiChevronLeft className="h-5 w-5" />}
-                  onClick={isAllFilesView ? handlePreviousInAllFiles : handlePrevious}
-                  tooltip={t('common.previous')}
-                  disabled={!canGoPrevious}
-                  className={clsx(
-                    'p-1.5 rounded-md transition-colors',
-                    canGoPrevious ? 'hover:bg-bg-tertiary text-text-secondary' : 'text-text-muted cursor-not-allowed',
-                  )}
-                />
-                <span className="text-xs sm:text-sm text-text-secondary min-w-[60px] text-center">
-                  {currentPosition + 1} / {flatFiles.length}
-                </span>
-                <IconButton
-                  icon={<HiChevronRight className="h-5 w-5" />}
-                  onClick={isAllFilesView ? handleNextInAllFiles : handleNext}
-                  tooltip={t('common.next')}
-                  disabled={!canGoNext}
-                  className={clsx(
-                    'p-1.5 rounded-md transition-colors',
-                    canGoNext ? 'hover:bg-bg-tertiary text-text-secondary' : 'text-text-muted cursor-not-allowed',
-                  )}
-                />
-                <IconButton
-                  icon={<HiViewList className="h-4 w-4" />}
-                  onClick={handleToggleViewMode}
-                  tooltip={isAllFilesView ? t('contextFiles.viewSingleFile') : t('contextFiles.viewAllFiles')}
-                  className={clsx(
-                    'p-1.5 rounded-md transition-colors',
-                    isAllFilesView ? 'bg-bg-tertiary text-text-primary' : 'hover:bg-bg-tertiary text-text-secondary',
-                  )}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      {/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
+      {/* Main content area: file sidebar on left (full height), header + diff viewer center, comments panel right */}
       <div className="flex-1 flex overflow-hidden">
         {flatFiles.length > 1 && (
           <DiffFilesSidebar
@@ -676,80 +622,175 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
             onToggleFolderSelection={handleToggleFolderSelection}
           />
         )}
-
-        {/* Diff viewer with its own scroll - scrollbar right next to the file */}
-        <div
-          ref={scrollContainerRef}
-          className="flex-1 overflow-auto bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent relative"
-        >
-          {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
-          {editCommentActiveLineInfo && (
-            <DiffLineCommentPanel
-              initialText={editCommentActiveLineInfo.initialText}
-              onSubmit={handleEditCommentSubmit}
-              onCancel={handleEditCommentCancel}
-              anchorRect={editCommentActiveLineInfo.viewportRect}
-            />
-          )}
-          <div className="p-4 pr-0">
-            {isAllFilesView ? (
-              <div className="space-y-4">
-                {orderedGroups.map((group, gi) => (
-                  <div key={group.id}>
-                    {renderGroupHeader(group)}
-                    <div className={isFlatMode ? 'space-y-3' : 'space-y-3 mt-3'}>
-                      {group.files.map((file, fi) => {
-                        const flatIdx = groupFileOffsets[gi] + fi;
-                        return (
-                          <DiffFileItem
-                            key={`${file.path}-${gi}`}
-                            file={file}
-                            index={flatIdx}
-                            baseDir={baseDir}
-                            taskId={taskId}
-                            diffViewMode={diffViewMode || DiffViewMode.SideBySide}
-                            selectedLineNumber={activeLineInfo?.filePath === file.path ? activeLineInfo.lineInfo.lineNumber : null}
-                            onLineClick={handleLineClick}
-                            comments={getCommentsForFile(file.path)}
-                            onEditComment={handleEditCommentFromDiffViewer}
-                            onRemoveComment={handleRemoveComment}
-                            stickyHeader
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="select-text bg-bg-code-block rounded-lg px-4 py-2 text-xs relative">
-                {currentFileDiff.isLarge && currentFileDiff.diff === null && !currentFileDiff.loading ? (
-                  <div className="flex flex-col items-center gap-2 py-10">
-                    <p className="text-xs text-text-muted">
-                      {t('contextFiles.largeDiffMessage', { count: (currentFile?.additions ?? 0) + (currentFile?.deletions ?? 0) })}
-                    </p>
-                    <Button variant="contained" size="xs" onClick={handleLoadLargeDiff}>
-                      {t('contextFiles.largeDiffLoad')}
-                    </Button>
-                  </div>
-                ) : currentFileDiff.loading ? (
-                  <div className="flex items-center justify-center py-10">
-                    <CgSpinner className="text-3xl text-text-muted animate-spin" />
-                  </div>
-                ) : (
-                  <PierreDiffViewer
-                    udiff={currentFileDiff.diff ?? ''}
-                    viewMode={diffViewMode || DiffViewMode.SideBySide}
-                    showFilename={false}
-                    selectedLineNumber={activeLineInfo?.filePath === currentFile.path ? activeLineInfo.lineInfo.lineNumber : null}
-                    onLineClick={(lineInfo) => handleLineClick(lineInfo, currentFile.path)}
-                    comments={currentFileComments}
-                    onEditComment={handleEditCommentFromDiffViewer}
-                    onRemoveComment={handleRemoveComment}
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex items-center border-b border-border-default justify-center bg-bg-secondary h-11 px-4">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3 min-w-0">
+                {/* Group badge in single-file mode */}
+                {!isAllFilesView && currentGroup && (
+                  <span
+                    className={clsx(
+                      'text-2xs font-medium px-1.5 py-0.5 rounded shrink-0',
+                      !currentGroup.commitHash ? 'bg-bg-tertiary text-text-secondary' : 'bg-accent-primary/10 text-accent-primary',
+                    )}
+                  >
+                    {!currentGroup.commitHash ? t('contextFiles.uncommitted') : currentGroup.commitHash?.slice(0, 7)}
+                  </span>
+                )}
+                <span className="text-3xs sm:text-xs font-medium text-text-primary truncate">{currentFile.path}</span>
+                <>
+                  {currentFile.additions > 0 && <span className="text-3xs sm:text-xs font-medium text-success shrink-0">+{currentFile.additions}</span>}
+                  {currentFile.deletions > 0 && <span className="text-3xs sm:text-xs font-medium text-error shrink-0">-{currentFile.deletions}</span>}
+                </>
+                {!isAllFilesView && (
+                  <IconButton
+                    icon={
+                      contentsLoading && showFullContext ? (
+                        <CgSpinner className="h-4 w-4 animate-spin" />
+                      ) : showFullContext ? (
+                        <MdUnfoldLess className="h-4 w-4" />
+                      ) : (
+                        <MdUnfoldMore className="h-4 w-4" />
+                      )
+                    }
+                    onClick={handleToggleExpandContext}
+                    tooltip={showFullContext ? t('contextFiles.collapseContext') : t('contextFiles.expandContext')}
+                    className={clsx(
+                      'p-1.5 rounded-md transition-colors',
+                      showFullContext ? 'text-text-primary hover:bg-bg-tertiary' : 'hover:bg-bg-tertiary text-text-secondary',
+                    )}
+                  />
+                )}
+                {(!currentFile.commitHash || isFlatMode) && (
+                  <IconButton
+                    icon={<MdUndo className="h-4 w-4" />}
+                    onClick={handleRevertClick}
+                    tooltip={t('contextFiles.revertFile')}
+                    className="p-1.5 rounded-md transition-colors hover:bg-bg-tertiary text-text-secondary"
                   />
                 )}
               </div>
+              <div className="flex items-center gap-3 shrink-0 ml-4">
+                <div className="hidden sm:block">
+                  <CompactSelect options={diffViewOptions} value={diffViewMode || DiffViewMode.SideBySide} onChange={handleDiffViewModeChange} />
+                </div>
+                {flatFiles.length > 1 && (
+                  <div className="flex items-center gap-2">
+                    <IconButton
+                      icon={<HiChevronLeft className="h-5 w-5" />}
+                      onClick={isAllFilesView ? handlePreviousInAllFiles : handlePrevious}
+                      tooltip={t('common.previous')}
+                      disabled={!canGoPrevious}
+                      className={clsx(
+                        'p-1.5 rounded-md transition-colors',
+                        canGoPrevious ? 'hover:bg-bg-tertiary text-text-secondary' : 'text-text-muted cursor-not-allowed',
+                      )}
+                    />
+                    <span className="text-xs sm:text-sm text-text-secondary min-w-[60px] text-center">
+                      {currentPosition + 1} / {flatFiles.length}
+                    </span>
+                    <IconButton
+                      icon={<HiChevronRight className="h-5 w-5" />}
+                      onClick={isAllFilesView ? handleNextInAllFiles : handleNext}
+                      tooltip={t('common.next')}
+                      disabled={!canGoNext}
+                      className={clsx(
+                        'p-1.5 rounded-md transition-colors',
+                        canGoNext ? 'hover:bg-bg-tertiary text-text-secondary' : 'text-text-muted cursor-not-allowed',
+                      )}
+                    />
+                    <IconButton
+                      icon={<HiViewList className="h-4 w-4" />}
+                      onClick={handleToggleViewMode}
+                      tooltip={isAllFilesView ? t('contextFiles.viewSingleFile') : t('contextFiles.viewAllFiles')}
+                      className={clsx(
+                        'p-1.5 rounded-md transition-colors',
+                        isAllFilesView ? 'bg-bg-tertiary text-text-primary' : 'hover:bg-bg-tertiary text-text-secondary',
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Diff viewer with its own scroll - scrollbar right next to the file */}
+          <div
+            ref={scrollContainerRef}
+            className="flex-1 overflow-auto bg-bg-primary-light scrollbar scrollbar-thumb-bg-tertiary scrollbar-track-transparent relative"
+          >
+            {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
+            {editCommentActiveLineInfo && (
+              <DiffLineCommentPanel
+                initialText={editCommentActiveLineInfo.initialText}
+                onSubmit={handleEditCommentSubmit}
+                onCancel={handleEditCommentCancel}
+                anchorRect={editCommentActiveLineInfo.viewportRect}
+              />
             )}
+            <div className="p-4">
+              {isAllFilesView ? (
+                <div className="space-y-4">
+                  {orderedGroups.map((group, gi) => (
+                    <div key={group.id}>
+                      {renderGroupHeader(group)}
+                      <div className={isFlatMode ? 'space-y-3' : 'space-y-3 mt-3'}>
+                        {group.files.map((file, fi) => {
+                          const flatIdx = groupFileOffsets[gi] + fi;
+                          return (
+                            <DiffFileItem
+                              key={`${file.path}-${gi}`}
+                              file={file}
+                              index={flatIdx}
+                              baseDir={baseDir}
+                              taskId={taskId}
+                              diffViewMode={diffViewMode || DiffViewMode.SideBySide}
+                              selectedLineNumber={activeLineInfo?.filePath === file.path ? activeLineInfo.lineInfo.lineNumber : null}
+                              onLineClick={handleLineClick}
+                              comments={getCommentsForFile(file.path)}
+                              onEditComment={handleEditCommentFromDiffViewer}
+                              onRemoveComment={handleRemoveComment}
+                              stickyHeader
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="select-text bg-bg-code-block rounded-lg px-4 py-2 text-xs relative">
+                  {currentFileDiff.isLarge && currentFileDiff.diff === null && !currentFileDiff.loading ? (
+                    <div className="flex flex-col items-center gap-2 py-10">
+                      <p className="text-xs text-text-muted">
+                        {t('contextFiles.largeDiffMessage', { count: (currentFile?.additions ?? 0) + (currentFile?.deletions ?? 0) })}
+                      </p>
+                      <Button variant="contained" size="xs" onClick={handleLoadLargeDiff}>
+                        {t('contextFiles.largeDiffLoad')}
+                      </Button>
+                    </div>
+                  ) : currentFileDiff.loading ? (
+                    <div className="flex items-center justify-center py-10">
+                      <CgSpinner className="text-3xl text-text-muted animate-spin" />
+                    </div>
+                  ) : (
+                    <PierreDiffViewer
+                      udiff={currentFileDiff.diff ?? ''}
+                      contents={currentFileContents}
+                      expandContext={showFullContext && !!currentFileContents}
+                      fileName={currentFile.path}
+                      viewMode={diffViewMode || DiffViewMode.SideBySide}
+                      showFilename={false}
+                      selectedLineNumber={activeLineInfo?.filePath === currentFile.path ? activeLineInfo.lineInfo.lineNumber : null}
+                      onLineClick={(lineInfo) => handleLineClick(lineInfo, currentFile.path)}
+                      comments={currentFileComments}
+                      onEditComment={handleEditCommentFromDiffViewer}
+                      onRemoveComment={handleRemoveComment}
+                    />
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
