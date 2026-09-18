@@ -77,7 +77,7 @@ enum Status {
 }
 ```
 
-- when adding some strings to the UI component, always use i18n library and update the translation files: packages/common/src/locales/en.json and packages/common/src/locales/zh.json
+- when adding some strings to the UI component, always use i18n library and update the translation files: packages/common/src/locales/en.json and others there
 - only add comments that are beneficial and describe some functionality
 - use `clsx` library for conditional classes - `import { clsx } from 'clsx';`
 - do not use `any` type - this is not allowed by eslint - find and use the existing type instead
