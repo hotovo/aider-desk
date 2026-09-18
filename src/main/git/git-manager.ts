@@ -3102,8 +3102,16 @@ export class GitManager {
       return;
     }
 
+    // Files explicitly added by the user should be staged even when ignored (e.g. .aider-desk rules)
     const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
-    await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
+    try {
+      await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
+    } catch (error) {
+      // git check-ignore is unreliable here: negation rules under an excluded parent directory
+      // (e.g. .aider* + !.aider-desk/rules) report "not ignored" but git add still refuses
+      logger.debug(`Failed to stage ${filePath}, retrying with --force (path may be gitignored):`, error);
+      await execWithShellPath(`git add -f -- "${escapedPath}"`, { cwd: worktreePath });
+    }
   }
 
   async stageFile(worktreePath: string, filePath: string): Promise<boolean> {
@@ -3291,7 +3299,18 @@ export class GitManager {
             return false;
           }
           const escapedPath = file.path.replace(/"/g, '\\"');
-          await execWithShellPath(`git add -- "${escapedPath}"`, options);
+          try {
+            await execWithShellPath(`git add -- "${escapedPath}"`, options);
+          } catch (error) {
+            // Retry with --force: files explicitly selected in the UI should be staged even
+            // when ignored (git check-ignore misses directory-traversal exclusions like
+            // .aider* ignoring .aider-desk/rules despite a negation pattern)
+            if (isAbortError(error)) {
+              throw error;
+            }
+            logger.debug(`Failed to stage ${file.path}, retrying with --force (path may be gitignored):`, error);
+            await execWithShellPath(`git add -f -- "${escapedPath}"`, options);
+          }
         }
         logger.info(`Staged ${selectedFiles.length} file(s) for commit`);
       }

@@ -290,6 +290,28 @@ describe('GitManager - untracked files', () => {
 
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/\\$HOME-\\`command\\`-\\"quoted\\".ts"', { cwd: testPath });
   });
+
+  it('should retry with --force when git add fails for a gitignored file', async () => {
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git add -- ".aider-desk/rules/CONVENTIONS.md"') {
+        throw new Error('The following paths are ignored by one of your .gitignore files');
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    await gitManager.addFileToGit(testPath, '.aider-desk/rules/CONVENTIONS.md');
+
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -f -- ".aider-desk/rules/CONVENTIONS.md"', { cwd: testPath });
+  });
+
+  it('should not force-add a file when git add succeeds', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    await gitManager.addFileToGit(testPath, 'src/file.ts');
+
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/file.ts"', { cwd: testPath });
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -f -- "src/file.ts"', expect.anything());
+  });
 });
 
 describe('GitManager - getUpdatedFiles no HEAD (no commits)', () => {
