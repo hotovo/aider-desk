@@ -55,6 +55,7 @@ scripts/
   before-pack.js
   download-probe.mjs
   test-proxy-server.mjs
+  validate-locales.mjs
 src/
   main/
     agent/
@@ -506,6 +507,7 @@ src/
           GitBranchesButton.tsx
           GitBranchesPopup.tsx
           GitBranchesTooltipContent.tsx
+          GitInitButton.tsx
           GitStatusBadges.tsx
           MobileSidebar.tsx
           MountedTaskView.tsx
@@ -516,6 +518,7 @@ src/
           ProjectView.tsx
           TaskBar.tsx
           TaskControlBar.tsx
+          TaskGitControls.tsx
           TaskView.tsx
           TodoListItem.tsx
           TodoWindow.tsx
@@ -534,7 +537,6 @@ src/
           ModeSelector.tsx
           PromptField.tsx
           QueuedPromptsList.tsx
-          TaskWorkingMode.tsx
           usePromptFieldText.ts
         readonly/
           ReadonlyHeader.tsx
@@ -703,6 +705,7 @@ src/
         useTaskResponseHandlers.ts
         useTaskToolHandlers.ts
         useTypingAnimation.ts
+        useUpdatedFileContents.ts
         useUpdatedFileDiff.ts
         useUserMessageNavigation.tsx
         useVersions.ts
@@ -1615,6 +1618,11 @@ const timestamp = ()
  * Simple HTTP forward proxy for testing AiderDesk's proxy settings.
  * Logs every HTTP request and HTTPS CONNECT that passes through.
  */
+
+================
+File: scripts/validate-locales.mjs
+================
+
 
 ================
 File: src/main/agent/middlewares/extract-reasoning-middleware.ts
@@ -2546,7 +2554,7 @@ const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
 // Persist new messages incrementally after each iteration
 ⋮----
-// Check for 'stop' with empty response (model generated tokens, but no usable messages)
+// Check for 'stop' with no usable output (model generated tokens, but no messages or reasoning-only message)
 ⋮----
 // Check for 'stop' with trailing tool message
 ⋮----
@@ -2555,6 +2563,10 @@ const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 // if response messages have been modified by other means (e.g. hooks), we need to continue when the last message is a user message
 ⋮----
 // Clean up abort controller only if we created it
+⋮----
+private stepShouldContinue(stepMessages: ContextMessage[]): boolean
+⋮----
+// A single assistant message with only reasoning parts and no text or tool calls is not a usable output
 ⋮----
 private filterResultMessages(resultMessages: ContextMessage[])
 ⋮----
@@ -5119,6 +5131,8 @@ async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
 async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
 ⋮----
+async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<
+⋮----
 getRepoMap(): string
 ⋮----
 async addToGit(path: string): Promise<void>
@@ -5301,6 +5315,7 @@ import {
 } from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
+import { simpleGit } from 'simple-git';
 ⋮----
 import type { GitAskpassManager } from '@/git/git-askpass-manager';
 ⋮----
@@ -5464,6 +5479,16 @@ async detectMainBranch(projectPath: string): Promise<string>
 ⋮----
 // Deprecated: Use getProjectMainBranch instead
 async getEffectiveMainBranch(project:
+⋮----
+async isGitRepository(projectPath: string): Promise<boolean>
+⋮----
+async initRepository(projectPath: string): Promise<void>
+⋮----
+// Fallback for older git versions without `-b` support
+⋮----
+private async ensureGitignoreEntry(projectPath: string): Promise<void>
+⋮----
+private async ensureGitRepository(projectPath: string, action: string): Promise<boolean>
 ⋮----
 async getCommitHash(worktreePath: string, ref: string): Promise<string | undefined>
 ⋮----
@@ -5948,6 +5973,23 @@ async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: 
 // resolve diff base
 ⋮----
 /**
+   * Get full old and new contents of a file for a diff group.
+   * commitHash group: old = parent commit version, new = commit version.
+   * Uncommitted group: old = base (merge-base/HEAD) version, new = working tree.
+   */
+async getFileContents(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    filePath?: string,
+    commitHash?: string,
+): Promise<
+⋮----
+// Resolve the base the same way as getFileDiff
+⋮----
+private async safeGitShow(worktreePath: string, ref: string, escapedPath: string): Promise<string>
+⋮----
+/**
    * Check if the file at the given path (relative to worktreePath) is binary.
    */
 private async checkBinaryOrSkip(worktreePath: string, filePath: string): Promise<boolean>
@@ -5957,6 +5999,18 @@ private async checkBinaryOrSkip(worktreePath: string, filePath: string): Promise
 private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): Promise<UpdatedFile[]>
 ⋮----
 async addFileToGit(worktreePath: string, filePath: string): Promise<void>
+⋮----
+async stageFile(worktreePath: string, filePath: string): Promise<boolean>
+⋮----
+async undoLastCommit(worktreePath: string): Promise<
+⋮----
+// Use the git root directory to handle monorepo scenarios
+⋮----
+// Check if file exists at HEAD~1
+⋮----
+// If it exists, checkout the previous version
+⋮----
+// Reset --soft HEAD~1
 ⋮----
 async restoreFile(worktreePath: string, filePath: string): Promise<void>
 ⋮----
@@ -5969,6 +6023,12 @@ async restoreFile(worktreePath: string, filePath: string): Promise<void>
 // File might not be in the index
 ⋮----
 async getUncommittedDiff(worktreePath: string, filePaths?: string[]): Promise<string | null>
+⋮----
+// Unborn HEAD (repository with no commits yet): fall back to diffing against the empty tree
+⋮----
+// no commits yet
+⋮----
+// The empty tree diff only shows staged changes - also include untracked files
 ⋮----
 cancelCommitChanges(worktreePath: string): boolean
 ⋮----
@@ -9254,6 +9314,10 @@ registerRoutes(router: Router): void
 ⋮----
 // Git pull
 ⋮----
+// Check whether the project has a git repository
+⋮----
+// Initialize a git repository for the project
+⋮----
 // Git push
 ⋮----
 // Worktree status
@@ -10646,7 +10710,6 @@ import fs from 'fs/promises';
 import path from 'path';
 import { homedir } from 'os';
 ⋮----
-import { simpleGit } from 'simple-git';
 import {
   AgentProfile,
   AIDER_COMMANDS,
@@ -10732,7 +10795,6 @@ import { isEqual } from 'lodash';
 ⋮----
 import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
-import type { SimpleGit } from 'simple-git';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 ⋮----
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
@@ -10836,6 +10898,8 @@ private generateBranchName(): string
 // If result is empty, use shortened taskId (first segment of UUID)
 ⋮----
 private async renameWorktreeBranchIfNeeded(): Promise<void>
+⋮----
+// Don't rename a branch owned by another task sharing this worktree (e.g. parent set it)
 ⋮----
 /**
    * Resolves missing `baseBranch` for worktrees created while the main repo
@@ -11083,10 +11147,6 @@ public sendDropFile(filePath: string, readOnly?: boolean, noUpdate?: boolean): v
 ⋮----
 public async addToGit(absolutePath: string): Promise<void>
 ⋮----
-// Check if the project is a git repository before attempting to add
-⋮----
-// Add the new file to git staging
-⋮----
 private sendStateUpdated()
 ⋮----
 private async sendContextFilesUpdated()
@@ -11094,20 +11154,6 @@ private async sendContextFilesUpdated()
 public async refreshContextFiles(): Promise<void>
 ⋮----
 public async runCommand(command: string, addToHistory = true)
-⋮----
-// Get the Git root directory to handle monorepo scenarios
-⋮----
-// Get the current HEAD commit hash before undoing
-⋮----
-// Get all files from the last commit
-⋮----
-// For each file, check if it exists at HEAD~1 before attempting checkout
-⋮----
-// Check if file exists at HEAD~1
-⋮----
-// If it exists, checkout the previous version
-⋮----
-// Reset --soft HEAD~1
 ⋮----
 private async handleSubagentCommand(commandArgs: string): Promise<void>
 ⋮----
@@ -11166,6 +11212,8 @@ public async getAllFiles(useGit = true): Promise<string[]>
 public async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
 public async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
+⋮----
+public async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<
 ⋮----
 public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]>
 ⋮----
@@ -11591,6 +11639,10 @@ public async abortWorktreeRebase(): Promise<void>
 public async renameBranch(newBranchName: string): Promise<void>
 ⋮----
 public async listGitBranches(includeRemote?: boolean): Promise<BranchInfo[]>
+⋮----
+public async isGitRepository(): Promise<boolean>
+⋮----
+public async initializeGitRepository(): Promise<void>
 ⋮----
 public async getSyncCommits(targetBranch?: string): Promise<GitSyncCommits>
 ⋮----
@@ -12899,6 +12951,8 @@ async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]>
 ⋮----
 async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
 ⋮----
+async getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<
+⋮----
 async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void>
 ⋮----
 dropFile(baseDir: string, taskId: string, filePath: string): void
@@ -13026,6 +13080,10 @@ cancelCommitChanges(baseDir: string, taskId: string): void
 async listBranches(baseDir: string): Promise<BranchInfo[]>
 ⋮----
 async listGitBranches(baseDir: string, taskId: string, includeRemote?: boolean): Promise<BranchInfo[]>
+⋮----
+async isGitRepository(baseDir: string, taskId: string): Promise<boolean>
+⋮----
+async initializeGitRepository(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async getSyncCommits(baseDir: string, taskId: string, targetBranch?: string): Promise<GitSyncCommits>
 ⋮----
@@ -14244,15 +14302,17 @@ File: src/renderer/public/manifest.json
 ================
 File: src/renderer/public/sw.js
 ================
-// Minimal service worker for PWA recognition
-// No caching - just exists to enable PWA features
+// Minimal service worker for PWA recognition.
+// No caching and no fetch interception - just exists to enable PWA features.
 ⋮----
 // Skip waiting to activate immediately
 ⋮----
 // Claim clients immediately
 ⋮----
-// Pass through all fetch requests without caching
-// Skip socket.io requests to avoid interfering with long-polling transport
+// Do not intercept fetch requests. A pass-through respondWith(fetch()) here adds a
+// service worker round-trip to every module load and turns transient network failures
+// into hard ERR_FAILED errors. Leaving fetches untouched keeps PWA install eligibility
+// without the failure amplification.
 
 ================
 File: src/renderer/src/api/browser-api.ts
@@ -14490,6 +14550,7 @@ getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]
 refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
 getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
+getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<
 async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
 async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
@@ -14699,6 +14760,10 @@ mergeIntoCurrentBranch(baseDir: string, taskId: string, branch: string): Promise
 rebaseOntoBranch(baseDir: string, taskId: string, branch: string): Promise<
 ⋮----
 updateGitBranch(baseDir: string, taskId: string, branchName: string): Promise<
+⋮----
+isGitRepository(baseDir: string, taskId: string): Promise<boolean>
+⋮----
+initializeGitRepository(baseDir: string, taskId: string): Promise<void>
 ⋮----
 gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<
 ⋮----
@@ -15199,7 +15264,12 @@ type Props = {
   comments?: DiffComment[];
   onEditComment?: (info: { commentId: string; viewportRect: { top: number; left: number } }) => void;
   onRemoveComment?: (commentId: string) => void;
+  /** Full file contents; when provided together with expandContext, renders the whole-file diff with expandable context */
+  contents?: { oldContent: string; newContent: string } | null;
+  expandContext?: boolean;
 };
+⋮----
+/** Full file contents; when provided together with expandContext, renders the whole-file diff with expandable context */
 ⋮----
 const handleEdit = (e: MouseEvent<HTMLButtonElement>) =>
 const handleRemove = ()
@@ -16265,6 +16335,7 @@ type Props = {
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   placement?: 'bottom' | 'top';
+  notFoundLabel?: string;
 };
 ⋮----
 const handleKeyDown = (e: KeyboardEvent) =>
@@ -18597,7 +18668,7 @@ className=
 ================
 File: src/renderer/src/components/message/utils.tsx
 ================
-import { ReactNode } from 'react';
+import { Fragment, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -18640,8 +18711,6 @@ if (reasoning)
 // Fallback: check if the content matches the thinking/answer format (for legacy messages)
 ⋮----
 const normalizeListBlocks = (text: string): string =>
-⋮----
-if (currentText.trimEnd())
 ⋮----
 const processCodeBlock = () =>
 ⋮----
@@ -21510,7 +21579,7 @@ label=
 ================
 File: src/renderer/src/components/project/GitBranchesPopup.tsx
 ================
-import { MouseEvent, useEffect, useMemo, useState } from 'react';
+import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CgSpinner } from 'react-icons/cg';
 import { FaChevronDown, FaChevronRight, FaFolder, FaFolderOpen, FaMagnifyingGlass } from 'react-icons/fa6';
@@ -21531,6 +21600,7 @@ type Props = {
   onRebaseOnto: (branch: BranchInfo) => void;
   onRebaseWorktreeOnto?: (branch: BranchInfo) => void;
   onDelete: (branch: BranchInfo) => void;
+  onRequestClose?: () => void;
 };
 ⋮----
 type BranchTreeNode = {
@@ -21540,34 +21610,43 @@ type BranchTreeNode = {
   children: BranchTreeNode[];
 };
 ⋮----
+type RowItem =
+  | { type: 'section'; label: string }
+  | { type: 'branch'; branch: BranchInfo; depth: number }
+  | { type: 'folder'; node: BranchTreeNode; depth: number; collapsed: boolean };
+⋮----
 const buildBranchTree = (branches: BranchInfo[]): BranchTreeNode[] =>
 ⋮----
-const handleKeyDown = (e: KeyboardEvent) =>
+const rowKey = (row?: RowItem) =>
 ⋮----
 const isFolderCollapsed = (fullPath: string) =>
 ⋮----
 // Collapsed by default; only folders on the current branch's path start expanded
 ⋮----
+const walk = (nodes: BranchTreeNode[], depth: number) =>
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
+const getSubmenuItems = (branch: BranchInfo) =>
+⋮----
+// eslint-disable-next-line react-hooks/exhaustive-deps
+⋮----
 const handleFilterChange = (value: string) =>
 ⋮----
 const toggleFolder = (fullPath: string, currentlyCollapsed: boolean) =>
 ⋮----
-const showSubmenu = (branch: BranchInfo, e: MouseEvent<HTMLElement>) =>
+const openSubmenuFor = (branch: BranchInfo, e?: MouseEvent<HTMLElement>) =>
 ⋮----
-const getSubmenuItems = (branch: BranchInfo) =>
+className=
 ⋮----
 <span className=
 ⋮----
-onClick=
+const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
-if (tree.length === 0)
-⋮----
-
+return <div key=
 ⋮----
 setOpenSubmenu(null);
 item.action();
-⋮----
-className=
 
 ================
 File: src/renderer/src/components/project/GitBranchesTooltipContent.tsx
@@ -21585,6 +21664,26 @@ type Props = {
 };
 ⋮----
 const renderCommitList = (commits: string[]) =>
+
+================
+File: src/renderer/src/components/project/GitInitButton.tsx
+================
+import { useState } from 'react';
+import { IoGitBranch } from 'react-icons/io5';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+import { Tooltip } from '@/components/ui/Tooltip';
+import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
+⋮----
+type Props = {
+  baseDir: string;
+  taskId: string;
+  disabled?: boolean;
+  onInitialized: () => void;
+};
+⋮----
+const handleInitialize = async () =>
 
 ================
 File: src/renderer/src/components/project/GitStatusBadges.tsx
@@ -22000,7 +22099,7 @@ import { IconButton } from '@/components/common/IconButton';
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { showErrorNotification } from '@/utils/notifications';
 import { EditFormatSelector } from '@/components/PromptField/EditFormatSelector';
-import { TaskWorkingMode } from '@/components/PromptField/TaskWorkingMode';
+import { TaskGitControls } from '@/components/project/TaskGitControls';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useApi } from '@/contexts/ApiContext';
@@ -22109,6 +22208,94 @@ type Props = {
 };
 ⋮----
 const handleAutonomyLockChanged = (locked: boolean) =>
+
+================
+File: src/renderer/src/components/project/TaskGitControls.tsx
+================
+import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
+import { useCallback, useEffect, useState, useMemo } from 'react';
+import { MdClose } from 'react-icons/md';
+import { CgSpinner } from 'react-icons/cg';
+import { useHotkeys } from 'react-hotkeys-hook';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { registerAction, unregisterAction } from '@/stores/actionsStore';
+import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
+import { GitBranchesButton } from '@/components/project/GitBranchesButton';
+import { GitInitButton } from '@/components/project/GitInitButton';
+import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
+import { BaseDialog } from '@/components/common/BaseDialog';
+import { RadioButton } from '@/components/common/RadioButton';
+import { useApi } from '@/contexts/ApiContext';
+import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useCommitChanges } from '@/hooks/useCommitChanges';
+import { useProjectTasks } from '@/stores/projectStore';
+⋮----
+enum LocalSwitchOption {
+  Merge = 'merge',
+  MergeAll = 'mergeAll',
+  Remove = 'remove',
+}
+⋮----
+enum WorktreeSwitchOption {
+  JustSwitch = 'justSwitch',
+  CarryOverRemove = 'carryOverRemove',
+  CarryOverKeep = 'carryOverKeep',
+}
+⋮----
+type Props = {
+  task: TaskData;
+  onMerge: (targetBranch?: string) => void;
+  onSquash: (targetBranch?: string, commitMessage?: string) => void;
+  onOnlyUncommitted: () => void;
+  onRebaseFromBranch: (fromBranch?: string) => void;
+  onAbortRebase: () => void;
+  onContinueRebase: () => void;
+  onResolveConflictsWithAgent: () => void;
+  onRevert: () => void;
+  onRenameBranch: (newBranchName: string) => Promise<void>;
+  isMerging: boolean;
+};
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const performMergeAndSwitch = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const performMergeAndSwitchAll = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const handleLocalConfirm = async () =>
+⋮----
+const handleWorktreeConfirm = async () =>
+⋮----
+const performSwitchToWorktreeWithChanges = async (dropSourceChanges: boolean) =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const getWarningMessage = () =>
+⋮----
+const handleSwitchToLocal = () =>
+⋮----
+const handleSwitchToWorktree = () =>
+⋮----
+const handleCancelCommit = () =>
+⋮----
+title=
+⋮----
+<Button onClick=
+
+⋮----
+onChange=
+⋮----
+<div className="font-medium">
 
 ================
 File: src/renderer/src/components/project/TaskView.tsx
@@ -22825,93 +23012,6 @@ onClick=
 const handleDragEnd = (event: DragEndEvent) =>
 
 ================
-File: src/renderer/src/components/PromptField/TaskWorkingMode.tsx
-================
-import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
-import { useCallback, useEffect, useState, useMemo } from 'react';
-import { MdClose } from 'react-icons/md';
-import { CgSpinner } from 'react-icons/cg';
-import { useHotkeys } from 'react-hotkeys-hook';
-import { useTranslation } from 'react-i18next';
-⋮----
-import { registerAction, unregisterAction } from '@/stores/actionsStore';
-import { Button } from '@/components/common/Button';
-import { IconButton } from '@/components/common/IconButton';
-import { GitBranchesButton } from '@/components/project/GitBranchesButton';
-import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
-import { BaseDialog } from '@/components/common/BaseDialog';
-import { RadioButton } from '@/components/common/RadioButton';
-import { useApi } from '@/contexts/ApiContext';
-import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
-import { useCommitChanges } from '@/hooks/useCommitChanges';
-import { useProjectTasks } from '@/stores/projectStore';
-⋮----
-enum LocalSwitchOption {
-  Merge = 'merge',
-  MergeAll = 'mergeAll',
-  Remove = 'remove',
-}
-⋮----
-enum WorktreeSwitchOption {
-  JustSwitch = 'justSwitch',
-  CarryOverRemove = 'carryOverRemove',
-  CarryOverKeep = 'carryOverKeep',
-}
-⋮----
-type Props = {
-  task: TaskData;
-  onMerge: (targetBranch?: string) => void;
-  onSquash: (targetBranch?: string, commitMessage?: string) => void;
-  onOnlyUncommitted: () => void;
-  onRebaseFromBranch: (fromBranch?: string) => void;
-  onAbortRebase: () => void;
-  onContinueRebase: () => void;
-  onResolveConflictsWithAgent: () => void;
-  onRevert: () => void;
-  onRenameBranch: (newBranchName: string) => Promise<void>;
-  isMerging: boolean;
-};
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const performMergeAndSwitch = async () =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const performMergeAndSwitchAll = async () =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const handleLocalConfirm = async () =>
-⋮----
-const handleWorktreeConfirm = async () =>
-⋮----
-const performSwitchToWorktreeWithChanges = async (dropSourceChanges: boolean) =>
-⋮----
-// eslint-disable-next-line no-console
-⋮----
-const getWarningMessage = () =>
-⋮----
-const handleSwitchToLocal = () =>
-⋮----
-const handleSwitchToWorktree = () =>
-⋮----
-const handleCancelCommit = () =>
-⋮----
-title=
-⋮----
-<Button onClick=
-
-⋮----
-onChange=
-⋮----
-<div className="font-medium">
-
-================
 File: src/renderer/src/components/PromptField/usePromptFieldText.ts
 ================
 import { useCallback } from 'react';
@@ -23168,7 +23268,7 @@ type Props = {
   mcpServers: Record<string, McpServerConfig>;
   extensionToolsInfo: ExtensionToolInfo[];
   onSettingChange: <K extends keyof AgentProfile>(field: K, value: AgentProfile[K]) => void;
-  onApprovalChange: (toolId: string, approval: ToolApprovalState) => void;
+  onApprovalChange: (toolId: string | string[], approval: ToolApprovalState) => void;
   onToggleServerEnabled: (serverKey: string, checked: boolean) => void;
   onOpenMcpServers?: () => void;
 };
@@ -23353,7 +23453,7 @@ const handleModelChange = (model: Model | null) =>
 ⋮----
 const handleToggleServerEnabled = (serverKey: string, checked: boolean) =>
 ⋮----
-const handleToolApprovalChange = (toolId: string, approval: ToolApprovalState) =>
+const handleToolApprovalChange = (toolId: string | string[], approval: ToolApprovalState) =>
 ⋮----
 const handleTabChange = (tabId: string) =>
 ⋮----
@@ -23578,6 +23678,7 @@ import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { McpToolItem } from './McpToolItem';
 import { McpOAuthControls } from './McpOAuthControls';
 ⋮----
+import { Select } from '@/components/common/Select';
 import { Accordion } from '@/components/common/Accordion';
 import { IconButton } from '@/components/common/IconButton';
 import { Checkbox } from '@/components/common/Checkbox';
@@ -23590,7 +23691,7 @@ type Props = {
   onRemove?: () => void;
   onEdit?: () => void;
   toolApprovals?: Record<string, ToolApprovalState>;
-  onApprovalChange?: (toolId: string, approval: ToolApprovalState) => void;
+  onApprovalChange?: (toolId: string | string[], approval: ToolApprovalState) => void;
   reloadTrigger?: number;
   enabled?: boolean;
   onEnabledChange?: (enabled: boolean) => void;
@@ -23598,6 +23699,8 @@ type Props = {
 };
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+const getApproval = (tool: McpTool) => toolApprovals?.[`$
 ⋮----
 <Accordion title=
 
@@ -23957,7 +24060,7 @@ cancelButtonText=
 File: src/renderer/src/components/settings/ExtensionsSettings.tsx
 ================
 import { AvailableExtension, InstalledExtension, ProjectData, SettingsData } from '@common/types';
-import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMount } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FaChevronDown, FaChevronLeft, FaChevronRight, FaPlus, FaSearch, FaSync, FaTrash } from 'react-icons/fa';
@@ -24005,6 +24108,8 @@ type Props = {
   openProjects?: ProjectData[];
   selectedProjectContext?: 'global' | string;
 };
+⋮----
+const handleTabChange = (tab: Tab) =>
 ⋮----
 const handleAvailableSortChange = (value: string) =>
 ⋮----
@@ -24878,8 +24983,16 @@ export const Tooltip = (
 ⋮----
 const showFromEvent = (e: PointerEvent<HTMLElement> | FocusEvent<HTMLElement>) =>
 ⋮----
-const chain =
-<E,>(first: ((e: E)
+const handleChildPointerEnter = (e: PointerEvent<HTMLElement>) =>
+⋮----
+const handleChildPointerLeave = (e: PointerEvent<HTMLElement>) =>
+⋮----
+const handleChildFocus = (e: FocusEvent<HTMLElement>) =>
+⋮----
+const handleChildBlur = (e: FocusEvent<HTMLElement>) =>
+⋮----
+// Handlers only touch anchorRef at event time; the rule cannot see this through cloneElement's props argument.
+// eslint-disable-next-line react-hooks/refs
 
 ================
 File: src/renderer/src/components/usage/CacheHitRateTrendChart.tsx
@@ -25294,7 +25407,7 @@ File: src/renderer/src/components/Workspace/DiffFileItem.tsx
 import { useCallback, useEffect, useMemo, useRef, useState, MouseEvent } from 'react';
 import { HiChevronDown } from 'react-icons/hi';
 import { AnimatePresence, motion } from 'framer-motion';
-import { MdOutlineCommit } from 'react-icons/md';
+import { MdOutlineCommit, MdUnfoldLess, MdUnfoldMore } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { RiAlertLine } from 'react-icons/ri';
 import { DiffViewMode, UpdatedFile } from '@common/types';
@@ -25303,8 +25416,10 @@ import { clsx } from 'clsx';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
+import { IconButton } from '@/components/common/IconButton';
 import { PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
+import { useUpdatedFileContents } from '@/hooks/useUpdatedFileContents';
 ⋮----
 type Props = {
   file: UpdatedFile;
@@ -25334,9 +25449,13 @@ export const DiffFileItem = ({
   stickyHeader,
 }: Props) =>
 ⋮----
+// Full file context with expandable unchanged regions, loaded on demand via the header button
+⋮----
 // Diffs are fetched lazily only when the file item scrolls into the viewport
 ⋮----
-className=
+handleToggle();
+⋮----
+tooltip=
 
 ================
 File: src/renderer/src/components/Workspace/DiffFilesSidebar.tsx
@@ -25890,6 +26009,10 @@ type TreeProps = SharedRowProps & {
   scrollContainerRef?: RefObject<HTMLDivElement | null>;
 };
 ⋮----
+// useVirtualizer returns a stateful instance with methods, which React Compiler cannot memoize;
+// Tree is skipped by the compiler, rows are already memoized via MemoizedTreeItemRenderer.
+// eslint-disable-next-line react-hooks/incompatible-library
+⋮----
 key=
 ⋮----
 itemInstanceProps.ref?.(el);
@@ -25983,7 +26106,7 @@ File: src/renderer/src/components/Workspace/UpdatedFilesDiffModal.tsx
 ================
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HiChevronLeft, HiChevronRight, HiSparkles, HiViewList } from 'react-icons/hi';
-import { MdClose, MdOutlineCommit, MdUndo } from 'react-icons/md';
+import { MdClose, MdOutlineCommit, MdUndo, MdUnfoldLess, MdUnfoldMore } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -26008,6 +26131,7 @@ import { CommentsPanel } from '@/components/Workspace/CommentsPanel';
 import { useApi } from '@/contexts/ApiContext';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useUpdatedFileDiff } from '@/hooks/useUpdatedFileDiff';
+import { useUpdatedFileContents } from '@/hooks/useUpdatedFileContents';
 ⋮----
 type PendingComment = {
   id: string;
@@ -26064,6 +26188,8 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// Strip the Electron IPC wrapper prefix so only the actual backend error is shown
+⋮----
 // Place the file header right below the sticky group header at the
 // top of the scroll view (viewport-rect based, so it is stable even
 // for deep nesting)
@@ -26079,6 +26205,9 @@ const cancelPin = () =>
 const pinScroll = () =>
 ⋮----
 // Lazily fetched diff for the current file (single-file view)
+⋮----
+// Full file context for the current file (single-file view), loaded on demand via the header button.
+// Tracks which file is expanded so switching files collapses automatically.
 ⋮----
 // Sync currentFile when initialFile prop changes (user clicks a different file)
 ⋮----
@@ -26096,11 +26225,15 @@ const handleScroll = () =>
 ⋮----
 title=
 ⋮----
+{/* Main content area: file sidebar on left (full height), header + diff viewer center, comments panel right */}
+⋮----
 {/* Group badge in single-file mode */}
 ⋮----
 className=
 ⋮----
-{/* Main content area: file sidebar on left, diff viewer center, comments panel right */}
+tooltip=
+⋮----
+{/* Diff viewer with its own scroll - scrollbar right next to the file */}
 ⋮----
 comments=
 ⋮----
@@ -26550,13 +26683,13 @@ File: src/renderer/src/contexts/ApiContext.tsx
 ================
 import { createContext, useEffect, useMemo, ReactNode, useContext } from 'react';
 import { ApplicationAPI } from '@common/api';
-import { HotkeysProvider } from 'react-hotkeys-hook';
 ⋮----
 import { BrowserApi } from '@/api/browser-api';
 ⋮----
 type Props = { children: ReactNode };
 ⋮----
 export const useOptionalApi = (): ApplicationAPI | undefined
+export const useIsReadonlyView = (): boolean
 ⋮----
 export const useApi = (): ApplicationAPI =>
 
@@ -27519,6 +27652,28 @@ export const useTypingAnimation = (text: string, typingSpeed: number = 60, pause
 // Letter-by-letter typing animation
 
 ================
+File: src/renderer/src/hooks/useUpdatedFileContents.ts
+================
+import { useCallback, useState } from 'react';
+import { UpdatedFile } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type LoadedContents = {
+  key: string;
+  data: { oldContent: string; newContent: string };
+};
+⋮----
+/**
+ * Lazily fetches full old/new file contents for expandable context diffs on demand.
+ * Nothing is fetched until load() is called. Contents are tied to the file they were
+ * loaded for — changing the file invalidates them automatically.
+ */
+export const useUpdatedFileContents = (baseDir: string, taskId: string, file: UpdatedFile | null | undefined) =>
+⋮----
+// eslint-disable-next-line no-console
+
+================
 File: src/renderer/src/hooks/useUpdatedFileDiff.ts
 ================
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -27559,8 +27714,6 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
 const fetchDiff = async () =>
 ⋮----
 // eslint-disable-next-line no-console
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
 
 ================
 File: src/renderer/src/hooks/useUserMessageNavigation.tsx
@@ -31861,6 +32014,7 @@ File: src/renderer/src/App.tsx
 import { AnimatePresence, motion } from 'framer-motion';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter as Router, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 import { ToastContainer } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 import { BrowserBootstrap, THEMES } from '@common/types';
@@ -31898,8 +32052,6 @@ const ThemeAndFontManager = () =>
 // Remove all theme classes first
 ⋮----
 // Add the current theme class, default to dark
-⋮----
-const NormalApp = () =>
 
 ================
 File: src/renderer/src/env.d.ts
@@ -31983,6 +32135,10 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 ⋮----
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+⋮----
+const registerServiceWorker = () =>
+⋮----
+// eslint-disable-next-line no-console
 
 ================
 File: src/renderer/index.html
@@ -32015,16 +32171,6 @@ File: src/renderer/index.html
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // Register service worker for PWA
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {
-            // Silently fail if service worker registration fails
-          });
-        });
-      }
-    </script>
   </body>
 </html>
 
@@ -32400,7 +32546,8 @@ File: package.json
     "test:e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
     "test:e2e:headed": "playwright test --config e2e/playwright.config.ts --headed",
     "test:e2e:debug": "playwright test --config e2e/playwright.config.ts --debug",
-    "validate": "npm-run-all --parallel lint typecheck test:web test:node"
+    "validate:locales": "node scripts/validate-locales.mjs",
+    "validate": "npm-run-all --parallel lint typecheck test:web test:node validate:locales"
   },
   "dependencies": {
     "@ai-sdk/alibaba": "2.0.30",
