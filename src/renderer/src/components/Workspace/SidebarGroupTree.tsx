@@ -52,10 +52,13 @@ export const SidebarGroupTree = ({
 
   const allFolderIds = useMemo(() => Object.keys(treeData).filter((key) => treeData[key].isFolder), [treeData]);
 
+  const knownFolderIdsRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- merge auto-expanded folders into external state
-    setExpandedItems((prev) => Array.from(new Set([...prev, ...allFolderIds])));
-  }, [allFolderIds]);
+    const newFolderIds = allFolderIds.filter((id) => !knownFolderIdsRef.current.has(id));
+    knownFolderIdsRef.current = new Set(allFolderIds);
+    setExpandedItems((prev) => Array.from(new Set([...prev, ...newFolderIds])).filter((id) => treeData[id]?.isFolder));
+  }, [allFolderIds, treeData]);
 
   useEffect(() => {
     if (currentFilePath && selectedItemRef.current) {
@@ -185,9 +188,12 @@ export const SidebarGroupTree = ({
 
   return (
     <div className="pl-1 py-1" {...tree.getContainerProps()}>
-      {tree.getItems().map((item) => (
-        <div key={item.getId()}>{renderRow(item)}</div>
-      ))}
+      {tree
+        .getItems()
+        .filter((item) => Boolean(treeData[String(item.getId())]))
+        .map((item) => (
+          <div key={item.getId()}>{renderRow(item)}</div>
+        ))}
     </div>
   );
 };
