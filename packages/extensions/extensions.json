@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "legacy-system-prompt",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "bmad",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 63
+      "installCount": 66
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 52
+      "installCount": 54
     }
   ]
 }
