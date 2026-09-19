@@ -6000,6 +6000,11 @@ private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): 
 ⋮----
 async addFileToGit(worktreePath: string, filePath: string): Promise<void>
 ⋮----
+// Files explicitly added by the user should be staged even when ignored (e.g. .aider-desk rules)
+⋮----
+// git check-ignore is unreliable here: negation rules under an excluded parent directory
+// (e.g. .aider* + !.aider-desk/rules) report "not ignored" but git add still refuses
+⋮----
 async stageFile(worktreePath: string, filePath: string): Promise<boolean>
 ⋮----
 async undoLastCommit(worktreePath: string): Promise<
@@ -6037,6 +6042,10 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, fileP
 // Get the list of updated files (unstaged changes that are shown in the UI)
 ⋮----
 // Stage updated files before committing
+⋮----
+// Retry with --force: files explicitly selected in the UI should be staged even
+// when ignored (git check-ignore misses directory-traversal exclusions like
+// .aider* ignoring .aider-desk/rules despite a negation pattern)
 ⋮----
 // Escape the commit message for shell
 ⋮----
@@ -25931,8 +25940,6 @@ type SidebarGroupTreeProps = {
   onToggleFileSelection: (filePath: string, selected: boolean) => void;
   onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
 };
-⋮----
-// eslint-disable-next-line react-hooks/set-state-in-effect -- merge auto-expanded folders into external state
 ⋮----
 const handleClick = () =>
 ⋮----
