@@ -47,7 +47,9 @@ export interface LogResult {
   hasMore: boolean;
 }
 
-function runGit(args: string[], cwd: string): Promise<string> {
+export type GitResetMode = 'soft' | 'mixed' | 'hard';
+
+function runGit(args: string[], cwd: string, input?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const proc = spawn('git', args, { cwd, stdio: ['pipe', 'pipe', 'pipe'] });
 
@@ -69,7 +71,7 @@ function runGit(args: string[], cwd: string): Promise<string> {
       }
     });
 
-    proc.stdin.end();
+    proc.stdin.end(input ?? null);
   });
 }
 
@@ -225,4 +227,128 @@ function parseNumstat(output: string): ChangedFile[] {
   }
 
   return files;
+}
+
+export interface GitContextInfo {
+  headHash: string | null;
+  currentBranch: string | null;
+  dirty: boolean;
+  remoteUrl: string | null;
+  unpushedCount: number | null;
+}
+
+export async function getContextInfo(cwd: string): Promise<GitContextInfo> {
+  const [headHash, currentBranch, statusOut, remoteUrl, unpushedOut] = await Promise.all([
+    runGit(['rev-parse', 'HEAD'], cwd).then((s) => s.trim()).catch(() => null),
+    runGit(['branch', '--show-current'], cwd).then((s) => s.trim()).catch(() => null),
+    runGit(['status', '--porcelain'], cwd).then((s) => s.trim().length > 0).catch(() => false),
+    runGit(['remote', 'get-url', 'origin'], cwd).then((s) => s.trim()).catch(() => null),
+    runGit(['rev-list', '--count', '@{upstream}..HEAD'], cwd)
+      .then((s) => parseInt(s.trim(), 10))
+      .catch(() => null),
+  ]);
+
+  return { headHash, currentBranch, dirty: statusOut, remoteUrl: remoteUrl || null, unpushedCount: unpushedOut };
+}
+
+export async function createPatch(cwd: string, hash: string): Promise<string> {
+  const out = await runGit(['format-patch', '-1', '--no-signature', hash, '-o', cwd], cwd);
+  return out.trim().split('\n').pop() || '';
+}
+
+export async function cherryPick(cwd: string, hash: string): Promise<void> {
+  await runGit(['cherry-pick', hash], cwd);
+}
+
+export async function checkoutRevision(cwd: string, hash: string): Promise<void> {
+  if (await isWorktreeDirty(cwd)) {
+    throw new Error('Working tree has uncommitted changes. Commit or stash them before checking out.');
+  }
+  await runGit(['checkout', hash], cwd);
+}
+
+export async function resetBranch(cwd: string, hash: string, mode: GitResetMode): Promise<void> {
+  if (mode === 'hard' && (await isWorktreeDirty(cwd))) {
+    throw new Error('Working tree has uncommitted changes. Commit or stash them before a hard reset.');
+  }
+  await runGit(['reset', `--${mode}`, hash], cwd);
+}
+
+export async function revertCommit(cwd: string, hash: string): Promise<void> {
+  if (await isWorktreeDirty(cwd)) {
+    throw new Error('Working tree has uncommitted changes. Commit or stash them before reverting.');
+  }
+  await runGit(['revert', '--no-edit', hash], cwd);
+}
+
+export async function undoCommit(cwd: string, mode: 'soft' | 'mixed'): Promise<void> {
+  await runGit(['reset', `--${mode}`, 'HEAD~1'], cwd);
+}
+
+export async function amendCommitMessage(cwd: string, subject: string, body: string): Promise<void> {
+  const message = body.trim() ? `${subject}\n\n${body}` : subject;
+  await runGit(['commit', '--amend', '-F', '-'], cwd, message);
+}
+
+export async function pushUpTo(cwd: string, hash: string, force: boolean): Promise<void> {
+  const branch = (await runGit(['branch', '--show-current'], cwd)).trim();
+  if (!branch) throw new Error('No current branch (detached HEAD)');
+
+  const remote = (await runGit(['config', `branch.${branch}.remote`], cwd).catch(() => '')).trim() || 'origin';
+
+  const args = force ? ['push', '--force', remote, `${hash}:refs/heads/${branch}`] : ['push', remote, `${hash}:refs/heads/${branch}`];
+  await runGit(args, cwd);
+}
+
+export async function createBranch(cwd: string, name: string, hash: string): Promise<void> {
+  await runGit(['checkout', '-b', name, hash], cwd);
+}
+
+export async function createTag(cwd: string, name: string, hash: string): Promise<void> {
+  await runGit(['tag', name, hash], cwd);
+}
+
+export async function getCommitDiffToLocal(cwd: string, hash: string): Promise<string> {
+  const out = await runGit(['diff', hash, '--unified=3', '--no-ext-diff'], cwd).catch(() => '');
+  return out.length > MAX_DIFF_CHARS ? out.slice(0, MAX_DIFF_CHARS) : out;
+}
+
+export interface CommitNeighbors {
+  parent: string | null;
+  child: string | null;
+}
+
+export async function getNeighbors(cwd: string, hash: string): Promise<CommitNeighbors> {
+  const parentOut = await runGit(['rev-list', '--parents', '-n', '1', hash], cwd).catch(() => '');
+  const parentTokens = parentOut.trim().split(/\s+/).filter(Boolean);
+  const parent = parentTokens.length > 1 ? parentTokens[1] : null;
+
+  const childrenOut = await runGit(['rev-list', '--all', '--children'], cwd).catch(() => '');
+  let child: string | null = null;
+  for (const line of childrenOut.split('\n')) {
+    const tokens = line.trim().split(/\s+/).filter(Boolean);
+    if (tokens.length > 1 && tokens[0] !== hash && tokens.slice(1).includes(hash)) {
+      child = tokens[0];
+      break;
+    }
+  }
+
+  return { parent, child };
+}
+
+export function remoteUrlToWebUrl(remoteUrl: string, hash: string): string | null {
+  const match = remoteUrl.match(/^(?:https?:\/\/|ssh:\/\/[^@]+@|git@)([^/:]+)[/:]([^.\/]+)\/(.+?)(?:\.git)?\/?$/);
+  if (!match) return null;
+
+  const [, host, owner, repo] = match;
+  const base = `https://${host}/${owner}/${repo.replace(/\.git$/, '')}`;
+  if (host.includes('github')) return `${base}/commit/${hash}`;
+  if (host.includes('gitlab')) return `${base}/-/commit/${hash}`;
+  if (host.includes('bitbucket')) return `${base}/commits/${hash}`;
+  return null;
+}
+
+export async function isWorktreeDirty(cwd: string): Promise<boolean> {
+  const out = await runGit(['status', '--porcelain'], cwd).catch(() => '');
+  return out.trim().length > 0;
 }
