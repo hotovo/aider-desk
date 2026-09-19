@@ -157,7 +157,7 @@ export const ProjectTabs = ({
         >
           <MdAdd className="h-5 w-5" />
         </button>
-        <ExtensionComponentWrapper placement="header-left" />
+        <ExtensionComponentWrapper placement="header-left" projectDir={activeProject ?? undefined} />
       </div>
     );
   }
@@ -213,7 +213,7 @@ export const ProjectTabs = ({
         >
           <MdAdd className="h-5 w-5" />
         </button>
-        <ExtensionComponentWrapper placement="header-left" />
+        <ExtensionComponentWrapper placement="header-left" projectDir={activeProject ?? undefined} />
       </TabList>
     </TabGroup>
   );

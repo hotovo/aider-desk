@@ -572,7 +572,7 @@ export const Home = () => {
             onReorderProjects={handleReorderProjects}
           />
           <div className="flex items-center flex-shrink-0">
-            <ExtensionComponentWrapper placement="header-right" />
+            <ExtensionComponentWrapper placement="header-right" projectDir={activeProject ?? undefined} />
             {showUpdateIcon && (
               <IconButton
                 icon={<MdUpload className="h-5 w-5 text-text-primary animate-pulse animate-slow" />}
