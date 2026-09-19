@@ -321,7 +321,7 @@
         "ui",
         "example"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "multi-model-run",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "claude-agent-sdk",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "kanban",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 56
+      "installCount": 57
     }
   ]
 }
