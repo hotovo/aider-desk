@@ -38,7 +38,7 @@ const gitLogJsx = readFileSync(join(__dirname, './ui/GitLog.jsx'), 'utf-8');
 export default class GitLogExtension implements Extension {
   static metadata = {
     name: 'Git Log',
-    version: '1.1.0',
+    version: '1.1.1',
     description: 'Browse the git history of open projects with an IntelliJ IDEA-style log viewer',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/git-log/icon.png',

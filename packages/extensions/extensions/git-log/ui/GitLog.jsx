@@ -37,6 +37,11 @@
     return LANG_BY_EXT[ext] || 'text';
   }, []);
 
+  const fileSlug = useCallback((path) => {
+    if (!path) return '';
+    return path.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  }, []);
+
 
   const STATUS_COLORS = {
     A: 'bg-success-subtle text-success',
@@ -62,9 +67,7 @@
   const [selectedCommit, setSelectedCommit] = useState(null);
   const [commitDetail, setCommitDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [selectedFilePath, setSelectedFilePath] = useState(null);
-  const [fileDiff, setFileDiff] = useState('');
-  const [fileDiffLoading, setFileDiffLoading] = useState(false);
+  const [activeFilePath, setActiveFilePath] = useState(null);
   const [branchQuery, setBranchQuery] = useState('');
   const [branchOpen, setBranchOpen] = useState(false);
   const [gitCtx, setGitCtx] = useState(null);
@@ -81,6 +84,7 @@
   const [inputValue, setInputValue] = useState('');
 
   const listRef = useRef(null);
+  const detailContainerRef = useRef(null);
   const loadingMoreRef = useRef(false);
   const branchContainerRef = useRef(null);
   const contextMenuRef = useRef(null);
@@ -207,8 +211,7 @@
       setHasMore(false);
       setSelectedCommit(null);
       setCommitDetail(null);
-      setSelectedFilePath(null);
-      setFileDiff('');
+      setActiveFilePath(null);
 
       const branchResult = await executeExtensionAction('get-branches', dir);
       let branch = 'all';
@@ -261,8 +264,7 @@
   const handleBackToList = useCallback(() => {
     setSelectedCommit(null);
     setCommitDetail(null);
-    setSelectedFilePath(null);
-    setFileDiff('');
+    setActiveFilePath(null);
   }, []);
 
   const handleProjectChange = useCallback(
@@ -281,8 +283,7 @@
       setHasMore(false);
       setSelectedCommit(null);
       setCommitDetail(null);
-      setSelectedFilePath(null);
-      setFileDiff('');
+      setActiveFilePath(null);
       const result = await executeExtensionAction('get-log', selectedProject, value, 0, PAGE_SIZE);
       if (result) {
         if (result.error) {
@@ -354,8 +355,7 @@
     async (c) => {
       setSelectedCommit(c);
       setCommitDetail(null);
-      setSelectedFilePath(null);
-      setFileDiff('');
+      setActiveFilePath(null);
       setDetailLoading(true);
       const result = await executeExtensionAction('get-commit-detail', selectedProject, c.hash);
       setDetailLoading(false);
@@ -369,15 +369,19 @@
   );
 
   const handleSelectFile = useCallback(
-    async (file) => {
-      if (!selectedCommit) return;
-      setSelectedFilePath(file.path);
-      setFileDiffLoading(true);
-      const result = await executeExtensionAction('get-file-diff', selectedProject, selectedCommit.hash, file.path);
-      setFileDiffLoading(false);
-      setFileDiff((result && result.diff) || '');
+    (file) => {
+      setActiveFilePath(file.path);
+      const container = detailContainerRef.current;
+      if (!container) return;
+      const target = container.querySelector('#diff-section-' + fileSlug(file.path));
+      if (target) {
+        const offset = target.getBoundingClientRect().top - container.getBoundingClientRect().top;
+        container.scrollTop = Math.max(0, container.scrollTop + offset - 8);
+      } else {
+        container.scrollTop = 0;
+      }
     },
-    [executeExtensionAction, selectedProject, selectedCommit],
+    [fileSlug],
   );
 
   const runGitAction = useCallback(
@@ -487,8 +491,21 @@
     return badges;
   }, []);
 
-  const diffLanguage =
-    getLanguageForFile(selectedFilePath || (commitDetail && commitDetail.files && commitDetail.files.length ? commitDetail.files[0].path : null)) || 'text';
+  const splitCommitDiffSec = useMemo(() => {
+    const raw = commitDetail && commitDetail.diff ? commitDetail.diff : '';
+    if (!raw) return [];
+    return raw
+      .split(/(?=^diff --git )/m)
+      .map((part) => {
+        part = part.replace(/\s+$/, '');
+        if (!part) return null;
+        const plusLine = part.match(/^\+\+\+ (?:b|)\/(.+)$/m);
+        const gitLine = part.match(/^diff --git a\/(.+?) b\/(.+?)$/m);
+        const path = ((plusLine && plusLine[1]) || (gitLine && gitLine[2]) || '').trim().replace(/^"|"$/g, '');
+        return { path, diff: part, language: getLanguageForFile(path) || 'text' };
+      })
+      .filter(Boolean);
+  }, [commitDetail, getLanguageForFile]);
   const totalHeight = filteredCommits.length * ROW_HEIGHT;
   const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
   const end = Math.min(filteredCommits.length, Math.ceil((scrollTop + viewportHeight) / ROW_HEIGHT) + OVERSCAN);
@@ -1047,7 +1064,7 @@
                   {commitDetail &&
                     commitDetail.files &&
                     commitDetail.files.map((f) => {
-                      const isActive = selectedFilePath === f.path;
+                      const isActive = activeFilePath === f.path;
                       return (
                         <div
                           key={f.path}
@@ -1071,43 +1088,38 @@
                 </div>
 
                 {/* Diff */}
-                <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary p-3">
-                  {fileDiffLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                      <div className="animate-spin h-4 w-4 border-2 border-accent-primary border-t-transparent rounded-full"></div>
-                    </div>
-                  ) : (
-                    <div>
-                      {compareDiff && selectedCommit && compareDiff.hash === selectedCommit.hash ? (
-                        <>
-                          <div className="flex items-center justify-between mb-2 px-1 sticky top-0">
-                            <span className="text-2xs text-warning font-semibold">
-                              Comparing {selectedCommit.shortHash} with working tree
-                            </span>
-                            <button
-                              className="text-2xs text-text-muted underline cursor-pointer hover:text-text-primary"
-                              onClick={() => setCompareDiff(null)}
-                            >
-                              Clear comparison
-                            </button>
-                          </div>
-                          <CodeBlock baseDir={selectedProject} language={diffLanguage} isComplete={true}>
-                            {compareDiff.diff}
-                          </CodeBlock>
-                        </>
-                      ) : commitDetail && commitDetail.files && commitDetail.files.length === 0 ? (
-                        <div className="text-text-muted text-sm">No changes in this commit.</div>
-                      ) : (
-                        commitDetail && (
-                          <CodeBlock baseDir={selectedProject} language={diffLanguage} isComplete={true}>
-                            {selectedFilePath ? fileDiff : commitDetail.diff}
-                          </CodeBlock>
-                        )
-                      )}
-                      {commitDetail && commitDetail.truncated && !selectedFilePath && (
-                        <div className="text-2xs text-text-muted mt-2">Diff truncated due to size.</div>
-                      )}
-                    </div>
+                <div
+                  ref={detailContainerRef}
+                  className="flex-1 min-h-0 overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary p-3"
+                >
+                  {compareDiff && selectedCommit && compareDiff.hash === selectedCommit.hash ? (
+                    <>
+                      <div className="flex items-center justify-between mb-2 px-1 sticky top-0">
+                        <span className="text-2xs text-warning font-semibold">
+                          Comparing {selectedCommit.shortHash} with working tree
+                        </span>
+                        <button
+                          className="text-2xs text-text-muted underline cursor-pointer hover:text-text-primary"
+                          onClick={() => setCompareDiff(null)}
+                        >
+                          Clear comparison
+                        </button>
+                      </div>
+                      <CodeBlock baseDir={selectedProject} isComplete={true}>{compareDiff.diff}</CodeBlock>
+                    </>
+                  ) : commitDetail && commitDetail.files && commitDetail.files.length === 0 ? (
+                    <div className="text-text-muted text-sm">No changes in this commit.</div>
+                  ) : commitDetail ? (
+                    splitCommitDiffSec.map((sec) => (
+                      <div key={sec.path} id={'diff-section-' + fileSlug(sec.path)} className="mb-3">
+                        <CodeBlock baseDir={selectedProject} language={sec.language} isComplete={true}>
+                          {sec.diff}
+                        </CodeBlock>
+                      </div>
+                    ))
+                  ) : null}
+                  {commitDetail && commitDetail.truncated && !(compareDiff && compareDiff.hash === (selectedCommit && selectedCommit.hash)) && (
+                    <div className="text-2xs text-text-muted mt-2">Diff truncated due to size.</div>
                   )}
                 </div>
               </div>
