@@ -219,7 +219,7 @@
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.4",
     "dts-bundle-generator": "9.5.1",
-    "electron": "43.3.0",
+    "electron": "44.3.0",
     "electron-builder": "26.15.7",
     "electron-vite": "5.0.0",
     "encoding": "0.1.13",

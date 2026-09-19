@@ -16,7 +16,7 @@ import {
   AgentProfile,
   ChangeRequestItem,
 } from '@common/types';
-import { ipcMain, clipboard, nativeImage } from 'electron';
+import { ipcMain, clipboard, ClipboardItem } from 'electron';
 
 import { EventsHandler } from './events-handler';
 
@@ -809,7 +809,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
   });
 
   ipcMain.handle('clipboard-write-image', async (_, dataUrl: string) => {
-    clipboard.writeImage(nativeImage.createFromDataURL(dataUrl));
+    const blob = await (await fetch(dataUrl)).blob();
+    await clipboard.write([new ClipboardItem({ 'image/png': blob })]);
   });
 
   // System logs handlers

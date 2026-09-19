@@ -396,12 +396,18 @@ export class EventsHandler {
         buffer = imageBuffer;
       } else {
         const { clipboard } = await import('electron');
-        const image = clipboard.readImage();
-        if (image.isEmpty()) {
+        if (!(await clipboard.has('image/png'))) {
           task.addLogMessage('info', 'No image found in clipboard.');
           return;
         }
-        buffer = image.toPNG();
+        const items = await clipboard.read();
+        const item = items.find((i) => i.types.includes('image/png'));
+        const blob = await item?.getType('image/png');
+        if (!(blob instanceof Blob)) {
+          task.addLogMessage('info', 'No image found in clipboard.');
+          return;
+        }
+        buffer = Buffer.from(await blob.arrayBuffer());
       }
 
       const imagesDir = path.join(AIDER_DESK_TMP_DIR, 'images');

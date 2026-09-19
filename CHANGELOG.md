@@ -27,6 +27,7 @@
 - added fetching full old and new file contents on demand for the updated files diff modal
 - updated toast notifications styling with a more visible border, using the error color for error toasts
 - fixed ignored files failing to stage by retrying staging with --force
+- updated Electron to 44.3.0
 
 ## [0.83.0]
 
