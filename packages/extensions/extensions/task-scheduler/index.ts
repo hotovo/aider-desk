@@ -27,7 +27,7 @@ const SET_BUTTON_COMPONENT_ID = 'set-schedule-button';
 export default class TaskSchedulerExtension implements Extension {
   static metadata = {
     name: 'Task Scheduler',
-    version: '1.0.0',
+    version: '1.1.0',
     description: 'Schedule tasks to run automatically on a cron or periodic basis',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/task-scheduler/icon.png',
@@ -237,7 +237,9 @@ export default class TaskSchedulerExtension implements Extension {
         schedule.paused = schedule.paused ?? false;
         schedule.initialized = true;
 
-        if (schedule.cron) {
+        if (schedule.runAt) {
+          schedule.nextRunAt = schedule.runAt;
+        } else if (schedule.cron) {
           schedule.nextRunAt = calculateNextRun(schedule.cron);
         } else if (schedule.delayMinutes) {
           schedule.nextRunAt = calculateNextDelayRun(schedule.delayMinutes);
@@ -282,7 +284,9 @@ export default class TaskSchedulerExtension implements Extension {
         const schedule = schedules[taskId];
         if (schedule) {
           schedule.paused = false;
-          if (schedule.cron) {
+          if (schedule.runAt) {
+            schedule.nextRunAt = schedule.runAt;
+          } else if (schedule.cron) {
             schedule.nextRunAt = calculateNextRun(schedule.cron);
           } else if (schedule.delayMinutes) {
             schedule.nextRunAt = calculateNextDelayRun(schedule.delayMinutes);

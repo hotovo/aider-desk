@@ -1,6 +1,8 @@
 export interface TaskSchedule {
   cron?: string;
   delayMinutes?: number;
+  runAt?: string;
+  runAsSubtask?: boolean;
   maxRuns?: number;
   runsCompleted: number;
   isActive: boolean;

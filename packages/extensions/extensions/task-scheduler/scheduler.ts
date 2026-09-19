@@ -95,6 +95,20 @@ export class TaskScheduler {
           'error',
         );
       }
+    } else if (schedule.runAt) {
+      const runAtMs = new Date(schedule.runAt).getTime();
+      const nextRunIsStale = schedule.nextRunAt && new Date(schedule.nextRunAt).getTime() <= Date.now();
+      if (!schedule.awaitingSubtaskCompletion && (!schedule.nextRunAt || nextRunIsStale || runAtMs > Date.now())) {
+        const delay = Math.max(0, runAtMs - Date.now());
+        schedule.nextRunAt = schedule.runAt;
+        saveSchedule(baseDir, taskId, schedule);
+        entry.timer = setTimeout(() => {
+          void this.executeScheduledTask(baseDir, taskId, context);
+        }, delay);
+        context.log(`Scheduled one-time task at ${schedule.runAt} (${schedule.runAsSubtask ? 'as new subtask' : 'resume current task'})`, 'info');
+      } else if (schedule.awaitingSubtaskCompletion) {
+        context.log(`One-time task ${taskId} awaiting subtask completion`, 'info');
+      }
     } else if (schedule.delayMinutes) {
       const nextRunIsStale = schedule.nextRunAt && new Date(schedule.nextRunAt).getTime() <= Date.now();
       if (!schedule.awaitingSubtaskCompletion && (!schedule.nextRunAt || nextRunIsStale)) {
@@ -164,14 +178,21 @@ export class TaskScheduler {
 
       context.log(`Executing scheduled task ${taskId}`, 'info');
 
-      const duplicatedTask = await projectContext.duplicateTask(taskId);
-      const newTaskContext = projectContext.getTask(duplicatedTask.id);
-      if (newTaskContext) {
-        await newTaskContext.updateTask({
-          state: TODO_STATE,
-          parentId: taskId,
-        });
-        void newTaskContext.resumeTask();
+      const isOnceMode = Boolean(schedule.runAt);
+      const runAsSubtask = isOnceMode ? schedule.runAsSubtask === true : true;
+
+      if (!runAsSubtask) {
+        await sourceTaskContext.resumeTask();
+      } else {
+        const duplicatedTask = await projectContext.duplicateTask(taskId);
+        const newTaskContext = projectContext.getTask(duplicatedTask.id);
+        if (newTaskContext) {
+          await newTaskContext.updateTask({
+            state: TODO_STATE,
+            parentId: taskId,
+          });
+          void newTaskContext.resumeTask();
+        }
       }
 
       const updatedSchedule: TaskSchedule = {
@@ -180,12 +201,25 @@ export class TaskScheduler {
         lastRunAt: new Date().toISOString(),
       };
 
-      if (updatedSchedule.cron) {
+      if (updatedSchedule.runAt) {
+        updatedSchedule.nextRunAt = undefined;
+        updatedSchedule.awaitingSubtaskCompletion = false;
+      } else if (updatedSchedule.cron) {
         updatedSchedule.nextRunAt = calculateNextRun(updatedSchedule.cron);
         updatedSchedule.awaitingSubtaskCompletion = false;
       } else if (updatedSchedule.delayMinutes) {
         updatedSchedule.awaitingSubtaskCompletion = true;
         updatedSchedule.nextRunAt = undefined;
+      }
+
+      if (isOnceMode) {
+        deleteSchedule(baseDir, taskId);
+        if (runAsSubtask) {
+          await sourceTaskContext.updateTask({ state: TODO_STATE });
+        }
+        this.unschedule(baseDir, taskId);
+        context.triggerUIDataRefresh(undefined, taskId);
+        return;
       }
 
       if (updatedSchedule.maxRuns !== undefined && updatedSchedule.runsCompleted >= updatedSchedule.maxRuns) {

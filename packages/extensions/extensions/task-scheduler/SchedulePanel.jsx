@@ -1,6 +1,6 @@
 ({ data, task, ui, icons, libraries, executeExtensionAction, renderDefaultTaskActions, onResumeTask }) => {
   const { useState, useCallback, useEffect, useRef } = React;
-  const { Button, Input, IconButton } = ui;
+  const { Button, Input, IconButton, Checkbox } = ui;
   const MdOutlineEdit = icons.Md.MdOutlineEdit;
   const MdOutlineScheduleSend = icons.Md.MdOutlineScheduleSend;
   const MdPause = icons.Md.MdPause;
@@ -12,6 +12,34 @@
   const cronstrue = libraries?.cronstrue?.default || libraries?.cronstrue;
 
   const SECTION_CLASS = 'px-4 p-2 max-w-full break-words text-xs border-t border-border-dark-light relative group bg-bg-primary-light-strong';
+
+  const DATETIME_SCOPE_CLASS = 'task-scheduler-datetime';
+  const DATETIME_STYLE = `
+    .${DATETIME_SCOPE_CLASS} input[type='date'],
+    .${DATETIME_SCOPE_CLASS} input[type='time'] {
+      cursor: text;
+      color-scheme: dark;
+    }
+    body.theme-light .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-bw .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-serenity .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-cappuccino .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-fresh .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-botanical-garden .${DATETIME_SCOPE_CLASS} input[type='date'],
+    body.theme-light .${DATETIME_SCOPE_CLASS} input[type='time'],
+    body.theme-bw .${DATETIME_SCOPE_CLASS} input[type='time'],
+    body.theme-serenity .${DATETIME_SCOPE_CLASS} input[type='time'],
+    body.theme-cappuccino .${DATETIME_SCOPE_CLASS} input[type='time'],
+    body.theme-fresh .${DATETIME_SCOPE_CLASS} input[type='time'],
+    body.theme-botanical-garden .${DATETIME_SCOPE_CLASS} input[type='time'] {
+      color-scheme: light;
+    }
+    .${DATETIME_SCOPE_CLASS} input[type='date']::-webkit-calendar-picker-indicator,
+    .${DATETIME_SCOPE_CLASS} input[type='time']::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      opacity: 0.9;
+    }
+  `;
 
   const schedule = data?.schedule;
   const isTodo = !task?.state || task?.state === 'TODO';
@@ -35,15 +63,31 @@
     );
   }
 
-  const initialMode = schedule.cron ? 'cron' : 'periodic';
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const toDateInputValue = (iso) => {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  };
+  const toTimeInputValue = (iso) => {
+    const d = new Date(iso);
+    return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+  };
+
+  const initialMode = schedule.cron ? 'cron' : schedule.runAt ? 'once' : 'periodic';
   const initialCron = schedule.cron || '';
   const initialDelay = schedule.delayMinutes?.toString() || '30';
   const initialMaxRuns = schedule.maxRuns?.toString() || '';
+  const initialRunAtDate = schedule.runAt ? toDateInputValue(schedule.runAt) : '';
+  const initialRunAtTime = schedule.runAt ? toTimeInputValue(schedule.runAt) : '';
+  const initialRunAsSubtask = schedule.runAsSubtask === true;
 
   const [mode, setMode] = useState(initialMode);
   const [cronExpression, setCronExpression] = useState(initialCron);
   const [delayMinutes, setDelayMinutes] = useState(initialDelay);
   const [maxRuns, setMaxRuns] = useState(initialMaxRuns);
+  const [runAtDate, setRunAtDate] = useState(initialRunAtDate);
+  const [runAtTime, setRunAtTime] = useState(initialRunAtTime);
+  const [runAsSubtask, setRunAsSubtask] = useState(initialRunAsSubtask);
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -60,8 +104,12 @@
 
   const isDirty = needsInitialization ||
     mode !== initialMode ||
-    (mode === 'cron' ? cronExpression.trim() !== initialCron : delayMinutes !== initialDelay) ||
-    maxRuns.trim() !== initialMaxRuns;
+    (mode === 'cron'
+      ? cronExpression.trim() !== initialCron
+      : mode === 'once'
+        ? runAtDate !== initialRunAtDate || runAtTime !== initialRunAtTime || runAsSubtask !== initialRunAsSubtask
+        : delayMinutes !== initialDelay) ||
+    (mode !== 'once' && maxRuns.trim() !== initialMaxRuns);
 
   const cronDescription = (expr) => {
     if (!expr.trim()) return '';
@@ -103,6 +151,22 @@
         return;
       }
       updated.cron = cronExpression.trim();
+    } else if (mode === 'once') {
+      if (!runAtDate || !runAtTime) {
+        setError('Date and time are required');
+        return;
+      }
+      const runAt = new Date(`${runAtDate}T${runAtTime}`);
+      if (isNaN(runAt.getTime())) {
+        setError('Invalid date or time');
+        return;
+      }
+      if (runAt.getTime() <= Date.now()) {
+        setError('Date and time must be in the future');
+        return;
+      }
+      updated.runAt = runAt.toISOString();
+      updated.runAsSubtask = runAsSubtask;
     } else {
       const minutes = parseInt(delayMinutes, 10);
       if (isNaN(minutes) || minutes <= 0) {
@@ -112,7 +176,7 @@
       updated.delayMinutes = minutes;
     }
 
-    if (maxRuns.trim()) {
+    if (mode !== 'once' && maxRuns.trim()) {
       const runs = parseInt(maxRuns, 10);
       if (!isNaN(runs) && runs > 0) {
         updated.maxRuns = runs;
@@ -125,7 +189,7 @@
       setIsEditing(false);
       setError(null);
     });
-  }, [executeExtensionAction, mode, cronExpression, delayMinutes, maxRuns, schedule, withProcessing]);
+  }, [executeExtensionAction, mode, cronExpression, delayMinutes, maxRuns, runAtDate, runAtTime, runAsSubtask, schedule, withProcessing]);
 
   const handleCancel = useCallback(() => {
     if (needsInitialization) {
@@ -175,6 +239,11 @@
     setError(null);
   }, []);
 
+  const handleOnceModeClick = useCallback(() => {
+    setMode('once');
+    setError(null);
+  }, []);
+
   const handleCronExpressionChange = useCallback((e) => {
     setCronExpression(e.target.value);
     setError(null);
@@ -187,6 +256,20 @@
 
   const handleMaxRunsChange = useCallback((e) => {
     setMaxRuns(e.target.value);
+  }, []);
+
+  const handleRunAtDateChange = useCallback((e) => {
+    setRunAtDate(e.target.value);
+    setError(null);
+  }, []);
+
+  const handleRunAtTimeChange = useCallback((e) => {
+    setRunAtTime(e.target.value);
+    setError(null);
+  }, []);
+
+  const handleRunAsSubtaskChange = useCallback((checked) => {
+    setRunAsSubtask(checked);
   }, []);
 
   const QUICK_PRESETS = [
@@ -225,7 +308,8 @@
 
   if (isEditing) {
     return (
-      <div className={SECTION_CLASS}>
+      <div className={`${SECTION_CLASS} ${DATETIME_SCOPE_CLASS}`}>
+        <style>{DATETIME_STYLE}</style>
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2">
             <span className="flex-1 min-w-0 truncate text-xs font-medium text-text-secondary">
@@ -257,36 +341,88 @@
             >
               Periodically
             </Button>
+            <Button
+              variant={mode === 'once' ? 'contained' : 'outline'}
+              color="primary"
+              size="xs"
+              onClick={handleOnceModeClick}
+            >
+              Once
+            </Button>
           </div>
           <div className="flex gap-2">
             {mode === 'cron' ? (
-              <Input
-                wrapperClassName="flex-[2] min-w-0"
-                label="Cron Expression"
-                placeholder="*/5 * * * *"
-                value={cronExpression}
-                onChange={handleCronExpressionChange}
-                size="sm"
-              />
+              <>
+                <Input
+                  wrapperClassName="flex-[2] min-w-0"
+                  label="Cron Expression"
+                  placeholder="*/5 * * * *"
+                  value={cronExpression}
+                  onChange={handleCronExpressionChange}
+                  size="sm"
+                />
+                <Input
+                  wrapperClassName="w-24"
+                  label="Max Runs"
+                  placeholder="∞"
+                  value={maxRuns}
+                  onChange={handleMaxRunsChange}
+                  size="sm"
+                />
+              </>
+            ) : mode === 'once' ? (
+              <>
+                <Input
+                  wrapperClassName="flex-1 min-w-0"
+                  label="Date"
+                  type="date"
+                  value={runAtDate}
+                  onChange={handleRunAtDateChange}
+                  size="sm"
+                />
+                <Input
+                  wrapperClassName="flex-1 min-w-0"
+                  label="Time"
+                  type="time"
+                  value={runAtTime}
+                  onChange={handleRunAtTimeChange}
+                  size="sm"
+                />
+              </>
             ) : (
-              <Input
-                wrapperClassName="flex-1 min-w-0"
-                label="Delay (minutes)"
-                type="number"
-                value={delayMinutes}
-                onChange={handleDelayMinutesChange}
-                size="sm"
-              />
+              <>
+                <Input
+                  wrapperClassName="flex-1 min-w-0"
+                  label="Delay (minutes)"
+                  type="number"
+                  value={delayMinutes}
+                  onChange={handleDelayMinutesChange}
+                  size="sm"
+                />
+                <Input
+                  wrapperClassName="w-24"
+                  label="Max Runs"
+                  placeholder="∞"
+                  value={maxRuns}
+                  onChange={handleMaxRunsChange}
+                  size="sm"
+                />
+              </>
             )}
-            <Input
-              wrapperClassName="w-24"
-              label="Max Runs"
-              placeholder="∞"
-              value={maxRuns}
-              onChange={handleMaxRunsChange}
-              size="sm"
-            />
           </div>
+          {mode === 'once' && (
+            <div className="flex flex-col gap-0.5">
+              <Checkbox
+                label="Run as new subtask"
+                checked={runAsSubtask}
+                onChange={handleRunAsSubtaskChange}
+                size="xs"
+              />
+              {!runAsSubtask && (
+                <span className="text-2xs text-text-muted">If disabled, the current task will be resumed instead.</span>
+              )}
+            </div>
+          )}
           {error && (
             <div className="text-xs text-error">{error}</div>
           )}
@@ -295,27 +431,29 @@
               {cronDescription(cronExpression)}
             </div>
           )}
-          <div className="flex flex-wrap gap-1.5">
-            {mode === 'cron'
-              ? QUICK_PRESETS.map((preset) => (
-                  <button
-                    key={preset.label}
-                    onClick={() => setCronExpression(preset.cron)}
-                    className="px-2 py-0.5 text-2xs rounded border border-border-dark-light bg-bg-tertiary-emphasis hover:bg-bg-tertiary text-text-secondary transition-colors"
-                  >
-                    {preset.label}
-                  </button>
-                ))
-              : PERIODIC_PRESETS.map((preset) => (
-                  <button
-                    key={preset.label}
-                    onClick={() => setDelayMinutes(String(preset.minutes))}
-                    className="px-2 py-0.5 text-2xs rounded border border-border-dark-light bg-bg-tertiary-emphasis hover:bg-bg-tertiary text-text-secondary transition-colors"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-          </div>
+          {mode !== 'once' && (
+            <div className="flex flex-wrap gap-1.5">
+              {mode === 'cron'
+                ? QUICK_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => setCronExpression(preset.cron)}
+                      className="px-2 py-0.5 text-2xs rounded border border-border-dark-light bg-bg-tertiary-emphasis hover:bg-bg-tertiary text-text-secondary transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))
+                : PERIODIC_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => setDelayMinutes(String(preset.minutes))}
+                      className="px-2 py-0.5 text-2xs rounded border border-border-dark-light bg-bg-tertiary-emphasis hover:bg-bg-tertiary text-text-secondary transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -328,6 +466,9 @@
       } catch {
         return schedule.cron;
       }
+    }
+    if (schedule.runAt) {
+      return `Once at ${new Date(schedule.runAt).toLocaleString()}`;
     }
     if (schedule.delayMinutes) {
       return `Every ${schedule.delayMinutes} minutes`;
@@ -366,6 +507,8 @@
                 <div className="flex items-center">
                   {schedule.paused ? (
                     <span className="text-warning shrink-0 font-medium mr-2">Paused</span>
+                  ) : !schedule.isActive ? (
+                    <span className="text-text-muted shrink-0 font-medium mr-2">Completed</span>
                   ) : (
                     <span className="text-success-light shrink-0 font-medium mr-2">Active</span>
                   )}
