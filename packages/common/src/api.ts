@@ -88,7 +88,14 @@ export type ExtensionDisplayAPI = Pick<
   'getExtensionUIComponents' | 'getUIExtensionData' | 'executeUIExtensionAction' | 'onExtensionUIRefresh' | 'loadExtensionLibrary'
 >;
 
+export type RendererProcessMemoryInfo = {
+  private: number;
+  residentSet: number;
+  shared: number;
+};
+
 export interface ApplicationAPI {
+  getRendererProcessMemoryInfo: () => Promise<RendererProcessMemoryInfo | null>;
   isOpenLogsDirectorySupported: () => boolean;
   openLogsDirectory: () => Promise<boolean>;
   loadSettings: () => Promise<SettingsData>;

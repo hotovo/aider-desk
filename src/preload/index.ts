@@ -52,6 +52,7 @@ import { compareBaseDirs } from '@common/utils';
 import './index.d';
 
 const api: ApplicationAPI = {
+  getRendererProcessMemoryInfo: () => process.getProcessMemoryInfo(),
   isOpenLogsDirectorySupported: () => true,
   openLogsDirectory: () => ipcRenderer.invoke('open-logs-directory'),
   loadSettings: () => ipcRenderer.invoke('load-settings'),

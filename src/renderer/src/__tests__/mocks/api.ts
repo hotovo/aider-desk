@@ -42,6 +42,9 @@ import {
  */
 export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedObject<ApplicationAPI> => {
   const defaultMock: ApplicationAPI = {
+    // Process operations
+    getRendererProcessMemoryInfo: vi.fn(() => Promise.resolve(null)),
+
     // Directory and logging operations
     isOpenLogsDirectorySupported: vi.fn((): boolean => true),
     openLogsDirectory: vi.fn((): Promise<boolean> => Promise.resolve(true)),

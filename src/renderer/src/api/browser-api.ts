@@ -81,7 +81,7 @@ import {
   SkillsUpdatedData,
   ExtensionOperationResult,
 } from '@common/types';
-import { ApplicationAPI } from '@common/api';
+import { ApplicationAPI, RendererProcessMemoryInfo } from '@common/api';
 import { type AxiosInstance, create } from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { compareBaseDirs } from '@common/utils';
@@ -358,6 +358,9 @@ export class BrowserApi implements ApplicationAPI {
     return response.data;
   }
 
+  getRendererProcessMemoryInfo(): Promise<RendererProcessMemoryInfo | null> {
+    return Promise.resolve(null);
+  }
   isOpenLogsDirectorySupported(): boolean {
     return false;
   }

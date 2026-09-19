@@ -5,10 +5,12 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+import { DevelopmentPerformanceCleanup } from '@/components/common/DevelopmentPerformanceCleanup';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AppErrorBoundary>
     <App />
+    {import.meta.env.DEV && <DevelopmentPerformanceCleanup />}
   </AppErrorBoundary>,
 );
 
