@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -81,61 +80,59 @@ const formatResultsAsMarkdown = (results: SearchResult[], query: string, maxResu
   return lines.join('\n');
 };
 
-const execSearXng = (
-  args: string[],
-  signal?: AbortSignal,
-): Promise<{ stdout: string; stderr: string; exitCode: number | null }> => {
-  return new Promise((resolve, reject) => {
-    const cliBin = join(__dirname, 'node_modules', '.bin', 'searchxng');
+const fetchSearXngResults = async (endpointUrl: string, input: SearchInput, signal?: AbortSignal): Promise<Record<string, unknown>[]> => {
+  const searchUrl = new URL('search', endpointUrl.endsWith('/') ? endpointUrl : `${endpointUrl}/`);
 
-    const child = spawn(cliBin, args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+  const params = new URLSearchParams({ q: input.query, format: 'json' });
+  if (input.language) params.set('language', input.language);
+  if (input.categories) params.set('categories', input.categories);
 
-    let stdout = '';
-    let stderr = '';
+  const timeout = AbortSignal.timeout(30_000);
+  const abortSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
 
-    child.stdout?.on('data', (data: Buffer) => {
-      stdout += data.toString();
-    });
-
-    child.stderr?.on('data', (data: Buffer) => {
-      stderr += data.toString();
-    });
-
-    const onAbort = () => {
-      child.kill('SIGTERM');
-      reject(new Error('Search was cancelled by user.'));
-    };
-
-    if (signal) {
-      signal.addEventListener('abort', onAbort, { once: true });
-    }
-
-    child.on('error', (err) => {
-      if (signal) {
-        signal.removeEventListener('abort', onAbort);
-      }
-      reject(err);
-    });
-
-    child.on('close', (code) => {
-      if (signal) {
-        signal.removeEventListener('abort', onAbort);
-      }
-      if (signal?.aborted) {
-        reject(new Error('Search was cancelled by user.'));
-        return;
-      }
-      resolve({ stdout, stderr, exitCode: code });
-    });
+  const response = await fetch(`${searchUrl.toString()}?${params.toString()}`, {
+    signal: abortSignal,
+    headers: { Accept: 'application/json' },
   });
+
+  if (response.status === 403) {
+    throw new Error(
+      'SearXNG instance rejected the request (403). The instance likely does not allow JSON output - enable "formats: [html, json]" in its settings.yml or use another instance.',
+    );
+  }
+  if (!response.ok) {
+    throw new Error(`SearXNG API returned status ${response.status}`);
+  }
+
+  const contentType = response.headers.get('content-type') || '';
+  const body = await response.text();
+
+  if (!contentType.includes('json')) {
+    throw new Error(
+      'SearXNG instance does not return JSON output for the search request. Enable "formats: [html, json]" in its settings.yml or use another instance.',
+    );
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(body);
+  } catch {
+    throw new Error('SearXNG returned a non-JSON response. Enable "formats: [html, json]" in its settings.yml or use another instance.');
+  }
+
+  const resultsArray = Array.isArray(parsed) ? parsed : (parsed as { results?: unknown }).results;
+
+  if (!Array.isArray(resultsArray)) {
+    throw new Error('SearXNG returned an unexpected response format.');
+  }
+
+  return resultsArray as Record<string, unknown>[];
 };
 
 export default class SearXngSearchExtension implements Extension {
   static metadata = {
     name: 'SearXNG Search',
-    version: '1.0.3',
+    version: '1.1.0',
     description: 'Web search tool using SearXNG with auto-starting Docker container support',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
     author: 'wladimiiir',
@@ -388,60 +385,33 @@ export default class SearXngSearchExtension implements Extension {
       return `Error: No SearXNG endpoint available. ${modeHint}`;
     }
 
-    const args: string[] = [input.query, '-e', endpointUrl, '-j'];
-
-    if (input.language) {
-      args.push('-l', input.language);
-    }
-    if (input.categories) {
-      args.push('-c', input.categories);
-    }
-    if (input.maxResults) {
-      args.push('-m', String(input.maxResults));
-    }
-
     context.log(`[searxng-search] searching: "${input.query}" on ${endpointUrl}`, 'info');
 
     try {
-      const result = await execSearXng(args, signal);
+      const resultsArray = await fetchSearXngResults(endpointUrl, input, signal);
 
-      if (result.exitCode !== 0) {
-        const errorDetail = result.stderr || result.stdout || 'Unknown error';
-        context.log(`[searxng-search] search failed: ${errorDetail}`, 'error');
-        return `Search error: ${errorDetail}`;
-      }
-
-      const output = result.stdout.trim();
-      if (!output) {
+      if (resultsArray.length === 0) {
         return `No results found for "${input.query}".`;
       }
 
-      try {
-        const parsed = JSON.parse(output);
+      const searchResults: SearchResult[] = resultsArray.slice(0, input.maxResults).map((r) => ({
+        title: String(r.title || 'Untitled'),
+        url: String(r.url || ''),
+        engine: Array.isArray(r.engines) ? r.engines.join(', ') : String(r.engines || 'unknown'),
+        content: r.content ? String(r.content) : undefined,
+      }));
 
-        const resultsArray = Array.isArray(parsed) ? parsed : parsed.results;
-
-        if (!Array.isArray(resultsArray) || resultsArray.length === 0) {
-          return `No results found for "${input.query}".`;
-        }
-
-        const searchResults: SearchResult[] = resultsArray
-          .slice(0, input.maxResults)
-          .map((r: Record<string, unknown>) => ({
-            title: String(r.title || 'Untitled'),
-            url: String(r.url || ''),
-            engine: Array.isArray(r.engines) ? r.engines.join(', ') : String(r.engines || 'unknown'),
-            content: r.content ? String(r.content) : undefined,
-          }));
-
-        return formatResultsAsMarkdown(searchResults, input.query, input.maxResults);
-      } catch {
-        return output;
-      }
+      return formatResultsAsMarkdown(searchResults, input.query, input.maxResults);
     } catch (err) {
-      if (err instanceof Error && err.message === 'Search was cancelled by user.') {
-        return 'Search was cancelled by user.';
+      if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+        if (signal?.aborted) {
+          return 'Search was cancelled by user.';
+        }
+        const errorMsg = 'Search timed out after 30 seconds.';
+        context.log(`[searxng-search] search error: ${errorMsg}`, 'error');
+        return `Search error: ${errorMsg}`;
       }
+
       const errorMsg = err instanceof Error ? err.message : String(err);
       context.getTaskContext()?.addLogMessage('error', `Search failed: ${errorMsg}`);
       context.log(`[searxng-search] search error: ${errorMsg}`, 'error');
