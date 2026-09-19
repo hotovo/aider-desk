@@ -206,9 +206,9 @@
   const handleOpen = useCallback(async () => {
     setShowModal(true);
     const dirs = Array.isArray(projectDirs) ? projectDirs : [];
-    let target = selectedProject;
+    const activeDir = data.currentProjectDir;
+    let target = activeDir && dirs.includes(activeDir) ? activeDir : selectedProject;
     if (!dirs.includes(target) && dirs.length > 0) target = dirs[0];
-    if (!target && data.currentProjectDir) target = data.currentProjectDir;
     if (!target) {
       setError('No open projects to inspect');
       return;
