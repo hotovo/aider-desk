@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 50
+      "installCount": 52
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "permission-gate",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "external-rules",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 40
+      "installCount": 42
     },
     {
       "id": "plannotator",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "programmatic-tool-calls",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 23
+      "installCount": 25
     },
     {
       "id": "bmad",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "kanban",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "git-log",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 26
+      "installCount": 28
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "task-scheduler",
