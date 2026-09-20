@@ -317,6 +317,7 @@ src/
           ConfirmDialog.tsx
           DatePicker.css
           DatePicker.tsx
+          DevelopmentPerformanceCleanup.tsx
           FileChip.tsx
           FloatingPanel.tsx
           HtmlInfoDialog.tsx
@@ -13434,7 +13435,7 @@ import {
   AgentProfile,
   ChangeRequestItem,
 } from '@common/types';
-import { ipcMain, clipboard, nativeImage } from 'electron';
+import { ipcMain, clipboard, ClipboardItem } from 'electron';
 ⋮----
 import { EventsHandler } from './events-handler';
 ⋮----
@@ -14409,7 +14410,7 @@ import {
   SkillsUpdatedData,
   ExtensionOperationResult,
 } from '@common/types';
-import { ApplicationAPI } from '@common/api';
+import { ApplicationAPI, RendererProcessMemoryInfo } from '@common/api';
 import { type AxiosInstance, create } from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { compareBaseDirs } from '@common/utils';
@@ -14510,6 +14511,7 @@ private async deleteWithBody<B, T>(endpoint: string, body: B): Promise<T>
 ⋮----
 private async put<B, R>(endpoint: string, body: B, params?: Record<string, unknown>): Promise<R>
 ⋮----
+getRendererProcessMemoryInfo(): Promise<RendererProcessMemoryInfo | null>
 isOpenLogsDirectorySupported(): boolean
 openLogsDirectory(): Promise<boolean>
 loadSettings(): Promise<SettingsData>
@@ -15838,6 +15840,17 @@ type Props = DatePickerProps & {
 };
 ⋮----
 className=
+
+================
+File: src/renderer/src/components/common/DevelopmentPerformanceCleanup.tsx
+================
+import { useEffect } from 'react';
+⋮----
+export const DevelopmentPerformanceCleanup = () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+const checkAndCleanup = async () =>
 
 ================
 File: src/renderer/src/components/common/FileChip.tsx
@@ -32142,6 +32155,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 ⋮----
 import { AppErrorBoundary } from '@/components/common/AppErrorBoundary';
+import { DevelopmentPerformanceCleanup } from '@/components/common/DevelopmentPerformanceCleanup';
 ⋮----
 const registerServiceWorker = () =>
 ⋮----
@@ -32726,7 +32740,7 @@ File: package.json
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.4",
     "dts-bundle-generator": "9.5.1",
-    "electron": "43.3.0",
+    "electron": "44.3.0",
     "electron-builder": "26.15.7",
     "electron-vite": "5.0.0",
     "encoding": "0.1.13",
