@@ -45,7 +45,7 @@
         "commands",
         "example"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "questions",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 56
+      "installCount": 59
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 21
+      "installCount": 23
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "ultrathink",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "external-rules",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 38
+      "installCount": 40
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 45
+      "installCount": 47
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 34
+      "installCount": 36
     },
     {
       "id": "context-autocompletion-words",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 11
+      "installCount": 13
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 45
+      "installCount": 47
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "kanban",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 21
+      "installCount": 23
     },
     {
       "id": "git-log",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 71
+      "installCount": 73
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 64
+      "installCount": 65
     }
   ]
 }
