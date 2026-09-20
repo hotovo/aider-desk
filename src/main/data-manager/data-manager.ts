@@ -33,6 +33,7 @@ export class DataManager {
           timestamp            DATETIME DEFAULT CURRENT_TIMESTAMP,
           type                 TEXT NOT NULL,
           project              TEXT NOT NULL,
+          task_id              TEXT,
           model                TEXT NOT NULL,
           input_tokens         INTEGER,
           output_tokens        INTEGER,
@@ -53,9 +54,24 @@ export class DataManager {
       `;
 
       this.db.exec(initSql);
+
+      this.runMigrations();
+
       logger.info('Database initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize database:', error);
+    }
+  }
+
+  /**
+   * Applies pending schema migrations for existing databases.
+   * Each migration must be idempotent, as this runs on every startup.
+   */
+  private runMigrations(): void {
+    const columns = this.db.prepare('PRAGMA table_info(messages)').all() as { name: string }[];
+    if (!columns.some((column) => column.name === 'task_id')) {
+      this.db.exec('ALTER TABLE messages ADD COLUMN task_id TEXT');
+      logger.info("Added 'task_id' column to 'messages' table");
     }
   }
 
@@ -64,21 +80,31 @@ export class DataManager {
    * @param id The unique identifier for the message.
    * @param type The type of the message ('tool' or 'assistant').
    * @param project The project's base directory.
+   * @param taskId The task's identifier.
    * @param model The model used for the message.
    * @param usageReport The usage report data.
    * @param content The content of the message.
    */
-  public saveMessage(id: string, type: 'tool' | 'assistant', project: string, model: string, usageReport: UsageReportData | undefined, content: unknown): void {
+  public saveMessage(
+    id: string,
+    type: 'tool' | 'assistant',
+    project: string,
+    taskId: string,
+    model: string,
+    usageReport: UsageReportData | undefined,
+    content: unknown,
+  ): void {
     try {
       const sql = `
-      INSERT INTO messages (id, type, project, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost, message_content_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO messages (id, type, project, task_id, model, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cost, message_content_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
 
       logger.debug('Saving message to database:', {
         id,
         type,
         project,
+        taskId,
         model,
         input_tokens: usageReport?.sentTokens,
         output_tokens: usageReport?.receivedTokens,
@@ -94,6 +120,7 @@ export class DataManager {
           id,
           type,
           project,
+          taskId,
           model,
           usageReport?.sentTokens ?? null,
           usageReport?.receivedTokens ?? null,

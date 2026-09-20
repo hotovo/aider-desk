@@ -1601,7 +1601,7 @@ export class Task {
         : undefined;
 
       if (usageReport && saveToDb) {
-        this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, usageReport.model, usageReport, {
+        this.dataManager.saveMessage(message.id, 'assistant', this.project.baseDir, this.taskId, usageReport.model, usageReport, {
           content: message.content,
           reasoning: message.reasoning,
         });
@@ -3113,7 +3113,7 @@ export class Task {
     };
 
     if (response && usageReport && saveToDb) {
-      this.dataManager.saveMessage(id, 'tool', this.project.baseDir, usageReport.model, usageReport, {
+      this.dataManager.saveMessage(id, 'tool', this.project.baseDir, this.taskId, usageReport.model, usageReport, {
         toolName,
         args,
         response,
