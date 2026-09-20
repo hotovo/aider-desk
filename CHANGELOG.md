@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.84.0]
 
 - improved updated files diff performance by loading diffs lazily on demand instead of computing them with the file list
 - fixed updated files diff modal file ordering to match the sidebar tree order
