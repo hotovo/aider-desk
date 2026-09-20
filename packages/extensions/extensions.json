@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "protected-paths",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "legacy-system-prompt",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "sandbox",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "plannotator",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "programmatic-tool-calls",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "destructive-command-guard",
