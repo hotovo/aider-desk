@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "protected-paths",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 58
+      "installCount": 60
     }
   ]
 }
