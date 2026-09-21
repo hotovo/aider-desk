@@ -638,7 +638,7 @@ describe('Extension Tool Integration with Agent', () => {
 
       await manager.executeCommand('test-command', ['arg1', 'arg2'], {} as any);
 
-      expect(mockExecute).toHaveBeenCalledWith(['arg1', 'arg2'], expect.any(Object));
+      expect(mockExecute).toHaveBeenCalledWith(['arg1', 'arg2'], expect.any(Object), undefined);
     });
   });
 });

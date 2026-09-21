@@ -125,6 +125,7 @@ vi.mock('uuid', () => ({
 }));
 
 import { Task } from '../task';
+import { TaskContextImpl } from '../../extensions/task-context';
 
 describe('Task - custom commands queued while prompt is running', () => {
   const baseDir = '/test/project';
@@ -214,6 +215,82 @@ describe('Task - custom commands queued while prompt is running', () => {
     expect(queue).toHaveLength(0);
   });
 
+  it('passes images through to extension command execution', async () => {
+    const t = createTask();
+    spyInternal(t);
+    vi.spyOn(t as any, 'isPromptRunning').mockReturnValue(false);
+
+    const extensionManager = (t as any).extensionManager;
+    extensionManager.getCommands = vi.fn().mockReturnValue([{ command: { name: 'ext-cmd' } }]);
+    const executeCommandSpy = vi.fn().mockResolvedValue(undefined);
+    extensionManager.executeCommand = executeCommandSpy;
+    (t as any).telemetryManager.captureCustomCommand = vi.fn();
+
+    const images = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='];
+    await t.runCustomCommand('ext-cmd', [], 'agent', images);
+
+    expect(executeCommandSpy).toHaveBeenCalledWith('ext-cmd', [], mockProject, t, images);
+  });
+
+  it('auto-includes pending command images in the first prompt submitted by an extension command', async () => {
+    const t = createTask();
+    spyInternal(t);
+    vi.spyOn(t as any, 'isPromptRunning').mockReturnValue(false);
+    const images = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='];
+
+    const extensionManager = (t as any).extensionManager;
+    extensionManager.getCommands = vi.fn().mockReturnValue([{ command: { name: 'ext-cmd' } }]);
+    extensionManager.executeCommand = vi.fn(async (_name: string, _args: string[], _project: unknown, task: Task) => {
+      const taskContext = new TaskContextImpl(task);
+      await taskContext.runPrompt('explain the image');
+    });
+    (t as any).telemetryManager.captureCustomCommand = vi.fn();
+
+    const runPromptSpy = vi.spyOn(t, 'runPrompt').mockResolvedValue([]);
+
+    await t.runCustomCommand('ext-cmd', [], 'agent', images);
+
+    expect(runPromptSpy).toHaveBeenCalledWith('explain the image', undefined, true, undefined, true, images);
+    expect(t.takePendingCommandImages()).toBeUndefined();
+  });
+
+  it('includes images in the user message and agent run for a file-based custom command', async () => {
+    const t = createTask();
+    spyInternal(t);
+    vi.spyOn(t as any, 'isPromptRunning').mockReturnValue(false);
+
+    const command = { name: 'greet', arguments: [] };
+    const customCommandManager = (t as any).customCommandManager;
+    customCommandManager.getCommand = vi.fn().mockReturnValue(command);
+    customCommandManager.processCommandTemplate = vi.fn().mockResolvedValue('processed prompt');
+    const extensionManager = (t as any).extensionManager;
+    extensionManager.getCommands = vi.fn().mockReturnValue([]);
+    extensionManager.dispatchEvent = vi.fn().mockResolvedValue({ blocked: false, mode: 'agent', command });
+    (t as any).telemetryManager.captureCustomCommand = vi.fn();
+    vi.spyOn(t, 'getTaskAgentProfile').mockResolvedValue({ id: 'profile' } as any);
+    (t as any).promptsManager = { getSystemPrompt: vi.fn().mockResolvedValue(undefined) };
+    const runPromptInAgentSpy = vi.spyOn(t as any, 'runPromptInAgent').mockResolvedValue([]);
+    const addUserMessageSpy = vi.spyOn(t as any, 'addUserMessage').mockImplementation(() => undefined);
+
+    const images = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='];
+    await t.runCustomCommand('greet', [], 'agent', images);
+
+    expect(addUserMessageSpy).toHaveBeenCalledWith(expect.any(String), 'processed prompt', undefined, images);
+    expect(runPromptInAgentSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      'agent',
+      'processed prompt',
+      expect.objectContaining({ id: expect.any(String) }),
+      undefined,
+      undefined,
+      undefined,
+      true,
+      true,
+      images,
+      undefined,
+    );
+  });
+
   it('runs the queued custom command from the queue without adding a prompt user message', async () => {
     const t = createTask();
     const { sendQueuedPromptsUpdated } = spyInternal(t);
@@ -224,9 +301,30 @@ describe('Task - custom commands queued while prompt is running', () => {
 
     await (t as any).runNextQueuedPrompt();
 
-    expect(runCustomCommandSpy).toHaveBeenCalledWith('greet', ['bob'], 'code');
+    expect(runCustomCommandSpy).toHaveBeenCalledWith('greet', ['bob'], 'code', undefined);
     expect(addUserMessageSpy).not.toHaveBeenCalled();
     expect(sendQueuedPromptsUpdated).toHaveBeenCalledWith(baseDir, 'test-task-id', []);
+  });
+
+  it('preserves images when queueing a custom command and passes them through on execution', async () => {
+    const t = createTask();
+    const { sendQueuedPromptsUpdated } = spyInternal(t);
+    const images = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='];
+    vi.spyOn(t as any, 'isPromptRunning').mockReturnValue(true);
+
+    await t.runCustomCommand('greet', ['bob'], 'agent', images);
+
+    const queue = sendQueuedPromptsUpdated.mock.calls.at(-1)?.[2];
+    expect(queue[0].customCommand).toMatchObject({ name: 'greet', args: ['bob'], images });
+
+    (t as any).queuedPrompts = queue;
+    const runCustomCommandSpy = vi.spyOn(t as any, 'runCustomCommand').mockResolvedValue(undefined);
+    const addUserMessageSpy = vi.spyOn(t as any, 'addUserMessage').mockImplementation(() => undefined);
+
+    await (t as any).runNextQueuedPrompt();
+
+    expect(runCustomCommandSpy).toHaveBeenCalledWith('greet', ['bob'], 'agent', images);
+    expect(addUserMessageSpy).not.toHaveBeenCalled();
   });
 
   it('interrupts without adding a user message when sending a queued custom command now', async () => {

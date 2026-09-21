@@ -1064,13 +1064,14 @@ export class BrowserApi implements ApplicationAPI {
   getCustomModes(baseDir: string): Promise<ModeDefinition[]> {
     return this.get<ModeDefinition[]>('/project/custom-modes', { projectDir: baseDir });
   }
-  runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
+  runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void> {
     return this.post('/project/custom-commands', {
       projectDir: baseDir,
       taskId,
       commandName,
       args,
       mode,
+      images,
     });
   }
   isTerminalSupported(): boolean {

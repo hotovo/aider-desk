@@ -522,10 +522,10 @@ export class EventsHandler {
     return this.projectManager.getCustomModes(baseDir);
   }
 
-  async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void> {
+  async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void> {
     const project = this.projectManager.getProject(baseDir);
     const task = project.getTask(taskId);
-    await task?.runCustomCommand(commandName, args, mode);
+    await task?.runCustomCommand(commandName, args, mode, images);
   }
 
   async updateMainModel(baseDir: string, taskId: string, mainModel: string): Promise<void> {

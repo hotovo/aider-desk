@@ -103,7 +103,7 @@ export default class GenerateTestsExtension implements Extension {
           { description: 'File path to generate tests for', required: true },
           { description: 'Test framework (jest, vitest, mocha)', required: false },
         ],
-        async execute(args, context) {
+        async execute(args, context, images) {
           const filePath = args[0];
           const framework = args[1] || 'vitest';
 
@@ -114,7 +114,8 @@ export default class GenerateTestsExtension implements Extension {
           }
 
           const prompt = `Generate comprehensive unit tests for ${filePath} using ${framework}. Include edge cases and error handling.`;
-          await taskContext.runPrompt(prompt);
+          // Images are screenshots attached to the prompt when the command was executed
+          await taskContext.runPrompt(prompt, undefined, images);
         },
       },
     ];

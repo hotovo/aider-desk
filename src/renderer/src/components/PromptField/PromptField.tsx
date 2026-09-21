@@ -785,7 +785,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           const command = allCommands.find((command) => command.name === cmd);
 
           if (command) {
-            void api.runCustomCommand(baseDir, taskId, cmd, args, mode);
+            const images = pastedImages.length > 0 ? pastedImages : undefined;
+            void api.runCustomCommand(baseDir, taskId, cmd, args, mode, images);
             prepareForNextPrompt();
             setPlaceholderIndex(Math.floor(Math.random() * PLACEHOLDER_COUNT));
             return;

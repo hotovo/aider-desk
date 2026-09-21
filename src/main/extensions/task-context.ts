@@ -173,8 +173,8 @@ export class TaskContextImpl implements TaskContext {
 
   // Execution
 
-  async runPrompt(prompt: string, mode?: string): Promise<void> {
-    await this.task.runPrompt(prompt, mode);
+  async runPrompt(prompt: string, mode?: string, images?: string[]): Promise<void> {
+    await this.task.runPrompt(prompt, mode as Mode | undefined, true, undefined, true, images ?? this.task.takePendingCommandImages());
   }
 
   async runPromptInAgent(
@@ -199,7 +199,7 @@ export class TaskContextImpl implements TaskContext {
       systemPrompt,
       waitForCurrentAgentToFinish,
       sendNotification,
-      undefined,
+      this.task.takePendingCommandImages(),
       skillsToActivate,
     );
   }

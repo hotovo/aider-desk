@@ -307,7 +307,7 @@ export interface ApplicationAPI {
 
   getCommands: (baseDir: string) => Promise<CommandsData>;
   getCustomModes: (baseDir: string) => Promise<ModeDefinition[]>;
-  runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => Promise<void>;
+  runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]) => Promise<void>;
 
   // Terminal operations
   isTerminalSupported: () => boolean;

@@ -6,6 +6,7 @@
 - fixed duplicate keys in git branches popup rows causing React rendering issues
 - fixed crash with React error #185 (maximum update depth exceeded) during message streaming by ensuring message list item ids are always unique and updating @legendapp/list to 3.3.11
 - fixed committing deleted files failing to stage by retrying with `git add -A -f`
+- added passing images attached to the prompt to custom extension commands, allowing extensions to include the screenshot in the prompt they run
 
 ## [0.84.0]
 

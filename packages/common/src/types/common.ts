@@ -388,6 +388,7 @@ export interface QueuedPromptData {
   customCommand?: {
     name: string;
     args: string[];
+    images?: string[];
   };
 }
 

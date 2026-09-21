@@ -363,8 +363,13 @@ export interface CommandDefinition {
   description: string;
   /** Command arguments */
   arguments?: CommandArgument[];
-  /** Execute function that handles the complete command logic */
-  execute: (args: string[], context: ExtensionContext) => Promise<void>;
+  /**
+   * Execute function that handles the complete command logic
+   * @param args - Command arguments provided by the user
+   * @param context - Extension context providing access to task and project operations
+   * @param images - Optional images (data URLs) attached to the prompt when the command was executed
+   */
+  execute: (args: string[], context: ExtensionContext, images?: string[]) => Promise<void>;
 }
 
 // Event Payload Interfaces
@@ -908,8 +913,9 @@ export interface TaskContext {
    * If there is a pending question, it will be answered with 'no' using the prompt text as user input.
    * @param prompt - The text prompt to send
    * @param mode - Optional mode to use (defaults to the task's current mode)
+   * @param images - Optional images (data URLs) to include with the prompt
    */
-  runPrompt(prompt: string, mode?: string): Promise<void>;
+  runPrompt(prompt: string, mode?: string, images?: string[]): Promise<void>;
 
   /**
    * Execute a prompt directly using a specific agent profile.

@@ -1893,7 +1893,7 @@ export class ExtensionManager {
     return null;
   }
 
-  async executeCommand(commandName: string, args: string[], project: Project, task?: Task): Promise<void> {
+  async executeCommand(commandName: string, args: string[], project: Project, task?: Task, images?: string[]): Promise<void> {
     const commands = this.getCommands(project);
     const registered = commands.find((c) => c.command.name === commandName);
 
@@ -1907,7 +1907,7 @@ export class ExtensionManager {
       const context = this.createContext(extensionId, extensionName, project, task);
 
       logger.debug(`[Extensions] Executing command '${commandName}' from extension '${extensionName}'`);
-      await command.execute(args, context);
+      await command.execute(args, context, images);
 
       logger.debug(`[Extensions] Command '${commandName}' executed successfully`);
     } catch (error) {

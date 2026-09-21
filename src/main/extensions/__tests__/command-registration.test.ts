@@ -302,7 +302,33 @@ describe('Extension Command Registration', () => {
 
       await manager.executeCommand('test-command', ['arg1', 'arg2'], createMockProject());
 
-      expect(mockExecute).toHaveBeenCalledWith(['arg1', 'arg2'], expect.any(Object));
+      expect(mockExecute).toHaveBeenCalledWith(['arg1', 'arg2'], expect.any(Object), undefined);
+    });
+
+    it('should pass images to command execute', async () => {
+      const mockExecute = vi.fn(async () => {
+        // Command logic
+      });
+
+      const extension: Extension = {
+        getCommands: () => [
+          {
+            name: 'test-command',
+            description: 'A test command',
+            execute: mockExecute,
+          },
+        ],
+      };
+
+      registry.register(extension, { name: 'test-ext', version: '1.0.0', description: 'Test', author: 'Test' }, '/path/to/ext.ts');
+
+      const manager = new ExtensionManager(mockDeps.store, mockDeps.modelManager, mockDeps.eventManager, mockDeps.telemetryManager, mockDeps.memoryManager);
+      (manager as any).registry = registry;
+
+      const images = ['data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='];
+      await manager.executeCommand('test-command', [], createMockProject(), undefined, images);
+
+      expect(mockExecute).toHaveBeenCalledWith([], expect.any(Object), images);
     });
 
     it('should throw error for non-existent command', async () => {

@@ -526,8 +526,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getCustomModes(baseDir);
   });
 
-  ipcMain.handle('run-custom-command', async (_, baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode) => {
-    await eventsHandler.runCustomCommand(baseDir, taskId, commandName, args, mode);
+  ipcMain.handle('run-custom-command', async (_, baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]) => {
+    await eventsHandler.runCustomCommand(baseDir, taskId, commandName, args, mode, images);
   });
 
   // Terminal handlers

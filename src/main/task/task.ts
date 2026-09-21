@@ -183,6 +183,7 @@ export class Task {
   private subagentAbortControllers: Record<string, AbortController> = {};
   private tokensInfo: TokensInfoData;
   private queuedPrompts: QueuedPromptData[] = [];
+  private pendingCommandImages?: string[];
   private isCompacting = false;
   private lastSmartCompactionMessageCount = 0;
   private smartCompactionLevel = CompactionLevel.One;
@@ -1028,7 +1029,7 @@ export class Task {
         this.addLogMessage('loading');
         this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
         if (nextPrompt.customCommand) {
-          await this.runCustomCommand(nextPrompt.customCommand.name, nextPrompt.customCommand.args, nextPrompt.mode);
+          await this.runCustomCommand(nextPrompt.customCommand.name, nextPrompt.customCommand.args, nextPrompt.mode, nextPrompt.customCommand.images);
           return [];
         }
         this.addUserMessage(nextPrompt.id, nextPrompt.text, undefined, nextPrompt.images);
@@ -4000,7 +4001,7 @@ export class Task {
     }
   }
 
-  private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode): Promise<void> {
+  private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode, images?: string[]): Promise<void> {
     const { command } = extensionCommand;
 
     logger.info('Running extension command:', {
@@ -4009,19 +4010,31 @@ export class Task {
     });
     this.telemetryManager.captureCustomCommand(command.name, args.length, mode);
 
+    // Images attached to the prompt are automatically included in the first prompt submitted
+    // by the extension (via runPrompt/runPromptInAgent), unless it passes images explicitly
+    this.pendingCommandImages = images;
+
     try {
       // Execute the command - extension is fully responsible for its logic
-      await this.extensionManager.executeCommand(command.name, args, this.project, this);
+      await this.extensionManager.executeCommand(command.name, args, this.project, this, images);
     } catch (error) {
       logger.error('Extension command execution failed:', error);
       this.addLogMessage('error', `Extension command failed: ${error instanceof Error ? error.message : String(error)}`);
       this.eventManager.sendCustomCommandError(this.project.baseDir, this.taskId, `Extension command execution failed: ${command.name}`);
+    } finally {
+      this.pendingCommandImages = undefined;
     }
 
     await this.project.addToInputHistory(`/${command.name}${args.length > 0 ? ' ' + args.join(' ') : ''}`);
   }
 
-  public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void> {
+  takePendingCommandImages(): string[] | undefined {
+    const images = this.pendingCommandImages;
+    this.pendingCommandImages = undefined;
+    return images;
+  }
+
+  public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent', images?: string[]): Promise<void> {
     if (this.isPromptRunning()) {
       // Queue the custom command for later execution
       const queuedPrompt: QueuedPromptData = {
@@ -4029,7 +4042,7 @@ export class Task {
         text: `/${commandName}${args.length > 0 ? ' ' + args.join(' ') : ''}`,
         mode,
         timestamp: Date.now(),
-        customCommand: { name: commandName, args },
+        customCommand: { name: commandName, args, images },
       };
       this.queuedPrompts.push(queuedPrompt);
       this.eventManager.sendQueuedPromptsUpdated(this.project.baseDir, this.taskId, this.queuedPrompts);
@@ -4041,7 +4054,7 @@ export class Task {
 
     if (extensionCommand) {
       // Handle extension command execution
-      await this.runExtensionCommand(extensionCommand, args, mode);
+      await this.runExtensionCommand(extensionCommand, args, mode, images);
       return;
     }
 
@@ -4105,7 +4118,7 @@ ${error.stderr}`,
       id: uuidv4(),
     };
 
-    this.addUserMessage(promptContext.id, prompt);
+    this.addUserMessage(promptContext.id, prompt, undefined, images);
 
     try {
       if (!AIDER_MODES.includes(mode)) {
@@ -4126,7 +4139,7 @@ ${error.stderr}`,
         const messages = command.includeContext === false ? [] : undefined;
         const contextFiles = command.includeContext === false ? [] : undefined;
         this.addLogMessage('loading', 'Executing custom command...');
-        await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt, true, true, undefined, command.skills);
+        await this.runPromptInAgent(profile, mode, prompt, promptContext, messages, contextFiles, systemPrompt, true, true, images, command.skills);
       } else {
         // All other modes (code, ask, architect)
         this.addLogMessage('loading', 'Executing custom command...');
