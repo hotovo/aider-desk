@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "protected-paths",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "ultrathink",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "learn",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 51
+      "installCount": 53
     },
     {
       "id": "verifier",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "auggie-sdk",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "kanban",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 73
+      "installCount": 74
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 65
+      "installCount": 67
     }
   ]
 }
