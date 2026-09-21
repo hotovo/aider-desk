@@ -473,12 +473,14 @@ export const GitBranchesPopup = ({
         ) : (
           rows.map((row, index) => {
             if (row.type === 'section') {
-              return <div key={rowKey(row)}>{renderSectionHeader(row.label)}</div>;
+              return <div key={`${rowKey(row)}-${index}`}>{renderSectionHeader(row.label)}</div>;
             }
             if (row.type === 'folder') {
-              return <div key={rowKey(row)}>{renderFolderRow(row.node, row.depth, row.collapsed, highlightedIndex === index)}</div>;
+              return <div key={`${rowKey(row)}-${index}`}>{renderFolderRow(row.node, row.depth, row.collapsed, highlightedIndex === index)}</div>;
             }
-            return <div key={rowKey(row)}>{renderBranchRow(row.branch, row.depth, highlightedIndex === index, row.branch.name.split('/').at(-1))}</div>;
+            return (
+              <div key={`${rowKey(row)}-${index}`}>{renderBranchRow(row.branch, row.depth, highlightedIndex === index, row.branch.name.split('/').at(-1))}</div>
+            );
           })
         )}
       </div>

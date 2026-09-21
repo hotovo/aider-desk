@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added find in file support to the file editor with a themed search panel opened via Ctrl+F / Cmd+F
+- fixed duplicate keys in git branches popup rows causing React rendering issues
 
 ## [0.84.0]
 
