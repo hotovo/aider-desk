@@ -3871,15 +3871,30 @@ constructor()
 public init()
 ⋮----
 /**
+   * Applies pending schema migrations for existing databases.
+   * Each migration must be idempotent, as this runs on every startup.
+   */
+private runMigrations(): void
+⋮----
+/**
    * Saves a message to the database.
    * @param id The unique identifier for the message.
    * @param type The type of the message ('tool' or 'assistant').
    * @param project The project's base directory.
+   * @param taskId The task's identifier.
    * @param model The model used for the message.
    * @param usageReport The usage report data.
    * @param content The content of the message.
    */
-public saveMessage(id: string, type: 'tool' | 'assistant', project: string, model: string, usageReport: UsageReportData | undefined, content: unknown): void
+public saveMessage(
+    id: string,
+    type: 'tool' | 'assistant',
+    project: string,
+    taskId: string,
+    model: string,
+    usageReport: UsageReportData | undefined,
+    content: unknown,
+): void
 ⋮----
 /**
    * Closes the database connection.
