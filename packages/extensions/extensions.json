@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "context-autocompletion-words",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "lsp",
@@ -297,7 +297,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "programmatic-tool-calls",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "seek",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "bmad",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "auggie-sdk",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "doom",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 67
+      "installCount": 68
     }
   ]
 }
