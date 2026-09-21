@@ -105,7 +105,7 @@ const agentSchema = z.object({
 export default class WigoloExtension implements Extension {
   static metadata = {
     name: 'wigolo',
-    version: '1.0.0',
+    version: '1.1.0',
     description:
       'Local-first web search, fetch, crawl & research tools powered by wigolo. No API keys required for core functionality.',
     iconUrl:
