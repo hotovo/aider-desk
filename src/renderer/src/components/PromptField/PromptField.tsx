@@ -103,6 +103,7 @@ const BASIC_SETUP = {
   lineNumbers: false,
   foldGutter: false,
   completionKeymap: false,
+  searchKeymap: false,
   autocompletion: true,
   highlightActiveLine: false,
 };

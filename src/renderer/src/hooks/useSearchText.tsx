@@ -62,6 +62,9 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string,
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) {
+        return;
+      }
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
         event.preventDefault();
         if (!enabled) {

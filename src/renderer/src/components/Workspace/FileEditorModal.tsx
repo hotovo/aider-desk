@@ -6,6 +6,8 @@ import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
 import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
+import { openSearchPanel } from '@codemirror/search';
+import { Prec } from '@codemirror/state';
 import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { type Extension } from '@uiw/react-codemirror';
@@ -107,6 +109,99 @@ const EDITOR_LAYOUT = EditorView.theme({
     color: 'var(--color-accent-primary)',
     outline: 'none',
   },
+  '.cm-panels.cm-panels-bottom': {
+    backgroundColor: 'var(--color-bg-secondary)',
+    borderTop: '1px solid var(--color-border-default)',
+    color: 'var(--color-text-primary)',
+  },
+  '.cm-panel.cm-search': {
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    fontFamily: 'inherit',
+    fontSize: '12px',
+    gap: '6px',
+    padding: '8px 12px',
+  },
+  '.cm-panel.cm-search .cm-textfield': {
+    backgroundColor: 'var(--color-bg-secondary-light)',
+    border: '2px solid var(--color-border-default)',
+    borderRadius: '4px',
+    color: 'var(--color-text-primary)',
+    fontSize: '12px',
+    padding: '6px',
+    width: '240px',
+  },
+  '.cm-panel.cm-search .cm-textfield:focus': {
+    borderColor: 'var(--color-border-light)',
+    outline: 'none',
+  },
+  '.cm-panel.cm-search .cm-textfield::placeholder': {
+    color: 'var(--color-text-muted)',
+  },
+  '.cm-panel.cm-search .cm-button': {
+    backgroundColor: 'var(--color-bg-primary)',
+    backgroundImage: 'none',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: '4px',
+    color: 'var(--color-text-primary)',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500',
+    padding: '4px 8px',
+  },
+  '.cm-panel.cm-search .cm-button:hover': {
+    backgroundColor: 'var(--color-bg-primary-light)',
+  },
+  '.cm-panel.cm-search label': {
+    alignItems: 'center',
+    color: 'var(--color-text-primary)',
+    cursor: 'pointer',
+    display: 'flex',
+    fontFamily: 'var(--font-family)',
+    fontSize: '12px',
+    gap: '8px',
+  },
+  '.cm-panel.cm-search input[type=checkbox]': {
+    appearance: 'none',
+    backgroundColor: 'var(--color-bg-secondary-light)',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    flexShrink: '0',
+    height: '16px',
+    margin: '0',
+    width: '16px',
+  },
+  '.cm-panel.cm-search input[type=checkbox]:checked': {
+    backgroundColor: 'var(--color-bg-fourth)',
+    backgroundImage:
+      'linear-gradient(45deg, transparent 35%, var(--color-text-primary) 35%, var(--color-text-primary) 65%, transparent 65%), linear-gradient(-45deg, transparent 42%, var(--color-text-primary) 42%, var(--color-text-primary) 58%, transparent 58%)',
+    backgroundPosition: '2px 6px, 4px 2px',
+    backgroundRepeat: 'no-repeat, no-repeat',
+    backgroundSize: '5px 5px, 9px 9px',
+    borderColor: 'var(--color-border-accent)',
+  },
+  '.cm-panel.cm-search [name=close]': {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: 'var(--color-text-muted)',
+    cursor: 'pointer',
+    fontSize: '16px',
+    lineHeight: '1',
+    padding: '2px 4px',
+  },
+  '.cm-panel.cm-search [name=close]:hover': {
+    color: 'var(--color-text-primary)',
+  },
+  '.cm-searchMatch': {
+    backgroundColor: '#fcd34d',
+    color: '#000',
+  },
+  '.cm-searchMatch-selected': {
+    backgroundColor: '#f59e0b',
+    color: '#000',
+  },
 });
 
 const BASIC_SETUP = {
@@ -118,6 +213,17 @@ const BASIC_SETUP = {
   highlightActiveLineGutter: true,
   autocompletion: true,
 };
+
+const FIND_SHORTCUT_HANDLER = Prec.highest(
+  EditorView.domEventHandlers({
+    keydown: (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        event.stopPropagation();
+      }
+      return false;
+    },
+  }),
+);
 
 type PendingComment = {
   id: string;
@@ -528,7 +634,15 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   );
 
   const editorExtensions = useMemo(
-    () => [changeRequestGutter, lineNumbers(), EDITOR_LAYOUT, captureSelection, inlineChangeRequests, ...(languageSupport ? [languageSupport] : [])],
+    () => [
+      changeRequestGutter,
+      lineNumbers(),
+      EDITOR_LAYOUT,
+      FIND_SHORTCUT_HANDLER,
+      captureSelection,
+      inlineChangeRequests,
+      ...(languageSupport ? [languageSupport] : []),
+    ],
     [changeRequestGutter, captureSelection, inlineChangeRequests, languageSupport],
   );
 
@@ -712,6 +826,25 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
       enableOnContentEditable: true,
     },
     [handleSave, isDirty],
+  );
+
+  useHotkeys(
+    ['ctrl+f', 'meta+f'],
+    (event) => {
+      const view = editorViewRef.current;
+      const target = event.target as HTMLElement;
+      if (!view || view.dom.contains(target) || target.closest('textarea, input, [contenteditable="true"]')) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      view.focus();
+      openSearchPanel(view);
+    },
+    {
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
   );
 
   useHotkeys(

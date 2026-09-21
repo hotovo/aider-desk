@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added find in file support to the file editor with a themed search panel opened via Ctrl+F / Cmd+F
+
 ## [0.84.0]
 
 - improved updated files diff performance by loading diffs lazily on demand instead of computing them with the file list
