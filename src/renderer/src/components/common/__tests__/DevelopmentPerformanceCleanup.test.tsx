@@ -39,33 +39,7 @@ describe('DevelopmentPerformanceCleanup', () => {
   });
 
   it('clears measures when renderer memory reaches the threshold', async () => {
-    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockResolvedValue(createMemoryInfo(2 * 1024 * 1024));
-    render(<DevelopmentPerformanceCleanup />);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000);
-    });
-
-    expect(clearMeasures).toHaveBeenCalledOnce();
-  });
-
-  it('clears measures periodically while renderer memory remains below the threshold', async () => {
-    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockResolvedValue(createMemoryInfo(512 * 1024));
-    render(<DevelopmentPerformanceCleanup />);
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(50_000);
-    });
-    expect(clearMeasures).not.toHaveBeenCalled();
-
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(10_000);
-    });
-    expect(clearMeasures).toHaveBeenCalledOnce();
-  });
-
-  it('keeps periodic cleanup working when renderer memory information is unavailable', async () => {
-    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockRejectedValue(new Error('Unavailable'));
+    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockResolvedValue(createMemoryInfo(3 * 1024 * 1024));
     render(<DevelopmentPerformanceCleanup />);
 
     await act(async () => {
@@ -73,5 +47,27 @@ describe('DevelopmentPerformanceCleanup', () => {
     });
 
     expect(clearMeasures).toHaveBeenCalledOnce();
+  });
+
+  it('does not clear measures while renderer memory remains below the threshold', async () => {
+    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockResolvedValue(createMemoryInfo(512 * 1024));
+    render(<DevelopmentPerformanceCleanup />);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(120_000);
+    });
+
+    expect(clearMeasures).not.toHaveBeenCalled();
+  });
+
+  it('does not clear measures when renderer memory information is unavailable', async () => {
+    vi.mocked(globalMockApi.getRendererProcessMemoryInfo).mockRejectedValue(new Error('Unavailable'));
+    render(<DevelopmentPerformanceCleanup />);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+
+    expect(clearMeasures).not.toHaveBeenCalled();
   });
 });

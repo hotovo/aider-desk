@@ -1,8 +1,7 @@
 import { useEffect } from 'react';
 
-const MEMORY_CHECK_INTERVAL_MS = 10_000;
-const PERIODIC_CLEANUP_INTERVAL_MS = 60_000;
-const RENDERER_MEMORY_THRESHOLD_KB = 2 * 1024 * 1024;
+const MEMORY_CHECK_INTERVAL_MS = 60_000;
+const RENDERER_MEMORY_THRESHOLD_KB = 3 * 1024 * 1024;
 
 export const DevelopmentPerformanceCleanup = () => {
   useEffect(() => {
@@ -13,7 +12,6 @@ export const DevelopmentPerformanceCleanup = () => {
   useEffect(() => {
     let disposed = false;
     let checkInProgress = false;
-    let lastCleanupAt = Date.now();
 
     const checkAndCleanup = async () => {
       if (checkInProgress) {
@@ -34,10 +32,8 @@ export const DevelopmentPerformanceCleanup = () => {
           return;
         }
 
-        const now = Date.now();
-        if (residentSet >= RENDERER_MEMORY_THRESHOLD_KB || now - lastCleanupAt >= PERIODIC_CLEANUP_INTERVAL_MS) {
+        if (residentSet >= RENDERER_MEMORY_THRESHOLD_KB) {
           performance.clearMeasures();
-          lastCleanupAt = now;
         }
       } finally {
         checkInProgress = false;
