@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "theme",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "context-autocompletion-words",
