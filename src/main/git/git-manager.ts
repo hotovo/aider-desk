@@ -3102,15 +3102,16 @@ export class GitManager {
       return;
     }
 
-    // Files explicitly added by the user should be staged even when ignored (e.g. .aider-desk rules)
+    // Files explicitly added by the user should always be staged: -f handles ignored files
+    // (git check-ignore is unreliable here: negation rules under an excluded parent directory,
+    // e.g. .aider* + !.aider-desk/rules, report "not ignored" but git add still refuses),
+    // -A stages deletions (git add fails with "pathspec did not match any files" for files removed on disk)
     const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
     try {
       await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
     } catch (error) {
-      // git check-ignore is unreliable here: negation rules under an excluded parent directory
-      // (e.g. .aider* + !.aider-desk/rules) report "not ignored" but git add still refuses
-      logger.debug(`Failed to stage ${filePath}, retrying with --force (path may be gitignored):`, error);
-      await execWithShellPath(`git add -f -- "${escapedPath}"`, { cwd: worktreePath });
+      logger.debug(`Failed to stage ${filePath}, retrying with -A -f (file may be deleted or gitignored):`, error);
+      await execWithShellPath(`git add -A -f -- "${escapedPath}"`, { cwd: worktreePath });
     }
   }
 
@@ -3302,14 +3303,16 @@ export class GitManager {
           try {
             await execWithShellPath(`git add -- "${escapedPath}"`, options);
           } catch (error) {
-            // Retry with --force: files explicitly selected in the UI should be staged even
-            // when ignored (git check-ignore misses directory-traversal exclusions like
-            // .aider* ignoring .aider-desk/rules despite a negation pattern)
             if (isAbortError(error)) {
               throw error;
             }
-            logger.debug(`Failed to stage ${file.path}, retrying with --force (path may be gitignored):`, error);
-            await execWithShellPath(`git add -f -- "${escapedPath}"`, options);
+            // Retry with -A -f: files explicitly selected in the UI should always be staged.
+            // -A stages deletions (git add fails with "pathspec did not match any files" for
+            // files removed on disk), -f handles ignored files (git check-ignore misses
+            // directory-traversal exclusions like .aider* ignoring .aider-desk/rules
+            // despite a negation pattern)
+            logger.debug(`Failed to stage ${file.path}, retrying with -A -f (file may be deleted or gitignored):`, error);
+            await execWithShellPath(`git add -A -f -- "${escapedPath}"`, options);
           }
         }
         logger.info(`Staged ${selectedFiles.length} file(s) for commit`);

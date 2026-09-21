@@ -291,7 +291,7 @@ describe('GitManager - untracked files', () => {
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/\\$HOME-\\`command\\`-\\"quoted\\".ts"', { cwd: testPath });
   });
 
-  it('should retry with --force when git add fails for a gitignored file', async () => {
+  it('should retry with -A -f when git add fails for a gitignored file', async () => {
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
       if (command === 'git add -- ".aider-desk/rules/CONVENTIONS.md"') {
         throw new Error('The following paths are ignored by one of your .gitignore files');
@@ -301,7 +301,20 @@ describe('GitManager - untracked files', () => {
 
     await gitManager.addFileToGit(testPath, '.aider-desk/rules/CONVENTIONS.md');
 
-    expect(execWithShellPath).toHaveBeenCalledWith('git add -f -- ".aider-desk/rules/CONVENTIONS.md"', { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- ".aider-desk/rules/CONVENTIONS.md"', { cwd: testPath });
+  });
+
+  it('should retry with -A -f when git add fails for a deleted file', async () => {
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git add -- "patches/@legendapp+list+3.3.7.patch"') {
+        throw new Error("fatal: pathspec 'patches/@legendapp+list+3.3.7.patch' did not match any files");
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    await gitManager.addFileToGit(testPath, 'patches/@legendapp+list+3.3.7.patch');
+
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "patches/@legendapp+list+3.3.7.patch"', { cwd: testPath });
   });
 
   it('should not force-add a file when git add succeeds', async () => {
@@ -310,7 +323,7 @@ describe('GitManager - untracked files', () => {
     await gitManager.addFileToGit(testPath, 'src/file.ts');
 
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "src/file.ts"', { cwd: testPath });
-    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -f -- "src/file.ts"', expect.anything());
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -A -f -- "src/file.ts"', expect.anything());
   });
 });
 

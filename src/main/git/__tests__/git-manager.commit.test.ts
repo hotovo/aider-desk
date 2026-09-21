@@ -48,7 +48,7 @@ describe('GitManager - commitChanges cancellation', () => {
     expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "test commit"', expect.objectContaining({ killSignal: 'SIGINT' }));
   });
 
-  it('should retry staging with --force when git add fails for ignored files', async () => {
+  it('should retry staging with -A -f when git add fails for ignored files', async () => {
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
       if (command === 'git add -- "file-b.ts"') {
         throw new Error('Command failed: git add -- "file-b.ts"\nThe following paths are ignored by one of your .gitignore files:\n.aider-desk');
@@ -60,8 +60,26 @@ describe('GitManager - commitChanges cancellation', () => {
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
-    expect(execWithShellPath).toHaveBeenCalledWith('git add -f -- "file-b.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "file-b.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
     expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "test commit"', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
+  it('should stage deleted files with -A -f when git add fails with pathspec error', async () => {
+    vi.spyOn(gitManager, 'getUpdatedFiles').mockResolvedValue([{ path: 'patches/@legendapp+list+3.3.7.patch', additions: 0, deletions: 10 }]);
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git add -- "patches/@legendapp+list+3.3.7.patch"') {
+        throw new Error(
+          'Command failed: git add -- "patches/@legendapp+list+3.3.7.patch"\nfatal: pathspec \'patches/@legendapp+list+3.3.7.patch\' did not match any files',
+        );
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "patches/@legendapp+list+3.3.7.patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "remove patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
   });
 
   it('should return false and skip commit when cancelled during staging', async () => {

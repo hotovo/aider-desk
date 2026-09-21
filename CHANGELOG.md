@@ -5,6 +5,7 @@
 - added find in file support to the file editor with a themed search panel opened via Ctrl+F / Cmd+F
 - fixed duplicate keys in git branches popup rows causing React rendering issues
 - fixed crash with React error #185 (maximum update depth exceeded) during message streaming by ensuring message list item ids are always unique and updating @legendapp/list to 3.3.11
+- fixed committing deleted files failing to stage by retrying with `git add -A -f`
 
 ## [0.84.0]
 
