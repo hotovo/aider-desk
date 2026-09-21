@@ -613,15 +613,31 @@ export const includeMessageProperty = (message: Message): boolean => {
  */
 export const groupAssistantMessages = (messages: Message[]): Message[] => {
   const result: Message[] = [];
+  const usedIds = new Set<string>();
+  let duplicateIdCounter = 0;
   let currentResponse: ResponseMessage | null = null;
   let currentToolMessages: ToolMessage[] = [];
+
+  const nextUniqueId = (message: Message): string => {
+    if (!usedIds.has(message.id)) {
+      usedIds.add(message.id);
+      return message.id;
+    }
+    duplicateIdCounter += 1;
+    return `${message.id}#dup${duplicateIdCounter}`;
+  };
+
+  const pushWithUniqueId = (message: Message) => {
+    const id = nextUniqueId(message);
+    result.push(id === message.id ? message : { ...message, id });
+  };
 
   const flushCurrentGroup = () => {
     if (currentResponse) {
       if (currentToolMessages.length > 0) {
         // Create an AssistantGroupMessage
         const assistantGroup: AssistantGroupMessage = {
-          id: currentResponse.id,
+          id: nextUniqueId(currentResponse),
           type: 'assistant-group',
           content: '',
           responseMessage: currentResponse,
@@ -630,7 +646,7 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
         result.push(assistantGroup);
       } else {
         // No tool messages, just push the response as-is
-        result.push(currentResponse);
+        pushWithUniqueId(currentResponse);
       }
       currentResponse = null;
       currentToolMessages = [];
@@ -648,12 +664,12 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
         currentToolMessages.push(message);
       } else {
         // Orphan tool message - push as-is
-        result.push(message);
+        pushWithUniqueId(message);
       }
     } else {
       // Other message types - flush current group and push as-is
       flushCurrentGroup();
-      result.push(message);
+      pushWithUniqueId(message);
     }
   }
 
@@ -747,10 +763,15 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
   return true;
 };
 
+// LegendList keys items by id; duplicate ids in the list data cause a
+// measurement/re-render feedback loop that crashes with React error #185,
+// so every item pushed here must have a unique id.
 export const groupMessagesByPromptContext = (messages: Message[]): Message[] => {
   const result: Message[] = [];
   const groups: Record<string, Message[]> = {};
   const latestGroupInfo: Record<string, Group> = {};
+  const usedIds = new Set<string>();
+  let duplicateIdCounter = 0;
 
   // First pass: collect messages with groups
   messages.forEach((message) => {
@@ -767,6 +788,20 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] => 
     }
   });
 
+  const nextUniqueId = (message: Message): string => {
+    if (!usedIds.has(message.id)) {
+      usedIds.add(message.id);
+      return message.id;
+    }
+    duplicateIdCounter += 1;
+    return `${message.id}#dup${duplicateIdCounter}`;
+  };
+
+  const pushWithUniqueId = (message: Message) => {
+    const id = nextUniqueId(message);
+    result.push(id === message.id ? message : { ...message, id });
+  };
+
   messages.forEach((message) => {
     const groupId = message.promptContext?.group?.id;
     if (groupId && groups[groupId].length > 0) {
@@ -777,7 +812,7 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] => 
       // Only create the group once
       if (firstMessage === message) {
         const groupMessage: GroupMessage = {
-          id: groupId,
+          id: nextUniqueId(message),
           type: 'group',
           content: '',
           group: latestGroupInfo[groupId],
@@ -786,7 +821,7 @@ export const groupMessagesByPromptContext = (messages: Message[]): Message[] => 
         result.push(groupMessage);
       }
     } else if (!groupId) {
-      result.push(message);
+      pushWithUniqueId(message);
     }
   });
 
