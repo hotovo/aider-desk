@@ -2,8 +2,33 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
-import type { ConversationStep, InteractionUpdate, ModelSelection, Run, SDKAgent, SDKImage, SDKUserMessage, SendOptions, ToolCall } from '@cursor/sdk';
 
+import { createModelAliases, resolveModelSelection } from './model-selection';
+import {
+  completeCursorTaskPromptContext,
+  createCursorTaskPromptContext,
+  CURSOR_SUBAGENT_SERVER_NAME,
+  CURSOR_SUBAGENT_TOOL_NAME,
+  getCursorTaskConversationSteps,
+  getCursorTaskError,
+  mapCursorTaskInput,
+  mapCursorTaskResult,
+  type CursorTaskArgs,
+} from './task';
+import { mapTokenUsage, type TurnUsage } from './usage';
+
+import type {
+  ConversationStep,
+  InteractionUpdate,
+  ModelSelection,
+  Run,
+  SDKAgent,
+  SDKImage,
+  SDKUserMessage,
+  SendOptions,
+  ToolCall,
+  SettingSource,
+} from '@cursor/sdk';
 import type {
   AgentStartedEvent,
   ContextAssistantMessage,
@@ -25,21 +50,6 @@ import type {
   ToolCallPart,
   ToolResultOutput,
 } from '@aiderdesk/extensions';
-import type { SettingSource } from '@cursor/sdk';
-
-import { createModelAliases, resolveModelSelection } from './model-selection';
-import {
-  completeCursorTaskPromptContext,
-  createCursorTaskPromptContext,
-  CURSOR_SUBAGENT_SERVER_NAME,
-  CURSOR_SUBAGENT_TOOL_NAME,
-  getCursorTaskConversationSteps,
-  getCursorTaskError,
-  mapCursorTaskInput,
-  mapCursorTaskResult,
-  type CursorTaskArgs,
-} from './task';
-import { mapTokenUsage, type TurnUsage } from './usage';
 
 interface CursorConfig {
   apiKey: string;
@@ -117,7 +127,9 @@ function parseUnifiedDiff(diffString: string, defaultFilePath: string): ParsedEd
   let replaceLines: string[] = [];
 
   const finishHunk = () => {
-    if (!inHunk) return;
+    if (!inHunk) {
+      return;
+    }
     const searchTerm = searchLines.join('\n');
     const replacementText = replaceLines.join('\n');
     if (searchTerm !== replacementText) {
@@ -154,7 +166,9 @@ function parseUnifiedDiff(diffString: string, defaultFilePath: string): ParsedEd
       continue;
     }
 
-    if (!inHunk) continue;
+    if (!inHunk) {
+      continue;
+    }
 
     if (line.startsWith('+')) {
       replaceLines.push(line.slice(1));
@@ -190,7 +204,9 @@ function toCursorMcpServers(
 
   for (const serverName of enabledServers) {
     const config = aiderDeskMcpServers[serverName];
-    if (!config) continue;
+    if (!config) {
+      continue;
+    }
 
     if (config.command) {
       result[serverName] = {
@@ -580,7 +596,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.6.1',
+    version: '4.6.2',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -754,6 +770,7 @@ export default class CursorSdkExtension implements Extension {
 
     let agent: SDKAgent | undefined;
     const existingAgentId = taskContext.data.metadata?.[AGENT_ID_METADATA_KEY] as string | undefined;
+    const streamProcessor = createStreamProcessor(taskContext, context, rawModelId, modelConfig);
 
     try {
       if (existingAgentId) {
@@ -777,7 +794,27 @@ export default class CursorSdkExtension implements Extension {
         context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
       }
 
-      const streamProcessor = createStreamProcessor(taskContext, context, rawModelId, modelConfig);
+      if (prompt) {
+        const userMessage: ContextUserMessage = {
+          id: `user-cursor-${Date.now()}`,
+          role: 'user',
+          content:
+            images.length > 0
+              ? [
+                  { type: 'text' as const, text: prompt },
+                  ...images.map((dataUrl) => {
+                    const { data, mimeType } = parseDataUrl(dataUrl);
+                    return {
+                      type: 'file' as const,
+                      data,
+                      mediaType: mimeType,
+                    } satisfies FilePart;
+                  }),
+                ]
+              : prompt,
+        };
+        await taskContext.addContextMessage(userMessage);
+      }
 
       const sendOptions = {
         ...(mcpServers && Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
@@ -801,37 +838,13 @@ export default class CursorSdkExtension implements Extension {
       context.log(`Cursor run finished: ${result.status}`, 'info');
       context.log(`[cursor-sdk] run.wait() result.usage: ${result.usage ? JSON.stringify(result.usage) : 'undefined'}`, 'debug');
 
-      const contextMessages = await streamProcessor.finish(result.usage ?? undefined);
-
-      if (prompt) {
-        const userMessage: ContextUserMessage = {
-          id: `user-${run.id}`,
-          role: 'user',
-          content:
-            images.length > 0
-              ? [
-                  { type: 'text' as const, text: prompt },
-                  ...images.map((dataUrl) => {
-                    const { data, mimeType } = parseDataUrl(dataUrl);
-                    return {
-                      type: 'file' as const,
-                      data,
-                      mediaType: mimeType,
-                    } satisfies FilePart;
-                  }),
-                ]
-              : prompt,
-        };
-        await taskContext.addContextMessage(userMessage);
-      }
-
-      for (const contextMessage of contextMessages) {
-        await taskContext.addContextMessage(contextMessage);
-      }
+      await streamProcessor.finish(result.usage ?? undefined);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       context.log(`Cursor agent error: ${message}`, 'error');
       taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
+
+      await streamProcessor.finish().catch(() => {});
     } finally {
       if (abortSignal && abortListener) {
         abortSignal.removeEventListener('abort', abortListener);
@@ -869,10 +882,6 @@ export default class CursorSdkExtension implements Extension {
       await taskContext.updateTask({
         state: 'INTERRUPTED',
         interruptedAt: new Date().toISOString(),
-        metadata: {
-          ...taskContext.data.metadata,
-          [AGENT_ID_METADATA_KEY]: undefined,
-        },
       });
 
       return { blocked: true };
@@ -886,17 +895,16 @@ export default class CursorSdkExtension implements Extension {
     projectDir: string,
     context: ExtensionContext,
   ): Promise<Record<string, CursorMcpServerConfig> | null> {
-    if (enabledServers.length === 0) return null;
-
-    try {
-      const allMcpServers = (await context.getSetting('mcpServers')) as Record<string, AiderDeskMcpServerConfig> | undefined;
-      if (!allMcpServers || Object.keys(allMcpServers).length === 0) return null;
-
-      return toCursorMcpServers(allMcpServers, enabledServers, projectDir);
-    } catch (err) {
-      context.log(`Failed to load MCP servers config: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+    if (enabledServers.length === 0) {
       return null;
     }
+
+    const allMcpServers = await context.getMcpServers(projectDir);
+    if (!allMcpServers || Object.keys(allMcpServers).length === 0) {
+      return null;
+    }
+
+    return toCursorMcpServers(allMcpServers, enabledServers, projectDir);
   }
 
   getConfigComponent(): string {
@@ -959,6 +967,22 @@ function createStreamProcessor(
 
   let currentAssistantMessage: ContextAssistantMessage | null = null;
   let hasActiveReasoning = false;
+  let finishing = false;
+  const pendingPersist: ContextMessage[] = [];
+
+  const flushPendingPersist = async () => {
+    if (finishing) {
+      return;
+    }
+    const messages = pendingPersist.splice(0);
+    for (const message of messages) {
+      try {
+        await taskContext.addContextMessage(message);
+      } catch (err) {
+        context.log(`Cursor SDK: failed to persist context message: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+      }
+    }
+  };
   let responseCounter = 0;
   let accumulatedUsage: TurnUsage | null = null;
   const cursorTaskPromptContexts = new Map<string, PromptContext>();
@@ -1093,7 +1117,9 @@ function createStreamProcessor(
 
       switch (step.type) {
         case 'assistantMessage': {
-          if (!batchId) batchId = `${callId}-step-${index}`;
+          if (!batchId) {
+            batchId = `${callId}-step-${index}`;
+          }
           batchPromptContext = stepPromptContext;
           const text = step.message.text;
           batchParts.push({ type: 'text', text });
@@ -1101,7 +1127,9 @@ function createStreamProcessor(
           break;
         }
         case 'thinkingMessage': {
-          if (!batchId) batchId = `${callId}-step-${index}`;
+          if (!batchId) {
+            batchId = `${callId}-step-${index}`;
+          }
           batchPromptContext = stepPromptContext;
           const text = step.message.text;
           batchParts.push({ type: 'reasoning', text });
@@ -1255,12 +1283,16 @@ function createStreamProcessor(
   };
 
   const finishCurrentMessage = async () => {
-    if (!currentAssistantMessage) return;
+    if (!currentAssistantMessage) {
+      return;
+    }
 
     const parts = getParts(currentAssistantMessage);
     if (parts.length === 0) {
       const idx = contextMessages.lastIndexOf(currentAssistantMessage);
-      if (idx !== -1) contextMessages.splice(idx, 1);
+      if (idx !== -1) {
+        contextMessages.splice(idx, 1);
+      }
       currentAssistantMessage = null;
       hasActiveReasoning = false;
       return;
@@ -1281,8 +1313,10 @@ function createStreamProcessor(
       );
     }
 
+    pendingPersist.push(currentAssistantMessage);
     currentAssistantMessage = null;
     hasActiveReasoning = false;
+    await flushPendingPersist();
   };
 
   const handleTaskCompletion = async (callId: string, toolCall: ToolCall, fromStep = false) => {
@@ -1292,14 +1326,16 @@ function createStreamProcessor(
     const promptContext = getTaskPromptContext(callId, toolArgs);
     const pendingTask = pendingCursorTasks.get(callId);
 
-    if (pendingTask?.completed) return;
+    if (pendingTask?.completed) {
+      return;
+    }
 
     const conversationSteps = getCursorTaskConversationSteps(toolResult);
-    if (conversationSteps.length === 0 && !fromStep) return;
+    if (conversationSteps.length === 0 && !fromStep) {
+      return;
+    }
 
-    const taskSteps = pendingTask?.stepsRendered
-      ? []
-      : mapTaskConversationSteps(callId, toolArgs as CursorTaskArgs, conversationSteps, promptContext);
+    const taskSteps = pendingTask?.stepsRendered ? [] : mapTaskConversationSteps(callId, toolArgs as CursorTaskArgs, conversationSteps, promptContext);
     const taskContextMessages = taskSteps.flatMap((step): ContextMessage[] =>
       step.type === 'response' ? [step.message] : [step.assistantMessage, step.toolMessage],
     );
@@ -1307,6 +1343,9 @@ function createStreamProcessor(
     if (pendingTask && taskContextMessages.length > 0) {
       pendingTask.contextMessages = taskContextMessages;
       pendingTask.stepsRendered = true;
+      for (const message of taskContextMessages) {
+        pendingPersist.push(message);
+      }
     }
 
     const completed = fromStep || status === 'error' || taskSteps.length > 0;
@@ -1370,7 +1409,14 @@ function createStreamProcessor(
     if (pendingTask) {
       pendingTask.resultSent = true;
       pendingTask.completed = completed;
+      if (completed && taskToolMessage) {
+        pendingPersist.push(taskToolMessage);
+      }
+    } else if (taskToolMessage) {
+      pendingPersist.push(taskToolMessage);
     }
+
+    await flushPendingPersist();
   };
 
   const handleToolCompletion = async (callId: string, toolCall: ToolCall) => {
@@ -1380,8 +1426,10 @@ function createStreamProcessor(
     const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
 
     if (toolName === 'task') {
-      await ensureTaskAssistantMessage(callId, toolArgs, getTaskPromptContext(callId, toolArgs));
+      const taskAssistantMessage = await ensureTaskAssistantMessage(callId, toolArgs, getTaskPromptContext(callId, toolArgs));
       await handleTaskCompletion(callId, toolCall);
+      pendingPersist.push(taskAssistantMessage);
+      await flushPendingPersist();
       return;
     }
 
@@ -1422,7 +1470,7 @@ function createStreamProcessor(
 
             taskContext.addToolMessage(editId, POWER_TOOL_SERVER_NAME, 'file_edit', editInput, JSON.stringify(resultStr), undefined, undefined, true, true);
 
-            contextMessages.push({
+            const editToolMessage = {
               id: editId,
               role: 'tool',
               content: [
@@ -1433,11 +1481,14 @@ function createStreamProcessor(
                   output: { type: 'text', value: resultStr },
                 },
               ],
-            } as ContextToolMessage);
+            } as ContextToolMessage;
+            contextMessages.push(editToolMessage);
+            pendingPersist.push(editToolMessage);
 
             await taskContext.addToGit(resolve(taskContext.getTaskDir(), edit.filePath));
           }
 
+          await flushPendingPersist();
           return;
         }
       }
@@ -1468,7 +1519,7 @@ function createStreamProcessor(
       true,
     );
 
-    contextMessages.push({
+    const toolContextMessage = {
       id: callId,
       role: 'tool',
       content: [
@@ -1479,7 +1530,9 @@ function createStreamProcessor(
           output: transformedResult.output,
         },
       ],
-    } as ContextToolMessage);
+    } as ContextToolMessage;
+    contextMessages.push(toolContextMessage);
+    pendingPersist.push(toolContextMessage);
 
     if (toolName === 'write' || toolName === 'edit') {
       const writeArgs = toolArgs as { path: string };
@@ -1487,6 +1540,8 @@ function createStreamProcessor(
         await taskContext.addToGit(resolve(taskContext.getTaskDir(), writeArgs.path));
       }
     }
+
+    await flushPendingPersist();
   };
 
   const onDelta = async (update: InteractionUpdate) => {
@@ -1564,7 +1619,9 @@ function createStreamProcessor(
 
       case 'partial-tool-call': {
         const { callId, toolCall } = update;
-        if (!currentAssistantMessage) break;
+        if (!currentAssistantMessage) {
+          break;
+        }
 
         const parts = getParts(currentAssistantMessage);
         const existingIdx = parts.findIndex((p): p is ToolCallPart => p.type === 'tool-call' && p.toolCallId === callId);
@@ -1656,6 +1713,8 @@ function createStreamProcessor(
   };
 
   const finish = async (runUsage?: TurnUsage): Promise<ContextMessage[]> => {
+    finishing = true;
+
     await finishCurrentMessage();
 
     for (const [callId, pendingTask] of pendingCursorTasks) {
@@ -1692,6 +1751,10 @@ function createStreamProcessor(
         const msg = contextMessages[i];
         if (msg.role === 'assistant') {
           msg.usageReport = usageReport;
+          if (!pendingPersist.includes(msg)) {
+            await taskContext.removeMessage(msg.id);
+            pendingPersist.push(msg);
+          }
           const assistantMsg = msg as ContextAssistantMessage;
           const parts = getParts(assistantMsg);
           const text = extractText(parts).trim();
@@ -1715,7 +1778,10 @@ function createStreamProcessor(
       context.log('[cursor-sdk] No usage data available to attach', 'debug');
     }
 
-    return contextMessages;
+    finishing = false;
+    await flushPendingPersist();
+
+    return [];
   };
 
   return { onDelta, onStep, finish };

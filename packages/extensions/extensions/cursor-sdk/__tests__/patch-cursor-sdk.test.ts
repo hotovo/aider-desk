@@ -9,7 +9,7 @@ import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 const patchScriptPath = fileURLToPath(new URL('../patch-cursor-sdk.mjs', import.meta.url));
 const ORIGINAL = 'async getCwd(){return this.executor.getCwd()}';
 const PATCHED = 'async getCwd(){return this.workspacePath||await this.executor.getCwd()}';
-const MARKER = '/* aiderdesk-shell-cwd-patch 1.0.23-shell-cwd-1 */';
+const MARKER = '/* aiderdesk-shell-cwd-patch 1.0.31-shell-cwd-1 */';
 
 let workDir: string;
 
@@ -47,7 +47,7 @@ describe('patch-cursor-sdk shell cwd patch', () => {
   });
 
   it('patches both esm and cjs bundles', () => {
-    createSdkTree('1.0.23');
+    createSdkTree('1.0.31');
     const { status, stdout } = runPatchScript();
 
     expect(status).toBe(0);
@@ -61,7 +61,7 @@ describe('patch-cursor-sdk shell cwd patch', () => {
   });
 
   it('is idempotent when run twice', () => {
-    createSdkTree('1.0.23');
+    createSdkTree('1.0.31');
     expect(runPatchScript().status).toBe(0);
 
     const firstRun = readBundle('esm');
@@ -71,13 +71,13 @@ describe('patch-cursor-sdk shell cwd patch', () => {
   });
 
   it('fails on an unexpected SDK version', () => {
-    createSdkTree('1.0.24');
+    createSdkTree('1.0.32');
 
     expect(runPatchScript().status).not.toBe(0);
   });
 
   it('fails when the target string appears more than once', () => {
-    createSdkTree('1.0.23', 2);
+    createSdkTree('1.0.31', 2);
 
     const { status, stderr } = runPatchScript();
 
