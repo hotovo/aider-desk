@@ -4835,7 +4835,7 @@ validateUIComponentDefinition(component: UIComponentDefinition):
 ⋮----
 async updateAgentProfile(profile: AgentProfile): Promise<AgentProfile | null>
 ⋮----
-async executeCommand(commandName: string, args: string[], project: Project, task?: Task): Promise<void>
+async executeCommand(commandName: string, args: string[], project: Project, task?: Task, images?: string[]): Promise<void>
 ⋮----
 /**
    * Fetch available extensions from a repository URL
@@ -5169,7 +5169,7 @@ async setTodos(items: TodoItem[], initialUserPrompt = ''): Promise<void>
 ⋮----
 // Execution
 ⋮----
-async runPrompt(prompt: string, mode?: string): Promise<void>
+async runPrompt(prompt: string, mode?: string, images?: string[]): Promise<void>
 ⋮----
 async runPromptInAgent(
     profile: AgentProfile,
@@ -6016,10 +6016,10 @@ private async markConflictingFiles(worktreePath: string, files: UpdatedFile[]): 
 ⋮----
 async addFileToGit(worktreePath: string, filePath: string): Promise<void>
 ⋮----
-// Files explicitly added by the user should be staged even when ignored (e.g. .aider-desk rules)
-⋮----
-// git check-ignore is unreliable here: negation rules under an excluded parent directory
-// (e.g. .aider* + !.aider-desk/rules) report "not ignored" but git add still refuses
+// Files explicitly added by the user should always be staged: -f handles ignored files
+// (git check-ignore is unreliable here: negation rules under an excluded parent directory,
+// e.g. .aider* + !.aider-desk/rules, report "not ignored" but git add still refuses),
+// -A stages deletions (git add fails with "pathspec did not match any files" for files removed on disk)
 ⋮----
 async stageFile(worktreePath: string, filePath: string): Promise<boolean>
 ⋮----
@@ -6059,9 +6059,11 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, fileP
 ⋮----
 // Stage updated files before committing
 ⋮----
-// Retry with --force: files explicitly selected in the UI should be staged even
-// when ignored (git check-ignore misses directory-traversal exclusions like
-// .aider* ignoring .aider-desk/rules despite a negation pattern)
+// Retry with -A -f: files explicitly selected in the UI should always be staged.
+// -A stages deletions (git add fails with "pathspec did not match any files" for
+// files removed on disk), -f handles ignored files (git check-ignore misses
+// directory-traversal exclusions like .aider* ignoring .aider-desk/rules
+// despite a negation pattern)
 ⋮----
 // Escape the commit message for shell
 ⋮----
@@ -11546,11 +11548,16 @@ async initProjectAgentsFile(args?: string): Promise<void>
 ⋮----
 // Check if the AGENTS.md file was created
 ⋮----
-private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode): Promise<void>
+private async runExtensionCommand(extensionCommand: RegisteredCommand, args: string[], mode: Mode, images?: string[]): Promise<void>
+⋮----
+// Images attached to the prompt are automatically included in the first prompt submitted
+// by the extension (via runPrompt/runPromptInAgent), unless it passes images explicitly
 ⋮----
 // Execute the command - extension is fully responsible for its logic
 ⋮----
-public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent'): Promise<void>
+takePendingCommandImages(): string[] | undefined
+⋮----
+public async runCustomCommand(commandName: string, args: string[], mode: Mode = 'agent', images?: string[]): Promise<void>
 ⋮----
 // Queue the custom command for later execution
 ⋮----
@@ -13014,7 +13021,7 @@ async getCommands(baseDir: string): Promise<CommandsData>
 ⋮----
 async getCustomModes(baseDir: string): Promise<ModeDefinition[]>
 ⋮----
-async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void>
+async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void>
 ⋮----
 async updateMainModel(baseDir: string, taskId: string, mainModel: string): Promise<void>
 ⋮----
@@ -14721,7 +14728,7 @@ addContextMenuListener(callback: (params: ContextMenuParams) => void): () => voi
 addShowViewListener(callback: (viewId: string) => void): () => void
 async getCommands(baseDir: string): Promise<CommandsData>
 getCustomModes(baseDir: string): Promise<ModeDefinition[]>
-runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode): Promise<void>
+runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void>
 isTerminalSupported(): boolean
 async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string>
 async writeToTerminal(terminalId: string, data: string): Promise<boolean>
@@ -15791,24 +15798,6 @@ type Props = {
   additionalAction?: AdditionalAction;
   enableFocusTrap?: boolean;
 };
-⋮----
-export const ConfirmDialog = ({
-  title,
-  onConfirm,
-  onCancel,
-  confirmButtonText,
-  cancelButtonText,
-  contentClass,
-  children,
-  disabled = false,
-  confirmButtonClass,
-  confirmButtonColor,
-  width,
-  closeOnEscape = false,
-  footerAdditionalComponents,
-  additionalAction,
-  enableFocusTrap,
-}: Props) =>
 
 ================
 File: src/renderer/src/components/common/DatePicker.css
@@ -15906,8 +15895,6 @@ type Props = {
   minHeight?: number;
   className?: string;
 };
-⋮----
-onDragStop=
 ⋮----
 icon=
 ⋮----
@@ -16982,7 +16969,6 @@ checked=
 {/* Auto-scroll */}
 ⋮----
 {/* Clear logs button */}
-<Button onClick=
 ⋮----
 {/* Clear confirmation dialog */}
 ⋮----
@@ -17286,9 +17272,6 @@ const handleUnarchiveClick = () =>
 ⋮----
 const renderSection = (icon: ReactNode, text: string, actions: ReactNode) =>
 ⋮----
-
-⋮----
-onClose=
 
 ================
 File: src/renderer/src/components/message/DeleteMemoryToolMessage.tsx
@@ -18896,6 +18879,10 @@ export const includeMessageProperty = (message: Message): boolean =>
  */
 export const groupAssistantMessages = (messages: Message[]): Message[] =>
 ⋮----
+const nextUniqueId = (message: Message): string =>
+⋮----
+const pushWithUniqueId = (message: Message) =>
+⋮----
 const flushCurrentGroup = () =>
 ⋮----
 // Create an AssistantGroupMessage
@@ -18922,6 +18909,9 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
 ⋮----
 // Check args for ToolMessage
 ⋮----
+// LegendList keys items by id; duplicate ids in the list data cause a
+// measurement/re-render feedback loop that crashes with React error #185,
+// so every item pushed here must have a unique id.
 export const groupMessagesByPromptContext = (messages: Message[]): Message[] =>
 ⋮----
 // First pass: collect messages with groups
@@ -19066,6 +19056,8 @@ type Props = {
   provider: AnthropicCompatibleProvider;
   onChange: (updated: AnthropicCompatibleProvider) => void;
 };
+⋮----
+export const AnthropicCompatibleParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -19420,6 +19412,8 @@ type Props = {
   onChange: (updated: GpustackProvider) => void;
 };
 ⋮----
+export const GpustackParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -19488,6 +19482,8 @@ type Props = {
   onChange: (updated: LitellmProvider) => void;
 };
 ⋮----
+export const LitellmParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
@@ -19508,6 +19504,8 @@ type Props = {
   provider: LmStudioProvider;
   onChange: (updated: LmStudioProvider) => void;
 };
+⋮----
+export const LmStudioParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -19633,6 +19631,8 @@ type Props = {
   onChange: (updated: OllamaProvider) => void;
 };
 ⋮----
+export const OllamaParameters = (
+⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 label=
@@ -19737,6 +19737,8 @@ type Props = {
   provider: OpenAiCompatibleProvider;
   onChange: (updated: OpenAiCompatibleProvider) => void;
 };
+⋮----
+export const OpenAiCompatibleParameters = (
 ⋮----
 const handleBaseUrlChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
@@ -20471,6 +20473,8 @@ const handleBulkToggleHidden = async (modelIds: string[], isHidden: boolean) =>
 <ModalOverlayLayout title=
 ⋮----
 // Show provider configuration form
+⋮----
+onCancel=
 
 ================
 File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
@@ -21434,25 +21438,6 @@ type Props = {
   refreshContextFiles: () => Promise<void>;
   onToggleFilesSidebarCollapse?: () => void;
 };
-⋮----
-export const FilesContextInfoContent = ({
-  baseDir,
-  taskId,
-  allFiles,
-  contextFiles,
-  aiderTotalCost,
-  maxInputTokens,
-  clearMessages,
-  runCommand,
-  resetTask,
-  mode,
-  showFileDialog,
-  task,
-  updateTask,
-  refreshAllFiles,
-  refreshContextFiles,
-  onToggleFilesSidebarCollapse,
-}: Props) =>
 
 ================
 File: src/renderer/src/components/project/GitBranchesButton.tsx
@@ -21682,6 +21667,8 @@ const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
 return <div key=
 ⋮----
+<div key=
+⋮----
 setOpenSubmenu(null);
 item.action();
 
@@ -21798,8 +21785,6 @@ export const MobileSidebar = ({
 className=
 ⋮----
 <div onClick=
-⋮----
-showFileDialog=
 
 ================
 File: src/renderer/src/components/project/MountedTaskView.tsx
@@ -22325,14 +22310,14 @@ const handleSwitchToWorktree = () =>
 ⋮----
 const handleCancelCommit = () =>
 ⋮----
-title=
-⋮----
 <Button onClick=
-
 ⋮----
 onChange=
 ⋮----
 <div className="font-medium">
+⋮----
+title=
+⋮----
 
 ================
 File: src/renderer/src/components/project/TaskView.tsx
@@ -23106,6 +23091,8 @@ type Props = {
 const load = async () =>
 ⋮----
 const handleSelectTask = (taskId: string) =>
+⋮----
+messages=
 
 ================
 File: src/renderer/src/components/readonly/ReadonlyTaskSidebar.tsx
@@ -24334,6 +24321,8 @@ const handleConfirm = () =>
 ⋮----
 title=
 ⋮----
+value=
+⋮----
 // Parse the value into an array of shortcuts
 ⋮----
 const handleAddShortcut = () =>
@@ -25430,8 +25419,6 @@ const expandFolders = (treeData: Record<string, TreeItem>, files: ContextFile[])
 const checkChild = (childKey: string | number) =>
 ⋮----
 <Tooltip content=
-⋮----
-onFileDiffClick=
 
 ================
 File: src/renderer/src/components/Workspace/ContextFilesSectionInner.tsx
@@ -25578,6 +25565,10 @@ eq(other: WidgetType): boolean
 ⋮----
 toDOM(): HTMLElement
 ⋮----
+onEdit=
+⋮----
+onRemove=
+⋮----
 destroy(dom: HTMLElement): void
 ⋮----
 ignoreEvent(): boolean
@@ -25597,6 +25588,8 @@ import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
 import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
+import { openSearchPanel } from '@codemirror/search';
+import { Prec } from '@codemirror/state';
 import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { type Extension } from '@uiw/react-codemirror';
@@ -26369,8 +26362,6 @@ className=
                               section={'updated' as SectionType}
                               treeData={tree}
                               expandedItems={expanded}
-setExpandedItems=
-⋮----
 setExpandedItems=
 ⋮----
 onClose=
@@ -32536,7 +32527,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.84.0-dev",
+  "version": "0.85.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -32610,6 +32601,7 @@ File: package.json
     "@codemirror/autocomplete": "6.20.0",
     "@codemirror/language": "6.12.2",
     "@codemirror/language-data": "6.5.2",
+    "@codemirror/search": "6.6.0",
     "@codemirror/state": "6.5.4",
     "@codemirror/view": "6.39.14",
     "@dnd-kit/core": "6.3.1",
@@ -32624,7 +32616,7 @@ File: package.json
     "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
     "@huggingface/transformers": "3.8.1",
     "@lancedb/lancedb": "0.22.3",
-    "@legendapp/list": "3.3.7",
+    "@legendapp/list": "3.3.11",
     "@openrouter/ai-sdk-provider": "3.0.0",
     "@opentelemetry/auto-instrumentations-node": "0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
