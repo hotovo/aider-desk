@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "protected-paths",
@@ -191,7 +191,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "rtk",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "fff",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "bmad",
