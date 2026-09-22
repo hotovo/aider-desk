@@ -2,6 +2,7 @@
 
 ## [UNRELEASED]
 
+- added file watcher manager that watches the task dir while a task is in progress and triggers updated files refresh, worktree integration status and autocompletion updates
 - added find in file support to the file editor with a themed search panel opened via Ctrl+F / Cmd+F
 - fixed duplicate keys in git branches popup rows causing React rendering issues
 - fixed crash with React error #185 (maximum update depth exceeded) during message streaming by ensuring message list item ids are always unique and updating @legendapp/list to 3.3.11

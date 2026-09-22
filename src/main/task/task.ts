@@ -88,6 +88,7 @@ import { isEqual } from 'lodash';
 import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
+import type { WatchHandle } from '@/file-watcher-manager';
 
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
@@ -184,6 +185,7 @@ export class Task {
   private tokensInfo: TokensInfoData;
   private queuedPrompts: QueuedPromptData[] = [];
   private pendingCommandImages?: string[];
+  private fileWatchHandle: WatchHandle | null = null;
   private isCompacting = false;
   private lastSmartCompactionMessageCount = 0;
   private smartCompactionLevel = CompactionLevel.One;
@@ -463,6 +465,8 @@ export class Task {
       return this.task;
     }
 
+    const previousTaskState = this.task.state;
+
     logger.debug('Saving task data', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -496,6 +500,7 @@ export class Task {
     }
 
     this.eventManager.sendTaskUpdated(this.task);
+    this.syncFileWatching(previousTaskState);
 
     logger.debug('Saved task data', {
       baseDir: this.project.baseDir,
@@ -504,6 +509,40 @@ export class Task {
     });
 
     return this.task;
+  }
+
+  /**
+   * Starts/stops watching the task dir for file changes while the task is in progress.
+   */
+  private syncFileWatching(previousTaskState: TaskData['state'] | undefined) {
+    const wasWatching = previousTaskState === DefaultTaskState.InProgress;
+    const shouldBeWatching = this.task.state === DefaultTaskState.InProgress;
+
+    if (wasWatching === shouldBeWatching) {
+      return;
+    }
+
+    if (shouldBeWatching) {
+      logger.debug('Starting file watching', { baseDir: this.project.baseDir, taskId: this.taskId });
+      this.fileWatchHandle?.unwatch();
+      this.fileWatchHandle = this.project.getFileWatcherManager().watch(this.getTaskDir(), () => this.onWatchedFilesChanged(), {
+        ignored: ['.git', 'node_modules'],
+      });
+    } else {
+      logger.debug('Stopping file watching', { baseDir: this.project.baseDir, taskId: this.taskId });
+      this.fileWatchHandle?.unwatch();
+      this.fileWatchHandle = null;
+    }
+  }
+
+  public async onWatchedFilesChanged() {
+    if (this.task.state !== DefaultTaskState.InProgress) {
+      return;
+    }
+
+    await this.sendUpdatedFilesUpdated();
+    await this.sendWorktreeIntegrationStatusUpdated();
+    await this.updateAutocompletionData(undefined, true);
   }
 
   public async init(readonly = false) {
@@ -796,6 +835,8 @@ export class Task {
     this.resolveAgentRunPromises();
     this.cleanupChunkBuffers();
 
+    this.fileWatchHandle?.unwatch();
+    this.fileWatchHandle = null;
     await this.aiderManager.kill();
     if (cleanupEmptyTask) {
       await this.cleanUpEmptyTask();

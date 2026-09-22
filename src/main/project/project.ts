@@ -23,8 +23,10 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_TASKS_DIR, AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
+import { FileWatcherManager } from '@/file-watcher-manager';
 
 export class Project {
+  private readonly fileWatcherManager: FileWatcherManager;
   private readonly customCommandManager: CustomCommandManager;
   private readonly tasksLoadingPromise: Promise<void> | null = null;
   private readonly tasks = new Map<string, Task>();
@@ -50,6 +52,7 @@ export class Project {
     private readonly extensionManager: ExtensionManager,
     private readonly pythonInstaller: PythonDependenciesInstaller,
   ) {
+    this.fileWatcherManager = new FileWatcherManager(this.store);
     this.customCommandManager = new CustomCommandManager(this, this.eventManager, this.extensionManager, this.store);
     this.tasksLoadingPromise = this.loadTasks();
   }
@@ -632,6 +635,11 @@ export class Project {
     });
 
     void this.customCommandManager.settingsChanged(oldSettings, newSettings);
+    void this.fileWatcherManager.settingsChanged(oldSettings, newSettings);
+  }
+
+  public getFileWatcherManager(): FileWatcherManager {
+    return this.fileWatcherManager;
   }
 
   async projectSettingsChanged(oldSettings: ProjectSettings, newSettings: ProjectSettings) {
@@ -651,6 +659,7 @@ export class Project {
     await this.extensionManager.dispatchEvent('onProjectStopped', { baseDir: this.baseDir }, this);
 
     this.customCommandManager.dispose();
+    await this.fileWatcherManager.dispose();
     this.agentProfileManager.removeProject(this.baseDir);
     this.mcpConfigManager.removeProject(this.baseDir);
     await this.promptsManager.unwatchProject(this.baseDir);
