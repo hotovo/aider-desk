@@ -24,6 +24,8 @@
     "setAutonomyMode": "Переключить режим автономности",
     "openSettingsPage": "Открыть страницу настроек",
     "showLogs": "Показать логи",
+    "showArchivedTasks": "Показать архивированные задачи",
+    "hideArchivedTasks": "Скрыть архивированные задачи",
     "createNewTask": "Создать новую задачу",
     "createNewSubtask": "Создать новую подзадачу",
     "createNewSiblingTask": "Создать соседнюю задачу",

@@ -24,6 +24,8 @@
     "setAutonomyMode": "자율 모드 전환",
     "openSettingsPage": "설정 페이지 열기",
     "showLogs": "로그 표시",
+    "showArchivedTasks": "보관된 작업 표시",
+    "hideArchivedTasks": "보관된 작업 숨기기",
     "createNewTask": "새 작업 만들기",
     "createNewSubtask": "새 하위 작업 만들기",
     "createNewSiblingTask": "새 형제 작업 만들기",

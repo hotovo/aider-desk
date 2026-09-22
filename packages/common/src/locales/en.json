@@ -24,6 +24,8 @@
     "setAutonomyMode": "Switch autonomy mode",
     "openSettingsPage": "Open settings page",
     "showLogs": "Show Logs",
+    "showArchivedTasks": "Show archived tasks",
+    "hideArchivedTasks": "Hide archived tasks",
     "createNewTask": "Create new task",
     "createNewSubtask": "Create new subtask",
     "createNewSiblingTask": "Create new sibling task",

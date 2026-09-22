@@ -26,6 +26,8 @@ export const UI_ACTIONS = [
   { id: 'view.usageDashboard', labelKey: 'settings.hotkeys.usageDashboard' },
   { id: 'view.modelLibrary', labelKey: 'settings.hotkeys.modelLibrary' },
   { id: 'view.showLogs', labelKey: 'uiActions.showLogs' },
+  { id: 'task.showArchived', labelKey: 'uiActions.showArchivedTasks' },
+  { id: 'task.hideArchived', labelKey: 'uiActions.hideArchivedTasks' },
 
   // Task
   { id: 'task.new', labelKey: 'uiActions.createNewTask' },

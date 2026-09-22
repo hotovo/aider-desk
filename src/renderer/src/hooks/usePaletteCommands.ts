@@ -6,6 +6,7 @@ import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { invokeAction, registerAction, unregisterAction } from '@/stores/actionsStore';
 import { openSettingsPage } from '@/stores/settingsNavigationStore';
 import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { useTaskSidebarStore } from '@/stores/taskSidebarStore';
 
 export const GLOBAL_PALETTE_SCOPE = 'global';
 
@@ -35,6 +36,8 @@ const buildShortcuts = (hotkeys: ReturnType<typeof useConfiguredHotkeys>): Recor
 });
 
 const MODULE_ACTIONS: Record<string, () => void> = {
+  'task.showArchived': () => useTaskSidebarStore.getState().setShowArchived(true),
+  'task.hideArchived': () => useTaskSidebarStore.getState().setShowArchived(false),
   'view.settings': () => openSettingsPage('general'),
   'settings.general': () => openSettingsPage('general'),
   'settings.aider': () => openSettingsPage('aider'),
@@ -53,6 +56,7 @@ export const usePaletteCommands = () => {
   const hotkeys = useConfiguredHotkeys();
   const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
   const clearItems = useCommandPaletteStore((state) => state.clearItems);
+  const showArchived = useTaskSidebarStore((state) => state.showArchived);
 
   useEffect(() => {
     const shortcuts = buildShortcuts(hotkeys);
@@ -61,9 +65,14 @@ export const usePaletteCommands = () => {
       registerAction(id, handler);
     }
 
+    const archivedVisibilityIds: Record<string, boolean> = {
+      'task.showArchived': !showArchived,
+      'task.hideArchived': showArchived,
+    };
+
     replaceItems(
       GLOBAL_PALETTE_SCOPE,
-      UI_ACTIONS.map(
+      UI_ACTIONS.filter((info) => archivedVisibilityIds[info.id] !== false).map(
         (info): PaletteItem => ({
           id: info.id,
           label: t(info.labelKey),
@@ -81,5 +90,5 @@ export const usePaletteCommands = () => {
       }
       clearItems(GLOBAL_PALETTE_SCOPE);
     };
-  }, [t, i18n.language, hotkeys, replaceItems, clearItems]);
+  }, [t, i18n.language, hotkeys, showArchived, replaceItems, clearItems]);
 };

@@ -40,6 +40,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Toggle } from '@/components/common/Toggle';
 import { getTaskStateLabel, getStateTextClass } from '@/components/common/TaskStateChip';
+import { useTaskSidebarStore } from '@/stores/taskSidebarStore';
 
 export const COLLAPSED_WIDTH = 44;
 export const EXPANDED_WIDTH = 256;
@@ -102,7 +103,8 @@ const TaskSidebarComponent = (
   const [deleteConfirmTaskId, setDeleteConfirmTaskId] = useState<string | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [selectedStates, setSelectedStates] = useState<Set<string>>(() => new Set([...Object.values(DefaultTaskState)]));
-  const [showArchived, setShowArchived] = useState<boolean>(false);
+  const showArchived = useTaskSidebarStore((state) => state.showArchived);
+  const setShowArchived = useTaskSidebarStore((state) => state.setShowArchived);
   const [isFilterVisible, setIsFilterVisible] = useState<boolean>(false);
   const [isSearchVisible, setIsSearchVisible] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -444,6 +446,13 @@ const TaskSidebarComponent = (
     setIsSearchVisible(false);
     setSearchQuery('');
   };
+
+  const handleToggleShowArchived = useCallback(
+    (checked: boolean) => {
+      setShowArchived(checked);
+    },
+    [setShowArchived],
+  );
 
   const handleArchiveTask = useCallback(
     async (taskId: string) => {
@@ -838,7 +847,7 @@ const TaskSidebarComponent = (
               />
             ))}
             <div className="flex items-center gap-2 pt-1 border-t border-border-dark-light">
-              <Toggle color="tertiary" size="sm" checked={showArchived} onChange={setShowArchived} />
+              <Toggle color="tertiary" size="sm" checked={showArchived} onChange={handleToggleShowArchived} />
               <span className="text-2xs">{t('taskSidebar.archived')}</span>
             </div>
           </div>

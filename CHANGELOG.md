@@ -14,6 +14,7 @@
 - added built-in skill names to the `/` command autocompletion
 - improved task sidebar spinner visibility for collapsed parent subtasks
 - clarified worktree to local mode switch dialog for shared worktrees
+- added command palette actions to show or hide archived tasks
 
 ## [0.84.0]
 
