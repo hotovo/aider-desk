@@ -10,6 +10,7 @@
 - added passing images attached to the prompt to custom extension commands, allowing extensions to include the screenshot in the prompt they run
 - fixed in-progress tasks being evicted from the task mount pool when switching between tasks, keeping running tasks mounted
 - fixed find in file shortcut (Ctrl+F / Cmd+F) being swallowed by inactive task views of background projects, preventing the search panel from opening
+- updated default models for built-in providers to their latest versions
 
 ## [0.84.0]
 
