@@ -899,6 +899,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
                   projectDir={projectDir}
                   task={mountedTask}
                   isActive={isActive}
+                  isProjectActive={isProjectActive}
                   inputHistory={inputHistory}
                   shouldFocusPrompt={isActive && shouldFocusNewTask}
                   updateTask={handleUpdateTask}

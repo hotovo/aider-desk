@@ -93,6 +93,7 @@ type Props = {
   updateOptimisticTaskState: (taskId: string, taskState: string) => void;
   inputHistory: string[];
   isActive?: boolean;
+  isProjectActive?: boolean;
   shouldFocusPrompt?: boolean;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -108,6 +109,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
       updateTask,
       inputHistory,
       isActive = false,
+      isProjectActive = true,
       shouldFocusPrompt = false,
       updateOptimisticTaskState,
       onArchiveTask,
@@ -185,7 +187,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const [showSidebar, setShowSidebar] = useState(isMobile);
     const { width: sidebarWidth, setWidth: setSidebarWidth } = useSidebarWidth(projectDir);
     const [isFilesSidebarCollapsed, setIsFilesSidebarCollapsed] = useLocalStorage(`files-sidebar-collapsed-${projectDir}-${task.id}`, false);
-    const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive);
+    const { renderSearchInput } = useSearchText(searchContainer, 'absolute top-1 left-1', isActive && isProjectActive);
 
     const inProgress = task.state === DefaultTaskState.InProgress;
     const isLastLoadingMessage = displayedMessages.length > 0 && isLoadingMessage(displayedMessages[displayedMessages.length - 1]);

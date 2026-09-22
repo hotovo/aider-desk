@@ -66,10 +66,12 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string,
         return;
       }
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
-        event.preventDefault();
+        // Ignore the event when disabled without preventing default, so the
+        // enabled (visible) instance can still handle it.
         if (!enabled) {
           return;
         }
+        event.preventDefault();
         setShowSearchInput((prev) => !prev);
         if (!showSearchInput) {
           // Clear previous search when opening
@@ -81,26 +83,26 @@ export const useSearchText = (inElement: HTMLElement | null, className?: string,
           }
         }
       } else if (event.key === 'F3' && event.shiftKey) {
-        event.preventDefault();
         if (!enabled) {
           return;
         }
+        event.preventDefault();
         if (showSearchInput && foundElementsRef.current.size > 0) {
           navigateToPreviousFound();
         }
       } else if (event.key === 'F3') {
-        event.preventDefault();
         if (!enabled) {
           return;
         }
+        event.preventDefault();
         if (showSearchInput && foundElementsRef.current.size > 0) {
           navigateToNextFound();
         }
       } else if (event.key === 'Escape' && showSearchInput) {
-        event.preventDefault();
         if (!enabled) {
           return;
         }
+        event.preventDefault();
         resetSearch();
       }
     };

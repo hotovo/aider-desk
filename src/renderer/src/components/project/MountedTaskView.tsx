@@ -11,6 +11,7 @@ type Props = {
   projectDir: string;
   task: TaskData;
   isActive: boolean;
+  isProjectActive: boolean;
   inputHistory: string[];
   shouldFocusPrompt: boolean;
   updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
@@ -27,6 +28,7 @@ export const MountedTaskView = forwardRef<TaskViewRef, Props>(
       projectDir,
       task,
       isActive,
+      isProjectActive,
       inputHistory,
       shouldFocusPrompt,
       updateTask,
@@ -54,6 +56,7 @@ export const MountedTaskView = forwardRef<TaskViewRef, Props>(
             updateOptimisticTaskState={updateOptimisticTaskState}
             inputHistory={inputHistory}
             isActive={isActive}
+            isProjectActive={isProjectActive}
             shouldFocusPrompt={shouldFocusPrompt}
             onArchiveTask={onArchiveTask}
             onUnarchiveTask={onUnarchiveTask}

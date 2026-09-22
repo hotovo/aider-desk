@@ -8,6 +8,7 @@
 - fixed committing deleted files failing to stage by retrying with `git add -A -f`
 - added passing images attached to the prompt to custom extension commands, allowing extensions to include the screenshot in the prompt they run
 - fixed in-progress tasks being evicted from the task mount pool when switching between tasks, keeping running tasks mounted
+- fixed find in file shortcut (Ctrl+F / Cmd+F) being swallowed by inactive task views of background projects, preventing the search panel from opening
 
 ## [0.84.0]
 
