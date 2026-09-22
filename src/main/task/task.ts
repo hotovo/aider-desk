@@ -5522,7 +5522,13 @@ ${error.stderr}`,
 
       const isConflict = error instanceof GitError && error.gitOutput?.includes('Resolve all conflicts manually');
 
-      if (!isConflict) {
+      // The 'Continuing rebase...' loading message must be closed explicitly,
+      // otherwise it stays visible forever when the rebase pauses on conflicts
+      this.addLogMessage('loading', undefined, true);
+
+      if (isConflict) {
+        this.addLogMessage('info', 'worktree.rebasePausedDueToConflicts', true);
+      } else {
         this.addLogMessage(
           'error',
           error instanceof GitError ? error.getErrorDetails() : `Failed to continue rebase: ${error instanceof Error ? error.message : String(error)}`,
