@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "permission-gate",
@@ -103,7 +103,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "ultrathink",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "external-skills",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "learn",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 40
+      "installCount": 42
     },
     {
       "id": "context-autocompletion-words",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "lsp",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "plannotator",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "ui-placement-demo",
@@ -334,7 +334,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "providers-quota-extension",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "codegraph",
@@ -556,7 +556,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "my-minions",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 75
+      "installCount": 77
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 68
+      "installCount": 69
     }
   ]
 }
