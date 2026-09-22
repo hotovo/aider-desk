@@ -68,6 +68,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
   const [starting, setStarting] = useState(true);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [mountedTaskIds, setMountedTaskIds] = useState<string[]>([]);
+  const inProgressTaskIdsRef = useRef<Set<string>>(new Set());
   const [tasksLoading, setTasksLoading] = useState(true);
   const [isTaskBarCollapsed, setIsTaskBarCollapsed] = useLocalStorage(`task-sidebar-collapsed-${projectDir}`, false);
   const [taskSidebarWidth, setTaskSidebarWidth] = useLocalStorage(`task-sidebar-width-${projectDir}`, EXPANDED_WIDTH);
@@ -109,8 +110,12 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       hasActivatedTaskRef.current = true;
       setActiveTaskId(taskId);
       // Keep recently-active tasks mounted (LRU) so switching back is instant. The active task is
-      // always at the front and therefore never evicted.
-      setMountedTaskIds((current) => [taskId, ...current.filter((id) => id !== taskId)].slice(0, MAX_MOUNTED_TASKS));
+      // always at the front and therefore never evicted. In-progress tasks are never evicted
+      // either, so a running task stays mounted while other tasks are used.
+      setMountedTaskIds((current) => {
+        const next = [taskId, ...current.filter((id) => id !== taskId)];
+        return next.filter((id, index) => index < MAX_MOUNTED_TASKS || inProgressTaskIdsRef.current.has(id));
+      });
       setShouldFocusNewTask(shouldFocusNewTask);
       if (shouldFocusActiveTaskPrompt) {
         focusActiveTaskPrompt();
@@ -360,6 +365,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
     startupAppliedRef.current = true;
     void handleStartupMode(optimisticTasks);
   }, [isProjectActive, starting, tasksLoading, optimisticTasks, handleStartupMode]);
+
+  // Track in-progress task ids so the mount pool can protect them from eviction.
+  useEffect(() => {
+    inProgressTaskIdsRef.current = new Set(optimisticTasks.filter((task) => task.state === DefaultTaskState.InProgress).map((task) => task.id));
+  }, [optimisticTasks]);
 
   // Release backend/store state for tasks evicted from the mount pool (mirrors unmount cleanup).
   const prevMountedTaskIdsRef = useRef<string[]>([]);

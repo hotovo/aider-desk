@@ -4,6 +4,7 @@ import { TaskCreatedData, TaskData, TaskStateData } from '@common/types';
 
 import { ProjectView } from '../ProjectView';
 
+import { releaseTaskFiles } from '@/stores/taskFilesStore';
 import { useApi } from '@/contexts/ApiContext';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
@@ -297,6 +298,55 @@ describe('ProjectView', () => {
       expect(activeView).toHaveTextContent('Task 2');
     });
     expect(screen.getByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
+  });
+
+  it('never evicts in-progress tasks from the mount pool', async () => {
+    mockApi.getTasks.mockResolvedValue(
+      Array.from({ length: 7 }, (_, index) => ({
+        id: `task-${index + 1}`,
+        name: `Task ${index + 1}`,
+        baseDir: projectDir,
+        createdAt: `2023-01-0${index + 1}T00:00:00Z`,
+      })) as TaskData[],
+    );
+
+    let taskStartedHandler: (taskData: TaskData) => void = () => {};
+    mockApi.addTaskStartedListener.mockImplementation((_baseDir: string, handler: (taskData: TaskData) => void) => {
+      taskStartedHandler = handler;
+      return () => undefined;
+    });
+
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} initialTaskId="task-1" />);
+
+    await waitFor(() => expect(screen.getByTestId('task-view')).toHaveTextContent('Task 1'));
+
+    for (const taskId of ['task-2', 'task-3', 'task-4', 'task-5']) {
+      fireEvent.click(screen.getByTestId(`task-${taskId}`));
+    }
+
+    // Task 1 starts processing while it is the least recently used task in the pool.
+    act(() => {
+      taskStartedHandler({ id: 'task-1', name: 'Task 1', baseDir: projectDir, state: 'IN_PROGRESS' } as TaskData);
+    });
+
+    fireEvent.click(screen.getByTestId('task-task-6'));
+
+    await waitFor(() => {
+      const activeView = screen.getAllByTestId('task-view').find((el) => el.getAttribute('data-active') === 'true');
+      expect(activeView).toHaveTextContent('Task 6');
+    });
+    expect(screen.getAllByTestId('task-view')).toHaveLength(6);
+    expect(releaseTaskFiles).not.toHaveBeenCalledWith('task-1');
+
+    fireEvent.click(screen.getByTestId('task-task-7'));
+
+    await waitFor(() => expect(releaseTaskFiles).toHaveBeenCalledWith('task-2'));
+    const mountedViews = screen.getAllByTestId('task-view');
+    expect(mountedViews).toHaveLength(6);
+    expect(mountedViews.find((el) => el.textContent === 'Task 1')).toBeInTheDocument();
+    expect(mountedViews.find((el) => el.textContent === 'Task 2')).toBeUndefined();
+
+    mockApi.addTaskStartedListener.mockImplementation(() => () => undefined);
   });
 
   const setupSettings = (startupMode: string) => {
