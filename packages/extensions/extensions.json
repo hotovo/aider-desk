@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 63
+      "installCount": 65
     },
     {
       "id": "protected-paths",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 44
+      "installCount": 46
     },
     {
       "id": "learn",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "seek",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "bmad",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "doom",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 77
+      "installCount": 79
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 69
+      "installCount": 70
     }
   ]
 }
