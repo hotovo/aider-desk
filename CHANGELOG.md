@@ -2,18 +2,18 @@
 
 ## [UNRELEASED]
 
-- added file watcher manager that watches the task dir while a task is in progress and triggers updated files refresh, worktree integration status and autocompletion updates
-- added find in file support to the file editor with a themed search panel opened via Ctrl+F / Cmd+F
-- fixed duplicate keys in git branches popup rows causing React rendering issues
-- fixed crash with React error #185 (maximum update depth exceeded) during message streaming by ensuring message list item ids are always unique and updating @legendapp/list to 3.3.11
-- fixed committing deleted files failing to stage by retrying with `git add -A -f`
-- added passing images attached to the prompt to custom extension commands, allowing extensions to include the screenshot in the prompt they run
-- fixed in-progress tasks being evicted from the task mount pool when switching between tasks, keeping running tasks mounted
-- fixed find in file shortcut (Ctrl+F / Cmd+F) being swallowed by inactive task views of background projects, preventing the search panel from opening
+- added file watcher for refreshing task files, worktree status and autocompletion while a task runs
+- added find in file support to the file editor with Ctrl+F / Cmd+F
+- fixed duplicate keys in git branches popup rows
+- fixed crash during message streaming (React maximum update depth exceeded)
+- fixed committing deleted files with `git add -A -f` retry
+- added passing prompt-attached images to custom extension commands
+- fixed in-progress tasks being evicted from the task mount pool when switching tasks
+- fixed find in file shortcut being swallowed by inactive background project task views
 - updated default models for built-in providers to their latest versions
-- added built-in skill names to the `/` command autocompletion so they can be selected and filtered directly without typing the `/skill:` prefix
-- improved task sidebar spinner visibility by propagating in-progress subtask spinners to their closest visible ancestor when parents are collapsed
-- clarified worktree to local mode switch dialog when the worktree is shared: labels now indicate whether merge or remove affects only this task or all tasks sharing the worktree, with the remove option keeping the worktree for other tasks
+- added built-in skill names to the `/` command autocompletion
+- improved task sidebar spinner visibility for collapsed parent subtasks
+- clarified worktree to local mode switch dialog for shared worktrees
 
 ## [0.84.0]
 
