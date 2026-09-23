@@ -402,9 +402,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
             // Add custom and extension commands to the list
             const allCommands = [...customCommands, ...extensionCommands];
             const customCmds = allCommands.map((cmd) => `/${cmd.name}`);
+            const skillCmds = skills.map((skill) => `${SKILL_COMMAND_PREFIX}${skill.name}`);
             return {
               from: 0,
-              options: [...COMMANDS, SKILL_COMMAND_PREFIX, ...customCmds].map((cmd) => {
+              options: [...COMMANDS, SKILL_COMMAND_PREFIX, ...customCmds, ...skillCmds].map((cmd) => {
                 const option: Completion = { label: cmd, type: 'keyword' };
 
                 // Re-open the completion menu to show skill names right after accepting /skill:

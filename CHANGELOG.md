@@ -11,6 +11,7 @@
 - fixed in-progress tasks being evicted from the task mount pool when switching between tasks, keeping running tasks mounted
 - fixed find in file shortcut (Ctrl+F / Cmd+F) being swallowed by inactive task views of background projects, preventing the search panel from opening
 - updated default models for built-in providers to their latest versions
+- added built-in skill names to the `/` command autocompletion so they can be selected and filtered directly without typing the `/skill:` prefix
 
 ## [0.84.0]
 
