@@ -1,4 +1,4 @@
-import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CgSpinner } from 'react-icons/cg';
 import { FaChevronDown, FaChevronRight, FaFolder, FaFolderOpen, FaMagnifyingGlass } from 'react-icons/fa6';
@@ -114,18 +114,21 @@ export const GitBranchesPopup = ({
 
   const isFilterActive = filter.trim().length > 0;
 
-  const isFolderCollapsed = (fullPath: string) => {
-    const override = folderOverrides.get(fullPath);
-    if (override !== undefined) {
-      return override;
-    }
+  const isFolderCollapsed = useCallback(
+    (fullPath: string) => {
+      const override = folderOverrides.get(fullPath);
+      if (override !== undefined) {
+        return override;
+      }
 
-    // Collapsed by default; only folders on the current branch's path start expanded
-    const segments = currentBranch ? currentBranch.split('/') : [];
-    const expandedFolders = new Set(segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/')));
+      // Collapsed by default; only folders on the current branch's path start expanded
+      const segments = currentBranch ? currentBranch.split('/') : [];
+      const expandedFolders = new Set(segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/')));
 
-    return !expandedFolders.has(fullPath);
-  };
+      return !expandedFolders.has(fullPath);
+    },
+    [folderOverrides, currentBranch],
+  );
 
   const recentList = useMemo(() => {
     const recentNames = new Set(recentBranches);
@@ -173,18 +176,60 @@ export const GitBranchesPopup = ({
     }
 
     return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localTree, remoteTree, recentList, isFilterActive, currentBranch, folderOverrides]);
+  }, [localTree, remoteTree, recentList, isFilterActive, isFolderCollapsed, t]);
 
   const navigableIndices = useMemo(() => rows.map((row, index) => (row.type === 'section' ? -1 : index)).filter((index) => index >= 0), [rows]);
 
-  const getSubmenuItems = (branch: BranchInfo) => {
-    const isCurrent = !branch.isRemote && branch.name === currentBranch;
-    const canDelete = !branch.isRemote && !isCurrent && !branch.hasWorktree;
-    const canUpdate = !branch.isRemote && Boolean(branch.upstream) && Boolean(onUpdateBranch);
+  const getSubmenuItems = useCallback(
+    (branch: BranchInfo) => {
+      const isCurrent = !branch.isRemote && branch.name === currentBranch;
+      const canDelete = !branch.isRemote && !isCurrent && !branch.hasWorktree;
+      const canUpdate = !branch.isRemote && Boolean(branch.upstream) && Boolean(onUpdateBranch);
 
-    if (worktreeMode) {
+      if (worktreeMode) {
+        return [
+          ...(canUpdate
+            ? [
+                {
+                  key: 'update-from-remote',
+                  label: t('git.updateFromRemote', { upstream: branch.upstream }),
+                  disabled: false,
+                  action: () => onUpdateBranch?.(branch),
+                },
+              ]
+            : []),
+          {
+            key: 'rebase-worktree',
+            label: t('git.rebaseWorktreeOnto', { branch: branch.name }),
+            disabled: isCurrent,
+            action: () => onRebaseWorktreeOnto?.(branch),
+          },
+          ...(canDelete
+            ? [
+                {
+                  key: 'delete',
+                  label: t('git.deleteBranchName', { branch: branch.name }),
+                  disabled: false,
+                  action: () => onDelete(branch),
+                },
+              ]
+            : []),
+        ];
+      }
+
       return [
+        {
+          key: 'checkout',
+          label: t('git.checkoutBranch', { branch: branch.name }),
+          disabled: isCurrent,
+          action: () => onSelect(branch),
+        },
+        {
+          key: 'new-branch-from',
+          label: t('git.newBranchFrom', { branch: branch.name }),
+          disabled: false,
+          action: () => onNewBranchFrom(branch),
+        },
         ...(canUpdate
           ? [
               {
@@ -196,10 +241,16 @@ export const GitBranchesPopup = ({
             ]
           : []),
         {
-          key: 'rebase-worktree',
-          label: t('git.rebaseWorktreeOnto', { branch: branch.name }),
+          key: 'rebase',
+          label: t('git.rebaseOnto', { current: currentBranch, branch: branch.name }),
           disabled: isCurrent,
-          action: () => onRebaseWorktreeOnto?.(branch),
+          action: () => onRebaseOnto(branch),
+        },
+        {
+          key: 'merge',
+          label: t('git.mergeBranchInto', { branch: branch.name, current: currentBranch }),
+          disabled: isCurrent,
+          action: () => onMergeIntoCurrent(branch),
         },
         ...(canDelete
           ? [
@@ -212,61 +263,11 @@ export const GitBranchesPopup = ({
             ]
           : []),
       ];
-    }
-
-    return [
-      {
-        key: 'checkout',
-        label: t('git.checkoutBranch', { branch: branch.name }),
-        disabled: isCurrent,
-        action: () => onSelect(branch),
-      },
-      {
-        key: 'new-branch-from',
-        label: t('git.newBranchFrom', { branch: branch.name }),
-        disabled: false,
-        action: () => onNewBranchFrom(branch),
-      },
-      ...(canUpdate
-        ? [
-            {
-              key: 'update-from-remote',
-              label: t('git.updateFromRemote', { upstream: branch.upstream }),
-              disabled: false,
-              action: () => onUpdateBranch?.(branch),
-            },
-          ]
-        : []),
-      {
-        key: 'rebase',
-        label: t('git.rebaseOnto', { current: currentBranch, branch: branch.name }),
-        disabled: isCurrent,
-        action: () => onRebaseOnto(branch),
-      },
-      {
-        key: 'merge',
-        label: t('git.mergeBranchInto', { branch: branch.name, current: currentBranch }),
-        disabled: isCurrent,
-        action: () => onMergeIntoCurrent(branch),
-      },
-      ...(canDelete
-        ? [
-            {
-              key: 'delete',
-              label: t('git.deleteBranchName', { branch: branch.name }),
-              disabled: false,
-              action: () => onDelete(branch),
-            },
-          ]
-        : []),
-    ];
-  };
-
-  const submenuItems = useMemo(
-    () => (openSubmenu ? getSubmenuItems(openSubmenu.branch) : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [openSubmenu, currentBranch, worktreeMode, onUpdateBranch],
+    },
+    [t, currentBranch, worktreeMode, onSelect, onNewBranchFrom, onUpdateBranch, onRebaseOnto, onMergeIntoCurrent, onRebaseWorktreeOnto, onDelete],
   );
+
+  const submenuItems = useMemo(() => (openSubmenu ? getSubmenuItems(openSubmenu.branch) : []), [openSubmenu, getSubmenuItems]);
 
   const handleFilterChange = (value: string) => {
     setFilter(value);
@@ -277,20 +278,23 @@ export const GitBranchesPopup = ({
     setFolderOverrides((prev) => new Map(prev).set(fullPath, !currentlyCollapsed));
   };
 
-  const openSubmenuFor = (branch: BranchInfo, e?: MouseEvent<HTMLElement>) => {
-    const row = e?.currentTarget.closest('[class*="group/row"]') as HTMLElement | null;
-    const rect = (row ?? rowRefs.current.get(branch.name))?.getBoundingClientRect();
-    if (!rect) {
-      return;
-    }
-    const menuWidth = 240;
-    const left = rect.right + menuWidth > window.innerWidth ? rect.left - menuWidth - 6 : rect.right + 2;
-    const top = Math.max(8, Math.min(rect.top - 3, window.innerHeight - 120));
-    const items = getSubmenuItems(branch);
-    const firstEnabled = items.findIndex((item) => !item.disabled);
-    setSubmenuHighlight(firstEnabled);
-    setOpenSubmenu({ branch, top, left });
-  };
+  const openSubmenuFor = useCallback(
+    (branch: BranchInfo, e?: MouseEvent<HTMLElement>) => {
+      const row = e?.currentTarget.closest('[class*="group/row"]') as HTMLElement | null;
+      const rect = (row ?? rowRefs.current.get(branch.name))?.getBoundingClientRect();
+      if (!rect) {
+        return;
+      }
+      const menuWidth = 240;
+      const left = rect.right + menuWidth > window.innerWidth ? rect.left - menuWidth - 6 : rect.right + 2;
+      const top = Math.max(8, Math.min(rect.top - 3, window.innerHeight - 120));
+      const items = getSubmenuItems(branch);
+      const firstEnabled = items.findIndex((item) => !item.disabled);
+      setSubmenuHighlight(firstEnabled);
+      setOpenSubmenu({ branch, top, left });
+    },
+    [getSubmenuItems],
+  );
 
   const renderBranchRow = (branch: BranchInfo, depth: number, highlighted: boolean, label?: string) => {
     const isCurrent = !branch.isRemote && branch.name === currentBranch;
@@ -434,7 +438,7 @@ export const GitBranchesPopup = ({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [openSubmenu, submenuItems, submenuHighlight, rows, highlightedIndex, navigableIndices, onRequestClose]);
+  }, [openSubmenu, submenuItems, submenuHighlight, rows, highlightedIndex, navigableIndices, openSubmenuFor, onRequestClose]);
 
   useEffect(() => {
     const row = rows[highlightedIndex];
