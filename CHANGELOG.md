@@ -15,6 +15,7 @@
 - improved task sidebar spinner visibility for collapsed parent subtasks
 - clarified worktree to local mode switch dialog for shared worktrees
 - added command palette actions to show or hide archived tasks
+- added context menu action to open project folder from project tabs
 
 ## [0.84.0]
 

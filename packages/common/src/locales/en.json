@@ -1893,6 +1893,7 @@
     "close": "Close",
     "closeOtherTabs": "Close other tabs",
     "closeAllTabs": "Close all tabs",
+    "openProjectFolder": "Open project folder",
     "openInNewWindow": "Open in new window",
     "copyLink": "Copy Link"
   },

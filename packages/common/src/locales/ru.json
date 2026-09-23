@@ -1889,6 +1889,7 @@
     "close": "Закрыть",
     "closeOtherTabs": "Закрыть остальные вкладки",
     "closeAllTabs": "Закрыть все вкладки",
+    "openProjectFolder": "Открыть папку проекта",
     "openInNewWindow": "Открыть в новом окне",
     "copyLink": "Копировать ссылку"
   },

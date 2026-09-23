@@ -1889,6 +1889,7 @@
     "close": "닫기",
     "closeOtherTabs": "다른 탭 닫기",
     "closeAllTabs": "모든 탭 닫기",
+    "openProjectFolder": "프로젝트 폴더 열기",
     "openInNewWindow": "새 창에서 열기",
     "copyLink": "링크 복사"
   },

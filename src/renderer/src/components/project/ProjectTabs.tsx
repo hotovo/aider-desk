@@ -275,6 +275,12 @@ const SortableTabItem = ({ project, isActive, onCloseProject, onCloseOtherProjec
 
     const options: MenuOption[] = [
       {
+        label: t('contextMenu.openProjectFolder'),
+        action: () => {
+          void api.openPath(project.baseDir);
+        },
+      },
+      {
         label: t('contextMenu.openInNewWindow'),
         action: () => {
           void api.openProjectInNewWindow(project.baseDir);
