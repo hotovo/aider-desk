@@ -635,7 +635,6 @@ export class Project {
     });
 
     void this.customCommandManager.settingsChanged(oldSettings, newSettings);
-    void this.fileWatcherManager.settingsChanged(oldSettings, newSettings);
   }
 
   public getFileWatcherManager(): FileWatcherManager {

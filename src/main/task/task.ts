@@ -186,6 +186,7 @@ export class Task {
   private queuedPrompts: QueuedPromptData[] = [];
   private pendingCommandImages?: string[];
   private fileWatchHandle: WatchHandle | null = null;
+  private fileWatchGeneration = 0;
   private isCompacting = false;
   private lastSmartCompactionMessageCount = 0;
   private smartCompactionLevel = CompactionLevel.One;
@@ -522,17 +523,36 @@ export class Task {
       return;
     }
 
+    this.stopFileWatching();
+    const generation = this.fileWatchGeneration;
     if (shouldBeWatching) {
       logger.debug('Starting file watching', { baseDir: this.project.baseDir, taskId: this.taskId });
-      this.fileWatchHandle?.unwatch();
-      this.fileWatchHandle = this.project.getFileWatcherManager().watch(this.getTaskDir(), () => this.onWatchedFilesChanged(), {
-        ignored: ['.git', 'node_modules'],
-      });
+      void this.project
+        .getFileWatcherManager()
+        .watch(this.getTaskDir(), () => this.onWatchedFilesChanged())
+        .then((handle) => {
+          if (generation === this.fileWatchGeneration && this.task.state === DefaultTaskState.InProgress) {
+            this.fileWatchHandle = handle;
+          } else {
+            handle.unwatch();
+          }
+        })
+        .catch((error) =>
+          logger.error('Failed to start file watching', {
+            baseDir: this.project.baseDir,
+            taskId: this.taskId,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
     } else {
       logger.debug('Stopping file watching', { baseDir: this.project.baseDir, taskId: this.taskId });
-      this.fileWatchHandle?.unwatch();
-      this.fileWatchHandle = null;
     }
+  }
+
+  private stopFileWatching() {
+    this.fileWatchGeneration++;
+    this.fileWatchHandle?.unwatch();
+    this.fileWatchHandle = null;
   }
 
   public async onWatchedFilesChanged() {
@@ -819,6 +839,7 @@ export class Task {
   }
 
   public async close(clearContext = false, cleanupEmptyTask = true) {
+    this.stopFileWatching();
     if (!this.initialized) {
       return;
     }
@@ -835,8 +856,7 @@ export class Task {
     this.resolveAgentRunPromises();
     this.cleanupChunkBuffers();
 
-    this.fileWatchHandle?.unwatch();
-    this.fileWatchHandle = null;
+    this.stopFileWatching();
     await this.aiderManager.kill();
     if (cleanupEmptyTask) {
       await this.cleanUpEmptyTask();
