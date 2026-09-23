@@ -13,6 +13,7 @@
 - updated default models for built-in providers to their latest versions
 - added built-in skill names to the `/` command autocompletion so they can be selected and filtered directly without typing the `/skill:` prefix
 - improved task sidebar spinner visibility by propagating in-progress subtask spinners to their closest visible ancestor when parents are collapsed
+- clarified worktree to local mode switch dialog when the worktree is shared: labels now indicate whether merge or remove affects only this task or all tasks sharing the worktree, with the remove option keeping the worktree for other tasks
 
 ## [0.84.0]
 

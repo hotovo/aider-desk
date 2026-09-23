@@ -156,7 +156,7 @@ export const TaskGitControls = ({
         const hasUnmerged = worktreeStatus.aheadCommits.count > 0;
 
         if (hasUncommitted || hasUnmerged) {
-          setLocalOption(LocalSwitchOption.Merge);
+          setLocalOption(isWorktreeShared ? LocalSwitchOption.MergeAll : LocalSwitchOption.Merge);
           setShowConfirmLocal(true);
           return;
         }
@@ -179,7 +179,7 @@ export const TaskGitControls = ({
 
       await performSwitch(mode);
     },
-    [task.workingMode, task.baseDir, task.id, worktreeStatus, api, performSwitch],
+    [task.workingMode, task.baseDir, task.id, worktreeStatus, api, performSwitch, isWorktreeShared],
   );
 
   const performMergeAndSwitch = async () => {
@@ -383,19 +383,6 @@ export const TaskGitControls = ({
           <div className="space-y-4">
             <div className="whitespace-pre-wrap text-xs">{t('workingMode.confirmLocalMessage', { warnings: getWarningMessage() })}</div>
             <div className="space-y-3">
-              <RadioButton
-                id="local-merge"
-                name="local-switch-option"
-                value="merge"
-                checked={localOption === LocalSwitchOption.Merge}
-                onChange={() => setLocalOption(LocalSwitchOption.Merge)}
-                label={
-                  <div>
-                    <div className="font-medium">{t('workingMode.localOptionMergeLabel')}</div>
-                    <div className="text-text-muted text-2xs mt-0.5">{t('workingMode.localOptionMergeDescription')}</div>
-                  </div>
-                }
-              />
               {isWorktreeShared && (
                 <RadioButton
                   id="local-merge-all"
@@ -412,6 +399,19 @@ export const TaskGitControls = ({
                 />
               )}
               <RadioButton
+                id="local-merge"
+                name="local-switch-option"
+                value="merge"
+                checked={localOption === LocalSwitchOption.Merge}
+                onChange={() => setLocalOption(LocalSwitchOption.Merge)}
+                label={
+                  <div>
+                    <div className="font-medium">{isWorktreeShared ? t('workingMode.localOptionMergeOnlyLabel') : t('workingMode.localOptionMergeLabel')}</div>
+                    <div className="text-text-muted text-2xs mt-0.5">{t('workingMode.localOptionMergeDescription')}</div>
+                  </div>
+                }
+              />
+              <RadioButton
                 id="local-remove"
                 name="local-switch-option"
                 value="remove"
@@ -420,7 +420,9 @@ export const TaskGitControls = ({
                 label={
                   <div>
                     <div className="font-medium">{t('workingMode.localOptionRemoveLabel')}</div>
-                    <div className="text-text-muted text-2xs mt-0.5">{t('workingMode.localOptionRemoveDescription')}</div>
+                    <div className="text-text-muted text-2xs mt-0.5">
+                      {isWorktreeShared ? t('workingMode.localOptionRemoveSharedDescription') : t('workingMode.localOptionRemoveDescription')}
+                    </div>
                   </div>
                 }
               />
