@@ -12,6 +12,7 @@
 - fixed find in file shortcut (Ctrl+F / Cmd+F) being swallowed by inactive task views of background projects, preventing the search panel from opening
 - updated default models for built-in providers to their latest versions
 - added built-in skill names to the `/` command autocompletion so they can be selected and filtered directly without typing the `/skill:` prefix
+- improved task sidebar spinner visibility by propagating in-progress subtask spinners to their closest visible ancestor when parents are collapsed
 
 ## [0.84.0]
 

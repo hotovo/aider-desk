@@ -51,6 +51,7 @@ type Props = {
   isExpanded: boolean;
   onToggleExpand: (taskId: string) => void;
   hasChildren: boolean;
+  showSpinner: boolean;
   draggedTaskIds: Set<string>;
   dragOverTaskId: string | null;
   onDragStart: (taskId: string) => void;
@@ -89,7 +90,8 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.isMultiselectMode !== nextProps.isMultiselectMode ||
     prevProps.activeTaskId !== nextProps.activeTaskId ||
     prevProps.isExpanded !== nextProps.isExpanded ||
-    prevProps.hasChildren !== nextProps.hasChildren
+    prevProps.hasChildren !== nextProps.hasChildren ||
+    prevProps.showSpinner !== nextProps.showSpinner
   ) {
     return false;
   }
@@ -180,6 +182,7 @@ export const TaskItem = memo(
     isExpanded,
     onToggleExpand,
     hasChildren,
+    showSpinner,
     draggedTaskIds,
     dragOverTaskId,
     onDragStart,
@@ -371,7 +374,7 @@ export const TaskItem = memo(
           </div>
 
           <div className="flex items-center pl-2">
-            <TaskStatusIcon taskId={task.id} state={task.state} isCollapsed={false} />
+            <TaskStatusIcon taskId={task.id} state={task.state} isCollapsed={false} showSpinner={showSpinner} />
           </div>
 
           {!isMultiselectMode && (

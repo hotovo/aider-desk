@@ -238,6 +238,46 @@ const TaskSidebarComponent = (
 
   const expandedIdsSet = useMemo(() => new Set(expandedIds ?? []), [expandedIds]);
 
+  const spinnerTaskIds = useMemo(() => {
+    const ids = new Set<string>();
+    const tasksById = new Map(tasks.map((task) => [task.id, task]));
+    tasks.forEach((task) => {
+      if (task.state !== DefaultTaskState.InProgress) {
+        return;
+      }
+      const visited = new Set<string>();
+      let current = task;
+      while (current.parentId && !visited.has(current.parentId)) {
+        visited.add(current.parentId);
+        const parent = tasksById.get(current.parentId);
+        if (!parent) {
+          break;
+        }
+        if (expandedIdsSet.has(parent.id)) {
+          current = parent;
+          continue;
+        }
+        // propagate through the whole chain of collapsed ancestors so that
+        // the closest visible ancestor of the in-progress subtask shows the spinner
+        ids.add(parent.id);
+        let hiddenAncestor = parent;
+        while (hiddenAncestor.parentId) {
+          const next = tasksById.get(hiddenAncestor.parentId);
+          if (!next) {
+            break;
+          }
+          if (expandedIdsSet.has(next.id)) {
+            break;
+          }
+          ids.add(next.id);
+          hiddenAncestor = next;
+        }
+        break;
+      }
+    });
+    return ids;
+  }, [tasks, expandedIdsSet]);
+
   const virtualItems = useMemo(
     () => flattenTasksForVirtualization(tasks, expandedIdsSet, selectedStates, showArchived, debouncedSearchQuery),
     [tasks, expandedIdsSet, selectedStates, showArchived, debouncedSearchQuery],
@@ -974,6 +1014,7 @@ const TaskSidebarComponent = (
                           isExpanded={isExpanded}
                           onToggleExpand={handleToggleExpand}
                           hasChildren={subtasks.length > 0}
+                          showSpinner={spinnerTaskIds.has(task.id)}
                           draggedTaskIds={effectiveDraggedIds}
                           dragOverTaskId={dragOverTaskId}
                           onDragStart={handleDragStart}
