@@ -113,6 +113,9 @@ export const highlightWithLowlight = (code: string, language?: string): ReactNod
     }
     // Fallback to auto-detection
     const result = lowlight.highlightAuto(code);
+    if (!result.children?.length) {
+      return code;
+    }
     return renderHast(result, true);
   } catch (error) {
     // eslint-disable-next-line no-console
