@@ -20,6 +20,7 @@ export const ZaiPlanThinkingSetting = ({ provider, onChange }: Props) => {
   };
 
   const reasoningEffortOptions: Option[] = [
+    { value: 'low', label: t('reasoningEffort.low') },
     { value: 'high', label: t('reasoningEffort.high') },
     { value: 'max', label: t('reasoningEffort.max') },
   ];

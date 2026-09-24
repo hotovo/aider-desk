@@ -156,7 +156,7 @@ const getZaiPlanProviderOptions = (llmProvider: LlmProvider, model: Model, reaso
       } as SharedV4ProviderOptions;
     }
 
-    const mappedReasoningEffort = reasoningEffort === ReasoningEffort.None ? undefined : (reasoningEffort.toLowerCase() as 'max' | 'high');
+    const mappedReasoningEffort = reasoningEffort === ReasoningEffort.None ? undefined : (reasoningEffort.toLowerCase() as 'low' | 'max' | 'high');
 
     if (mappedReasoningEffort) {
       return {
