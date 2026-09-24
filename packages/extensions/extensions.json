@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "wakatime",
@@ -45,7 +45,7 @@
         "commands",
         "example"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "questions",
@@ -126,7 +126,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "external-skills",
