@@ -121,7 +121,7 @@ export const PierreDiffViewer = ({
         overflow: 'wrap',
         ...(expandContext ? { expansionLineCount: 30 } : {}),
         ...(onLineClick ? { onLineClick: handleLineClick } : {}),
-      }) as MultiFileDiffProps<unknown>['options'],
+      }) as MultiFileDiffProps<unknown, undefined>['options'],
     [showFilename, udiff, viewMode, onLineClick, handleLineClick, expandContext],
   );
 
