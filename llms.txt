@@ -261,6 +261,7 @@ src/
     app.ts
     constants.ts
     events-handler.ts
+    file-watcher-manager.ts
     index.ts
     ipc-handlers.ts
     logger.ts
@@ -762,6 +763,7 @@ src/
         settingsNavigationStore.ts
         settingsStore.ts
         taskFilesStore.ts
+        taskSidebarStore.ts
         taskStore.ts
         terminalStore.ts
       themes/
@@ -8573,6 +8575,7 @@ import { ExtensionManager } from '@/extensions/extension-manager';
 import { AIDER_DESK_TASKS_DIR, AIDER_DESK_WATCH_FILES_LOCK } from '@/constants';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { determineMainModel, determineWeakModel } from '@/utils';
+import { FileWatcherManager } from '@/file-watcher-manager';
 ⋮----
 export class Project
 ⋮----
@@ -8694,6 +8697,8 @@ private async reloadTasksInternal(): Promise<TaskData[]>
 forEachTask(callback: (task: Task) => void, initializedOnly = true)
 ⋮----
 async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
+⋮----
+public getFileWatcherManager(): FileWatcherManager
 ⋮----
 async projectSettingsChanged(oldSettings: ProjectSettings, newSettings: ProjectSettings)
 ⋮----
@@ -10823,6 +10828,7 @@ import { isEqual } from 'lodash';
 import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
+import type { WatchHandle } from '@/file-watcher-manager';
 ⋮----
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
@@ -10945,6 +10951,15 @@ public async saveTask(updates?: Partial<TaskData>, updateTimestamps = true): Pro
 // Allow extensions to modify task data before saving
 ⋮----
 // only save if task is not new
+⋮----
+/**
+   * Starts/stops watching the task dir for file changes while the task is in progress.
+   */
+private syncFileWatching(previousTaskState: TaskData['state'] | undefined)
+⋮----
+private stopFileWatching()
+⋮----
+public async onWatchedFilesChanged()
 ⋮----
 public async init(readonly = false)
 ⋮----
@@ -11733,6 +11748,9 @@ public async resolveGitErrorWithAgent(): Promise<void>
 public async continueWorktreeRebase(): Promise<void>
 ⋮----
 // Clear any remaining merge state after successful rebase continuation
+⋮----
+// The 'Continuing rebase...' loading message must be closed explicitly,
+// otherwise it stays visible forever when the rebase pauses on conflicts
 ⋮----
 public async duplicateFrom(sourceTask: Task): Promise<void>
 ⋮----
@@ -13323,6 +13341,95 @@ getExtensionConfigComponent(extensionId: string, projectDir?: string): Extension
 async getExtensionConfig(extensionId: string, projectDir?: string): Promise<unknown>
 ⋮----
 async saveExtensionConfig(extensionId: string, configData: unknown, projectDir?: string): Promise<unknown>
+
+================
+File: src/main/file-watcher-manager.ts
+================
+import fs from 'fs/promises';
+import path from 'path';
+⋮----
+import { FSWatcher, watch } from 'chokidar';
+import debounce from 'lodash/debounce';
+import { simpleGit } from 'simple-git';
+⋮----
+import type { Store } from '@/store';
+⋮----
+import { shouldUsePolling } from '@/utils/file-watch';
+import logger from '@/logger';
+⋮----
+export type FileWatchOptions = {
+  ignored?: (string | RegExp)[] | ((matchingPath: string) => boolean);
+  debounceMs?: number;
+};
+⋮----
+export interface WatchHandle {
+  unwatch: () => void;
+}
+⋮----
+type WatcherEntry = {
+  dir: string;
+  watcher: FSWatcher | null;
+  handles: Set<() => Promise<void>>;
+  notify: (() => void) & { cancel: () => void };
+  loggedEnospc?: boolean;
+};
+⋮----
+// Heavy directories excluded from watching by default
+⋮----
+const getErrorMessage = (error: unknown): string
+⋮----
+const tryCatchAsync = async (fn: () => void | Promise<void>, context: string) =>
+⋮----
+/**
+ * Lists paths ignored by git rules (collapsed to top-level entries), e.g. `out/`, `.aider-desk/tmp/`.
+ * Returns paths relative to `dir` (dirs end with `/`), or an empty list for non-git dirs / failures.
+ */
+const getGitIgnoredEntries = async (dir: string): Promise<string[]> =>
+⋮----
+const countWatchedEntries = async (dir: string, isIgnored: (watcherPath: string) => boolean, isCancelled: () => boolean): Promise<number> =>
+⋮----
+export class FileWatcherManager
+⋮----
+constructor(private readonly store: Store)
+⋮----
+/**
+   * Starts watching `dir` (one shared chokidar watcher per dir + options combination,
+   * handles are ref-counted) and returns a handle that must be released with `unwatch()`.
+   * The debounced `onChange` is invoked for file changes (add/change/unlink).
+   *
+   * Watching is skipped (no-op handle) when the directory tree is too large to watch safely.
+   */
+async watch(dir: string, onChange: () => void | Promise<void>, options: FileWatchOptions =
+⋮----
+const handler = () => tryCatchAsync(onChange, `watch '$
+⋮----
+const isCancelled = ()
+⋮----
+async dispose(): Promise<void>
+⋮----
+private createIgnoredList(dir: string, gitIgnoredEntries: string[], userIgnored?: FileWatchOptions['ignored']): ((watcherPath: string) => boolean)[]
+⋮----
+const matcher = (relativePath: string): boolean =>
+⋮----
+// path itself or one of its ancestors matches a gitignored entry
+⋮----
+const matchFn = (watcherPath: string): boolean =>
+⋮----
+private getWatchKey(dir: string, options: FileWatchOptions): string
+⋮----
+private createEntry(dir: string, options: FileWatchOptions, ignoredForWatcher: ((watcherPath: string) => boolean)[]): WatcherEntry
+⋮----
+private bindWatcherEvents(entry: WatcherEntry)
+⋮----
+private handleWatcherError(entry: WatcherEntry, error: unknown): void
+⋮----
+// Log once per watcher instead of spamming an error for every unwatchable path
+⋮----
+private async closeEntry(entry: WatcherEntry): Promise<void>
+⋮----
+private deleteEntry(entry: WatcherEntry): void
+⋮----
+private async closeWatcher(entry: WatcherEntry): Promise<void>
 
 ================
 File: src/main/index.ts
@@ -20975,6 +21082,7 @@ type Props = {
   isExpanded: boolean;
   onToggleExpand: (taskId: string) => void;
   hasChildren: boolean;
+  showSpinner: boolean;
   draggedTaskIds: Set<string>;
   dragOverTaskId: string | null;
   onDragStart: (taskId: string) => void;
@@ -21151,6 +21259,7 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { Checkbox } from '@/components/common/Checkbox';
 import { Toggle } from '@/components/common/Toggle';
 import { getTaskStateLabel, getStateTextClass } from '@/components/common/TaskStateChip';
+import { useTaskSidebarStore } from '@/stores/taskSidebarStore';
 ⋮----
 type Props = {
   loading: boolean;
@@ -21194,6 +21303,9 @@ const handleMultiselectClose = () =>
 const handleKeyDown = (e: globalThis.KeyboardEvent) =>
 ⋮----
 // Handle click outside for multiselect menu
+⋮----
+// propagate through the whole chain of collapsed ancestors so that
+// the closest visible ancestor of the in-progress subtask shows the spinner
 ⋮----
 // eslint-disable-next-line react-hooks/incompatible-library
 ⋮----
@@ -21303,6 +21415,7 @@ type Props = {
   taskId: string;
   state?: string;
   isCollapsed?: boolean;
+  showSpinner?: boolean;
 };
 ⋮----
 export const TaskStatusIcon = (
@@ -21601,7 +21714,7 @@ label=
 ================
 File: src/renderer/src/components/project/GitBranchesPopup.tsx
 ================
-import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CgSpinner } from 'react-icons/cg';
 import { FaChevronDown, FaChevronRight, FaFolder, FaFolderOpen, FaMagnifyingGlass } from 'react-icons/fa6';
@@ -21641,23 +21754,13 @@ const buildBranchTree = (branches: BranchInfo[]): BranchTreeNode[] =>
 ⋮----
 const rowKey = (row?: RowItem) =>
 ⋮----
-const isFolderCollapsed = (fullPath: string) =>
-⋮----
 // Collapsed by default; only folders on the current branch's path start expanded
 ⋮----
 const walk = (nodes: BranchTreeNode[], depth: number) =>
 ⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
-const getSubmenuItems = (branch: BranchInfo) =>
-⋮----
-// eslint-disable-next-line react-hooks/exhaustive-deps
-⋮----
 const handleFilterChange = (value: string) =>
 ⋮----
 const toggleFolder = (fullPath: string, currentlyCollapsed: boolean) =>
-⋮----
-const openSubmenuFor = (branch: BranchInfo, e?: MouseEvent<HTMLElement>) =>
 ⋮----
 className=
 ⋮----
@@ -21802,6 +21905,7 @@ type Props = {
   projectDir: string;
   task: TaskData;
   isActive: boolean;
+  isProjectActive: boolean;
   inputHistory: string[];
   shouldFocusPrompt: boolean;
   updateTask: (taskId: string, updates: Partial<TaskData>, useOptimistic?: boolean) => void;
@@ -22031,7 +22135,8 @@ type Props = {
 };
 ⋮----
 // Keep recently-active tasks mounted (LRU) so switching back is instant. The active task is
-// always at the front and therefore never evicted.
+// always at the front and therefore never evicted. In-progress tasks are never evicted
+// either, so a running task stays mounted while other tasks are used.
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -22076,6 +22181,8 @@ const initProject = async () =>
 // Startup-on-first-activation: background projects do not load any task until they are first
 // activated, then the configured startup mode is applied once (also serving as a self-healing
 // fallback if the startup race was lost or task creation failed).
+⋮----
+// Track in-progress task ids so the mount pool can protect them from eviction.
 ⋮----
 // Release backend/store state for tasks evicted from the mount pool (mirrors unmount cleanup).
 ⋮----
@@ -22415,6 +22522,7 @@ type Props = {
   updateOptimisticTaskState: (taskId: string, taskState: string) => void;
   inputHistory: string[];
   isActive?: boolean;
+  isProjectActive?: boolean;
   shouldFocusPrompt?: boolean;
   onArchiveTask?: () => void;
   onUnarchiveTask?: () => void;
@@ -27381,6 +27489,7 @@ import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { invokeAction, registerAction, unregisterAction } from '@/stores/actionsStore';
 import { openSettingsPage } from '@/stores/settingsNavigationStore';
 import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { useTaskSidebarStore } from '@/stores/taskSidebarStore';
 ⋮----
 const buildShortcuts = (hotkeys: ReturnType<typeof useConfiguredHotkeys>): Record<string, string> => (
 ⋮----
@@ -27503,6 +27612,9 @@ import { IconButton } from '@/components/common/IconButton';
 // Remove highlight from previous element
 ⋮----
 const handleKeyDown = (event: KeyboardEvent) =>
+⋮----
+// Ignore the event when disabled without preventing default, so the
+// enabled (visible) instance can still handle it.
 ⋮----
 // Clear previous search when opening
 ⋮----
@@ -29323,6 +29435,17 @@ export const releaseTaskFiles = (taskId: string)
 export const useTaskAllFiles = (taskDir: string | undefined)
 ⋮----
 export const useTaskAutocompletionWords = (taskDir: string | undefined)
+
+================
+File: src/renderer/src/stores/taskSidebarStore.ts
+================
+import { devtools } from 'zustand/middleware';
+import { createWithEqualityFn } from 'zustand/traditional';
+⋮----
+type TaskSidebarStore = {
+  showArchived: boolean;
+  setShowArchived: (show: boolean) => void;
+};
 
 ================
 File: src/renderer/src/stores/taskStore.ts
