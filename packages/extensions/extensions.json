@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 67
+      "installCount": 70
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "permission-gate",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 33
+      "installCount": 35
     },
     {
       "id": "external-rules",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 49
+      "installCount": 51
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 54
+      "installCount": 58
     },
     {
       "id": "legacy-system-prompt",
@@ -208,7 +208,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 17
+      "installCount": 20
     },
     {
       "id": "redact-secrets",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 52
+      "installCount": 56
     },
     {
       "id": "plannotator",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 19
+      "installCount": 21
     },
     {
       "id": "ui-placement-demo",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "seek",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "bmad",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 25
+      "installCount": 27
     },
     {
       "id": "codegraph",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 47
+      "installCount": 49
     },
     {
       "id": "kanban",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 33
+      "installCount": 35
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 86
+      "installCount": 89
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 78
+      "installCount": 82
     }
   ]
 }
