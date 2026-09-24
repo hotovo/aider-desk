@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "protected-paths",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "context-autocompletion-words",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "bmad",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 89
+      "installCount": 90
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 82
+      "installCount": 83
     }
   ]
 }
