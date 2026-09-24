@@ -1260,6 +1260,8 @@
     "projectSkill": "Project skill",
     "builtinSkill": "Built-in skill",
     "extensionSkill": "Extension skill",
+    "manualSkillOnly": "Manual invocation only (disable-model-invocation)",
+    "agentSkillOnly": "Agent-only skill (user-invocable: false)",
     "disableRuleFile": "Disable rule file",
     "enableRuleFile": "Enable rule file",
     "disableAllRuleFiles": "Disable all rule files in folder",

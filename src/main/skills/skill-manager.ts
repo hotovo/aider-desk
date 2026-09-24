@@ -17,7 +17,35 @@ const SKILL_MARKDOWN_FILE = 'SKILL.md';
 
 const TOOL_NAME = `${SKILLS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SKILLS_TOOL_ACTIVATE_SKILL}`;
 
-const parseSkillFrontMatter = (markdown: string): { name: string; description: string } | null => {
+const TRUTHY_BOOLEAN_VALUES = new Set(['true', 'yes', 'on', '1']);
+const FALSY_BOOLEAN_VALUES = new Set(['false', 'no', 'off', '0']);
+
+const parseBooleanFrontMatterField = (value: unknown, defaultValue: boolean): boolean => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'number') {
+    const normalized = value.toString();
+    if (TRUTHY_BOOLEAN_VALUES.has(normalized)) {
+      return true;
+    }
+    if (FALSY_BOOLEAN_VALUES.has(normalized)) {
+      return false;
+    }
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (TRUTHY_BOOLEAN_VALUES.has(normalized)) {
+      return true;
+    }
+    if (FALSY_BOOLEAN_VALUES.has(normalized)) {
+      return false;
+    }
+  }
+  return defaultValue;
+};
+
+const parseSkillFrontMatter = (markdown: string): { name: string; description: string; disableModelInvocation: boolean; userInvocable: boolean } | null => {
   const parsed = loadFront(markdown);
   const name = typeof parsed.name === 'string' ? parsed.name : undefined;
   const description = typeof parsed.description === 'string' ? parsed.description : undefined;
@@ -26,7 +54,12 @@ const parseSkillFrontMatter = (markdown: string): { name: string; description: s
     return null;
   }
 
-  return { name, description };
+  return {
+    name,
+    description,
+    disableModelInvocation: parseBooleanFrontMatterField(parsed['disable-model-invocation'], false),
+    userInvocable: parseBooleanFrontMatterField(parsed['user-invocable'], true),
+  };
 };
 
 const safeReadDir = async (dirPath: string): Promise<string[]> => {
@@ -79,6 +112,8 @@ const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation)
       description: parsed.description,
       location,
       dirPath,
+      disableModelInvocation: parsed.disableModelInvocation,
+      userInvocable: parsed.userInvocable,
     });
   }
 

@@ -2770,6 +2770,12 @@ export class Task {
   }
 
   public async activateSkill(skillName: string): Promise<[ContextAssistantMessage, ContextToolMessage] | null> {
+    const skills = await this.getSkills();
+    const skill = skills.find((s) => s.name === skillName);
+    if (!skill || skill.userInvocable === false) {
+      throw new Error(`Skill '${skillName}' cannot be invoked manually (user-invocable: false)`);
+    }
+
     const messages = await this.createSkillMessages(skillName);
     if (!messages) {
       return null;

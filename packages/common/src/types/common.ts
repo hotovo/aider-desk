@@ -1366,6 +1366,8 @@ export interface SkillDefinition {
   dirPath?: string;
   content?: string;
   activated?: boolean;
+  disableModelInvocation?: boolean;
+  userInvocable?: boolean;
 }
 
 export interface SkillsUpdatedData {

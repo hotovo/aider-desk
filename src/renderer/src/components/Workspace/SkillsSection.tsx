@@ -2,7 +2,7 @@ import { SkillDefinition } from '@common/types';
 import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiX } from 'react-icons/hi';
-import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
+import { MdOutlinePublic, MdOutlineRefresh, MdOutlineSmartToy, MdOutlineTouchApp } from 'react-icons/md';
 import { RiPlayCircleLine, RiRocketLine, RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { motion } from 'framer-motion';
@@ -41,6 +41,24 @@ const getSkillLocationIcon = (location: string, t: (key: string) => string) => {
     return (
       <Tooltip content={t('contextFiles.extensionSkill')}>
         <RiRocketLine className="w-3.5 h-3.5 text-text-muted-light flex-shrink-0" />
+      </Tooltip>
+    );
+  }
+  return null;
+};
+
+const getSkillInvocationIcon = (skill: SkillDefinition, t: (key: string) => string) => {
+  if (skill.disableModelInvocation) {
+    return (
+      <Tooltip content={t('contextFiles.manualSkillOnly')}>
+        <MdOutlineTouchApp className="w-3.5 h-3.5 text-text-muted-light flex-shrink-0" />
+      </Tooltip>
+    );
+  }
+  if (skill.userInvocable === false) {
+    return (
+      <Tooltip content={t('contextFiles.agentSkillOnly')}>
+        <MdOutlineSmartToy className="w-3.5 h-3.5 text-text-muted-light flex-shrink-0" />
       </Tooltip>
     );
   }
@@ -204,6 +222,7 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {getSkillLocationIcon(skill.location, t)}
+                  {getSkillInvocationIcon(skill, t)}
                   {skill.activated ? (
                     <Tooltip content={t('contextFiles.skillDeactivate')}>
                       <button
@@ -220,18 +239,20 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
                       </button>
                     </Tooltip>
                   ) : (
-                    <Tooltip content={t('contextFiles.skillActivate')}>
-                      <button
-                        onClick={() => handleActivate(skill.name)}
-                        disabled={activating === skill.name}
-                        className={clsx(
-                          'p-0.5 rounded transition-colors',
-                          activating === skill.name ? 'bg-bg-tertiary text-text-muted cursor-wait' : 'text-text-primary hover:bg-bg-tertiary cursor-pointer',
-                        )}
-                      >
-                        <RiPlayCircleLine className="w-3.5 h-3.5" />
-                      </button>
-                    </Tooltip>
+                    skill.userInvocable !== false && (
+                      <Tooltip content={t('contextFiles.skillActivate')}>
+                        <button
+                          onClick={() => handleActivate(skill.name)}
+                          disabled={activating === skill.name}
+                          className={clsx(
+                            'p-0.5 rounded transition-colors',
+                            activating === skill.name ? 'bg-bg-tertiary text-text-muted cursor-wait' : 'text-text-primary hover:bg-bg-tertiary cursor-pointer',
+                          )}
+                        >
+                          <RiPlayCircleLine className="w-3.5 h-3.5" />
+                        </button>
+                      </Tooltip>
+                    )
                   )}
                 </div>
               </div>

@@ -1193,6 +1193,8 @@
     "projectSkill": "项目技能",
     "builtinSkill": "内置技能",
     "extensionSkill": "扩展技能",
+    "manualSkillOnly": "仅限手动调用 (disable-model-invocation)",
+    "agentSkillOnly": "仅限代理调用 (user-invocable: false)",
     "disableRuleFile": "禁用规则文件",
     "enableRuleFile": "启用规则文件",
     "disableAllRuleFiles": "禁用文件夹中的所有规则文件",

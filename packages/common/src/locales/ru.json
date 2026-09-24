@@ -1259,6 +1259,8 @@
     "projectSkill": "Проектный навык",
     "builtinSkill": "Встроенный навык",
     "extensionSkill": "Навык расширения",
+    "manualSkillOnly": "Только ручной вызов (disable-model-invocation)",
+    "agentSkillOnly": "Только для агента (user-invocable: false)",
     "disableRuleFile": "Отключить файл правил",
     "enableRuleFile": "Включить файл правил",
     "disableAllRuleFiles": "Отключить все файлы правил в папке",

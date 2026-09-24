@@ -18,6 +18,7 @@
 - added context menu action to open project folder from project tabs
 - added low reasoning effort option for Z.ai plan provider
 - fixed code highlighting fallback when auto-detected language yields no matches
+- added disable-model-invocation and user-invocable skill frontmatter options
 
 ## [0.84.0]
 

@@ -1259,6 +1259,8 @@
     "projectSkill": "프로젝트 스킬",
     "builtinSkill": "내장 스킬",
     "extensionSkill": "확장 스킬",
+    "manualSkillOnly": "수동 호출 전용 (disable-model-invocation)",
+    "agentSkillOnly": "에이전트 전용 (user-invocable: false)",
     "disableRuleFile": "규칙 파일 비활성화",
     "enableRuleFile": "규칙 파일 활성화",
     "disableAllRuleFiles": "폴더의 모든 규칙 파일 비활성화",

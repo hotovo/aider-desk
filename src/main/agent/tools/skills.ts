@@ -25,7 +25,7 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
   const skillManager = task.getSkillManager();
 
   const generateActivateSkillDescription = async (): Promise<string> => {
-    const skills = await skillManager.loadAllSkills();
+    const skills = (await skillManager.loadAllSkills()).filter((skill) => !skill.disableModelInvocation);
     return getActivateSkillDescription(skills);
   };
 
