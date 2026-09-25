@@ -22,6 +22,7 @@
 - fixed wrong scroll offset in updated files diff modal when tracking headers were not found
 - fixed provider options leaking into task context messages
 - fixed partial commits including unrelated staged files by committing only selected files via pathspec mode
+- added `/resume` command to prompt autocompletion for resuming tasks
 
 ## [0.84.0]
 

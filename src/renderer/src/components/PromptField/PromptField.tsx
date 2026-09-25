@@ -65,6 +65,7 @@ const COMMANDS = [
   '/reset',
   '/drop',
   '/redo',
+  '/resume',
   '/edit-last',
   '/compact',
   '/smart-compact',
@@ -567,6 +568,10 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           case '/redo':
             prepareForNextPrompt();
             redoLastUserPrompt();
+            break;
+          case '/resume':
+            prepareForNextPrompt();
+            void api.resumeTask(baseDir, taskId);
             break;
           case '/edit-last':
             prepareForNextPrompt();
