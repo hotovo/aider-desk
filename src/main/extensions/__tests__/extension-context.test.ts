@@ -17,6 +17,17 @@ vi.mock('@/logger', () => ({
   },
 }));
 
+// Mock only the navigation itself — keep the real redactUrlToken so the
+// redaction behaviour is exercised through the context implementation.
+vi.mock('@/utils/open-url', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/open-url')>();
+  return {
+    ...actual,
+    openUrl: vi.fn(),
+  };
+});
+
+import { openUrl as openUrlUtilMock } from '@/utils/open-url';
 import logger from '@/logger';
 const createMockStore = (settings: Partial<SettingsData> = {}, providers: ProviderProfile[] = []): Store => {
   const fullSettings: SettingsData = {
@@ -354,6 +365,76 @@ describe('ExtensionContextImpl', () => {
       }).not.toThrow();
 
       expect(logger.warn).toHaveBeenCalled();
+    });
+  });
+
+  describe('openUrl', () => {
+    const createWithEventManager = () => {
+      const mockEventManager = {
+        sendModalOverlayUrl: vi.fn(),
+      };
+      const contextWithEventManager = new ExtensionContextImpl(
+        extensionId,
+        extensionName,
+        new DisposableStore(extensionName),
+        undefined,
+        undefined,
+        mockEventManager as any,
+        undefined,
+      );
+      return { contextWithEventManager, mockEventManager };
+    };
+
+    it('logs a redacted token URL but navigates with the original URL', async () => {
+      const { contextWithEventManager, mockEventManager } = createWithEventManager();
+      const secretUrl = 'http://localhost:41475/#token=0123456789abcdefdeadbeef';
+
+      await contextWithEventManager.openUrl(secretUrl, 'modal-overlay');
+
+      // The log must never contain the secret token value...
+      expect(logger.info).toHaveBeenCalledWith('[Extension:Test Extension] Opening URL: http://localhost:41475/#token=<redacted> (target: modal-overlay)');
+      // ...while the modal overlay still receives the ORIGINAL URL so the
+      // bootstrap script can read the token from the fragment.
+      expect(mockEventManager.sendModalOverlayUrl).toHaveBeenCalledWith(secretUrl);
+    });
+
+    it('does not alter URLs without a token parameter', async () => {
+      const { contextWithEventManager, mockEventManager } = createWithEventManager();
+      const plainUrl = 'https://example.com/review?item=1&hide=2';
+
+      await contextWithEventManager.openUrl(plainUrl, 'modal-overlay');
+
+      expect(logger.info).toHaveBeenCalledWith('[Extension:Test Extension] Opening URL: https://example.com/review?item=1&hide=2 (target: modal-overlay)');
+      expect(mockEventManager.sendModalOverlayUrl).toHaveBeenCalledWith(plainUrl);
+    });
+
+    it('rejects when eventManager is missing for a modal-overlay target (cleanup/error path must run)', async () => {
+      const contextWithoutEventManager = new ExtensionContextImpl(extensionId, extensionName, new DisposableStore(extensionName));
+
+      await expect(contextWithoutEventManager.openUrl('http://localhost:41475/#token=0123456789abcdefdeadbeef', 'modal-overlay')).rejects.toThrow(
+        'EventManager not available, cannot open URL in modal overlay',
+      );
+
+      // The rejection is logged through the same redacting error path.
+      expect(logger.error).toHaveBeenCalledWith('[Extension:Test Extension] Failed to open URL: EventManager not available, cannot open URL in modal overlay');
+    });
+
+    it('redacts token-bearing URLs from failure logs and rethrows', async () => {
+      const { contextWithEventManager } = createWithEventManager();
+      const secretUrl = 'http://localhost:41475/#token=0123456789abcdefdeadbeef';
+      // Error messages from a failed external launch embed the full command —
+      // including the raw secret-bearing URL.
+      const failure = new Error(`Command failed: "xdg-open" "${secretUrl}"`);
+      vi.mocked(openUrlUtilMock).mockRejectedValue(failure);
+
+      await expect(contextWithEventManager.openUrl(secretUrl, 'external')).rejects.toThrow(failure);
+
+      // The secret must never reach the log, but the failure stays diagnosable.
+      // (redactUrlToken over-redacts from the token to the next `&`/`#`/EOL,
+      // consuming the trailing quote — still safe.)
+      expect(logger.error).toHaveBeenCalledWith(
+        '[Extension:Test Extension] Failed to open URL: Command failed: "xdg-open" "http://localhost:41475/#token=<redacted>',
+      );
     });
   });
 

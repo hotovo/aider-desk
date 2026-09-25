@@ -5,6 +5,43 @@
  * (No access to pi-mono's plan-mode/utils at runtime.)
  */
 
+import os from 'node:os';
+
+// ── Network Detection ────────────────────────────────────────────────────
+
+let cachedLocalAddress: string | null = null;
+
+/**
+ * Auto-detect the best local address for serving the plan review UI.
+ *
+ * Priority:
+ * 1. First non-internal IPv4 address from os.networkInterfaces()
+ * 2. Fall back to 'localhost'
+ *
+ * Result is cached for the process lifetime.
+ */
+export const getLocalAddress = (): string => {
+  if (cachedLocalAddress !== null) {
+    return cachedLocalAddress;
+  }
+
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    const entries = interfaces[name];
+    if (!entries) continue;
+
+    for (const entry of entries) {
+      if (entry.family === 'IPv4' && !entry.internal) {
+        cachedLocalAddress = entry.address;
+        return cachedLocalAddress;
+      }
+    }
+  }
+
+  cachedLocalAddress = 'localhost';
+  return cachedLocalAddress;
+};
+
 // ── Checklist Parsing ────────────────────────────────────────────────────
 
 export interface ChecklistItem {
