@@ -26252,8 +26252,8 @@ import { clsx } from 'clsx';
 ⋮----
 import { sortFilesByTreeOrder } from './group-files';
 ⋮----
-import { IconButton } from '@/components/common/IconButton';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
+import { IconButton } from '@/components/common/IconButton';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel, PierreDiffViewer, PierreLineClickInfo, type DiffComment } from '@/components/common/DiffViewer';
 import { CompactSelect } from '@/components/common/CompactSelect';
@@ -26293,6 +26293,11 @@ type Props = {
   openInWindowUrl?: string;
   openInWindowTitle?: string;
 };
+⋮----
+// Full file context for the current file (single-file view), loaded on demand via the header button.
+// Tracks which file is expanded so switching files collapses automatically.
+⋮----
+// Lazily fetched diff for the current file (single-file view)
 ⋮----
 // Sort each group's files to match the sidebar tree order so the all-files view,
 // navigation and scroll spy agree with the sidebar
@@ -26340,9 +26345,6 @@ const cancelPin = () =>
 ⋮----
 const pinScroll = () =>
 ⋮----
-// Lazily fetched diff for the current file (single-file view)
-⋮----
-// Full file context for the current file (single-file view), loaded on demand via the header button.
 // Tracks which file is expanded so switching files collapses automatically.
 ⋮----
 // Sync currentFile when initialFile prop changes (user clicks a different file)
@@ -32735,6 +32737,8 @@ File: package.json
     "@electron-toolkit/utils": "4.0.0",
     "@google-cloud/aiplatform": "5.14.0",
     "@google/genai": "1.52.0",
+    "@headless-tree/core": "1.7.0",
+    "@headless-tree/react": "1.7.0",
     "@headlessui/react": "2.2.9",
     "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
     "@huggingface/transformers": "3.8.1",
@@ -32745,7 +32749,7 @@ File: package.json
     "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
     "@opentelemetry/sdk-node": "0.221.0",
     "@opentelemetry/sdk-trace-base": "2.10.0",
-    "@pierre/diffs": "1.2.12",
+    "@pierre/diffs": "1.4.3",
     "@posthog/ai": "8.4.0",
     "@radix-ui/react-tooltip": "1.2.8",
     "@reactuses/core": "6.1.11",
@@ -32803,8 +32807,6 @@ File: package.json
     "os-name": "6.1.0",
     "patch-package": "8.0.1",
     "posthog-node": "5.29.1",
-    "@headless-tree/core": "1.7.0",
-    "@headless-tree/react": "1.7.0",
     "prismjs": "1.30.0",
     "react-country-flag": "3.1.0",
     "react-datepicker": "8.10.0",
