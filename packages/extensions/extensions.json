@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "legacy-system-prompt",
@@ -244,7 +244,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "tree-sitter-repo-map",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "verifier",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "kanban",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 84
+      "installCount": 85
     }
   ]
 }
