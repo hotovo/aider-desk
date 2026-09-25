@@ -14,6 +14,10 @@ files:
   - '!.aider-desk/*'
   - '!llms.txt'
   - '!packages/*'
+  - '!node_modules/react-icons/**'
+  - '!node_modules/mermaid/**'
+  - '!node_modules/@mermaid-js/**'
+  - '!node_modules/@shikijs/**'
 extraResources:
   - from: ./resources/connector
     to: connector
@@ -28,6 +32,7 @@ extraResources:
     filter:
       - '**/*'
 beforePack: scripts/before-pack.js
+afterPack: scripts/after-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
