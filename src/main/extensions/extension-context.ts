@@ -32,10 +32,11 @@ export class ExtensionContextImpl implements ExtensionContext {
     private readonly project?: Project,
     private readonly task?: Task,
     private readonly mcpConfigManager?: McpConfigManager,
+    projectContext?: ProjectContext,
   ) {
     this.disposableStore = disposableStore;
     this.taskContext = this.task ? new TaskContextImpl(this.task) : null;
-    this.projectContext = this.project ? new ProjectContextImpl(this.project, disposableStore) : null;
+    this.projectContext = projectContext ?? (this.project ? new ProjectContextImpl(this.project, disposableStore) : null);
   }
 
   addDisposable(setup: () => (() => void | Promise<void>) | void): void {
