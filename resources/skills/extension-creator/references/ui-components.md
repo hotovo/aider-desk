@@ -93,6 +93,12 @@ UI components can be placed in various locations throughout the AiderDesk interf
   - *Layout*: Inline with other message actions
   - *Props*: Includes `message` prop with current message data
 
+- **task-message-bar-menu**: Inside the message bar's dropdown menu (vertical dots menu)
+  - *Use for*: Additional context-menu actions for individual messages (e.g., "undo changes", "edit & undo")
+  - *Layout*: Vertical stack below built-in menu items, separated by a divider
+  - *Props*: Includes `message` prop with current message data
+  - *Note*: The vertical dots menu button is shown when there are built-in menu actions or extension components for this placement
+
 ### Task Page - Usage Info
 
 - **task-usage-info-bottom**: Below the usage info section (tokens, costs display)
@@ -264,7 +270,7 @@ All UI components receive these props via the `data` prop passed by `string-to-r
 
 ### Message-Specific Props
 
-For components placed in `task-message-above`, `task-message-below`, or `task-message-bar`:
+For components placed in `task-message-above`, `task-message-below`, `task-message-bar`, or `task-message-bar-menu`:
 
 ```typescript
 {
@@ -738,6 +744,46 @@ getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
     <span className="text-xs text-text-muted">
       {messageData.tokensPerSecond} TPS
     </span>
+  );
+}
+```
+
+### Message Bar Menu Action (task-message-bar-menu placement)
+
+Add custom actions to the message bar's vertical-dots dropdown menu:
+
+```typescript
+getUIComponents(context: ExtensionContext): UIComponentDefinition[] {
+  return [{
+    id: 'undo-changes-action',
+    placement: 'task-message-bar-menu',
+    loadData: true,
+    noDataCache: true,
+    jsx: readFileSync(join(__dirname, './UndoChangesMenuItem.jsx'), 'utf-8'),
+  }];
+}
+```
+
+```jsx
+// UndoChangesMenuItem.jsx
+(props) => {
+  const { message, data, executeExtensionAction } = props;
+  const { MdUndo } = props.icons.Md;
+
+  if (!message?.id || !data?.canUndo) return null;
+
+  const handleClick = () => {
+    executeExtensionAction('undo', message.id);
+  };
+
+  return (
+    <div
+      className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors whitespace-nowrap"
+      onClick={handleClick}
+    >
+      <MdUndo className="w-4 h-4" />
+      <span>Undo changes</span>
+    </div>
   );
 }
 ```

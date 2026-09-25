@@ -416,7 +416,7 @@ const myComponent: UIComponentDefinition = {
 
 ## UIComponentPlacement
 
-Available placement locations for UI components (27 total).
+Available placement locations for UI components (28 total).
 
 ```typescript
 type UIComponentPlacement =
@@ -435,6 +435,7 @@ type UIComponentPlacement =
   | 'task-message-above'          // Above each message (receives message prop)
   | 'task-message-below'          // Below each message (receives message prop)
   | 'task-message-bar'            // In message action bar (receives message prop)
+  | 'task-message-bar-menu'       // In message bar dropdown menu (receives message prop)
 
   // Task Usage Info
   | 'task-usage-info-bottom'      // Below usage info (tokens, costs)

@@ -440,6 +440,16 @@ After completing this skill, verify:
 - Style: Prefer `props.ui.ExpandableMessageBlock` for the standard collapsible tool-message layout and `props.ui.CodeBlock` for code or structured results
 - Reference: [ui-components.md](references/ui-components.md) for full details, `MessageFilter` type, and JSX examples
 
+**Situation:** Extension needs custom actions in the message context menu
+
+**Pattern:**
+- When: Extension wants to add extra actions to a message's vertical-dots dropdown menu (e.g. "undo changes")
+- Then: Use the `task-message-bar-menu` placement — components render as menu items below the built-in actions, separated by a divider
+- Props: Component receives `message` prop for the specific message
+- Must: Style JSX as a menu item (flex row, `hover:bg-bg-tertiary`, `text-2xs`) to match built-in menu entries
+- Note: The menu button appears when there are built-in menu actions or components registered for this placement; use `task-message-bar` for inline actions shown directly in the bar instead
+- Reference: [ui-components.md](references/ui-components.md)
+
 **Situation:** Extension needs a floating panel
 
 **Pattern:**

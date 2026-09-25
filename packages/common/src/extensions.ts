@@ -220,6 +220,7 @@ export type UIComponentPlacement =
   | 'task-message-above'
   | 'task-message-below'
   | 'task-message-bar'
+  | 'task-message-bar-menu'
   | 'task-top-bar-left'
   | 'task-top-bar-right'
   | 'task-state-actions'

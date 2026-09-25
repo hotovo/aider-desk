@@ -22,6 +22,7 @@ const ALWAYS_ON_PLACEMENTS: UIComponentPlacement[] = [
   'task-message-above',
   'task-message-below',
   'task-message-bar',
+  'task-message-bar-menu',
   'task-input-above',
   'task-input-toolbar-left',
   'task-input-toolbar-right',
@@ -142,6 +143,24 @@ const TASK_MESSAGE_JSX = `
   }
 `;
 
+// JSX for the task-message-bar-menu placement — renders as a menu item inside the dots dropdown
+const MENU_ITEM_JSX = `
+  (props) => {
+    const message = props.message;
+    if (!message) return null;
+
+    return (
+      <div
+        className="flex items-center gap-1 px-2 py-1 text-2xs text-text-primary hover:bg-bg-tertiary cursor-pointer transition-colors whitespace-nowrap"
+        onClick={() => props.executeExtensionAction('menu-item-click')}
+      >
+        <span className="opacity-60">📍</span>
+        <span>task-message-bar-menu</span>
+      </div>
+    );
+  }
+`;
+
 // JSX for the task-floating placement — panel with checkboxes controlling togglable placements
 const TASK_FLOATING_PANEL_JSX = `
   (props) => {
@@ -229,7 +248,12 @@ export default class UIPlacementDemoExtension implements Extension {
     const alwaysOn = ALWAYS_ON_PLACEMENTS.map((placement) => ({
       id: `placement-demo-${placement}`,
       placement,
-      jsx: COMPACT_PLACEMENTS.has(placement) ? createCompactIconJsx(placement) : createChipJsx(placement),
+      jsx:
+        placement === 'task-message-bar-menu'
+          ? MENU_ITEM_JSX
+          : COMPACT_PLACEMENTS.has(placement)
+            ? createCompactIconJsx(placement)
+            : createChipJsx(placement),
     }));
 
     const togglable = TOGGLABLE_PLACEMENTS
@@ -293,6 +317,10 @@ export default class UIPlacementDemoExtension implements Extension {
     args: unknown[],
     context: ExtensionContext,
   ): Promise<unknown> {
+    if (action === 'menu-item-click') {
+      context.log('task-message-bar-menu item clicked', 'info');
+    }
+
     if (action === 'toggle-placement' && typeof args[0] === 'string') {
       const placement = args[0];
       this.enabledPlacements[placement] = !this.enabledPlacements[placement];

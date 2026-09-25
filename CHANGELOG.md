@@ -25,6 +25,7 @@
 - added `/resume` command to prompt autocompletion for resuming tasks
 - added option to disable skills per project
 - added LLM API provider
+- added task-message-bar-menu extension UI placement for message dropdown menu actions
 
 ## [0.84.0]
 

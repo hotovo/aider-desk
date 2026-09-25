@@ -214,6 +214,7 @@ UI components can be placed in 21 different locations throughout the interface:
 | `task-message-above` | Per message | Above each individual message |
 | `task-message-below` | Per message | Below each individual message |
 | `task-message-bar` | Per message | In the message action bar (on hover) |
+| `task-message-bar-menu` | Per message | In the message bar's dropdown menu (vertical dots) |
 | `task-input-above` | Input area | Above the task input field |
 | `task-input-toolbar-left` | Input toolbar | Left side of input toolbar (below input) |
 | `task-input-toolbar-right` | Input toolbar | Right side of input toolbar |

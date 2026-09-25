@@ -15,6 +15,7 @@ import { UsageInfo } from './UsageInfo';
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 import { includeMessageProperty } from '@/components/message/utils';
 
 type MenuPosition = {
@@ -46,6 +47,11 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
   const additionalProps = {
     message: message && includeMessageProperty(message) ? message : null,
   };
+  const { isEmpty: isExtensionMenuEmpty, renderComponents: renderExtensionMenuItems } = useExtensionComponentsWrapper({
+    placement: 'task-message-bar-menu',
+    additionalProps,
+  });
+  const hasMenuItems = remove || redo || edit || onFork || onRemoveUpTo || !isExtensionMenuEmpty;
 
   useClickOutside(
     [menuRef, buttonRef],
@@ -121,7 +127,7 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
       <ExtensionComponentWrapper placement="task-message-bar" additionalProps={additionalProps} />
       {usageReport && <UsageInfo usageReport={usageReport} className="mt-[4px]" />}
       {content && <CopyMessageButton content={content} className="transition-colors text-text-dark hover:text-text-primary" alwaysShow={true} />}
-      {(remove || redo || edit || onFork || onRemoveUpTo) && (
+      {hasMenuItems && (
         <div ref={buttonRef}>
           <IconButton
             icon={<FaEllipsisVertical className="w-4 h-4" />}
@@ -132,7 +138,7 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
       )}
       {isMenuOpen &&
         menuPosition &&
-        (remove || redo || edit || onFork || onRemoveUpTo) &&
+        hasMenuItems &&
         createPortal(
           <div
             ref={menuRef}
@@ -199,6 +205,7 @@ export const MessageBar = ({ className, content, usageReport, message, remove, r
                 </li>
               )}
             </ul>
+            {!isExtensionMenuEmpty && <div className="border-t border-border-dark-light flex flex-col">{renderExtensionMenuItems()}</div>}
           </div>,
           document.body,
         )}
