@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 58
+      "installCount": 59
     },
     {
       "id": "legacy-system-prompt",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "sandbox",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "verifier",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 90
+      "installCount": 91
     },
     {
       "id": "task-scheduler",
@@ -633,7 +633,7 @@
         "commands",
         "events"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "reasoning-selector",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 83
+      "installCount": 84
     }
   ]
 }
