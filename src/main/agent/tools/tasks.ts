@@ -15,7 +15,17 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, TaskExecutionMode, ToolApprovalState } from '@common/types';
+import {
+  AgentProfile,
+  AutonomyMode,
+  ContextMessage,
+  DefaultTaskState,
+  PromptContext,
+  SettingsData,
+  TaskData,
+  TaskExecutionMode,
+  ToolApprovalState,
+} from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 
 import { ApprovalManager } from './approval-manager';
@@ -28,6 +38,14 @@ import { deriveDirName } from '@/utils';
 import { Task } from '@/task';
 
 const taskDateSchema = z.string().refine((value) => !Number.isNaN(Date.parse(value)), 'Must be a valid date or ISO 8601 timestamp');
+
+const stripProviderOptions = (content: ContextMessage['content']): ContextMessage['content'] =>
+  typeof content === 'string'
+    ? content
+    : content.map((part) => {
+        const { providerOptions, ...rest } = part as typeof part & { providerOptions?: unknown };
+        return providerOptions === undefined ? part : (rest as typeof part);
+      });
 
 const listTasksInputSchema = z
   .object({
@@ -288,7 +306,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           index: actualIndex,
           originalIndex: messageIndex,
           role: message.role,
-          content: typeof message.content === 'string' ? message.content : JSON.stringify(message.content),
+          content: typeof message.content === 'string' ? message.content : JSON.stringify(stripProviderOptions(message.content)),
           usageReport: message.usageReport,
         };
       } catch (error) {
@@ -427,6 +445,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         }
 
         const contextMessages = await taskInstance.getContextMessages();
+        const lastContextMessage = contextMessages[contextMessages.length - 1];
 
         return {
           id: newTask.id,
@@ -438,8 +457,8 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
                 ? 'Task created and started in the background'
                 : 'Task created successfully',
           ...(executionMode === TaskExecutionMode.WaitForFinish &&
-            contextMessages.length > 0 && {
-              lastMessage: contextMessages[contextMessages.length - 1],
+            lastContextMessage && {
+              lastMessage: { ...lastContextMessage, content: stripProviderOptions(lastContextMessage.content) },
             }),
         };
       } catch (error) {
@@ -543,13 +562,15 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
           resultMessage = 'Task has been delegated to a subagent';
         }
 
+        const lastContextMessage = contextMessages[contextMessages.length - 1];
+
         return {
           taskId,
           result: resultMessage,
           state: taskState,
           ...(executeAndWait &&
-            contextMessages.length > 0 && {
-              lastMessage: contextMessages[contextMessages.length - 1],
+            lastContextMessage && {
+              lastMessage: { ...lastContextMessage, content: stripProviderOptions(lastContextMessage.content) },
             }),
         };
       } catch (error) {

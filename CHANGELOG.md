@@ -20,6 +20,7 @@
 - fixed code highlighting fallback when auto-detected language yields no matches
 - added disable-model-invocation and user-invocable skill frontmatter options
 - fixed wrong scroll offset in updated files diff modal when tracking headers were not found
+- fixed provider options leaking into task context messages
 
 ## [0.84.0]
 
