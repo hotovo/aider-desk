@@ -3292,9 +3292,24 @@ export class GitManager {
         return true;
       }
 
-      // Stage updated files before committing
+      // Stage updated files before committing. With a file selection the commit runs in the
+      // --only pathspec form (see below), which takes tracked files directly from the working
+      // tree — so staging is only needed for files not yet tracked (untracked, incl. ignored ones).
+      // Without a selection (full commit / amend) everything must be staged, because a plain
+      // `git commit` only takes what is in the index.
       if (selectedFiles.length > 0) {
-        for (const file of selectedFiles) {
+        // A selection that covers all updated files is effectively a full commit — keep the
+        // plain index commit (shorter command, everything is committed anyway)
+        let filesToStage = selectedFiles;
+        const usePathspecCommit = !amend && !!filePaths && selectedFiles.length < updatedFiles.length;
+        if (usePathspecCommit) {
+          const selectedPathspecs = selectedFiles.map((file) => ` "${file.path.replace(/"/g, '\\"')}"`).join('');
+          const { stdout: trackedFilesOutput } = await execWithShellPath(`git ls-files -z${selectedPathspecs}`, options);
+          const trackedFiles = new Set(trackedFilesOutput.split('\0').filter(Boolean));
+          filesToStage = selectedFiles.filter((file) => !trackedFiles.has(file.path));
+        }
+
+        for (const file of filesToStage) {
           if (cancelController.signal.aborted) {
             logger.info('Commit cancelled while staging files', { worktreePath });
             return false;
@@ -3306,7 +3321,7 @@ export class GitManager {
             if (isAbortError(error)) {
               throw error;
             }
-            // Retry with -A -f: files explicitly selected in the UI should always be staged.
+            // Retry with -A -f: untracked files must always be staged for the commit.
             // -A stages deletions (git add fails with "pathspec did not match any files" for
             // files removed on disk), -f handles ignored files (git check-ignore misses
             // directory-traversal exclusions like .aider* ignoring .aider-desk/rules
@@ -3315,7 +3330,9 @@ export class GitManager {
             await execWithShellPath(`git add -A -f -- "${escapedPath}"`, options);
           }
         }
-        logger.info(`Staged ${selectedFiles.length} file(s) for commit`);
+        if (filesToStage.length > 0) {
+          logger.info(`Staged ${filesToStage.length} file(s) for commit`);
+        }
       }
 
       if (cancelController.signal.aborted) {
@@ -3327,7 +3344,13 @@ export class GitManager {
       const escapedMessage = message.replace(/"/g, '\\"');
       const amendFlag = amend ? ' --amend' : '';
       // If amending and message is empty, use --no-edit to keep previous message
-      const commitCommand = amend && !message.trim() ? 'git commit --amend --no-edit' : `git commit${amendFlag} -m "${escapedMessage}"`;
+      let commitCommand = amend && !message.trim() ? 'git commit --amend --no-edit' : `git commit${amendFlag} -m "${escapedMessage}"`;
+      // When a file selection is provided, commit only those paths (--only pathspec form).
+      // Plain `git commit` would also include any other files already staged in the index,
+      // which breaks partial commits when edited files are left staged.
+      if (!amend && filePaths && selectedFiles.length > 0 && selectedFiles.length < updatedFiles.length) {
+        commitCommand += selectedFiles.map((file) => ` "${file.path.replace(/"/g, '\\"')}"`).join('');
+      }
       await execWithShellPath(commitCommand, options);
 
       logger.info(`Successfully committed changes${amend ? ' (amended)' : ''}`);

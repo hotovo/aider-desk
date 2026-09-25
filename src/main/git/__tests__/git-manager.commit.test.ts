@@ -48,6 +48,48 @@ describe('GitManager - commitChanges cancellation', () => {
     expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "test commit"', expect.objectContaining({ killSignal: 'SIGINT' }));
   });
 
+  it('should use a plain commit when filePaths covers all updated files', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    const committed = await gitManager.commitChanges(worktreePath, 'all files commit', false, ['file-a.ts', 'file-b.ts']);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git ls-files'), expect.anything());
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "all files commit"', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
+  it('should commit only the selected files via pathspec when filePaths is provided', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: 'file-a.ts\0', stderr: '' });
+
+    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, ['file-a.ts']);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).toHaveBeenCalledWith('git ls-files -z "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -- "file-a.ts"', expect.anything());
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -- "file-b.ts"', expect.anything());
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "partial commit" "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
+  it('should stage only untracked selected files when filePaths is provided', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, ['file-a.ts']);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git add -- "file-b.ts"', expect.anything());
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "partial commit" "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
+  it('should not use pathspec commit when amending an empty message', async () => {
+    (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
+
+    const committed = await gitManager.commitChanges(worktreePath, '', true, ['file-a.ts']);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit --amend --no-edit', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
   it('should retry staging with -A -f when git add fails for ignored files', async () => {
     (execWithShellPath as Mock).mockImplementation(async (command: string) => {
       if (command === 'git add -- "file-b.ts"') {
