@@ -395,9 +395,9 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
             const computeTargetTop = (): number => {
               const rect = element.getBoundingClientRect();
               const containerRect = container.getBoundingClientRect();
-              const header = container.querySelector<HTMLElement>('.sticky.top-0');
+              const header = container.querySelector<HTMLElement>('.sticky.top-0.z-10');
               const headerHeight = header?.getBoundingClientRect().height ?? 0;
-              return container.scrollTop + rect.top - containerRect.top - headerHeight - 8;
+              return container.scrollTop + rect.top - containerRect.top - headerHeight - (header ? 8 : 0);
             };
 
             programmaticScrollRef.current = true;
@@ -538,9 +538,9 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
       }
 
       const containerRect = container.getBoundingClientRect();
-      const header = container.querySelector<HTMLElement>('.sticky.top-0');
+      const header = container.querySelector<HTMLElement>('.sticky.top-0.z-10');
       const headerHeight = header?.getBoundingClientRect().height ?? 0;
-      const threshold = containerRect.top + headerHeight + 8;
+      const threshold = containerRect.top + headerHeight + (header ? 8 : 0);
 
       let bestIdx = -1;
 

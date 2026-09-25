@@ -19,6 +19,7 @@
 - added low reasoning effort option for Z.ai plan provider
 - fixed code highlighting fallback when auto-detected language yields no matches
 - added disable-model-invocation and user-invocable skill frontmatter options
+- fixed wrong scroll offset in updated files diff modal when tracking headers were not found
 
 ## [0.84.0]
 
