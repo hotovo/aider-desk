@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "external-rules",
@@ -269,7 +269,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "lsp",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "seek",
@@ -443,7 +443,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "claude-agent-sdk",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "doom",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "skill-gallery",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 85
+      "installCount": 86
     }
   ]
 }
