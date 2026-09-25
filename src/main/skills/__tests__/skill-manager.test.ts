@@ -7,6 +7,10 @@ import path from 'path';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { SkillManager } from '../skill-manager';
+
+import type { Project } from '@/project';
+
 vi.mock('uuid', () => ({
   v4: vi.fn(() => 'test-uuid'),
 }));
@@ -71,15 +75,13 @@ vi.mock('fs/promises', () => ({
   },
 }));
 
-import { SkillManager } from '../skill-manager';
-
 describe('SkillManager', () => {
   let skillManager: SkillManager;
 
   beforeEach(() => {
     vi.clearAllMocks();
     files.clear();
-    skillManager = new SkillManager('/project/dir');
+    skillManager = new SkillManager({ baseDir: '/project/dir' } as Project);
   });
 
   const loadGlobalSkills = async () => {

@@ -1255,6 +1255,8 @@
     "skillActivate": "Активировать",
     "skillDeactivate": "Деактивировать",
     "skillActivating": "...",
+    "skillDisable": "Отключить навык",
+    "skillEnable": "Включить навык",
     "globalSkill": "Глобальный навык",
     "projectSkill": "Проектный навык",
     "builtinSkill": "Встроенный навык",

@@ -227,7 +227,7 @@ export class Task {
     };
     this.taskDataPath = path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, 'settings.json');
     this.contextManager = new ContextManager(this, this.taskId);
-    this.skillManager = new SkillManager(project.baseDir, extensionManager);
+    this.skillManager = new SkillManager(project, extensionManager);
     this.agent = new Agent(
       this.store,
       this.agentProfileManager,
@@ -3911,12 +3911,16 @@ export class Task {
     const modeChanged = oldSettings.currentMode !== newSettings.currentMode;
     const agentProfileIdChanged = oldSettings.agentProfileId !== newSettings.agentProfileId;
     const disabledRulesChanged = JSON.stringify(oldSettings.disabledRuleFiles) !== JSON.stringify(newSettings.disabledRuleFiles);
+    const disabledSkillsChanged = JSON.stringify(oldSettings.disabledSkills) !== JSON.stringify(newSettings.disabledSkills);
 
     if (agentProfileIdChanged || modeChanged || disabledRulesChanged) {
       void this.sendContextFilesUpdated();
     }
     if (disabledRulesChanged) {
       void this.updateAgentEstimatedTokens();
+    }
+    if (disabledSkillsChanged) {
+      void this.sendSkillsUpdated();
     }
   }
 

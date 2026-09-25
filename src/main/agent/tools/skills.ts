@@ -25,7 +25,7 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
   const skillManager = task.getSkillManager();
 
   const generateActivateSkillDescription = async (): Promise<string> => {
-    const skills = (await skillManager.loadAllSkills()).filter((skill) => !skill.disableModelInvocation);
+    const skills = (await skillManager.getEnabledSkills()).filter((skill) => !skill.disableModelInvocation);
     return getActivateSkillDescription(skills);
   };
 
@@ -48,7 +48,7 @@ export const createSkillsToolset = async (task: Task, profile: AgentProfile, pro
         return `Activating skill denied by user. Reason: ${userInput}`;
       }
 
-      const allSkills = await skillManager.loadAllSkills();
+      const allSkills = await skillManager.getEnabledSkills();
 
       const requested = allSkills.find((s) => s.name === skill);
       if (!requested) {

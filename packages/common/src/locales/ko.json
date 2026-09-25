@@ -1255,6 +1255,8 @@
     "skillActivate": "활성화",
     "skillDeactivate": "비활성화",
     "skillActivating": "...",
+    "skillDisable": "스킬 비활성화",
+    "skillEnable": "스킬 활성화",
     "globalSkill": "전역 스킬",
     "projectSkill": "프로젝트 스킬",
     "builtinSkill": "내장 스킬",

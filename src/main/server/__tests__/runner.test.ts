@@ -54,6 +54,7 @@ describe('addProjectsFromEnv', () => {
       currentMode: 'agent' as const,
       updatedFilesGroupMode: 'flat',
       disabledRuleFiles: [],
+      disabledSkills: [],
       contextSidebarSectionsOrder: [],
       contextSidebarSectionsHidden: [],
     });

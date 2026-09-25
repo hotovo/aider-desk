@@ -122,19 +122,19 @@ const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation)
 
 export class SkillManager {
   private extensionManager: ExtensionManager | undefined;
-  private projectDir: string;
+  private project: Project;
 
-  constructor(projectDir: string, extensionManager?: ExtensionManager) {
-    this.projectDir = projectDir;
+  constructor(project: Project, extensionManager?: ExtensionManager) {
+    this.project = project;
     this.extensionManager = extensionManager;
   }
 
   async loadAllSkills(): Promise<Skill[]> {
     const globalSkillsDir = path.join(AIDER_DESK_HOME_DIR, SKILLS_DIR_NAME);
-    const projectSkillsDir = path.join(this.projectDir, AIDER_DESK_DIR, SKILLS_DIR_NAME);
+    const projectSkillsDir = path.join(this.project.baseDir, AIDER_DESK_DIR, SKILLS_DIR_NAME);
 
     const extensionSkills: Skill[] = this.extensionManager
-      ? this.extensionManager.getSkills({ baseDir: this.projectDir } as Project, { getTaskDir: () => this.projectDir } as Task)
+      ? this.extensionManager.getSkills(this.project, { getTaskDir: () => this.project.baseDir } as Task)
       : [];
 
     const [globalSkills, projectSkills, builtinSkills] = await Promise.all([
@@ -165,6 +165,13 @@ export class SkillManager {
       ...skill,
       activated: activatedSkillNames.has(skill.name),
     }));
+  }
+
+  async getEnabledSkills(): Promise<Skill[]> {
+    const disabledSkills = this.project.getProjectSettings().disabledSkills ?? [];
+    const skills = await this.loadAllSkills();
+
+    return skills.filter((skill) => !disabledSkills.includes(skill.name));
   }
 
   async getSkillContent(skillName: string): Promise<string | null> {

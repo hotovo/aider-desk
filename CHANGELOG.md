@@ -23,6 +23,7 @@
 - fixed provider options leaking into task context messages
 - fixed partial commits including unrelated staged files by committing only selected files via pathspec mode
 - added `/resume` command to prompt autocompletion for resuming tasks
+- added option to disable skills per project
 
 ## [0.84.0]
 

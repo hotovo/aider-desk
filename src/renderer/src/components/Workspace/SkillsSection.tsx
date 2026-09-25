@@ -12,7 +12,9 @@ import { SectionHeader } from './SectionHeader';
 import { SectionLoading } from './SectionLoading';
 
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 
 const getSkillLocationIcon = (location: string, t: (key: string) => string) => {
@@ -81,12 +83,28 @@ type Props = {
 export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSections, onToggle, editMode, isHidden, onToggleHidden, showBorderTop }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
+  const { projectSettings, saveProjectSettings } = useProjectSettings();
   const [skills, setSkills] = useState<SkillDefinition[]>([]);
   const [activating, setActivating] = useState<string | null>(null);
   const [deactivating, setDeactivating] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const openFile = useFileEditorStore((state) => state.openFile);
+
+  const disabledSkills = useMemo(() => projectSettings?.disabledSkills ?? [], [projectSettings?.disabledSkills]);
+
+  const handleToggleSkill = useCallback(
+    (skillName: string, disable: boolean) => {
+      const current = new Set(disabledSkills);
+      if (disable) {
+        current.add(skillName);
+      } else {
+        current.delete(skillName);
+      }
+      void saveProjectSettings({ disabledSkills: Array.from(current) });
+    },
+    [disabledSkills, saveProjectSettings],
+  );
 
   const loadSkills = useCallback(async () => {
     try {
@@ -200,63 +218,71 @@ export const SkillsSection = ({ baseDir, taskId, isOpen, totalStats, visitedSect
           {isLoadingSkills ? (
             <SectionLoading label={t('common.loadingFiles')} />
           ) : hasContent ? (
-            sortedSkills.map((skill) => (
-              <div key={skill.name} className="flex items-center w-full px-1 h-7 group/item">
-                <div className="flex items-center flex-grow min-w-0 gap-1">
-                  <Tooltip content={skill.description} delayDuration={500}>
-                    <span
-                      className={clsx(
-                        'select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis',
-                        skill.dirPath ? 'cursor-pointer hover:text-text-tertiary' : 'cursor-default',
-                        skill.activated ? 'text-text-primary' : 'text-text-muted',
-                      )}
-                      onClick={() => {
-                        if (skill.dirPath) {
-                          openFile(baseDir, `${skill.dirPath}/SKILL.md`, taskId);
-                        }
-                      }}
-                    >
-                      {skill.name}
-                    </span>
-                  </Tooltip>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {getSkillLocationIcon(skill.location, t)}
-                  {getSkillInvocationIcon(skill, t)}
-                  {skill.activated ? (
-                    <Tooltip content={t('contextFiles.skillDeactivate')}>
-                      <button
-                        onClick={() => handleDeactivate(skill.name)}
-                        disabled={deactivating === skill.name}
-                        className={clsx(
-                          'p-0.5 rounded transition-colors',
-                          deactivating === skill.name
-                            ? 'bg-bg-tertiary text-text-muted cursor-wait'
-                            : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary cursor-pointer',
-                        )}
-                      >
-                        <HiX className="w-3.5 h-3.5" />
-                      </button>
+            sortedSkills.map((skill) => {
+              const isDisabled = disabledSkills.includes(skill.name);
+              return (
+                <div key={skill.name} className="flex items-center w-full px-1 h-7 group/item">
+                  <div className="flex items-center flex-grow min-w-0 gap-1">
+                    <Tooltip content={isDisabled ? t('contextFiles.skillEnable') : t('contextFiles.skillDisable')}>
+                      <TriStateCheckbox state={isDisabled ? 'unchecked' : 'checked'} onChange={() => handleToggleSkill(skill.name, !isDisabled)} />
                     </Tooltip>
-                  ) : (
-                    skill.userInvocable !== false && (
-                      <Tooltip content={t('contextFiles.skillActivate')}>
+                    <Tooltip content={skill.description} delayDuration={500}>
+                      <span
+                        className={clsx(
+                          'select-none text-2xs overflow-hidden whitespace-nowrap overflow-ellipsis',
+                          skill.dirPath ? 'cursor-pointer hover:text-text-tertiary' : 'cursor-default',
+                          skill.activated && !isDisabled ? 'text-text-primary' : 'text-text-muted',
+                        )}
+                        onClick={() => {
+                          if (skill.dirPath) {
+                            openFile(baseDir, `${skill.dirPath}/SKILL.md`, taskId);
+                          }
+                        }}
+                      >
+                        {skill.name}
+                      </span>
+                    </Tooltip>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {getSkillLocationIcon(skill.location, t)}
+                    {getSkillInvocationIcon(skill, t)}
+                    {skill.activated ? (
+                      <Tooltip content={t('contextFiles.skillDeactivate')}>
                         <button
-                          onClick={() => handleActivate(skill.name)}
-                          disabled={activating === skill.name}
+                          onClick={() => handleDeactivate(skill.name)}
+                          disabled={deactivating === skill.name}
                           className={clsx(
                             'p-0.5 rounded transition-colors',
-                            activating === skill.name ? 'bg-bg-tertiary text-text-muted cursor-wait' : 'text-text-primary hover:bg-bg-tertiary cursor-pointer',
+                            deactivating === skill.name
+                              ? 'bg-bg-tertiary text-text-muted cursor-wait'
+                              : 'text-text-muted hover:text-text-primary hover:bg-bg-tertiary cursor-pointer',
                           )}
                         >
-                          <RiPlayCircleLine className="w-3.5 h-3.5" />
+                          <HiX className="w-3.5 h-3.5" />
                         </button>
                       </Tooltip>
-                    )
-                  )}
+                    ) : (
+                      skill.userInvocable !== false && (
+                        <Tooltip content={t('contextFiles.skillActivate')}>
+                          <button
+                            onClick={() => handleActivate(skill.name)}
+                            disabled={activating === skill.name}
+                            className={clsx(
+                              'p-0.5 rounded transition-colors',
+                              activating === skill.name
+                                ? 'bg-bg-tertiary text-text-muted cursor-wait'
+                                : 'text-text-primary hover:bg-bg-tertiary cursor-pointer',
+                            )}
+                          >
+                            <RiPlayCircleLine className="w-3.5 h-3.5" />
+                          </button>
+                        </Tooltip>
+                      )
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="absolute inset-0 flex items-center justify-center text-center text-text-muted text-2xs">{t('contextFiles.noSkills')}</div>
           )}

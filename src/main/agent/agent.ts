@@ -613,7 +613,10 @@ export class Agent {
         contextFiles = extensionResult.contextFiles;
         systemPrompt = extensionResult.systemPrompt;
         images = extensionResult.images ?? images;
-        skillsToActivate = extensionResult.skillsToActivate;
+        if (extensionResult.skillsToActivate && extensionResult.skillsToActivate.length > 0) {
+          const enabledSkillNames = new Set((await task.getSkillManager().getEnabledSkills()).map((skill) => skill.name));
+          skillsToActivate = extensionResult.skillsToActivate.filter((skillName) => enabledSkillNames.has(skillName));
+        }
         modelCallSettings = {
           ...modelCallSettings,
           ...extensionResult.modelCallSettings,

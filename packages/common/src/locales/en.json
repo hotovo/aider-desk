@@ -1256,6 +1256,8 @@
     "skillActivate": "Activate",
     "skillDeactivate": "Deactivate",
     "skillActivating": "...",
+    "skillDisable": "Disable skill",
+    "skillEnable": "Enable skill",
     "globalSkill": "Global skill",
     "projectSkill": "Project skill",
     "builtinSkill": "Built-in skill",

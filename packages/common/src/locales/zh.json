@@ -1189,6 +1189,8 @@
     "skillActivate": "激活",
     "skillDeactivate": "停用",
     "skillActivating": "...",
+    "skillDisable": "禁用技能",
+    "skillEnable": "启用技能",
     "globalSkill": "全局技能",
     "projectSkill": "项目技能",
     "builtinSkill": "内置技能",

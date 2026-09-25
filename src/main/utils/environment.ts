@@ -311,6 +311,7 @@ export const getDefaultProjectSettings = (
     autonomyModeLocked: false,
     updatedFilesGroupMode: 'flat',
     disabledRuleFiles: [],
+    disabledSkills: [],
     contextSidebarSectionsOrder: [],
     contextSidebarSectionsHidden: [],
   };

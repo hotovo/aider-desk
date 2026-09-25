@@ -25,7 +25,7 @@ describe('Skills Tools - activate_skill', () => {
     vi.clearAllMocks();
 
     mockSkillManager = {
-      loadAllSkills: vi.fn(async () => [] as SkillDefinition[]),
+      getEnabledSkills: vi.fn(async () => [] as SkillDefinition[]),
       getSkillContent: vi.fn(async () => 'Skill content'),
     };
 
@@ -52,7 +52,7 @@ describe('Skills Tools - activate_skill', () => {
   };
 
   it('excludes skills with disable-model-invocation from the agent-facing skill list', async () => {
-    mockSkillManager.loadAllSkills.mockResolvedValue([
+    mockSkillManager.getEnabledSkills.mockResolvedValue([
       createSkill({ name: 'normal', description: 'Normal skill' }),
       createSkill({ name: 'manual-only', description: 'Manual only skill', disableModelInvocation: true }),
     ]);
@@ -64,7 +64,7 @@ describe('Skills Tools - activate_skill', () => {
   });
 
   it('still lists skills with user-invocable false for the agent', async () => {
-    mockSkillManager.loadAllSkills.mockResolvedValue([createSkill({ name: 'agent-only', description: 'Agent only skill', userInvocable: false })]);
+    mockSkillManager.getEnabledSkills.mockResolvedValue([createSkill({ name: 'agent-only', description: 'Agent only skill', userInvocable: false })]);
 
     const tool = await getActivateSkillTool();
 
@@ -72,7 +72,7 @@ describe('Skills Tools - activate_skill', () => {
   });
 
   it('allows the agent to activate a skill with user-invocable false', async () => {
-    mockSkillManager.loadAllSkills.mockResolvedValue([createSkill({ name: 'agent-only', description: 'Agent only skill', userInvocable: false })]);
+    mockSkillManager.getEnabledSkills.mockResolvedValue([createSkill({ name: 'agent-only', description: 'Agent only skill', userInvocable: false })]);
     mockSkillManager.getSkillContent.mockResolvedValue('Agent only skill content');
 
     const tool = await getActivateSkillTool();
