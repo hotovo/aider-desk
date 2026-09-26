@@ -52,6 +52,7 @@ resources/
   connector/
     connector.py
 scripts/
+  after-pack.js
   before-pack.js
   download-probe.mjs
   test-proxy-server.mjs
@@ -1577,11 +1578,32 @@ posthog_api_key = os.getenv("POSTHOG_API_KEY")
 # Set OpenRouter site and app name
 
 ================
+File: scripts/after-pack.js
+================
+const restore = (dir, rel) =>
+⋮----
+// Moves everything packaged-pruned in scripts/before-pack.js back into node_modules,
+// so the dev environment and other platform builds keep all platform binaries.
+
+================
 File: scripts/before-pack.js
 ================
-// Copy all files from source directory to target directory
+const nodePlatform = (platformName)
 ⋮----
-// Copy all files from source directory to target directory
+const pruneToBackup = (nodeModulesDir, relPaths, key) =>
+⋮----
+const pruneOnnxruntimeNode = (nodeModulesDir, nodePlatformName, nodeArch, key) =>
+⋮----
+// CUDA and TensorRT execution providers are loaded dynamically and are not used (embeddings run on CPU); they add ~344MB on linux/x64.
+⋮----
+const pruneLanceDb = (nodeModulesDir, nodePlatformName, nodeArch, key) =>
+⋮----
+// lancedb ships glibc (gnu) and musl builds; our Linux targets (AppImage/deb/rpm) use glibc, so only keep the gnu flavor
+⋮----
+// only prune when we found a matching subpackage for the current platform/arch, otherwise keep everything to be safe
+⋮----
+// Moves platform-mismatched native binaries away from node_modules for the duration of packaging,
+// so they are not included in the bundle; restored again in scripts/after-pack.js.
 
 ================
 File: scripts/download-probe.mjs
@@ -1998,7 +2020,17 @@ import {
   TASKS_TOOL_SEARCH_TASK,
   TOOL_GROUP_NAME_SEPARATOR,
 } from '@common/tools';
-import { AgentProfile, AutonomyMode, DefaultTaskState, PromptContext, SettingsData, TaskData, TaskExecutionMode, ToolApprovalState } from '@common/types';
+import {
+  AgentProfile,
+  AutonomyMode,
+  ContextMessage,
+  DefaultTaskState,
+  PromptContext,
+  SettingsData,
+  TaskData,
+  TaskExecutionMode,
+  ToolApprovalState,
+} from '@common/types';
 import { fileExists, isUuid } from '@common/utils';
 ⋮----
 import { ApprovalManager } from './approval-manager';
@@ -2009,6 +2041,8 @@ import logger from '@/logger';
 import { isAbortError } from '@/utils/errors';
 import { deriveDirName } from '@/utils';
 import { Task } from '@/task';
+⋮----
+const stripProviderOptions = (content: ContextMessage['content']): ContextMessage['content']
 ⋮----
 export const createTasksToolset = (settings: SettingsData, task: Task, profile: AgentProfile, promptContext?: PromptContext): ToolSet =>
 ⋮----
@@ -6059,9 +6093,16 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, fileP
 ⋮----
 // Get the list of updated files (unstaged changes that are shown in the UI)
 ⋮----
-// Stage updated files before committing
+// Stage updated files before committing. With a file selection the commit runs in the
+// --only pathspec form (see below), which takes tracked files directly from the working
+// tree — so staging is only needed for files not yet tracked (untracked, incl. ignored ones).
+// Without a selection (full commit / amend) everything must be staged, because a plain
+// `git commit` only takes what is in the index.
 ⋮----
-// Retry with -A -f: files explicitly selected in the UI should always be staged.
+// A selection that covers all updated files is effectively a full commit — keep the
+// plain index commit (shorter command, everything is committed anyway)
+⋮----
+// Retry with -A -f: untracked files must always be staged for the commit.
 // -A stages deletions (git add fails with "pathspec did not match any files" for
 // files removed on disk), -f handles ignored files (git check-ignore misses
 // directory-traversal exclusions like .aider* ignoring .aider-desk/rules
@@ -6070,6 +6111,10 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, fileP
 // Escape the commit message for shell
 ⋮----
 // If amending and message is empty, use --no-edit to keep previous message
+⋮----
+// When a file selection is provided, commit only those paths (--only pathspec form).
+// Plain `git commit` would also include any other files already staged in the index,
+// which breaks partial commits when edited files are left staged.
 ⋮----
 async getRebaseState(worktreePath: string): Promise<RebaseState>
 ⋮----
@@ -9909,6 +9954,8 @@ import type { Task } from '@/task';
 ⋮----
 import { AIDER_DESK_BUILTIN_SKILLS_DIR, AIDER_DESK_DIR, AIDER_DESK_HOME_DIR } from '@/constants';
 import { ExtensionManager } from '@/extensions/extension-manager';
+⋮----
+const parseBooleanFrontMatterField = (value: unknown, defaultValue: boolean): boolean =>
 ⋮----
 const parseSkillFrontMatter = (markdown: string):
 ⋮----
@@ -26085,7 +26132,7 @@ import { SkillDefinition } from '@common/types';
 import { Activity, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { HiX } from 'react-icons/hi';
-import { MdOutlinePublic, MdOutlineRefresh } from 'react-icons/md';
+import { MdOutlinePublic, MdOutlineRefresh, MdOutlineSmartToy, MdOutlineTouchApp } from 'react-icons/md';
 import { RiPlayCircleLine, RiRocketLine, RiRobot2Line } from 'react-icons/ri';
 import { VscFileCode } from 'react-icons/vsc';
 import { motion } from 'framer-motion';
@@ -26104,6 +26151,8 @@ className=
 ⋮----
 if (skill.dirPath)
 openFile(baseDir, `$
+⋮----
+
 ⋮----
 onClick=
 
@@ -32568,6 +32617,10 @@ files:
   - '!.aider-desk/*'
   - '!llms.txt'
   - '!packages/*'
+  - '!node_modules/react-icons/**'
+  - '!node_modules/mermaid/**'
+  - '!node_modules/@mermaid-js/**'
+  - '!node_modules/@shikijs/**'
 extraResources:
   - from: ./resources/connector
     to: connector
@@ -32582,6 +32635,7 @@ extraResources:
     filter:
       - '**/*'
 beforePack: scripts/before-pack.js
+afterPack: scripts/after-pack.js
 win:
   executableName: aider-desk
   icon: resources/icon.png
