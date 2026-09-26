@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 72
+      "installCount": 73
     },
     {
       "id": "protected-paths",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "external-rules",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "legacy-system-prompt",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "sound-notification",
@@ -175,7 +175,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "sandbox",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 58
+      "installCount": 60
     },
     {
       "id": "plannotator",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "ui-placement-demo",
@@ -334,7 +334,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "providers-quota-extension",
@@ -358,7 +358,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "fff",
@@ -456,7 +456,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 17
+      "installCount": 20
     },
     {
       "id": "auggie-sdk",
@@ -480,7 +480,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 4
+      "installCount": 7
     },
     {
       "id": "cursor-sdk",
@@ -493,7 +493,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "github-copilot",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "codegraph",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 36
+      "installCount": 38
     },
     {
       "id": "wigolo",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 87
+      "installCount": 89
     }
   ]
 }
