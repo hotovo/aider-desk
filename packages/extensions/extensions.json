@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "sound-notification",
@@ -282,7 +282,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 57
+      "installCount": 58
     },
     {
       "id": "plannotator",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 63
+      "installCount": 64
     },
     {
       "id": "verifier",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "destructive-command-guard",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 86
+      "installCount": 87
     }
   ]
 }
