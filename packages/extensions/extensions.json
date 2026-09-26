@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "wakatime",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "permission-gate",
@@ -375,7 +375,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 64
+      "installCount": 66
     },
     {
       "id": "verifier",
@@ -519,7 +519,7 @@
         "events",
         "ui"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "codegraph",
