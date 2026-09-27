@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.85.0]
 
 - added file watcher for refreshing task files, worktree status and autocompletion while a task runs
 - added find in file support to the file editor with Ctrl+F / Cmd+F
