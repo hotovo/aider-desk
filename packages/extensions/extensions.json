@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "theme",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "permission-gate",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "learn",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "legacy-system-prompt",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "context-autocompletion-words",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 66
+      "installCount": 67
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "bmad",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "kanban",
@@ -544,7 +544,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "doom",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "git-log",
@@ -607,7 +607,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "skill-gallery",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 91
+      "installCount": 92
     },
     {
       "id": "task-scheduler",
