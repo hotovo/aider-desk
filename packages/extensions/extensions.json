@@ -58,7 +58,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "theme",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 73
+      "installCount": 74
     },
     {
       "id": "protected-paths",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 42
+      "installCount": 44
     },
     {
       "id": "destructive-command-guard",
