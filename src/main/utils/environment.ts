@@ -66,6 +66,7 @@ const readApiKeyFromConfFile = (filePath: string, envVarName: string): string | 
           SYNTHETIC_API_KEY: ['synthetic'],
           MISTRAL_API_KEY: ['mistral'],
           NEURALWATT_API_KEY: ['neuralwatt'],
+          LLMAPI_API_KEY: ['llmapi'],
         };
 
         const providerNames = envVarToProviderName[envVarName] || [envVarName.replace(/_API_KEY$/, '').toLowerCase()];

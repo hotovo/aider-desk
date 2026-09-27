@@ -11,6 +11,7 @@ export * from './GroqParameters';
 export * from './AlibabaPlanParameters';
 export * from './KimiPlanParameters';
 export * from './LitellmParameters';
+export * from './LlmApiParameters';
 export * from './MinimaxParameters';
 export * from './MistralParameters';
 export * from './NeuralwattParameters';

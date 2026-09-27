@@ -443,6 +443,10 @@
     "getApiKeyLink": "Получить API-ключ Synthetic",
     "apiKey": "API-ключ"
   },
+  "llmApi": {
+    "getApiKeyLink": "Получить API-ключ LLM API",
+    "apiKey": "API-ключ"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Получить API-ключ Z.AI",
     "apiKey": "API-ключ",
@@ -496,6 +500,7 @@
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
+    "llmapi": "LLM API",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "ollama": "Ollama",

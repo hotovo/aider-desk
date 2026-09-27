@@ -397,6 +397,10 @@
     "getApiKeyLink": "获取 Synthetic API 密钥",
     "apiKey": "API 密钥"
   },
+  "llmApi": {
+    "getApiKeyLink": "获取 LLM API 密钥",
+    "apiKey": "API 密钥"
+  },
   "gemini": {
     "getApiKeyLink": "获取 Gemini API 密钥",
     "apiKey": "API 密钥",
@@ -493,6 +497,7 @@
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
+    "llmapi": "LLM API",
     "minimax": "Minimax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",

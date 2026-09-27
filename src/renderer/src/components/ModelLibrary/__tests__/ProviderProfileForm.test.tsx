@@ -43,6 +43,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   GroqParameters: () => <div>Groq Parameters</div>,
   KimiPlanParameters: () => <div>KimiPlan Parameters</div>,
   LitellmParameters: () => <div>Litellm Parameters</div>,
+  LlmApiParameters: () => <div>LlmApi Parameters</div>,
   LmStudioParameters: () => <div>LmStudio Parameters</div>,
   MinimaxParameters: () => <div>Minimax Parameters</div>,
   MistralParameters: () => <div>Mistral Parameters</div>,

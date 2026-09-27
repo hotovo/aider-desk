@@ -30,6 +30,7 @@ import { groqProviderStrategy } from './providers/groq';
 import { alibabaPlanProviderStrategy } from './providers/alibaba-plan';
 import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
+import { llmApiProviderStrategy } from './providers/llmapi';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
 import { mistralProviderStrategy } from './providers/mistral';
@@ -114,6 +115,7 @@ export class ModelManager {
     'alibaba-plan': alibabaPlanProviderStrategy,
     'kimi-plan': kimiPlanProviderStrategy,
     litellm: litellmProviderStrategy,
+    llmapi: llmApiProviderStrategy,
     lmstudio: lmStudioProviderStrategy,
     minimax: minimaxProviderStrategy,
     mistral: mistralProviderStrategy,

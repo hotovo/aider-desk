@@ -47,6 +47,7 @@ export type LlmProviderName =
   | 'alibaba-plan'
   | 'kimi-plan'
   | 'litellm'
+  | 'llmapi'
   | 'lmstudio'
   | 'minimax'
   | 'mistral'
@@ -96,6 +97,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'groq',
   'kimi-plan',
   'litellm',
+  'llmapi',
   'lmstudio',
   'minimax',
   'mistral',
@@ -345,6 +347,12 @@ export interface SyntheticProvider extends LlmProviderBase {
 }
 export const isSyntheticProvider = (provider: LlmProviderBase): provider is SyntheticProvider => provider.name === 'synthetic';
 
+export interface LlmApiProvider extends LlmProviderBase {
+  name: 'llmapi';
+  apiKey: string;
+}
+export const isLlmApiProvider = (provider: LlmProviderBase): provider is LlmApiProvider => provider.name === 'llmapi';
+
 export interface ExtensionLlmProvider extends LlmProviderBase {
   [key: string]: unknown;
 }
@@ -377,6 +385,7 @@ export type LlmProvider =
   | MinimaxProvider
   | MistralProvider
   | NeuralwattProvider
+  | LlmApiProvider
   | ExtensionLlmProvider;
 
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
@@ -768,6 +777,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         apiKey: '',
         baseUrl: 'http://localhost:4000',
       } satisfies LitellmProvider;
+      break;
+    case 'llmapi':
+      provider = {
+        name: 'llmapi',
+        apiKey: '',
+      } satisfies LlmApiProvider;
       break;
     case 'ollama':
       provider = {

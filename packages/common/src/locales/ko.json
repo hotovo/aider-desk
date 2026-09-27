@@ -447,6 +447,10 @@
     "getApiKeyLink": "Synthetic API 키 받기",
     "apiKey": "API 키"
   },
+  "llmApi": {
+    "getApiKeyLink": "LLM API 키 받기",
+    "apiKey": "API 키"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Z.AI API 키 받기",
     "apiKey": "API 키",
@@ -496,6 +500,7 @@
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
+    "llmapi": "LLM API",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",

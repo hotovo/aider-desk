@@ -443,6 +443,10 @@
     "getApiKeyLink": "Get Synthetic API key",
     "apiKey": "API Key"
   },
+  "llmApi": {
+    "getApiKeyLink": "Get LLM API key",
+    "apiKey": "API Key"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Get Z.AI API key",
     "apiKey": "API Key",
@@ -492,6 +496,7 @@
     "gpustack": "GPUStack",
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
+    "llmapi": "LLM API",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",

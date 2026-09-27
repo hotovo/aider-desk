@@ -11,6 +11,7 @@ export { GroqIcon } from './GroqIcon';
 export { AlibabaPlanIcon } from './AlibabaPlanIcon';
 export { KimiPlanIcon } from './KimiPlanIcon';
 export { LitellmIcon } from './LitellmIcon';
+export { LlmApiIcon } from './LlmApiIcon';
 export { LmStudioIcon } from './LmStudioIcon';
 export { MinimaxIcon } from './MinimaxIcon';
 export { MistralIcon } from './MistralIcon';

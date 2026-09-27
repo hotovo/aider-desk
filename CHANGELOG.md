@@ -24,6 +24,7 @@
 - fixed partial commits including unrelated staged files by committing only selected files via pathspec mode
 - added `/resume` command to prompt autocompletion for resuming tasks
 - added option to disable skills per project
+- added LLM API provider
 
 ## [0.84.0]
 
