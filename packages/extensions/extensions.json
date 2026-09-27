@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 29
+      "installCount": 31
     },
     {
       "id": "permission-gate",
@@ -151,7 +151,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 62
+      "installCount": 64
     },
     {
       "id": "legacy-system-prompt",
@@ -191,7 +191,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "rtk",
@@ -220,7 +220,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 18
+      "installCount": 20
     },
     {
       "id": "chunkhound-search",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "context-autocompletion-words",
@@ -309,7 +309,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "ui-placement-demo",
@@ -388,7 +388,7 @@
         "tools",
         "search"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "seek",
@@ -417,7 +417,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "verifier",
@@ -430,7 +430,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "bmad",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "destructive-command-guard",
@@ -595,7 +595,7 @@
         "security",
         "commands"
       ],
-      "installCount": 29
+      "installCount": 31
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 92
+      "installCount": 94
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 89
+      "installCount": 90
     }
   ]
 }
