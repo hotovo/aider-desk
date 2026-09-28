@@ -36,6 +36,7 @@ import {
 export type LlmProviderName =
   | 'anthropic'
   | 'anthropic-compatible'
+  | 'atlascloud'
   | 'azure'
   | 'bedrock'
   | 'cerebras'
@@ -87,6 +88,7 @@ export const AVAILABLE_PROVIDERS: LlmProviderName[] = [
   'alibaba-plan',
   'anthropic',
   'anthropic-compatible',
+  'atlascloud',
   'azure',
   'bedrock',
   'cerebras',
@@ -347,6 +349,12 @@ export interface SyntheticProvider extends LlmProviderBase {
 }
 export const isSyntheticProvider = (provider: LlmProviderBase): provider is SyntheticProvider => provider.name === 'synthetic';
 
+export interface AtlasCloudProvider extends LlmProviderBase {
+  name: 'atlascloud';
+  apiKey: string;
+}
+export const isAtlasCloudProvider = (provider: LlmProviderBase): provider is AtlasCloudProvider => provider.name === 'atlascloud';
+
 export interface LlmApiProvider extends LlmProviderBase {
   name: 'llmapi';
   apiKey: string;
@@ -386,6 +394,7 @@ export type LlmProvider =
   | MistralProvider
   | NeuralwattProvider
   | LlmApiProvider
+  | AtlasCloudProvider
   | ExtensionLlmProvider;
 
 export const DEFAULT_PROVIDER_MODELS: Partial<Record<LlmProviderName, string>> = {
@@ -783,6 +792,12 @@ export const getDefaultProviderParams = <T extends LlmProvider>(providerName: Ll
         name: 'llmapi',
         apiKey: '',
       } satisfies LlmApiProvider;
+      break;
+    case 'atlascloud':
+      provider = {
+        name: 'atlascloud',
+        apiKey: '',
+      } satisfies AtlasCloudProvider;
       break;
     case 'ollama':
       provider = {

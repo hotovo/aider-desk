@@ -11,6 +11,7 @@ import { DisableToolCallStreaming } from './DisableToolCallStreaming';
 import {
   AnthropicParameters,
   AnthropicCompatibleParameters,
+  AtlasCloudParameters,
   AzureParameters,
   BedrockParameters,
   ClinePassParameters,
@@ -51,6 +52,7 @@ type ProviderParametersProps<T extends LlmProvider> = {
 const PROVIDER_PARAMETERS_MAP: Record<LlmProviderName, ComponentType<ProviderParametersProps>> = {
   anthropic: AnthropicParameters,
   'anthropic-compatible': AnthropicCompatibleParameters,
+  atlascloud: AtlasCloudParameters,
   azure: AzureParameters,
   bedrock: BedrockParameters,
   clinepass: ClinePassParameters,

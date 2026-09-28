@@ -19,6 +19,7 @@ import { extractProviderModel } from '@common/utils';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
+import { atlasCloudProviderStrategy } from './providers/atlascloud';
 import { azureProviderStrategy } from './providers/azure';
 import { bedrockProviderStrategy } from './providers/bedrock';
 import { cerebrasProviderStrategy } from './providers/cerebras';
@@ -104,6 +105,7 @@ export class ModelManager {
   private providerRegistry: LlmProviderRegistry = {
     anthropic: anthropicProviderStrategy,
     'anthropic-compatible': anthropicCompatibleProviderStrategy,
+    atlascloud: atlasCloudProviderStrategy,
     azure: azureProviderStrategy,
     bedrock: bedrockProviderStrategy,
     cerebras: cerebrasProviderStrategy,
