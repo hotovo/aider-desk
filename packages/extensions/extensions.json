@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 74
+      "installCount": 75
     },
     {
       "id": "protected-paths",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "external-rules",
