@@ -137,6 +137,7 @@ src/
         groq.ts
         kimi-plan.ts
         litellm.ts
+        llmapi.ts
         lm-studio.ts
         minimax.ts
         mistral.ts
@@ -444,6 +445,7 @@ src/
             index.ts
             KimiPlanParameters.tsx
             LitellmParameters.tsx
+            LlmApiParameters.tsx
             LmStudioParameters.tsx
             MinimaxParameters.tsx
             MistralParameters.tsx
@@ -731,6 +733,7 @@ src/
         index.ts
         KimiPlanIcon.tsx
         LitellmIcon.tsx
+        LlmApiIcon.tsx
         LmStudioIcon.tsx
         MinimaxIcon.tsx
         MistralIcon.tsx
@@ -7151,6 +7154,61 @@ apiKey = 'sk-dummy'; // Dummy key for OpenAI-compatible client which expects a k
 // Model discovery functions
 
 ================
+File: src/main/models/providers/llmapi.ts
+================
+import { Model, ProviderProfile, SettingsData, UsageReportData } from '@common/types';
+import { isLlmApiProvider, LlmApiProvider } from '@common/agent';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+⋮----
+import type { LanguageModel, LanguageModelUsage } from 'ai';
+⋮----
+import { AIDER_DESK_TITLE, AIDER_DESK_WEBSITE } from '@/constants';
+import { AiderModelMapping, LlmProviderStrategy, LoadModelsResponse } from '@/models';
+import logger from '@/logger';
+import { getEffectiveEnvironmentVariable } from '@/utils';
+import { getDefaultUsageReport } from '@/models/providers/default';
+import { Task } from '@/task/task';
+⋮----
+interface LlmApiPricing {
+  prompt?: string;
+  completion?: string;
+  input_cache_read?: string;
+  input_cache_write?: string;
+}
+⋮----
+interface LlmApiModel {
+  id: string;
+  context_length?: number;
+  pricing: LlmApiPricing;
+}
+⋮----
+interface LlmApiModelsResponse {
+  data: LlmApiModel[];
+}
+⋮----
+const parsePrice = (price: string | undefined): number | undefined =>
+⋮----
+const loadLlmApiModels = async (profile: ProviderProfile, settings: SettingsData): Promise<LoadModelsResponse> =>
+⋮----
+export const hasLlmApiEnvVars = (settings: SettingsData): boolean =>
+⋮----
+export const getLlmApiAiderMapping = (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string): AiderModelMapping =>
+⋮----
+// LLMAPI is OpenAI-compatible, so we use the OpenAI endpoint for Aider
+⋮----
+// === LLM Creation Functions ===
+export const createLlmApiLlm = (profile: ProviderProfile, model: Model, settings: SettingsData, projectDir: string): LanguageModel =>
+⋮----
+// === Cost and Usage Functions ===
+export const getLlmApiUsageReport = (task: Task, provider: ProviderProfile, model: Model, usage: LanguageModelUsage): UsageReportData
+⋮----
+// === Complete Strategy Implementation ===
+⋮----
+// Core LLM functions
+⋮----
+// Model discovery functions
+
+================
 File: src/main/models/providers/lm-studio.ts
 ================
 import { Model, ProviderProfile, SettingsData } from '@common/types';
@@ -8035,6 +8093,7 @@ import { groqProviderStrategy } from './providers/groq';
 import { alibabaPlanProviderStrategy } from './providers/alibaba-plan';
 import { kimiPlanProviderStrategy } from './providers/kimi-plan';
 import { litellmProviderStrategy } from './providers/litellm';
+import { llmApiProviderStrategy } from './providers/llmapi';
 import { lmStudioProviderStrategy } from './providers/lm-studio';
 import { minimaxProviderStrategy } from './providers/minimax';
 import { mistralProviderStrategy } from './providers/mistral';
@@ -9967,11 +10026,13 @@ const loadSkillsFromDir = async (skillsRootDir: string, location: SkillLocation)
 ⋮----
 export class SkillManager
 ⋮----
-constructor(projectDir: string, extensionManager?: ExtensionManager)
+constructor(project: Project, extensionManager?: ExtensionManager)
 ⋮----
 async loadAllSkills(): Promise<Skill[]>
 ⋮----
 async getSkills(contextMessages?: ContextMessage[]): Promise<Skill[]>
+⋮----
+async getEnabledSkills(): Promise<Skill[]>
 ⋮----
 async getSkillContent(skillName: string): Promise<string | null>
 ⋮----
@@ -17994,6 +18055,7 @@ import { UsageInfo } from './UsageInfo';
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
+import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 import { includeMessageProperty } from '@/components/message/utils';
 ⋮----
 type MenuPosition = {
@@ -19645,6 +19707,25 @@ const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
 label=
 
 ================
+File: src/renderer/src/components/ModelLibrary/providers/LlmApiParameters.tsx
+================
+import { ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
+import { LlmApiProvider } from '@common/agent';
+⋮----
+import { Input } from '@/components/common/Input';
+import { useEffectiveEnvironmentVariable } from '@/hooks/useEffectiveEnvironmentVariable';
+⋮----
+type Props = {
+  provider: LlmApiProvider;
+  onChange: (updated: LlmApiProvider) => void;
+};
+⋮----
+const handleApiKeyChange = (e: ChangeEvent<HTMLInputElement>) =>
+⋮----
+label=
+
+================
 File: src/renderer/src/components/ModelLibrary/providers/LmStudioParameters.tsx
 ================
 import { ChangeEvent } from 'react';
@@ -20795,6 +20876,7 @@ import {
   GpustackIcon,
   GroqIcon,
   LitellmIcon,
+  LlmApiIcon,
   LmStudioIcon,
   MinimaxIcon,
   MistralIcon,
@@ -20902,6 +20984,7 @@ import {
   AlibabaPlanParameters,
   KimiPlanParameters,
   LitellmParameters,
+  LlmApiParameters,
   LmStudioParameters,
   MinimaxParameters,
   MistralParameters,
@@ -20996,6 +21079,7 @@ import {
   GroqIcon,
   KimiPlanIcon,
   LitellmIcon,
+  LlmApiIcon,
   LmStudioIcon,
   MinimaxIcon,
   MistralIcon,
@@ -26142,7 +26226,9 @@ import { SectionHeader } from './SectionHeader';
 import { SectionLoading } from './SectionLoading';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TriStateCheckbox } from '@/components/common/TriStateCheckbox';
 import { useApi } from '@/contexts/ApiContext';
+import { useProjectSettings } from '@/contexts/ProjectSettingsContext';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
 ⋮----
 className=
@@ -28336,6 +28422,98 @@ export const LitellmIcon = ({ width = 64, height = 64, className }: Props) => (
     }}
   >
     <div style={{ fontSize: `${width * 0.6}px` }}>🚅</div>
+  </div>
+);
+
+================
+File: src/renderer/src/icons/LlmApiIcon.tsx
+================
+type Props = {
+  width?: number;
+  height?: number;
+  className?: string;
+};
+⋮----
+export const LlmApiIcon = ({ width = 64, height = 64, className }: Props) => (
+  <div
+    aria-label="LLM API"
+    className={`flex items-center justify-center rounded-md ${className || ''}`}
+    style={{
+      backgroundColor: '#3578FF',
+      height: `${height}px`,
+      width: `${width}px`,
+    }}
+  >
+    <svg viewBox="0 0 40 40" width={width} height={height} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <title>LLM API</title>
+      <path d="M13.4093 18.8597L6.6792 15.0605L13.4093 11.2612L20.1394 15.0605L13.4093 18.8597Z" fill="white" />
+      <path
+        d="M13.2819 10.7731C13.407 10.7405 13.5415 10.7568 13.657 10.822L20.3875 14.6206C20.5461 14.7101 20.6438 14.879 20.6438 15.0611C20.6437 15.2431 20.546 15.4111 20.3875 15.5006L13.657 19.2992C13.5029 19.3861 13.315 19.3862 13.1609 19.2992L6.43042 15.5006C6.27201 15.4111 6.17424 15.2431 6.17407 15.0611C6.17407 14.879 6.27183 14.7102 6.43042 14.6206L13.1609 10.822L13.2819 10.7731ZM7.70661 15.06L13.4084 18.2794L19.1113 15.06L13.4084 11.8407L7.70661 15.06Z"
+        fill="black"
+      />
+      <path d="M6.6792 15.0608V24.5112L13.4093 28.3104V23.7513V18.86L6.6792 15.0608Z" fill="black" />
+      <path
+        d="M12.9046 19.1552L7.18393 15.9259V24.2167L12.9046 27.446V19.1552ZM13.9144 28.3105C13.9144 28.49 13.8187 28.6572 13.6636 28.7477C13.5087 28.838 13.3172 28.8391 13.1609 28.751L6.43042 24.9513C6.272 24.8617 6.17411 24.6939 6.17407 24.5118V15.0614C6.17407 14.8818 6.2698 14.7158 6.42487 14.6253C6.57988 14.5349 6.77133 14.5337 6.92758 14.6219L13.657 18.4205C13.8156 18.5101 13.9144 18.6789 13.9144 18.8611V28.3105Z"
+        fill="black"
+      />
+      <path d="M20.1395 15.0608V24.5112L13.4094 28.3104V23.7513V18.86L20.1395 15.0608Z" fill="white" />
+      <path
+        d="M19.8912 14.622C20.0475 14.5338 20.2388 14.5349 20.3939 14.6254C20.5489 14.7159 20.6447 14.8819 20.6447 15.0615V24.5119C20.6446 24.6941 20.5458 24.8618 20.3872 24.9514L13.6578 28.7511C13.5016 28.8393 13.3101 28.838 13.1551 28.7478C13 28.6572 12.9043 28.4901 12.9043 28.3105V18.8612C12.9043 18.679 13.0021 18.5102 13.1606 18.4206L19.8912 14.622ZM13.9142 27.445L19.6348 24.2167V15.9248L13.9142 19.1553V27.445Z"
+        fill="black"
+      />
+      <path d="M26.8695 18.8597L20.1394 15.0605L26.8695 11.2612L33.5996 15.0605L26.8695 18.8597Z" fill="white" />
+      <path
+        d="M26.7419 10.7731C26.867 10.7405 27.0014 10.7568 27.1169 10.822L33.8475 14.6206C34.0061 14.7101 34.1038 14.879 34.1038 15.0611C34.1036 15.2431 34.006 15.4111 33.8475 15.5006L27.1169 19.2992C26.9629 19.3861 26.775 19.3862 26.6209 19.2992L19.8904 15.5006C19.732 15.4111 19.6342 15.2431 19.634 15.0611C19.634 14.879 19.7318 14.7102 19.8904 14.6206L26.6209 10.822L26.7419 10.7731ZM21.1666 15.06L26.8684 18.2794L32.5713 15.06L26.8684 11.8407L21.1666 15.06Z"
+        fill="black"
+      />
+      <path d="M33.5997 15.0608V24.5112L26.8696 28.3104V23.7513V18.86L33.5997 15.0608Z" fill="white" />
+      <path
+        d="M33.3514 14.622C33.5077 14.5338 33.699 14.5349 33.8541 14.6254C34.0091 14.7159 34.1049 14.8819 34.1049 15.0615V24.5119C34.1048 24.6941 34.006 24.8618 33.8474 24.9514L27.118 28.7511C26.9618 28.8393 26.7703 28.838 26.6153 28.7478C26.4602 28.6572 26.3645 28.4901 26.3645 28.3105V18.8612C26.3645 18.679 26.4623 18.5102 26.6208 18.4206L33.3514 14.622ZM27.3744 27.445L33.095 24.2167V15.9248L27.3744 19.1553V27.445Z"
+        fill="black"
+      />
+      <path d="M13.4093 26.4557L6.6792 22.6564L13.4093 18.8572L20.1394 22.6564L13.4093 26.4557Z" fill="white" />
+      <path
+        d="M13.2819 18.3693C13.407 18.3367 13.5415 18.353 13.657 18.4182L20.3875 22.2168C20.5461 22.3063 20.6438 22.4751 20.6438 22.6573C20.6437 22.8393 20.546 23.0073 20.3875 23.0968L13.657 26.8954C13.5029 26.9823 13.315 26.9824 13.1609 26.8954L6.43042 23.0968C6.27201 23.0073 6.17424 22.8393 6.17407 22.6573C6.17407 22.4752 6.27183 22.3063 6.43042 22.2168L13.1609 18.4182L13.2819 18.3693ZM7.70661 22.6562L13.4084 25.8756L19.1113 22.6562L13.4084 19.4369L7.70661 22.6562Z"
+        fill="black"
+      />
+      <path d="M6.6792 22.657V32.1095L13.4093 35.9088V31.3497V26.4562L6.6792 22.657Z" fill="black" />
+      <path
+        d="M12.9046 26.7514L7.18393 23.5221V31.8151L12.9046 35.0444V26.7514ZM13.9144 35.9089C13.9144 36.0884 13.8186 36.2544 13.6636 36.345C13.5086 36.4355 13.3173 36.4376 13.1609 36.3494L6.43042 32.5497C6.272 32.4601 6.17412 32.2923 6.17407 32.1103V22.6576C6.17407 22.478 6.2698 22.312 6.42487 22.2215C6.57988 22.1311 6.77133 22.1299 6.92758 22.2181L13.657 26.0167C13.8156 26.1063 13.9144 26.2751 13.9144 26.4573V35.9089Z"
+        fill="black"
+      />
+      <path d="M20.1395 22.657V32.1095L13.4094 35.9088V31.3497V26.4562L20.1395 22.657Z" fill="white" />
+      <path
+        d="M19.8912 22.2182C20.0475 22.13 20.2388 22.131 20.3939 22.2215C20.5489 22.3121 20.6447 22.4781 20.6447 22.6577V32.1103C20.6446 32.2925 20.5458 32.4603 20.3872 32.5498L13.6578 36.3495C13.5015 36.4378 13.3101 36.4355 13.1551 36.3451C13 36.2545 12.9043 36.0885 12.9043 35.909V26.4574C12.9043 26.2752 13.0021 26.1064 13.1606 26.0168L19.8912 22.2182ZM13.9142 35.0434L19.6348 31.8152V23.521L13.9142 26.7515V35.0434Z"
+        fill="black"
+      />
+      <path d="M26.8695 26.4557L20.1394 22.6564L26.8695 18.8572L33.5996 22.6564L26.8695 26.4557Z" fill="white" />
+      <path
+        d="M26.7419 18.3693C26.867 18.3367 27.0014 18.353 27.1169 18.4182L33.8475 22.2168C34.0061 22.3063 34.1038 22.4751 34.1038 22.6573C34.1036 22.8393 34.006 23.0073 33.8475 23.0968L27.1169 26.8954C26.9629 26.9823 26.775 26.9824 26.6209 26.8954L19.8904 23.0968C19.732 23.0073 19.6342 22.8393 19.634 22.6573C19.634 22.4752 19.7318 22.3063 19.8904 22.2168L26.6209 18.4182L26.7419 18.3693ZM21.1666 22.6562L26.8684 25.8756L32.5713 22.6562L26.8684 19.4369L21.1666 22.6562Z"
+        fill="black"
+      />
+      <path d="M20.1394 22.657V32.1095L26.8695 35.9088V31.3497V26.4562L20.1394 22.657Z" fill="black" />
+      <path
+        d="M26.3645 26.7514L20.6439 23.5221V31.8151L26.3645 35.0444V26.7514ZM27.3744 35.9089C27.3744 36.0884 27.2786 36.2544 27.1236 36.345C26.9686 36.4355 26.7772 36.4376 26.6209 36.3494L19.8904 32.5497C19.732 32.4601 19.6341 32.2923 19.634 32.1103V22.6576C19.634 22.478 19.7298 22.312 19.8848 22.2215C20.0398 22.1311 20.2313 22.1299 20.3875 22.2181L27.1169 26.0167C27.2756 26.1063 27.3744 26.2751 27.3744 26.4573V35.9089Z"
+        fill="black"
+      />
+      <path d="M33.5997 22.657V32.1095L26.8696 35.9088V31.3497V26.4562L33.5997 22.657Z" fill="white" />
+      <path
+        d="M33.3514 22.2182C33.5077 22.13 33.699 22.131 33.8541 22.2215C34.0091 22.3121 34.1049 22.4781 34.1049 22.6577V32.1103C34.1048 32.2925 34.006 32.4603 33.8474 32.5498L27.118 36.3495C26.9617 36.4378 26.7703 36.4355 26.6153 36.3451C26.4602 36.2545 26.3645 36.0885 26.3645 35.909V26.4574C26.3645 26.2752 26.4623 26.1064 26.6208 26.0168L33.3514 22.2182ZM27.3744 35.0434L33.095 31.8152V23.521L27.3744 26.7515V35.0434Z"
+        fill="black"
+      />
+      <path
+        d="M19.9649 22.2719C24.9857 22.2719 29.0558 18.2018 29.0558 13.181C29.0558 8.16023 24.9857 4.09009 19.9649 4.09009C14.9442 4.09009 10.874 8.16023 10.874 13.181C10.874 18.2018 14.9442 22.2719 19.9649 22.2719Z"
+        fill="white"
+      />
+      <path
+        d="M28.5507 13.1818C28.5507 8.43993 24.7066 4.59579 19.9647 4.59579C15.2229 4.59579 11.3788 8.43993 11.3788 13.1818C11.3788 17.9236 15.2229 21.7678 19.9647 21.7678C24.7066 21.7678 28.5507 17.9236 28.5507 13.1818ZM29.5606 13.1818C29.5606 18.4815 25.2644 22.7776 19.9647 22.7776C14.665 22.7776 10.3689 18.4815 10.3689 13.1818C10.3689 7.88207 14.665 3.58594 19.9647 3.58594C25.2644 3.58594 29.5606 7.88207 29.5606 13.1818Z"
+        fill="black"
+      />
+      <path d="M14.0549 12.8784H17.6913V16.5148H14.0549V12.8784Z" fill="black" />
+      <path d="M15.1921 14.0149H16.5558V16.5149H15.1921V14.0149Z" fill="white" />
+      <path d="M22.2368 12.8784H25.8732V16.5148H22.2368V12.8784Z" fill="black" />
+      <path d="M23.3733 14.0149H24.7369V16.5149H23.3733V14.0149Z" fill="white" />
+    </svg>
   </div>
 );
 
@@ -32735,7 +32913,7 @@ File: package.json
     "build:server": "vite build --config vite.config.server.ts && mkdir -p out/resources && cp -r resources/* out/resources",
     "postbuild:server": "npm rebuild",
     "build": "npm run typecheck && electron-vite build",
-    "postinstall": "electron-builder install-app-deps && node scripts/download-probe.mjs && patch-package && npm run build:extensions",
+    "postinstall": "electron-builder install-app-deps && node node_modules/electron/install.js && node scripts/download-probe.mjs && patch-package && npm run build:extensions",
     "build:unpack": "npm run build && electron-builder --dir",
     "build:win": "npm run build && electron-builder --win",
     "build:mac": "npm run build && electron-builder --mac",
