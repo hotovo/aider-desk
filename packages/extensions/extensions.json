@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "wakatime",
@@ -80,7 +80,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 75
+      "installCount": 77
     },
     {
       "id": "protected-paths",
@@ -92,7 +92,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "permission-gate",
@@ -114,7 +114,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "external-rules",
@@ -257,7 +257,7 @@
         "context",
         "commands"
       ],
-      "installCount": 51
+      "installCount": 54
     },
     {
       "id": "context-autocompletion-words",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "checkpoints",
@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 51
+      "installCount": 56
     },
     {
       "id": "kanban",
@@ -556,7 +556,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "my-minions",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "wigolo",
@@ -582,7 +582,7 @@
         "tools",
         "search"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "destructive-command-guard",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 94
+      "installCount": 95
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 91
+      "installCount": 92
     }
   ]
 }
