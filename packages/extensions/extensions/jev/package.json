@@ -1,0 +1,9 @@
+{
+  "name": "jev-extension",
+  "version": "1.0.0",
+  "description": "Jev decision-model tools for AiderDesk agents — typed yes/no, choice, and score questions about files, command output, or state",
+  "main": "index.ts",
+  "keywords": ["aiderdesk", "extension", "tools", "ai", "decisions", "jev"],
+  "author": "AiderDesk",
+  "license": "MIT"
+}

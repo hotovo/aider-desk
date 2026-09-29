@@ -1,6 +1,18 @@
 {
   "extensions": [
     {
+      "id": "jev",
+      "name": "Jev",
+      "description": "Jev decision-model tools: typed yes/no, choice, and score questions about files, command output, or state",
+      "folder": "jev",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": [
+        "tools"
+      ],
+      "installCount": 0
+    },
+    {
       "id": "binary-files",
       "name": "Binary Files",
       "description": "Attaches local binary files to multimodal model requests",
