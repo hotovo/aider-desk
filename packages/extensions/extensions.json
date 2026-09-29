@@ -532,7 +532,7 @@
         "tools",
         "search"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "kanban",
@@ -569,7 +569,7 @@
         "agents",
         "example"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "wigolo",
@@ -645,7 +645,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 92
+      "installCount": 93
     }
   ]
 }
