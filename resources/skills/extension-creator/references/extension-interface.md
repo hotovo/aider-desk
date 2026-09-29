@@ -328,6 +328,10 @@ interface ExtensionContext {
   /** Get a specific setting value from global settings using dot-notation (e.g., 'general.theme'). */
   getSetting(key: string): Promise<unknown>;
 
+  /** Get the configured provider profiles (LLM provider settings including API keys).
+   *  Read-only snapshots from the ModelManager; empty array when not available. */
+  getProviders(): ProviderProfile[];
+
   /** Update global settings by merging the provided partial updates. */
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 

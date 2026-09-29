@@ -1515,6 +1515,13 @@ export interface ExtensionContext {
   getSetting(key: string): Promise<unknown>;
 
   /**
+   * Get the configured provider profiles (LLM provider settings including API keys).
+   * Results are read-only snapshots from the ModelManager; empty array when not available.
+   * @returns Array of ProviderProfile currently configured by the user
+   */
+  getProviders(): ProviderProfile[];
+
+  /**
    * Get the merged MCP server configurations (global servers overridden by project-specific ones)
    * available for the current project context. Returns an empty object if no project context is
    * available or the MCP config manager is not wired up.

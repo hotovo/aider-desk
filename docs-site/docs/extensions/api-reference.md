@@ -115,6 +115,9 @@ interface ExtensionContext {
   getSetting(key: string): Promise<unknown>;
   updateSettings(updates: Partial<SettingsData>): Promise<void>;
 
+  // Providers
+  getProviders(): ProviderProfile[];
+
   // MCP Servers
   getMcpServers(projectDir?: string): Promise<Record<string, McpServerConfig>>;
 
@@ -125,6 +128,19 @@ interface ExtensionContext {
   // Navigation
   openUrl(url: string, target?: 'external' | 'window' | 'modal-overlay'): Promise<void>;
   openPath(path: string): Promise<boolean>;
+
+  // Electron access
+  getElectronApp(): Promise<ElectronApp | null>;
+
+  // Advanced
+  truncateToolResult(
+    content: string,
+    maxLines?: number,
+    maxSizeKB?: number,
+    maxTokens?: number,
+    saveToFile?: boolean,
+    truncationSuffix?: string,
+  ): Promise<string>;
 }
 ```
 
@@ -147,6 +163,9 @@ interface ExtensionContext {
 | `triggerUIComponentsReload()` | Reload all UI component definitions for this extension |
 | `openUrl(url, target?)` | Open URL in external browser, new window, or modal overlay |
 | `openPath(path)` | Open file or directory in system's default application |
+| `getProviders()` | Get configured provider profiles (read-only snapshots from ModelManager including API keys; empty array when not available) |
+| `getElectronApp()` | Get a narrowed Electron `App` object for host-level APIs (e.g., `getAppMetrics()`); returns `null` when not running in Electron |
+| `truncateToolResult(content, maxLines?, maxSizeKB?, maxTokens?, saveToFile?, truncationSuffix?)` | Truncate a tool-result string exceeding line/size/token limits, preserving head and tail (defaults: 1000 lines, 50 KB, 50000 tokens; saves full content to a temp file unless `saveToFile: false`) |
 
 ## TaskContext
 

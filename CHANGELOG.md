@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added getProviders to extension context to access configured provider profiles
+
 ## [0.85.0]
 
 - added file watcher for refreshing task files, worktree status and autocompletion while a task runs
