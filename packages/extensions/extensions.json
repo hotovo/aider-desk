@@ -57,7 +57,7 @@
         "commands",
         "example"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "questions",
@@ -92,7 +92,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 79
+      "installCount": 80
     },
     {
       "id": "protected-paths",
@@ -115,7 +115,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "ultrathink",
@@ -126,7 +126,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "external-rules",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "external-skills",
@@ -150,7 +150,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "learn",
@@ -163,7 +163,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 66
+      "installCount": 67
     },
     {
       "id": "legacy-system-prompt",
@@ -187,7 +187,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "sandbox",
@@ -220,7 +220,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "redact-secrets",
@@ -269,7 +269,7 @@
         "context",
         "commands"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "context-autocompletion-words",
@@ -294,7 +294,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 63
+      "installCount": 64
     },
     {
       "id": "plannotator",
@@ -321,7 +321,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "ui-placement-demo",
@@ -346,7 +346,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "providers-quota-extension",
@@ -387,7 +387,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "searxng-search",
@@ -400,7 +400,7 @@
         "tools",
         "search"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "seek",
@@ -429,7 +429,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "verifier",
@@ -544,7 +544,7 @@
         "tools",
         "search"
       ],
-      "installCount": 58
+      "installCount": 59
     },
     {
       "id": "kanban",
@@ -581,7 +581,7 @@
         "agents",
         "example"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "wigolo",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "skill-gallery",
@@ -631,7 +631,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 97
+      "installCount": 98
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
         "commands",
         "events"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "reasoning-selector",
@@ -657,7 +657,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 95
+      "installCount": 96
     }
   ]
 }
