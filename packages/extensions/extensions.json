@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 0
+      "installCount": 1
     },
     {
       "id": "binary-files",
@@ -22,7 +22,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "wakatime",
@@ -33,7 +33,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "pirate",
@@ -70,7 +70,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "theme",
@@ -104,7 +104,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 34
+      "installCount": 36
     },
     {
       "id": "permission-gate",
@@ -115,7 +115,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "ultrathink",
@@ -175,7 +175,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "sound-notification",
@@ -232,7 +232,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "chunkhound-search",
@@ -244,7 +244,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -256,7 +256,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "tree-sitter-repo-map",
@@ -281,7 +281,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 19
+      "installCount": 21
     },
     {
       "id": "lsp",
@@ -294,7 +294,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 64
+      "installCount": 65
     },
     {
       "id": "plannotator",
@@ -309,7 +309,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "programmatic-tool-calls",
@@ -333,7 +333,7 @@
         "ui",
         "example"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "multi-model-run",
@@ -417,7 +417,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "tps-counter",
@@ -429,7 +429,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "verifier",
@@ -442,7 +442,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "bmad",
@@ -480,7 +480,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "cursor",
@@ -531,7 +531,7 @@
         "events",
         "ui"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "codegraph",
@@ -556,7 +556,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "doom",
@@ -594,7 +594,7 @@
         "tools",
         "search"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "destructive-command-guard",
@@ -607,7 +607,7 @@
         "security",
         "commands"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "git-log",
