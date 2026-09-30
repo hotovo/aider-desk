@@ -220,7 +220,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "redact-secrets",
@@ -531,7 +531,7 @@
         "events",
         "ui"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "codegraph",
