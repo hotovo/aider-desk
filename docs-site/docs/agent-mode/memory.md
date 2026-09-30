@@ -109,14 +109,14 @@ async onAgentFinished(event: AgentFinishedEvent, context: ExtensionContext) {
   const memory = context.getMemoryContext();
   if (!memory.isMemoryEnabled()) return;
 
-  const projectId = context.getProjectDir();
+  const scopeId = context.getProjectDir();
   const taskId = context.getTaskContext()?.data.id ?? '';
 
   // Store an insight
-  await memory.storeMemory(projectId, taskId, 'code-pattern', 'Always use clsx for conditional classes');
+  await memory.storeMemory(scopeId, taskId, 'code-pattern', 'Always use clsx for conditional classes');
 
   // Retrieve relevant context
-  const memories = await memory.retrieveMemories(projectId, 'React patterns');
+  const memories = await memory.retrieveMemories(scopeId, 'React patterns');
 }
 ```
 

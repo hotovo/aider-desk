@@ -798,6 +798,9 @@
       "includeFilesTooltip": "将上下文文件内容添加到代理的聊天中。这将增加令牌使用量。",
       "includeRepoMap": "包含仓库地图",
       "includeRepoMapTooltip": "在代理的上下文中包含仓库地图。这有助于代理理解项目结构，但可能会增加token使用量。",
+      "memory": "记忆",
+      "useAgentMemoryScope": "按智能体隔离记忆",
+      "useAgentMemoryScopeTooltip": "启用后，该智能体将使用自己的记忆范围存储和检索记忆，而不是项目目录。这些记忆在该智能体使用的所有项目之间共享。",
       "autonomyMode": "自主模式",
       "override": "覆盖",
       "clearOverride": "清除覆盖",
@@ -1005,8 +1008,8 @@
       },
       "memories": {
         "title": "记忆",
-        "project": "项目",
-        "allProjects": "所有项目",
+        "scope": "范围",
+        "all": "全部",
         "loading": "正在加载记忆...",
         "empty": "未找到记忆。",
         "delete": "删除",
@@ -1015,6 +1018,9 @@
         "deleteDialogText": "删除记忆",
         "deleteProjectDialogTitle": "删除项目记忆",
         "deleteProjectDialogText": "删除该项目的所有记忆",
+        "deleteAllForAgent": "删除智能体的全部记忆",
+        "deleteAgentMemoriesDialogTitle": "删除智能体记忆",
+        "deleteAgentMemoriesDialogText": "删除该智能体的全部记忆",
         "projectId": "projectId",
         "id": "id"
       }

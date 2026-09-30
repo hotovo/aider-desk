@@ -1442,10 +1442,10 @@ export class BrowserApi implements ApplicationAPI {
     return this.get('/memories/embedding-progress');
   }
 
-  async deleteProjectMemories(projectId: string): Promise<number> {
+  async deleteScopeMemories(scopeId: string): Promise<number> {
     const { data } = await this.apiClient.delete<{ deletedCount: number }>('/memories', {
       data: {
-        projectId,
+        scopeId,
       },
     });
     return data.deletedCount;

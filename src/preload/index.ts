@@ -792,7 +792,7 @@ const api: ApplicationAPI = {
   // Memory operations
   listAllMemories: () => ipcRenderer.invoke('list-all-memories'),
   deleteMemory: (id) => ipcRenderer.invoke('delete-memory', id),
-  deleteProjectMemories: (projectId) => ipcRenderer.invoke('delete-project-memories', projectId),
+  deleteScopeMemories: (scopeId) => ipcRenderer.invoke('delete-scope-memories', scopeId),
   getMemoryEmbeddingProgress: () => ipcRenderer.invoke('get-memory-embedding-progress'),
 
   writeToClipboard: (text: string) => ipcRenderer.invoke('clipboard-write-text', text),

@@ -70,6 +70,7 @@ ADRs are grouped into context directories. **Numbering is global and sequential*
 | [0038](security/0038-context-isolation-secrets-readonly.md) | Electron Trust Boundaries, Secrets, and Readonly Access | Accepted | 2026-08-28 |
 | [0039](testing-tooling/0039-vitest-multi-config-and-playwright.md) | Vitest Multi-Config Testing and Playwright E2E | Accepted | 2026-08-28 |
 | [0040](testing-tooling/0040-electron-vite-build-system.md) | electron-vite Build System | Accepted | 2026-08-28 |
+| [0041](extensions/0041-mirror-surface-sync-for-shared-contracts.md) | Mirror-Surface Sync for Shared Contract Changes | Proposed | 2026-09-27 |
 
 ## Creating a New ADR
 

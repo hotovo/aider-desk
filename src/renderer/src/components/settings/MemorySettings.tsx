@@ -1,7 +1,8 @@
-import { MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEmbeddingProvider, MemoryEntry, SettingsData } from '@common/types';
+import { AGENT_MEMORY_SCOPE_PREFIX, getAgentMemoryScopeId } from '@common/agent';
+import { AgentProfile, MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEmbeddingProvider, MemoryEntry, SettingsData } from '@common/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTrash } from 'react-icons/fa';
+import { FaFolderOpen, FaRobot, FaTrash } from 'react-icons/fa';
 import { useMount } from '@reactuses/core';
 
 import { Checkbox } from '../common/Checkbox';
@@ -17,6 +18,8 @@ import { Slider } from '@/components/common/Slider';
 import { InfoIcon } from '@/components/common/InfoIcon';
 
 const EMBEDDING_PROVIDERS = [{ value: 'sentence-transformers', label: 'Local' }];
+
+const ALL_SCOPES = '__all__';
 
 const LOCAL_MODELS = [
   {
@@ -46,9 +49,10 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
   const api = useApi();
 
   const [memories, setMemories] = useState<MemoryEntry[] | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('__all__');
+  const [agentProfiles, setAgentProfiles] = useState<AgentProfile[]>([]);
+  const [selectedScopeId, setSelectedScopeId] = useState<string>(ALL_SCOPES);
   const [memoryToDelete, setMemoryToDelete] = useState<MemoryEntry | null>(null);
-  const [isDeleteProjectDialogOpen, setIsDeleteProjectDialogOpen] = useState(false);
+  const [isDeleteScopeDialogOpen, setIsDeleteScopeDialogOpen] = useState(false);
 
   const [embeddingProgress, setEmbeddingProgress] = useState<MemoryEmbeddingProgress | null>(null);
 
@@ -59,6 +63,7 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
 
   useMount(() => {
     void loadMemories();
+    void api.getAllAgentProfiles().then(setAgentProfiles);
   });
 
   useEffect(() => {
@@ -98,31 +103,61 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
     };
   }, [api, settings.memory.model, settings.memory.provider]);
 
-  const projectOptions = useMemo(() => {
-    const ids = new Set<string>();
-    (memories ?? []).forEach((m) => {
-      if (m.projectId) {
-        ids.add(m.projectId);
-      }
-    });
+  const isAgentScopeSelected = selectedScopeId.startsWith(AGENT_MEMORY_SCOPE_PREFIX);
+
+  const getScopeLabel = (scopeId: string): string => {
+    if (scopeId.startsWith(AGENT_MEMORY_SCOPE_PREFIX)) {
+      const profile = agentProfiles.find((p) => getAgentMemoryScopeId(p.id) === scopeId);
+      return profile?.name ?? scopeId;
+    }
+    return scopeId;
+  };
+
+  const scopeOptions = useMemo(() => {
+    const memoryScopeIds = Array.from(new Set((memories ?? []).map((m) => m.projectId).filter((id): id is string => Boolean(id))));
+
+    const isolatedProfiles = agentProfiles.filter((p) => p.useAgentMemoryScope);
+    const isolatedProfileScopes = new Set(isolatedProfiles.map((p) => getAgentMemoryScopeId(p.id)));
+
+    const projectScopes = memoryScopeIds.filter((id) => !id.startsWith(AGENT_MEMORY_SCOPE_PREFIX)).sort((a, b) => a.localeCompare(b));
+    // agent scopes with memories but no matching isolated profile (e.g. the flag was turned off) stay visible for cleanup
+    const orphanAgentScopes = memoryScopeIds
+      .filter((id) => id.startsWith(AGENT_MEMORY_SCOPE_PREFIX) && !isolatedProfileScopes.has(id))
+      .sort((a, b) => a.localeCompare(b));
 
     return [
-      { value: '__all__', label: t('settings.memory.memories.allProjects') },
-      ...Array.from(ids)
-        .sort((a, b) => a.localeCompare(b))
-        .map((id) => ({ value: id, label: id.split('/').pop() || id })),
+      { value: ALL_SCOPES, label: t('settings.memory.memories.all') },
+      ...projectScopes.map((id) => ({
+        value: id,
+        label: (
+          <span className="flex items-center gap-1.5">
+            <FaFolderOpen className="h-3 w-3 flex-shrink-0" />
+            {id.split('/').pop() || id}
+          </span>
+        ),
+      })),
+      ...isolatedProfiles.map((p) => ({
+        value: getAgentMemoryScopeId(p.id),
+        label: (
+          <span className="flex items-center gap-1.5">
+            <FaRobot className="h-3 w-3 flex-shrink-0" />
+            {p.name}
+          </span>
+        ),
+      })),
+      ...orphanAgentScopes.map((id) => ({ value: id, label: id })),
     ];
-  }, [memories, t]);
+  }, [memories, agentProfiles, t]);
 
   const filteredMemories = useMemo(() => {
     if (!memories) {
       return null;
     }
-    if (selectedProjectId === '__all__') {
+    if (selectedScopeId === ALL_SCOPES) {
       return memories;
     }
-    return memories.filter((m) => m.projectId === selectedProjectId);
-  }, [memories, selectedProjectId]);
+    return memories.filter((m) => m.projectId === selectedScopeId);
+  }, [memories, selectedScopeId]);
 
   const handleDeleteMemory = async () => {
     if (!memoryToDelete) {
@@ -133,12 +168,12 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
     await loadMemories();
   };
 
-  const handleDeleteProjectMemories = async () => {
-    if (selectedProjectId === '__all__') {
+  const handleDeleteScopeMemories = async () => {
+    if (selectedScopeId === ALL_SCOPES) {
       return;
     }
-    await api.deleteProjectMemories(selectedProjectId);
-    setIsDeleteProjectDialogOpen(false);
+    await api.deleteScopeMemories(selectedScopeId);
+    setIsDeleteScopeDialogOpen(false);
     await loadMemories();
   };
 
@@ -270,16 +305,18 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
         <div className="px-4 py-5 space-y-4 flex-1 min-h-0 flex flex-col">
           <div className="flex items-end justify-between gap-4">
             <Select
-              label={t('settings.memory.memories.project')}
-              value={selectedProjectId}
-              onChange={(value) => setSelectedProjectId(value)}
-              options={projectOptions}
-              className="min-w-[300px]"
+              label={t('settings.memory.memories.scope')}
+              value={selectedScopeId}
+              onChange={(value) => setSelectedScopeId(value)}
+              options={scopeOptions}
+              className="min-w-[400px]"
             />
 
-            <Button variant="contained" onClick={() => setIsDeleteProjectDialogOpen(true)} size="sm" color="danger" disabled={selectedProjectId === '__all__'}>
-              {t('settings.memory.memories.deleteAllForProject')}
-            </Button>
+            {selectedScopeId !== ALL_SCOPES && (
+              <Button variant="contained" onClick={() => setIsDeleteScopeDialogOpen(true)} size="sm" color="danger">
+                {isAgentScopeSelected ? t('settings.memory.memories.deleteAllForAgent') : t('settings.memory.memories.deleteAllForProject')}
+              </Button>
+            )}
           </div>
 
           <div className="border border-border-default-dark rounded-md overflow-hidden flex-1 min-h-0">
@@ -299,7 +336,7 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
                           <div className="text-xs text-text-muted flex flex-wrap gap-x-1 gap-y-0.5 leading-4">
                             {m.projectId && (
                               <span>
-                                <CodeInline>{m.projectId}</CodeInline>
+                                <CodeInline>{getScopeLabel(m.projectId)}</CodeInline>
                               </span>
                             )}
                             <span>
@@ -342,17 +379,18 @@ export const MemorySettings = ({ settings, setSettings }: Props) => {
         </ConfirmDialog>
       )}
 
-      {isDeleteProjectDialogOpen && selectedProjectId !== '__all__' && (
+      {isDeleteScopeDialogOpen && selectedScopeId !== ALL_SCOPES && (
         <ConfirmDialog
-          title={t('settings.memory.memories.deleteProjectDialogTitle')}
-          onConfirm={handleDeleteProjectMemories}
-          onCancel={() => setIsDeleteProjectDialogOpen(false)}
-          confirmButtonText={t('settings.memory.memories.deleteAllForProject')}
+          title={isAgentScopeSelected ? t('settings.memory.memories.deleteAgentMemoriesDialogTitle') : t('settings.memory.memories.deleteProjectDialogTitle')}
+          onConfirm={handleDeleteScopeMemories}
+          onCancel={() => setIsDeleteScopeDialogOpen(false)}
+          confirmButtonText={isAgentScopeSelected ? t('settings.memory.memories.deleteAllForAgent') : t('settings.memory.memories.deleteAllForProject')}
           confirmButtonClass="bg-error hover:bg-error"
         >
           <div className="text-sm text-text-secondary space-y-2">
             <div>
-              {t('settings.memory.memories.deleteProjectDialogText')} <CodeInline>{selectedProjectId}</CodeInline>
+              {isAgentScopeSelected ? t('settings.memory.memories.deleteAgentMemoriesDialogText') : t('settings.memory.memories.deleteProjectDialogText')}{' '}
+              <CodeInline>{getScopeLabel(selectedScopeId)}</CodeInline>
             </div>
           </div>
         </ConfirmDialog>

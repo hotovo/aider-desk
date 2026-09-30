@@ -468,6 +468,7 @@ export const DEFAULT_AGENT_PROFILE: AgentProfile = {
   useTaskTools: false,
   useMemoryTools: true,
   useSkillsTools: true,
+  useAgentMemoryScope: false,
   useExtensionTools: true,
   disabledExtensionTools: [],
   customInstructions: '',
@@ -637,6 +638,10 @@ export const HANDOFF_AGENT_PROFILE: AgentProfile = {
     [`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`]: ToolApprovalState.Never,
   },
 };
+
+export const AGENT_MEMORY_SCOPE_PREFIX = 'agent-profile:';
+
+export const getAgentMemoryScopeId = (profileId: string): string => `${AGENT_MEMORY_SCOPE_PREFIX}${profileId}`;
 
 export const getDefaultProviderParams = <T extends LlmProvider>(providerName: LlmProviderName): T => {
   let provider: LlmProvider;

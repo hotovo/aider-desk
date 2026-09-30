@@ -320,7 +320,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     getMemoryEmbeddingProgress: vi.fn((): Promise<MemoryEmbeddingProgress> => Promise.resolve({} as MemoryEmbeddingProgress)),
     listAllMemories: vi.fn((): Promise<MemoryEntry[]> => Promise.resolve([])),
     deleteMemory: vi.fn((): Promise<boolean> => Promise.resolve(true)),
-    deleteProjectMemories: vi.fn((): Promise<number> => Promise.resolve(0)),
+    deleteScopeMemories: vi.fn((): Promise<number> => Promise.resolve(0)),
     writeToClipboard: vi.fn((): Promise<void> => Promise.resolve()),
     writeImageToClipboard: vi.fn((): Promise<void> => Promise.resolve()),
     openPath: vi.fn((): Promise<boolean> => Promise.resolve(true)),

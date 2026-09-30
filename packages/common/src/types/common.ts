@@ -574,6 +574,7 @@ export interface AgentProfile {
   useTaskTools: boolean;
   useMemoryTools: boolean;
   useSkillsTools: boolean;
+  useAgentMemoryScope?: boolean; // when true, memory tools use a per-agent scope instead of the project directory
   useExtensionTools: boolean;
   disabledExtensionTools: string[]; // Array of extension IDs whose tools are disabled
   customInstructions: string;

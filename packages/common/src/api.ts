@@ -360,7 +360,7 @@ export interface ApplicationAPI {
   // Memory operations
   listAllMemories: () => Promise<MemoryEntry[]>;
   deleteMemory: (id: string) => Promise<boolean>;
-  deleteProjectMemories: (projectId: string) => Promise<number>;
+  deleteScopeMemories: (scopeId: string) => Promise<number>;
   getMemoryEmbeddingProgress: () => Promise<MemoryEmbeddingProgress>;
 
   // Clipboard operations

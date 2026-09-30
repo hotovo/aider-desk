@@ -306,6 +306,24 @@ export const ProfileGeneralSection = ({ profile, settings, onSettingChange }: Pr
           />
         </div>
       </div>
+
+      {profile.useMemoryTools && (
+        <div className="border-t border-border-default-dark pt-4">
+          <div className="text-sm font-medium text-text-primary mb-3">{t('settings.agent.memory')}</div>
+          <div className="space-y-2">
+            <Checkbox
+              label={
+                <div className="flex items-center">
+                  <span>{t('settings.agent.useAgentMemoryScope')}</span>
+                  <InfoIcon className="ml-1" tooltip={t('settings.agent.useAgentMemoryScopeTooltip')} />
+                </div>
+              }
+              checked={profile.useAgentMemoryScope ?? false}
+              onChange={(checked) => onSettingChange('useAgentMemoryScope', checked)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

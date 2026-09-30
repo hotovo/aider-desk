@@ -1391,8 +1391,8 @@ export class EventsHandler {
     return await this.memoryManager.deleteMemory(id);
   }
 
-  async deleteProjectMemories(projectId: string): Promise<number> {
-    return await this.memoryManager.deleteMemoriesForProject(projectId);
+  async deleteScopeMemories(scopeId: string): Promise<number> {
+    return await this.memoryManager.deleteMemoriesForScope(scopeId);
   }
 
   getMemoryEmbeddingProgress() {

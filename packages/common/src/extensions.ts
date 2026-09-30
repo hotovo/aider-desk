@@ -1626,15 +1626,17 @@ export interface ExtensionContext {
 export interface MemoryContext {
   /**
    * Store a new memory entry
+   * @param scopeId - Memory scope: the project directory, or `agent-profile:{profileId}` when the agent profile has memory isolation (`useAgentMemoryScope`) enabled
    * @returns The ID of the created memory
    */
-  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+  storeMemory(scopeId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
 
   /**
    * Retrieve memories by semantic similarity
+   * @param scopeId - Memory scope: the project directory, or `agent-profile:{profileId}` when the agent profile has memory isolation (`useAgentMemoryScope`) enabled
    * @returns Array of matching memory entries, ranked by relevance
    */
-  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+  retrieveMemories(scopeId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
 
   /**
    * Get a single memory by ID

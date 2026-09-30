@@ -13,9 +13,13 @@ const DeleteMemorySchema = z.object({
   id: z.string().min(1, 'Memory ID is required'),
 });
 
-const DeleteProjectMemoriesSchema = z.object({
-  projectId: z.string().min(1, 'Project ID is required'),
-});
+const DeleteScopeMemoriesSchema = z
+  .object({
+    scopeId: z.string().min(1).optional(),
+    projectId: z.string().min(1).optional(), // legacy field name, kept for backward compatibility
+  })
+  .refine((data) => data.scopeId || data.projectId, { message: 'Memory scope ID is required' })
+  .transform((data) => ({ scopeId: (data.scopeId ?? data.projectId) as string }));
 
 export class MemoryApi extends BaseApi {
   constructor(private readonly eventsHandler: EventsHandler) {
@@ -53,12 +57,12 @@ export class MemoryApi extends BaseApi {
     router.delete(
       '/memories',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(DeleteProjectMemoriesSchema, req.body, res);
+        const parsed = this.validateRequest(DeleteScopeMemoriesSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
-        const deletedCount = await this.eventsHandler.deleteProjectMemories(parsed.projectId);
+        const deletedCount = await this.eventsHandler.deleteScopeMemories(parsed.scopeId);
         res.status(200).json({ deletedCount });
       }),
     );

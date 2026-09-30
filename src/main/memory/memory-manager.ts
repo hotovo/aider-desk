@@ -464,9 +464,9 @@ export class MemoryManager {
   }
 
   /**
-   * Creates and stores a new memory for a specific project.
+   * Creates and stores a new memory for a specific scope (project directory or agent profile).
    */
-  async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string> {
+  async storeMemory(scopeId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string> {
     if (!(await this.waitForInit()) || !this.isMemoryEnabled() || !this.db) {
       return '';
     }
@@ -480,7 +480,7 @@ export class MemoryManager {
         type,
         content,
         taskid: taskId,
-        projectid: projectId,
+        projectid: scopeId,
         timestamp: Date.now(),
         vector: embedding,
       };
@@ -496,7 +496,7 @@ export class MemoryManager {
       logger.debug('Stored memory entry', {
         id: memoryWithVector.id,
         type: memoryWithVector.type,
-        projectId: memoryWithVector.projectid,
+        scopeId: memoryWithVector.projectid,
         taskId: memoryWithVector.taskid,
         content: memoryWithVector.content.substring(0, 100),
       });
@@ -509,12 +509,12 @@ export class MemoryManager {
   }
 
   /**
-   * Retrieves memories for a specific project relevant to the user's query.
-   * @param projectId - The project to filter by
+   * Retrieves memories for a specific scope (project directory or agent profile) relevant to the user's query.
+   * @param scopeId - The scope to filter by (project directory or `agent-profile:{id}`)
    * @param query - The user's search query
    * @param limit - Max number of memories to return (default 5)
    */
-  async retrieveMemories(projectId: string, query: string, limit: number = 5): Promise<MemoryEntry[]> {
+  async retrieveMemories(scopeId: string, query: string, limit: number = 5): Promise<MemoryEntry[]> {
     if (!(await this.waitForInit()) || !this.isMemoryEnabled() || !this.db) {
       return [];
     }
@@ -526,7 +526,7 @@ export class MemoryManager {
     const maxDistance = this.store.getSettings().memory.maxDistance;
 
     logger.info('Retrieving memories', {
-      projectId,
+      scopeId,
       query,
       limit,
       maxDistance,
@@ -537,13 +537,13 @@ export class MemoryManager {
     const results = await this.table
       .query()
       .nearestTo(queryVector) // Vector similarity search
-      .where(`projectid = '${projectId}'`) // SQL-like filtering for the project
+      .where(`projectid = '${scopeId}'`) // SQL-like filtering for the memory scope
       .limit(limit)
       .select(['id', 'content', 'type', 'timestamp', 'projectid', 'taskid', '_distance'])
       .toArray();
 
     logger.info('Retrieved memories', {
-      projectId,
+      scopeId,
       query,
       limit,
       maxDistance,
@@ -665,16 +665,16 @@ export class MemoryManager {
     }));
   }
 
-  async deleteMemoriesForProject(projectId: string): Promise<number> {
+  async deleteMemoriesForScope(scopeId: string): Promise<number> {
     if (!(await this.waitForInit()) || !this.isMemoryEnabled() || !this.db || !this.table) {
       return 0;
     }
 
     try {
-      const results = await this.table.query().where(`projectid = '${projectId}'`).select(['id']).toArray();
+      const results = await this.table.query().where(`projectid = '${scopeId}'`).select(['id']).toArray();
       const ids = results.map((r) => (r as { id: string }).id).filter(Boolean);
       await Promise.all(ids.map((id) => this.table!.delete(`id = '${id}'`)));
-      logger.info('Deleted project memories', { projectId, count: ids.length });
+      logger.info('Deleted memories for scope', { scopeId, count: ids.length });
       return ids.length;
     } catch (error) {
       logger.error('Failed to delete project memories:', error);

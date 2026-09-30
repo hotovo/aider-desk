@@ -1,5 +1,6 @@
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
+import { getAgentMemoryScopeId } from '@common/agent';
 import { AgentProfile, MemoryEntryType, PromptContext, ToolApprovalState } from '@common/types';
 import {
   MEMORY_TOOL_DELETE as TOOL_DELETE,
@@ -20,6 +21,8 @@ import logger from '@/logger';
 
 export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryManager: MemoryManager, promptContext?: PromptContext): ToolSet => {
   const approvalManager = new ApprovalManager(task, profile);
+
+  const memoryScope = profile.useAgentMemoryScope ? getAgentMemoryScopeId(profile.id) : task.getProject().baseDir;
 
   const storeMemoryTool = tool({
     description: MEMORY_TOOL_DESCRIPTIONS[TOOL_STORE],
@@ -42,18 +45,17 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       }
 
       try {
-        const projectId = task.getProject().baseDir;
         const taskId = task.taskId;
         const memoryType = type as MemoryEntryType;
 
-        const id = await memoryManager.storeMemory(projectId, taskId, memoryType, content);
+        const id = await memoryManager.storeMemory(memoryScope, taskId, memoryType, content);
 
         if (!id) {
           return 'Failed to store memory: memory system unavailable.';
         }
 
         logger.info('Memory stored successfully', {
-          projectId,
+          scopeId: memoryScope,
           taskId,
           type: memoryType,
           contentLength: content.length,
@@ -88,11 +90,10 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       }
 
       try {
-        const projectId = task.getProject().baseDir;
-        const memories = await memoryManager.retrieveMemories(projectId, query, limit);
+        const memories = await memoryManager.retrieveMemories(memoryScope, query, limit);
 
         logger.info('Memories retrieved successfully', {
-          projectId,
+          scopeId: memoryScope,
           query,
           count: memories.length,
         });
@@ -169,12 +170,11 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
       }
 
       try {
-        const projectId = task.getProject().baseDir;
         const memories = await memoryManager.getAllMemories();
 
-        // Filter by project and type if specified
+        // Filter by memory scope and type if specified
         const filteredMemories = memories.filter((memory) => {
-          if (memory.projectId !== projectId) {
+          if (memory.projectId !== memoryScope) {
             return false;
           }
           if (type && memory.type !== type) {
@@ -186,7 +186,7 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
         const limitedMemories = filteredMemories.slice(0, limit);
 
         logger.info('Memories listed successfully', {
-          projectId,
+          scopeId: memoryScope,
           type: type || 'all',
           count: limitedMemories.length,
         });

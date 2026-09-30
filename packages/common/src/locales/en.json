@@ -800,6 +800,9 @@
       "includeFilesTooltip": "Adds content of context files into the chat of agent. This will increase token usage.",
       "includeRepoMap": "Include repository map",
       "includeRepoMapTooltip": "Include the repository map from Aider in the agent's context. This can help the agent understand the project structure, but will increase token usage.",
+      "memory": "Memory",
+      "useAgentMemoryScope": "Isolate memories by agent",
+      "useAgentMemoryScopeTooltip": "When enabled, this agent stores and retrieves memories in its own scope instead of the project directory. These memories are shared across all projects where this agent is used.",
       "autonomyMode": "Autonomy mode",
       "override": "Override",
       "clearOverride": "Clear Override",
@@ -1072,8 +1075,8 @@
       },
       "memories": {
         "title": "Memories",
-        "project": "Project",
-        "allProjects": "All projects",
+        "scope": "Scope",
+        "all": "All",
         "loading": "Loading memories...",
         "empty": "No memories found.",
         "delete": "Delete",
@@ -1082,6 +1085,9 @@
         "deleteDialogText": "Delete memory",
         "deleteProjectDialogTitle": "Delete project memories",
         "deleteProjectDialogText": "Delete all memories for project",
+        "deleteAllForAgent": "Delete all for agent",
+        "deleteAgentMemoriesDialogTitle": "Delete agent memories",
+        "deleteAgentMemoriesDialogText": "Delete all memories for agent",
         "projectId": "projectId",
         "id": "id"
       }

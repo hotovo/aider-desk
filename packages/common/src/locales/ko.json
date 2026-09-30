@@ -791,6 +791,9 @@
       "includeFilesTooltip": "에이전트의 채팅에 컨텍스트 파일의 내용을 추가합니다. 토큰 사용량이 늘어납니다.",
       "includeRepoMap": "저장소 맵 포함",
       "includeRepoMapTooltip": "Aider의 저장소 맵을 에이전트의 컨텍스트에 포함합니다. 에이전트가 프로젝트 구조를 이해하는 데 도움이 되지만 토큰 사용량이 늘어납니다.",
+      "memory": "메모리",
+      "useAgentMemoryScope": "에이전트별 메모리 격리",
+      "useAgentMemoryScopeTooltip": "활성화하면 이 에이전트는 프로젝트 디렉터리 대신 자체 메모리 범위에 메모리를 저장하고 검색합니다. 이 메모리는 이 에이전트가 사용되는 모든 프로젝트에서 공유됩니다.",
       "autonomyMode": "자율성 모드",
       "override": "재정의",
       "clearOverride": "재정의 지우기",
@@ -1071,8 +1074,8 @@
       },
       "memories": {
         "title": "메모리",
-        "project": "프로젝트",
-        "allProjects": "모든 프로젝트",
+        "scope": "범위",
+        "all": "전체",
         "loading": "메모리를 불러오는 중...",
         "empty": "메모리가 없습니다.",
         "delete": "삭제",
@@ -1081,6 +1084,9 @@
         "deleteDialogText": "메모리 삭제",
         "deleteProjectDialogTitle": "프로젝트 메모리 삭제",
         "deleteProjectDialogText": "프로젝트의 모든 메모리 삭제",
+        "deleteAllForAgent": "에이전트의 모든 메모리 삭제",
+        "deleteAgentMemoriesDialogTitle": "에이전트 메모리 삭제",
+        "deleteAgentMemoriesDialogText": "에이전트의 모든 메모리 삭제",
         "projectId": "projectId",
         "id": "id"
       }

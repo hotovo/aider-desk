@@ -765,10 +765,12 @@ interface ToolResult {
 
 Provides access to AiderDesk's memory system — the same underlying vector store used by the built-in memory MCP tools. Available via `context.getMemoryContext()` in any extension lifecycle hook or method.
 
+Memories are scoped by the first parameter of `storeMemory`/`retrieveMemories`. Use the project directory (`context.getProjectDir()`) for project-scoped memories, or `agent-profile:{profileId}` to share memories across projects for agents with memory isolation (`useAgentMemoryScope`) enabled.
+
 ```typescript
 interface MemoryContext {
-  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
-  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+  storeMemory(scopeId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+  retrieveMemories(scopeId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
   getMemory(id: string): Promise<MemoryEntry | null>;
   deleteMemory(id: string): Promise<boolean>;
   updateMemory(id: string, content: string): Promise<boolean>;
@@ -782,8 +784,8 @@ interface MemoryContext {
 
 | Method | Returns | Description |
 |--------|---------|-------------|
-| `storeMemory(projectId, taskId, type, content)` | `Promise<string>` | Store a new memory entry. Returns the created memory ID. |
-| `retrieveMemories(projectId, query, limit?)` | `Promise<MemoryEntry[]>` | Retrieve memories by semantic similarity, ranked by relevance. |
+| `storeMemory(scopeId, taskId, type, content)` | `Promise<string>` | Store a new memory entry. Returns the created memory ID. |
+| `retrieveMemories(scopeId, query, limit?)` | `Promise<MemoryEntry[]>` | Retrieve memories by semantic similarity, ranked by relevance. |
 | `getMemory(id)` | `Promise<MemoryEntry \| null>` | Get a single memory by ID. |
 | `deleteMemory(id)` | `Promise<boolean>` | Delete a specific memory by ID. Returns `true` if successful. |
 | `updateMemory(id, content)` | `Promise<boolean>` | Update the content of an existing memory. Returns `true` if successful. |
@@ -811,7 +813,7 @@ interface MemoryEntry {
   content: string;       // Memory content text
   type: MemoryEntryType; // Category of memory
   taskId?: string;       // Associated task ID (if applicable)
-  projectId?: string;    // Associated project directory path
+  projectId?: string;    // Memory scope: project directory path, or agent profile scope (`agent-profile:{id}`)
   timestamp: number;     // Creation timestamp
 }
 ```
@@ -826,19 +828,19 @@ export default class MemoryExtension implements Extension {
     const memory = context.getMemoryContext();
     if (!memory.isMemoryEnabled()) return;
 
-    const projectId = context.getProjectDir();
+    const scopeId = context.getProjectDir();
     const taskId = context.getTaskContext()?.data.id ?? '';
 
     // Store a code pattern discovered during the task
     await memory.storeMemory(
-      projectId,
+      scopeId,
       taskId,
       'code-pattern',
       'Always use clsx for conditional class names in React components',
     );
 
     // Retrieve relevant memories
-    const memories = await memory.retrieveMemories(projectId, 'React class naming conventions');
+    const memories = await memory.retrieveMemories(scopeId, 'React class naming conventions');
     context.log(`Found ${memories.length} relevant memories`, 'info');
   }
 }

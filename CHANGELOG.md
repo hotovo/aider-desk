@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added getProviders to extension context to access configured provider profiles
+- added option to isolate memories per agent profile
 
 ## [0.85.0]
 

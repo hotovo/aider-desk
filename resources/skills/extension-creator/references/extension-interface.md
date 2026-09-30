@@ -754,11 +754,13 @@ Provides access to AiderDesk's memory system. Uses the same underlying vector st
 
 ```typescript
 interface MemoryContext {
-  /** Store a new memory entry. Returns the ID of the created memory. */
-  storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
+  /** Store a new memory entry. Returns the ID of the created memory.
+   * @param scopeId - Memory scope: the project directory, or `agent-profile:{profileId}` when the agent profile has memory isolation (`useAgentMemoryScope`) enabled */
+  storeMemory(scopeId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>;
 
-  /** Retrieve memories by semantic similarity. Returns array ranked by relevance. */
-  retrieveMemories(projectId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
+  /** Retrieve memories by semantic similarity. Returns array ranked by relevance.
+   * @param scopeId - Memory scope: the project directory, or `agent-profile:{profileId}` when the agent profile has memory isolation (`useAgentMemoryScope`) enabled */
+  retrieveMemories(scopeId: string, query: string, limit?: number): Promise<MemoryEntry[]>;
 
   /** Get a single memory by ID. */
   getMemory(id: string): Promise<MemoryEntry | null>;
@@ -798,6 +800,7 @@ interface MemoryEntry {
   content: string;
   type: MemoryEntryType;
   taskId?: string;
+  /** Memory scope: project directory path, or agent profile scope (`agent-profile:{id}`) */
   projectId?: string;
   timestamp: number;
 }
