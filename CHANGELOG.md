@@ -4,6 +4,7 @@
 
 - added getProviders to extension context to access configured provider profiles
 - added option to isolate memories per agent profile
+- fixed crash during streaming (React maximum update depth exceeded) in message list
 
 ## [0.85.0]
 
