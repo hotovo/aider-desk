@@ -70,7 +70,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "theme",
@@ -92,7 +92,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 80
+      "installCount": 82
     },
     {
       "id": "protected-paths",
@@ -429,7 +429,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 72
+      "installCount": 73
     },
     {
       "id": "verifier",
@@ -631,7 +631,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 98
+      "installCount": 99
     },
     {
       "id": "task-scheduler",
@@ -657,7 +657,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 96
+      "installCount": 97
     }
   ]
 }
