@@ -1787,6 +1787,7 @@ File: src/main/agent/tools/memory.ts
 ================
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
+import { getAgentMemoryScopeId } from '@common/agent';
 import { AgentProfile, MemoryEntryType, PromptContext, ToolApprovalState } from '@common/types';
 import {
   MEMORY_TOOL_DELETE as TOOL_DELETE,
@@ -1809,7 +1810,7 @@ export const createMemoryToolset = (task: Task, profile: AgentProfile, memoryMan
 ⋮----
 // Get the memory to show its content in the approval question
 ⋮----
-// Filter by project and type if specified
+// Filter by memory scope and type if specified
 ⋮----
 // Get the memory to show its content in the approval question
 ⋮----
@@ -6417,28 +6418,28 @@ private async getEmbedding(text: string): Promise<number[]>
 // Convert Float32Array to standard number array for LanceDB
 ⋮----
 /**
-   * Creates and stores a new memory for a specific project.
+   * Creates and stores a new memory for a specific scope (project directory or agent profile).
    */
-async storeMemory(projectId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>
+async storeMemory(scopeId: string, taskId: string, type: MemoryEntryType, content: string): Promise<string>
 ⋮----
 // Create the table if it doesn't exist yet
 ⋮----
 // Add to existing table
 ⋮----
 /**
-   * Retrieves memories for a specific project relevant to the user's query.
-   * @param projectId - The project to filter by
+   * Retrieves memories for a specific scope (project directory or agent profile) relevant to the user's query.
+   * @param scopeId - The scope to filter by (project directory or `agent-profile:{id}`)
    * @param query - The user's search query
    * @param limit - Max number of memories to return (default 5)
    */
-async retrieveMemories(projectId: string, query: string, limit: number = 5): Promise<MemoryEntry[]>
+async retrieveMemories(scopeId: string, query: string, limit: number = 5): Promise<MemoryEntry[]>
 ⋮----
 return []; // No memories exist yet
 ⋮----
 // Perform Vector Search + SQL Filtering with distance information
 ⋮----
 .nearestTo(queryVector) // Vector similarity search
-.where(`projectid = '${projectId}'`) // SQL-like filtering for the project
+.where(`projectid = '${scopeId}'`) // SQL-like filtering for the memory scope
 ⋮----
 // Map results back to MemoryEntry interface
 // Note: LanceDB returns rows, we cast them to our interface
@@ -6456,7 +6457,7 @@ async getAllMemories(): Promise<MemoryEntry[]>
 // Map results back to MemoryEntry interface
 // Note: LanceDB returns rows, we cast them to our interface
 ⋮----
-async deleteMemoriesForProject(projectId: string): Promise<number>
+async deleteMemoriesForScope(scopeId: string): Promise<number>
 ⋮----
 async clearAllMemories(): Promise<boolean>
 ⋮----
@@ -9313,6 +9314,8 @@ import { z } from 'zod';
 import { BaseApi } from './base-api';
 ⋮----
 import { EventsHandler } from '@/events-handler';
+⋮----
+projectId: z.string().min(1).optional(), // legacy field name, kept for backward compatibility
 ⋮----
 export class MemoryApi extends BaseApi
 ⋮----
@@ -13411,7 +13414,7 @@ async listAllMemories(): Promise<MemoryEntry[]>
 ⋮----
 async deleteMemory(id: string): Promise<boolean>
 ⋮----
-async deleteProjectMemories(projectId: string): Promise<number>
+async deleteScopeMemories(scopeId: string): Promise<number>
 ⋮----
 getMemoryEmbeddingProgress()
 ⋮----
@@ -15040,7 +15043,7 @@ async deleteMemory(id: string): Promise<boolean>
 ⋮----
 getMemoryEmbeddingProgress(): Promise<MemoryEmbeddingProgress>
 ⋮----
-async deleteProjectMemories(projectId: string): Promise<number>
+async deleteScopeMemories(scopeId: string): Promise<number>
 ⋮----
 async writeToClipboard(text: string): Promise<void>
 ⋮----
@@ -24632,10 +24635,11 @@ export const LanguageSelector = (
 ================
 File: src/renderer/src/components/settings/MemorySettings.tsx
 ================
-import { MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEmbeddingProvider, MemoryEntry, SettingsData } from '@common/types';
+import { AGENT_MEMORY_SCOPE_PREFIX, getAgentMemoryScopeId } from '@common/agent';
+import { AgentProfile, MemoryEmbeddingProgress, MemoryEmbeddingProgressPhase, MemoryEmbeddingProvider, MemoryEntry, SettingsData } from '@common/types';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FaTrash } from 'react-icons/fa';
+import { FaFolderOpen, FaRobot, FaTrash } from 'react-icons/fa';
 import { useMount } from '@reactuses/core';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
@@ -24657,9 +24661,13 @@ type Props = {
 ⋮----
 const poll = async () =>
 ⋮----
+const getScopeLabel = (scopeId: string): string =>
+⋮----
+// agent scopes with memories but no matching isolated profile (e.g. the flag was turned off) stay visible for cleanup
+⋮----
 const handleDeleteMemory = async () =>
 ⋮----
-const handleDeleteProjectMemories = async () =>
+const handleDeleteScopeMemories = async () =>
 ⋮----
 const handleEnabledChange = (enabled: boolean) =>
 ⋮----
@@ -24678,6 +24686,7 @@ onClick=
 title=
 ⋮----
 confirmButtonText=
+⋮----
 
 ================
 File: src/renderer/src/components/settings/NetworkSettings.tsx
@@ -32975,7 +32984,7 @@ File: package.json
     "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
     "@huggingface/transformers": "3.8.1",
     "@lancedb/lancedb": "0.22.3",
-    "@legendapp/list": "3.3.11",
+    "@legendapp/list": "3.6.0",
     "@openrouter/ai-sdk-provider": "3.0.0",
     "@opentelemetry/auto-instrumentations-node": "0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
@@ -33063,7 +33072,7 @@ File: package.json
     "tmp": "0.2.7",
     "tree-kill": "1.2.2",
     "turndown": "7.2.2",
-    "undici": "8.10.0",
+    "undici": "8.11.2",
     "unidiff": "1.0.4",
     "unist-util-map": "4.0.0",
     "use-sync-external-store": "1.6.0",
