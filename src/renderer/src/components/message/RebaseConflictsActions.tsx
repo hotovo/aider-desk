@@ -1,6 +1,6 @@
 import { TiWarning } from 'react-icons/ti';
 import { useTranslation } from 'react-i18next';
-import { WorktreeIntegrationStatus } from '@common/types';
+import { TaskGitStatus } from '@common/types';
 
 import { Button } from '@/components/common/Button';
 import { useApi } from '@/contexts/ApiContext';
@@ -8,25 +8,25 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   projectDir: string;
   taskId: string;
-  worktreeStatus: WorktreeIntegrationStatus;
+  status: TaskGitStatus;
 };
 
-export const RebaseConflictsActions = ({ projectDir, taskId, worktreeStatus }: Props) => {
+export const RebaseConflictsActions = ({ projectDir, taskId, status }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
 
-  const conflictFiles = worktreeStatus.rebaseState.unmergedFiles ?? [];
+  const conflictFiles = status.rebaseState.unmergedFiles ?? [];
 
   const handleContinueRebase = () => {
-    void api.continueWorktreeRebase(projectDir, taskId);
+    void api.continueRebase(projectDir, taskId);
   };
 
   const handleResolveConflictsWithAgent = () => {
-    void api.resolveWorktreeConflictsWithAgent(projectDir, taskId);
+    void api.resolveConflictsWithAgent(projectDir, taskId);
   };
 
   const handleAbortRebase = () => {
-    void api.abortWorktreeRebase(projectDir, taskId);
+    void api.abortRebase(projectDir, taskId);
   };
 
   return (

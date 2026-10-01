@@ -536,7 +536,7 @@ Loads a task's runtime state including messages, context files, and queued promp
   ```
 - **Response**: `200 OK` (returns `TaskStateData` with `messages`, `files`, `workingMode`, etc.)
 
-The returned object contains the conversation state but **not** the full `worktree` metadata. Use `GET /api/project/worktree/status` or `POST /api/project/tasks` (update) to get worktree details.
+The returned object contains the conversation state but **not** the full `worktree` metadata. Use `GET /api/project/git/status` (or its legacy alias `GET /api/project/worktree/status`) or `POST /api/project/tasks` (update) to get worktree details.
 
 ### Settings Management
 
@@ -754,8 +754,40 @@ Replaces the entire server configuration of the given scope.
 
 Worktrees provide Git isolation for tasks. Each worktree is a separate working directory linked to the main repository, allowing tasks to make changes without affecting each other or the main branch. All worktree endpoints require `projectDir` and `taskId` parameters.
 
-#### Get Worktree Status
-Returns the integration status of a task's worktree against a target branch. This is the **authoritative endpoint** for verifying that a Git worktree has been materialized and checking its state.
+#### Get Task Git Status
+Returns the git status of a task: current branch, uncommitted files, rebase state, and — for worktree-mode tasks — nested worktree integration details.
+
+- **Endpoint**: `GET /api/project/git/status`
+- **Query Parameters**:
+  | Parameter | Type | Required | Description |
+  |-----------|------|----------|-------------|
+  | `projectDir` | string | Yes | Absolute path to the project directory |
+  | `taskId` | string | Yes | Task ID |
+  | `targetBranch` | string | No | Branch to compare the worktree against (defaults to main branch) |
+- **Response**: `200 OK`
+  ```json
+  {
+    "currentBranch": "task/a1b2c3d4",
+    "uncommittedFiles": {
+      "count": 2,
+      "files": ["src/auth.ts", "src/login.tsx"]
+    },
+    "rebaseState": null,
+    "worktree": {
+      "baseBranch": "main",
+      "targetBranch": "main",
+      "aheadCommits": {
+        "count": 3,
+        "commits": ["abc1234 feat: add login", "def5678 fix: validation", "..."]
+      },
+      "predictedConflicts": []
+    }
+  }
+  ```
+  For local-mode tasks `worktree` is absent. `null` is returned only when a worktree exists but cannot be checked (e.g., its directory is gone or no target branch can be determined).
+
+#### Get Worktree Status (Deprecated)
+Returns the legacy flat worktree integration status. **Deprecated**: use `GET /api/project/git/status` instead. This endpoint preserves the pre-deprecation contract: it returns `null` if no worktree exists for the task; a non-null response confirms the worktree is materialized on disk.
 
 - **Endpoint**: `GET /api/project/worktree/status`
 - **Query Parameters**:
@@ -1128,7 +1160,7 @@ curl -X POST http://localhost:24337/api/project/tasks \
   }"
 
 # Step 3: Verify worktree isolation
-curl "http://localhost:24337/api/project/worktree/status?projectDir=/path/to/project&taskId=$TASK_ID"
+curl "http://localhost:24337/api/project/git/status?projectDir=/path/to/project&taskId=$TASK_ID"
 ```
 
 ## Error Handling
@@ -1150,4 +1182,4 @@ The API uses standard HTTP status codes:
 5. **Authentication**: Keep API keys secure when using environment variables
 6. **Validation**: Validate paths and parameters before sending requests
 7. **Worktree Isolation**: Use the two-step create-then-update pattern to ensure Git worktree isolation is verified before starting execution. Do not rely on `POST /api/project/tasks/new` alone to materialize a worktree.
-8. **Conservative Automation**: For external bridges, verify worktree status via `GET /api/project/worktree/status` before transitioning external state (e.g., moving a GitHub issue to `a2a/queued`). Fail closed if the worktree cannot be verified.
+8. **Conservative Automation**: For external bridges, verify worktree status via `GET /api/project/git/status` (a materialized worktree shows as `worktree` present in the response) before transitioning external state (e.g., moving a GitHub issue to `a2a/queued`). Fail closed if the worktree cannot be verified. The legacy `GET /api/project/worktree/status` endpoint is deprecated but keeps its old contract (flat shape, `null` when no worktree exists).

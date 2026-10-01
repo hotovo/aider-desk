@@ -62,9 +62,9 @@ import {
   GitSyncCommits,
   SwitchToLocalOptions,
   SwitchToWorktreeOptions,
-  WorktreeIntegrationStatus,
-  WorktreeIntegrationStatusUpdatedData,
-  WorktreeUncommittedFiles,
+  TaskGitStatus,
+  TaskGitStatusUpdatedData,
+  UncommittedFiles,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
@@ -112,7 +112,7 @@ type EventDataMap = {
   'provider-models-updated': ProviderModelsData;
   'providers-updated': ProvidersUpdatedData;
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
-  'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
+  'task-git-status-updated': TaskGitStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'mcp-servers-updated': McpServersData;
   'updated-files-updated': UpdatedFilesUpdatedData;
@@ -197,7 +197,7 @@ export class BrowserApi implements ApplicationAPI {
       'input-history-updated': new Map(),
       'clear-task': new Map(),
       'project-started': new Map(),
-      'worktree-integration-status-updated': new Map(),
+      'task-git-status-updated': new Map(),
       'provider-models-updated': new Map(),
       'providers-updated': new Map(),
       'updated-files-updated': new Map(),
@@ -1007,8 +1007,8 @@ export class BrowserApi implements ApplicationAPI {
     return this.addListener('project-settings-updated', callback, baseDir);
   }
 
-  addWorktreeIntegrationStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void): () => void {
-    return this.addListener('worktree-integration-status-updated', callback, baseDir, taskId);
+  addTaskGitStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: TaskGitStatusUpdatedData) => void): () => void {
+    return this.addListener('task-git-status-updated', callback, baseDir, taskId);
   }
 
   // Task lifecycle event listeners
@@ -1212,7 +1212,7 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<WorktreeUncommittedFiles> {
+  getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<UncommittedFiles> {
     return this.get('/project/local-uncommitted-files', {
       projectDir: baseDir,
       taskId,
@@ -1379,8 +1379,8 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus> {
-    return this.get('/project/worktree/status', {
+  getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<TaskGitStatus> {
+    return this.get('/project/git/status', {
       projectDir: baseDir,
       taskId,
       targetBranch,
@@ -1395,22 +1395,22 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  abortWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
-    return this.post('/project/worktree/abort-rebase', {
+  abortRebase(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/git/abort-rebase', {
       projectDir: baseDir,
       taskId,
     });
   }
 
-  continueWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
-    return this.post('/project/worktree/continue-rebase', {
+  continueRebase(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/git/continue-rebase', {
       projectDir: baseDir,
       taskId,
     });
   }
 
-  resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
-    return this.post('/project/worktree/resolve-conflicts-with-agent', {
+  resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {
+    return this.post('/project/git/resolve-conflicts-with-agent', {
       projectDir: baseDir,
       taskId,
     });

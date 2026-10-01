@@ -1,4 +1,4 @@
-import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
+import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, UncommittedFiles } from '@common/types';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { MdClose } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
@@ -14,7 +14,7 @@ import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton'
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
 import { useApi } from '@/contexts/ApiContext';
-import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
 
@@ -65,9 +65,9 @@ export const TaskGitControls = ({
   const [showConfirmWorktree, setShowConfirmWorktree] = useState(false);
   const [localOption, setLocalOption] = useState<LocalSwitchOption>(LocalSwitchOption.Merge);
   const [worktreeOption, setWorktreeOption] = useState<WorktreeSwitchOption>(WorktreeSwitchOption.JustSwitch);
-  const [localUncommittedFiles, setLocalUncommittedFiles] = useState<WorktreeUncommittedFiles | null>(null);
+  const [localUncommittedFiles, setLocalUncommittedFiles] = useState<UncommittedFiles | null>(null);
   const isWorktree = task.workingMode === 'worktree';
-  const { worktreeStatus } = useWorktreeIntegrationStatus(task.baseDir, task.id, isWorktree);
+  const { taskGitStatus } = useTaskGitStatus(task.baseDir, task.id);
   const { isCommitting, cancelCommit } = useCommitChanges(task.baseDir, task.id);
 
   const [isGitRepo, setIsGitRepo] = useState<boolean | null>(null);
@@ -124,7 +124,7 @@ export const TaskGitControls = ({
     };
   }, [api, task.baseDir, task.id, task.workingMode]);
 
-  const hasWorktreeChanges = Boolean(worktreeStatus && (worktreeStatus.uncommittedFiles.count > 0 || worktreeStatus.aheadCommits.count > 0));
+  const hasWorktreeChanges = Boolean(taskGitStatus && (taskGitStatus.uncommittedFiles.count > 0 || (taskGitStatus.worktree?.aheadCommits.count ?? 0) > 0));
   const hasLocalChanges = Boolean(localUncommittedFiles && localUncommittedFiles.count > 0);
   const willShowConfirmDialog = isWorktree ? hasWorktreeChanges : hasLocalChanges;
 
@@ -151,9 +151,9 @@ export const TaskGitControls = ({
 
   const handleWorkingModeChanged = useCallback(
     async (mode: WorkingMode) => {
-      if (mode === 'local' && task.workingMode === 'worktree' && worktreeStatus) {
-        const hasUncommitted = worktreeStatus.uncommittedFiles.count > 0;
-        const hasUnmerged = worktreeStatus.aheadCommits.count > 0;
+      if (mode === 'local' && task.workingMode === 'worktree' && taskGitStatus) {
+        const hasUncommitted = taskGitStatus.uncommittedFiles.count > 0;
+        const hasUnmerged = (taskGitStatus.worktree?.aheadCommits.count ?? 0) > 0;
 
         if (hasUncommitted || hasUnmerged) {
           setLocalOption(isWorktreeShared ? LocalSwitchOption.MergeAll : LocalSwitchOption.Merge);
@@ -179,14 +179,14 @@ export const TaskGitControls = ({
 
       await performSwitch(mode);
     },
-    [task.workingMode, task.baseDir, task.id, worktreeStatus, api, performSwitch, isWorktreeShared],
+    [task.workingMode, task.baseDir, task.id, taskGitStatus, api, performSwitch, isWorktreeShared],
   );
 
   const performMergeAndSwitch = async () => {
     setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
-      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: worktreeStatus?.targetBranch };
+      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: taskGitStatus?.worktree?.targetBranch };
       await api.switchToLocalWorkingMode(task.baseDir, task.id, options);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -200,7 +200,7 @@ export const TaskGitControls = ({
     setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
-      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: worktreeStatus?.targetBranch, switchAllInWorktree: true };
+      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: taskGitStatus?.worktree?.targetBranch, switchAllInWorktree: true };
       await api.switchToLocalWorkingMode(task.baseDir, task.id, options);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -247,18 +247,18 @@ export const TaskGitControls = ({
   };
 
   const getWarningMessage = () => {
-    if (!worktreeStatus) {
+    if (!taskGitStatus?.worktree) {
       return '';
     }
     const warnings: string[] = [];
-    if (worktreeStatus.uncommittedFiles.count > 0) {
-      warnings.push(`- ${t('workingMode.uncommittedChanges', { count: worktreeStatus.uncommittedFiles.count, defaultValue: 'Uncommitted changes' })}`);
+    if (taskGitStatus.uncommittedFiles.count > 0) {
+      warnings.push(`- ${t('workingMode.uncommittedChanges', { count: taskGitStatus.uncommittedFiles.count, defaultValue: 'Uncommitted changes' })}`);
     }
-    if (worktreeStatus.aheadCommits.count > 0) {
+    if (taskGitStatus.worktree.aheadCommits.count > 0) {
       warnings.push(
         `- ${t('workingMode.unmergedCommits', {
-          count: worktreeStatus.aheadCommits.count,
-          defaultValue: `${worktreeStatus.aheadCommits.count} commit${worktreeStatus.aheadCommits.count > 1 ? 's' : ''} not merged to main branch`,
+          count: taskGitStatus.worktree.aheadCommits.count,
+          defaultValue: `${taskGitStatus.worktree.aheadCommits.count} commit${taskGitStatus.worktree.aheadCommits.count > 1 ? 's' : ''} not merged to main branch`,
         })}`,
       );
     }
@@ -341,7 +341,7 @@ export const TaskGitControls = ({
                 baseDir={task.baseDir}
                 taskId={task.id}
                 worktreePath={task.workingMode === 'worktree' ? task.worktree?.path : undefined}
-                status={worktreeStatus}
+                status={taskGitStatus}
                 taskName={task.name}
                 disabled={isMerging}
                 onSwitchToLocal={handleSwitchToLocal}
@@ -355,9 +355,9 @@ export const TaskGitControls = ({
                 onContinueRebase={onContinueRebase}
                 onResolveConflictsWithAgent={onResolveConflictsWithAgent}
                 onRenameBranch={onRenameBranch}
-                canAbortRebase={worktreeStatus?.rebaseState.inProgress}
-                canContinueRebase={worktreeStatus?.rebaseState.inProgress}
-                canResolveConflictsWithAgent={worktreeStatus?.rebaseState.hasUnmergedPaths}
+                canAbortRebase={taskGitStatus?.rebaseState.inProgress}
+                canContinueRebase={taskGitStatus?.rebaseState.inProgress}
+                canResolveConflictsWithAgent={taskGitStatus?.rebaseState.hasUnmergedPaths}
               />
             )
           )}

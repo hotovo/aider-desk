@@ -29,19 +29,19 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt, remove
   const handleAbortRebase = () => {
     setIsExecuted(true);
     removeActionId?.('abort-rebase');
-    void api.abortWorktreeRebase(baseDir, taskId);
+    void api.abortRebase(baseDir, taskId);
   };
 
   const handleContinueRebase = () => {
     setIsExecuted(true);
     removeActionId?.('continue-rebase');
-    void api.continueWorktreeRebase(baseDir, taskId);
+    void api.continueRebase(baseDir, taskId);
   };
 
   const handleResolveConflictsWithAgent = () => {
     setIsExecuted(true);
     removeActionId?.('resolve-conflicts-with-agent');
-    void api.resolveWorktreeConflictsWithAgent(baseDir, taskId);
+    void api.resolveConflictsWithAgent(baseDir, taskId);
   };
 
   const handleResolveGitErrorWithAgent = () => {

@@ -1,6 +1,6 @@
 import { act, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { WorktreeIntegrationStatus } from '@common/types';
+import { TaskGitStatus } from '@common/types';
 
 import { GitBranchesButton } from '../GitBranchesButton';
 
@@ -36,14 +36,16 @@ vi.mock('@/utils/notifications', () => ({
   showInfoNotification: vi.fn(),
 }));
 
-const mockStatus: WorktreeIntegrationStatus = {
+const mockStatus: TaskGitStatus = {
   currentBranch: 'task-123',
-  baseBranch: 'main',
-  targetBranch: 'main',
-  aheadCommits: { count: 1, commits: ['commit1'] },
   uncommittedFiles: { count: 0, files: [] },
-  predictedConflicts: { hasConflicts: false, conflictingFiles: [] },
   rebaseState: { inProgress: false, hasUnmergedPaths: false },
+  worktree: {
+    baseBranch: 'main',
+    targetBranch: 'main',
+    aheadCommits: { count: 1, commits: ['commit1'] },
+    predictedConflicts: { hasConflicts: false, conflictingFiles: [] },
+  },
 };
 
 const defaultProps = {

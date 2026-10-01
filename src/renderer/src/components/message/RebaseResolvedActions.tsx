@@ -1,6 +1,5 @@
 import { TiInfo } from 'react-icons/ti';
 import { useTranslation } from 'react-i18next';
-import { WorktreeIntegrationStatus } from '@common/types';
 
 import { Button } from '@/components/common/Button';
 import { useApi } from '@/contexts/ApiContext';
@@ -8,7 +7,6 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   projectDir: string;
   taskId: string;
-  worktreeStatus: WorktreeIntegrationStatus;
 };
 
 export const RebaseResolvedActions = ({ projectDir, taskId }: Props) => {
@@ -16,11 +14,11 @@ export const RebaseResolvedActions = ({ projectDir, taskId }: Props) => {
   const api = useApi();
 
   const handleContinueRebase = () => {
-    void api.continueWorktreeRebase(projectDir, taskId);
+    void api.continueRebase(projectDir, taskId);
   };
 
   const handleAbortRebase = () => {
-    void api.abortWorktreeRebase(projectDir, taskId);
+    void api.abortRebase(projectDir, taskId);
   };
 
   return (

@@ -13,8 +13,8 @@ import {
   UpdatedFilesGroupMode,
   WorkingMode,
   Worktree,
-  WorktreeAheadCommits,
-  WorktreeUncommittedFiles,
+  GitAheadCommits,
+  UncommittedFiles,
 } from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
@@ -1241,33 +1241,35 @@ export class GitManager {
   }
 
   async abortRebase(worktreePath: string): Promise<void> {
-    try {
-      // Check if we're in the middle of a rebase
-      const statusCommand = 'git status --porcelain=v1';
-      await execWithShellPath(statusCommand, { cwd: worktreePath });
+    await withLock(`git-rebase-${worktreePath}`, async () => {
+      try {
+        // Check if we're in the middle of a rebase
+        const statusCommand = 'git status --porcelain=v1';
+        await execWithShellPath(statusCommand, { cwd: worktreePath });
 
-      // Abort the rebase
-      const command = 'git rebase --abort';
-      const { stderr } = await execWithShellPath(command, {
-        cwd: worktreePath,
-      });
+        // Abort the rebase
+        const command = 'git rebase --abort';
+        const { stdout: abortStdout, stderr: abortStderr } = await execWithShellPath(command, {
+          cwd: worktreePath,
+        });
 
-      if (stderr && !stderr.includes('No rebase in progress')) {
-        throw new Error(`Failed to abort rebase: ${stderr}`);
+        if (abortStderr && !abortStderr.includes('No rebase in progress')) {
+          throw new Error(`Failed to abort rebase: ${abortStderr}`);
+        }
+
+        // Always try to reset temporary commit if it exists
+        await this.resetTempCommitIfExists(worktreePath);
+        logger.info(`Successfully aborted rebase: ${abortStdout}`);
+      } catch (error: unknown) {
+        const err = error as Error;
+        logger.error('Error aborting rebase:', err);
+        throw new Error(`Failed to abort rebase: ${err.message}`);
       }
-
-      // Always try to reset temporary commit if it exists
-      await this.resetTempCommitIfExists(worktreePath);
-      logger.info('Successfully handled temporary commit after abort rebase');
-    } catch (error: unknown) {
-      const err = error as Error;
-      logger.error('Error aborting rebase:', err);
-      throw new Error(`Failed to abort rebase: ${err.message}`);
-    }
+    });
   }
 
   async continueRebase(worktreePath: string): Promise<{ ontoCommit?: string; ontoBranch?: string }> {
-    return await withLock(`git-rebase-continue-${worktreePath}`, async () => {
+    return await withLock(`git-rebase-${worktreePath}`, async () => {
       const executedCommands: string[] = [];
       let lastOutput = '';
 
@@ -2407,7 +2409,7 @@ export class GitManager {
     }
   }
 
-  async getAheadCommits(worktreePath: string, targetBranch: string): Promise<WorktreeAheadCommits> {
+  async getAheadCommits(worktreePath: string, targetBranch: string): Promise<GitAheadCommits> {
     const { stdout } = await execWithShellPath(`git log --oneline ${targetBranch}..HEAD`, { cwd: worktreePath });
     const commits = stdout
       .trim()
@@ -2486,7 +2488,7 @@ export class GitManager {
     }
   }
 
-  async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles> {
+  async getUncommittedFiles(worktreePath: string): Promise<UncommittedFiles> {
     if (!(await this.ensureGitRepository(worktreePath, 'get uncommitted files'))) {
       return { count: 0, files: [] };
     }

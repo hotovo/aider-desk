@@ -7,7 +7,7 @@ import { ExtensionComponentRenderer } from '@/components/extensions/ExtensionCom
 import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
-import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 
 type Props = {
   projectDir: string;
@@ -100,8 +100,7 @@ export const TaskStateActions = ({
   onUnarchiveTask,
   onDeleteTask,
 }: Props) => {
-  const isWorktree = task?.workingMode === 'worktree';
-  const { worktreeStatus } = useWorktreeIntegrationStatus(projectDir, taskId, isWorktree);
+  const { taskGitStatus } = useTaskGitStatus(projectDir, taskId);
 
   const defaultTaskActionsProps: Props = {
     projectDir,
@@ -125,12 +124,12 @@ export const TaskStateActions = ({
       taskId,
     });
 
-  if (isWorktree && worktreeStatus?.rebaseState.hasUnmergedPaths === true && (worktreeStatus.rebaseState.unmergedFiles?.length ?? 0) > 0) {
-    return <RebaseConflictsActions projectDir={projectDir} taskId={taskId} worktreeStatus={worktreeStatus} />;
+  if (taskGitStatus?.rebaseState.hasUnmergedPaths === true && (taskGitStatus.rebaseState.unmergedFiles?.length ?? 0) > 0) {
+    return <RebaseConflictsActions projectDir={projectDir} taskId={taskId} status={taskGitStatus} />;
   }
 
-  if (isWorktree && worktreeStatus?.rebaseState.inProgress === true && worktreeStatus.rebaseState.hasUnmergedPaths === false) {
-    return <RebaseResolvedActions projectDir={projectDir} taskId={taskId} worktreeStatus={worktreeStatus} />;
+  if (taskGitStatus?.rebaseState.inProgress === true && taskGitStatus.rebaseState.hasUnmergedPaths === false) {
+    return <RebaseResolvedActions projectDir={projectDir} taskId={taskId} />;
   }
 
   if (isEmpty || !components) {

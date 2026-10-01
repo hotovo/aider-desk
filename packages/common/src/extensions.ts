@@ -40,11 +40,11 @@ import {
   UpdatedFile,
   UsageReportData,
   VoiceSession,
-  WorktreeUncommittedFiles,
+  UncommittedFiles,
 } from '@common/types';
 
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState };
-export type { ModelCallSettings, ModelCallTimeout, Reasoning, SwitchToLocalOptions, SwitchToWorktreeOptions, WorktreeUncommittedFiles };
+export type { ModelCallSettings, ModelCallTimeout, Reasoning, SwitchToLocalOptions, SwitchToWorktreeOptions, UncommittedFiles };
 
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
@@ -1181,7 +1181,7 @@ export interface TaskContext {
    * Get uncommitted files from the project's main repository (not from a worktree).
    * @returns Object containing arrays of unstaged, staged, and untracked file paths
    */
-  getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>;
+  getLocalUncommittedFiles(): Promise<UncommittedFiles>;
 
   /**
    * Apply uncommitted changes from the task's worktree to the branch currently checked out

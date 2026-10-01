@@ -340,52 +340,40 @@ export const TaskBar = forwardRef<TaskBarRef, Props>(
     );
 
     const handleAbortRebase = useCallback(async () => {
-      if (!task.worktree) {
-        return;
-      }
-
       setIsMerging(true);
       try {
-        await api.abortWorktreeRebase(baseDir, task.id);
+        await api.abortRebase(baseDir, task.id);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to abort rebase:', error);
       } finally {
         setIsMerging(false);
       }
-    }, [api, baseDir, task.id, task.worktree]);
+    }, [api, baseDir, task.id]);
 
     const handleContinueRebase = useCallback(async () => {
-      if (!task.worktree) {
-        return;
-      }
-
       setIsMerging(true);
       try {
-        await api.continueWorktreeRebase(baseDir, task.id);
+        await api.continueRebase(baseDir, task.id);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to continue rebase:', error);
       } finally {
         setIsMerging(false);
       }
-    }, [api, baseDir, task.id, task.worktree]);
+    }, [api, baseDir, task.id]);
 
     const handleResolveConflictsWithAgent = useCallback(async () => {
-      if (!task.worktree) {
-        return;
-      }
-
       setIsMerging(true);
       try {
-        await api.resolveWorktreeConflictsWithAgent(baseDir, task.id);
+        await api.resolveConflictsWithAgent(baseDir, task.id);
       } catch (error) {
         // eslint-disable-next-line no-console
         console.error('Failed to resolve conflicts with agent:', error);
       } finally {
         setIsMerging(false);
       }
-    }, [api, baseDir, task.id, task.worktree]);
+    }, [api, baseDir, task.id]);
 
     const handleOnlyUncommitted = useCallback(async () => {
       if (!task.worktree) {

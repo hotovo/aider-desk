@@ -12,7 +12,7 @@ import {
   TodoItem,
   UpdatedFile,
   UsageReportData,
-  WorktreeUncommittedFiles,
+  UncommittedFiles,
 } from '@common/types';
 
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
@@ -327,7 +327,7 @@ export class TaskContextImpl implements TaskContext {
     await this.task.switchToLocalWorkingMode(options);
   }
 
-  async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles> {
+  async getLocalUncommittedFiles(): Promise<UncommittedFiles> {
     return this.task.getLocalUncommittedFiles();
   }
 

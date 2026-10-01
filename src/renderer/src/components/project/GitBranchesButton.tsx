@@ -8,7 +8,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLocalStorage } from '@reactuses/core';
-import { BranchInfo, GitSyncCommits, WorktreeIntegrationStatus } from '@common/types';
+import { BranchInfo, GitSyncCommits, TaskGitStatus } from '@common/types';
 
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -63,7 +63,7 @@ type Props = {
   baseDir: string;
   taskId: string;
   worktreePath?: string;
-  status?: WorktreeIntegrationStatus | null;
+  status?: TaskGitStatus | null;
   taskName?: string;
   disabled?: boolean;
   onSwitchToLocal: () => void;
@@ -155,14 +155,14 @@ export const GitBranchesButton = ({
   const currentBranch = branches.find((b) => b.isCurrent)?.name || statusCurrentBranch || '';
   const hasUpstream = Boolean(branches.find((b) => b.isCurrent)?.upstream);
   const isWorktree = Boolean(worktreePath);
-  const worktreeBaseBranch = isWorktree ? status?.baseBranch || status?.targetBranch : undefined;
+  const worktreeBaseBranch = isWorktree ? status?.worktree?.baseBranch || status?.worktree?.targetBranch : undefined;
 
   const incomingCount = syncCommits.incoming.count;
   const outgoingCount = syncCommits.outgoing.count;
   const recentBranchesWithCurrent = currentBranch ? [currentBranch, ...recentBranches.filter((name) => name !== currentBranch)] : recentBranches;
 
   const [mainBranchName, setMainBranchName] = useState<string | null>(null);
-  const rebaseBranch = status?.baseBranch || mainBranchName;
+  const rebaseBranch = status?.worktree?.baseBranch || mainBranchName;
 
   const loadBranches = useCallback(async () => {
     setLoading(true);
@@ -803,9 +803,9 @@ export const GitBranchesButton = ({
                 </Tooltip>
               )}
             </div>
-            {status?.baseBranch && (
+            {status?.worktree?.baseBranch && (
               <div className="px-3 py-0.5 pb-1.5 text-2xs text-text-muted">
-                {t('worktree.basedOn')}: <span className="text-text-secondary">{status.baseBranch}</span>
+                {t('worktree.basedOn')}: <span className="text-text-secondary">{status.worktree?.baseBranch}</span>
               </div>
             )}
           </div>
@@ -1031,7 +1031,7 @@ export const GitBranchesButton = ({
           title={t('worktree.confirmMergeTitle')}
           message={t('worktree.confirmMergeMessage')}
           confirmButtonText={t('worktree.merge')}
-          defaultBranch={status?.targetBranch}
+          defaultBranch={status?.worktree?.targetBranch}
           onCancel={() => setShowMergeDialog(false)}
           onConfirm={(branch) => {
             setShowMergeDialog(false);
@@ -1046,10 +1046,12 @@ export const GitBranchesButton = ({
           title={t('worktree.confirmSquashTitle')}
           message={t('worktree.confirmSquashMessage')}
           confirmButtonText={t('worktree.squash')}
-          defaultBranch={status?.targetBranch}
+          defaultBranch={status?.worktree?.targetBranch}
           showCommitMessage
           initialCommitMessage={
-            status?.aheadCommits.commits && status.aheadCommits.commits.length > 0 ? status.aheadCommits.commits[0].split(' ').slice(1).join(' ') : taskName
+            status?.worktree?.aheadCommits.commits && status.worktree.aheadCommits.commits.length > 0
+              ? status.worktree.aheadCommits.commits[0].split(' ').slice(1).join(' ')
+              : taskName
           }
           onCancel={() => setShowSquashDialog(false)}
           onConfirm={(branch, commitMessage) => {

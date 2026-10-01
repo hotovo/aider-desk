@@ -40,7 +40,7 @@ import {
   SkillsUpdatedData,
   UserMessageData,
   VersionsInfo,
-  WorktreeIntegrationStatusUpdatedData,
+  TaskGitStatusUpdatedData,
   AiderConnectorStatus,
   InputPromptData,
 } from '@common/types';
@@ -704,16 +704,16 @@ const api: ApplicationAPI = {
     };
   },
 
-  addWorktreeIntegrationStatusUpdatedListener: (baseDir, taskId, callback) => {
-    const listener = (_: Electron.IpcRendererEvent, data: WorktreeIntegrationStatusUpdatedData) => {
+  addTaskGitStatusUpdatedListener: (baseDir, taskId, callback) => {
+    const listener = (_: Electron.IpcRendererEvent, data: TaskGitStatusUpdatedData) => {
       if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
         return;
       }
       callback(data);
     };
-    ipcRenderer.on('worktree-integration-status-updated', listener);
+    ipcRenderer.on('task-git-status-updated', listener);
     return () => {
-      ipcRenderer.removeListener('worktree-integration-status-updated', listener);
+      ipcRenderer.removeListener('task-git-status-updated', listener);
     };
   },
 
@@ -757,11 +757,11 @@ const api: ApplicationAPI = {
   applyUncommittedChanges: (baseDir, taskId) => ipcRenderer.invoke('apply-uncommitted-changes', baseDir, taskId),
   revertLastMerge: (baseDir, taskId) => ipcRenderer.invoke('revert-last-merge', baseDir, taskId),
   listBranches: (baseDir) => ipcRenderer.invoke('list-branches', baseDir),
-  getWorktreeIntegrationStatus: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('get-worktree-integration-status', baseDir, taskId, targetBranch),
+  getTaskGitStatus: (baseDir, taskId, targetBranch) => ipcRenderer.invoke('get-task-git-status', baseDir, taskId, targetBranch),
   rebaseWorktreeFromBranch: (baseDir, taskId, fromBranch) => ipcRenderer.invoke('rebase-worktree-from-branch', baseDir, taskId, fromBranch),
-  abortWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('abort-worktree-rebase', baseDir, taskId),
-  continueWorktreeRebase: (baseDir, taskId) => ipcRenderer.invoke('continue-worktree-rebase', baseDir, taskId),
-  resolveWorktreeConflictsWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-worktree-conflicts-with-agent', baseDir, taskId),
+  abortRebase: (baseDir, taskId) => ipcRenderer.invoke('abort-rebase', baseDir, taskId),
+  continueRebase: (baseDir, taskId) => ipcRenderer.invoke('continue-rebase', baseDir, taskId),
+  resolveConflictsWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-conflicts-with-agent', baseDir, taskId),
   renameWorktreeBranch: (baseDir, taskId, newBranchName) => ipcRenderer.invoke('rename-git-branch', baseDir, taskId, newBranchName),
   renameGitBranch: (baseDir, taskId, newBranchName) => ipcRenderer.invoke('rename-git-branch', baseDir, taskId, newBranchName),
 

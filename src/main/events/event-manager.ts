@@ -30,8 +30,8 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   McpServersData,
-  WorktreeIntegrationStatus,
-  WorktreeIntegrationStatusUpdatedData,
+  TaskGitStatus,
+  TaskGitStatusUpdatedData,
   TaskCreatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
@@ -274,15 +274,15 @@ export class EventManager {
     this.broadcastToEventConnectors('custom-command-error', data);
   }
 
-  sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus | null): void {
-    const data: WorktreeIntegrationStatusUpdatedData = {
+  sendTaskGitStatusUpdated(baseDir: string, taskId: string, status: TaskGitStatus | null): void {
+    const data: TaskGitStatusUpdatedData = {
       baseDir,
       taskId,
       status,
     };
-    logger.debug('Sending worktree integration status updated', data);
-    this.sendToWindows('worktree-integration-status-updated', data);
-    this.broadcastToEventConnectors('worktree-integration-status-updated', data);
+    logger.debug('Sending task git status updated', data);
+    this.sendToWindows('task-git-status-updated', data);
+    this.broadcastToEventConnectors('task-git-status-updated', data);
   }
 
   // Terminal events

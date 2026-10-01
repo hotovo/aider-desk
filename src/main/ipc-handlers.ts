@@ -680,23 +680,23 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.resolveGitErrorWithAgent(baseDir, taskId);
   });
 
-  ipcMain.handle('get-worktree-integration-status', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
-    return await eventsHandler.getWorktreeIntegrationStatus(baseDir, taskId, targetBranch);
+  ipcMain.handle('get-task-git-status', async (_, baseDir: string, taskId: string, targetBranch?: string) => {
+    return await eventsHandler.getTaskGitStatus(baseDir, taskId, targetBranch);
   });
 
   ipcMain.handle('rebase-worktree-from-branch', async (_, baseDir: string, taskId: string, fromBranch?: string) => {
     await eventsHandler.rebaseWorktreeFromBranch(baseDir, taskId, fromBranch);
   });
 
-  ipcMain.handle('abort-worktree-rebase', async (_, baseDir: string, taskId: string) => {
-    await eventsHandler.abortWorktreeRebase(baseDir, taskId);
+  ipcMain.handle('abort-rebase', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.abortRebase(baseDir, taskId);
   });
 
-  ipcMain.handle('continue-worktree-rebase', async (_, baseDir: string, taskId: string) => {
-    await eventsHandler.continueWorktreeRebase(baseDir, taskId);
+  ipcMain.handle('continue-rebase', async (_, baseDir: string, taskId: string) => {
+    await eventsHandler.continueRebase(baseDir, taskId);
   });
 
-  ipcMain.handle('resolve-worktree-conflicts-with-agent', async (_, baseDir: string, taskId: string) => {
+  ipcMain.handle('resolve-conflicts-with-agent', async (_, baseDir: string, taskId: string) => {
     await eventsHandler.resolveConflictsWithAgent(baseDir, taskId);
   });
 

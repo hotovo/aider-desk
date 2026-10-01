@@ -63,9 +63,9 @@ import {
   VoiceSession,
   SwitchToLocalOptions,
   SwitchToWorktreeOptions,
-  WorktreeUncommittedFiles,
-  WorktreeIntegrationStatus,
-  WorktreeIntegrationStatusUpdatedData,
+  UncommittedFiles,
+  TaskGitStatus,
+  TaskGitStatusUpdatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
   InstalledExtension,
@@ -290,7 +290,7 @@ export interface ApplicationAPI {
   addAgentProfilesUpdatedListener: (callback: (data: AgentProfilesUpdatedData) => void) => () => void;
   addMcpServersUpdatedListener: (callback: (data: McpServersData) => void) => () => void;
   addProjectSettingsUpdatedListener: (baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void) => () => void;
-  addWorktreeIntegrationStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void) => () => void;
+  addTaskGitStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: TaskGitStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;
   addTerminalExitListener: (baseDir: string, callback: (data: TerminalExitData) => void) => () => void;
   addContextMenuListener: (callback: (params: ContextMenuParams) => void) => () => void;
@@ -323,15 +323,15 @@ export interface ApplicationAPI {
   mergeWorktreeToMain: (baseDir: string, taskId: string, squash: boolean, targetBranch?: string, commitMessage?: string) => Promise<void>;
   switchToLocalWorkingMode: (baseDir: string, taskId: string, options?: SwitchToLocalOptions) => Promise<void>;
   switchToWorktreeWorkingMode: (baseDir: string, taskId: string, options?: SwitchToWorktreeOptions) => Promise<void>;
-  getLocalUncommittedFiles: (baseDir: string, taskId: string) => Promise<WorktreeUncommittedFiles>;
+  getLocalUncommittedFiles: (baseDir: string, taskId: string) => Promise<UncommittedFiles>;
   applyUncommittedChanges: (baseDir: string, taskId: string) => Promise<void>;
   revertLastMerge: (baseDir: string, taskId: string) => Promise<void>;
   listBranches: (baseDir: string) => Promise<BranchInfo[]>;
-  getWorktreeIntegrationStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<WorktreeIntegrationStatus | null>;
+  getTaskGitStatus: (baseDir: string, taskId: string, targetBranch?: string) => Promise<TaskGitStatus | null>;
   rebaseWorktreeFromBranch: (baseDir: string, taskId: string, fromBranch?: string) => Promise<void>;
-  abortWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
-  continueWorktreeRebase: (baseDir: string, taskId: string) => Promise<void>;
-  resolveWorktreeConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
+  abortRebase: (baseDir: string, taskId: string) => Promise<void>;
+  continueRebase: (baseDir: string, taskId: string) => Promise<void>;
+  resolveConflictsWithAgent: (baseDir: string, taskId: string) => Promise<void>;
   renameWorktreeBranch: (baseDir: string, taskId: string, newBranchName: string) => Promise<void>;
   renameGitBranch: (baseDir: string, taskId: string, newBranchName: string) => Promise<void>;
 

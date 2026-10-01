@@ -45,17 +45,17 @@ export const MergeStateSchema = z.object({
 
 export type MergeState = z.infer<typeof MergeStateSchema>;
 
-export interface WorktreeAheadCommits {
+export interface GitAheadCommits {
   count: number;
   commits: string[];
 }
 
 export interface GitSyncCommits {
-  outgoing: WorktreeAheadCommits;
-  incoming: WorktreeAheadCommits;
+  outgoing: GitAheadCommits;
+  incoming: GitAheadCommits;
 }
 
-export interface WorktreeUncommittedFiles {
+export interface UncommittedFiles {
   count: number;
   files: string[];
 }
@@ -74,12 +74,10 @@ export interface ConflictResolutionFileContext {
   current?: string;
 }
 
-export interface WorktreeIntegrationStatus {
-  currentBranch: string;
+export interface TaskGitWorktreeStatus {
   baseBranch: string;
   targetBranch: string;
-  aheadCommits: WorktreeAheadCommits;
-  uncommittedFiles: WorktreeUncommittedFiles;
+  aheadCommits: GitAheadCommits;
   predictedConflicts: {
     hasConflicts: boolean;
     conflictingFiles?: string[];
@@ -89,13 +87,19 @@ export interface WorktreeIntegrationStatus {
     };
     canAutoMerge?: boolean;
   };
-  rebaseState: RebaseState;
 }
 
-export interface WorktreeIntegrationStatusUpdatedData {
+export interface TaskGitStatus {
+  currentBranch: string;
+  uncommittedFiles: UncommittedFiles;
+  rebaseState: RebaseState;
+  worktree?: TaskGitWorktreeStatus;
+}
+
+export interface TaskGitStatusUpdatedData {
   baseDir: string;
   taskId: string;
-  status: WorktreeIntegrationStatus | null;
+  status: TaskGitStatus | null;
 }
 
 export interface ModeDefinition {

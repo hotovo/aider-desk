@@ -613,7 +613,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
           case '/resolve-conflicts': {
             prepareForNextPrompt();
-            void api.resolveWorktreeConflictsWithAgent(baseDir, taskId);
+            void api.resolveConflictsWithAgent(baseDir, taskId);
             break;
           }
           case '/subtask': {

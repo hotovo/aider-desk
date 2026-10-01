@@ -860,9 +860,9 @@ export class EventsHandler {
     return await this.getTaskOrThrow(baseDir, taskId).gitPush(force, setUpstream);
   }
 
-  async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string) {
+  async getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string) {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    return await task.getWorktreeIntegrationStatus(targetBranch);
+    return await task.getTaskGitStatus(targetBranch);
   }
 
   async rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void> {
@@ -870,14 +870,14 @@ export class EventsHandler {
     await task.rebaseWorktreeFromBranch(fromBranch);
   }
 
-  async abortWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+  async abortRebase(baseDir: string, taskId: string): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    await task.abortWorktreeRebase();
+    await task.abortRebase();
   }
 
-  async continueWorktreeRebase(baseDir: string, taskId: string): Promise<void> {
+  async continueRebase(baseDir: string, taskId: string): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    await task.continueWorktreeRebase();
+    await task.continueRebase();
   }
 
   async resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void> {

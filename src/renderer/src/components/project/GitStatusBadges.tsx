@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { CgArrowBottomLeft, CgArrowTopRight } from 'react-icons/cg';
 import { TiWarning } from 'react-icons/ti';
 
-import type { WorktreeIntegrationStatus } from '@common/types';
+import type { TaskGitStatus } from '@common/types';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
-  status?: WorktreeIntegrationStatus | null;
+  status?: TaskGitStatus | null;
   showOutgoing: boolean;
   showIncoming: boolean;
 };
@@ -26,15 +26,15 @@ export const GitStatusBadges = ({ status, showOutgoing, showIncoming }: Props) =
       return `${t('worktree.conflictsPresent')}:\n${files.join('\n')}`;
     }
 
-    if (status.predictedConflicts.hasConflicts) {
-      const files = status.predictedConflicts.conflictingFiles || [];
+    if (status.worktree?.predictedConflicts.hasConflicts) {
+      const files = status.worktree.predictedConflicts.conflictingFiles || [];
       return `${t('worktree.conflictsPredicted')}:\n${files.join('\n')}`;
     }
 
     return '';
   }, [status, t]);
 
-  const showConflicts = Boolean(status && (status.rebaseState.hasUnmergedPaths || status.predictedConflicts.hasConflicts));
+  const showConflicts = Boolean(status && (status.rebaseState.hasUnmergedPaths || status.worktree?.predictedConflicts.hasConflicts));
 
   if (!showConflicts && !showOutgoing && !showIncoming) {
     return null;

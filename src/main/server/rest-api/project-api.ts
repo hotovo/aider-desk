@@ -475,23 +475,25 @@ const WorktreeStatusSchema = z.object({
   targetBranch: z.string().optional(),
 });
 
+const TaskGitStatusSchema = WorktreeStatusSchema;
+
 const RebaseWorktreeFromBranchSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   fromBranch: z.string().optional(),
 });
 
-const AbortWorktreeRebaseSchema = z.object({
+const AbortRebaseSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
 });
 
-const ContinueWorktreeRebaseSchema = z.object({
+const ContinueRebaseSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
 });
 
-const ResolveWorktreeConflictsWithAgentSchema = z.object({
+const ResolveConflictsWithAgentSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
 });
@@ -1418,7 +1420,23 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
-    // Worktree status
+    // Task git status (current branch, uncommitted files, rebase state, worktree integration)
+    router.get(
+      '/project/git/status',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(TaskGitStatusSchema, req.query, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId, targetBranch } = parsed;
+        const status = await this.eventsHandler.getTaskGitStatus(projectDir, taskId, targetBranch);
+        res.status(200).json(status);
+      }),
+    );
+
+    // Deprecated: use /project/git/status. Returns the legacy flat WorktreeIntegrationStatus shape,
+    // or null when the task has no materialized worktree (matches the documented pre-deprecation contract).
     router.get(
       '/project/worktree/status',
       this.handleRequest(async (req, res) => {
@@ -1428,8 +1446,26 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, targetBranch } = parsed;
-        const status = await this.eventsHandler.getWorktreeIntegrationStatus(projectDir, taskId, targetBranch);
-        res.status(200).json(status);
+        const taskGitStatus = await this.eventsHandler.getTaskGitStatus(projectDir, taskId, targetBranch);
+        if (!taskGitStatus?.worktree) {
+          res.status(200).json(null);
+          return;
+        }
+
+        const { currentBranch, worktree } = taskGitStatus;
+        const legacyStatus = {
+          currentBranch,
+          baseBranch: worktree.baseBranch,
+          targetBranch: worktree.targetBranch,
+          aheadCommits: worktree.aheadCommits,
+          uncommittedFiles: {
+            count: taskGitStatus.uncommittedFiles.count,
+            files: taskGitStatus.uncommittedFiles.files,
+          },
+          predictedConflicts: worktree.predictedConflicts,
+          rebaseState: taskGitStatus.rebaseState,
+        };
+        res.status(200).json(legacyStatus);
       }),
     );
 
@@ -1448,41 +1484,86 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
-    // Abort worktree rebase
+    // Abort rebase (worktree or local branch)
     router.post(
-      '/project/worktree/abort-rebase',
+      '/project/git/abort-rebase',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(AbortWorktreeRebaseSchema, req.body, res);
+        const parsed = this.validateRequest(AbortRebaseSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
         const { projectDir, taskId } = parsed;
-        await this.eventsHandler.abortWorktreeRebase(projectDir, taskId);
+        await this.eventsHandler.abortRebase(projectDir, taskId);
         res.status(200).json({ message: 'Rebase aborted' });
       }),
     );
 
-    // Continue worktree rebase
+    // Continue rebase (worktree or local branch)
     router.post(
-      '/project/worktree/continue-rebase',
+      '/project/git/continue-rebase',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(ContinueWorktreeRebaseSchema, req.body, res);
+        const parsed = this.validateRequest(ContinueRebaseSchema, req.body, res);
         if (!parsed) {
           return;
         }
 
         const { projectDir, taskId } = parsed;
-        await this.eventsHandler.continueWorktreeRebase(projectDir, taskId);
+        await this.eventsHandler.continueRebase(projectDir, taskId);
         res.status(200).json({ message: 'Rebase continued' });
       }),
     );
 
-    // Resolve worktree conflicts with agent
+    // Resolve conflicts with agent (worktree or local branch)
+    router.post(
+      '/project/git/resolve-conflicts-with-agent',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ResolveConflictsWithAgentSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.resolveConflictsWithAgent(projectDir, taskId);
+        res.status(200).json({ message: 'Conflicts resolved' });
+      }),
+    );
+
+    // Deprecated: use /project/git/abort-rebase
+    router.post(
+      '/project/worktree/abort-rebase',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(AbortRebaseSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.abortRebase(projectDir, taskId);
+        res.status(200).json({ message: 'Rebase aborted' });
+      }),
+    );
+
+    // Deprecated: use /project/git/continue-rebase
+    router.post(
+      '/project/worktree/continue-rebase',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(ContinueRebaseSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+
+        const { projectDir, taskId } = parsed;
+        await this.eventsHandler.continueRebase(projectDir, taskId);
+        res.status(200).json({ message: 'Rebase continued' });
+      }),
+    );
+
+    // Deprecated: use /project/git/resolve-conflicts-with-agent
     router.post(
       '/project/worktree/resolve-conflicts-with-agent',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(ResolveWorktreeConflictsWithAgentSchema, req.body, res);
+        const parsed = this.validateRequest(ResolveConflictsWithAgentSchema, req.body, res);
         if (!parsed) {
           return;
         }
