@@ -91,6 +91,7 @@ const UpdatedSectionHeader = ({ isOpen, title, totalStats, updatedActions, onTog
 type Props = {
   baseDir: string;
   taskId: string;
+  taskDir: string;
   isOpen: boolean;
   fileTokensInfo?: Record<string, TokensCost> | null;
   os: OS | null;
@@ -107,6 +108,7 @@ type Props = {
 export const UpdatedFilesSectionComponent = ({
   baseDir,
   taskId,
+  taskDir,
   isOpen,
   fileTokensInfo,
   os,
@@ -260,13 +262,13 @@ export const UpdatedFilesSectionComponent = ({
   }, [fetchUpdatedFiles]);
 
   useEffect(() => {
-    const unsubscribe = api.addUpdatedFilesUpdatedListener(baseDir, taskId, (data) => {
+    const unsubscribe = api.addUpdatedFilesUpdatedListener(baseDir, taskDir, (data) => {
       setUpdatedFiles(data.files);
     });
     return () => {
       unsubscribe();
     };
-  }, [api, baseDir, taskId]);
+  }, [api, baseDir, taskDir]);
 
   const handleRefreshUpdatedFiles = useCallback(async () => {
     setIsRefreshingUpdated(true);

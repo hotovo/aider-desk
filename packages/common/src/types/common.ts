@@ -342,6 +342,7 @@ export interface UpdatedFile {
 export interface UpdatedFilesUpdatedData {
   baseDir: string;
   taskId: string;
+  taskDir: string;
   files: UpdatedFile[];
 }
 

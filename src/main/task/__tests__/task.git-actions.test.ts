@@ -374,6 +374,29 @@ describe('Task - git actions', () => {
     });
   });
 
+  describe('sendUpdatedFilesUpdated', () => {
+    const updatedFiles = [{ path: 'src/a.ts', additions: 1, deletions: 2 }];
+
+    beforeEach(() => {
+      mockGitManager.getUpdatedFiles = vi.fn().mockResolvedValue(updatedFiles);
+      mockGitManager.getProjectMainBranch = vi.fn().mockResolvedValue('main');
+    });
+
+    it('emits the project baseDir as taskDir for local tasks', async () => {
+      await task.sendUpdatedFilesUpdated();
+
+      expect(mockEventManager.sendUpdatedFilesUpdated).toHaveBeenCalledWith(baseDir, 'test-task-id', baseDir, updatedFiles);
+    });
+
+    it('emits the worktree path as taskDir for worktree tasks', async () => {
+      const worktreeTask = createTask('worktree');
+
+      await worktreeTask.sendUpdatedFilesUpdated();
+
+      expect(mockEventManager.sendUpdatedFilesUpdated).toHaveBeenCalledWith(baseDir, 'test-task-id', worktreePath, updatedFiles);
+    });
+  });
+
   describe('error reporting', () => {
     it('reports action error to task and rethrows', async () => {
       const error = new Error('pull failed');

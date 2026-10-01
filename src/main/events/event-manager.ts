@@ -115,10 +115,11 @@ export class EventManager {
     this.broadcastToEventConnectors('context-files-updated', data);
   }
 
-  sendUpdatedFilesUpdated(baseDir: string, taskId: string, files: UpdatedFile[]): void {
+  sendUpdatedFilesUpdated(baseDir: string, taskId: string, taskDir: string, files: UpdatedFile[]): void {
     const data: UpdatedFilesUpdatedData = {
       baseDir,
       taskId,
+      taskDir,
       files,
     };
     this.sendToWindows('updated-files-updated', data);

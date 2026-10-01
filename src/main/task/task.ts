@@ -4311,12 +4311,14 @@ ${error.stderr}`,
   public async sendUpdatedFilesUpdated() {
     try {
       const updatedFiles = await this.getUpdatedFiles();
+      const taskDir = this.getTaskDir();
       logger.debug('Sending updated files', {
         baseDir: this.project.baseDir,
         taskId: this.taskId,
+        taskDir,
         updatedFiles: updatedFiles.map((f) => f.path),
       });
-      this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, updatedFiles);
+      this.eventManager.sendUpdatedFilesUpdated(this.project.baseDir, this.taskId, taskDir, updatedFiles);
     } catch (error) {
       logger.error('Failed to send updated files update:', error);
     }

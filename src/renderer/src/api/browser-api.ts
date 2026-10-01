@@ -140,6 +140,7 @@ interface ListenerEntry<T> {
   callback: EventCallback<T>;
   baseDir?: string;
   taskId?: string;
+  taskDir?: string;
 }
 
 class UnsupportedError extends Error {
@@ -275,6 +276,12 @@ export class BrowserApi implements ApplicationAPI {
             return;
           }
 
+          // Filter by taskDir for directory-scoped events (paths compared cross-platform)
+          const taskDir = (typedData as { taskDir?: string })?.taskDir;
+          if (entry.taskDir && taskDir && !compareBaseDirs(entry.taskDir, taskDir, this.appOS || undefined)) {
+            return;
+          }
+
           entry.callback(typedData);
         });
       }
@@ -311,11 +318,17 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  private addListener<T extends keyof EventDataMap>(eventType: T, callback: EventCallback<EventDataMap[T]>, baseDir?: string, taskId?: string): () => void {
+  private addListener<T extends keyof EventDataMap>(
+    eventType: T,
+    callback: EventCallback<EventDataMap[T]>,
+    baseDir?: string,
+    taskId?: string,
+    taskDir?: string,
+  ): () => void {
     void this.ensureSocketConnected();
     const eventListeners = this.listeners[eventType];
     const id = uuidv4();
-    eventListeners.set(id, { callback, baseDir, taskId });
+    eventListeners.set(id, { callback, baseDir, taskId, taskDir });
 
     return () => {
       eventListeners.delete(id);
@@ -929,8 +942,8 @@ export class BrowserApi implements ApplicationAPI {
   addContextInfoUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextInfoData) => void): () => void {
     return this.addListener('context-info-updated', callback, baseDir, taskId);
   }
-  addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void {
-    return this.addListener('updated-files-updated', callback, baseDir, taskId);
+  addUpdatedFilesUpdatedListener(baseDir: string, taskDir: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void {
+    return this.addListener('updated-files-updated', callback, baseDir, undefined, taskDir);
   }
   addSkillsUpdatedListener(baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void): () => void {
     return this.addListener('skills-updated', callback, baseDir, taskId);

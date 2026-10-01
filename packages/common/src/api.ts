@@ -266,7 +266,7 @@ export interface ApplicationAPI {
   addResponseCompletedListener: (baseDir: string, taskId: string, callback: (data: ResponseCompletedData) => void) => () => void;
   addLogListener: (baseDir: string, taskId: string, callback: (data: LogData) => void) => () => void;
   addContextFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void) => () => void;
-  addUpdatedFilesUpdatedListener: (baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void) => () => void;
+  addUpdatedFilesUpdatedListener: (baseDir: string, taskDir: string, callback: (data: UpdatedFilesUpdatedData) => void) => () => void;
   addSkillsUpdatedListener: (baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void) => () => void;
   addCommandsUpdatedListener: (baseDir: string, callback: (data: CommandsData) => void) => () => void;
   addUpdateAutocompletionListener: (baseDir: string, taskId: string, callback: (data: AutocompletionData) => void) => () => void;

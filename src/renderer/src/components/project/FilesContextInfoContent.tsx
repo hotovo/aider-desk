@@ -50,6 +50,7 @@ export const FilesContextInfoContent = ({
         <Workspace
           baseDir={baseDir}
           taskId={taskId}
+          taskDir={task.worktree?.path ?? baseDir}
           allFiles={allFiles}
           contextFiles={contextFiles}
           showFileDialog={showFileDialog}

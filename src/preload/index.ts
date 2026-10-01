@@ -297,9 +297,9 @@ const api: ApplicationAPI = {
     };
   },
 
-  addUpdatedFilesUpdatedListener: (baseDir, taskId, callback) => {
+  addUpdatedFilesUpdatedListener: (baseDir, taskDir, callback) => {
     const listener = (_: Electron.IpcRendererEvent, data: UpdatedFilesUpdatedData) => {
-      if (!compareBaseDirs(data.baseDir, baseDir) || data.taskId !== taskId) {
+      if (!compareBaseDirs(data.baseDir, baseDir) || !compareBaseDirs(data.taskDir, taskDir)) {
         return;
       }
       callback(data);
