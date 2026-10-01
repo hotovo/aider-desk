@@ -594,7 +594,7 @@
         "tools",
         "search"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "destructive-command-guard",
@@ -631,7 +631,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 99
+      "installCount": 100
     },
     {
       "id": "task-scheduler",
@@ -645,7 +645,7 @@
         "commands",
         "events"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "reasoning-selector",
@@ -657,7 +657,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 97
+      "installCount": 98
     }
   ]
 }
