@@ -490,6 +490,10 @@
     "getApiKeyLink": "Get LLM API key",
     "apiKey": "API Key"
   },
+  "atlasCloud": {
+    "getApiKeyLink": "Get Atlas Cloud API key",
+    "apiKey": "API Key"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Get Z.AI API key",
     "apiKey": "API Key",
@@ -540,6 +544,7 @@
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
     "llmapi": "LLM API",
+    "atlascloud": "Atlas Cloud",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",

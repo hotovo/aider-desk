@@ -444,6 +444,10 @@
     "getApiKeyLink": "获取 LLM API 密钥",
     "apiKey": "API 密钥"
   },
+  "atlasCloud": {
+    "getApiKeyLink": "获取 Atlas Cloud API 密钥",
+    "apiKey": "API 密钥"
+  },
   "gemini": {
     "getApiKeyLink": "获取 Gemini API 密钥",
     "apiKey": "API 密钥",
@@ -541,6 +545,7 @@
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
     "llmapi": "LLM API",
+    "atlascloud": "Atlas Cloud",
     "minimax": "Minimax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",

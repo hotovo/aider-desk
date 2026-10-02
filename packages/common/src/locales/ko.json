@@ -494,6 +494,10 @@
     "getApiKeyLink": "LLM API 키 받기",
     "apiKey": "API 키"
   },
+  "atlasCloud": {
+    "getApiKeyLink": "Atlas Cloud API 키 받기",
+    "apiKey": "API 키"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Z.AI API 키 받기",
     "apiKey": "API 키",
@@ -544,6 +548,7 @@
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
     "llmapi": "LLM API",
+    "atlascloud": "Atlas Cloud",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "neuralwatt": "Neuralwatt",
