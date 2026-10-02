@@ -658,6 +658,18 @@
         "ui"
       ],
       "installCount": 98
+    },
+    {
+      "id": "dbx",
+      "name": "DBX",
+      "description": "DBX database client UI running in a local testcontainers-backed container, embedded in a modal",
+      "folder": "dbx",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": [
+        "ui"
+      ],
+      "installCount": 0
     }
   ]
 }
