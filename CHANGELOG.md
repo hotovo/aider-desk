@@ -10,6 +10,7 @@
 - added pressing ArrowUp in an empty prompt field entering edit mode of the last user message
 - added onboarding path choice with default agent or code mode
 - added `smartCompact` and `getEstimatedTokens` to the extension task context
+- added extension tools section to agent selector with auto-refresh on extension changes
 
 ## [0.85.0]
 

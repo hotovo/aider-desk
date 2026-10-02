@@ -8,6 +8,7 @@ import {
   ContextMenuParams,
   CreateTaskParams,
   ExtensionUIRefreshData,
+  ExtensionsUpdatedData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -820,6 +821,12 @@ const api: ApplicationAPI = {
     const listener = (_, data) => callback(data);
     ipcRenderer.on('mcp-servers-updated', listener);
     return () => ipcRenderer.off('mcp-servers-updated', listener);
+  },
+
+  addExtensionsUpdatedListener: (callback: (data: ExtensionsUpdatedData) => void) => {
+    const listener = (_, data) => callback(data);
+    ipcRenderer.on('extensions-updated', listener);
+    return () => ipcRenderer.off('extensions-updated', listener);
   },
 
   addNotificationListener: () => {

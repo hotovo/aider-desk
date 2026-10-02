@@ -675,6 +675,18 @@ Emitted when MCP server configurations change (added, updated, removed, or reloa
 }
 ```
 
+#### `extensions-updated`
+Emitted when the extension set changes (extensions loaded, enabled, or disabled).
+
+**Data Structure:**
+```json
+{
+  "projectDir": "/path/to/project"
+}
+```
+
+`projectDir` is optional; it scopes the event to a project when provided.
+
 ### Token and Usage Events
 
 #### `update-tokens-info`

@@ -89,7 +89,7 @@ The readonly UI subscribes to a curated set of Socket.IO events for live updates
 - `tool`, `tool-input-chunk`
 - `log`, `command-output`
 - `clear-task`, `message-removed`
-- `extension-ui-refresh`
+- `extension-ui-refresh`, `extensions-updated`
 
 Direct Socket.IO mutations (e.g., running prompts, sending messages) are blocked — only these read-only event types are forwarded to browser clients.
 

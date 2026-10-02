@@ -231,6 +231,7 @@ export class ExtensionManager {
     for (const listener of this.listeners) {
       listener(extensions);
     }
+    this.eventManager.sendExtensionsUpdated();
   }, 100);
 
   private isExtensionDisabled(filePath: string): boolean {
@@ -306,6 +307,8 @@ export class ExtensionManager {
       }
 
       const changedExtensions = [...newlyDisabled, ...newlyEnabled];
+
+      this.eventManager.sendExtensionsUpdated();
 
       if (changedExtensions.length > 0) {
         // Check if any changed extensions have UI components

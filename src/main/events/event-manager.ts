@@ -41,6 +41,7 @@ import {
   SkillsUpdatedData,
   CommandsData,
   ExtensionUIRefreshData,
+  ExtensionsUpdatedData,
   ModalOverlayUrlData,
   InputPromptData,
   ContextInfoData,
@@ -341,6 +342,12 @@ export class EventManager {
   sendMcpServersUpdated(data: McpServersData): void {
     this.sendToWindows('mcp-servers-updated', data);
     this.broadcastToEventConnectors('mcp-servers-updated', data);
+  }
+
+  // Extension events
+  sendExtensionsUpdated(data: ExtensionsUpdatedData = {}): void {
+    this.sendToWindows('extensions-updated', data);
+    this.broadcastToEventConnectors('extensions-updated', data);
   }
 
   // Task lifecycle events

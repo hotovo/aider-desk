@@ -74,6 +74,7 @@ import {
   ExtensionToolInfo,
   ExtensionUIComponent,
   ExtensionUIRefreshData,
+  ExtensionsUpdatedData,
   ModalOverlayUrlData,
   InputPromptData,
   AiderConnectorStatus,
@@ -289,6 +290,7 @@ export interface ApplicationAPI {
   addProvidersUpdatedListener: (callback: (data: ProvidersUpdatedData) => void) => () => void;
   addAgentProfilesUpdatedListener: (callback: (data: AgentProfilesUpdatedData) => void) => () => void;
   addMcpServersUpdatedListener: (callback: (data: McpServersData) => void) => () => void;
+  addExtensionsUpdatedListener: (callback: (data: ExtensionsUpdatedData) => void) => () => void;
   addProjectSettingsUpdatedListener: (baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void) => () => void;
   addTaskGitStatusUpdatedListener: (baseDir: string, taskId: string, callback: (data: TaskGitStatusUpdatedData) => void) => () => void;
   addTerminalDataListener: (baseDir: string, callback: (data: TerminalData) => void) => () => void;

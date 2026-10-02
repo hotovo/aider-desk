@@ -71,6 +71,7 @@ const createMockDeps = () => ({
   eventManager: {
     sendSettingsUpdated: vi.fn(),
     sendExtensionUIRefresh: vi.fn(),
+    sendExtensionsUpdated: vi.fn(),
   } as any,
 });
 

@@ -73,6 +73,7 @@ import {
   ExtensionConfigComponent,
   ExtensionToolInfo,
   ExtensionUIComponent,
+  ExtensionsUpdatedData,
   ModalOverlayUrlData,
   InputPromptData,
   AiderConnectorStatus,
@@ -115,6 +116,7 @@ type EventDataMap = {
   'task-git-status-updated': TaskGitStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'mcp-servers-updated': McpServersData;
+  'extensions-updated': ExtensionsUpdatedData;
   'updated-files-updated': UpdatedFilesUpdatedData;
   'skills-updated': SkillsUpdatedData;
   notification: NotificationData;
@@ -213,6 +215,7 @@ export class BrowserApi implements ApplicationAPI {
       'task-cancelled': new Map(),
       'agent-profiles-updated': new Map(),
       'mcp-servers-updated': new Map(),
+      'extensions-updated': new Map(),
       notification: new Map(),
       'message-removed': new Map(),
       'terminal-data': new Map(),
@@ -1014,6 +1017,10 @@ export class BrowserApi implements ApplicationAPI {
 
   addMcpServersUpdatedListener(callback: (data: McpServersData) => void): () => void {
     return this.addListener('mcp-servers-updated', callback);
+  }
+
+  addExtensionsUpdatedListener(callback: (data: ExtensionsUpdatedData) => void): () => void {
+    return this.addListener('extensions-updated', callback);
   }
 
   addProjectSettingsUpdatedListener(baseDir: string, callback: (data: { baseDir: string; settings: ProjectSettings }) => void): () => void {

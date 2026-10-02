@@ -52,6 +52,7 @@ export const READONLY_EVENT_TYPES = [
   'clear-task',
   'message-removed',
   'extension-ui-refresh',
+  'extensions-updated',
 ] as const;
 
 const readonlyEventTypes = new Set<string>(READONLY_EVENT_TYPES);

@@ -1306,6 +1306,10 @@ export interface ExtensionUIRefreshData {
   reloadComponents?: boolean;
 }
 
+export interface ExtensionsUpdatedData {
+  projectDir?: string;
+}
+
 export type OpenDialogProperty = 'openFile' | 'openDirectory' | 'multiSelections';
 
 export interface OpenDialogOptions {

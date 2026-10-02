@@ -866,6 +866,7 @@
       "envVarFoundPlaceholder": "Найдено в: {{source}}",
       "createNewProfile": "Создать",
       "genericTools": "Инструменты",
+      "extensionTools": "Инструменты расширений",
       "noGenericToolsConfigured": "Инструменты не настроены.",
       "todoTools": "Инструменты Todo",
       "includeTodoToolsTooltip": "Позволяет агенту управлять списком задач, включая создание, получение, обновление и очистку задач.",

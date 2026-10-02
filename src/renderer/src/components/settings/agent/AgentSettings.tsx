@@ -1,4 +1,4 @@
-import { AgentProfile, ExtensionToolInfo, McpServersData, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, McpServersData, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaPaste, FaPlus } from 'react-icons/fa';
@@ -19,8 +19,8 @@ import { ProfileToolsSection } from './sections/ProfileToolsSection';
 import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { useExtensionTools } from '@/hooks/useExtensionTools';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useApi } from '@/contexts/ApiContext';
 import { useMcpServers } from '@/contexts/McpServersContext';
 import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
@@ -72,17 +72,9 @@ export const AgentSettings = ({
   const [contextIndex, setContextIndex] = useState(0);
   const [profileContext, setProfileContext] = useState<'global' | string>(selectedProfileContext || 'global');
 
-  const api = useApi();
   const { getMergedServers } = useMcpServers();
   const { models, providers } = useModelProviders();
-  const [extensionToolsInfo, setExtensionToolsInfo] = useState<ExtensionToolInfo[]>([]);
-
-  useEffect(() => {
-    api
-      .getExtensionToolsInfo(profileContext === 'global' ? undefined : profileContext)
-      .then(setExtensionToolsInfo)
-      .catch(() => setExtensionToolsInfo([]));
-  }, [api, profileContext]);
+  const extensionToolsInfo = useExtensionTools(profileContext === 'global' ? undefined : profileContext);
 
   // Sync internal profileContext with selectedProfileContext prop
   useEffect(() => {

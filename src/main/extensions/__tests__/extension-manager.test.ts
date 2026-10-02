@@ -67,7 +67,7 @@ describe('ExtensionManager', () => {
     registerExtensionProviders: ReturnType<typeof vi.fn>;
     unregisterExtensionProviders: ReturnType<typeof vi.fn>;
   };
-  let eventManager: { sendSettingsUpdated: ReturnType<typeof vi.fn> };
+  let eventManager: { sendSettingsUpdated: ReturnType<typeof vi.fn>; sendExtensionsUpdated: ReturnType<typeof vi.fn> };
   let telemetryManager: Partial<TelemetryManager>;
 
   // Get references to mocked fs functions
@@ -100,6 +100,7 @@ describe('ExtensionManager', () => {
     };
     eventManager = {
       sendSettingsUpdated: vi.fn(),
+      sendExtensionsUpdated: vi.fn(),
     };
     telemetryManager = {
       captureExtensionsLoaded: vi.fn(),

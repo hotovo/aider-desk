@@ -858,6 +858,7 @@
       "envVarFoundPlaceholder": "다음에서 찾음: {{source}}",
       "createNewProfile": "새로 만들기",
       "genericTools": "도구",
+      "extensionTools": "확장 도구",
       "noGenericToolsConfigured": "구성된 도구가 없습니다.",
       "todoTools": "할 일 도구",
       "includeTodoToolsTooltip": "에이전트가 할 일 항목 목록을 설정, 조회, 업데이트, 삭제하는 등 관리할 수 있게 합니다.",

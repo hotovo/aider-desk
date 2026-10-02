@@ -867,6 +867,7 @@
       "envVarFoundPlaceholder": "Found in: {{source}}",
       "createNewProfile": "Create New",
       "genericTools": "Tools",
+      "extensionTools": "Extension tools",
       "noGenericToolsConfigured": "No tools configured.",
       "todoTools": "Todo tools",
       "includeTodoToolsTooltip": "Allows the agent to manage a list of todo items, including setting, getting, updating, and clearing them.",
