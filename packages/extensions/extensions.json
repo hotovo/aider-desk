@@ -20,7 +20,8 @@
       "type": "folder",
       "hasDependencies": false,
       "capabilities": [
-        "tools"
+        "tools",
+        "ui"
       ],
       "installCount": 33
     },

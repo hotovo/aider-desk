@@ -1,10 +1,11 @@
+import { readFileSync } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { basename, extname, isAbsolute, resolve } from 'node:path';
+import { basename, extname, isAbsolute, join, resolve } from 'node:path';
 
 import { z } from 'zod';
 
-import type { Extension, ExtensionContext, ToolDefinition } from '@aiderdesk/extensions';
+import type { Extension, ExtensionContext, ToolDefinition, UIComponentDefinition } from '../../extensions.d.ts';
 
 const MEDIA_TYPES: Record<string, string> = {
   '.avi': 'video/x-msvideo',
@@ -39,11 +40,11 @@ const MEDIA_TYPES: Record<string, string> = {
 
 const metadata = {
   name: 'Binary Files',
-  version: '1.0.0',
+  version: '1.2.0',
   description: 'Adds a tool that attaches local binary files to multimodal model requests',
   author: 'AiderDesk',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/binary-files/icon.png',
-  capabilities: ['tools', 'multimodal'],
+  capabilities: ['tools', 'multimodal', 'ui'],
 };
 
 const inputSchema = z.object({
@@ -93,6 +94,21 @@ export const readBinaryFile = async (input: BinaryFileInput, taskDir: string, si
 
 export default class BinaryFilesExtension implements Extension {
   static metadata = metadata;
+
+  getUIComponents(): UIComponentDefinition[] {
+    return [
+      {
+        id: 'binary-file-tool-message',
+        placement: 'task-message',
+        jsx: readFileSync(join(__dirname, 'BinaryFileToolMessage.jsx'), 'utf-8'),
+        messageFilter: {
+          types: ['tool'],
+          serverName: 'extensions',
+          toolName: 'read_binary_file',
+        },
+      },
+    ];
+  }
 
   getTools(_context: ExtensionContext): ToolDefinition<typeof inputSchema>[] {
     return [
