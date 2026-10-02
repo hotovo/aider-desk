@@ -519,6 +519,16 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
 - **Model Library**: Use the [Model Library](../core/model-library.md) for advanced configuration and custom model management
 - **API Compatibility**: Configure all settings in the Model Library for unified experience across all modes
 
+### Example: Grokified
+
+[Grokified](https://grokified.com) is an OpenAI-compatible API for Grok models at 50% of the list price. It works through the OpenAI Compatible provider:
+
+- **Base URL**: `https://api.grokified.com/v1`
+- **API Key**: a `gk_live_...` key from [grokified.com/login](https://grokified.com/login)
+- **Models**: `grok-build-0.1,grok-4.6`
+
+Then select `openai-compatible/grok-build-0.1` in the model selector. `grok-build-0.1` (256K context) is tuned for code. `grok-4.7` also works but needs a Basic or higher Grokified plan; a prepaid account gets a 403 `plan_capability_required` error for it. See the [Grokified docs](https://grokified.com/docs) for the full model list.
+
 ---
 
 ## OpenCode
