@@ -123,6 +123,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const fullMessageRendering = useSettingsStore((state) => state.settings?.fullMessageRendering);
     const renderMarkdown = useSettingsStore((state) => state.settings?.renderMarkdown);
     const showTaskStateActions = useSettingsStore((state) => state.settings?.taskSettings?.showTaskStateActions);
+    const defaultMode = useSettingsStore((state) => state.settings?.defaultMode);
     const promptBehavior = useSettingsStore((state) => state.settings?.promptBehavior);
     const settingsLoaded = useSettingsStore((state) => !!state.settings);
     const { TASK_HOTKEYS } = useConfiguredHotkeys();
@@ -174,7 +175,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
     const isSwitchingTask = !renderReady || isRenderPending;
     const visibleMessages = isSwitchingTask ? [] : displayedMessages;
 
-    const currentMode = task.currentMode || 'agent';
+    const currentMode = task.currentMode || defaultMode || 'agent';
 
     const [addFileDialogOptions, setAddFileDialogOptions] = useState<AddFileDialogOptions | null>(null);
     const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);

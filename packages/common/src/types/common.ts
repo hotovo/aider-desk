@@ -779,6 +779,7 @@ export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
   startupMode?: ProjectStartMode;
+  defaultMode?: Mode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: Theme;

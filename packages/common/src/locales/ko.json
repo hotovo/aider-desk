@@ -128,7 +128,32 @@
       "aider": "Aider",
       "agent": "AI 에이전트",
       "providers": "공급자",
-      "finish": "완료"
+      "finish": "완료",
+      "choosePath": "경로 선택",
+      "configure": "구성"
+    },
+    "choice": {
+      "title": "AiderDesk를 어떻게 사용하실 건가요?",
+      "description": "이 선택에 따라 설정 과정이 맞춤화되고 기본 모드가 지정됩니다. 설정 → 일반에서 언제든 변경할 수 있습니다.",
+      "recommended": "추천",
+      "agent": {
+        "title": "에이전트 우선",
+        "subtitle": "기본값",
+        "description": "전체 도구 접근 권한을 가진 자율 에이전트. 결과만 설명하면 계획하고 실행합니다.",
+        "feature1": "다단계 계획 및 파일 편집",
+        "feature2": "파워 도구, MCP 서버 및 스킬",
+        "feature3": "Aider 모드도 한 번에 전환 가능",
+        "modeLabel": "기본 모드 → 에이전트"
+      },
+      "aider": {
+        "title": "Aider 사용자",
+        "subtitle": "Aider 모드 중심",
+        "description": "이미 Aider에 익숙하다면 Code, Ask, Architect를 중심으로 사용하세요.",
+        "feature1": "Aider 설정을 바로 구성",
+        "feature2": "편집 형식, 자동 커밋, 환경 변수",
+        "feature3": "필요할 때 에이전트 모드 사용 가능",
+        "modeLabel": "기본 모드 → Code"
+      }
     },
     "language": {
       "title": "언어 선택",
@@ -145,7 +170,8 @@
       "configureLater": "이 작업은 나중에 설정에서도 할 수 있습니다.",
       "fineTuneTitle": "Aider 세부 조정 (선택 사항)",
       "fineTuneDescription": "고급 사용자는 추가 Aider 설정과 환경 변수를 구성할 수 있습니다. 이 단계는 완전히 선택 사항이며 건너뛰어도 안전합니다.",
-      "fineTuneNote": "참고: 이 설정은 Aider의 동작을 사용자 지정하려는 고급 사용자를 위한 것입니다. 대부분의 사용자는 이 단계를 건너뛰고 필요할 때 설정에서 나중에 구성해도 됩니다."
+      "fineTuneNote": "참고: 이 설정은 Aider의 동작을 사용자 지정하려는 고급 사용자를 위한 것입니다. 대부분의 사용자는 이 단계를 건너뛰고 필요할 때 설정에서 나중에 구성해도 됩니다.",
+      "agentSwitchNote": "팁: 에이전트 모드는 한 번에 전환할 수 있습니다 — 완전한 자율성이 필요할 때 프롬프트 위의 모드 선택기를 사용하세요."
     },
     "providers": {
       "title": "모델 공급자",
@@ -192,7 +218,24 @@
       "title": "설정 완료!",
       "description": "축하합니다! AiderDesk 설정을 성공적으로 완료했습니다. 이제 완전한 투명성과 제어로 AI 지원 개발을 이끌어 나갈 준비가 되었습니다.",
       "ready": "'설정 완료'를 클릭하여 코딩 여정을 시작하세요.",
-      "success": "온보딩이 성공적으로 완료되었습니다! AiderDesk에 오신 것을 환영합니다."
+      "success": "온보딩이 성공적으로 완료되었습니다! AiderDesk에 오신 것을 환영합니다.",
+      "mode": "새 작업은 {{mode}} 모드로 시작됩니다 — 설정 → 일반에서 언제든 변경할 수 있습니다.",
+      "modeAgent": "에이전트",
+      "modeCode": "Code",
+      "customizeTitle": "AiderDesk를 나에게 맞게",
+      "customizeDescription": "더 살펴볼 만한 곳들이 있습니다:",
+      "general": {
+        "title": "설정 → 일반",
+        "description": "외관, 언어, 기본 모드 및 시작 동작"
+      },
+      "mcp": {
+        "title": "설정 → MCP",
+        "description": "MCP 서버를 연결해 에이전트에 더 많은 도구 제공"
+      },
+      "tasks": {
+        "title": "설정 → 작업",
+        "description": "작업 동작, 자동화 및 스마트 상태"
+      }
     },
     "errors": {
       "navigationFailed": "이동에 실패했습니다. 다시 시도해 주세요.",
@@ -1101,7 +1144,13 @@
     "notificationsAndFiles": {
       "title": "알림 및 파일"
     },
-    "navigation": "탐색"
+    "navigation": "탐색",
+    "defaultMode": {
+      "title": "기본 모드",
+      "agent": "에이전트 (추천)",
+      "code": "Code (Aider 모드)",
+      "tooltip": "새 작업이 이 모드로 시작됩니다. 온보딩 중 자동으로 설정됩니다."
+    }
   },
   "messages": {
     "thinking": "생각하는 중...",

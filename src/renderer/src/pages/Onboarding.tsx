@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from 'react';
+import { clsx } from 'clsx';
 import { HiArrowRight, HiArrowLeft } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isEqual } from 'lodash';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_PROVIDER_MODELS } from '@common/agent';
 import { SettingsData } from '@common/types';
 
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { OnboardingProviderSetup } from '@/components/onboarding/OnboardingProviderSetup';
+import { OnboardingPathChoice, OnboardingPath } from '@/components/onboarding/OnboardingPathChoice';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { Button } from '@/components/common/Button';
 import { OnboardingStepper } from '@/components/onboarding/OnboardingStepper';
@@ -22,8 +26,10 @@ export const Onboarding = () => {
   const originalSettings = useSettingsStore((state) => state.settings);
   const saveSettings = useSaveSettings();
   const { profiles: originalAgentProfiles, createProfile, updateProfile, deleteProfile, updateProfilesOrder } = useAgents();
+  const { providers, models } = useModelProviders();
   const [localSettings, setLocalSettings] = useState<SettingsData | null>(originalSettings);
   const [agentProfiles, setAgentProfiles] = useState(originalAgentProfiles);
+  const [selectedPath, setSelectedPath] = useState<OnboardingPath | null>(null);
   const [step, setStep] = useState(1);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,15 +44,55 @@ export const Onboarding = () => {
     setAgentProfiles(originalAgentProfiles);
   }, [originalAgentProfiles]);
 
+  // Point the untouched default agent profile to the first provider configured during onboarding,
+  // so the agent doesn't keep a hardcoded provider the user never set up.
+  useEffect(() => {
+    if (providers.length === 0) {
+      return;
+    }
+
+    setAgentProfiles((prevProfiles) => {
+      let changed = false;
+      const nextProfiles = prevProfiles.map((profile) => {
+        if (profile.id !== DEFAULT_AGENT_PROFILE.id) {
+          return profile;
+        }
+        if (profile.provider !== DEFAULT_AGENT_PROFILE.provider || profile.model !== DEFAULT_AGENT_PROFILE.model) {
+          return profile;
+        }
+
+        const primaryProvider = providers[0];
+        const providerModels = models.filter((model) => model.providerId === primaryProvider.id);
+        const defaultModel = DEFAULT_PROVIDER_MODELS[primaryProvider.provider.name] ?? providerModels[0]?.id;
+        if (!defaultModel) {
+          return profile;
+        }
+
+        changed = true;
+        return { ...profile, provider: primaryProvider.provider.name, model: defaultModel };
+      });
+
+      return changed ? nextProfiles : prevProfiles;
+    });
+  }, [providers, models, originalAgentProfiles]);
+
+  const branchStepTitle =
+    selectedPath === 'aider' ? t('onboarding.steps.aider') : selectedPath === 'agent' ? t('onboarding.steps.agent') : t('onboarding.steps.configure');
+
   const steps = [
     { title: t('onboarding.steps.welcome') },
+    { title: t('onboarding.steps.choosePath') },
     { title: t('onboarding.steps.connectModel') },
-    { title: t('onboarding.steps.aider') },
-    { title: t('onboarding.steps.agent') },
+    { title: branchStepTitle },
+    { title: t('onboarding.steps.finish') },
   ];
 
   const handleNext = async () => {
     if (isNavigating || isSaving) {
+      return;
+    }
+
+    if (step === 2 && !selectedPath) {
       return;
     }
 
@@ -98,6 +144,7 @@ export const Onboarding = () => {
 
       await saveSettings({
         ...localSettings,
+        defaultMode: selectedPath === 'aider' ? 'code' : 'agent',
         onboardingFinished: true,
       });
 
@@ -162,6 +209,10 @@ export const Onboarding = () => {
     [localSettings, saveSettings],
   );
 
+  const handleSelectPath = (path: OnboardingPath) => {
+    setSelectedPath(path);
+  };
+
   const renderStep = () => {
     switch (step) {
       case 1:
@@ -185,6 +236,8 @@ export const Onboarding = () => {
           </div>
         );
       case 2:
+        return <OnboardingPathChoice selectedPath={selectedPath} onSelectPath={handleSelectPath} />;
+      case 3:
         return (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.providers.connectTitle')}</h2>
@@ -204,73 +257,80 @@ export const Onboarding = () => {
             </div>
           </div>
         );
-      case 3:
-        return (
-          <div className="space-y-6">
-            <h2 className="text-xl font-bold text-text-primary uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
-            <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
-              <p className="text-xs text-info-lightest">{t('onboarding.aider.fineTuneNote')}</p>
-            </div>
-            <AiderSettings settings={localSettings!} setSettings={setLocalSettings} initialShowEnvVars={true} />
-          </div>
-        );
       case 4:
+        if (selectedPath === 'aider') {
+          return (
+            <div className="space-y-6">
+              <h2 className="text-xl font-bold text-text-primary uppercase !mb-4">{t('onboarding.aider.fineTuneTitle')}</h2>
+              <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
+                <p className="text-xs text-info-lightest">{t('onboarding.aider.fineTuneNote')}</p>
+              </div>
+              <AiderSettings settings={localSettings!} setSettings={setLocalSettings} initialShowEnvVars={true} />
+              <div className="p-3 bg-info-subtle rounded-lg border border-info-light-emphasis">
+                <p className="text-xs text-info-lightest">{t('onboarding.aider.agentSwitchNote')}</p>
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div className="space-y-6">
-            <div className="">
-              <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.title')}</h2>
-              <p className="text-text-tertiary text-sm mt-2">{t('onboarding.agent.description')}</p>
+            <div>
+              <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.configureTitle')}</h2>
+              <p className="text-text-tertiary text-sm mt-2">{t('onboarding.agent.configureDescription')}</p>
             </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-text-primary">{t('onboarding.agent.capabilities')}</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-info-lighter rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-text-primary font-medium">{t('onboarding.agent.autonomousPlanning')}</span>
-                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.autonomousPlanningDesc')}</p>
-                  </div>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-success-light rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-text-primary font-medium">{t('onboarding.agent.toolUse')}</span>
-                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.toolUseDesc')}</p>
-                  </div>
-                </li>
-                <li className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-agent-power-tools rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <span className="text-text-primary font-medium">{t('onboarding.agent.extensible')}</span>
-                    <p className="text-text-tertiary text-sm">{t('onboarding.agent.extensibleDesc')}</p>
-                  </div>
-                </li>
-              </ul>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                <span className="text-sm font-medium text-text-primary">{t('onboarding.agent.autonomousPlanning')}</span>
+                <p className="text-xs text-text-tertiary mt-1">{t('onboarding.agent.autonomousPlanningDesc')}</p>
+              </div>
+              <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                <span className="text-sm font-medium text-text-primary">{t('onboarding.agent.toolUse')}</span>
+                <p className="text-xs text-text-tertiary mt-1">{t('onboarding.agent.toolUseDesc')}</p>
+              </div>
+              <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                <span className="text-sm font-medium text-text-primary">{t('onboarding.agent.extensible')}</span>
+                <p className="text-xs text-text-tertiary mt-1">{t('onboarding.agent.extensibleDesc')}</p>
+              </div>
             </div>
 
-            <div className="flex flex-col items-center space-y-5 pt-4">
-              <Button onClick={handleNext} className="gap-2" disabled={isNavigating || isSaving} size="sm" color="secondary">
-                {isNavigating ? t('common.loading') : t('onboarding.agent.configureAgent')}
-                {!isNavigating && <HiArrowRight className="w-4 h-4" />}
-              </Button>
+            <div className="border border-border-default rounded-lg overflow-hidden h-[600px]">
+              <AgentSettings settings={localSettings!} setSettings={setLocalSettings} agentProfiles={agentProfiles} setAgentProfiles={setAgentProfiles} />
             </div>
           </div>
         );
       case 5:
         return (
           <div className="space-y-4">
-            <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.agent.configureTitle')}</h2>
-            <p className="text-text-tertiary text-sm">{t('onboarding.agent.configureDescription')}</p>
-            <AgentSettings settings={localSettings!} setSettings={setLocalSettings} agentProfiles={agentProfiles} setAgentProfiles={setAgentProfiles} />
-          </div>
-        );
-      case 6:
-        return (
-          <div className="space-y-4">
             <h2 className="text-xl font-bold text-text-primary uppercase">{t('onboarding.complete.title')}</h2>
             <p className="text-text-tertiary text-sm">{t('onboarding.complete.description')}</p>
             <p className="text-text-tertiary text-sm">{t('onboarding.complete.ready')}</p>
+            <div className="p-3 bg-success-subtle rounded-lg border border-success-emphasis">
+              <p className="text-xs text-success-light">
+                {t('onboarding.complete.mode', { mode: selectedPath === 'aider' ? t('onboarding.complete.modeCode') : t('onboarding.complete.modeAgent') })}
+              </p>
+            </div>
+            <div className="space-y-3 pt-2">
+              <div>
+                <h3 className="text-sm font-semibold text-text-primary">{t('onboarding.complete.customizeTitle')}</h3>
+                <p className="text-xs text-text-tertiary mt-1">{t('onboarding.complete.customizeDescription')}</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                  <span className="text-xs font-medium text-text-primary">{t('onboarding.complete.general.title')}</span>
+                  <p className="text-xs text-text-tertiary mt-1">{t('onboarding.complete.general.description')}</p>
+                </div>
+                <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                  <span className="text-xs font-medium text-text-primary">{t('onboarding.complete.mcp.title')}</span>
+                  <p className="text-xs text-text-tertiary mt-1">{t('onboarding.complete.mcp.description')}</p>
+                </div>
+                <div className="p-3 bg-bg-secondary rounded-lg border border-border-default">
+                  <span className="text-xs font-medium text-text-primary">{t('onboarding.complete.tasks.title')}</span>
+                  <p className="text-xs text-text-tertiary mt-1">{t('onboarding.complete.tasks.description')}</p>
+                </div>
+              </div>
+            </div>
           </div>
         );
       default:
@@ -282,10 +342,10 @@ export const Onboarding = () => {
     <div className="flex flex-col h-full p-[4px] bg-bg-primary-light">
       <div className="flex flex-col flex-1 border-2 border-border-default relative overflow-y-auto scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
         <div className="flex-1 flex flex-col justify-center items-center p-4">
-          <div className="max-w-3xl w-full">
+          <div className={clsx('w-full', step === 3 || step === 4 ? 'max-w-5xl' : 'max-w-3xl')}>
             {/* Stepper */}
             <div className="mb-8">
-              <OnboardingStepper steps={steps} currentStep={step === 5 ? 4 : step} />
+              <OnboardingStepper steps={steps} currentStep={step} />
             </div>
 
             {/* Step Content */}
@@ -295,24 +355,22 @@ export const Onboarding = () => {
             <div className="mt-10 flex justify-between">
               <div>
                 {step > 1 && (
-                  <Button onClick={handleBack} variant="outline" className="gap-2" disabled={isNavigating || isSaving}>
+                  <Button onClick={handleBack} variant="text" className="gap-2" disabled={isNavigating || isSaving}>
                     <HiArrowLeft className="w-4 h-4" />
                     {t('common.back')}
                   </Button>
                 )}
               </div>
-              {step !== 4 && step !== 5 && (
-                <Button onClick={handleNext} className="gap-2" disabled={isNavigating || isSaving}>
-                  {isNavigating || isSaving ? t('common.loading') : step === 6 ? t('onboarding.finish') : t('common.next')}
-                  {!(isNavigating || isSaving) && <HiArrowRight className="w-4 h-4" />}
+              {step < 5 && (
+                <Button onClick={handleNext} className="gap-2" disabled={isNavigating || isSaving || (step === 2 && !selectedPath)}>
+                  {isNavigating ? t('common.loading') : t('common.next')}
+                  {!isNavigating && <HiArrowRight className="w-4 h-4" />}
                 </Button>
               )}
-              {(step === 4 || step === 5) && (
-                <div className="flex gap-3">
-                  <Button onClick={handleFinish} className="gap-2" disabled={isNavigating || isSaving}>
-                    {isSaving ? t('common.loading') : t('onboarding.finish')}
-                  </Button>
-                </div>
+              {step === 5 && (
+                <Button onClick={handleFinish} className="gap-2" disabled={isNavigating || isSaving}>
+                  {isSaving ? t('common.loading') : t('onboarding.finish')}
+                </Button>
               )}
             </div>
           </div>

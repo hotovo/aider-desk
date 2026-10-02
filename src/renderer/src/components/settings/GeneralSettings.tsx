@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
+import { Font, FONTS, Mode, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
 import { ChangeEvent } from 'react';
 
 import { Checkbox } from '../common/Checkbox';
@@ -165,6 +165,18 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     });
   };
 
+  const handleDefaultModeChange = (value: string) => {
+    setSettings({
+      ...settings,
+      defaultMode: value as Mode,
+    });
+  };
+
+  const defaultModeOptions: Option[] = [
+    { label: t('settings.defaultMode.agent'), value: 'agent' },
+    { label: t('settings.defaultMode.code'), value: 'code' },
+  ];
+
   const fileWatchModeOptions: Option[] = [
     { label: t('settings.fileWatchMode.auto'), value: FileWatchMode.Auto },
     { label: t('settings.fileWatchMode.native'), value: FileWatchMode.Native },
@@ -228,6 +240,18 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
             options={FONT_SIZE_OPTIONS}
             value={String(settings.fontSize ?? 16)}
             onChange={handleFontSizeChange}
+            size="sm"
+          />
+          <Select
+            label={
+              <span className="flex items-center gap-1 text-xs">
+                {t('settings.defaultMode.title')}
+                <InfoIcon tooltip={t('settings.defaultMode.tooltip')} />
+              </span>
+            }
+            options={defaultModeOptions}
+            value={settings.defaultMode ?? 'agent'}
+            onChange={handleDefaultModeChange}
             size="sm"
           />
         </div>

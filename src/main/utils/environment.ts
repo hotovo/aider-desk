@@ -307,7 +307,7 @@ export const getDefaultProjectSettings = (
     mainModel: determineMainModel(store.getSettings(), providers ?? store.getProviders(), providerModels, baseDir),
     weakModel: determineWeakModel(baseDir),
     modelEditFormats: {},
-    currentMode: 'agent',
+    currentMode: store.getSettings().defaultMode ?? 'agent',
     agentProfileId: defaultAgentProfileId,
     autonomyModeLocked: false,
     updatedFilesGroupMode: 'flat',

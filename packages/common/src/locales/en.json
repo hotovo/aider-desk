@@ -128,7 +128,32 @@
       "aider": "Aider",
       "agent": "AI Agent",
       "providers": "Providers",
-      "finish": "Finish"
+      "finish": "Finish",
+      "choosePath": "Choose Path",
+      "configure": "Configure"
+    },
+    "choice": {
+      "title": "How will you use AiderDesk?",
+      "description": "This tailors your setup and sets your default mode. You can change it anytime in Settings → General.",
+      "recommended": "Recommended",
+      "agent": {
+        "title": "Agent-first",
+        "subtitle": "Default",
+        "description": "Autonomous agent with full tool access. Describe the outcome — it plans and executes.",
+        "feature1": "Multi-step planning and file edits",
+        "feature2": "Power tools, MCP servers and skills",
+        "feature3": "Aider modes still one switch away",
+        "modeLabel": "Sets default mode → Agent"
+      },
+      "aider": {
+        "title": "Coming from Aider",
+        "subtitle": "Aider modes primary",
+        "description": "You already know aider — keep Code, Ask and Architect front and center.",
+        "feature1": "Aider settings set up in-line",
+        "feature2": "Edit formats, auto-commits, env vars",
+        "feature3": "Agent mode available when you want it",
+        "modeLabel": "Sets default mode → Code"
+      }
     },
     "language": {
       "title": "Choose Your Language",
@@ -145,7 +170,8 @@
       "configureLater": "You can also do that later in the Settings.",
       "fineTuneTitle": "Fine-Tune Aider (Optional)",
       "fineTuneDescription": "Advanced users can configure additional Aider settings and environment variables. This step is completely optional and can be safely skipped.",
-      "fineTuneNote": "Note: These settings are for advanced users who want to customize Aider's behavior. Most users can skip this step and configure these later in Settings if needed."
+      "fineTuneNote": "Note: These settings are for advanced users who want to customize Aider's behavior. Most users can skip this step and configure these later in Settings if needed.",
+      "agentSwitchNote": "Tip: Agent mode is one switch away — use the mode picker above the prompt anytime you want full autonomy."
     },
     "providers": {
       "title": "Model Providers",
@@ -192,7 +218,24 @@
       "title": "Setup Complete!",
       "description": "Congratulations! You've successfully set up AiderDesk. You're now ready to steer AI-assisted development with full transparency and control.",
       "ready": "Click 'Finish Setup' to begin your coding journey.",
-      "success": "Onboarding completed successfully! Welcome to AiderDesk."
+      "success": "Onboarding completed successfully! Welcome to AiderDesk.",
+      "mode": "New tasks will start in {{mode}} mode — you can change this anytime in Settings → General.",
+      "modeAgent": "Agent",
+      "modeCode": "Code",
+      "customizeTitle": "Make AiderDesk yours",
+      "customizeDescription": "There's more to explore — a few places worth a look:",
+      "general": {
+        "title": "Settings → General",
+        "description": "Appearance, language, default mode and startup behavior"
+      },
+      "mcp": {
+        "title": "Settings → MCP",
+        "description": "Connect MCP servers to give the agent more tools"
+      },
+      "tasks": {
+        "title": "Settings → Tasks",
+        "description": "Task behavior, automation and smart states"
+      }
     },
     "errors": {
       "navigationFailed": "Navigation failed. Please try again.",
@@ -1101,6 +1144,12 @@
     },
     "notificationsAndFiles": {
       "title": "Notifications & Files"
+    },
+    "defaultMode": {
+      "title": "Default Mode",
+      "agent": "Agent (recommended)",
+      "code": "Code (Aider modes)",
+      "tooltip": "New tasks start in this mode. Set automatically during onboarding."
     }
   },
   "messages": {

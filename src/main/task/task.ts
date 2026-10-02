@@ -944,7 +944,7 @@ export class Task {
 
   public async runPrompt(
     prompt: string,
-    mode: Mode = this.task.currentMode || 'agent',
+    mode: Mode = this.getCurrentMode(),
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,

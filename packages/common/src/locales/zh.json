@@ -128,7 +128,32 @@
       "aider": "Aider",
       "agent": "AI代理",
       "providers": "提供商",
-      "finish": "完成"
+      "finish": "完成",
+      "choosePath": "选择使用方式",
+      "configure": "配置"
+    },
+    "choice": {
+      "title": "您打算如何使用 AiderDesk？",
+      "description": "这将定制您的设置流程并设置默认模式。您可以随时在“设置 → 常规”中更改。",
+      "recommended": "推荐",
+      "agent": {
+        "title": "Agent 优先",
+        "subtitle": "默认",
+        "description": "拥有完整工具权限的自主 Agent。描述目标，它会规划并执行。",
+        "feature1": "多步骤规划与文件编辑",
+        "feature2": "Power 工具、MCP 服务器和技能",
+        "feature3": "Aider 模式仍可一键切换",
+        "modeLabel": "默认模式设为 Agent"
+      },
+      "aider": {
+        "title": "来自 Aider",
+        "subtitle": "Aider 模式为主",
+        "description": "您已经熟悉 Aider——让 Code、Ask 和 Architect 保持核心地位。",
+        "feature1": "Aider 设置直接配置",
+        "feature2": "编辑格式、自动提交、环境变量",
+        "feature3": "需要时可随时使用 Agent 模式",
+        "modeLabel": "默认模式设为 Code"
+      }
     },
     "language": {
       "title": "选择您的语言",
@@ -145,7 +170,8 @@
       "configureLater": "您也可以稍后在设置中进行配置。",
       "fineTuneTitle": "微调 Aider（可选）",
       "fineTuneDescription": "高级用户可以配置额外的 Aider 设置和环境变量。此步骤完全可选，可以安全跳过。",
-      "fineTuneNote": "注意：这些设置适用于想要自定义 Aider 行为的高级用户。大多数用户可以跳过此步骤，如需要可稍后在设置中配置。"
+      "fineTuneNote": "注意：这些设置适用于想要自定义 Aider 行为的高级用户。大多数用户可以跳过此步骤，如需要可稍后在设置中配置。",
+      "agentSwitchNote": "提示：Agent 模式一键即可切换——随时使用输入框上方的模式选择器即可获得完全自主能力。"
     },
     "providers": {
       "title": "模型提供商",
@@ -192,7 +218,24 @@
       "title": "设置完成！",
       "description": "恭喜！您已成功设置 AiderDesk。现在您可以以完全透明和可控的方式驾驭 AI 辅助开发。",
       "ready": "点击'完成设置'开始您的编程之旅。",
-      "success": "引导完成成功！欢迎使用 AiderDesk。"
+      "success": "引导完成成功！欢迎使用 AiderDesk。",
+      "mode": "新任务将以 {{mode}} 模式开始——您可以随时在“设置 → 常规”中更改。",
+      "modeAgent": "Agent",
+      "modeCode": "Code",
+      "customizeTitle": "定制你的 AiderDesk",
+      "customizeDescription": "还有更多可探索的设置——推荐看看这几处：",
+      "general": {
+        "title": "设置 → 常规",
+        "description": "外观、语言、默认模式和启动行为"
+      },
+      "mcp": {
+        "title": "设置 → MCP",
+        "description": "连接 MCP 服务器，为 Agent 提供更多工具"
+      },
+      "tasks": {
+        "title": "设置 → 任务",
+        "description": "任务行为、自动化和智能状态"
+      }
     },
     "errors": {
       "navigationFailed": "导航失败。请重试。",
@@ -1034,6 +1077,12 @@
     },
     "notificationsAndFiles": {
       "title": "通知与文件"
+    },
+    "defaultMode": {
+      "title": "默认模式",
+      "agent": "Agent（推荐）",
+      "code": "Code（Aider 模式）",
+      "tooltip": "新任务将以此模式开始。会在引导流程中自动设置。"
     }
   },
   "messages": {
