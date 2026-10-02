@@ -117,6 +117,39 @@ const CODEX_MODELS: Model[] = [
     cacheReadInputTokenCost: 0.000001,
     cacheWriteInputTokenCost: 0.0000125,
   },
+  // Recommended
+  {
+    id: 'gpt-6.1-sol',
+    providerId: '',
+    maxInputTokens: 1050000,
+    maxOutputTokensLimit: 128000,
+    inputCostPerToken: 0.000002,
+    outputCostPerToken: 0.00001,
+    cacheReadInputTokenCost: 0.0000001,
+    cacheWriteInputTokenCost: 0.0000025,
+  },
+  // Recommended
+  {
+    id: 'gpt-6-luna',
+    providerId: '',
+    maxInputTokens: 1050000,
+    maxOutputTokensLimit: 128000,
+    inputCostPerToken: 0.0000001,
+    outputCostPerToken: 0.0000005,
+    cacheReadInputTokenCost: 0.00000001,
+    cacheWriteInputTokenCost: 0.000000125,
+  },
+  // Predecessor of gpt-6.1-sol, still available in Codex
+  {
+    id: 'gpt-6-sol',
+    providerId: '',
+    maxInputTokens: 1050000,
+    maxOutputTokensLimit: 128000,
+    inputCostPerToken: 0.000002,
+    outputCostPerToken: 0.00001,
+    cacheReadInputTokenCost: 0.0000002,
+    cacheWriteInputTokenCost: 0.0000025,
+  },
   {
     id: 'gpt-5.6-sol',
     providerId: '',
@@ -812,7 +845,7 @@ const PROVIDER_ID = 'openai-codex';
 export default class OpenAICodexAuthExtension implements Extension {
   static metadata = {
     name: 'OpenAI Codex Auth',
-    version: '1.2.0',
+    version: '1.3.0',
     description: 'OpenAI Codex provider using ChatGPT Plus/Pro OAuth authentication with a dedicated sign-in UI (browser or device code)',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/openai-codex/icon.png',
     author: 'wladimiiir',
