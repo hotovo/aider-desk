@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "binary-files",
@@ -22,7 +22,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "wakatime",
@@ -33,7 +33,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "pirate",
@@ -57,7 +57,7 @@
         "commands",
         "example"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "questions",
@@ -70,7 +70,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "theme",
@@ -92,7 +92,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 82
+      "installCount": 83
     },
     {
       "id": "protected-paths",
@@ -104,7 +104,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "permission-gate",
@@ -115,7 +115,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "ultrathink",
@@ -126,7 +126,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "external-rules",
@@ -138,7 +138,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "external-skills",
@@ -150,7 +150,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 55
+      "installCount": 56
     },
     {
       "id": "learn",
@@ -163,7 +163,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "legacy-system-prompt",
@@ -187,7 +187,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "sandbox",
@@ -203,7 +203,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "rtk",
@@ -220,7 +220,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "redact-secrets",
@@ -232,7 +232,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "chunkhound-search",
@@ -244,7 +244,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -256,7 +256,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "tree-sitter-repo-map",
@@ -269,7 +269,7 @@
         "context",
         "commands"
       ],
-      "installCount": 57
+      "installCount": 59
     },
     {
       "id": "context-autocompletion-words",
@@ -294,7 +294,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 66
+      "installCount": 68
     },
     {
       "id": "plannotator",
@@ -321,7 +321,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "ui-placement-demo",
@@ -333,7 +333,7 @@
         "ui",
         "example"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "multi-model-run",
@@ -346,7 +346,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "providers-quota-extension",
@@ -400,7 +400,7 @@
         "tools",
         "search"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "seek",
@@ -429,7 +429,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 73
+      "installCount": 74
     },
     {
       "id": "verifier",
@@ -442,7 +442,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "bmad",
@@ -455,7 +455,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "claude-agent-sdk",
@@ -480,7 +480,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "cursor",
@@ -492,7 +492,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "cursor-sdk",
@@ -505,7 +505,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "github-copilot",
@@ -518,7 +518,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "checkpoints",
@@ -531,7 +531,7 @@
         "events",
         "ui"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "codegraph",
@@ -544,7 +544,7 @@
         "tools",
         "search"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "kanban",
@@ -556,7 +556,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "doom",
@@ -581,7 +581,7 @@
         "agents",
         "example"
       ],
-      "installCount": 43
+      "installCount": 45
     },
     {
       "id": "wigolo",
@@ -594,7 +594,7 @@
         "tools",
         "search"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "destructive-command-guard",
@@ -607,7 +607,7 @@
         "security",
         "commands"
       ],
-      "installCount": 33
+      "installCount": 36
     },
     {
       "id": "git-log",
@@ -619,7 +619,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "skill-gallery",
@@ -631,7 +631,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 100
+      "installCount": 103
     },
     {
       "id": "task-scheduler",
@@ -657,7 +657,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 98
+      "installCount": 100
     },
     {
       "id": "dbx",
