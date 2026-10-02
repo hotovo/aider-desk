@@ -44,7 +44,7 @@
         </div>
       ) : isReady ? (
         isElectron ? (
-          <webview src={status.url} className="flex-1 w-full h-full border-0 rounded-lg" allowpopups partition="persist:dbx" />
+          <webview src={status.url} className="flex-1 w-full h-full border-0 rounded-lg" allowpopups="true" partition="persist:dbx" />
         ) : (
           <iframe src={status.url} className="flex-1 w-full h-full border-0 rounded-lg" title="dbx" />
         )
