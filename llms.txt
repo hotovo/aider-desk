@@ -704,6 +704,7 @@ src/
         useTaskActions.ts
         useTaskCommandHandlers.ts
         useTaskDataHandlers.ts
+        useTaskGitStatus.ts
         useTaskLifecycleHandlers.ts
         useTaskLogHandlers.ts
         useTaskMessageHandlers.ts
@@ -714,7 +715,6 @@ src/
         useUpdatedFileDiff.ts
         useUserMessageNavigation.tsx
         useVersions.ts
-        useWorktreeIntegrationStatus.ts
       i18n/
         index.ts
       icons/
@@ -3989,8 +3989,8 @@ import {
   AgentProfile,
   AgentProfilesUpdatedData,
   McpServersData,
-  WorktreeIntegrationStatus,
-  WorktreeIntegrationStatusUpdatedData,
+  TaskGitStatus,
+  TaskGitStatusUpdatedData,
   TaskCreatedData,
   UpdatedFile,
   UpdatedFilesUpdatedData,
@@ -4037,7 +4037,7 @@ sendFileAdded(baseDir: string, taskId: string, file: ContextFile): void
 ⋮----
 sendContextFilesUpdated(baseDir: string, taskId: string, files: ContextFile[]): void
 ⋮----
-sendUpdatedFilesUpdated(baseDir: string, taskId: string, files: UpdatedFile[]): void
+sendUpdatedFilesUpdated(baseDir: string, taskId: string, taskDir: string, files: UpdatedFile[]): void
 ⋮----
 sendSkillsUpdated(baseDir: string, taskId: string, skills: SkillDefinition[]): void
 ⋮----
@@ -4090,7 +4090,7 @@ sendCommandsUpdated(data: CommandsData): void
 ⋮----
 sendCustomCommandError(baseDir: string, taskId: string, error: string): void
 ⋮----
-sendWorktreeIntegrationStatusUpdated(baseDir: string, taskId: string, status: WorktreeIntegrationStatus | null): void
+sendTaskGitStatusUpdated(baseDir: string, taskId: string, status: TaskGitStatus | null): void
 ⋮----
 // Terminal events
 sendTerminalData(data: TerminalData): void
@@ -5118,7 +5118,7 @@ import {
   TodoItem,
   UpdatedFile,
   UsageReportData,
-  WorktreeUncommittedFiles,
+  UncommittedFiles,
 } from '@common/types';
 ⋮----
 import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
@@ -5286,7 +5286,7 @@ async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<vo
 ⋮----
 async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<void>
 ⋮----
-async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
+async getLocalUncommittedFiles(): Promise<UncommittedFiles>
 ⋮----
 async applyUncommittedChanges(): Promise<void>
 ⋮----
@@ -5366,8 +5366,8 @@ import {
   UpdatedFilesGroupMode,
   WorkingMode,
   Worktree,
-  WorktreeAheadCommits,
-  WorktreeUncommittedFiles,
+  GitAheadCommits,
+  UncommittedFiles,
 } from '@common/types';
 // @ts-expect-error istextorbinary library does not provide TypeScript definitions
 import { isBinary } from 'istextorbinary';
@@ -5912,7 +5912,7 @@ async checkWorktreeForUnmergedWork(
 ⋮----
 // On error, return safe defaults (assume there might be work)
 ⋮----
-async getAheadCommits(worktreePath: string, targetBranch: string): Promise<WorktreeAheadCommits>
+async getAheadCommits(worktreePath: string, targetBranch: string): Promise<GitAheadCommits>
 ⋮----
 /**
    * Get outgoing and incoming commits relative to a target branch, or relative to the
@@ -5925,7 +5925,7 @@ const parseCommits = (stdout: string)
 ⋮----
 private async fetchRemote(repoPath: string): Promise<void>
 ⋮----
-async getUncommittedFiles(worktreePath: string): Promise<WorktreeUncommittedFiles>
+async getUncommittedFiles(worktreePath: string): Promise<UncommittedFiles>
 ⋮----
 private parseGitStatusEntries(stdout: string): string[]
 ⋮----
@@ -9459,15 +9459,24 @@ registerRoutes(router: Router): void
 ⋮----
 // Git push
 ⋮----
-// Worktree status
+// Task git status (current branch, uncommitted files, rebase state, worktree integration)
+⋮----
+// Deprecated: use /project/git/status. Returns the legacy flat WorktreeIntegrationStatus shape,
+// or null when the task has no materialized worktree (matches the documented pre-deprecation contract).
 ⋮----
 // Rebase worktree from branch
 ⋮----
-// Abort worktree rebase
+// Abort rebase (worktree or local branch)
 ⋮----
-// Continue worktree rebase
+// Continue rebase (worktree or local branch)
 ⋮----
-// Resolve worktree conflicts with agent
+// Resolve conflicts with agent (worktree or local branch)
+⋮----
+// Deprecated: use /project/git/abort-rebase
+⋮----
+// Deprecated: use /project/git/continue-rebase
+⋮----
+// Deprecated: use /project/git/resolve-conflicts-with-agent
 ⋮----
 // Resolve git error with agent
 ⋮----
@@ -10902,8 +10911,10 @@ import {
   UserMessageData,
   SwitchToLocalOptions,
   SwitchToWorktreeOptions,
+  TaskGitStatus,
+  TaskGitWorktreeStatus,
   WorkingMode,
-  WorktreeUncommittedFiles,
+  UncommittedFiles,
 } from '@common/types';
 import { parsePartialJson } from 'ai';
 import {
@@ -11717,7 +11728,7 @@ public async updateTask(updates: Partial<TaskData>): Promise<TaskData>
 ⋮----
 // no need to save if nothing changed
 ⋮----
-private async sendWorktreeIntegrationStatusUpdated()
+private async sendTaskGitStatusUpdated()
 ⋮----
 // These methods are often invoked fire-and-forget (void); never let them produce unhandled rejections
 ⋮----
@@ -11755,7 +11766,7 @@ public async switchToLocalWorkingMode(options?: SwitchToLocalOptions): Promise<v
 ⋮----
 public async switchToWorktreeWorkingMode(options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
-public async getLocalUncommittedFiles(): Promise<WorktreeUncommittedFiles>
+public async getLocalUncommittedFiles(): Promise<UncommittedFiles>
 ⋮----
 public async applyUncommittedChanges(): Promise<void>
 ⋮----
@@ -11779,7 +11790,7 @@ public async commitChanges(message: string, amend: boolean, filePaths?: string[]
 ⋮----
 public cancelCommitChanges(): void
 ⋮----
-public async getWorktreeIntegrationStatus(targetBranch?: string)
+public async getTaskGitStatus(targetBranch?: string): Promise<TaskGitStatus | null>
 ⋮----
 public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
 ⋮----
@@ -11792,7 +11803,7 @@ public async rebaseWorktreeFromBranch(fromBranch?: string): Promise<void>
 ⋮----
 // keep the marker if we cannot determine the rebase state
 ⋮----
-public async abortWorktreeRebase(): Promise<void>
+public async abortRebase(): Promise<void>
 ⋮----
 public async renameBranch(newBranchName: string): Promise<void>
 ⋮----
@@ -11856,7 +11867,7 @@ public reportGitActionError(action: string, error: unknown): void
 ⋮----
 public async resolveGitErrorWithAgent(): Promise<void>
 ⋮----
-public async continueWorktreeRebase(): Promise<void>
+public async continueRebase(): Promise<void>
 ⋮----
 // Clear any remaining merge state after successful rebase continuation
 ⋮----
@@ -13264,13 +13275,13 @@ async gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<
 ⋮----
 async gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean): Promise<
 ⋮----
-async getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string)
+async getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string)
 ⋮----
 async rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void>
 ⋮----
-async abortWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+async abortRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
-async continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+async continueRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -14469,7 +14480,7 @@ import {
   SkillsUpdatedData,
   UserMessageData,
   VersionsInfo,
-  WorktreeIntegrationStatusUpdatedData,
+  TaskGitStatusUpdatedData,
   AiderConnectorStatus,
   InputPromptData,
 } from '@common/types';
@@ -14631,9 +14642,9 @@ import {
   GitSyncCommits,
   SwitchToLocalOptions,
   SwitchToWorktreeOptions,
-  WorktreeIntegrationStatus,
-  WorktreeIntegrationStatusUpdatedData,
-  WorktreeUncommittedFiles,
+  TaskGitStatus,
+  TaskGitStatusUpdatedData,
+  UncommittedFiles,
   TaskCreatedData,
   UpdatedFilesUpdatedData,
   QueuedPromptsUpdatedData,
@@ -14681,7 +14692,7 @@ type EventDataMap = {
   'provider-models-updated': ProviderModelsData;
   'providers-updated': ProvidersUpdatedData;
   'project-settings-updated': { baseDir: string; settings: ProjectSettings };
-  'worktree-integration-status-updated': WorktreeIntegrationStatusUpdatedData;
+  'task-git-status-updated': TaskGitStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'mcp-servers-updated': McpServersData;
   'updated-files-updated': UpdatedFilesUpdatedData;
@@ -14709,6 +14720,7 @@ interface ListenerEntry<T> {
   callback: EventCallback<T>;
   baseDir?: string;
   taskId?: string;
+  taskDir?: string;
 }
 ⋮----
 class UnsupportedError extends Error
@@ -14729,6 +14741,8 @@ constructor()
 ⋮----
 // Filter by taskId for task-level events
 ⋮----
+// Filter by taskDir for directory-scoped events (paths compared cross-platform)
+⋮----
 private ensureSocketConnected(): Promise<void>
 ⋮----
 const cleanup = () =>
@@ -14737,7 +14751,13 @@ const onConnect = () =>
 ⋮----
 const onDisconnect = () =>
 ⋮----
-private addListener<T extends keyof EventDataMap>(eventType: T, callback: EventCallback<EventDataMap[T]>, baseDir?: string, taskId?: string): () => void
+private addListener<T extends keyof EventDataMap>(
+    eventType: T,
+    callback: EventCallback<EventDataMap[T]>,
+    baseDir?: string,
+    taskId?: string,
+    taskDir?: string,
+): () => void
 ⋮----
 private async post<B, R>(endpoint: string, body: B): Promise<R>
 ⋮----
@@ -14893,7 +14913,7 @@ addResponseCompletedListener(baseDir: string, taskId: string, callback: (data: R
 addLogListener(baseDir: string, taskId: string, callback: (data: LogData) => void): () => void
 addContextFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextFilesUpdatedData) => void): () => void
 addContextInfoUpdatedListener(baseDir: string, taskId: string, callback: (data: ContextInfoData) => void): () => void
-addUpdatedFilesUpdatedListener(baseDir: string, taskId: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void
+addUpdatedFilesUpdatedListener(baseDir: string, taskDir: string, callback: (data: UpdatedFilesUpdatedData) => void): () => void
 addSkillsUpdatedListener(baseDir: string, taskId: string, callback: (data: SkillsUpdatedData) => void): () => void
 addCommandsUpdatedListener(baseDir: string, callback: (data: CommandsData) => void): () => void
 addUpdateAutocompletionListener(baseDir: string, taskId: string, callback: (data: AutocompletionData) => void): () => void
@@ -14924,7 +14944,7 @@ addMcpServersUpdatedListener(callback: (data: McpServersData) => void): () => vo
 ⋮----
 addProjectSettingsUpdatedListener(baseDir: string, callback: (data:
 ⋮----
-addWorktreeIntegrationStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: WorktreeIntegrationStatusUpdatedData) => void): () => void
+addTaskGitStatusUpdatedListener(baseDir: string, taskId: string, callback: (data: TaskGitStatusUpdatedData) => void): () => void
 ⋮----
 // Task lifecycle event listeners
 addTaskCreatedListener(baseDir: string, callback: (data: TaskCreatedData) => void): () => void
@@ -14980,7 +15000,7 @@ switchToLocalWorkingMode(baseDir: string, taskId: string, options?: SwitchToLoca
 ⋮----
 switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
-getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<WorktreeUncommittedFiles>
+getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<UncommittedFiles>
 ⋮----
 applyUncommittedChanges(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -15022,15 +15042,15 @@ gitPush(baseDir: string, taskId: string, force?: boolean): Promise<
 ⋮----
 resolveGitErrorWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
-getWorktreeIntegrationStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<WorktreeIntegrationStatus>
+getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<TaskGitStatus>
 ⋮----
 rebaseWorktreeFromBranch(baseDir: string, taskId: string, fromBranch?: string): Promise<void>
 ⋮----
-abortWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+abortRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
-continueWorktreeRebase(baseDir: string, taskId: string): Promise<void>
+continueRebase(baseDir: string, taskId: string): Promise<void>
 ⋮----
-resolveWorktreeConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
+resolveConflictsWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
 renameGitBranch(baseDir: string, taskId: string, newBranchName: string): Promise<void>
 ⋮----
@@ -18329,7 +18349,7 @@ File: src/renderer/src/components/message/RebaseConflictsActions.tsx
 ================
 import { TiWarning } from 'react-icons/ti';
 import { useTranslation } from 'react-i18next';
-import { WorktreeIntegrationStatus } from '@common/types';
+import { TaskGitStatus } from '@common/types';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { useApi } from '@/contexts/ApiContext';
@@ -18337,7 +18357,7 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   projectDir: string;
   taskId: string;
-  worktreeStatus: WorktreeIntegrationStatus;
+  status: TaskGitStatus;
 };
 ⋮----
 const handleContinueRebase = () =>
@@ -18351,7 +18371,6 @@ File: src/renderer/src/components/message/RebaseResolvedActions.tsx
 ================
 import { TiInfo } from 'react-icons/ti';
 import { useTranslation } from 'react-i18next';
-import { WorktreeIntegrationStatus } from '@common/types';
 ⋮----
 import { Button } from '@/components/common/Button';
 import { useApi } from '@/contexts/ApiContext';
@@ -18359,7 +18378,6 @@ import { useApi } from '@/contexts/ApiContext';
 type Props = {
   projectDir: string;
   taskId: string;
-  worktreeStatus: WorktreeIntegrationStatus;
 };
 ⋮----
 const handleContinueRebase = () =>
@@ -18694,7 +18712,7 @@ import { ExtensionComponentRenderer } from '@/components/extensions/ExtensionCom
 import { useExtensionComponentsWrapper } from '@/components/extensions/useExtensionComponentsWrapper';
 import { RebaseConflictsActions } from '@/components/message/RebaseConflictsActions';
 import { RebaseResolvedActions } from '@/components/message/RebaseResolvedActions';
-import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 ⋮----
 type Props = {
   projectDir: string;
@@ -21685,6 +21703,25 @@ type Props = {
   refreshContextFiles: () => Promise<void>;
   onToggleFilesSidebarCollapse?: () => void;
 };
+⋮----
+export const FilesContextInfoContent = ({
+  baseDir,
+  taskId,
+  allFiles,
+  contextFiles,
+  aiderTotalCost,
+  maxInputTokens,
+  clearMessages,
+  runCommand,
+  resetTask,
+  mode,
+  showFileDialog,
+  task,
+  updateTask,
+  refreshAllFiles,
+  refreshContextFiles,
+  onToggleFilesSidebarCollapse,
+}: Props) =>
 
 ================
 File: src/renderer/src/components/project/GitBranchesButton.tsx
@@ -21699,7 +21736,7 @@ import { MdKeyboardArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { useLocalStorage } from '@reactuses/core';
-import { BranchInfo, GitSyncCommits, WorktreeIntegrationStatus } from '@common/types';
+import { BranchInfo, GitSyncCommits, TaskGitStatus } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -21731,7 +21768,7 @@ type Props = {
   baseDir: string;
   taskId: string;
   worktreePath?: string;
-  status?: WorktreeIntegrationStatus | null;
+  status?: TaskGitStatus | null;
   taskName?: string;
   disabled?: boolean;
   onSwitchToLocal: () => void;
@@ -21954,12 +21991,12 @@ import { useTranslation } from 'react-i18next';
 import { CgArrowBottomLeft, CgArrowTopRight } from 'react-icons/cg';
 import { TiWarning } from 'react-icons/ti';
 ⋮----
-import type { WorktreeIntegrationStatus } from '@common/types';
+import type { TaskGitStatus } from '@common/types';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
 type Props = {
-  status?: WorktreeIntegrationStatus | null;
+  status?: TaskGitStatus | null;
   showOutgoing: boolean;
   showIncoming: boolean;
 };
@@ -22475,7 +22512,7 @@ const handleAutonomyLockChanged = (locked: boolean) =>
 ================
 File: src/renderer/src/components/project/TaskGitControls.tsx
 ================
-import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, WorktreeUncommittedFiles } from '@common/types';
+import { SwitchToLocalOptions, SwitchToWorktreeOptions, TaskData, WorkingMode, UncommittedFiles } from '@common/types';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { MdClose } from 'react-icons/md';
 import { CgSpinner } from 'react-icons/cg';
@@ -22491,7 +22528,7 @@ import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton'
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
 import { useApi } from '@/contexts/ApiContext';
-import { useWorktreeIntegrationStatus } from '@/hooks/useWorktreeIntegrationStatus';
+import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
 ⋮----
@@ -27851,6 +27888,21 @@ const getTaskDirById = (baseDir: string, taskId: string) =>
 export const useTaskDataHandlers = (baseDir: string, taskId: string) =>
 
 ================
+File: src/renderer/src/hooks/useTaskGitStatus.ts
+================
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { TaskGitStatus } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+⋮----
+type UseTaskGitStatus = {
+  taskGitStatus: TaskGitStatus | null;
+  refreshStatus: () => void;
+};
+⋮----
+export const useTaskGitStatus = (projectDir: string, taskId: string): UseTaskGitStatus =>
+
+================
 File: src/renderer/src/hooks/useTaskLifecycleHandlers.ts
 ================
 import { useCallback, useEffect } from 'react';
@@ -28059,21 +28111,6 @@ export const useVersions = () =>
 // Optionally set versions to indicate an error or keep them null
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
-
-================
-File: src/renderer/src/hooks/useWorktreeIntegrationStatus.ts
-================
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { WorktreeIntegrationStatus } from '@common/types';
-⋮----
-import { useApi } from '@/contexts/ApiContext';
-⋮----
-type UseWorktreeIntegrationStatus = {
-  worktreeStatus: WorktreeIntegrationStatus | null;
-  refreshStatus: () => void;
-};
-⋮----
-export const useWorktreeIntegrationStatus = (projectDir: string, taskId: string, isWorktree: boolean): UseWorktreeIntegrationStatus =>
 
 ================
 File: src/renderer/src/i18n/index.ts
