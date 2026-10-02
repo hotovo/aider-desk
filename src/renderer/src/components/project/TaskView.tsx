@@ -191,6 +191,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
 
     const inProgress = task.state === DefaultTaskState.InProgress;
     const isLastLoadingMessage = displayedMessages.length > 0 && isLoadingMessage(displayedMessages[displayedMessages.length - 1]);
+    const lastMessageIsUserMessage = displayedMessages.length > 0 && isUserMessage(displayedMessages[displayedMessages.length - 1]);
 
     const promptFieldRef = useRef<PromptFieldRef>(null);
     const projectTopBarRef = useRef<TaskBarRef>(null);
@@ -969,6 +970,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   runPrompt={runPrompt}
                   savePrompt={handleSavePrompt}
                   editUserMessage={handleEditLastUserMessage}
+                  lastMessageIsUserMessage={lastMessageIsUserMessage}
                   isEditingLastMessage={editingMessageIndex !== null}
                   canSaveEditedPrompt={canSaveEditedPrompt}
                   isActive={isActive}

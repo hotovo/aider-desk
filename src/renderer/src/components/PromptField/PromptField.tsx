@@ -159,6 +159,7 @@ type Props = {
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
   editUserMessage: () => void;
+  lastMessageIsUserMessage?: boolean;
   isEditingLastMessage?: boolean;
   canSaveEditedPrompt?: boolean;
   disabled?: boolean;
@@ -199,6 +200,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
       runTests,
       redoLastUserPrompt,
       editUserMessage,
+      lastMessageIsUserMessage = false,
       isEditingLastMessage = false,
       canSaveEditedPrompt = false,
       openModelSelector,
@@ -1085,15 +1087,20 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           {
             key: 'ArrowUp',
             run: () => {
-              if (historyItems.length > 0) {
-                if (historyMenuVisible) {
-                  if (highlightedHistoryItemIndex === historyItems.length - 1) {
-                    loadMoreHistory();
-                  } else {
-                    setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
-                  }
+              if (historyMenuVisible) {
+                if (highlightedHistoryItemIndex === historyItems.length - 1) {
+                  loadMoreHistory();
+                } else {
+                  setHighlightedHistoryItemIndex((prev) => Math.min(prev + 1, historyItems.length - 1));
+                }
+                return true;
+              }
+              if (!text) {
+                if (lastMessageIsUserMessage) {
+                  editUserMessage();
                   return true;
-                } else if (!text) {
+                }
+                if (historyItems.length > 0) {
                   setHistoryLimit(HISTORY_MENU_CHUNK_SIZE);
                   setHistoryMenuVisible(true);
                   setHighlightedHistoryItemIndex(0);
@@ -1131,6 +1138,8 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
         text,
         loadMoreHistory,
         promptBehavior.suggestionMode,
+        lastMessageIsUserMessage,
+        editUserMessage,
       ],
     );
 

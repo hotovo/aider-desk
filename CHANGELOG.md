@@ -7,6 +7,7 @@
 - fixed crash during streaming (React maximum update depth exceeded) in message list
 - added agent-based conflict resolution support also on project root level, not only in worktrees
 - fixed updated files section not refreshing for tasks sharing the same worktree or project root
+- added pressing ArrowUp in an empty prompt field entering edit mode of the last user message
 
 ## [0.85.0]
 
