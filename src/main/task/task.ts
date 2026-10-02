@@ -91,6 +91,8 @@ import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 import type { WatchHandle } from '@/file-watcher-manager';
+import type { SmartCompactionPassSelection } from '@/agent/smart-compaction';
+import type { SmartCompactionOptions } from '@common/extensions';
 
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
@@ -3483,7 +3485,11 @@ export class Task {
     return skillMessages;
   }
 
-  public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.'): Promise<ContextMessage[]> {
+  public async smartCompactConversation(
+    contextMessages?: ContextMessage[],
+    infoMessage = 'Conversation smart-compacted.',
+    options?: SmartCompactionOptions,
+  ): Promise<ContextMessage[]> {
     if (!contextMessages) {
       contextMessages = await this.contextManager.getContextMessages();
     }
@@ -3496,26 +3502,32 @@ export class Task {
     // backing up the current context before compacting for debugging purposes
     await this.contextManager.backupContext();
 
-    // Determine compaction level based on messages since last compaction
-    const messagesSinceLastCompaction = contextMessages.length - this.lastSmartCompactionMessageCount;
-    if (messagesSinceLastCompaction <= 3) {
-      logger.info('Increasing compaction level to aggressive due to low message count since last compaction.', {
-        messagesSinceLastCompaction,
-        smartCompactionLevel: this.smartCompactionLevel,
-      });
-      this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Max) as CompactionLevel;
-    } else if (messagesSinceLastCompaction > 5 && this.smartCompactionLevel > CompactionLevel.One) {
-      logger.info('Decreasing compaction level to mild due to high message count since last compaction.', {
-        messagesSinceLastCompaction,
-      });
-      this.smartCompactionLevel = Math.max(this.smartCompactionLevel - 1, CompactionLevel.One) as CompactionLevel;
+    if (options?.compactionLevel !== undefined) {
+      this.smartCompactionLevel = Math.min(Math.max(Math.round(options.compactionLevel), 1), CompactionLevel.Max) as CompactionLevel;
+    } else if (!options) {
+      // Determine compaction level based on messages since last compaction
+      const messagesSinceLastCompaction = contextMessages.length - this.lastSmartCompactionMessageCount;
+      if (messagesSinceLastCompaction <= 3) {
+        logger.info('Increasing compaction level to aggressive due to low message count since last compaction.', {
+          messagesSinceLastCompaction,
+          smartCompactionLevel: this.smartCompactionLevel,
+        });
+        this.smartCompactionLevel = Math.min(this.smartCompactionLevel + 1, CompactionLevel.Max) as CompactionLevel;
+      } else if (messagesSinceLastCompaction > 5 && this.smartCompactionLevel > CompactionLevel.One) {
+        logger.info('Decreasing compaction level to mild due to high message count since last compaction.', {
+          messagesSinceLastCompaction,
+        });
+        this.smartCompactionLevel = Math.max(this.smartCompactionLevel - 1, CompactionLevel.One) as CompactionLevel;
+      }
+      // else: 4-5 messages since last compaction → keep current level
     }
-    // else: 4-5 messages since last compaction → keep current level
 
     logger.debug('Current compaction level:', {
       smartCompactionLevel: this.smartCompactionLevel,
     });
-    const compactedMessages = await smartCompactMessages(contextMessages, 10, this.smartCompactionLevel);
+    const protectedMessageCount = options?.protectedMessageCount ?? 10;
+    const passes: SmartCompactionPassSelection | undefined = options?.passes;
+    const compactedMessages = await smartCompactMessages(contextMessages, protectedMessageCount, this.smartCompactionLevel, passes);
 
     this.lastSmartCompactionMessageCount = compactedMessages.length;
 
@@ -3845,6 +3857,14 @@ export class Task {
       },
     });
   }, 500);
+
+  public async getEstimatedTokens(): Promise<number> {
+    const agentProfile = await this.getTaskAgentProfile();
+    if (!agentProfile) {
+      return 0;
+    }
+    return this.agent.estimateTokens(this, agentProfile);
+  }
 
   async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData) {
     // For old profile, we can't easily get it from old settings since they're now file-based

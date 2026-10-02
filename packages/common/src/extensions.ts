@@ -651,6 +651,54 @@ export interface QuestionOptions {
   defaultAnswer?: string;
 }
 
+/** Selection of individual smart compaction passes. Omitted flags default to true. */
+export interface SmartCompactionPasses {
+  /** Remove errored/no-op power tool calls */
+  erroredTools?: boolean;
+  /** Collapse repeated file edit/write calls into <file-edited> markers */
+  fileEdits?: boolean;
+  /** Remove file reads that precede later edits of the same file */
+  staleFileReads?: boolean;
+  /** Truncate/redact file read outputs */
+  fileReads?: boolean;
+  /** Remove glob/grep searches made obsolete by later edits */
+  searches?: boolean;
+  /** Remove/deduplicate semantic search results */
+  semanticSearches?: boolean;
+  /** Deduplicate bash commands and redact their outputs */
+  bash?: boolean;
+  /** Redact fetch outputs */
+  fetch?: boolean;
+  /** Truncate results of non-power (MCP/extension) tools */
+  otherTools?: boolean;
+  /** Remove tool calls with verbose inputs */
+  verboseToolCalls?: boolean;
+  /** Remove reasoning parts from assistant messages */
+  reasoning?: boolean;
+}
+
+/** Options for manual smart compaction of the task context. */
+export interface SmartCompactionOptions {
+  /** Number of most-recent messages protected from compaction (default: 10) */
+  protectedMessageCount?: number;
+  /** Compaction level 1 (mild) to 5 (max). Omit to keep the automatic level. */
+  compactionLevel?: number;
+  /** Which compaction passes to run. Omitted = all passes enabled. */
+  passes?: SmartCompactionPasses;
+}
+
+/** Result of a smart compaction run. */
+export interface SmartCompactionResult {
+  /** Context message count before compaction */
+  messagesBefore: number;
+  /** Context message count after compaction */
+  messagesAfter: number;
+  /** Estimated next-prompt token count before compaction */
+  tokensBefore: number;
+  /** Estimated next-prompt token count after compaction */
+  tokensAfter: number;
+}
+
 /**
  * Safe subset of Task capabilities exposed to extensions.
  * Provides read-only access to task data and safe operations.
@@ -1076,6 +1124,22 @@ export interface TaskContext {
    * @param instructions - Optional custom instructions to guide the compaction process
    */
   compactConversation(instructions?: string): Promise<void>;
+
+  /**
+   * Run smart (rule-based) compaction on the task's context with manual controls.
+   * Backs up the current context (undoable), applies the selected compaction passes,
+   * reloads the UI and connectors, and refreshes the context info.
+   * @param options - Optional settings: protected message window, compaction level (1-5), and pass selection
+   * @returns Message and estimated token counts before and after compaction
+   */
+  smartCompact(options?: SmartCompactionOptions): Promise<SmartCompactionResult>;
+
+  /**
+   * Estimate the number of tokens the next agent prompt would use
+   * (system prompt, tools, context messages, and context files included).
+   * @returns Estimated token count, or 0 if no agent profile is configured
+   */
+  getEstimatedTokens(): Promise<number>;
 
   /**
    * Generate a markdown representation of the context messages in the context manager.

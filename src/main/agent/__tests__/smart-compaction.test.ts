@@ -368,7 +368,7 @@ describe('CompactionLevel Four - removeVerboseToolCalls', () => {
     expect(textParts[0].text).toBe('Let me read this file');
   });
 
-  it('respects the 50-message protection window', () => {
+  it('automatic compaction respects the 50-message protection window', async () => {
     resetCounters();
     const longInput = { query: 'x'.repeat(200) };
     const msgs: ContextMessage[] = [userMsg('start')];
@@ -379,10 +379,25 @@ describe('CompactionLevel Four - removeVerboseToolCalls', () => {
     msgs.push(assistantToolCallMsg(tcId, 'power---semantic_search', longInput));
     msgs.push(toolResultMsg([{ toolCallId: tcId, toolName: 'power---semantic_search', output: { type: 'text', value: 'results' } }]));
 
-    const result = removeVerboseToolCalls(msgs, 10, CompactionLevel.Four);
+    const result = await smartCompactMessages(msgs, 10, CompactionLevel.Four);
     expect(result).toHaveLength(msgs.length);
     const toolMsgs = result.filter((m) => m.role === 'tool');
     expect(toolMsgs).toHaveLength(1);
+  });
+
+  it('manually selected verboseToolCalls respects safe window 0', async () => {
+    resetCounters();
+    const longInput = { query: 'x'.repeat(200) };
+    const tcId = nextTcId();
+    const msgs: ContextMessage[] = [
+      userMsg('go'),
+      assistantToolCallMsg(tcId, 'power---semantic_search', longInput),
+      toolResultMsg([{ toolCallId: tcId, toolName: 'power---semantic_search', output: { type: 'text', value: 'results' } }]),
+      userMsg('next'),
+    ];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.One, { verboseToolCalls: true });
+    expect(result.find((m) => m.role === 'tool')).toBeUndefined();
+    expect(result.find((m) => m.role === 'assistant')).toBeUndefined();
   });
 });
 
@@ -487,6 +502,14 @@ describe('CompactionLevel 4 & 5 - smartCompactMessages pipeline', () => {
     const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('just thinking'), userMsg('transition'), ...padMessages(50)];
     const result = await smartCompactMessages(msgs, 10, CompactionLevel.Five);
     expect(result.find((m) => m.role === 'assistant' && m.id === msgs[1].id)).toBeUndefined();
+    expectInvariants(result);
+  });
+
+  it('manually selected reasoning respects safe window 0', async () => {
+    resetCounters();
+    const msgs: ContextMessage[] = [userMsg('go'), assistantReasoningMsg('just thinking'), userMsg('next')];
+    const result = await smartCompactMessages(msgs, NO_PROTECTION, CompactionLevel.One, { reasoning: true });
+    expect(result.find((m) => m.role === 'assistant')).toBeUndefined();
     expectInvariants(result);
   });
 });

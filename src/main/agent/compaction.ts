@@ -4,6 +4,7 @@ import type { AgentProfile, ContextMessage, PromptContext } from '@common/types'
 import type { Task } from '@/task';
 
 export { CompactionLevel, smartCompactMessages } from './smart-compaction';
+export type { SmartCompactionPass, SmartCompactionPassSelection } from './smart-compaction';
 
 export const extractSummary = (content: string): string => {
   const lines = content.split('\n');

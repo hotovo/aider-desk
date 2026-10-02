@@ -230,6 +230,8 @@ interface TaskContext {
   clearContext(): Promise<void>;
   resetContext(): Promise<void>;
   compactConversation(instructions?: string): Promise<void>;
+  smartCompact(options?: SmartCompactionOptions): Promise<SmartCompactionResult>;
+  getEstimatedTokens(): Promise<number>;
   handoffConversation(focus?: string, execute?: boolean): Promise<void>;
   updateAutocompletionWords(words?: string[]): Promise<void>;
 

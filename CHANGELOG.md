@@ -9,6 +9,7 @@
 - fixed updated files section not refreshing for tasks sharing the same worktree or project root
 - added pressing ArrowUp in an empty prompt field entering edit mode of the last user message
 - added onboarding path choice with default agent or code mode
+- added `smartCompact` and `getEstimatedTokens` to the extension task context
 
 ## [0.85.0]
 

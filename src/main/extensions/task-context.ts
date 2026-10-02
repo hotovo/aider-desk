@@ -15,7 +15,7 @@ import {
   UncommittedFiles,
 } from '@common/types';
 
-import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
+import type { QuestionOptions, SmartCompactionOptions, SmartCompactionResult, TaskContext, ResponseMessage } from '@common/extensions';
 import type { z } from 'zod';
 import type { Task } from '@/task';
 
@@ -281,6 +281,22 @@ export class TaskContextImpl implements TaskContext {
 
   async compactConversation(instructions?: string): Promise<void> {
     await this.task.compactConversation('agent', instructions);
+  }
+
+  async smartCompact(options?: SmartCompactionOptions): Promise<SmartCompactionResult> {
+    const messagesBefore = (await this.task.getContextMessages()).length;
+    const tokensBefore = await this.task.getEstimatedTokens();
+
+    await this.task.smartCompactConversation(undefined, 'Conversation manually compacted.', options);
+
+    const messagesAfter = (await this.task.getContextMessages()).length;
+    const tokensAfter = await this.task.getEstimatedTokens();
+
+    return { messagesBefore, messagesAfter, tokensBefore, tokensAfter };
+  }
+
+  async getEstimatedTokens(): Promise<number> {
+    return this.task.getEstimatedTokens();
   }
 
   async generateContextMarkdown(): Promise<string | null> {

@@ -624,6 +624,20 @@ interface TaskContext {
   /** Compact the conversation by summarizing history via a compact-conversation agent. */
   compactConversation(instructions?: string): Promise<void>;
 
+  /**
+   * Run deterministic (rule-based) smart compaction on the task context.
+   * Passes: erroredTools, fileEdits, staleFileReads, fileReads, searches, semanticSearches,
+   * bash, fetch, otherTools, verboseToolCalls, reasoning. Omitted flags default to true.
+   * @param options.protectedMessageCount - Number of most-recent messages protected from compaction (default: 10)
+   * @param options.compactionLevel - Compaction level 1 (mild) to 5 (max). Omit to keep the automatic level.
+   * @param options.passes - Which compaction passes to run. Omitted = all passes enabled.
+   * @returns Message counts and estimated next-prompt token counts before and after compaction.
+   */
+  smartCompact(options?: SmartCompactionOptions): Promise<SmartCompactionResult>;
+
+  /** Estimate the token count of the next agent prompt for this task. */
+  getEstimatedTokens(): Promise<number>;
+
   /** Generate a markdown representation of the context messages. */
   generateContextMarkdown(): Promise<string | null>;
 
@@ -892,6 +906,63 @@ interface QuestionOptions {
   answers?: Array<{ text: string; shortkey: string }>;
   /** Default answer if user doesn't choose */
   defaultAnswer?: string;
+}
+```
+
+### SmartCompactionPasses
+
+```typescript
+interface SmartCompactionPasses {
+  /** Remove errored/no-op power tool calls */
+  erroredTools?: boolean;
+  /** Collapse repeated file edit/write calls into <file-edited> markers */
+  fileEdits?: boolean;
+  /** Remove file reads that precede later edits of the same file */
+  staleFileReads?: boolean;
+  /** Truncate/redact file read outputs */
+  fileReads?: boolean;
+  /** Remove glob/grep searches made obsolete by later edits */
+  searches?: boolean;
+  /** Remove/deduplicate semantic search results */
+  semanticSearches?: boolean;
+  /** Deduplicate bash commands and redact their outputs */
+  bash?: boolean;
+  /** Redact fetch outputs */
+  fetch?: boolean;
+  /** Truncate results of non-power (MCP/extension) tools */
+  otherTools?: boolean;
+  /** Remove tool calls with verbose inputs */
+  verboseToolCalls?: boolean;
+  /** Remove reasoning parts from assistant messages */
+  reasoning?: boolean;
+}
+```
+
+### SmartCompactionOptions
+
+```typescript
+interface SmartCompactionOptions {
+  /** Number of most-recent messages protected from compaction (default: 10) */
+  protectedMessageCount?: number;
+  /** Compaction level 1 (mild) to 5 (max). Omit to keep the automatic level. */
+  compactionLevel?: number;
+  /** Which compaction passes to run. Omitted = all passes enabled. */
+  passes?: SmartCompactionPasses;
+}
+```
+
+### SmartCompactionResult
+
+```typescript
+interface SmartCompactionResult {
+  /** Context message count before compaction */
+  messagesBefore: number;
+  /** Context message count after compaction */
+  messagesAfter: number;
+  /** Estimated next-prompt token count before compaction */
+  tokensBefore: number;
+  /** Estimated next-prompt token count after compaction */
+  tokensAfter: number;
 }
 ```
 

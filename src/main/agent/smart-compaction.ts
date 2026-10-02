@@ -16,7 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { truncateToolResult } from '@/agent/utils';
 import logger from '@/logger';
 
-const VERBOSE_COMPACT_WINDOW = 50;
+const EXTENDED_COMPACT_WINDOW = 50;
 const VERBOSE_TOOL_INPUT_THRESHOLD = 150;
 
 export enum CompactionLevel {
@@ -27,6 +27,21 @@ export enum CompactionLevel {
   Five = 5,
   Max = CompactionLevel.Five,
 }
+
+export type SmartCompactionPass =
+  | 'erroredTools'
+  | 'fileEdits'
+  | 'staleFileReads'
+  | 'fileReads'
+  | 'searches'
+  | 'semanticSearches'
+  | 'bash'
+  | 'fetch'
+  | 'otherTools'
+  | 'verboseToolCalls'
+  | 'reasoning';
+
+export type SmartCompactionPassSelection = Partial<Record<SmartCompactionPass, boolean>>;
 
 type ToolInfo = {
   messageIndex: number;
@@ -305,20 +320,49 @@ export const smartCompactMessages = async (
   messages: ContextMessage[],
   protectedMessageCount = 10,
   compactionLevel = CompactionLevel.One,
+  passes?: SmartCompactionPassSelection,
 ): Promise<ContextMessage[]> => {
   let result = cloneMessages(messages);
 
-  result = removeErroredTools(result, protectedMessageCount);
-  result = collapseFileEdits(result, protectedMessageCount);
-  result = removeStaleFileReads(result, protectedMessageCount);
-  result = compactFileReads(result, protectedMessageCount, compactionLevel);
-  result = removeObsoleteSearches(result, protectedMessageCount, compactionLevel);
-  result = compactSemanticSearches(result, protectedMessageCount, compactionLevel);
-  result = compactBashOutputs(result, protectedMessageCount, compactionLevel);
-  result = redactFetchOutputs(result, protectedMessageCount);
-  result = await truncateNonPowerToolResults(result, protectedMessageCount, compactionLevel);
-  result = removeVerboseToolCalls(result, protectedMessageCount, compactionLevel);
-  result = removeReasoningFromAssistant(result, protectedMessageCount, compactionLevel);
+  const isPassEnabled = (pass: SmartCompactionPass): boolean => passes?.[pass] !== false;
+
+  if (isPassEnabled('erroredTools')) {
+    result = removeErroredTools(result, protectedMessageCount);
+  }
+  if (isPassEnabled('fileEdits')) {
+    result = collapseFileEdits(result, protectedMessageCount);
+  }
+  if (isPassEnabled('staleFileReads')) {
+    result = removeStaleFileReads(result, protectedMessageCount);
+  }
+  if (isPassEnabled('fileReads')) {
+    result = compactFileReads(result, protectedMessageCount, compactionLevel);
+  }
+  if (isPassEnabled('searches')) {
+    result = removeObsoleteSearches(result, protectedMessageCount, compactionLevel);
+  }
+  if (isPassEnabled('semanticSearches')) {
+    result = compactSemanticSearches(result, protectedMessageCount, compactionLevel);
+  }
+  if (isPassEnabled('bash')) {
+    result = compactBashOutputs(result, protectedMessageCount, compactionLevel);
+  }
+  if (isPassEnabled('fetch')) {
+    result = redactFetchOutputs(result, protectedMessageCount);
+  }
+  if (isPassEnabled('otherTools')) {
+    result = await truncateNonPowerToolResults(result, protectedMessageCount, compactionLevel);
+  }
+  // explicitly selected passes (manual compaction) respect the safe window and run on any level;
+  // automatic compaction keeps the extended protection window and level gates
+  const verboseWindow = passes?.verboseToolCalls !== undefined ? protectedMessageCount : Math.max(protectedMessageCount, EXTENDED_COMPACT_WINDOW);
+  const reasoningWindow = passes?.reasoning !== undefined ? protectedMessageCount : Math.max(protectedMessageCount, EXTENDED_COMPACT_WINDOW);
+  if (isPassEnabled('verboseToolCalls')) {
+    result = removeVerboseToolCalls(result, verboseWindow, passes?.verboseToolCalls ? CompactionLevel.Max : compactionLevel);
+  }
+  if (isPassEnabled('reasoning')) {
+    result = removeReasoningFromAssistant(result, reasoningWindow, passes?.reasoning ? CompactionLevel.Max : compactionLevel);
+  }
   result = mergeConsecutiveAssistantMessages(result);
 
   return result;
@@ -901,7 +945,7 @@ export const removeVerboseToolCalls = (messages: ContextMessage[], protectedMess
     return messages;
   }
 
-  const protectedStart = getProtectedStartIndex(messages, Math.max(protectedMessageCount, VERBOSE_COMPACT_WINDOW));
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   for (let i = protectedStart - 1; i >= 0; i--) {
     if (i >= messages.length) {
@@ -947,7 +991,7 @@ export const removeReasoningFromAssistant = (
     return messages;
   }
 
-  const protectedStart = getProtectedStartIndex(messages, Math.max(protectedMessageCount, VERBOSE_COMPACT_WINDOW));
+  const protectedStart = getProtectedStartIndex(messages, protectedMessageCount);
 
   for (let i = protectedStart - 1; i >= 0; i--) {
     if (i >= messages.length) {
