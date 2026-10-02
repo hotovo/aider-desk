@@ -671,6 +671,19 @@
         "ui"
       ],
       "installCount": 0
+    },
+    {
+      "id": "compaction-studio",
+      "name": "Compaction Studio",
+      "description": "Manually compact the current context with full control over what gets compacted, the safe window and the compaction level",
+      "folder": "compaction-studio",
+      "type": "folder",
+      "hasDependencies": false,
+      "capabilities": [
+        "ui",
+        "commands"
+      ],
+      "installCount": 0
     }
   ]
 }
