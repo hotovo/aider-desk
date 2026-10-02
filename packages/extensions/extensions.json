@@ -294,7 +294,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 65
+      "installCount": 66
     },
     {
       "id": "plannotator",
@@ -321,7 +321,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "ui-placement-demo",
@@ -544,7 +544,7 @@
         "tools",
         "search"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "kanban",
