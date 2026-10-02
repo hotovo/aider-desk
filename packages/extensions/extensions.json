@@ -57,7 +57,7 @@
         "commands",
         "example"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "questions",
@@ -104,7 +104,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "permission-gate",
@@ -115,7 +115,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "ultrathink",
@@ -150,7 +150,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "learn",
@@ -163,7 +163,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 68
+      "installCount": 69
     },
     {
       "id": "legacy-system-prompt",
@@ -175,7 +175,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "sound-notification",
@@ -203,7 +203,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "rtk",
@@ -232,7 +232,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "chunkhound-search",
@@ -269,7 +269,7 @@
         "context",
         "commands"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "context-autocompletion-words",
@@ -294,7 +294,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 68
+      "installCount": 69
     },
     {
       "id": "plannotator",
@@ -387,7 +387,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "searxng-search",
@@ -417,7 +417,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "tps-counter",
@@ -429,7 +429,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 74
+      "installCount": 76
     },
     {
       "id": "verifier",
@@ -531,7 +531,7 @@
         "events",
         "ui"
       ],
-      "installCount": 33
+      "installCount": 35
     },
     {
       "id": "codegraph",
@@ -581,7 +581,7 @@
         "agents",
         "example"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "wigolo",
@@ -594,7 +594,7 @@
         "tools",
         "search"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "destructive-command-guard",
@@ -607,7 +607,7 @@
         "security",
         "commands"
       ],
-      "installCount": 36
+      "installCount": 38
     },
     {
       "id": "git-log",
@@ -631,7 +631,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 103
+      "installCount": 104
     },
     {
       "id": "task-scheduler",
@@ -657,7 +657,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 100
+      "installCount": 101
     },
     {
       "id": "dbx",
