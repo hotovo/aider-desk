@@ -738,7 +738,7 @@ Requesty provides optimized model routing and caching for improved performance a
 
 - **API Key**: Your Requesty API key for authentication
   - Environment variable: `REQUESTY_API_KEY`
-  - Get your API key from [Requesty API Keys](https://app.requesty.ai/api-keys)
+  - Get your API key from the [Requesty dashboard](https://app.requesty.ai/) (open the API Keys section)
 - **Models**: List of available models (auto-populated when API key is provided)
 - **Auto Cache**: Enable automatic response caching for improved performance
 - **Reasoning Effort**: Control the level of reasoning for supported models
@@ -750,7 +750,7 @@ Requesty provides optimized model routing and caching for improved performance a
 
 ### Setup
 
-1. Go to [Requesty API Keys](https://app.requesty.ai/api-keys)
+1. Go to the [Requesty dashboard](https://app.requesty.ai/) and open the API Keys section
 2. Create a new API key
 3. Enter the API key in the Model Library Requesty configuration
 4. Select your preferred models from the auto-populated list
