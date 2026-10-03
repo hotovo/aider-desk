@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "permission-gate",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "external-rules",
@@ -233,7 +233,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "chunkhound-search",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 101
+      "installCount": 102
     },
     {
       "id": "dbx",
