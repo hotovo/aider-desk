@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 2
+      "installCount": 3
     },
     {
       "id": "binary-files",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "context-autocompletion-words",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "searxng-search",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 76
+      "installCount": 77
     },
     {
       "id": "verifier",
