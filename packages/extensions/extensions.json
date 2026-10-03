@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "binary-files",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 69
+      "installCount": 70
     },
     {
       "id": "plannotator",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "searxng-search",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "destructive-command-guard",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "skill-gallery",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 104
+      "installCount": 105
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 102
+      "installCount": 103
     },
     {
       "id": "dbx",
