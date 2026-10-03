@@ -289,6 +289,7 @@ src/
       components/
         AgentSelector/
           AgentSelector.tsx
+          ExtensionToolsSelectorItem.tsx
           index.ts
           McpServerSelectorItem.tsx
         common/
@@ -496,6 +497,7 @@ src/
           ProviderProfileForm.tsx
           ProviderSelection.tsx
         onboarding/
+          OnboardingPathChoice.tsx
           OnboardingProviderSetup.tsx
           OnboardingStepper.tsx
         project/
@@ -686,6 +688,7 @@ src/
         useCustomModes.ts
         useDropdownState.ts
         useEffectiveEnvironmentVariable.ts
+        useExtensionTools.ts
         useIndexedDB.ts
         useLmStudioModels.ts
         useOllamaModels.ts
@@ -760,6 +763,7 @@ src/
         actionsStore.ts
         commandPaletteStore.ts
         commitStore.ts
+        extensionToolsStore.ts
         extensionUIStore.ts
         fileEditorStore.ts
         overlayStore.ts
@@ -3287,6 +3291,21 @@ export enum CompactionLevel {
   Max = CompactionLevel.Five,
 }
 ⋮----
+export type SmartCompactionPass =
+  | 'erroredTools'
+  | 'fileEdits'
+  | 'staleFileReads'
+  | 'fileReads'
+  | 'searches'
+  | 'semanticSearches'
+  | 'bash'
+  | 'fetch'
+  | 'otherTools'
+  | 'verboseToolCalls'
+  | 'reasoning';
+⋮----
+export type SmartCompactionPassSelection = Partial<Record<SmartCompactionPass, boolean>>;
+⋮----
 type ToolInfo = {
   messageIndex: number;
   toolCallId: string;
@@ -3339,7 +3358,13 @@ export const smartCompactMessages = async (
   messages: ContextMessage[],
   protectedMessageCount = 10,
   compactionLevel = CompactionLevel.One,
+  passes?: SmartCompactionPassSelection,
 ): Promise<ContextMessage[]> =>
+⋮----
+const isPassEnabled = (pass: SmartCompactionPass): boolean
+⋮----
+// explicitly selected passes (manual compaction) respect the safe window and run on any level;
+// automatic compaction keeps the extended protection window and level gates
 ⋮----
 export const removeErroredTools = (messages: ContextMessage[], protectedMessageCount = 10): ContextMessage[] =>
 ⋮----
@@ -4000,6 +4025,7 @@ import {
   SkillsUpdatedData,
   CommandsData,
   ExtensionUIRefreshData,
+  ExtensionsUpdatedData,
   ModalOverlayUrlData,
   InputPromptData,
   ContextInfoData,
@@ -4114,6 +4140,9 @@ sendAgentProfilesUpdated(profiles: AgentProfile[]): void
 ⋮----
 // MCP servers events
 sendMcpServersUpdated(data: McpServersData): void
+⋮----
+// Extension events
+sendExtensionsUpdated(data: ExtensionsUpdatedData =
 ⋮----
 // Task lifecycle events
 sendTaskCreated(task: TaskData, activate?: boolean): void
@@ -5121,7 +5150,7 @@ import {
   UncommittedFiles,
 } from '@common/types';
 ⋮----
-import type { QuestionOptions, TaskContext, ResponseMessage } from '@common/extensions';
+import type { QuestionOptions, SmartCompactionOptions, SmartCompactionResult, TaskContext, ResponseMessage } from '@common/extensions';
 import type { z } from 'zod';
 import type { Task } from '@/task';
 ⋮----
@@ -5261,6 +5290,10 @@ async clearContext(): Promise<void>
 async resetContext(): Promise<void>
 ⋮----
 async compactConversation(instructions?: string): Promise<void>
+⋮----
+async smartCompact(options?: SmartCompactionOptions): Promise<SmartCompactionResult>
+⋮----
+async getEstimatedTokens(): Promise<number>
 ⋮----
 async generateContextMarkdown(): Promise<string | null>
 ⋮----
@@ -10951,6 +10984,8 @@ import type { z } from 'zod';
 import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 import type { WatchHandle } from '@/file-watcher-manager';
+import type { SmartCompactionPassSelection } from '@/agent/smart-compaction';
+import type { SmartCompactionOptions } from '@common/extensions';
 ⋮----
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
@@ -11163,7 +11198,7 @@ public async waitForIdle(): Promise<void>
 ⋮----
 public async runPrompt(
     prompt: string,
-    mode: Mode = this.task.currentMode || 'agent',
+    mode: Mode = this.getCurrentMode(),
     addToInputHistory = true,
     userMessageId = uuidv4(),
     sendNotification = true,
@@ -11561,7 +11596,11 @@ private findSkillActivationMessages(contextMessages: ContextMessage[]): ContextM
 ⋮----
 // Create a filtered assistant message that only contains the skill activation tool-call
 ⋮----
-public async smartCompactConversation(contextMessages?: ContextMessage[], infoMessage = 'Conversation smart-compacted.'): Promise<ContextMessage[]>
+public async smartCompactConversation(
+    contextMessages?: ContextMessage[],
+    infoMessage = 'Conversation smart-compacted.',
+    options?: SmartCompactionOptions,
+): Promise<ContextMessage[]>
 ⋮----
 // backing up the current context before compacting for debugging purposes
 ⋮----
@@ -11632,6 +11671,8 @@ private async sendRequestContextInfo()
 public async updateAutocompletionData(words?: string[], force = false, useGit = true)
 ⋮----
 async updateAgentEstimatedTokens(checkContextFilesIncluded = false, checkRepoMapIncluded = false)
+⋮----
+public async getEstimatedTokens(): Promise<number>
 ⋮----
 async settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
 ⋮----
@@ -14448,6 +14489,7 @@ import {
   ContextMenuParams,
   CreateTaskParams,
   ExtensionUIRefreshData,
+  ExtensionsUpdatedData,
   FileEdit,
   InputHistoryData,
   LogData,
@@ -14653,6 +14695,7 @@ import {
   ExtensionConfigComponent,
   ExtensionToolInfo,
   ExtensionUIComponent,
+  ExtensionsUpdatedData,
   ModalOverlayUrlData,
   InputPromptData,
   AiderConnectorStatus,
@@ -14695,6 +14738,7 @@ type EventDataMap = {
   'task-git-status-updated': TaskGitStatusUpdatedData;
   'agent-profiles-updated': AgentProfilesUpdatedData;
   'mcp-servers-updated': McpServersData;
+  'extensions-updated': ExtensionsUpdatedData;
   'updated-files-updated': UpdatedFilesUpdatedData;
   'skills-updated': SkillsUpdatedData;
   notification: NotificationData;
@@ -14941,6 +14985,8 @@ addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () 
 addAgentProfilesUpdatedListener(callback: (data: AgentProfilesUpdatedData) => void): () => void
 ⋮----
 addMcpServersUpdatedListener(callback: (data: McpServersData) => void): () => void
+⋮----
+addExtensionsUpdatedListener(callback: (data: ExtensionsUpdatedData) => void): () => void
 ⋮----
 addProjectSettingsUpdatedListener(baseDir: string, callback: (data:
 ⋮----
@@ -15217,8 +15263,10 @@ import { LuBrain, LuClipboardList } from 'react-icons/lu';
 import { Checkbox } from '../common/Checkbox';
 ⋮----
 import { McpServerSelectorItem } from './McpServerSelectorItem';
+import { ExtensionToolsSelectorItem } from './ExtensionToolsSelectorItem';
 ⋮----
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { useExtensionTools } from '@/hooks/useExtensionTools';
 import { IconButton } from '@/components/common/IconButton';
 import { Accordion } from '@/components/common/Accordion';
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -15249,6 +15297,28 @@ const calculateEnabledTools = async () =>
 // Remove tool approvals for this server
 ⋮----
 const handleToggleSubagent = (subagentProfile: AgentProfile) =>
+⋮----
+if (activeGlobalProfile)
+
+================
+File: src/renderer/src/components/AgentSelector/ExtensionToolsSelectorItem.tsx
+================
+import { ExtensionToolInfo, ToolApprovalState } from '@common/types';
+import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Checkbox } from '../common/Checkbox';
+⋮----
+type Props = {
+  extensionInfo: ExtensionToolInfo;
+  disabled: boolean;
+  toolApprovals: Record<string, ToolApprovalState>;
+  onToggle: (extensionId: string) => void;
+};
+⋮----
+export const ExtensionToolsSelectorItem = (
+⋮----
+const handleToggle = ()
 
 ================
 File: src/renderer/src/components/AgentSelector/index.ts
@@ -21126,6 +21196,35 @@ type Props = {
 onClick=
 
 ================
+File: src/renderer/src/components/onboarding/OnboardingPathChoice.tsx
+================
+import { HiOutlineCpuChip, HiOutlineCommandLine } from 'react-icons/hi2';
+import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+export type OnboardingPath = 'agent' | 'aider';
+⋮----
+type PathOption = {
+  path: OnboardingPath;
+  icon: ReactNode;
+  title: string;
+  subtitle: string;
+  description: string;
+  features: readonly string[];
+  modeLabel: string;
+};
+⋮----
+type Props = {
+  selectedPath: OnboardingPath | null;
+  onSelectPath: (path: OnboardingPath) => void;
+};
+⋮----
+<span className=
+⋮----
+className=
+
+================
 File: src/renderer/src/components/onboarding/OnboardingProviderSetup.tsx
 ================
 import { useState } from 'react';
@@ -23197,6 +23296,7 @@ type Props = {
   runTests: (testCmd?: string) => void;
   redoLastUserPrompt: () => void;
   editUserMessage: () => void;
+  lastMessageIsUserMessage?: boolean;
   isEditingLastMessage?: boolean;
   canSaveEditedPrompt?: boolean;
   disabled?: boolean;
@@ -23620,7 +23720,7 @@ type AgentRulesProps = {
 ================
 File: src/renderer/src/components/settings/agent/AgentSettings.tsx
 ================
-import { AgentProfile, ExtensionToolInfo, McpServersData, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
+import { AgentProfile, McpServersData, Model, ProjectData, SettingsData, ToolApprovalState } from '@common/types';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaChevronLeft, FaChevronRight, FaPaste, FaPlus } from 'react-icons/fa';
@@ -23641,8 +23741,8 @@ import { ProfileToolsSection } from './sections/ProfileToolsSection';
 import { ProfileSubagentsSection } from './sections/ProfileSubagentsSection';
 ⋮----
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { useExtensionTools } from '@/hooks/useExtensionTools';
 import { useResponsive } from '@/hooks/useResponsive';
-import { useApi } from '@/contexts/ApiContext';
 import { useMcpServers } from '@/contexts/McpServersContext';
 import { getPathBasename } from '@/utils/path-utils';
 import { IconButton } from '@/components/common/IconButton';
@@ -24507,7 +24607,7 @@ setSelectedCapabilities((prev) =>
 File: src/renderer/src/components/settings/GeneralSettings.tsx
 ================
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
+import { Font, FONTS, Mode, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
 import { ChangeEvent } from 'react';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
@@ -24555,6 +24655,8 @@ const handleSuggestionModeClick = (value: string) =>
 const handleWindowTitleTemplateChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleFileWatchModeChange = (value: string) =>
+⋮----
+const handleDefaultModeChange = (value: string) =>
 ⋮----
 const handleSuggestionDelayChange = (delay: number) =>
 ⋮----
@@ -27556,6 +27658,17 @@ export const useEffectiveEnvironmentVariable = (key: string, baseDir?: string): 
 const fetchEnvironmentVariable = async () =>
 
 ================
+File: src/renderer/src/hooks/useExtensionTools.ts
+================
+import { useEffect } from 'react';
+import { ExtensionToolInfo } from '@common/types';
+⋮----
+import { useApi } from '@/contexts/ApiContext';
+import { useExtensionToolsInfo, useExtensionToolsStore } from '@/stores/extensionToolsStore';
+⋮----
+export const useExtensionTools = (projectDir?: string): ExtensionToolInfo[] =>
+
+================
 File: src/renderer/src/hooks/useIndexedDB.ts
 ================
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -29105,22 +29218,29 @@ import { LogsPage } from '@/components/logs/LogsPage';
 File: src/renderer/src/pages/Onboarding.tsx
 ================
 import { useCallback, useEffect, useState } from 'react';
+import { clsx } from 'clsx';
 import { HiArrowRight, HiArrowLeft } from 'react-icons/hi2';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { isEqual } from 'lodash';
+import { DEFAULT_AGENT_PROFILE, DEFAULT_PROVIDER_MODELS } from '@common/agent';
 import { SettingsData } from '@common/types';
 ⋮----
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 import { useAgents } from '@/contexts/AgentsContext';
+import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { AiderSettings } from '@/components/settings/AiderSettings';
 import { LanguageSelector } from '@/components/settings/LanguageSelector';
 import { OnboardingProviderSetup } from '@/components/onboarding/OnboardingProviderSetup';
+import { OnboardingPathChoice, OnboardingPath } from '@/components/onboarding/OnboardingPathChoice';
 import { AgentSettings } from '@/components/settings/agent/AgentSettings';
 import { Button } from '@/components/common/Button';
 import { OnboardingStepper } from '@/components/onboarding/OnboardingStepper';
 import { ROUTES } from '@/utils/routes';
 import { showErrorNotification, showInfoNotification } from '@/utils/notifications';
+⋮----
+// Point the untouched default agent profile to the first provider configured during onboarding,
+// so the agent doesn't keep a hardcoded provider the user never set up.
 ⋮----
 const handleNext = async () =>
 ⋮----
@@ -29150,8 +29270,11 @@ const handleFinish = async () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+const handleSelectPath = (path: OnboardingPath) =>
+⋮----
 {/* Language Selector in top-right corner */}
 ⋮----
+<div className=
 {/* Stepper */}
 ⋮----
 {/* Step Content */}
@@ -29405,6 +29528,45 @@ interface CommitStore {
 const getCommitKey = (baseDir: string, taskId: string) => `$
 ⋮----
 export const useIsCommitting = (baseDir: string, taskId: string)
+
+================
+File: src/renderer/src/stores/extensionToolsStore.ts
+================
+import { useShallow } from 'zustand/react/shallow';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { devtools } from 'zustand/middleware';
+import { shallow } from 'zustand/vanilla/shallow';
+import { ExtensionToolInfo } from '@common/types';
+import { ApplicationAPI } from '@common/api';
+⋮----
+const getToolsCacheKey = (projectDir?: string): string
+⋮----
+interface ExtensionToolsState {
+  toolsInfoMap: Map<string, ExtensionToolInfo[]>;
+  loadingTools: Set<string>;
+  initialized: boolean;
+}
+⋮----
+interface ExtensionToolsActions {
+  loadToolsInfo: (api: ApplicationAPI, projectDir?: string, forceRefresh?: boolean) => Promise<ExtensionToolInfo[]>;
+  refreshAllToolsInfo: (api: ApplicationAPI) => Promise<ExtensionToolInfo[]>;
+  getToolsInfo: (projectDir?: string) => ExtensionToolInfo[] | undefined;
+  isLoadingTools: (projectDir?: string) => boolean;
+}
+⋮----
+type ExtensionToolsStore = ExtensionToolsState & ExtensionToolsActions;
+⋮----
+// Return cached if available and not forcing refresh
+⋮----
+// If a request is already in flight, return cached data immediately or wait for it
+⋮----
+const checkLoaded = () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
+export const useExtensionToolsInfo = (projectDir?: string): ExtensionToolInfo[]
+⋮----
+export const useExtensionToolsLoading = (projectDir?: string): boolean
 
 ================
 File: src/renderer/src/stores/extensionUIStore.ts
