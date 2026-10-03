@@ -156,6 +156,7 @@ const TERMINAL_WRITE_FLUSH_INTERVAL_MS = 25;
 
 export class BrowserApi implements ApplicationAPI {
   private readonly socket: Socket;
+  private readonly reconnectListeners = new Set<() => void>();
   private readonly listeners: {
     [K in keyof EventDataMap]: Map<string, ListenerEntry<EventDataMap[K]>>;
   };
@@ -254,6 +255,9 @@ export class BrowserApi implements ApplicationAPI {
     this.socket.on('disconnect', () => {
       // eslint-disable-next-line no-console
       console.log('Disconnected from Socket.IO server');
+    });
+    this.socket.on('reconnect', () => {
+      this.reconnectListeners.forEach((callback) => callback());
     });
     this.socket.on('connect_error', (error) => {
       // eslint-disable-next-line no-console
@@ -1001,6 +1005,14 @@ export class BrowserApi implements ApplicationAPI {
   addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void {
     void callback;
     return () => {};
+  }
+
+  addSocketReconnectListener(callback: () => void): () => void {
+    void this.ensureSocketConnected();
+    this.reconnectListeners.add(callback);
+    return () => {
+      this.reconnectListeners.delete(callback);
+    };
   }
 
   addProviderModelsUpdatedListener(callback: (data: ProviderModelsData) => void): () => void {

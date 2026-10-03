@@ -554,6 +554,8 @@ const api: ApplicationAPI = {
     };
   },
 
+  addSocketReconnectListener: () => () => undefined,
+
   addProviderModelsUpdatedListener: (callback) => {
     const listener = (_: Electron.IpcRendererEvent, data: ProviderModelsData) => {
       callback(data);

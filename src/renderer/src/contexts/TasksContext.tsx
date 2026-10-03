@@ -3,7 +3,8 @@ import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 
 import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
-import { useProjectStore } from '@/stores/projectStore';
+import { setProjectTasks, useProjectStore } from '@/stores/projectStore';
+import { useApi } from '@/contexts/ApiContext';
 import { releaseTaskFiles } from '@/stores/taskFilesStore';
 import { cleanupTaskCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
@@ -17,6 +18,7 @@ import { useTaskActions } from '@/hooks/useTaskActions';
 
 const TASK_INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
 const INACTIVITY_CHECK_INTERVAL_MS = 60 * 1000; // Check every minute
+const RESYNC_MIN_INTERVAL_MS = 3000;
 
 interface TaskEventSubscriberProps {
   baseDir: string;
@@ -94,7 +96,9 @@ type Props = {
 
 export const TasksProvider = ({ baseDir, tasks, activeTaskId, children }: Props) => {
   const taskActions = useTaskActions({ baseDir });
+  const api = useApi();
   const inactivityCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastResyncAtRef = useRef(0);
 
   const markTaskActive = useCallback((taskId: string) => {
     const state = useTaskStore.getState().taskStateMap.get(taskId);
@@ -144,6 +148,33 @@ export const TasksProvider = ({ baseDir, tasks, activeTaskId, children }: Props)
       }
     };
   }, [checkAndUnloadInactiveTasks]);
+
+  // Resync after a socket reconnect: events emitted while disconnected are lost forever, so
+  // refetch task metadata and reload already-loaded tasks to bring the UI back in sync.
+  const resyncAfterReconnect = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastResyncAtRef.current < RESYNC_MIN_INTERVAL_MS) {
+      return;
+    }
+    lastResyncAtRef.current = now;
+
+    try {
+      const actualTasks = await api.getTasks(baseDir);
+      setProjectTasks(baseDir, actualTasks);
+
+      const taskStateMap = useTaskStore.getState().taskStateMap;
+      await Promise.all(actualTasks.filter((task) => taskStateMap.get(task.id)?.loaded).map((task) => taskActions.loadTask(task.id)));
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to resync state after reconnect:', error);
+    }
+  }, [api, baseDir, taskActions]);
+
+  useEffect(() => {
+    return api.addSocketReconnectListener(() => {
+      void resyncAfterReconnect();
+    });
+  }, [api, resyncAfterReconnect]);
 
   const contextValue = useMemo(
     () => ({

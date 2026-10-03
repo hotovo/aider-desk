@@ -11,6 +11,7 @@
 - added onboarding path choice with default agent or code mode
 - added `smartCompact` and `getEstimatedTokens` to the extension task context
 - added extension tools section to agent selector with auto-refresh on extension changes
+- added automatic state resync for tasks and readonly view after socket reconnect
 
 ## [0.85.0]
 

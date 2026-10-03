@@ -96,6 +96,17 @@ export const ReadonlyProjectView = ({ projectDir, selectedTaskId, onSelectTask }
     });
   }, [api, selectedTaskId, t]);
 
+  // Resync after a socket reconnect: events emitted while disconnected are lost forever,
+  // so refetch the task list and the selected task state.
+  useEffect(() => {
+    return api.onReconnect(() => {
+      void loadTasks();
+      if (selectedTaskId) {
+        void loadSelectedTask(selectedTaskId);
+      }
+    });
+  }, [api, loadTasks, loadSelectedTask, selectedTaskId]);
+
   const handleSelectTask = (taskId: string) => {
     onSelectTask(taskId);
     if (isMobile) {

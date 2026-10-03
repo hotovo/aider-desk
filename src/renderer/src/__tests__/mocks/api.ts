@@ -227,6 +227,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
     addClearTaskListener: vi.fn(() => vi.fn()),
     addProjectStartedListener: vi.fn(() => vi.fn()),
     addVersionsInfoUpdatedListener: vi.fn(() => vi.fn()),
+    addSocketReconnectListener: vi.fn(() => vi.fn()),
     addProviderModelsUpdatedListener: vi.fn(() => vi.fn()),
     addProvidersUpdatedListener: vi.fn(() => vi.fn()),
     addAgentProfilesUpdatedListener: vi.fn(() => vi.fn()),
