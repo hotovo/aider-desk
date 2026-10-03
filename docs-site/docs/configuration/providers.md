@@ -525,9 +525,9 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
 
 - **Base URL**: `https://api.grokified.com/v1`
 - **API Key**: a `gk_live_...` key from [grokified.com/login](https://grokified.com/login)
-- **Models**: `grok-build-0.1,grok-4.6`
+- **Models**: `grok-build-0.1,grok-4.6` (both work on any Grokified account)
 
-Then select `openai-compatible/grok-build-0.1` in the model selector. `grok-build-0.1` (256K context) is tuned for code. `grok-4.7` also works but needs a Basic or higher Grokified plan; a prepaid account gets a 403 `plan_capability_required` error for it. See the [Grokified docs](https://grokified.com/docs) for the full model list.
+Then select `openai-compatible/grok-build-0.1` in the model selector. `grok-build-0.1` (256K context) is tuned for code, and `grok-4.6` has a 500K context. `grok-4.7` is left out of the list above because it needs a Basic or higher Grokified plan: add it to **Models** only on such a plan, since other accounts get a 403 `plan_capability_required` error for it. Free accounts are capped at 32,000 input tokens per request until they buy credit. See the [Grokified docs](https://grokified.com/docs) for the full model list.
 
 ---
 
