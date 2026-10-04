@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "theme",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 83
+      "installCount": 84
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 69
+      "installCount": 70
     },
     {
       "id": "legacy-system-prompt",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "plannotator",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "seek",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 77
+      "installCount": 78
     },
     {
       "id": "verifier",
@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 20
+      "installCount": 21
     },
     {
       "id": "auggie-sdk",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "kanban",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 106
+      "installCount": 107
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 103
+      "installCount": 104
     },
     {
       "id": "dbx",
