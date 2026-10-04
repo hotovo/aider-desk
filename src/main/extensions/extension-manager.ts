@@ -1381,9 +1381,9 @@ export class ExtensionManager {
     return agents.find((a) => a.agent.id === agentId);
   }
 
-  getModes(project: Project): RegisteredMode[] {
+  getModes(project?: Project): RegisteredMode[] {
     const collectedModes: RegisteredMode[] = [];
-    const allExtensions = this.registry.getExtensions(project.baseDir);
+    const allExtensions = this.registry.getExtensions(project?.baseDir);
     const extensions = this.filterEnabledExtensions(allExtensions);
 
     for (const loaded of extensions) {

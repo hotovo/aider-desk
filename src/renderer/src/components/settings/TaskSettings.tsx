@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
+import { Mode, SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
@@ -8,11 +8,13 @@ import { getProviderModelId } from '@common/agent';
 import { Checkbox } from '../common/Checkbox';
 import { Section } from '../common/Section';
 import { InfoIcon } from '../common/InfoIcon';
+import { Select, Option } from '../common/Select';
 import { Slider } from '../common/Slider';
 import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 import { ChipListInput } from '../common/ChipListInput';
 
+import { useModes } from '@/hooks/useModes';
 import { Input } from '@/components/common/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
 
@@ -174,6 +176,30 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const modes = useModes();
+  const taskModeOptions: Option[] = modes.map((mode) => ({ value: mode.value, label: t(mode.labelKey) }));
+  const defaultTaskModeOptions: Option[] = [{ label: t('settings.tasks.defaultTaskModeLast'), value: 'last' }, ...taskModeOptions];
+
+  const handleDefaultTaskModeChange = (mode: string) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        defaultTaskMode: mode as Mode | 'last',
+      },
+    });
+  };
+
+  const handleDefaultProjectModeChange = (mode: string) => {
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        defaultProjectMode: mode as Mode,
+      },
+    });
+  };
+
   const handleDefaultWorkingModeChange = useCallback(
     (mode: WorkingMode) => {
       setSettings({
@@ -271,6 +297,35 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
               label={t('settings.tasks.showTaskStateActions')}
             />
             <InfoIcon tooltip={t('settings.tasks.showTaskStateActionsTooltip')} />
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex-1 min-w-48">
+              <div className="flex items-center gap-1 mb-1">
+                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.defaultTaskMode')}</label>
+                <InfoIcon tooltip={t('settings.tasks.defaultTaskModeTooltip')} />
+              </div>
+              <Select
+                className="w-56"
+                options={defaultTaskModeOptions}
+                value={settings.taskSettings.defaultTaskMode ?? 'last'}
+                onChange={handleDefaultTaskModeChange}
+                size="sm"
+              />
+            </div>
+            <div className="flex-1 min-w-48">
+              <div className="flex items-center gap-1 mb-1">
+                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.defaultProjectMode')}</label>
+                <InfoIcon tooltip={t('settings.tasks.defaultProjectModeTooltip')} />
+              </div>
+              <Select
+                className="w-56"
+                options={taskModeOptions}
+                value={settings.taskSettings.defaultProjectMode ?? 'agent'}
+                onChange={handleDefaultProjectModeChange}
+                size="sm"
+              />
+            </div>
           </div>
         </div>
       </Section>

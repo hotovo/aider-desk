@@ -108,17 +108,21 @@ export class Project {
     }
 
     const sourceTask = parentTask || this.getMostRecentTask();
-    const defaultWorkingMode = this.store.getSettings().taskSettings.defaultWorkingMode || 'local';
+    const taskSettings = this.store.getSettings().taskSettings;
+    const defaultWorkingMode = taskSettings.defaultWorkingMode || 'local';
+    const defaultProjectMode = taskSettings.defaultProjectMode ?? 'agent';
+    const defaultTaskMode = taskSettings.defaultTaskMode ?? 'last';
     let initialTaskData: Partial<TaskData>;
 
     if (sourceTask) {
+      const inheritedMode = parentTask ? parentTask.task.currentMode : defaultTaskMode === 'last' ? sourceTask.task.currentMode : defaultTaskMode;
       initialTaskData = {
         mainModel: sourceTask.task.mainModel,
         weakModel: sourceTask.task.weakModel,
         architectModel: sourceTask.task.architectModel,
         reasoningEffort: sourceTask.task.reasoningEffort,
         thinkingTokens: sourceTask.task.thinkingTokens,
-        currentMode: sourceTask.task.currentMode,
+        currentMode: inheritedMode,
         agentProfileId: parentTask?.task.agentProfileId,
         provider: parentTask?.task.provider,
         model: parentTask?.task.model,
@@ -137,7 +141,7 @@ export class Project {
       initialTaskData = {
         mainModel: determineMainModel(this.store.getSettings(), this.modelManager.getProviders(), providerModels.models || [], this.baseDir),
         weakModel: determineWeakModel(this.baseDir),
-        currentMode: 'agent',
+        currentMode: defaultProjectMode,
         workingMode: defaultWorkingMode,
         ...normalizedParams,
       };

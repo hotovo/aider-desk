@@ -1093,8 +1093,8 @@ export class BrowserApi implements ApplicationAPI {
       extensionCommands: response.extensionCommands,
     };
   }
-  getCustomModes(baseDir: string): Promise<ModeDefinition[]> {
-    return this.get<ModeDefinition[]>('/project/custom-modes', { projectDir: baseDir });
+  getCustomModes(baseDir?: string): Promise<ModeDefinition[]> {
+    return this.get<ModeDefinition[]>('/project/custom-modes', baseDir ? { projectDir: baseDir } : {});
   }
   runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void> {
     return this.post('/project/custom-commands', {

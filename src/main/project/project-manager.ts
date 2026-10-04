@@ -137,8 +137,11 @@ export class ProjectManager {
     return this.getProject(baseDir).getCustomCommandManager().getAllCommands();
   }
 
-  public getCustomModes(baseDir: string): ModeDefinition[] {
-    return this.getProject(baseDir).getCustomModes();
+  public getCustomModes(baseDir?: string): ModeDefinition[] {
+    if (baseDir) {
+      return this.getProject(baseDir).getCustomModes();
+    }
+    return this.extensionManager.getModes().map((registered) => registered.mode);
   }
 
   public getProjects(): Project[] {

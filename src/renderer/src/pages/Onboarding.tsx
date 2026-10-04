@@ -144,7 +144,11 @@ export const Onboarding = () => {
 
       await saveSettings({
         ...localSettings,
-        defaultMode: selectedPath === 'aider' ? 'code' : 'agent',
+        taskSettings: {
+          ...localSettings.taskSettings,
+          defaultProjectMode: selectedPath === 'aider' ? 'code' : 'agent',
+          defaultTaskMode: 'last',
+        },
         onboardingFinished: true,
       });
 

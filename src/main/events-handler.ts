@@ -518,7 +518,7 @@ export class EventsHandler {
     return this.projectManager.getCommands(baseDir);
   }
 
-  async getCustomModes(baseDir: string): Promise<ModeDefinition[]> {
+  async getCustomModes(baseDir?: string): Promise<ModeDefinition[]> {
     return this.projectManager.getCustomModes(baseDir);
   }
 

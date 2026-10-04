@@ -742,6 +742,8 @@ export interface TaskSettings {
   taskStateModel?: string | null;
   commitMessageModel?: string | null;
   defaultWorkingMode: WorkingMode;
+  defaultTaskMode?: Mode | 'last';
+  defaultProjectMode?: Mode;
   worktreeBranchPrefix: string;
   renameBranchOnNameGeneration: boolean;
 }
@@ -779,7 +781,6 @@ export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
   startupMode?: ProjectStartMode;
-  defaultMode?: Mode;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: Theme;

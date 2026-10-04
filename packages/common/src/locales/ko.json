@@ -737,6 +737,11 @@
       "autoGenerateTaskNameTooltip": "활성화하면 모델이 프롬프트로부터 간결한 작업 이름을 생성합니다. 비활성화하면 프롬프트의 처음 5단어가 작업 이름으로 사용됩니다.",
       "showTaskStateActions": "작업 상태 액션 표시",
       "showTaskStateActionsTooltip": "활성화하면 메시지 하단에 작업 상태 액션이 표시됩니다. 비활성화하면 이 액션들이 숨겨집니다.",
+      "defaultTaskMode": "새 작업 기본 모드",
+      "defaultTaskModeTooltip": "이미 작업이 있는 프로젝트에서 새 작업을 만들 때 사용됩니다. '마지막 작업 모드 사용'을 선택하면 가장 최근 작업의 모드를 유지합니다.",
+      "defaultTaskModeLast": "마지막 작업 모드 사용",
+      "defaultProjectMode": "새 프로젝트 기본 모드",
+      "defaultProjectModeTooltip": "이전 작업이 없어 상속받을 수 없을 때, 프로젝트의 첫 작업에 사용되는 초기 모드입니다. 온보딩 중 자동으로 설정됩니다.",
       "contextManagement": "컨텍스트 관리",
       "contextCompactingThreshold": "자동 압축 임계값",
       "contextCompactingThresholdTooltip": "토큰 사용량이 이 임계값을 초과하면 선택한 압축 유형에 따라 대화가 자동으로 관리됩니다. 비활성화하려면 0으로 설정하세요.",
@@ -1145,13 +1150,7 @@
     "notificationsAndFiles": {
       "title": "알림 및 파일"
     },
-    "navigation": "탐색",
-    "defaultMode": {
-      "title": "기본 모드",
-      "agent": "에이전트 (추천)",
-      "code": "Code (Aider 모드)",
-      "tooltip": "새 작업이 이 모드로 시작됩니다. 온보딩 중 자동으로 설정됩니다."
-    }
+    "navigation": "탐색"
   },
   "messages": {
     "thinking": "생각하는 중...",

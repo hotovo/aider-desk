@@ -738,6 +738,11 @@
       "autoGenerateTaskNameTooltip": "When enabled, the model generates a concise task name from your prompt. When disabled, the first 5 words of your prompt will be used as the task name.",
       "showTaskStateActions": "Show Task State Actions",
       "showTaskStateActionsTooltip": "When enabled, task state actions are displayed at the bottom of messages. Disable to hide these actions.",
+      "defaultTaskMode": "Default Mode for New Tasks",
+      "defaultTaskModeTooltip": "Used when a new task is created in a project that already has tasks. 'Use latest task's mode' keeps the mode from the most recent task.",
+      "defaultTaskModeLast": "Use latest task's mode",
+      "defaultProjectMode": "Default Mode for New Projects",
+      "defaultProjectModeTooltip": "Used as the initial mode for a project's first task (when there are no previous tasks to inherit from). Set automatically during onboarding.",
       "contextManagement": "Context Management",
       "contextCompactingThreshold": "Auto-compact Threshold",
       "contextCompactingThresholdTooltip": "When token usage exceeds this threshold, the conversation will be automatically managed according to the selected compaction type. Set to 0 to disable.",
@@ -1145,12 +1150,6 @@
     },
     "notificationsAndFiles": {
       "title": "Notifications & Files"
-    },
-    "defaultMode": {
-      "title": "Default Mode",
-      "agent": "Agent (recommended)",
-      "code": "Code (Aider modes)",
-      "tooltip": "New tasks start in this mode. Set automatically during onboarding."
     }
   },
   "messages": {

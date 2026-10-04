@@ -309,7 +309,7 @@ export interface ApplicationAPI {
   addTaskDeletedListener: (baseDir: string, callback: (data: TaskData) => void) => () => void;
 
   getCommands: (baseDir: string) => Promise<CommandsData>;
-  getCustomModes: (baseDir: string) => Promise<ModeDefinition[]>;
+  getCustomModes: (baseDir?: string) => Promise<ModeDefinition[]>;
   runCustomCommand: (baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]) => Promise<void>;
 
   // Terminal operations

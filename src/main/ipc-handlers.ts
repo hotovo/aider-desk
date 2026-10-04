@@ -522,7 +522,7 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getCommands(baseDir);
   });
 
-  ipcMain.handle('get-custom-modes', async (_, baseDir: string) => {
+  ipcMain.handle('get-custom-modes', async (_, baseDir?: string) => {
     return eventsHandler.getCustomModes(baseDir);
   });
 

@@ -737,6 +737,11 @@
       "autoGenerateTaskNameTooltip": "启用后，模型会根据您的提示生成简洁的任务名称。禁用时，将使用提示的前5个词作为任务名称。",
       "showTaskStateActions": "显示任务状态操作",
       "showTaskStateActionsTooltip": "启用后，任务状态操作将显示在消息底部。禁用以隐藏这些操作。",
+      "defaultTaskMode": "新任务的默认模式",
+      "defaultTaskModeTooltip": "在已有任务的项目中创建新任务时使用。“使用最近任务的模式”将沿用最近一次任务的模式。",
+      "defaultTaskModeLast": "使用最近任务的模式",
+      "defaultProjectMode": "新项目的默认模式",
+      "defaultProjectModeTooltip": "作为项目第一个任务（没有可继承的前置任务时）的初始模式。会在引导流程中自动设置。",
       "contextManagement": "上下文管理",
       "contextCompactingThreshold": "自动压缩阈值",
       "contextCompactingThresholdTooltip": "当令牌使用量超过此阈值时，将根据所选的压缩类型自动管理对话。设置为 0 可禁用。",
@@ -1078,12 +1083,6 @@
     },
     "notificationsAndFiles": {
       "title": "通知与文件"
-    },
-    "defaultMode": {
-      "title": "默认模式",
-      "agent": "Agent（推荐）",
-      "code": "Code（Aider 模式）",
-      "tooltip": "新任务将以此模式开始。会在引导流程中自动设置。"
     }
   },
   "messages": {

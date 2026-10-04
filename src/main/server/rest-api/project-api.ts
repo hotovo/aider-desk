@@ -19,6 +19,10 @@ const GetProjectSettingsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
 });
 
+const GetCustomModesSchema = z.object({
+  projectDir: z.string().optional(),
+});
+
 const PatchProjectSettingsSchema = ProjectSettingsSchema.partial().and(
   z.object({
     projectDir: z.string().min(1, 'Project directory is required'),
@@ -1713,7 +1717,7 @@ export class ProjectApi extends BaseApi {
     router.get(
       '/project/custom-modes',
       this.handleRequest(async (req, res) => {
-        const parsed = this.validateRequest(GetProjectSettingsSchema, req.query, res);
+        const parsed = this.validateRequest(GetCustomModesSchema, req.query, res);
         if (!parsed) {
           return;
         }
