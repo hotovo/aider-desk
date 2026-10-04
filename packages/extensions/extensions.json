@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "binary-files",
@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "theme",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 84
+      "installCount": 85
     },
     {
       "id": "protected-paths",
@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "permission-gate",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "external-rules",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "context-autocompletion-words",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "plannotator",
@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "ui-placement-demo",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 79
+      "installCount": 80
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "bmad",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "kanban",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "doom",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "destructive-command-guard",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "skill-gallery",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 108
+      "installCount": 110
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 104
+      "installCount": 105
     },
     {
       "id": "dbx",
