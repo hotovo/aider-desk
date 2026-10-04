@@ -23,6 +23,7 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored, withLock } from '@/utils';
+import { atomicWriteJsonFile, cleanupStaleTempFiles } from '@/utils/atomic-write';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -670,9 +671,6 @@ export class ContextManager {
     // Serialize writes so concurrent saves cannot interleave and corrupt the file
     await withLock(`context-save-${this.taskId}`, async () => {
       try {
-        const dir = path.dirname(this.storagePath);
-        await fs.mkdir(dir, { recursive: true });
-
         const contextData: TaskContext = {
           version: CURRENT_CONTEXT_VERSION,
           contextMessages: this.messages,
@@ -680,14 +678,11 @@ export class ContextManager {
         };
 
         // Remove temp files orphaned by a crash between writeFile and rename
-        await this.cleanupStaleTempFiles(dir);
+        await cleanupStaleTempFiles(this.storagePath);
 
         // Write atomically: write to a temp file, then rename over the target so a
         // crash mid-write never leaves context.json half-written.
-        const baseName = path.basename(this.storagePath);
-        const temporaryPath = path.join(dir, `${baseName}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`);
-        await fs.writeFile(temporaryPath, JSON.stringify(contextData, null, 2), 'utf8');
-        await fs.rename(temporaryPath, this.storagePath);
+        await atomicWriteJsonFile(this.storagePath, contextData);
 
         logger.debug(`Task context saved to ${this.storagePath}`, {
           taskId: this.taskId,
@@ -700,28 +695,6 @@ export class ContextManager {
         throw error;
       }
     });
-  }
-
-  /**
-   * Removes temp files orphaned by a crash between writeFile and rename.
-   * Only safe to call while holding the save lock for this task's storage path.
-   */
-  private async cleanupStaleTempFiles(dir: string): Promise<void> {
-    try {
-      const baseName = path.basename(this.storagePath);
-      const prefix = `${baseName}.`;
-      const files = await fs.readdir(dir);
-      for (const file of files) {
-        if (file.startsWith(prefix) && file.endsWith('.tmp')) {
-          await fs.unlink(path.join(dir, file)).catch(() => undefined);
-        }
-      }
-    } catch (error) {
-      logger.error('Failed to clean up stale task context temp files:', {
-        error,
-        taskId: this.taskId,
-      });
-    }
   }
 
   /**

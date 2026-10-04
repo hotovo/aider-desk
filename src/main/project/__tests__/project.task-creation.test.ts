@@ -31,6 +31,7 @@ vi.mock('fs/promises');
 vi.mock('path');
 vi.mock('uuid');
 vi.mock('@/task/aider-manager');
+vi.mock('@/utils/atomic-write');
 vi.mock('@/task/context-manager');
 vi.mock('@/agent/agent');
 

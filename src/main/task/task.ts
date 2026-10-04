@@ -96,6 +96,7 @@ import type { SmartCompactionOptions } from '@common/extensions';
 
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
+import { atomicWriteJsonFile } from '@/utils/atomic-write';
 import {
   AIDER_DESK_GLOBAL_RULES_DIR,
   AIDER_DESK_PROJECT_RULES_DIR,
@@ -500,8 +501,7 @@ export class Task {
 
     if (this.task.createdAt) {
       // only save if task is not new
-      await fs.mkdir(path.dirname(this.taskDataPath), { recursive: true });
-      await fs.writeFile(this.taskDataPath, JSON.stringify(this.task, null, 2), 'utf8');
+      await atomicWriteJsonFile(this.taskDataPath, this.task);
     }
 
     this.eventManager.sendTaskUpdated(this.task);
@@ -3971,9 +3971,7 @@ export class Task {
   }
 
   public async writeTodoFile(data: { initialUserPrompt: string; items: TodoItem[] }): Promise<void> {
-    const todoFilePath = this.getTodoFilePath();
-    await fs.mkdir(path.dirname(todoFilePath), { recursive: true });
-    await fs.writeFile(todoFilePath, JSON.stringify(data, null, 2), 'utf8');
+    await atomicWriteJsonFile(this.getTodoFilePath(), data);
   }
 
   public async getTodos(): Promise<TodoItem[]> {
