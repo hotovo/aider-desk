@@ -35,6 +35,7 @@ interface Extension {
   onTaskCreated?(event, context): Promise<void | Partial<Event>>;
   onTaskDeleted?(event, context): Promise<void | Partial<Event>>;
   onPromptTemplate?(event, context): Promise<void | Partial<PromptTemplateEvent>>;
+  onToolsetCreated?(event, context): Promise<void | Partial<ToolsetCreatedEvent>>;
   // ... and more event handlers
 }
 ```

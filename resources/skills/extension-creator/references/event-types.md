@@ -33,6 +33,7 @@ Every Extension interface method dispatches a specific event type. All handlers 
 | `onToolApproval` | `ToolApprovalEvent` | ✅ Yes |
 | `onToolCalled` | `ToolCalledEvent` | — |
 | `onToolFinished` | `ToolFinishedEvent` | — |
+| `onToolsetCreated` | `ToolsetCreatedEvent` | — |
 | `onFilesAdded` | `FilesAddedEvent` | — |
 | `onFilesDropped` | `FilesDroppedEvent` | — |
 | `onRuleFilesRetrieved` | `RuleFilesRetrievedEvent` | — |
@@ -346,6 +347,31 @@ interface ToolFinishedEvent {
   output: unknown;
 }
 ```
+
+---
+
+### ToolsetCreatedEvent
+
+Dispatched after the complete toolset for an agent run has been assembled (built-in, MCP, and extension tools). Extensions can replace the `tools` record to add or remove tools before they are exposed to the model. Return a new record instead of mutating; when multiple extensions return `tools`, the last one wins.
+
+```typescript
+interface ToolsetCreatedEvent {
+  readonly mode: Mode;
+  readonly agentProfile: AgentProfile;
+  readonly providerProfile: ProviderProfile;
+  readonly model: string;
+  readonly promptContext?: PromptContext;
+  tools: Record<string, ToolsetToolEntry>;
+}
+
+interface ToolsetToolEntry {
+  description?: string;
+  inputSchema?: unknown;
+  execute?(input: Record<string, unknown>, options?: unknown): Promise<unknown>;
+}
+```
+
+Typical use case: hide tools from direct model calling while still invoking them programmatically (Code Mode pattern) — remove the tools from `tools` while keeping them accessible through your own extension tool.
 
 ---
 

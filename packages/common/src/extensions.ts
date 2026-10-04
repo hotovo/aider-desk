@@ -529,6 +529,28 @@ export interface ToolFinishedEvent {
   output: unknown;
 }
 
+/** A tool entry as exposed to extensions in toolset events */
+export interface ToolsetToolEntry {
+  description?: string;
+  inputSchema?: unknown;
+  execute?(input: Record<string, unknown>, options?: unknown): Promise<unknown>;
+}
+
+/** Event payload for toolset created events */
+export interface ToolsetCreatedEvent {
+  readonly mode: Mode;
+  readonly agentProfile: AgentProfile;
+  readonly providerProfile: ProviderProfile;
+  readonly model: string;
+  readonly promptContext?: PromptContext;
+  /**
+   * The complete toolset (built-in, MCP, and extension tools) for the agent run.
+   * Return `{ tools }` with a new record to replace it (e.g. to add or remove tools).
+   * Return a new record instead of mutating - when multiple extensions return tools, the last one wins.
+   */
+  tools: Record<string, ToolsetToolEntry>;
+}
+
 /** Event payload for files added events */
 export interface FilesAddedEvent {
   files: ContextFile[];
@@ -2066,6 +2088,13 @@ export interface Extension {
    * @returns void or partial event to modify result
    */
   onToolFinished?(event: ToolFinishedEvent, context: ExtensionContext): Promise<void | Partial<ToolFinishedEvent>>;
+
+  /**
+   * Called after the complete toolset for an agent run has been created (built-in, MCP, and extension tools)
+   * Return { tools } with a new record to replace the toolset (e.g. to add or remove tools)
+   * @returns void or partial event to modify the toolset
+   */
+  onToolsetCreated?(event: ToolsetCreatedEvent, context: ExtensionContext): Promise<void | Partial<ToolsetCreatedEvent>>;
 
   // File Events
 

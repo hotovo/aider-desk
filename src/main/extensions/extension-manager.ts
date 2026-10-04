@@ -68,6 +68,7 @@ import type {
   ToolCalledEvent,
   ToolDefinition,
   ToolFinishedEvent,
+  ToolsetCreatedEvent,
 } from '@common/extensions';
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
@@ -152,6 +153,7 @@ export type ExtensionEventMap = {
   onToolApproval: ToolApprovalEvent;
   onToolCalled: ToolCalledEvent;
   onToolFinished: ToolFinishedEvent;
+  onToolsetCreated: ToolsetCreatedEvent;
   onFilesAdded: FilesAddedEvent;
   onFilesDropped: FilesDroppedEvent;
   onRuleFilesRetrieved: RuleFilesRetrievedEvent;

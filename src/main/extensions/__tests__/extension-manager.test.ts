@@ -1130,6 +1130,56 @@ describe('ExtensionManager', () => {
 
       expect(event.prompt).toBe(originalPrompt); // Original should not be modified
     });
+
+    it('should dispatch onToolsetCreated and apply modified toolset', async () => {
+      const ext = {
+        instance: {
+          onToolsetCreated: vi.fn().mockResolvedValue({
+            tools: { only_tool: { description: 'kept', execute: vi.fn() } },
+          }),
+        },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext]);
+
+      const event = {
+        mode: 'ptc' as const,
+        agentProfile: { name: 'profile' } as any,
+        providerProfile: { name: 'provider' } as any,
+        model: 'test-model',
+        tools: { tool_a: { description: 'a' }, tool_b: { description: 'b' } },
+      };
+      const result = await manager.dispatchEvent('onToolsetCreated', event, mockProject as any, mockTask as any);
+
+      expect(result.tools).toEqual({ only_tool: { description: 'kept', execute: expect.any(Function) } });
+    });
+
+    it('should keep toolset unchanged when onToolsetCreated handler returns nothing', async () => {
+      const handler = vi.fn().mockResolvedValue(undefined);
+
+      const ext = {
+        instance: { onToolsetCreated: handler },
+        metadata: { name: 'ext1', version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: '/path/ext1.ts',
+        initialized: true,
+      };
+
+      (mockRegistry as ExtensionRegistry).getExtensions = vi.fn().mockReturnValue([ext]);
+
+      const event = {
+        mode: 'agent' as const,
+        agentProfile: { name: 'profile' } as any,
+        providerProfile: { name: 'provider' } as any,
+        model: 'test-model',
+        tools: { tool_a: { description: 'a' } },
+      };
+      const result = await manager.dispatchEvent('onToolsetCreated', event, mockProject as any, mockTask as any);
+
+      expect(result.tools).toEqual(event.tools);
+    });
   });
 
   describe('getUIComponents', () => {
