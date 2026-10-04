@@ -40,6 +40,7 @@ jobs:
             "@ai-sdk/cerebras"
             "@ai-sdk/deepseek"
             "@ai-sdk/google"
+            "@ai-sdk/mcp"
             "@ai-sdk/google-vertex"
             "@ai-sdk/mistral"
             "@ai-sdk/otel"
@@ -48,7 +49,6 @@ jobs:
             "@ai-sdk/openai-compatible"
             "@ai-sdk/provider"
             "@openrouter/ai-sdk-provider"
-            "@requesty/ai-sdk"
             "ollama-ai-provider-v2"
           )
 
