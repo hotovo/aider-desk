@@ -1,4 +1,4 @@
-import { KeyboardEvent, useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { MdAdd, MdExpandLess, MdOutlineChecklist, MdPlaylistRemove } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -29,6 +29,7 @@ export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDe
   const [isAddingTodo, setIsAddingTodo] = useState(false);
   const [newTodoName, setNewTodoName] = useState('');
   const [height, setHeight] = useState(250);
+  const wasAllCompletedRef = useRef(true);
 
   const handleToggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -62,12 +63,21 @@ export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDe
   const completedCount = todos.filter((todo) => todo.completed).length;
   const totalCount = todos.length;
 
-  // Auto-collapse when all items are completed
+  // Auto-collapse when all items are completed, auto-expand again when the completed set is replaced with new items
   useEffect(() => {
-    if (totalCount > 0 && completedCount === totalCount) {
+    if (totalCount === 0) {
+      // Keep the last non-empty evaluation so a fully-completed set followed by clearing still re-expands later
+      return;
+    }
+
+    const allCompleted = completedCount === totalCount;
+    if (allCompleted) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsExpanded(false);
+    } else if (wasAllCompletedRef.current) {
+      setIsExpanded(true);
     }
+    wasAllCompletedRef.current = allCompleted;
   }, [completedCount, totalCount]);
 
   if (totalCount === 0) {
@@ -148,9 +158,9 @@ export const TodoWindow = ({ taskId, onToggleTodo, onAddTodo, onUpdateTodo, onDe
                 {/* Todo List */}
                 {todos.length > 0 ? (
                   <div className="space-y-0.5">
-                    {todos.map((todo, index) => (
+                    {todos.map((todo) => (
                       <TodoListItem
-                        key={`${todo.name}-${index}`}
+                        key={todo.name}
                         item={todo}
                         onToggle={onToggleTodo}
                         onUpdate={onUpdateTodo}

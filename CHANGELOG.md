@@ -15,6 +15,7 @@
 - fixed task.json and todo.json being left half-written when the app crashes during save
 - fixed commit failing for already-staged file deletions
 - added default mode setting for new tasks and new projects
+- fixed todo list not auto-expanding again when a completed list is replaced with new items
 
 ## [0.85.0]
 
