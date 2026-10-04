@@ -16,6 +16,7 @@
 - fixed commit failing for already-staged file deletions
 - added default mode setting for new tasks and new projects
 - fixed todo list not auto-expanding again when a completed list is replaced with new items
+- fixed subagent token usage overwriting the main run's context size info
 
 ## [0.85.0]
 

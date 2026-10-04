@@ -1675,7 +1675,7 @@ export class Task {
 
       if (usageReport) {
         logger.debug(`Usage report: ${JSON.stringify(usageReport)}`);
-        this.updateTotalCosts(usageReport);
+        this.updateTotalCosts(usageReport, message.promptContext);
       }
       let data: ResponseCompletedData = {
         type: 'response-completed',
@@ -3194,22 +3194,35 @@ export class Task {
 
     // Update total costs when adding the tool message
     if (usageReport) {
-      this.updateTotalCosts(usageReport);
+      this.updateTotalCosts(usageReport, promptContext);
     }
 
     this.eventManager.sendTool(data);
   }
 
-  private updateTotalCosts(usageReport: UsageReportData) {
+  private updateTotalCosts(usageReport: UsageReportData, promptContext?: PromptContext) {
     if (usageReport.agentTotalCost !== undefined) {
       this.task.agentTotalCost = usageReport.agentTotalCost;
 
-      this.updateTokensInfo({
-        agent: {
-          cost: usageReport.agentTotalCost,
-          tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0),
-        },
-      });
+      if (promptContext?.group) {
+        // Subagent and other grouped runs use their own (different) model/context, so they must
+        // not override the main run's context size — only update the accumulated cost.
+        const existingAgent = this.tokensInfo.agent;
+        this.updateTokensInfo({
+          agent: {
+            ...existingAgent,
+            cost: usageReport.agentTotalCost,
+            tokens: existingAgent?.tokens ?? 0,
+          },
+        });
+      } else {
+        this.updateTokensInfo({
+          agent: {
+            cost: usageReport.agentTotalCost,
+            tokens: usageReport.sentTokens + usageReport.receivedTokens + (usageReport.cacheReadTokens ?? 0),
+          },
+        });
+      }
     }
     if (usageReport.aiderTotalCost) {
       this.task.aiderTotalCost += usageReport.messageCost;
