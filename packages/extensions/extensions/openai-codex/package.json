@@ -6,7 +6,7 @@
   "author": "AiderDesk",
   "license": "MIT",
   "dependencies": {
-    "@ai-sdk/openai": "^4.0.16"
+    "@ai-sdk/openai": "^4.0.83"
   },
   "devDependencies": {
     "@aiderdesk/extensions": "^0.12.0",
