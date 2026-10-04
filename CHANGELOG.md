@@ -13,6 +13,7 @@
 - added extension tools section to agent selector with auto-refresh on extension changes
 - added automatic state resync for tasks and readonly view after socket reconnect
 - fixed task.json and todo.json being left half-written when the app crashes during save
+- fixed commit failing for already-staged file deletions
 
 ## [0.85.0]
 

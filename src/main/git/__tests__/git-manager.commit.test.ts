@@ -124,6 +124,36 @@ describe('GitManager - commitChanges cancellation', () => {
     expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "remove patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
   });
 
+  it('should skip staging and still commit when the file is deleted and not in the index (staged deletion)', async () => {
+    vi.spyOn(gitManager, 'getUpdatedFiles').mockResolvedValue([{ path: 'patches/ai+7.0.60.patch', additions: 0, deletions: 10 }]);
+    const pathspecError = (command: string) => new Error(`Command failed: ${command}\nfatal: pathspec 'patches/ai+7.0.60.patch' did not match any files`);
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git add -- "patches/ai+7.0.60.patch"' || command === 'git add -A -f -- "patches/ai+7.0.60.patch"') {
+        throw pathspecError(command);
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false);
+
+    expect(committed).toBe(true);
+    expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "patches/ai+7.0.60.patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
+    expect(execWithShellPath).toHaveBeenCalledWith('git commit -m "remove patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
+  });
+
+  it('should fail the commit when the staging retry fails with an unexpected error', async () => {
+    vi.spyOn(gitManager, 'getUpdatedFiles').mockResolvedValue([{ path: 'locked-file.ts', additions: 1, deletions: 0 }]);
+    (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      if (command === 'git add -- "locked-file.ts"' || command === 'git add -A -f -- "locked-file.ts"') {
+        throw new Error(`Command failed: ${command}\nfatal: unable to index file 'locked-file.ts'`);
+      }
+      return { stdout: '', stderr: '' };
+    });
+
+    await expect(gitManager.commitChanges(worktreePath, 'test commit', false)).rejects.toThrow('unable to index file');
+    expect(execWithShellPath).not.toHaveBeenCalledWith('git commit -m "test commit"', expect.anything());
+  });
+
   it('should return false and skip commit when cancelled during staging', async () => {
     (execWithShellPath as Mock).mockImplementation(async () => {
       gitManager.cancelCommitChanges(worktreePath);

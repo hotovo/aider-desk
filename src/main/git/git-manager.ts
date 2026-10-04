@@ -3113,7 +3113,17 @@ export class GitManager {
       await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
     } catch (error) {
       logger.debug(`Failed to stage ${filePath}, retrying with -A -f (file may be deleted or gitignored):`, error);
-      await execWithShellPath(`git add -A -f -- "${escapedPath}"`, { cwd: worktreePath });
+      try {
+        await execWithShellPath(`git add -A -f -- "${escapedPath}"`, { cwd: worktreePath });
+      } catch (retryError) {
+        if (retryError instanceof Error && retryError.message.includes('did not match any files')) {
+          // The file exists neither on disk nor in the index (e.g. an already-staged deletion):
+          // there is nothing to stage, so treat it as a no-op instead of failing
+          logger.info(`Nothing to stage for ${filePath} (file deleted and not in index), skipping`);
+          return;
+        }
+        throw retryError;
+      }
     }
   }
 
@@ -3329,7 +3339,18 @@ export class GitManager {
             // directory-traversal exclusions like .aider* ignoring .aider-desk/rules
             // despite a negation pattern)
             logger.debug(`Failed to stage ${file.path}, retrying with -A -f (file may be deleted or gitignored):`, error);
-            await execWithShellPath(`git add -A -f -- "${escapedPath}"`, options);
+            try {
+              await execWithShellPath(`git add -A -f -- "${escapedPath}"`, options);
+            } catch (retryError) {
+              if (retryError instanceof Error && retryError.message.includes('did not match any files')) {
+                // The file exists neither on disk nor in the index (e.g. an already-staged
+                // deletion): there is nothing to stage, the commit picks up the staged
+                // deletion from the index, so skip instead of aborting the commit
+                logger.info(`Nothing to stage for ${file.path} (file deleted and not in index), skipping`);
+                continue;
+              }
+              throw retryError;
+            }
           }
         }
         if (filesToStage.length > 0) {
