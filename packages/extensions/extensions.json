@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "binary-files",
@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "wakatime",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 85
+      "installCount": 86
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "legacy-system-prompt",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "bmad",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 111
+      "installCount": 112
     },
     {
       "id": "task-scheduler",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 1
+      "installCount": 2
     }
   ]
 }
