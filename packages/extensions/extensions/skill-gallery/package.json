@@ -1,6 +1,6 @@
 {
   "name": "skill-gallery",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "Browse and install Claude Skills from popular skill repositories",
   "main": "index.ts",
   "author": "wladimiiir",
