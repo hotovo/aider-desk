@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 83
+      "installCount": 85
     },
     {
       "id": "verifier",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 63
+      "installCount": 64
     },
     {
       "id": "kanban",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 47
+      "installCount": 49
     },
     {
       "id": "wigolo",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "git-log",
