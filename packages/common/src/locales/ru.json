@@ -1351,6 +1351,8 @@
     "generateMessage": "Сгенерировать сообщение",
     "amend": "Изменить",
     "amendTooltip": "Изменить последний коммит вместо создания нового",
+    "skipGitHooks": "Пропустить Git-хуки",
+    "skipGitHooksTooltip": "Создать коммит без запуска Git-хуков (git commit --no-verify)",
     "commit": "Закоммитить",
     "generatingMessage": "Генерация...",
     "committing": "Коммит...",

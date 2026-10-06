@@ -615,8 +615,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.generateCommitMessage(baseDir, taskId, filePaths);
   });
 
-  ipcMain.handle('commit-changes', async (_, baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]) => {
-    await eventsHandler.commitChanges(baseDir, taskId, message, amend, filePaths);
+  ipcMain.handle('commit-changes', async (_, baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]) => {
+    await eventsHandler.commitChanges(baseDir, taskId, message, amend, skipGitHooks, filePaths);
   });
 
   ipcMain.handle('cancel-commit-changes', async (_, baseDir: string, taskId: string) => {

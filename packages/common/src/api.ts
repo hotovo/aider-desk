@@ -151,7 +151,7 @@ export interface ApplicationAPI {
   readFile: (baseDir: string, taskId: string, filePath: string) => Promise<string>;
   saveFile: (baseDir: string, taskId: string, filePath: string, content: string) => Promise<void>;
   generateCommitMessage: (baseDir: string, taskId: string, filePaths?: string[]) => Promise<string>;
-  commitChanges: (baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]) => Promise<void>;
+  commitChanges: (baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]) => Promise<void>;
   cancelCommitChanges: (baseDir: string, taskId: string) => Promise<void>;
   addFile: (baseDir: string, taskId: string, filePath: string, readOnly?: boolean) => void;
   isValidPath: (baseDir: string, path: string) => Promise<boolean>;

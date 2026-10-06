@@ -1351,6 +1351,8 @@
     "generateMessage": "메시지 생성",
     "amend": "수정(Amend)",
     "amendTooltip": "새 커밋을 만드는 대신 마지막 커밋을 수정합니다",
+    "skipGitHooks": "Git 훅 건너뛰기",
+    "skipGitHooksTooltip": "Git 훅을 실행하지 않고 커밋을 생성합니다 (git commit --no-verify)",
     "commit": "커밋",
     "generatingMessage": "생성하는 중...",
     "committing": "커밋하는 중...",

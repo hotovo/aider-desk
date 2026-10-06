@@ -3283,7 +3283,7 @@ export class GitManager {
     return true;
   }
 
-  async commitChanges(worktreePath: string, message: string, amend: boolean, filePaths?: string[]): Promise<boolean> {
+  async commitChanges(worktreePath: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<boolean> {
     if (!(await this.ensureGitRepository(worktreePath, 'commit changes'))) {
       return false;
     }
@@ -3293,7 +3293,7 @@ export class GitManager {
     const options = { cwd: worktreePath, signal: cancelController.signal, killSignal: 'SIGINT' as const };
 
     try {
-      logger.info(`Committing changes${amend ? ' (amend)' : ''}`, { worktreePath });
+      logger.info(`Committing changes${amend ? ' (amend)' : ''}${skipGitHooks ? ' (skip git hooks)' : ''}`, { worktreePath });
 
       // Get the list of updated files (unstaged changes that are shown in the UI)
       const updatedFiles = await this.getUpdatedFiles(worktreePath);
@@ -3366,8 +3366,10 @@ export class GitManager {
       // Escape the commit message for shell
       const escapedMessage = message.replace(/"/g, '\\"');
       const amendFlag = amend ? ' --amend' : '';
+      const noVerifyFlag = skipGitHooks ? ' --no-verify' : '';
       // If amending and message is empty, use --no-edit to keep previous message
-      let commitCommand = amend && !message.trim() ? 'git commit --amend --no-edit' : `git commit${amendFlag} -m "${escapedMessage}"`;
+      let commitCommand =
+        amend && !message.trim() ? `git commit --amend${noVerifyFlag} --no-edit` : `git commit${amendFlag}${noVerifyFlag} -m "${escapedMessage}"`;
       // When a file selection is provided, commit only those paths (--only pathspec form).
       // Plain `git commit` would also include any other files already staged in the index,
       // which breaks partial commits when edited files are left staged.
@@ -3376,7 +3378,7 @@ export class GitManager {
       }
       await execWithShellPath(commitCommand, options);
 
-      logger.info(`Successfully committed changes${amend ? ' (amended)' : ''}`);
+      logger.info(`Successfully committed changes${amend ? ' (amended)' : ''}${skipGitHooks ? ' (hooks skipped)' : ''}`);
       return true;
     } catch (error) {
       if (isAbortError(error)) {

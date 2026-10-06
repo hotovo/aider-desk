@@ -1285,6 +1285,8 @@
     "generateMessage": "生成信息",
     "amend": "修改",
     "amendTooltip": "修改上一次提交而不是创建新提交",
+    "skipGitHooks": "跳过 Git 钩子",
+    "skipGitHooksTooltip": "创建提交时不运行 Git 钩子（git commit --no-verify）",
     "commit": "提交",
     "generatingMessage": "生成中...",
     "committing": "提交中...",

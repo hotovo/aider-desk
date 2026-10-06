@@ -40,7 +40,7 @@ describe('GitManager - commitChanges cancellation', () => {
   it('should stage updated files and commit, returning true', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false, false);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -51,7 +51,7 @@ describe('GitManager - commitChanges cancellation', () => {
   it('should use a plain commit when filePaths covers all updated files', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'all files commit', false, ['file-a.ts', 'file-b.ts']);
+    const committed = await gitManager.commitChanges(worktreePath, 'all files commit', false, false, ['file-a.ts', 'file-b.ts']);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).not.toHaveBeenCalledWith(expect.stringContaining('git ls-files'), expect.anything());
@@ -61,7 +61,7 @@ describe('GitManager - commitChanges cancellation', () => {
   it('should commit only the selected files via pathspec when filePaths is provided', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: 'file-a.ts\0', stderr: '' });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, ['file-a.ts']);
+    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, false, ['file-a.ts']);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git ls-files -z "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -73,7 +73,7 @@ describe('GitManager - commitChanges cancellation', () => {
   it('should stage only untracked selected files when filePaths is provided', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, ['file-a.ts']);
+    const committed = await gitManager.commitChanges(worktreePath, 'partial commit', false, false, ['file-a.ts']);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -84,7 +84,7 @@ describe('GitManager - commitChanges cancellation', () => {
   it('should not use pathspec commit when amending an empty message', async () => {
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
 
-    const committed = await gitManager.commitChanges(worktreePath, '', true, ['file-a.ts']);
+    const committed = await gitManager.commitChanges(worktreePath, '', true, false, ['file-a.ts']);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git commit --amend --no-edit', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -98,7 +98,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false, false);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -- "file-a.ts"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -117,7 +117,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false, false);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "patches/@legendapp+list+3.3.7.patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -134,7 +134,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'remove patch', false, false);
 
     expect(committed).toBe(true);
     expect(execWithShellPath).toHaveBeenCalledWith('git add -A -f -- "patches/ai+7.0.60.patch"', expect.objectContaining({ killSignal: 'SIGINT' }));
@@ -150,7 +150,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    await expect(gitManager.commitChanges(worktreePath, 'test commit', false)).rejects.toThrow('unable to index file');
+    await expect(gitManager.commitChanges(worktreePath, 'test commit', false, false)).rejects.toThrow('unable to index file');
     expect(execWithShellPath).not.toHaveBeenCalledWith('git commit -m "test commit"', expect.anything());
   });
 
@@ -160,7 +160,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false, false);
 
     expect(committed).toBe(false);
     const commands = (execWithShellPath as Mock).mock.calls.map((call: unknown[]) => call[0] as string);
@@ -176,7 +176,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false);
+    const committed = await gitManager.commitChanges(worktreePath, 'test commit', false, false);
 
     expect(committed).toBe(false);
   });
@@ -190,7 +190,7 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    await expect(gitManager.commitChanges(worktreePath, 'test commit', false)).rejects.toBe(commitError);
+    await expect(gitManager.commitChanges(worktreePath, 'test commit', false, false)).rejects.toBe(commitError);
   });
 
   it('should return false from cancelCommitChanges when no commit is running', () => {
@@ -205,10 +205,10 @@ describe('GitManager - commitChanges cancellation', () => {
       return { stdout: '', stderr: '' };
     });
 
-    expect(await gitManager.commitChanges(worktreePath, 'cancelled commit', false)).toBe(false);
+    expect(await gitManager.commitChanges(worktreePath, 'cancelled commit', false, false)).toBe(false);
     expect(gitManager.cancelCommitChanges(worktreePath)).toBe(false);
 
     (execWithShellPath as Mock).mockResolvedValue({ stdout: '', stderr: '' });
-    expect(await gitManager.commitChanges(worktreePath, 'new commit', false)).toBe(true);
+    expect(await gitManager.commitChanges(worktreePath, 'new commit', false, false)).toBe(true);
   });
 });

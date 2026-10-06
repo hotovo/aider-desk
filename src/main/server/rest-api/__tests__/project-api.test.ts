@@ -9,6 +9,7 @@ describe('ProjectApi - commit-changes endpoint', () => {
         taskId: z.string().min(1, 'Task id is required'),
         message: z.string(),
         amend: z.boolean(),
+        skipGitHooks: z.boolean().optional(),
       })
       .refine((data) => data.amend || data.message.trim().length > 0, {
         message: 'Commit message is required',
@@ -89,6 +90,19 @@ describe('ProjectApi - commit-changes endpoint', () => {
         taskId: 'task-123',
         message: 'fix: update existing commit',
         amend: true,
+      };
+
+      const result = CommitChangesSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate commit with skipGitHooks', () => {
+      const validData = {
+        projectDir: '/test/project',
+        taskId: 'task-123',
+        message: 'feat: add new feature',
+        amend: false,
+        skipGitHooks: true,
       };
 
       const result = CommitChangesSchema.safeParse(validData);

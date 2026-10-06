@@ -657,6 +657,7 @@ export interface InterruptedEvent {
 export interface BeforeCommitEvent {
   message: string;
   amend: boolean;
+  skipGitHooks?: boolean;
   blocked?: boolean;
 }
 

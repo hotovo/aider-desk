@@ -1352,6 +1352,8 @@
     "generateMessage": "Generate Message",
     "amend": "Amend",
     "amendTooltip": "Amend the last commit instead of creating a new one",
+    "skipGitHooks": "Skip Git hooks",
+    "skipGitHooksTooltip": "Create the commit without running Git hooks (git commit --no-verify)",
     "commit": "Commit",
     "generatingMessage": "Generating...",
     "committing": "Committing...",

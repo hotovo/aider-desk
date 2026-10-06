@@ -596,12 +596,13 @@ export class BrowserApi implements ApplicationAPI {
     );
     return res.message;
   }
-  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void> {
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void> {
     await this.post('/project/worktree/commit-changes', {
       projectDir: baseDir,
       taskId,
       message,
       amend,
+      skipGitHooks,
       filePaths,
     });
   }

@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- added Skip Git hooks option on commit
+
 ## [0.86.0]
 
 - added getProviders to extension context to access configured provider profiles

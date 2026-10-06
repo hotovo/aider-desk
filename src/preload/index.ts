@@ -109,7 +109,8 @@ const api: ApplicationAPI = {
   readFile: (baseDir, taskId, filePath) => ipcRenderer.invoke('read-file', baseDir, taskId, filePath),
   saveFile: (baseDir, taskId, filePath, content) => ipcRenderer.invoke('save-file', baseDir, taskId, filePath, content),
   generateCommitMessage: (baseDir, taskId, filePaths) => ipcRenderer.invoke('generate-commit-message', baseDir, taskId, filePaths),
-  commitChanges: (baseDir, taskId, message, amend, filePaths) => ipcRenderer.invoke('commit-changes', baseDir, taskId, message, amend, filePaths),
+  commitChanges: (baseDir, taskId, message, amend, skipGitHooks, filePaths) =>
+    ipcRenderer.invoke('commit-changes', baseDir, taskId, message, amend, skipGitHooks, filePaths),
   cancelCommitChanges: (baseDir, taskId) => ipcRenderer.invoke('cancel-commit-changes', baseDir, taskId),
   addFile: (baseDir, taskId, filePath, readOnly = false) => ipcRenderer.send('add-file', baseDir, taskId, filePath, readOnly),
   isValidPath: (baseDir, path) => ipcRenderer.invoke('is-valid-path', baseDir, path),

@@ -798,9 +798,9 @@ export class EventsHandler {
     return await task.generateCommitMessage(filePaths);
   }
 
-  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void> {
+  async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    await task.commitChanges(message, amend, filePaths);
+    await task.commitChanges(message, amend, skipGitHooks, filePaths);
   }
 
   cancelCommitChanges(baseDir: string, taskId: string): void {

@@ -4974,23 +4974,24 @@ ${error.stderr}`,
     return commitMessage.trim();
   }
 
-  public async commitChanges(message: string, amend: boolean, filePaths?: string[]): Promise<void> {
+  public async commitChanges(message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void> {
     logger.info('Committing changes', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       amend,
     });
 
-    const beforeResult = await this.extensionManager.dispatchEvent('onBeforeCommit', { message, amend }, this.project, this);
+    const beforeResult = await this.extensionManager.dispatchEvent('onBeforeCommit', { message, amend, skipGitHooks }, this.project, this);
     if (beforeResult.blocked) {
       logger.debug('Commit blocked by extension');
       return;
     }
     message = beforeResult.message;
     amend = beforeResult.amend;
+    skipGitHooks = beforeResult.skipGitHooks ?? skipGitHooks;
 
     const taskDir = this.getTaskDir();
-    const committed = await this.gitManager.commitChanges(taskDir, message, amend, filePaths);
+    const committed = await this.gitManager.commitChanges(taskDir, message, amend, skipGitHooks, filePaths);
     await this.sendUpdatedFilesUpdated();
     await this.sendTaskGitStatusUpdated();
 

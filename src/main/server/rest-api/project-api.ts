@@ -383,6 +383,7 @@ const CommitChangesSchema = z
     taskId: z.string().min(1, 'Task id is required'),
     message: z.string(),
     amend: z.boolean(),
+    skipGitHooks: z.boolean().optional(),
     filePaths: z.array(z.string()).optional(),
   })
   .refine((data) => data.amend || data.message.trim().length > 0, { message: 'Commit message is required', path: ['message'] });
@@ -1207,8 +1208,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, message, amend, filePaths } = parsed;
-        await this.eventsHandler.commitChanges(projectDir, taskId, message, amend, filePaths);
+        const { projectDir, taskId, message, amend, skipGitHooks = false, filePaths } = parsed;
+        await this.eventsHandler.commitChanges(projectDir, taskId, message, amend, skipGitHooks, filePaths);
         res.status(200).json({ message: 'Changes committed' });
       }),
     );
