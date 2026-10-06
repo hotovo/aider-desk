@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 6
+      "installCount": 9
     },
     {
       "id": "binary-files",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 86
+      "installCount": 88
     },
     {
       "id": "protected-paths",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 80
+      "installCount": 81
     },
     {
       "id": "verifier",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 105
+      "installCount": 106
     },
     {
       "id": "dbx",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 0
+      "installCount": 1
     },
     {
       "id": "compaction-studio",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 2
+      "installCount": 5
     }
   ]
 }
