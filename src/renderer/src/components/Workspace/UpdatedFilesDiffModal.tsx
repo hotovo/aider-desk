@@ -873,7 +873,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                   size="xs"
                 />
               </div>
-              <div className="flex items-center shrink-0 gap-2 pr-4">
+              <div className="flex items-center shrink-0 gap-2">
                 <Button
                   onClick={handleCommit}
                   disabled={(!commitMessage.trim() && !amend) || isCommitting || isGeneratingMessage || (selectedFiles.length === 0 && !amend)}
