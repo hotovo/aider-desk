@@ -106,7 +106,7 @@ export interface ModeDefinition {
   name: Mode;
   label: string;
   description?: string;
-  /** Icon name from react-icons (e.g., 'GoCodeReview', 'FiLayers') */
+  /** Full react-icons component name including pack prefix (e.g., 'FiTerminal', 'GoCodeReview') */
   icon?: string;
 }
 

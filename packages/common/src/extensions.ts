@@ -98,9 +98,13 @@ export interface ToolResult {
  * Definition of a tool that is part of the tool set. This tool can be executed internally by extension, but it won't be propagated to UI.
  *
  * @execute - Optional execute function. If not provided, the tool has other unsupported means of execution.
+ * @description - Optional tool description as provided to the LLM.
+ * @inputSchema - Optional input schema of the tool (zod schema or JSON schema, depending on the tool origin).
  */
 export interface Tool {
   execute?: (input: Record<string, unknown>) => Promise<unknown>;
+  description?: string;
+  inputSchema?: unknown;
 }
 
 /**

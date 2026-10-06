@@ -1216,6 +1216,8 @@ export class ExtensionManager {
           const allToolsInternal = Object.entries(allTools).reduce(
             (acc, [toolId, tool]) => {
               acc[toolId] = {
+                description: typeof tool.description === 'string' ? tool.description : undefined,
+                inputSchema: tool.inputSchema,
                 execute: async (input: Record<string, unknown>) => {
                   if (tool.execute) {
                     return await tool.execute(input, {
