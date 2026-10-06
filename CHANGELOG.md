@@ -5,6 +5,7 @@
 - added Skip Git hooks option on commit
 - added support for icon for extension custom mode from icon packs
 - fixed terminal staying open with a dead session when the shell exits in it (e.g. Ctrl+D); it now closes the terminal the same as the manual close button
+- fixed crash (React maximum update depth exceeded) when interacting with diff viewer dropdown while task is running
 
 ## [0.86.0]
 
