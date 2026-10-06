@@ -100,8 +100,31 @@ jobs:
             if [ "$current_clean" != "$latest_clean" ]; then
               echo "Updating $package from $current_version to $latest_clean"
               # Write pinned version directly to package.json (no ~ or ^ prefix)
+              # If the package also has an exact-pinned override, sync it to the same version.
+              # npm throws EOVERRIDE when a package exists in both dependencies and overrides
+              # with different specs. Only string overrides are touched (skips nested objects
+              # like @huggingface/transformers); keys are never created.
               tmp=$(mktemp)
-              jq --arg pkg "$package" --arg ver "$latest_clean" '.dependencies[$pkg] = $ver' package.json > "$tmp" && mv "$tmp" package.json
+              jq --arg pkg "$package" --arg ver "$latest_clean" '
+                .dependencies[$pkg] = $ver
+                | if (.overrides[$pkg]? |type) == "string"
+                  then .overrides[$pkg] = $ver
+                  else . end
+              ' package.json > "$tmp" && mv "$tmp" package.json
+
+              # packages/app/package.json can carry the same pins in its overrides
+              # (it is a committed generated package manifest) - keep it in lockstep too.
+              if [ -f packages/app/package.json ] && jq -e --arg pkg "$package" '((.dependencies[$pkg]? |type) == "string") or ((.overrides[$pkg]? |type) == "string")' packages/app/package.json > /dev/null; then
+                tmp=$(mktemp)
+                jq --arg pkg "$package" --arg ver "$latest_clean" '
+                  if (.dependencies[$pkg]? |type) == "string"
+                  then .dependencies[$pkg] = $ver
+                  else . end
+                  | if (.overrides[$pkg]? |type) == "string"
+                    then .overrides[$pkg] = $ver
+                    else . end
+                ' packages/app/package.json > "$tmp" && mv "$tmp" packages/app/package.json
+              fi
 
               # Add to changelog
               changelog="$changelog\n| $package | $current_version | $latest_clean |"
