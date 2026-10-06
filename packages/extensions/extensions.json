@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 88
+      "installCount": 89
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 57
+      "installCount": 58
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "legacy-system-prompt",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 81
+      "installCount": 82
     },
     {
       "id": "verifier",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 112
+      "installCount": 113
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 106
+      "installCount": 107
     },
     {
       "id": "dbx",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 5
+      "installCount": 6
     }
   ]
 }
