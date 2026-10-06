@@ -19,6 +19,7 @@ vi.mock('@/prompts');
 vi.mock('@/extensions/extension-manager');
 vi.mock('@/task/aider-manager');
 vi.mock('@/task/context-manager');
+vi.mock('@/utils/atomic-write');
 vi.mock('@/project/migrations');
 vi.mock('fs/promises', () => {
   const mockFs = {
