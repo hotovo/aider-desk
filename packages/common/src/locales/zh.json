@@ -1958,8 +1958,7 @@
     "tabLabel": "终端",
     "copyOutput": "复制终端输出到提示",
     "minimize": "最小化终端",
-    "addTerminal": "添加新终端",
-    "restartHint": "会话已结束。按任意键重新启动。"
+    "addTerminal": "添加新终端"
   },
   "contextMenu": {
     "copy": "复制",

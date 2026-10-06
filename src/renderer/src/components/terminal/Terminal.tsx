@@ -23,6 +23,7 @@ type Props = {
   visible: boolean;
   ptyId: string | null;
   className?: string;
+  onClose: () => void;
 };
 
 const useIsTouchDevice = (): boolean => {
@@ -60,7 +61,7 @@ const KEY_SEQUENCES: Record<string, string> = {
   Tab: '\t',
 };
 
-export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, baseDir, taskId, visible, ptyId, className }, ref) => {
+export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, baseDir, taskId, visible, ptyId, onClose, className }, ref) => {
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<GhosttyTerminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -68,16 +69,17 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
   const creatingRef = useRef(false);
   const skipReplayRef = useRef(false);
   const touchInputRef = useRef<HTMLTextAreaElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [isInitialized, setIsInitialized] = useState(false);
   const [isEmulatorReady, setIsEmulatorReady] = useState(false);
-  const [exited, setExited] = useState(false);
   const [creationEpoch, setCreationEpoch] = useState(0);
   const isTouch = useIsTouchDevice();
   const ghosttyInstanceRef = useRef<InstanceType<typeof Ghostty> | null>(null);
   const api = useApi();
 
   const { t } = useTranslation();
-  const isConnecting = isInitialized && visible && !ptyId && !exited;
+  const isConnecting = isInitialized && visible && !ptyId;
 
   const writeToPty = useCallback(
     (data: string) => {
@@ -215,7 +217,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
 
   // Create the PTY process when visible and no session is attached
   useEffect(() => {
-    if (!visible || ptyId || exited || !isInitialized || creatingRef.current) {
+    if (!visible || ptyId || !isInitialized || creatingRef.current) {
       return;
     }
 
@@ -257,7 +259,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     return () => {
       cancelled = true;
     };
-  }, [baseDir, taskId, sessionKey, tabId, ptyId, visible, exited, isInitialized, api, creationEpoch]);
+  }, [baseDir, taskId, sessionKey, tabId, ptyId, visible, isInitialized, api, creationEpoch]);
 
   // Attach to the PTY session: reset the emulator, replay the recent output,
   // and only then subscribe to live events so no output is rendered twice
@@ -267,8 +269,6 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     if (!isEmulatorReady || !ptyId) {
       return;
     }
-
-    setExited(false);
 
     let cancelled = false;
     let removeDataListener: (() => void) | null = null;
@@ -283,8 +283,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     const handleTerminalExit = (data: TerminalExitData) => {
       if (data.terminalId === ptyIdRef.current) {
         ptyIdRef.current = null;
-        setTabPtyId(sessionKey, tabId, null);
-        setExited(true);
+        onCloseRef.current();
       }
     };
 
@@ -306,8 +305,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
         }
 
         if (!buffer.exists) {
-          setTabPtyId(sessionKey, tabId, null);
-          setExited(true);
+          ptyIdRef.current = null;
+          onCloseRef.current();
           return;
         }
 
@@ -342,22 +341,6 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
       removeExitListener?.();
     };
   }, [ptyId, isEmulatorReady, api, baseDir, sessionKey, tabId]);
-
-  // Handle restart on keypress after exit
-  useEffect(() => {
-    if (!exited || !terminalRef.current) {
-      return undefined;
-    }
-
-    const disposable = terminalRef.current.onData(() => {
-      terminalRef.current?.reset();
-      setExited(false);
-    });
-
-    return () => {
-      disposable.dispose();
-    };
-  }, [exited, isInitialized]);
 
   // Handle resize when visibility changes
   useEffect(() => {
@@ -419,19 +402,9 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     };
   }, [isTouch, isInitialized, writeToPty]);
 
-  const restartSession = () => {
-    terminalRef.current?.reset();
-    setExited(false);
-  };
-
   const handleTouchInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     e.target.value = '';
-
-    if (exited) {
-      restartSession();
-      return;
-    }
 
     if (!text) {
       return;
@@ -443,10 +416,6 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
   const handleContainerPointerDown = () => {
     if (!isTouch) {
       return;
-    }
-
-    if (exited) {
-      restartSession();
     }
 
     setTimeout(() => {
@@ -492,11 +461,6 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
       {isConnecting && (
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-text-muted-light text-xs">{t('terminal.connecting')}</div>
-        </div>
-      )}
-      {exited && visible && (
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="text-text-muted-light text-xs">{t('terminal.restartHint')}</div>
         </div>
       )}
     </div>

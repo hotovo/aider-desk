@@ -68,6 +68,20 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
     }
   };
 
+  // Close the tab when its PTY exits (e.g. shell ended via Ctrl+D or exit command)
+  const handlePtyExit = useCallback(
+    (removedTabId: string) => {
+      removeTerminalTab(sessionKey, removedTabId);
+      delete terminalRefs.current[removedTabId];
+
+      const remaining = useTerminalStore.getState().tabsMap.get(sessionKey)?.length ?? 0;
+      if (remaining === 0) {
+        onClose();
+      }
+    },
+    [sessionKey, onClose],
+  );
+
   // Ensure there is at least one tab when the terminal view becomes visible
   useEffect(() => {
     if (visible && (useTerminalStore.getState().tabsMap.get(sessionKey)?.length ?? 0) === 0) {
@@ -149,6 +163,7 @@ export const TerminalView = forwardRef<TerminalViewRef, Props>(({ baseDir, taskI
               taskId={taskId}
               visible={activeTabId === tab.id && visible}
               ptyId={tab.ptyId}
+              onClose={() => handlePtyExit(tab.id)}
             />
           </div>
         ))}

@@ -1950,8 +1950,7 @@
     "tabLabel": "Terminal",
     "copyOutput": "Copy terminal output to prompt",
     "minimize": "Minimize terminal",
-    "addTerminal": "Add new terminal",
-    "restartHint": "Session ended. Press any key to restart."
+    "addTerminal": "Add new terminal"
   },
   "contextMenu": {
     "copy": "Copy",
