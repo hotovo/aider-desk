@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - added Skip Git hooks option on commit
+- added support for icon for extension custom mode from icon packs
 
 ## [0.86.0]
 

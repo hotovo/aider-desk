@@ -8,6 +8,7 @@ import { GoProjectRoadmap } from 'react-icons/go';
 import { TbTargetArrow } from 'react-icons/tb';
 import { Mode } from '@common/types';
 
+import { useReactIcons, type ReactIconsMap } from '@/utils/extension-icons';
 import { useCustomModes } from '@/hooks/useCustomModes';
 import { ItemConfig } from '@/components/common/ItemSelector';
 
@@ -54,18 +55,35 @@ export const BUILT_IN_MODES: ItemConfig<Mode>[] = [
   },
 ];
 
-const getIconComponent = (iconName?: string): ElementType => MODE_ICONS[iconName || ''] || TbTargetArrow;
+const getIconComponent = (iconName: string | undefined, iconPacks: ReactIconsMap | null): ElementType => {
+  if (!iconName) {
+    return TbTargetArrow;
+  }
+  if (MODE_ICONS[iconName]) {
+    return MODE_ICONS[iconName];
+  }
+  if (iconPacks) {
+    for (const icons of Object.values(iconPacks)) {
+      const icon = icons[iconName];
+      if (icon) {
+        return icon as ElementType;
+      }
+    }
+  }
+  return TbTargetArrow;
+};
 
 export const useModes = (baseDir?: string): ItemConfig<Mode>[] => {
   const customModes = useCustomModes(baseDir);
+  const iconPacks = useReactIcons();
 
   return useMemo(() => {
     const customModeItems = customModes.map((mode) => ({
       value: mode.name,
-      icon: getIconComponent(mode.icon),
+      icon: getIconComponent(mode.icon, iconPacks),
       labelKey: mode.label,
       tooltipKey: mode.description,
     }));
     return [...BUILT_IN_MODES, ...customModeItems] as ItemConfig<Mode>[];
-  }, [customModes]);
+  }, [customModes, iconPacks]);
 };

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-type ReactIconsMap = Record<string, Record<string, unknown>>;
+export type ReactIconsMap = Record<string, Record<string, unknown>>;
 
 const ICON_PACK_KEYS = [
   'Fi',
