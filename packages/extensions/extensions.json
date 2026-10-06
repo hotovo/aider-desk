@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 89
+      "installCount": 90
     },
     {
       "id": "protected-paths",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 82
+      "installCount": 83
     },
     {
       "id": "verifier",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 113
+      "installCount": 114
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 107
+      "installCount": 108
     },
     {
       "id": "dbx",
