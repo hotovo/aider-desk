@@ -3,12 +3,15 @@ import { join } from 'path';
 import { z } from 'zod';
 import Sandbox from '@nyariv/sandboxjs';
 
-import type { Extension, ExtensionContext, ToolDefinition, Tool, UIComponentDefinition } from '../../extensions.d.ts';
+import type { Extension, ExtensionContext, ModeDefinition, ToolDefinition, Tool, ToolsetCreatedEvent, ToolsetToolEntry, UIComponentDefinition } from '../../extensions.d.ts';
+
+const PTC_MODE_NAME = 'ptc';
+const PTC_TOOL_NAME = 'programmatic_tool_calls';
 
 const metadata = {
   name: 'Programmatic Tool Calls',
-  version: '1.3.0',
-  description: 'Execute JavaScript code in a sandbox with access to all tools as async functions',
+  version: '1.4.0',
+  description: 'Execute JavaScript code in a sandbox with access to all tools as async functions. Provides the PTC mode where tools are only accessible through code execution.',
   author: 'wladimiiir',
   iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
   capabilities: ['tools', 'ui'],
@@ -29,8 +32,95 @@ const sanitizeToolName = (toolName: string): string => {
   return toolName.replace(/---/g, '_').replace(/-/g, '_');
 };
 
+const MAX_CATALOG_TOOL_DESCRIPTION_LENGTH = 200;
+
+const getJsonSchema = (inputSchema: unknown): Record<string, unknown> | undefined => {
+  if (!inputSchema || typeof inputSchema !== 'object') {
+    return undefined;
+  }
+
+  const schema = inputSchema as Record<string, unknown>;
+
+  // zod schema
+  if (typeof schema.safeParse === 'function') {
+    try {
+      const jsonSchema = { ...z.toJSONSchema(schema as unknown as z.ZodType, { io: 'input' }) };
+      delete jsonSchema.$schema;
+      return jsonSchema;
+    } catch {
+      return undefined;
+    }
+  }
+
+  // JSON schema wrapped by the AI SDK (jsonSchema())
+  if (schema.jsonSchema && typeof schema.jsonSchema === 'object') {
+    return schema.jsonSchema as Record<string, unknown>;
+  }
+
+  // plain JSON schema
+  if ('type' in schema || 'properties' in schema) {
+    return schema;
+  }
+
+  return undefined;
+};
+
+const truncateText = (text: string, maxLength: number): string => (text.length <= maxLength ? text : `${text.slice(0, maxLength - 1)}…`);
+
+const buildToolsCatalog = (tools: Record<string, ToolsetToolEntry>, excludeToolName: string): string => {
+  const catalog: Record<string, { description?: string; parameters?: Record<string, unknown> }> = {};
+
+  for (const [name, tool] of Object.entries(tools)) {
+    if (name === excludeToolName) {
+      continue;
+    }
+
+    const jsonSchema = getJsonSchema(tool.inputSchema);
+    catalog[sanitizeToolName(name)] = {
+      ...(tool.description ? { description: truncateText(tool.description, MAX_CATALOG_TOOL_DESCRIPTION_LENGTH) } : {}),
+      ...(jsonSchema ? { parameters: jsonSchema } : {}),
+    };
+  }
+
+  if (Object.keys(catalog).length === 0) {
+    return '';
+  }
+
+  return `
+
+Available tools (call them as async functions in code using these exact names):
+${JSON.stringify(catalog, null, 2)}`;
+};
+
 class ProgrammaticToolCallsExtension implements Extension {
   static metadata = metadata;
+
+  getModes(): ModeDefinition[] {
+    return [
+      {
+        name: PTC_MODE_NAME,
+        label: 'PTC',
+        description: 'Programmatic Tool Calls: only the code execution tool is available; all other tools are called from sandboxed code',
+        icon: 'FiTerminal',
+      },
+    ];
+  }
+
+  async onToolsetCreated(event: ToolsetCreatedEvent): Promise<void | Partial<ToolsetCreatedEvent>> {
+    if (event.mode !== PTC_MODE_NAME) {
+      return;
+    }
+
+    const ptcTool = event.tools[PTC_TOOL_NAME];
+    if (!ptcTool) {
+      return;
+    }
+
+    const toolsCatalog = buildToolsCatalog(event.tools, PTC_TOOL_NAME);
+    const ptcToolWithCatalog: ToolsetToolEntry = toolsCatalog ? { ...ptcTool, description: `${ptcTool.description ?? ''}${toolsCatalog}` } : ptcTool;
+
+    return { tools: { [PTC_TOOL_NAME]: ptcToolWithCatalog } };
+  }
 
   getUIComponents(): UIComponentDefinition[] {
     return [
@@ -59,6 +149,8 @@ class ProgrammaticToolCallsExtension implements Extension {
         - Implement complex logic that would require multiple round-trips
         - Reduce latency by batching operations
 
+        When the agent runs in the 'ptc' (Programmatic Tool Calls) mode, this is the ONLY tool available - all other tools are accessible exclusively through code execution in this sandbox.
+
         All tools are available as async functions. Replace dashes with underscores in tool names:
         - power---file-read becomes power_file_read()
         - power---bash becomes power_bash()
@@ -70,9 +162,8 @@ class ProgrammaticToolCallsExtension implements Extension {
 
         Example usage:
         \`\`\`javascript
-        // Read a file and process its contents
-        const content = await power_file_read({ filePath: 'src/index.ts' });
-        console.log(content);
+        // Read a file and return its content
+        return await power_file_read({ filePath: 'src/index.ts' });
 
         // Execute multiple operations in parallel (no destructuring - use index access)
         const results = await Promise.all([

@@ -6,6 +6,18 @@ Execute JavaScript code in a secure sandbox with access to all available tools a
 
 This extension implements the [programmatic tool calling](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/programmatic-tool-calling) pattern, allowing Claude to write code that invokes tools directly rather than requiring multiple round-trips.
 
+## PTC Mode
+
+The extension provides a **PTC** mode (selectable in the mode selector). In this mode:
+
+- Only the `programmatic_tool_calls` tool is exposed to the model
+- All other tools (built-in, MCP, and extension tools) are hidden from direct calling
+- Tools remain fully accessible inside the sandbox as async functions
+
+This follows the "Code Mode" pattern: the model orchestrates all tools through code, saving context tokens and enabling batching, filtering, and complex control flow.
+
+In all other modes, the `programmatic_tool_calls` tool is available in addition to the regular toolset.
+
 For more details on advanced tool use patterns, see [Claude Advanced Tool Use](https://github.com/shanraisshan/claude-code-best-practice/blob/main/reports/claude-advanced-tool-use.md).
 
 ## Benefits
