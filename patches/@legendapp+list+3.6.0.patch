@@ -1,0 +1,100 @@
+diff --git a/node_modules/@legendapp/list/react-native.web.js b/node_modules/@legendapp/list/react-native.web.js
+index a0f962c..5a58ecb 100644
+--- a/node_modules/@legendapp/list/react-native.web.js
++++ b/node_modules/@legendapp/list/react-native.web.js
+@@ -409,6 +409,7 @@ var IsNewArchitecture = true;
+ 
+ // src/core/containerLayoutBaseline.ts
+ var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var itemSizeFlipHistory = /* @__PURE__ */ new Map();
+ function getContainerLayoutBaseline(element) {
+   return containerLayoutBaselines.get(element);
+ }
+@@ -5262,6 +5263,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+     }
+   }
+   if (!prevSize || Math.abs(prevSize - size) > 0.1) {
++    if (itemSizeFlipHistory.size > 1024) itemSizeFlipHistory.clear();
++    const flipHistory = itemSizeFlipHistory.get(itemKey);
++    if (flipHistory !== void 0 && (flipHistory.last === size || flipHistory.prev === size)) {
++      return 0;
++    }
++    itemSizeFlipHistory.set(itemKey, { prev: size, last: flipHistory !== void 0 ? flipHistory.prev : void 0 });
+     setSize(ctx, itemKey, size, notifyTotalSize);
+     return size - prevSize;
+   }
+diff --git a/node_modules/@legendapp/list/react-native.web.mjs b/node_modules/@legendapp/list/react-native.web.mjs
+index 9338287..ac3ba4c 100644
+--- a/node_modules/@legendapp/list/react-native.web.mjs
++++ b/node_modules/@legendapp/list/react-native.web.mjs
+@@ -388,6 +388,7 @@ var IsNewArchitecture = true;
+ 
+ // src/core/containerLayoutBaseline.ts
+ var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var itemSizeFlipHistory = /* @__PURE__ */ new Map();
+ function getContainerLayoutBaseline(element) {
+   return containerLayoutBaselines.get(element);
+ }
+@@ -5241,6 +5242,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+     }
+   }
+   if (!prevSize || Math.abs(prevSize - size) > 0.1) {
++    if (itemSizeFlipHistory.size > 1024) itemSizeFlipHistory.clear();
++    const flipHistory = itemSizeFlipHistory.get(itemKey);
++    if (flipHistory !== void 0 && (flipHistory.last === size || flipHistory.prev === size)) {
++      return 0;
++    }
++    itemSizeFlipHistory.set(itemKey, { prev: size, last: flipHistory !== void 0 ? flipHistory.prev : void 0 });
+     setSize(ctx, itemKey, size, notifyTotalSize);
+     return size - prevSize;
+   }
+diff --git a/node_modules/@legendapp/list/react.js b/node_modules/@legendapp/list/react.js
+index a0f962c..5a58ecb 100644
+--- a/node_modules/@legendapp/list/react.js
++++ b/node_modules/@legendapp/list/react.js
+@@ -409,6 +409,7 @@ var IsNewArchitecture = true;
+ 
+ // src/core/containerLayoutBaseline.ts
+ var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var itemSizeFlipHistory = /* @__PURE__ */ new Map();
+ function getContainerLayoutBaseline(element) {
+   return containerLayoutBaselines.get(element);
+ }
+@@ -5262,6 +5263,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+     }
+   }
+   if (!prevSize || Math.abs(prevSize - size) > 0.1) {
++    if (itemSizeFlipHistory.size > 1024) itemSizeFlipHistory.clear();
++    const flipHistory = itemSizeFlipHistory.get(itemKey);
++    if (flipHistory !== void 0 && (flipHistory.last === size || flipHistory.prev === size)) {
++      return 0;
++    }
++    itemSizeFlipHistory.set(itemKey, { prev: size, last: flipHistory !== void 0 ? flipHistory.prev : void 0 });
+     setSize(ctx, itemKey, size, notifyTotalSize);
+     return size - prevSize;
+   }
+diff --git a/node_modules/@legendapp/list/react.mjs b/node_modules/@legendapp/list/react.mjs
+index 9338287..ac3ba4c 100644
+--- a/node_modules/@legendapp/list/react.mjs
++++ b/node_modules/@legendapp/list/react.mjs
+@@ -388,6 +388,7 @@ var IsNewArchitecture = true;
+ 
+ // src/core/containerLayoutBaseline.ts
+ var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var itemSizeFlipHistory = /* @__PURE__ */ new Map();
+ function getContainerLayoutBaseline(element) {
+   return containerLayoutBaselines.get(element);
+ }
+@@ -5241,6 +5242,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+     }
+   }
+   if (!prevSize || Math.abs(prevSize - size) > 0.1) {
++    if (itemSizeFlipHistory.size > 1024) itemSizeFlipHistory.clear();
++    const flipHistory = itemSizeFlipHistory.get(itemKey);
++    if (flipHistory !== void 0 && (flipHistory.last === size || flipHistory.prev === size)) {
++      return 0;
++    }
++    itemSizeFlipHistory.set(itemKey, { prev: size, last: flipHistory !== void 0 ? flipHistory.prev : void 0 });
+     setSize(ctx, itemKey, size, notifyTotalSize);
+     return size - prevSize;
+   }

@@ -7,6 +7,7 @@
 - fixed terminal staying open with a dead session when the shell exits in it (e.g. Ctrl+D); it now closes the terminal the same as the manual close button
 - fixed crash (React maximum update depth exceeded) when interacting with diff viewer dropdown while task is running
 - removed diff view mode switcher from code block headers; the view mode is now configured globally in Settings (also improves rendering performance of code blocks)
+- patched @legendapp/list with an item size flip guard to prevent "Maximum update depth exceeded" crash in the virtualized message list
 
 ## [0.86.0]
 
