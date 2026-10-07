@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "permission-gate",
@@ -116,7 +116,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "ultrathink",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "context-autocompletion-words",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 85
+      "installCount": 86
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "bmad",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 108
+      "installCount": 109
     },
     {
       "id": "dbx",
