@@ -1,16 +1,17 @@
 diff --git a/node_modules/@legendapp/list/react-native.web.js b/node_modules/@legendapp/list/react-native.web.js
-index a0f962c..5a58ecb 100644
+index a0f962c..bcfecd4 100644
 --- a/node_modules/@legendapp/list/react-native.web.js
 +++ b/node_modules/@legendapp/list/react-native.web.js
-@@ -409,6 +409,7 @@ var IsNewArchitecture = true;
+@@ -409,6 +409,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
 +var itemSizeFlipHistory = /* @__PURE__ */ new Map();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5262,6 +5263,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+@@ -5262,6 +5264,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
      }
    }
    if (!prevSize || Math.abs(prevSize - size) > 0.1) {
@@ -23,19 +24,41 @@ index a0f962c..5a58ecb 100644
      setSize(ctx, itemKey, size, notifyTotalSize);
      return size - prevSize;
    }
+@@ -5303,7 +5311,19 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
+     {
+       const targetContainerIds = getContainerLayoutEffectScope(ctx);
+       if (targetContainerIds !== void 0) {
+-        measureContainersInLayoutEffect(ctx, targetContainerIds);
++        const now = Date.now();
++        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
++        if (now - lastMeasureAt < 50) {
++          const deferredCtx = ctx;
++          const deferredTargets = targetContainerIds;
++          requestAnimationFrame(() => {
++            lastContainerMeasureAt.set(deferredCtx, Date.now());
++            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
++          });
++        } else {
++          lastContainerMeasureAt.set(ctx, now);
++          measureContainersInLayoutEffect(ctx, targetContainerIds);
++        }
+       }
+     }
+   }, [ctx, containerLayoutEpoch]);
 diff --git a/node_modules/@legendapp/list/react-native.web.mjs b/node_modules/@legendapp/list/react-native.web.mjs
-index 9338287..ac3ba4c 100644
+index 9338287..c9b9f8c 100644
 --- a/node_modules/@legendapp/list/react-native.web.mjs
 +++ b/node_modules/@legendapp/list/react-native.web.mjs
-@@ -388,6 +388,7 @@ var IsNewArchitecture = true;
+@@ -388,6 +388,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
 +var itemSizeFlipHistory = /* @__PURE__ */ new Map();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5241,6 +5242,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+@@ -5241,6 +5243,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
      }
    }
    if (!prevSize || Math.abs(prevSize - size) > 0.1) {
@@ -48,19 +71,41 @@ index 9338287..ac3ba4c 100644
      setSize(ctx, itemKey, size, notifyTotalSize);
      return size - prevSize;
    }
+@@ -5282,7 +5290,19 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
+     {
+       const targetContainerIds = getContainerLayoutEffectScope(ctx);
+       if (targetContainerIds !== void 0) {
+-        measureContainersInLayoutEffect(ctx, targetContainerIds);
++        const now = Date.now();
++        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
++        if (now - lastMeasureAt < 50) {
++          const deferredCtx = ctx;
++          const deferredTargets = targetContainerIds;
++          requestAnimationFrame(() => {
++            lastContainerMeasureAt.set(deferredCtx, Date.now());
++            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
++          });
++        } else {
++          lastContainerMeasureAt.set(ctx, now);
++          measureContainersInLayoutEffect(ctx, targetContainerIds);
++        }
+       }
+     }
+   }, [ctx, containerLayoutEpoch]);
 diff --git a/node_modules/@legendapp/list/react.js b/node_modules/@legendapp/list/react.js
-index a0f962c..5a58ecb 100644
+index a0f962c..bcfecd4 100644
 --- a/node_modules/@legendapp/list/react.js
 +++ b/node_modules/@legendapp/list/react.js
-@@ -409,6 +409,7 @@ var IsNewArchitecture = true;
+@@ -409,6 +409,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
 +var itemSizeFlipHistory = /* @__PURE__ */ new Map();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5262,6 +5263,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+@@ -5262,6 +5264,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
      }
    }
    if (!prevSize || Math.abs(prevSize - size) > 0.1) {
@@ -73,19 +118,41 @@ index a0f962c..5a58ecb 100644
      setSize(ctx, itemKey, size, notifyTotalSize);
      return size - prevSize;
    }
+@@ -5303,7 +5311,19 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
+     {
+       const targetContainerIds = getContainerLayoutEffectScope(ctx);
+       if (targetContainerIds !== void 0) {
+-        measureContainersInLayoutEffect(ctx, targetContainerIds);
++        const now = Date.now();
++        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
++        if (now - lastMeasureAt < 50) {
++          const deferredCtx = ctx;
++          const deferredTargets = targetContainerIds;
++          requestAnimationFrame(() => {
++            lastContainerMeasureAt.set(deferredCtx, Date.now());
++            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
++          });
++        } else {
++          lastContainerMeasureAt.set(ctx, now);
++          measureContainersInLayoutEffect(ctx, targetContainerIds);
++        }
+       }
+     }
+   }, [ctx, containerLayoutEpoch]);
 diff --git a/node_modules/@legendapp/list/react.mjs b/node_modules/@legendapp/list/react.mjs
-index 9338287..ac3ba4c 100644
+index 9338287..c9b9f8c 100644
 --- a/node_modules/@legendapp/list/react.mjs
 +++ b/node_modules/@legendapp/list/react.mjs
-@@ -388,6 +388,7 @@ var IsNewArchitecture = true;
+@@ -388,6 +388,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
++var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
 +var itemSizeFlipHistory = /* @__PURE__ */ new Map();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5241,6 +5242,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
+@@ -5241,6 +5243,12 @@ function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notif
      }
    }
    if (!prevSize || Math.abs(prevSize - size) > 0.1) {
@@ -98,3 +165,24 @@ index 9338287..ac3ba4c 100644
      setSize(ctx, itemKey, size, notifyTotalSize);
      return size - prevSize;
    }
+@@ -5282,7 +5290,19 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
+     {
+       const targetContainerIds = getContainerLayoutEffectScope(ctx);
+       if (targetContainerIds !== void 0) {
+-        measureContainersInLayoutEffect(ctx, targetContainerIds);
++        const now = Date.now();
++        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
++        if (now - lastMeasureAt < 50) {
++          const deferredCtx = ctx;
++          const deferredTargets = targetContainerIds;
++          requestAnimationFrame(() => {
++            lastContainerMeasureAt.set(deferredCtx, Date.now());
++            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
++          });
++        } else {
++          lastContainerMeasureAt.set(ctx, now);
++          measureContainersInLayoutEffect(ctx, targetContainerIds);
++        }
+       }
+     }
+   }, [ctx, containerLayoutEpoch]);
