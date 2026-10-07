@@ -45,7 +45,7 @@
     "glob": "^13.0.6",
     "graphology": "^0.26.0",
     "graphology-metrics": "^2.4.0",
-    "simple-git": "^3.32.3",
+    "simple-git": "^4.0.2",
     "web-tree-sitter": "^0.26.6"
   },
   "devDependencies": {

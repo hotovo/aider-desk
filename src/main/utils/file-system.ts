@@ -101,7 +101,10 @@ export const cloneProjectRepository = async (repositoryUrl: string, targetDir?: 
   const dirName = deriveDirName(parsed.repoName, new Set(existingEntries));
   const targetPath = path.join(destinationDir, dirName);
 
-  const git = simpleGit({ abort: signal });
+  const git = simpleGit({
+    abort: signal,
+    allowEnvironment: ['GIT_ASKPASS', 'SSH_ASKPASS', 'SSH_ASKPASS_REQUIRE'],
+  });
 
   try {
     logger.info(`Cloning repository ${parsed.cloneUrl} to ${targetPath}`);
