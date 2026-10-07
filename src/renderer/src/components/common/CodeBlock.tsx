@@ -1,5 +1,5 @@
 import 'prismjs/themes/prism-tomorrow.css';
-import { startTransition, useEffect, useMemo, useOptimistic, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
@@ -11,12 +11,10 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 
 import { MermaidDiagram } from './MermaidDiagram';
 import { IconButton } from './IconButton';
-import { CompactSelect } from './CompactSelect';
 
 import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/DiffViewer';
 import { useApi } from '@/contexts/ApiContext';
-import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
-import { useResponsive } from '@/hooks/useResponsive';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { highlightWithLowlight } from '@/utils/highlighter';
 
 const SEARCH_MARKER = /^<{5,9} SEARCH[^\n]*$/m;
@@ -79,29 +77,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
   const [isExpanded, setIsExpanded] = useState(true);
   const [changesReverted, setChangesReverted] = useState(false);
   const api = useApi();
-  const saveSettings = useSaveSettings();
-  const storedDiffViewMode = useSettingsStore((state) => state.settings?.diffViewMode) || DiffViewMode.SideBySide;
-  const [diffViewMode, setDiffViewMode] = useOptimistic(storedDiffViewMode);
-  const { isMobile } = useResponsive();
-
-  const handleDiffViewModeChange = (value: string) => {
-    const currentSettings = useSettingsStore.getState().settings;
-    if (currentSettings) {
-      startTransition(() => {
-        setDiffViewMode(value as DiffViewMode);
-        void saveSettings({
-          ...currentSettings,
-          diffViewMode: value as DiffViewMode,
-        });
-      });
-    }
-  };
-
-  const diffViewOptions = [
-    { label: t('diffViewer.sideBySide'), value: DiffViewMode.SideBySide },
-    { label: t('diffViewer.unified'), value: DiffViewMode.Unified },
-    { label: t('diffViewer.compact'), value: DiffViewMode.Compact },
-  ];
+  const diffViewMode = useSettingsStore((state) => state.settings?.diffViewMode) || DiffViewMode.SideBySide;
 
   const isExplicitDiff = oldValue !== undefined && newValue !== undefined;
   const isCustomChildrenDiff = !isExplicitDiff && children ? isCustomDiffContent(children) : false;
@@ -224,11 +200,6 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
                 )}
                 {!hideCopyButton && <CopyMessageButton content={stringToCopy} className="opacity-0 group-hover:opacity-100" />}
                 {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
-                {(displayAsDiff || displayAsUdiff) && !isMobile && (
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
-                  </div>
-                )}
                 <span className="text-text-primary transition-transform duration-200" style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}>
                   <MdKeyboardArrowDown size={16} />
                 </span>
@@ -245,9 +216,6 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
           <div className="relative">
             <div className="absolute right-0 top-1 flex items-center gap-2 z-10">
               {!hideCopyButton && <CopyMessageButton content={stringToCopy} />}
-              {(displayAsDiff || displayAsUdiff) && !isMobile && (
-                <CompactSelect options={diffViewOptions} value={diffViewMode} onChange={handleDiffViewModeChange} />
-              )}
               {!isComplete && <AiOutlineLoading3Quarters className="animate-spin text-text-muted" size={14} />}
             </div>
             {content}

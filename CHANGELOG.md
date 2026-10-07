@@ -6,6 +6,7 @@
 - added support for icon for extension custom mode from icon packs
 - fixed terminal staying open with a dead session when the shell exits in it (e.g. Ctrl+D); it now closes the terminal the same as the manual close button
 - fixed crash (React maximum update depth exceeded) when interacting with diff viewer dropdown while task is running
+- removed diff view mode switcher from code block headers; the view mode is now configured globally in Settings (also improves rendering performance of code blocks)
 
 ## [0.86.0]
 
