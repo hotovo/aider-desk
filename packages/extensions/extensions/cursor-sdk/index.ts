@@ -114,6 +114,58 @@ function parseDataUrl(dataUrl: string): { data: string; mimeType: string } {
 
 const HUNK_HEADER_RE = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
+const SKILL_ACTIVATION_TOOL_NAME = 'skills---activate_skill';
+
+type ActivatedSkill = { name: string; content: string };
+
+// Similar to SkillManager.getActivatedSkillNames: finds skill activation tool-calls in the
+// context window after the last user message (i.e., activated for the incoming run)
+// and pairs them with the skill content from the corresponding tool result.
+const collectActivatedSkills = (contextMessages: ContextMessage[]): ActivatedSkill[] => {
+  let lastUserIndex = -1;
+  for (let i = contextMessages.length - 1; i >= 0; i--) {
+    if (contextMessages[i].role === 'user') {
+      lastUserIndex = i;
+      break;
+    }
+  }
+
+  const skillContents = new Map<string, string>();
+  for (let i = lastUserIndex + 1; i < contextMessages.length; i++) {
+    const message = contextMessages[i];
+    if (message.role !== 'tool') {
+      continue;
+    }
+    for (const part of message.content) {
+      if (part.type === 'tool-result') {
+        const value = part.output?.value;
+        if (typeof value === 'string') {
+          skillContents.set(part.toolCallId, value);
+        }
+      }
+    }
+  }
+
+  const skills: ActivatedSkill[] = [];
+  for (let i = lastUserIndex + 1; i < contextMessages.length; i++) {
+    const message = contextMessages[i];
+    if (message.role !== 'assistant' || !Array.isArray(message.content)) {
+      continue;
+    }
+    for (const part of message.content) {
+      if (part.type === 'tool-call' && part.toolName === SKILL_ACTIVATION_TOOL_NAME) {
+        const skillName = (part.input as { skill?: string } | undefined)?.skill;
+        const content = skillName ? skillContents.get(part.toolCallId) : undefined;
+        if (skillName && content) {
+          skills.push({ name: skillName, content });
+        }
+      }
+    }
+  }
+
+  return skills;
+};
+
 function parseUnifiedDiff(diffString: string, defaultFilePath: string): ParsedEdit[] {
   const lines = diffString.split('\n');
   const edits: ParsedEdit[] = [];
@@ -596,7 +648,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.6.2',
+    version: '4.7.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -704,7 +756,19 @@ export default class CursorSdkExtension implements Extension {
       const { data, mimeType } = parseDataUrl(dataUrl);
       return { data, mimeType };
     });
-    const sendMessage: string | SDKUserMessage = sdkImages.length > 0 ? { text: prompt, images: sdkImages } : prompt;
+    // Skills activated via /skill:<name> commands are already persisted in AiderDesk context
+    // (Task.runPrompt strips the prefix before onAgentStarted), but the Cursor agent manages its own
+    // context and never sees them. Attach the skill content to this message — the same way Cursor
+    // attaches the skill when a user invokes it via /name in Cursor chat.
+    const activatedSkills = collectActivatedSkills(event.contextMessages ?? []);
+    let agentPrompt = prompt;
+    if (activatedSkills.length > 0) {
+      context.log(`Injecting activated skill(s) into the prompt: ${activatedSkills.map((s) => s.name).join(', ')}`, 'info');
+      const skillBlock = activatedSkills.map(({ name, content }) => `<skill name="${name}">\n${content}\n</skill>`).join('\n\n');
+      agentPrompt = `${skillBlock}\n\n${agentPrompt}`;
+    }
+
+    const sendMessage: string | SDKUserMessage = sdkImages.length > 0 ? { text: agentPrompt, images: sdkImages } : agentPrompt;
     if (sdkImages.length > 0) {
       context.log(`Sending ${sdkImages.length} image(s) to Cursor agent`, 'info');
     }
