@@ -242,6 +242,7 @@ src/
       index.ts
       terminal-manager.ts
     utils/
+      atomic-write.ts
       environment.ts
       errors.ts
       file-system.ts
@@ -691,6 +692,7 @@ src/
         useExtensionTools.ts
         useIndexedDB.ts
         useLmStudioModels.ts
+        useModes.ts
         useOllamaModels.ts
         useOpenRouterModels.ts
         useOS.ts
@@ -2437,6 +2439,7 @@ import {
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
+import type { ToolsetToolEntry } from '@common/extensions';
 import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
 import type { LanguageModelV4 } from '@ai-sdk/provider';
@@ -2519,6 +2522,8 @@ private async getAvailableTools(
 // Add provider-specific tools
 ⋮----
 // Add extension tools
+⋮----
+// Let extensions modify the complete toolset (built-in, MCP, and extension tools)
 ⋮----
 private wrapToolsWithHooks(task: Task, profile: AgentProfile, toolSet: ToolSet, abortSignal?: AbortSignal, promptContext?: PromptContext): ToolSet
 ⋮----
@@ -2959,6 +2964,8 @@ private isMcpCallToolResult(value: unknown): value is CallToolResult
 private stripUnsupportedSchemaKeywords(schema: Record<string, unknown>): Record<string, unknown>
 ⋮----
 const processObject = (obj: Record<string, unknown>): Record<string, unknown> =>
+⋮----
+private normalizeToolInputSchema(inputSchema: ListToolsResult['tools'][number]['inputSchema']): McpToolInputSchema
 ⋮----
 private fixInputSchema(provider: LlmProviderName, inputSchema: McpToolInputSchema): McpToolInputSchema
 ⋮----
@@ -4560,6 +4567,7 @@ import type {
   ToolCalledEvent,
   ToolDefinition,
   ToolFinishedEvent,
+  ToolsetCreatedEvent,
 } from '@common/extensions';
 import type { AgentProfile } from '@common/types';
 import type { Store } from '@/store';
@@ -4642,6 +4650,7 @@ export type ExtensionEventMap = {
   onToolApproval: ToolApprovalEvent;
   onToolCalled: ToolCalledEvent;
   onToolFinished: ToolFinishedEvent;
+  onToolsetCreated: ToolsetCreatedEvent;
   onFilesAdded: FilesAddedEvent;
   onFilesDropped: FilesDroppedEvent;
   onRuleFilesRetrieved: RuleFilesRetrievedEvent;
@@ -4856,7 +4865,7 @@ getAgents(project?: Project): RegisteredAgent[]
 ⋮----
 getAgentById(agentId: string, project?: Project): RegisteredAgent | undefined
 ⋮----
-getModes(project: Project): RegisteredMode[]
+getModes(project?: Project): RegisteredMode[]
 ⋮----
 validateModeDefinition(mode: ModeDefinition):
 ⋮----
@@ -6094,6 +6103,9 @@ async addFileToGit(worktreePath: string, filePath: string): Promise<void>
 // e.g. .aider* + !.aider-desk/rules, report "not ignored" but git add still refuses),
 // -A stages deletions (git add fails with "pathspec did not match any files" for files removed on disk)
 ⋮----
+// The file exists neither on disk nor in the index (e.g. an already-staged deletion):
+// there is nothing to stage, so treat it as a no-op instead of failing
+⋮----
 async stageFile(worktreePath: string, filePath: string): Promise<boolean>
 ⋮----
 async undoLastCommit(worktreePath: string): Promise<
@@ -6126,7 +6138,7 @@ async getUncommittedDiff(worktreePath: string, filePaths?: string[]): Promise<st
 ⋮----
 cancelCommitChanges(worktreePath: string): boolean
 ⋮----
-async commitChanges(worktreePath: string, message: string, amend: boolean, filePaths?: string[]): Promise<boolean>
+async commitChanges(worktreePath: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<boolean>
 ⋮----
 // Get the list of updated files (unstaged changes that are shown in the UI)
 ⋮----
@@ -6144,6 +6156,10 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, fileP
 // files removed on disk), -f handles ignored files (git check-ignore misses
 // directory-traversal exclusions like .aider* ignoring .aider-desk/rules
 // despite a negation pattern)
+⋮----
+// The file exists neither on disk nor in the index (e.g. an already-staged
+// deletion): there is nothing to stage, the commit picks up the staged
+// deletion from the index, so skip instead of aborting the commit
 ⋮----
 // Escape the commit message for shell
 ⋮----
@@ -8679,7 +8695,7 @@ projectSettingsChanged(baseDir: string, oldSettings: ProjectSettings, newSetting
 ⋮----
 public getCommands(baseDir: string)
 ⋮----
-public getCustomModes(baseDir: string): ModeDefinition[]
+public getCustomModes(baseDir?: string): ModeDefinition[]
 ⋮----
 public getProjects(): Project[]
 ⋮----
@@ -10634,6 +10650,7 @@ import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME
 import logger from '@/logger';
 import { Task } from '@/task';
 import { isDirectory, isFileIgnored, withLock } from '@/utils';
+import { atomicWriteJsonFile, cleanupStaleTempFiles } from '@/utils/atomic-write';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
@@ -10739,12 +10756,6 @@ async save(): Promise<void>
 ⋮----
 // Write atomically: write to a temp file, then rename over the target so a
 // crash mid-write never leaves context.json half-written.
-⋮----
-/**
-   * Removes temp files orphaned by a crash between writeFile and rename.
-   * Only safe to call while holding the save lock for this task's storage path.
-   */
-private async cleanupStaleTempFiles(dir: string): Promise<void>
 ⋮----
 /**
    * Creates a backup of the current context.json file before a destructive operation
@@ -10989,6 +11000,7 @@ import type { SmartCompactionOptions } from '@common/extensions';
 ⋮----
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
+import { atomicWriteJsonFile } from '@/utils/atomic-write';
 import {
   AIDER_DESK_GLOBAL_RULES_DIR,
   AIDER_DESK_PROJECT_RULES_DIR,
@@ -11542,7 +11554,10 @@ public addToolMessage(
 ⋮----
 // Update total costs when adding the tool message
 ⋮----
-private updateTotalCosts(usageReport: UsageReportData)
+private updateTotalCosts(usageReport: UsageReportData, promptContext?: PromptContext)
+⋮----
+// Subagent and other grouped runs use their own (different) model/context, so they must
+// not override the main run's context size — only update the accumulated cost.
 ⋮----
 addUserMessage(id: string, content: string, promptContext?: PromptContext, images?: string[])
 ⋮----
@@ -11827,7 +11842,7 @@ public async generateCommitMessage(filePaths?: string[]): Promise<string>
 ⋮----
 // Continue without commit history
 ⋮----
-public async commitChanges(message: string, amend: boolean, filePaths?: string[]): Promise<void>
+public async commitChanges(message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void>
 ⋮----
 public cancelCommitChanges(): void
 ⋮----
@@ -12103,6 +12118,13 @@ public getTerminalForTask(taskId: string): TerminalInstance | undefined
 public getTerminalsForTask(taskId: string): TerminalInstance[]
 ⋮----
 public close(): void
+
+================
+File: src/main/utils/atomic-write.ts
+================
+export const atomicWriteJsonFile = async (filePath: string, data: unknown): Promise<void> =>
+⋮----
+export const cleanupStaleTempFiles = async (filePath: string): Promise<void> =>
 
 ================
 File: src/main/utils/environment.ts
@@ -13200,7 +13222,7 @@ runCommand(baseDir: string, taskId: string, command: string): void
 ⋮----
 async getCommands(baseDir: string): Promise<CommandsData>
 ⋮----
-async getCustomModes(baseDir: string): Promise<ModeDefinition[]>
+async getCustomModes(baseDir?: string): Promise<ModeDefinition[]>
 ⋮----
 async runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void>
 ⋮----
@@ -13286,7 +13308,7 @@ async saveFile(baseDir: string, taskId: string, filePath: string, content: strin
 ⋮----
 async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
 ⋮----
-async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
+async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void>
 ⋮----
 cancelCommitChanges(baseDir: string, taskId: string): void
 ⋮----
@@ -14867,7 +14889,7 @@ getUpdatedFiles(baseDir: string, taskId: string): Promise<
 getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
 getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<
 async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
-async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, filePaths?: string[]): Promise<void>
+async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void>
 async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
 addFile(baseDir: string, taskId: string, filePath: string, readOnly?: boolean): void
 async isValidPath(baseDir: string, path: string): Promise<boolean>
@@ -14978,6 +15000,8 @@ addMessageRemovedListener(baseDir: string, taskId: string, callback: (data: Mess
 addProjectStartedListener(baseDir: string, callback: (data: ProjectStartedData) => void): () => void
 addVersionsInfoUpdatedListener(callback: (data: VersionsInfo) => void): () => void
 ⋮----
+addSocketReconnectListener(callback: () => void): () => void
+⋮----
 addProviderModelsUpdatedListener(callback: (data: ProviderModelsData) => void): () => void
 ⋮----
 addProvidersUpdatedListener(callback: (data: ProvidersUpdatedData) => void): () => void
@@ -15011,7 +15035,7 @@ addTerminalExitListener(baseDir: string, callback: (data: TerminalExitData) => v
 addContextMenuListener(callback: (params: ContextMenuParams) => void): () => void
 addShowViewListener(callback: (viewId: string) => void): () => void
 async getCommands(baseDir: string): Promise<CommandsData>
-getCustomModes(baseDir: string): Promise<ModeDefinition[]>
+getCustomModes(baseDir?: string): Promise<ModeDefinition[]>
 runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void>
 isTerminalSupported(): boolean
 async createTerminal(baseDir: string, taskId: string, cols?: number, rows?: number): Promise<string>
@@ -15220,6 +15244,8 @@ export class ReadonlyBrowserApi implements ExtensionDisplayAPI
 constructor(private readonly projectDir: string)
 ⋮----
 destroy(): void
+⋮----
+onReconnect(listener: () => void): () => void
 ⋮----
 onEvent(callback: EventListener): () => void
 ⋮----
@@ -16052,8 +16078,8 @@ className=
 ================
 File: src/renderer/src/components/common/CompactSelect.tsx
 ================
-import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
-import { Fragment, ReactNode } from 'react';
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
+import { ReactNode } from 'react';
 import { HiCheck, HiChevronDown } from 'react-icons/hi2';
 import { clsx } from 'clsx';
 ⋮----
@@ -22307,7 +22333,7 @@ import { ProjectData } from '@common/types';
 import { compareBaseDirs } from '@common/utils';
 import { CSS } from '@dnd-kit/utilities';
 import { MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from '@headlessui/react';
+import { Tab, TabGroup, TabList, Listbox, ListboxButton, ListboxOption, ListboxOptions } from '@headlessui/react';
 import { clsx } from 'clsx';
 import { CgSpinner } from 'react-icons/cg';
 import { MdAdd, MdChevronLeft, MdChevronRight } from 'react-icons/md';
@@ -22892,7 +22918,7 @@ onChange=
 ================
 File: src/renderer/src/components/project/TodoWindow.tsx
 ================
-import { KeyboardEvent, useEffect, useState } from 'react';
+import { KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { MdAdd, MdExpandLess, MdOutlineChecklist, MdPlaylistRemove } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { TodoItem } from '@common/types';
@@ -22926,7 +22952,9 @@ const handleCancelAdd = () =>
 ⋮----
 const handleKeyPress = (e: KeyboardEvent) =>
 ⋮----
-// Auto-collapse when all items are completed
+// Auto-collapse when all items are completed, auto-expand again when the completed set is replaced with new items
+⋮----
+// Keep the last non-empty evaluation so a fully-completed set followed by clearing still re-expands later
 ⋮----
 // eslint-disable-next-line react-hooks/set-state-in-effect
 ⋮----
@@ -23189,28 +23217,17 @@ const handleScroll = () =>
 ================
 File: src/renderer/src/components/PromptField/ModeSelector.tsx
 ================
-import { ElementType, memo, useMemo } from 'react';
-import { CgTerminal } from 'react-icons/cg';
-import { FaRegQuestionCircle } from 'react-icons/fa';
-import { AiOutlineFileSearch } from 'react-icons/ai';
-import { RiRobot2Line } from 'react-icons/ri';
-import { GoProjectRoadmap } from 'react-icons/go';
-import { FiLayers } from 'react-icons/fi';
-import { TbTargetArrow } from 'react-icons/tb';
-import { Mode, ModeDefinition } from '@common/types';
+import { memo } from 'react';
+import { Mode } from '@common/types';
 ⋮----
-import { ItemSelector, ItemConfig } from '@/components/common/ItemSelector';
-import { useCustomModes } from '@/hooks/useCustomModes';
+import { ItemSelector } from '@/components/common/ItemSelector';
+import { useModes } from '@/hooks/useModes';
 ⋮----
 type Props = {
   baseDir: string;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
 };
-⋮----
-const getIconComponent = (iconName?: string): ElementType =>
-⋮----
-const customModeToItemConfig = (mode: ModeDefinition): ItemConfig<Mode> => (
 
 ================
 File: src/renderer/src/components/PromptField/PromptField.tsx
@@ -23468,6 +23485,9 @@ type Props = {
 };
 ⋮----
 const load = async () =>
+⋮----
+// Resync after a socket reconnect: events emitted while disconnected are lost forever,
+// so refetch the task list and the selected task state.
 ⋮----
 const handleSelectTask = (taskId: string) =>
 ⋮----
@@ -24607,7 +24627,7 @@ setSelectedCapabilities((prev) =>
 File: src/renderer/src/components/settings/GeneralSettings.tsx
 ================
 import { useTranslation } from 'react-i18next';
-import { Font, FONTS, Mode, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
+import { Font, FONTS, SettingsData, ProjectStartMode, SuggestionMode, Theme, THEMES, DiffViewMode, MessageViewMode, FileWatchMode } from '@common/types';
 import { ChangeEvent } from 'react';
 ⋮----
 import { Checkbox } from '../common/Checkbox';
@@ -24655,8 +24675,6 @@ const handleSuggestionModeClick = (value: string) =>
 const handleWindowTitleTemplateChange = (e: ChangeEvent<HTMLInputElement>) =>
 ⋮----
 const handleFileWatchModeChange = (value: string) =>
-⋮----
-const handleDefaultModeChange = (value: string) =>
 ⋮----
 const handleSuggestionDelayChange = (delay: number) =>
 ⋮----
@@ -24994,7 +25012,7 @@ const handleZoomChange = (zoomLevel: number) =>
 File: src/renderer/src/components/settings/TaskSettings.tsx
 ================
 import { useCallback } from 'react';
-import { SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
+import { Mode, SettingsData, ContextCompactionType, Model, WorkingMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { AiFillFolderOpen } from 'react-icons/ai';
 import { IoGitBranch } from 'react-icons/io5';
@@ -25003,11 +25021,13 @@ import { getProviderModelId } from '@common/agent';
 import { Checkbox } from '../common/Checkbox';
 import { Section } from '../common/Section';
 import { InfoIcon } from '../common/InfoIcon';
+import { Select, Option } from '../common/Select';
 import { Slider } from '../common/Slider';
 import { ModelSelectorWrapper } from '../common/ModelSelectorWrapper';
 import { ItemConfig, ItemSelector } from '../common/ItemSelector';
 import { ChipListInput } from '../common/ChipListInput';
 ⋮----
+import { useModes } from '@/hooks/useModes';
 import { Input } from '@/components/common/Input';
 import { Tooltip } from '@/components/ui/Tooltip';
 ⋮----
@@ -25039,6 +25059,10 @@ const handleTaskNameModelChange = (model: Model | null) =>
 const handleTaskStateModelChange = (model: Model | null) =>
 ⋮----
 const handleCommitMessageModelChange = (model: Model | null) =>
+⋮----
+const handleDefaultTaskModeChange = (mode: string) =>
+⋮----
+const handleDefaultProjectModeChange = (mode: string) =>
 ⋮----
 const handleWorktreeBranchPrefixChange = (value: string) =>
 ⋮----
@@ -25190,6 +25214,7 @@ type Props = {
   visible: boolean;
   ptyId: string | null;
   className?: string;
+  onClose: () => void;
 };
 ⋮----
 const useIsTouchDevice = (): boolean =>
@@ -25231,8 +25256,6 @@ const attach = async () =>
 ⋮----
 // A freshly created PTY has an empty buffer - subscribe directly without a replay round trip
 ⋮----
-// Handle restart on keypress after exit
-⋮----
 // Handle resize when visibility changes
 ⋮----
 // Touch input: forward soft keyboard input to the PTY
@@ -25240,8 +25263,6 @@ const attach = async () =>
 const handleKeyDown = (e: KeyboardEvent) =>
 ⋮----
 const handleBeforeInput = (e: InputEvent) =>
-⋮----
-const restartSession = () =>
 ⋮----
 const handleTouchInputChange = (e: ChangeEvent<HTMLTextAreaElement>) =>
 ⋮----
@@ -25295,6 +25316,8 @@ type Props = {
 // Close a terminal tab and kill its PTY process
 const closeTerminalTab = (tabId: string) =>
 ⋮----
+// Close the tab when its PTY exits (e.g. shell ended via Ctrl+D or exit command)
+⋮----
 // Ensure there is at least one tab when the terminal view becomes visible
 ⋮----
 // Only react to visibility changes, not to tab count changes
@@ -25312,6 +25335,8 @@ const handleCopyOutput = () =>
 onClick=
 ⋮----
 {/* Terminal content */}
+⋮----
+onClose=
 
 ================
 File: src/renderer/src/components/ui/Tooltip.tsx
@@ -27423,7 +27448,8 @@ import { usePrevious } from '@reactuses/core';
 import { DefaultTaskState, TaskData, TodoItem, ModelsData, isLoadingMessage, Message } from '@common/types';
 ⋮----
 import { setMessages, setTodoItems, setAiderModelsData, updateTaskState, unloadTask, useTaskStore, useTaskLoaded } from '@/stores/taskStore';
-import { useProjectStore } from '@/stores/projectStore';
+import { setProjectTasks, useProjectStore } from '@/stores/projectStore';
+import { useApi } from '@/contexts/ApiContext';
 import { releaseTaskFiles } from '@/stores/taskFilesStore';
 import { cleanupTaskCache } from '@/stores/extensionUIStore';
 import { cleanupProcessingResponseMessage, useTaskResponseHandlers } from '@/hooks/useTaskResponseHandlers';
@@ -27466,6 +27492,11 @@ type Props = {
   activeTaskId?: string | null;
   children: ReactNode;
 };
+⋮----
+// Resync after a socket reconnect: events emitted while disconnected are lost forever, so
+// refetch task metadata and reload already-loaded tasks to bring the UI back in sync.
+⋮----
+// eslint-disable-next-line no-console
 ⋮----
 export const useTask = (): TaskContextType =>
 
@@ -27598,7 +27629,7 @@ import { showErrorNotification, showSuccessNotification } from '@/utils/notifica
 ⋮----
 type UseCommitChanges = {
   isCommitting: boolean;
-  commit: (message: string, amend: boolean, filePaths?: string[]) => Promise<void>;
+  commit: (message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]) => Promise<void>;
   cancelCommit: () => void;
 };
 ⋮----
@@ -27625,7 +27656,7 @@ import type { ModeDefinition } from '@common/types';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 ⋮----
-export const useCustomModes = (baseDir: string) =>
+export const useCustomModes = (baseDir?: string) =>
 
 ================
 File: src/renderer/src/hooks/useDropdownState.ts
@@ -27710,6 +27741,27 @@ export const useLmStudioModels = (baseUrl: string) =>
 const loadModels = async () =>
 ⋮----
 const normalized = baseUrl.replace(/\/+$/g, ''); // Remove all trailing slashes
+
+================
+File: src/renderer/src/hooks/useModes.ts
+================
+import { ElementType, useMemo } from 'react';
+import { AiOutlineFileSearch } from 'react-icons/ai';
+import { CgTerminal } from 'react-icons/cg';
+import { FaRegQuestionCircle } from 'react-icons/fa';
+import { FiLayers } from 'react-icons/fi';
+import { RiRobot2Line } from 'react-icons/ri';
+import { GoProjectRoadmap } from 'react-icons/go';
+import { TbTargetArrow } from 'react-icons/tb';
+import { Mode } from '@common/types';
+⋮----
+import { useReactIcons, type ReactIconsMap } from '@/utils/extension-icons';
+import { useCustomModes } from '@/hooks/useCustomModes';
+import { ItemConfig } from '@/components/common/ItemSelector';
+⋮----
+const getIconComponent = (iconName: string | undefined, iconPacks: ReactIconsMap | null): ElementType =>
+⋮----
+export const useModes = (baseDir?: string): ItemConfig<Mode>[] =>
 
 ================
 File: src/renderer/src/hooks/useOllamaModels.ts
@@ -32145,7 +32197,7 @@ File: src/renderer/src/utils/extension-icons.ts
 ================
 import { useEffect, useRef, useState } from 'react';
 ⋮----
-type ReactIconsMap = Record<string, Record<string, unknown>>;
+export type ReactIconsMap = Record<string, Record<string, unknown>>;
 ⋮----
 export const loadReactIcons = (): Promise<ReactIconsMap> =>
 ⋮----
@@ -33092,7 +33144,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.86.0-dev",
+  "version": "0.87.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -33142,21 +33194,21 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node validate:locales"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "2.0.30",
-    "@ai-sdk/amazon-bedrock": "5.0.52",
-    "@ai-sdk/anthropic": "4.0.37",
-    "@ai-sdk/azure": "4.0.39",
-    "@ai-sdk/cerebras": "3.0.29",
-    "@ai-sdk/deepseek": "3.0.27",
-    "@ai-sdk/google": "4.0.41",
-    "@ai-sdk/google-vertex": "5.0.50",
-    "@ai-sdk/groq": "4.0.27",
-    "@ai-sdk/mcp": "2.0.30",
-    "@ai-sdk/mistral": "4.0.28",
-    "@ai-sdk/openai": "4.0.38",
-    "@ai-sdk/openai-compatible": "3.0.29",
-    "@ai-sdk/otel": "1.0.60",
-    "@ai-sdk/provider": "4.0.7",
+    "@ai-sdk/alibaba": "2.0.60",
+    "@ai-sdk/amazon-bedrock": "5.0.105",
+    "@ai-sdk/anthropic": "4.0.71",
+    "@ai-sdk/azure": "4.0.90",
+    "@ai-sdk/cerebras": "3.0.62",
+    "@ai-sdk/deepseek": "3.0.58",
+    "@ai-sdk/google": "4.0.87",
+    "@ai-sdk/google-vertex": "5.0.101",
+    "@ai-sdk/groq": "4.0.54",
+    "@ai-sdk/mcp": "2.0.66",
+    "@ai-sdk/mistral": "4.0.56",
+    "@ai-sdk/openai": "4.0.83",
+    "@ai-sdk/openai-compatible": "3.0.62",
+    "@ai-sdk/otel": "1.0.127",
+    "@ai-sdk/provider": "4.0.21",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "5.2.0",
     "@aws-sdk/client-bedrock": "3.1059.0",
@@ -33184,7 +33236,7 @@ File: package.json
     "@huggingface/transformers": "3.8.1",
     "@lancedb/lancedb": "0.22.3",
     "@legendapp/list": "3.6.0",
-    "@openrouter/ai-sdk-provider": "3.0.0",
+    "@openrouter/ai-sdk-provider": "3.1.0",
     "@opentelemetry/auto-instrumentations-node": "0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
     "@opentelemetry/sdk-node": "0.221.0",
@@ -33206,9 +33258,9 @@ File: package.json
     "@uiw/codemirror-theme-github": "4.25.4",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "2.9.5",
-    "ai": "7.0.60",
+    "ai": "7.0.127",
     "apache-arrow": "18.1.0",
-    "axios": "1.18.1",
+    "axios": "1.20.0",
     "babel-plugin-react-compiler": "1.0.0",
     "cheerio": "1.2.0",
     "chokidar": "4.0.3",
@@ -33344,8 +33396,8 @@ File: package.json
     "vitest": "4.1.11"
   },
   "overrides": {
-    "@ai-sdk/provider": "4.0.7",
-    "@ai-sdk/provider-utils": "5.0.26",
+    "@ai-sdk/provider": "4.0.21",
+    "@ai-sdk/provider-utils": "5.0.53",
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },
