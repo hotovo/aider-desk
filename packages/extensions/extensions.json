@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "binary-files",
@@ -58,7 +58,7 @@
         "commands",
         "example"
       ],
-      "installCount": 21
+      "installCount": 22
     },
     {
       "id": "questions",
@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "theme",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 93
+      "installCount": 94
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 75
+      "installCount": 77
     },
     {
       "id": "legacy-system-prompt",
@@ -221,7 +221,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "redact-secrets",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "lsp",
@@ -310,7 +310,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "programmatic-tool-calls",
@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "ui-placement-demo",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "seek",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "bmad",
@@ -481,7 +481,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "cursor",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "kanban",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "doom",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "destructive-command-guard",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 118
+      "installCount": 119
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 112
+      "installCount": 114
     },
     {
       "id": "dbx",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 6
+      "installCount": 8
     }
   ]
 }
