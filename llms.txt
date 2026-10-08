@@ -15997,7 +15997,7 @@ onRemove=
 ================
 File: src/renderer/src/components/common/CodeBlock.tsx
 ================
-import { startTransition, useEffect, useMemo, useOptimistic, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
@@ -16009,12 +16009,10 @@ import { CopyMessageButton } from '../message/CopyMessageButton';
 ⋮----
 import { MermaidDiagram } from './MermaidDiagram';
 import { IconButton } from './IconButton';
-import { CompactSelect } from './CompactSelect';
 ⋮----
 import { DiffViewer, UDiffViewer, CompactDiffViewer } from '@/components/common/DiffViewer';
 import { useApi } from '@/contexts/ApiContext';
-import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
-import { useResponsive } from '@/hooks/useResponsive';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { highlightWithLowlight } from '@/utils/highlighter';
 ⋮----
 const isCustomDiffContent = (content: string): boolean =>
@@ -16040,8 +16038,6 @@ type Props = {
   hideCopyButton?: boolean;
 };
 ⋮----
-const handleDiffViewModeChange = (value: string) =>
-⋮----
 diffOldValue = oldValue!; // Known to be string
 diffNewValue = newValue!; // Known to be string
 ⋮----
@@ -16057,8 +16053,6 @@ const parsed = parseDiffContent(children!); // children is non-null and a diff
 const handleRevertChanges = () =>
 ⋮----
 className=
-⋮----
-<div onClick=
 
 ================
 File: src/renderer/src/components/common/CodeInline.tsx
@@ -33297,7 +33291,6 @@ File: package.json
     "mermaid": "11.16.1",
     "ollama-ai-provider-v2": "4.0.1",
     "os-name": "6.1.0",
-    "patch-package": "8.0.1",
     "posthog-node": "5.29.1",
     "prismjs": "1.30.0",
     "react-country-flag": "3.1.0",
@@ -33314,7 +33307,7 @@ File: package.json
     "recharts": "3.0.2",
     "refractor": "5.0.0",
     "remark-gfm": "4.0.1",
-    "simple-git": "3.36.0",
+    "simple-git": "4.0.2",
     "slugify": "1.6.6",
     "socket.io": "4.8.3",
     "socket.io-client": "4.8.3",
@@ -33341,7 +33334,7 @@ File: package.json
     "@electron-toolkit/tsconfig": "2.0.0",
     "@electron/notarize": "3.1.1",
     "@eslint/js": "9.39.5",
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@playwright/test": "1.60.0",
     "@tailwindcss/typography": "0.5.19",
     "@testing-library/jest-dom": "6.9.1",
@@ -33382,6 +33375,7 @@ File: package.json
     "jsdom": "27.4.0",
     "lint-staged": "15.5.2",
     "npm-run-all": "4.1.5",
+    "patch-package": "8.0.1",
     "prettier": "3.8.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
