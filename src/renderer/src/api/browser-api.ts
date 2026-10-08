@@ -256,7 +256,8 @@ export class BrowserApi implements ApplicationAPI {
       // eslint-disable-next-line no-console
       console.log('Disconnected from Socket.IO server');
     });
-    this.socket.on('reconnect', () => {
+    // 'reconnect' is only emitted on the Manager (socket.io does not forward it to the Socket)
+    this.socket.io.on('reconnect', () => {
       this.reconnectListeners.forEach((callback) => callback());
     });
     this.socket.on('connect_error', (error) => {

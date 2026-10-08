@@ -65,7 +65,8 @@ export class ReadonlyBrowserApi implements ExtensionDisplayAPI {
         eventTypes: EVENT_TYPES,
       });
     });
-    this.socket.on('reconnect', () => {
+    // 'reconnect' is only emitted on the Manager (socket.io does not forward it to the Socket)
+    this.socket.io.on('reconnect', () => {
       this.reconnectListeners.forEach((listener) => listener());
     });
     this.socket.on('event', (event: ReadonlyEvent) => {
