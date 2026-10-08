@@ -9,6 +9,7 @@
 - removed diff view mode switcher from code block headers; the view mode is now configured globally in Settings (also improves rendering performance of code blocks)
 - patched @legendapp/list to prevent crash in the message list from excessive container measurements
 - fixed task state not resyncing after socket reconnect
+- fixed delayed paste (Ctrl+V) on Linux when the app was idle; updated Electron to 44.7.0
 
 ## [0.86.0]
 
