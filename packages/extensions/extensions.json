@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 95
+      "installCount": 96
     },
     {
       "id": "protected-paths",
@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "permission-gate",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 89
+      "installCount": 90
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "bmad",
@@ -456,7 +456,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "claude-agent-sdk",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "destructive-command-guard",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "git-log",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 116
+      "installCount": 117
     },
     {
       "id": "dbx",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 8
+      "installCount": 9
     }
   ]
 }
