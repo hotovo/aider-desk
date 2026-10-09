@@ -14801,6 +14801,8 @@ constructor()
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
+// 'reconnect' is only emitted on the Manager (socket.io does not forward it to the Socket)
+⋮----
 // eslint-disable-next-line no-console
 ⋮----
 // Filter by baseDir
@@ -15242,6 +15244,8 @@ export const loadBrowserBootstrap = async (): Promise<BrowserBootstrap> =>
 export class ReadonlyBrowserApi implements ExtensionDisplayAPI
 ⋮----
 constructor(private readonly projectDir: string)
+⋮----
+// 'reconnect' is only emitted on the Manager (socket.io does not forward it to the Socket)
 ⋮----
 destroy(): void
 ⋮----
@@ -33357,7 +33361,7 @@ File: package.json
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.4",
     "dts-bundle-generator": "9.5.1",
-    "electron": "44.3.0",
+    "electron": "44.7.0",
     "electron-builder": "26.15.7",
     "electron-vite": "5.0.0",
     "encoding": "0.1.13",
