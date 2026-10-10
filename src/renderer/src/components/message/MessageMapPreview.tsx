@@ -21,11 +21,11 @@ export const MessageMapPreview = ({ marker }: Props) => {
             'bg-info-light': !isUser,
           })}
         />
-        <span className="text-2xs font-semibold uppercase tracking-wide text-text-muted">
+        <span className="text-4xs font-semibold uppercase tracking-wide text-text-muted">
           {t('messages.map.turn', { number: marker.turnNumber })} · {label}
         </span>
       </div>
-      <p className="line-clamp-4 whitespace-pre-wrap break-words text-xs text-text-secondary">{marker.preview || t('messages.map.emptyPreview')}</p>
+      <p className="line-clamp-4 whitespace-pre-wrap break-words text-3xs text-text-secondary">{marker.preview || t('messages.map.emptyPreview')}</p>
     </div>
   );
 };

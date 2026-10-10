@@ -53,6 +53,7 @@ export const DEFAULT_SETTINGS: SettingsData = {
   fullMessageRendering: false,
   aiderDeskAutoUpdate: true,
   messageViewMode: MessageViewMode.Compact,
+  showMessageMap: true,
   diffViewMode: DiffViewMode.SideBySide,
   aider: {
     options: '',

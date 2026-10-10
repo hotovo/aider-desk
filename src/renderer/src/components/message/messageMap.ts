@@ -76,14 +76,48 @@ export const createMessageMapTurns = (messages: Message[]): MessageMapTurn[] => 
   return turns;
 };
 
-export const getActiveTurnId = (turns: MessageMapTurn[], visibleIndex: number): string | null => {
-  let active: MessageMapTurn | undefined;
+export type MessageMapMarkerItem = {
+  id: string;
+  turnNumber: number;
+  role: MessageMapRole;
+  index: number;
+  preview: string;
+};
+
+// Flattens turns into individually navigable markers: a green user-prompt marker and a blue
+// last-assistant-reply marker per turn, kept in ascending rendered order for scroll tracking.
+export const createMessageMapMarkers = (turns: MessageMapTurn[]): MessageMapMarkerItem[] => {
+  const markers: MessageMapMarkerItem[] = [];
+
   for (const turn of turns) {
-    if (turn.startIndex <= visibleIndex) {
-      active = turn;
+    if (turn.userIndex !== null) {
+      markers.push({ id: `${turn.id}-user`, turnNumber: turn.number, role: MessageMapRole.User, index: turn.userIndex, preview: turn.userPreview });
+    }
+    if (turn.lastAssistantIndex !== null) {
+      markers.push({
+        id: `${turn.id}-assistant`,
+        turnNumber: turn.number,
+        role: MessageMapRole.Assistant,
+        index: turn.lastAssistantIndex,
+        preview: turn.lastAssistantPreview,
+      });
+    }
+  }
+
+  return markers;
+};
+
+// Selection follows user messages only: the active marker is the user message currently in the
+// scroll view, or the previous one when the viewport sits within that turn's replies.
+export const getActiveMarkerId = (markers: MessageMapMarkerItem[], visibleIndex: number): string | null => {
+  const userMarkers = markers.filter((marker) => marker.role === MessageMapRole.User);
+  let active: MessageMapMarkerItem | undefined;
+  for (const marker of userMarkers) {
+    if (marker.index <= visibleIndex) {
+      active = marker;
     } else {
       break;
     }
   }
-  return (active ?? turns[0])?.id ?? null;
+  return (active ?? userMarkers[0])?.id ?? null;
 };

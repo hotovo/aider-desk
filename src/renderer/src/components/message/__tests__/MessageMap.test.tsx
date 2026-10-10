@@ -3,15 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { AssistantGroupMessage, GroupMessage, Message } from '@common/types';
 
 import { MessageMap } from '../MessageMap';
-import { createMessageMapTurns } from '../messageMap';
+import { createMessageMapMarkers, createMessageMapTurns, MessageMapRole } from '../messageMap';
 
 import { render } from '@/__tests__/render';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, values?: { role?: string; number?: number }) => {
-      if (values?.role !== undefined) {
-        return `${key} ${values.role} ${values.number}`;
+    t: (key: string, values?: { label?: string; number?: number }) => {
+      if (values?.label !== undefined) {
+        return `${key} ${values.label} ${values.number}`;
       }
       if (values?.number !== undefined) {
         return `${key} ${values.number}`;
@@ -29,28 +29,51 @@ const messages: Message[] = [
   { id: 'assistant-2', type: 'response', content: 'Latest answer' },
 ];
 
-const turnName = (number: number) => `messages.map.goToTurn ${number}`;
+const markerName = (role: MessageMapRole, number: number) =>
+  `messages.map.goToMessage messages.map.${role === MessageMapRole.User ? 'userPrompt' : 'assistantReply'} ${number}`;
+
+const renderMap = (overrides: Partial<Parameters<typeof MessageMap>[0]> = {}) =>
+  render(
+    <MessageMap
+      messages={messages}
+      visibleIndex={0}
+      onNavigate={vi.fn()}
+      onPreviousUserMessage={vi.fn()}
+      onNextUserMessage={vi.fn()}
+      hasPreviousUserMessage
+      hasNextUserMessage
+      onScrollToBottom={vi.fn()}
+      {...overrides}
+    />,
+  );
 
 describe('MessageMap', () => {
-  it('previews the whole turn on hover without navigating and navigates to the turn start on click', async () => {
+  it('previews the assistant reply on hover without navigating and navigates to it on click', async () => {
     const onNavigate = vi.fn();
-    render(<MessageMap messages={messages} onNavigate={onNavigate} getVisibleIndex={() => 0} visibleIndex={0} />);
-    const marker = screen.getByRole('button', { name: turnName(2) });
+    renderMap({ onNavigate });
+    const marker = screen.getByRole('button', { name: markerName(MessageMapRole.Assistant, 2) });
 
     fireEvent.pointerEnter(marker);
-    await waitFor(() => expect(screen.getByText('Second question')).toBeInTheDocument());
-    expect(screen.getByText('Latest answer')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Latest answer')).toBeInTheDocument());
     expect(onNavigate).not.toHaveBeenCalled();
 
     fireEvent.click(marker);
-    expect(onNavigate).toHaveBeenCalledExactlyOnceWith(3);
+    expect(onNavigate).toHaveBeenCalledExactlyOnceWith(4, false);
     fireEvent.pointerLeave(marker);
+  });
+
+  it('navigates to the user prompt of a turn on click', () => {
+    const onNavigate = vi.fn();
+    renderMap({ onNavigate });
+
+    fireEvent.click(screen.getByRole('button', { name: markerName(MessageMapRole.User, 2) }));
+    expect(onNavigate).toHaveBeenCalledExactlyOnceWith(3, false);
   });
 
   it('previews on keyboard focus without navigating', async () => {
     const onNavigate = vi.fn();
-    render(<MessageMap messages={messages} onNavigate={onNavigate} getVisibleIndex={() => 0} visibleIndex={0} />);
-    const marker = screen.getByRole('button', { name: turnName(1) });
+    renderMap({ onNavigate });
+    const marker = screen.getByRole('button', { name: markerName(MessageMapRole.User, 1) });
 
     fireEvent.focus(marker);
     await waitFor(() => expect(screen.getByText('First question')).toBeInTheDocument());
@@ -58,47 +81,76 @@ describe('MessageMap', () => {
     fireEvent.blur(marker);
   });
 
-  it('marks the turn currently in view based on visibleIndex', () => {
-    const { rerender } = render(<MessageMap messages={messages} onNavigate={vi.fn()} getVisibleIndex={() => 0} visibleIndex={0} />);
-    expect(screen.getByRole('button', { name: turnName(1) })).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByRole('button', { name: turnName(2) })).not.toHaveAttribute('aria-current');
-
-    rerender(<MessageMap messages={messages} onNavigate={vi.fn()} getVisibleIndex={() => 0} visibleIndex={3} />);
-    expect(screen.getByRole('button', { name: turnName(2) })).toHaveAttribute('aria-current', 'true');
-    expect(screen.getByRole('button', { name: turnName(1) })).not.toHaveAttribute('aria-current');
-    expect(screen.getByRole('navigation')).toHaveClass('opacity-10', 'hover:opacity-100', 'focus-within:opacity-100');
+  it('colors user markers green and assistant markers blue', () => {
+    renderMap();
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.User, 1) }).firstChild).toHaveClass('bg-success-light');
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.Assistant, 1) }).firstChild).toHaveClass('bg-info-light');
   });
 
-  it('navigates to user prompts relative to the visible list index and to the latest assistant', () => {
-    const onNavigate = vi.fn();
-    render(<MessageMap messages={messages} onNavigate={onNavigate} getVisibleIndex={() => 2} visibleIndex={2} />);
+  it('marks only the user message in view (or the previous one) and never an assistant marker', () => {
+    const { rerender } = renderMap({ visibleIndex: 0 });
+    const firstMarker = screen.getByRole('button', { name: markerName(MessageMapRole.User, 1) });
+    expect(firstMarker).toHaveAttribute('aria-current', 'true');
+    expect(firstMarker.firstChild).toHaveClass('ring-1');
+
+    const renderAt = (visibleIndex: number) =>
+      rerender(
+        <MessageMap
+          messages={messages}
+          visibleIndex={visibleIndex}
+          onNavigate={vi.fn()}
+          onPreviousUserMessage={vi.fn()}
+          onNextUserMessage={vi.fn()}
+          hasPreviousUserMessage
+          hasNextUserMessage
+          onScrollToBottom={vi.fn()}
+        />,
+      );
+
+    // Scrolled into the first turn's reply: still the first user message.
+    renderAt(2);
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.User, 1) })).toHaveAttribute('aria-current', 'true');
+
+    // Scrolled onto the second turn's reply: the second user message, not the assistant marker.
+    renderAt(4);
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.User, 2) })).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.User, 1) })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.Assistant, 1) })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('button', { name: markerName(MessageMapRole.Assistant, 2) })).not.toHaveAttribute('aria-current');
+  });
+
+  it('becomes opaque only on hover, has a solid background and no left border', () => {
+    renderMap();
+    const nav = screen.getByRole('navigation');
+    expect(nav).toHaveClass('opacity-10', 'hover:opacity-100', 'border-y', 'border-r', 'hover:bg-bg-primary-light');
+    expect(nav.className).not.toContain('focus-within:opacity-100');
+    expect(nav.className).not.toMatch(/(^|\s)border-l(\s|$)/);
+  });
+
+  it('delegates user navigation to the provided handlers and scrolls to bottom', () => {
+    const onPrev = vi.fn();
+    const onNext = vi.fn();
+    const onScrollToBottom = vi.fn();
+    renderMap({ onPreviousUserMessage: onPrev, onNextUserMessage: onNext, onScrollToBottom });
 
     fireEvent.click(screen.getByRole('button', { name: 'messages.previousUserMessage' }));
-    expect(onNavigate).toHaveBeenLastCalledWith(0);
+    expect(onPrev).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'messages.nextUserMessage' }));
-    expect(onNavigate).toHaveBeenLastCalledWith(3);
-    fireEvent.click(screen.getByRole('button', { name: 'messages.map.lastAssistant' }));
-    expect(onNavigate).toHaveBeenLastCalledWith(4);
+    expect(onNext).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button', { name: 'messages.scrollToBottom' }));
+    expect(onScrollToBottom).toHaveBeenCalledOnce();
   });
 
-  it('updates the latest reply as messages arrive', () => {
-    const onNavigate = vi.fn();
-    const { rerender } = render(<MessageMap messages={messages} onNavigate={onNavigate} getVisibleIndex={() => 0} visibleIndex={0} />);
-    rerender(
-      <MessageMap messages={[...messages, { id: 'new', type: 'response', content: 'New reply' }]} onNavigate={onNavigate} getVisibleIndex={() => 0} visibleIndex={0} />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'messages.map.lastAssistant' }));
-    expect(onNavigate).toHaveBeenLastCalledWith(5);
-  });
-
-  it('hides the map without conversational messages and disables unavailable shortcuts', () => {
-    const { rerender } = render(<MessageMap messages={[]} onNavigate={vi.fn()} getVisibleIndex={() => 0} visibleIndex={0} />);
-    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
-    rerender(<MessageMap messages={[messages[0]]} onNavigate={vi.fn()} getVisibleIndex={() => 0} visibleIndex={0} />);
-    expect(screen.getByRole('button', { name: 'messages.map.lastAssistant' })).toBeDisabled();
-    rerender(<MessageMap messages={[messages[2]]} onNavigate={vi.fn()} getVisibleIndex={() => 0} visibleIndex={0} />);
+  it('disables the user navigation shortcuts based on the provided availability flags', () => {
+    renderMap({ hasPreviousUserMessage: false, hasNextUserMessage: false });
     expect(screen.getByRole('button', { name: 'messages.previousUserMessage' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'messages.nextUserMessage' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'messages.scrollToBottom' })).toBeEnabled();
+  });
+
+  it('hides the map without conversational messages', () => {
+    renderMap({ messages: [] });
+    expect(screen.queryByRole('navigation')).not.toBeInTheDocument();
   });
 });
 
@@ -145,5 +197,22 @@ describe('createMessageMapTurns', () => {
   it('bounds preview length', () => {
     const turns = createMessageMapTurns([{ id: 'long', type: 'user', content: 'x'.repeat(10000) }]);
     expect(turns[0].userPreview).toHaveLength(280);
+  });
+});
+
+describe('createMessageMapMarkers', () => {
+  it('creates a green user marker and a blue last-assistant marker per turn in scroll order', () => {
+    expect(createMessageMapMarkers(createMessageMapTurns(messages))).toEqual([
+      { id: '0-user-1-user', turnNumber: 1, role: MessageMapRole.User, index: 0, preview: 'First question' },
+      { id: '0-user-1-assistant', turnNumber: 1, role: MessageMapRole.Assistant, index: 2, preview: 'First answer' },
+      { id: '3-user-2-user', turnNumber: 2, role: MessageMapRole.User, index: 3, preview: 'Second question' },
+      { id: '3-user-2-assistant', turnNumber: 2, role: MessageMapRole.Assistant, index: 4, preview: 'Latest answer' },
+    ]);
+  });
+
+  it('omits the missing side when a turn only has one role', () => {
+    expect(createMessageMapMarkers(createMessageMapTurns([{ id: 'u', type: 'user', content: 'Question' }]))).toEqual([
+      { id: '0-u-user', turnNumber: 1, role: MessageMapRole.User, index: 0, preview: 'Question' },
+    ]);
   });
 });

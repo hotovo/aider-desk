@@ -123,6 +123,7 @@ export class ReadonlyApi extends BaseApi {
             renderMarkdown: settings.renderMarkdown,
             fullMessageRendering: settings.fullMessageRendering,
             messageViewMode: settings.messageViewMode,
+            showMessageMap: settings.showMessageMap ?? true,
             enableExtensionUi: isReadonlyExtensionUiEnabled(this.store),
           },
         };

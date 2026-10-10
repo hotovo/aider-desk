@@ -1097,7 +1097,8 @@
       "viewModeFull": "Full",
       "viewModeCompact": "Compact",
       "fullMessageRendering": "Use full message rendering (Legacy)",
-      "fullMessageRenderingTooltip": "Renders all messages in the DOM without virtualization. May impact performance with large conversation histories."
+      "fullMessageRenderingTooltip": "Renders all messages in the DOM without virtualization. May impact performance with large conversation histories.",
+      "messageMap": "Show message map"
     },
     "memory": {
       "configuration": "Configuration",
@@ -1171,6 +1172,14 @@
     "scrollToBottom": "Scroll to bottom",
     "previousUserMessage": "Previous user message",
     "nextUserMessage": "Next user message",
+    "map": {
+      "title": "Message map",
+      "turn": "Turn {{number}}",
+      "userPrompt": "Your prompt",
+      "assistantReply": "Last reply",
+      "emptyPreview": "No text preview",
+      "goToMessage": "Go to {{label}} in turn {{number}}"
+    },
     "messageBar": "Message Bar",
     "execute": "Execute",
     "resume": "Resume",

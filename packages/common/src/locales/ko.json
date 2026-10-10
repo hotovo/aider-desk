@@ -1096,7 +1096,8 @@
       "viewModeFull": "전체",
       "viewModeCompact": "간략히",
       "fullMessageRendering": "전체 메시지 렌더링 사용 (레거시)",
-      "fullMessageRenderingTooltip": "가상화 없이 모든 메시지를 DOM에 렌더링합니다. 대화 기록이 많으면 성능에 영향을 줄 수 있습니다."
+      "fullMessageRenderingTooltip": "가상화 없이 모든 메시지를 DOM에 렌더링합니다. 대화 기록이 많으면 성능에 영향을 줄 수 있습니다.",
+      "messageMap": "메시지 맵 표시"
     },
     "memory": {
       "configuration": "구성",
@@ -1170,6 +1171,14 @@
     "scrollToBottom": "맨 아래로 스크롤",
     "previousUserMessage": "이전 사용자 메시지",
     "nextUserMessage": "다음 사용자 메시지",
+    "map": {
+      "title": "메시지 지도",
+      "turn": "{{number}}번째 대화",
+      "userPrompt": "내 프롬프트",
+      "assistantReply": "마지막 답변",
+      "emptyPreview": "텍스트 미리보기 없음",
+      "goToMessage": "{{number}}번째 대화의 {{label}}(으)로 이동"
+    },
     "messageBar": "메시지 바",
     "execute": "실행",
     "resume": "재개",

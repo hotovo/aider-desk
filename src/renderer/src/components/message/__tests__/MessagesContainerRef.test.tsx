@@ -1,5 +1,6 @@
 import { forwardRef, type ReactElement } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fireEvent, screen } from '@testing-library/react';
 import { Message } from '@common/types';
 
 import { Messages } from '../Messages';
@@ -8,6 +9,8 @@ import { VirtualizedMessages } from '../VirtualizedMessages';
 import { render } from '@/__tests__/render';
 import { useApi } from '@/contexts/ApiContext';
 import { createMockApi } from '@/__tests__/mocks/api';
+
+const { scrollToIndex, scrollToEnd } = vi.hoisted(() => ({ scrollToIndex: vi.fn(), scrollToEnd: vi.fn() }));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -45,8 +48,8 @@ vi.mock('@legendapp/list/react', () => ({
           ? null
           : {
               getScrollableNode: () => node,
-              scrollToEnd: () => undefined,
-              scrollToIndex: () => undefined,
+              scrollToEnd,
+              scrollToIndex,
               getState: () => null,
             };
       if (typeof ref === 'function') {
@@ -101,6 +104,38 @@ describe('Messages container ref reporting', () => {
 
     return { consoleError };
   };
+
+  it('clicking a map turn marker scrolls the regular list to the turn start and pauses following during streaming', () => {
+    const messages: Message[] = [createMessage('first'), { id: 'reply', type: 'response', content: 'Answer' }, createMessage('last')];
+    const { rerender } = render(<Messages baseDir="/project" taskId="task-1" inProgress messages={messages} renderMarkdown />);
+    const target = screen.getByTestId('message-first');
+    const scrollIntoView = vi.spyOn(target, 'scrollIntoView');
+
+    const markers = screen.getAllByRole('button', { name: 'messages.map.goToMessage' });
+    fireEvent.pointerEnter(markers[0]);
+    expect(scrollIntoView).not.toHaveBeenCalled();
+    fireEvent.click(markers[0]);
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'instant', block: 'start' });
+    expect(screen.getByRole('navigation')).toBeInTheDocument();
+
+    rerender(<Messages baseDir="/project" taskId="task-1" inProgress messages={[...messages, createMessage('new')]} renderMarkdown />);
+    expect(scrollIntoView).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('message-reply')).toBeInTheDocument();
+    scrollIntoView.mockRestore();
+  });
+
+  it('clicking a map turn marker navigates by rendered index in the virtualized list', () => {
+    const messages: Message[] = [createMessage('first'), { id: 'reply', type: 'response', content: 'Answer' }, createMessage('last')];
+    render(<VirtualizedMessages baseDir="/project" taskId="task-1" inProgress messages={messages} renderMarkdown />);
+
+    const markers = screen.getAllByRole('button', { name: 'messages.map.goToMessage' });
+    fireEvent.pointerEnter(markers[0]);
+    expect(scrollToIndex).not.toHaveBeenCalled();
+    fireEvent.click(markers[0]);
+    expect(scrollToIndex).toHaveBeenCalledExactlyOnceWith({ index: 0, animated: false, viewPosition: 0 });
+    fireEvent.click(screen.getAllByRole('button', { name: 'messages.scrollToBottom' })[0]);
+    expect(scrollToEnd).toHaveBeenCalledWith({ animated: false });
+  });
 
   it('reports the container once per render through onContainerRef without update-depth errors', async () => {
     const onContainerRef = vi.fn();

@@ -7,6 +7,7 @@ import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/t
 import { twMerge } from 'tailwind-merge';
 
 import { MessageBlockWrapper } from './MessageBlockWrapper';
+import { MessageMap } from './MessageMap';
 
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
@@ -57,6 +58,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
   ) => {
     const { t } = useTranslation();
     const messageViewMode = useSettingsStore((state) => state.settings?.messageViewMode);
+    const showMessageMap = useSettingsStore((state) => state.settings?.showMessageMap ?? true);
     const listRef = useRef<LegendListRef>(null);
     const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(null);
     const isCompactMode = messageViewMode === MessageViewMode.Compact;
@@ -72,6 +74,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
     }
 
     const [scrollingPaused, setScrollingPaused] = useState(false);
+    const [visibleIndex, setVisibleIndex] = useState(0);
     const scrollingPausedRef = useRef(false);
     const isProgrammaticScrollRef = useRef(false);
     const prevScrollTopRef = useRef(0);
@@ -205,6 +208,11 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       if (!element) {
         return;
       }
+      const range = listRef.current?.getState();
+      if (range) {
+        // Anchor to the last visible item so a user message is selected as soon as it enters the view.
+        setVisibleIndex(range.end);
+      }
       const scrollTop = element.scrollTop;
       const scrolledUp = scrollTop < prevScrollTopRef.current - 1;
       prevScrollTopRef.current = scrollTop;
@@ -246,21 +254,28 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       return state ? { startIndex: state.start, endIndex: state.end } : null;
     }, []);
 
-    const scrollToUserMessageIndex = useCallback(
-      (index: number) => {
+    const scrollToMessageIndex = useCallback(
+      (index: number, animated = true) => {
         isProgrammaticScrollRef.current = true;
         updateScrollingPaused(true);
-        void listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0 });
+        void listRef.current?.scrollToIndex({ index, animated, viewPosition: 0 });
       },
       [updateScrollingPaused],
     );
 
-    const { hasPreviousUserMessage, hasNextUserMessage, renderGoToPrevious, renderGoToNext } = useUserMessageNavigation({
+    const {
+      hasPreviousUserMessage,
+      hasNextUserMessage,
+      handleNavigateToPreviousUserMessage,
+      handleNavigateToNextUserMessage,
+      renderGoToPrevious,
+      renderGoToNext,
+    } = useUserMessageNavigation({
       containerRef: scrollContainerRef,
       userMessageIds,
       userMessageIndices,
       getVisibleRange,
-      scrollToIndex: scrollToUserMessageIndex,
+      scrollToIndex: scrollToMessageIndex,
       buttonClassName: 'hidden group-hover:block',
     });
 
@@ -369,6 +384,19 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
           drawDistance={250}
           className="absolute inset-0 scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth px-4"
         />
+        {showMessageMap && (
+          <MessageMap
+            key={`map-${taskId}`}
+            messages={processedMessages}
+            visibleIndex={visibleIndex}
+            onNavigate={scrollToMessageIndex}
+            onPreviousUserMessage={handleNavigateToPreviousUserMessage}
+            onNextUserMessage={handleNavigateToNextUserMessage}
+            hasPreviousUserMessage={hasPreviousUserMessage}
+            hasNextUserMessage={hasNextUserMessage}
+            onScrollToBottom={scrollToBottom}
+          />
+        )}
         <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-[140px] z-10 flex justify-center gap-1 pt-6 pb-1 group">
           {(hasPreviousUserMessage || hasNextUserMessage) && renderGoToPrevious()}
           {scrollingPaused && (

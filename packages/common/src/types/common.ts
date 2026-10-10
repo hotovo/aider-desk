@@ -466,6 +466,7 @@ export interface ReadonlyDisplaySettings {
   renderMarkdown: boolean;
   fullMessageRendering: boolean;
   messageViewMode?: MessageViewMode;
+  showMessageMap?: boolean;
   enableExtensionUi: boolean;
 }
 
@@ -791,6 +792,7 @@ export interface SettingsData {
   aiderDeskAutoUpdate: boolean;
   diffViewMode?: DiffViewMode;
   messageViewMode?: MessageViewMode;
+  showMessageMap?: boolean;
   aider: {
     options: string;
     environmentVariables: string;

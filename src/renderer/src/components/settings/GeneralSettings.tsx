@@ -137,6 +137,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
     });
   };
 
+  const handleShowMessageMapChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      showMessageMap: checked,
+    });
+  };
+
   const handleSuggestionModeChange = (mode: SuggestionMode) => {
     setSettings({
       ...settings,
@@ -290,6 +297,7 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
                 />
                 <InfoIcon tooltip={t('settings.messages.fullMessageRenderingTooltip')} />
               </div>
+              <Checkbox label={t('settings.messages.messageMap')} checked={settings.showMessageMap ?? true} onChange={handleShowMessageMapChange} />
             </div>
           </div>
           <div className="space-y-2">

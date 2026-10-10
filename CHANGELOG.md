@@ -10,6 +10,7 @@
 - patched @legendapp/list to prevent crash in the message list from excessive container measurements
 - fixed task state not resyncing after socket reconnect
 - fixed delayed paste (Ctrl+V) on Linux when the app was idle; updated Electron to 44.7.0
+- added message map with color-coded user prompts and assistant replies, hover previews, and click-to-scroll navigation
 
 ## [0.86.0]
 

@@ -1030,7 +1030,8 @@
       "viewModeFull": "完整",
       "viewModeCompact": "紧凑",
       "fullMessageRendering": "使用完整消息渲染（旧版）",
-      "fullMessageRenderingTooltip": "在 DOM 中渲染所有消息而不使用虚拟化。在对话历史较多时可能影响性能。"
+      "fullMessageRenderingTooltip": "在 DOM 中渲染所有消息而不使用虚拟化。在对话历史较多时可能影响性能。",
+      "messageMap": "显示消息地图"
     },
     "memory": {
       "configuration": "配置",
@@ -1104,6 +1105,14 @@
     "scrollToBottom": "滚动到底部",
     "previousUserMessage": "上一条用户消息",
     "nextUserMessage": "下一条用户消息",
+    "map": {
+      "title": "消息地图",
+      "turn": "第 {{number}} 轮",
+      "userPrompt": "你的提问",
+      "assistantReply": "最新回复",
+      "emptyPreview": "无文本预览",
+      "goToMessage": "跳转到第 {{number}} 轮的{{label}}"
+    },
     "messageBar": "消息栏",
     "execute": "执行",
     "resume": "继续",
