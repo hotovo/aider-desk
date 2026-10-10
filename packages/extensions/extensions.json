@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "wakatime",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 96
+      "installCount": 97
     },
     {
       "id": "protected-paths",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "sandbox",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 78
+      "installCount": 79
     },
     {
       "id": "plannotator",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "searxng-search",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 122
+      "installCount": 123
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 117
+      "installCount": 118
     },
     {
       "id": "dbx",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "compaction-studio",
