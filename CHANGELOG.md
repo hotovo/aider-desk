@@ -12,6 +12,7 @@
 - fixed delayed paste (Ctrl+V) on Linux when the app was idle; updated Electron to 44.7.0
 - added message map with color-coded user prompts and assistant replies, hover previews, and click-to-scroll navigation
 - added arrow-key path segment completion in the prompt field, including fuzzy matches, and preserved autocomplete selection while typing
+- fixed delayed expand/collapse of folders in the updated files diff sidebar
 
 ## [0.86.0]
 

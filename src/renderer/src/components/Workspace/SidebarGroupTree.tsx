@@ -45,6 +45,10 @@ export const SidebarGroupTree = ({
   onToggleFileSelection,
   onToggleFolderSelection,
 }: SidebarGroupTreeProps) => {
+  // useTree keeps a mutable instance whose results (tree.getItems(), item.isExpanded())
+  // React Compiler cannot track — memoizing this component defers expand/collapse
+  // re-commits until an unrelated prop change busts the cache.
+  'use no memo';
   const { t } = useTranslation();
   const { treeData, files } = groupTree;
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
