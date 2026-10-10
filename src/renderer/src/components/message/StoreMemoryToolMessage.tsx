@@ -52,6 +52,7 @@ export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onF
   const memoryId = result?.success ? result.id : undefined;
 
   const [currentMemories, setCurrentMemories] = useState<Set<string>>(new Set());
+  const [hasLoadedMemories, setHasLoadedMemories] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -61,10 +62,12 @@ export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onF
         setCurrentMemories(new Set(allMemories.map((m) => m.id)));
       } catch {
         // Ignore errors loading memories
+      } finally {
+        setHasLoadedMemories(true);
       }
     };
     void loadMemories();
-  }, [api]);
+  }, [api, message.content]);
 
   const handleDeleteMemory = async () => {
     setIsDeleteDialogOpen(false);
@@ -134,7 +137,7 @@ export const StoreMemoryToolMessage = ({ message, onRemove, compact = false, onF
       );
     }
 
-    const memoryExists = memoryId ? currentMemories.has(memoryId) : true;
+    const memoryExists = memoryId ? (hasLoadedMemories ? currentMemories.has(memoryId) : true) : true;
 
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">

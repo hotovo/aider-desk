@@ -14,6 +14,7 @@
 - added arrow-key path segment completion in the prompt field, including fuzzy matches, and preserved autocomplete selection while typing
 - fixed delayed expand/collapse of folders in the updated files diff sidebar
 - fixed confirmation dialogs being clipped inside messages when deleting memories
+- fixed stale "(Not found)" shown in stored memory tool message until refresh; the memory list now reloads when the tool result arrives
 
 ## [0.86.0]
 
