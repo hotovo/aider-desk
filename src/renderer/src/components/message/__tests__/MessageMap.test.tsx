@@ -62,6 +62,31 @@ describe('MessageMap', () => {
     fireEvent.pointerLeave(marker);
   });
 
+  it('shows the updated streaming preview when the marker is hovered after an update', async () => {
+    const onNavigate = vi.fn();
+    const { rerender } = renderMap({ onNavigate });
+    const updatedMessages = messages.map((message) => (message.id === 'assistant-2' ? { ...message, content: 'Latest answer continued' } : message));
+    rerender(
+      <MessageMap
+        messages={updatedMessages}
+        visibleIndex={0}
+        onNavigate={onNavigate}
+        onPreviousUserMessage={vi.fn()}
+        onNextUserMessage={vi.fn()}
+        hasPreviousUserMessage
+        hasNextUserMessage
+        onScrollToBottom={vi.fn()}
+      />,
+    );
+    const marker = screen.getByRole('button', { name: markerName(MessageMapRole.Assistant, 2) });
+
+    fireEvent.pointerEnter(marker);
+    await waitFor(() => expect(screen.getByText('Latest answer continued')).toBeInTheDocument());
+    fireEvent.click(marker);
+    expect(onNavigate).toHaveBeenCalledExactlyOnceWith(4, false);
+    fireEvent.pointerLeave(marker);
+  });
+
   it('navigates to the user prompt of a turn on click', () => {
     const onNavigate = vi.fn();
     renderMap({ onNavigate });

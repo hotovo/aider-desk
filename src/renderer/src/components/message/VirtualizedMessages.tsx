@@ -203,16 +203,29 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       }
     }, [processedMessages]);
 
+    const updateVisibleIndex = useCallback(() => {
+      if (showMessageMap) {
+        const range = listRef.current?.getState();
+        if (range) {
+          setVisibleIndex(range.end);
+        }
+      }
+    }, [showMessageMap]);
+
+    useEffect(() => {
+      if (!showMessageMap || !scrollContainer) {
+        return undefined;
+      }
+      const frame = requestAnimationFrame(updateVisibleIndex);
+      return () => cancelAnimationFrame(frame);
+    }, [scrollContainer, showMessageMap, updateVisibleIndex]);
+
     const handleScrollState = useCallback(() => {
       const element = scrollContainer;
       if (!element) {
         return;
       }
-      const range = listRef.current?.getState();
-      if (range) {
-        // Anchor to the last visible item so a user message is selected as soon as it enters the view.
-        setVisibleIndex(range.end);
-      }
+      updateVisibleIndex();
       const scrollTop = element.scrollTop;
       const scrolledUp = scrollTop < prevScrollTopRef.current - 1;
       prevScrollTopRef.current = scrollTop;
@@ -228,7 +241,7 @@ const VirtualizedMessagesComponent = forwardRef<VirtualizedMessagesRef, Props>(
       } else if (scrolledUp && distanceFromEnd > 30 && pointerDownRef.current) {
         updateScrollingPaused(true);
       }
-    }, [scrollContainer, updateScrollingPaused]);
+    }, [scrollContainer, updateScrollingPaused, updateVisibleIndex]);
 
     const scrollToBottom = useCallback(() => {
       updateScrollingPaused(false);

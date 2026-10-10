@@ -1,15 +1,17 @@
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
-import { MessageMapMarkerItem, MessageMapRole } from './messageMap';
+import { MessageMapRole } from './messageMap';
 
 type Props = {
-  marker: MessageMapMarkerItem;
+  turnNumber: number;
+  role: MessageMapRole;
+  preview: string;
 };
 
-export const MessageMapPreview = ({ marker }: Props) => {
+export const MessageMapPreview = ({ turnNumber, role, preview }: Props) => {
   const { t } = useTranslation();
-  const isUser = marker.role === MessageMapRole.User;
+  const isUser = role === MessageMapRole.User;
   const label = isUser ? t('messages.map.userPrompt') : t('messages.map.assistantReply');
 
   return (
@@ -22,10 +24,10 @@ export const MessageMapPreview = ({ marker }: Props) => {
           })}
         />
         <span className="text-4xs font-semibold uppercase tracking-wide text-text-muted">
-          {t('messages.map.turn', { number: marker.turnNumber })} · {label}
+          {t('messages.map.turn', { number: turnNumber })} · {label}
         </span>
       </div>
-      <p className="line-clamp-4 whitespace-pre-wrap break-words text-3xs text-text-secondary">{marker.preview || t('messages.map.emptyPreview')}</p>
+      <p className="line-clamp-4 whitespace-pre-wrap break-words text-3xs text-text-secondary">{preview || t('messages.map.emptyPreview')}</p>
     </div>
   );
 };

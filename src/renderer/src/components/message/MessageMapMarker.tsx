@@ -1,28 +1,32 @@
+import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
-import { MessageMapMarkerItem, MessageMapRole } from './messageMap';
+import { MessageMapRole } from './messageMap';
 import { MessageMapPreview } from './MessageMapPreview';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 
 type Props = {
-  marker: MessageMapMarkerItem;
+  turnNumber: number;
+  role: MessageMapRole;
+  index: number;
+  preview: string;
   active: boolean;
-  onNavigate: (marker: MessageMapMarkerItem) => void;
+  onNavigate: (index: number, animated: boolean) => void;
 };
 
-export const MessageMapMarker = ({ marker, active, onNavigate }: Props) => {
+export const MessageMapMarker = memo(({ turnNumber, role, index, preview, active, onNavigate }: Props) => {
   const { t } = useTranslation();
-  const isUser = marker.role === MessageMapRole.User;
+  const isUser = role === MessageMapRole.User;
   const label = isUser ? t('messages.map.userPrompt') : t('messages.map.assistantReply');
-  const handleClick = () => onNavigate(marker);
+  const handleClick = () => onNavigate(index, false);
 
   return (
-    <Tooltip side="right" content={<MessageMapPreview marker={marker} />}>
+    <Tooltip side="right" content={<MessageMapPreview turnNumber={turnNumber} role={role} preview={preview} />}>
       <button
         type="button"
-        aria-label={t('messages.map.goToMessage', { label, number: marker.turnNumber })}
+        aria-label={t('messages.map.goToMessage', { label, number: turnNumber })}
         aria-current={active ? 'true' : undefined}
         onClick={handleClick}
         className="flex min-h-3 w-full items-center justify-center py-0.5 focus-visible:outline focus-visible:outline-1 focus-visible:outline-text-primary rounded-sm"
@@ -37,4 +41,6 @@ export const MessageMapMarker = ({ marker, active, onNavigate }: Props) => {
       </button>
     </Tooltip>
   );
-};
+});
+
+MessageMapMarker.displayName = 'MessageMapMarker';

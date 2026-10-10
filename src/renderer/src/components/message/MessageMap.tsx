@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp, MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { Message } from '@common/types';
 
-import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId, MessageMapMarkerItem } from './messageMap';
+import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMap';
 import { MessageMapMarker } from './MessageMapMarker';
 
 import { Tooltip } from '@/components/ui/Tooltip';
@@ -25,10 +25,6 @@ export const MessageMap = memo(
     const turns = useMemo(() => createMessageMapTurns(messages), [messages]);
     const markers = useMemo(() => createMessageMapMarkers(turns), [turns]);
     const activeMarkerId = useMemo(() => getActiveMarkerId(markers, visibleIndex), [markers, visibleIndex]);
-
-    const handleNavigate = (marker: MessageMapMarkerItem) => {
-      onNavigate(marker.index, false);
-    };
 
     if (markers.length === 0) {
       return null;
@@ -55,7 +51,15 @@ export const MessageMap = memo(
         </Tooltip>
         <div className="w-full flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin flex flex-col items-center gap-0.5 py-1">
           {markers.map((marker) => (
-            <MessageMapMarker key={marker.id} marker={marker} active={activeMarkerId === marker.id} onNavigate={handleNavigate} />
+            <MessageMapMarker
+              key={marker.id}
+              turnNumber={marker.turnNumber}
+              role={marker.role}
+              index={marker.index}
+              preview={marker.preview}
+              active={activeMarkerId === marker.id}
+              onNavigate={onNavigate}
+            />
           ))}
         </div>
         <Tooltip content={t('messages.nextUserMessage')} side="right">

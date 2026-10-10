@@ -122,27 +122,27 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
 
     const getVisibleIndex = useCallback(() => {
       const container = messagesContainerRef.current;
-      if (!container) {
+      if (!container || processedMessages.length === 0) {
         return 0;
       }
-      // Anchor to the last item that has entered the viewport (its top is above the viewport bottom),
-      // so a user message counts as soon as it becomes visible rather than only once it reaches the top.
+      // Anchor to the last item whose top has entered the viewport. Children are in vertical order.
       const bottom = container.getBoundingClientRect().bottom;
-      const children = Array.from(container.children);
-      let index = 0;
-      for (let i = 0; i < children.length; i++) {
-        if (children[i].getBoundingClientRect().top < bottom) {
-          index = i;
+      let start = 0;
+      let end = Math.min(processedMessages.length, container.children.length);
+      while (start < end) {
+        const middle = Math.floor((start + end) / 2);
+        if (container.children[middle].getBoundingClientRect().top < bottom) {
+          start = middle + 1;
         } else {
-          break;
+          end = middle;
         }
       }
-      return Math.max(0, Math.min(index, processedMessages.length - 1));
+      return Math.max(0, start - 1);
     }, [processedMessages.length]);
 
     useEffect(() => {
       const container = messagesContainerRef.current;
-      if (!container) {
+      if (!showMessageMap || !container) {
         return undefined;
       }
       let frame: number | null = null;
@@ -163,7 +163,7 @@ const MessagesComponent = forwardRef<MessagesRef, Props>(
           cancelAnimationFrame(frame);
         }
       };
-    }, [getVisibleIndex]);
+    }, [getVisibleIndex, showMessageMap]);
 
     useEffect(() => {
       onContainerRef?.(messagesContainerRef.current);
