@@ -2,6 +2,7 @@
 import {
   acceptCompletion,
   autocompletion,
+  completionStatus,
   type Completion,
   CompletionContext,
   type CompletionResult,
@@ -26,6 +27,8 @@ import { getSubagentId } from '@common/agent';
 
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
+import { wordCompletions } from './wordCompletions';
+import { acceptPathSegment } from './acceptPathSegment';
 
 import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -430,10 +433,7 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
           }
         }
 
-        return {
-          from: word.from,
-          options: [...words, ...allFiles].map((w) => ({ label: w, type: 'text' })),
-        };
+        return wordCompletions(word.from, words, allFiles);
       },
       [customCommands, extensionCommands, promptBehavior.suggestionMode, allFiles, api, baseDir, taskId, words, subagentProfiles, userInvocableSkills],
     );
@@ -1118,6 +1118,38 @@ export const PromptField = forwardRef<PromptFieldRef, Props>(
                 return true;
               }
               return false;
+            },
+          },
+          {
+            key: 'ArrowRight',
+            run: (view) => acceptPathSegment(view, promptBehavior.suggestionMode === SuggestionMode.MentionAtSign),
+          },
+          {
+            key: 'ArrowLeft',
+            preventDefault: true,
+            run: (view) => {
+              if (completionStatus(view.state) !== 'active') {
+                return false;
+              }
+              const state = view.state;
+              const cursor = state.selection.main.head;
+              if (cursor !== state.doc.length) {
+                return false;
+              }
+              const text = state.doc.toString();
+              const word = text.slice(0, cursor).match(/\S*$/)?.[0] ?? '';
+              const lastSlash = word.lastIndexOf('/');
+              // only strip a non-empty path segment; ignore command words like "/add"
+              if (lastSlash <= 0 || lastSlash === word.length - 1) {
+                return false;
+              }
+              const removeLength = word.length - lastSlash - 1;
+              view.dispatch({
+                changes: { from: cursor - removeLength, to: cursor, insert: '' },
+                selection: { anchor: cursor - removeLength },
+                userEvent: 'input.type',
+              });
+              return true;
             },
           },
         ]),
