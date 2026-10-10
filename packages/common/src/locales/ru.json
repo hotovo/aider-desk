@@ -490,6 +490,10 @@
     "getApiKeyLink": "Получить API-ключ LLM API",
     "apiKey": "API-ключ"
   },
+  "atlasCloud": {
+    "getApiKeyLink": "Получить API-ключ Atlas Cloud",
+    "apiKey": "API-ключ"
+  },
   "zaiPlan": {
     "getApiKeyLink": "Получить API-ключ Z.AI",
     "apiKey": "API-ключ",
@@ -544,6 +548,7 @@
     "lmstudio": "LM Studio",
     "litellm": "LiteLLM",
     "llmapi": "LLM API",
+    "atlascloud": "Atlas Cloud",
     "minimax": "MiniMax",
     "mistral": "Mistral",
     "ollama": "Ollama",

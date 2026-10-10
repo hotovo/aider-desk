@@ -32,6 +32,7 @@
 
 ## [0.85.0]
 
+- added Atlas Cloud provider
 - added file watcher for refreshing task files, worktree status and autocompletion while a task runs
 - added find in file support to the file editor with Ctrl+F / Cmd+F
 - fixed duplicate keys in git branches popup rows
