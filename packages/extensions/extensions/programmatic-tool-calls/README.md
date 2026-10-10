@@ -36,30 +36,50 @@ The `programmatic_tool_calls` tool accepts:
 
 ### Tool Naming Convention
 
-All tools are available as async functions. Convert tool names by:
+All tools are available as async functions under the `tools` object. Convert tool names by:
 1. Replace `---` with `_`
 2. Replace `-` with `_`
 
 Examples:
-- `power---file-read` → `power_file_read()`
-- `power---bash` → `power_bash()`
-- `power---semantic_search` → `power_semantic_search()`
+- `power---file-read` → `tools.power_file_read()`
+- `power---bash` → `tools.power_bash()`
+- `power---semantic_search` → `tools.power_semantic_search()`
+
+### Tool Discovery Inside the Sandbox
+
+The tool signature catalog embedded in the tool description is budgeted — with many tools
+it becomes partial. Discovery helpers are available as sandbox globals:
+
+- `searchTools({ query, limit?, namespace? })` — finds tools by topic, name, or parameter name.
+  Results include full JSDoc-annotated TypeScript signatures, so query → result → call needs no second lookup. Scoring: exact name-token match (20), name substring (8), description match (4), schema parameter match (2). Plural query terms match singular tool names (`issues` finds `issue`). An empty query browses all tools alphabetically; use `offset` to paginate (`total` reports the full count).
+- `describeTool(path)` — full signature of a known path.
+- `ALL_TOOLS` — list of `{ path, description }` for all available tools.
+
+### Structured Diagnostics
+
+Failures are returned as stable, model-friendly categories:
+`SyntaxError` (code could not be parsed), `UnknownTool` (with a `searchTools` hint),
+`ToolFailure` (`<tool> — <message>`), `TimeoutExceeded`, and `Cancelled` (user abort).
 
 ### Example
 
 ```javascript
-// Read multiple files in parallel
-const [index, config, readme] = await Promise.all([
-  power_file_read({ filePath: 'src/index.ts' }),
-  power_file_read({ filePath: 'tsconfig.json' }),
-  power_file_read({ filePath: 'README.md' })
+// Find a tool not shown in the catalog
+const matches = await searchTools({ query: 'edit file', limit: 5 });
+
+// Read multiple files in parallel (no destructuring - use index access)
+const r = await Promise.all([
+  tools.power_file_read({ filePath: 'src/index.ts' }),
+  tools.power_file_read({ filePath: 'tsconfig.json' }),
+  tools.power_file_read({ filePath: 'README.md' })
 ]);
+const readme = r[2];
 
 // Process and search
-const files = await power_glob({ pattern: '**/*.ts' });
-const results = await power_semantic_search({ 
+const files = await tools.power_glob({ pattern: '**/*.ts' });
+const results = await tools.power_semantic_search({
   query: 'authentication logic',
-  maxResults: 10 
+  maxResults: 10
 });
 
 // Return structured result

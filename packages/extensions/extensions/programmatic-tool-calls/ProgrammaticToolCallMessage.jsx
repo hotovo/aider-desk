@@ -70,7 +70,7 @@
   );
 
   const content = (
-    <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
+    <div className="px-3 pb-3 text-xs text-text-tertiary bg-bg-secondary">
       <CodeBlock baseDir={projectDir || ''} taskId={task?.id} language="javascript" isComplete={true} className="text-2xs">
         {code}
       </CodeBlock>
