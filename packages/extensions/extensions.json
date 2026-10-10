@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 79
+      "installCount": 80
     },
     {
       "id": "legacy-system-prompt",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 123
+      "installCount": 124
     },
     {
       "id": "task-scheduler",
