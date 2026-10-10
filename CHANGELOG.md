@@ -2,19 +2,20 @@
 
 ## [UNRELEASED]
 
-- added Skip Git hooks option on commit
-- added support for icon for extension custom mode from icon packs
-- fixed terminal staying open with a dead session when the shell exits in it (e.g. Ctrl+D); it now closes the terminal the same as the manual close button
+- added option to skip Git hooks on commit
+- added icon support for extension custom modes from icon packs
+- fixed terminal staying open with a dead session when the shell exits (e.g. Ctrl+D)
 - fixed crash (React maximum update depth exceeded) when interacting with diff viewer dropdown while task is running
-- removed diff view mode switcher from code block headers; the view mode is now configured globally in Settings (also improves rendering performance of code blocks)
+- removed diff view mode switcher from code block headers in favor of global Settings (also improves code block rendering performance)
 - patched @legendapp/list to prevent crash in the message list from excessive container measurements
 - fixed task state not resyncing after socket reconnect
-- fixed delayed paste (Ctrl+V) on Linux when the app was idle; updated Electron to 44.7.0
-- added message map with color-coded user prompts and assistant replies, hover previews, and click-to-scroll navigation
-- added arrow-key path segment completion in the prompt field, including fuzzy matches, and preserved autocomplete selection while typing
+- fixed delayed paste (Ctrl+V) on Linux when the app was idle
+- updated Electron to 44.7.0
+- added message map with color-coded users and assistants, hover previews, and click-to-scroll navigation
+- added arrow-key path segment completion with fuzzy matching in the prompt field
 - fixed delayed expand/collapse of folders in the updated files diff sidebar
 - fixed confirmation dialogs being clipped inside messages when deleting memories
-- fixed stale "(Not found)" shown in stored memory tool message until refresh; the memory list now reloads when the tool result arrives
+- fixed stale "(Not found)" shown in the stored memory tool message
 
 ## [0.86.0]
 
