@@ -16,6 +16,7 @@
 - fixed delayed expand/collapse of folders in the updated files diff sidebar
 - fixed confirmation dialogs being clipped inside messages when deleting memories
 - fixed stale "(Not found)" shown in the stored memory tool message
+- fixed paused chat scroll position being lost when switching between tasks
 
 ## [0.86.0]
 
