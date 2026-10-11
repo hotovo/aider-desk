@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
-import { MessageMapRole } from './messageMap';
+import { MessageMapRole } from './messageMapUtils';
 
 type Props = {
   turnNumber: number;

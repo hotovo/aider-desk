@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AssistantGroupMessage, GroupMessage, Message } from '@common/types';
 
 import { MessageMap } from '../MessageMap';
-import { createMessageMapMarkers, createMessageMapTurns, MessageMapRole } from '../messageMap';
+import { createMessageMapMarkers, createMessageMapTurns, MessageMapRole } from '../messageMapUtils';
 
 import { render } from '@/__tests__/render';
 

@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
-import { MessageMapRole } from './messageMap';
+import { MessageMapRole } from './messageMapUtils';
 import { MessageMapPreview } from './MessageMapPreview';
 
 import { Tooltip } from '@/components/ui/Tooltip';
