@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "binary-files",
@@ -176,7 +176,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "sound-notification",
@@ -221,7 +221,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "redact-secrets",
@@ -245,7 +245,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 70
+      "installCount": 73
     },
     {
       "id": "context-autocompletion-words",
@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 30
+      "installCount": 33
     },
     {
       "id": "ui-placement-demo",
@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 22
+      "installCount": 23
     },
     {
       "id": "auggie-sdk",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "kanban",
