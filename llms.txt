@@ -399,6 +399,10 @@ src/
           MessageBlock.tsx
           MessageBlockWrapper.tsx
           MessageImages.tsx
+          messageMap.ts
+          MessageMap.tsx
+          MessageMapMarker.tsx
+          MessageMapPreview.tsx
           Messages.tsx
           RebaseConflictsActions.tsx
           RebaseResolvedActions.tsx
@@ -535,6 +539,7 @@ src/
           WorktreeActionDialog.tsx
           WorktreeRevertButton.tsx
         PromptField/
+          acceptPathSegment.ts
           AudioAnalyzer.tsx
           AutoApprove.tsx
           AutonomySelector.tsx
@@ -546,6 +551,7 @@ src/
           PromptField.tsx
           QueuedPromptsList.tsx
           usePromptFieldText.ts
+          wordCompletions.ts
         readonly/
           ReadonlyHeader.tsx
           ReadonlyProjectView.tsx
@@ -15872,6 +15878,7 @@ File: src/renderer/src/components/common/BaseDialog.tsx
 ================
 import { FocusTrap } from 'focus-trap-react';
 import { ReactNode, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 import { useHotkeys } from 'react-hotkeys-hook';
@@ -18392,15 +18399,134 @@ e.stopPropagation();
 handleExpandedClick();
 
 ================
+File: src/renderer/src/components/message/messageMap.ts
+================
+import { isAssistantGroupMessage, isGroupMessage, isResponseMessage, isUserMessage, Message } from '@common/types';
+⋮----
+export enum MessageMapRole {
+  User = 'user',
+  Assistant = 'assistant',
+}
+⋮----
+export type MessageMapEntry = {
+  id: string;
+  index: number;
+  role: MessageMapRole;
+  preview: string;
+};
+⋮----
+export type MessageMapTurn = {
+  id: string;
+  number: number;
+  startIndex: number;
+  userIndex: number | null;
+  userPreview: string;
+  lastAssistantIndex: number | null;
+  lastAssistantPreview: string;
+};
+⋮----
+export const createMessageMapEntries = (messages: Message[]): MessageMapEntry[] =>
+⋮----
+const addMessage = (message: Message, index: number, path: string) =>
+⋮----
+// Collapses the flat message entries into conversation turns. A turn starts at each user prompt and
+// absorbs the assistant replies that follow it, tracking the last reply of the turn. Assistant
+// replies that appear before any user prompt form a leading turn with no user message.
+export const createMessageMapTurns = (messages: Message[]): MessageMapTurn[] =>
+⋮----
+export type MessageMapMarkerItem = {
+  id: string;
+  turnNumber: number;
+  role: MessageMapRole;
+  index: number;
+  preview: string;
+};
+⋮----
+// Flattens turns into individually navigable markers: a green user-prompt marker and a blue
+// last-assistant-reply marker per turn, kept in ascending rendered order for scroll tracking.
+export const createMessageMapMarkers = (turns: MessageMapTurn[]): MessageMapMarkerItem[] =>
+⋮----
+// Selection follows user messages only: the active marker is the user message currently in the
+// scroll view, or the previous one when the viewport sits within that turn's replies.
+export const getActiveMarkerId = (markers: MessageMapMarkerItem[], visibleIndex: number): string | null =>
+
+================
+File: src/renderer/src/components/message/MessageMap.tsx
+================
+import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { MdKeyboardArrowDown, MdKeyboardArrowUp, MdKeyboardDoubleArrowDown } from 'react-icons/md';
+import { Message } from '@common/types';
+⋮----
+import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMap';
+import { MessageMapMarker } from './MessageMapMarker';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  messages: Message[];
+  visibleIndex: number;
+  onNavigate: (index: number, animated: boolean) => void;
+  onPreviousUserMessage: () => void;
+  onNextUserMessage: () => void;
+  hasPreviousUserMessage: boolean;
+  hasNextUserMessage: boolean;
+  onScrollToBottom: () => void;
+};
+
+================
+File: src/renderer/src/components/message/MessageMapMarker.tsx
+================
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+import { MessageMapRole } from './messageMap';
+import { MessageMapPreview } from './MessageMapPreview';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  turnNumber: number;
+  role: MessageMapRole;
+  index: number;
+  preview: string;
+  active: boolean;
+  onNavigate: (index: number, animated: boolean) => void;
+};
+⋮----
+const handleClick = ()
+
+================
+File: src/renderer/src/components/message/MessageMapPreview.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+import { MessageMapRole } from './messageMap';
+⋮----
+type Props = {
+  turnNumber: number;
+  role: MessageMapRole;
+  preview: string;
+};
+⋮----
+export const MessageMapPreview = (
+⋮----
+className=
+⋮----
+
+================
 File: src/renderer/src/components/message/Messages.tsx
 ================
-import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { toPng } from 'html-to-image';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/types';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
+import { MessageMap } from './MessageMap';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
@@ -18433,6 +18559,10 @@ type Props = {
 // Group messages by promptContext.group.id, then optionally group assistant messages for compact mode
 ⋮----
 // Get all user message IDs
+⋮----
+// Anchor to the last item whose top has entered the viewport. Children are in vertical order.
+⋮----
+const handleScroll = () =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -19265,6 +19395,7 @@ import { GroupMessage, isUserMessage, Message, MessageViewMode } from '@common/t
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { MessageBlockWrapper } from './MessageBlockWrapper';
+import { MessageMap } from './MessageMap';
 ⋮----
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
@@ -23077,6 +23208,14 @@ title=
 confirmButtonText=
 
 ================
+File: src/renderer/src/components/PromptField/acceptPathSegment.ts
+================
+import { acceptCompletion, completionStatus, selectedCompletion } from '@codemirror/autocomplete';
+import { type EditorView } from '@codemirror/view';
+⋮----
+export const acceptPathSegment = (view: EditorView, mentionMode: boolean): boolean =>
+
+================
 File: src/renderer/src/components/PromptField/AudioAnalyzer.tsx
 ================
 import { useEffect, useRef } from 'react';
@@ -23234,6 +23373,7 @@ File: src/renderer/src/components/PromptField/PromptField.tsx
 import {
   acceptCompletion,
   autocompletion,
+  completionStatus,
   type Completion,
   CompletionContext,
   type CompletionResult,
@@ -23258,6 +23398,8 @@ import { getSubagentId } from '@common/agent';
 ⋮----
 import { QueuedPromptsList } from './QueuedPromptsList';
 import { usePromptFieldText } from './usePromptFieldText';
+import { wordCompletions } from './wordCompletions';
+import { acceptPathSegment } from './acceptPathSegment';
 ⋮----
 import { useTaskQueuedPrompts } from '@/stores/taskStore';
 import { InputHistoryMenu } from '@/components/PromptField/InputHistoryMenu';
@@ -23374,6 +23516,8 @@ return false; // Allow default behavior (new line)
 ⋮----
 // Desktop behavior: submit or handle special cases
 ⋮----
+// only strip a non-empty path segment; ignore command words like "/add"
+⋮----
 onClick=
 ⋮----
 ref=
@@ -23435,6 +23579,13 @@ import { useCallback } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 ⋮----
 export const usePromptFieldText = (baseDir: string, taskId: string, onLoad?: (value: string) => void) =>
+
+================
+File: src/renderer/src/components/PromptField/wordCompletions.ts
+================
+import { type CompletionResult } from '@codemirror/autocomplete';
+⋮----
+export const wordCompletions = (from: number, words: string[], files: string[]): CompletionResult => (
 
 ================
 File: src/renderer/src/components/readonly/ReadonlyHeader.tsx
@@ -24666,6 +24817,8 @@ const handleDiffViewModeChange = (value: string) =>
 ⋮----
 const handleMessageViewModeChange = (value: string) =>
 ⋮----
+const handleShowMessageMapChange = (checked: boolean) =>
+⋮----
 const handleSuggestionModeChange = (mode: SuggestionMode) =>
 ⋮----
 const handleSuggestionModeClick = (value: string) =>
@@ -24682,11 +24835,11 @@ label=
 ⋮----
 setSettings(
 ⋮----
+<Checkbox label=
+⋮----
 onChange=
 ⋮----
 {/* Vim key bindings */}
-⋮----
-<Checkbox label=
 
 ================
 File: src/renderer/src/components/settings/HotkeyConfig.tsx
@@ -26371,6 +26524,10 @@ type SidebarGroupTreeProps = {
   onToggleFileSelection: (filePath: string, selected: boolean) => void;
   onToggleFolderSelection: (filePaths: string[], selected: boolean) => void;
 };
+⋮----
+// useTree keeps a mutable instance whose results (tree.getItems(), item.isExpanded())
+// React Compiler cannot track — memoizing this component defers expand/collapse
+// re-commits until an unrelated prop change busts the cache.
 ⋮----
 const handleClick = () =>
 ⋮----
