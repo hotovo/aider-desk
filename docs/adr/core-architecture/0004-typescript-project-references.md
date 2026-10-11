@@ -64,6 +64,30 @@ The environment split is the compile-time reflection of the runtime split from [
 - Never import `src/main/*` modules from `src/renderer/*` or vice versa
 - Never relax `lib`/`types` settings in either config to make an environment violation pass — fix the boundary instead
 
+## Cross-Platform Module Naming (2026-10-11)
+
+### Context
+
+The renderer previously colocated `MessageMap.tsx` (the React component) and `messageMap.ts` (helper functions). Their extensionless module names differed only by casing. On a case-insensitive filesystem, TypeScript could resolve `../MessageMap` to the helper module, producing TS2305 (missing component export) and TS1149 (inconsistent filename casing). Successful checks on a case-sensitive Linux filesystem did not establish portability.
+
+### Decision
+
+Source modules in the same directory must have distinct extensionless names when compared case-insensitively. Different extensions (`.ts` versus `.tsx`) do not make a casing-only distinction safe. Keep imports consistent with the exact filename casing and use a descriptive suffix for related helper modules.
+
+The implemented fix preserves `MessageMap.tsx` and renames its helpers to `messageMapUtils.ts`, updating the component, marker, preview, and test imports without changing behavior.
+
+### Rationale and Consequences
+
+Distinct names avoid ambiguous extensionless resolution across Linux, macOS, and Windows without changing compiler settings or requiring case-sensitive developer filesystems. The trade-off is a slightly longer helper filename and the need to update every importing module when renaming it. Scoped typechecking and regression tests verify the affected code, but checks on one filesystem alone are not proof of cross-platform filename safety.
+
+### Guardrails for Agents
+
+- Before creating or renaming a module, compare its extensionless name with neighboring filenames case-insensitively.
+- Use distinct names such as `Foo.tsx` and `fooUtils.ts` rather than `Foo.tsx` and `foo.ts`; match the actual filename casing in imports.
+- Update all source and test imports when renaming a helper, and verify the rename is included in the Git changes.
+- Run the affected environment's typecheck and relevant tests after module renames.
+- Do not suppress casing diagnostics or rely on extension differences, explicit extensions, or a case-sensitive local filesystem to make casing-only module names portable.
+
 ## Related Decisions
 
 - [ADR-0001: Electron Multi-Process Model](0001-electron-multi-process-model.md)
