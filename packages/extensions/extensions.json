@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "binary-files",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 99
+      "installCount": 100
     },
     {
       "id": "protected-paths",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 82
+      "installCount": 83
     },
     {
       "id": "legacy-system-prompt",
@@ -221,7 +221,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "redact-secrets",
@@ -245,7 +245,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -257,7 +257,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "tree-sitter-repo-map",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 75
+      "installCount": 76
     },
     {
       "id": "context-autocompletion-words",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 80
+      "installCount": 81
     },
     {
       "id": "plannotator",
@@ -310,7 +310,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "programmatic-tool-calls",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 37
+      "installCount": 39
     },
     {
       "id": "searxng-search",
@@ -418,7 +418,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "tps-counter",
@@ -456,7 +456,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "claude-agent-sdk",
@@ -493,7 +493,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "cursor-sdk",
@@ -532,7 +532,7 @@
         "events",
         "ui"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "codegraph",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "destructive-command-guard",
@@ -646,7 +646,7 @@
         "commands",
         "events"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "reasoning-selector",
