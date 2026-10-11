@@ -882,6 +882,7 @@ export const TaskView = forwardRef<TaskViewRef, Props>(
                   ) : (
                     <VirtualizedMessages
                       ref={setMessagesRef}
+                      isActive={isActive && isProjectActive}
                       baseDir={projectDir}
                       taskId={task.id}
                       inProgress={inProgress}

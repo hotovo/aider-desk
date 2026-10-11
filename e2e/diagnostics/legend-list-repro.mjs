@@ -44,16 +44,21 @@ const baselineDeclaration = 'var lastContainerMeasureAt = /* @__PURE__ */ new We
 const sizeUpdate = '    setSize(ctx, itemKey, size, notifyTotalSize);';
 assert.equal(source.split(baselineDeclaration).length, 2, 'Missing deferral declaration');
 assert.equal(source.split(sizeUpdate).length, 2, 'Ambiguous size-update insertion point');
-const faulty = source
+const hiddenUpdateGuard = ['  if (sizeObj.width === 0 && sizeObj.height === 0) {', '    return 0;', '  }', ''].join(newline);
+const hiddenLayoutGuard = ['      if (rect.width === 0 && rect.height === 0) {', '        continue;', '      }', ''].join(newline);
+assert.ok(source.includes(hiddenUpdateGuard) && source.includes(hiddenLayoutGuard), 'Missing hidden-measurement guards');
+const deferredOnly = source.replace(hiddenUpdateGuard, '').replace(hiddenLayoutGuard, '');
+const faulty = deferredOnly
   .replace(baselineDeclaration, baselineDeclaration + newline + 'var itemSizeFlipHistory = /* @__PURE__ */ new Map();')
   .replace(sizeUpdate, flipGuard + newline + sizeUpdate);
-const variants = { unpatched, 'flip-guard': faulty, patched: source };
+const variants = { unpatched, 'flip-guard': faulty, 'deferral-only': deferredOnly, 'restoration-control': source, patched: source };
 const bundles = new Map();
 
 for (const [name, variant] of Object.entries(variants)) {
   const instrumented = variant.replace(
     ['    updateItemSizesBatch(ctx, measurements);', '  }', '}', 'var typedForwardRef'].join(newline),
     [
+      '    window.legendListRepro.hiddenMeasurements = (window.legendListRepro.hiddenMeasurements || 0) + measurements.filter(({ size }) => size.height === 0 && size.width === 0).length;',
       '    updateItemSizesBatch(ctx, measurements);',
       "    Object.defineProperty(window.legendListRepro, 'snapshot', {",
       '      configurable: true,',
@@ -117,13 +122,28 @@ try {
   browser = await chromium.launch({ headless: true });
   const results = [];
   for (const name of Object.keys(variants)) {
-    for (const scenario of ['feedback', 'visibility', 'remount']) {
+    for (const scenario of ['feedback', 'visibility', 'remount', 'finished-hidden', 'anchor', 'settling-bottom']) {
+      if (
+        (name === 'restoration-control' && scenario !== 'settling-bottom') ||
+        (scenario === 'settling-bottom' && !['patched', 'restoration-control'].includes(name))
+      ) {
+        continue;
+      }
+      if (scenario === 'anchor' && name !== 'patched') {
+        continue;
+      }
       const page = await browser.newPage();
       const errors = [];
       page.on('pageerror', (error) => errors.push(error.message));
       await page.goto('http://127.0.0.1:' + address.port + '/' + name + '?scenario=' + scenario);
       await page.waitForFunction(() => !!window.legendListRepro?.snapshot);
-      if (scenario === 'feedback') {
+      if (scenario === 'settling-bottom') {
+        await page.evaluate(() => window.legendListRepro.setHidden(true));
+        await page.waitForTimeout(100);
+        await page.evaluate(() => window.legendListRepro.holdNextRestore());
+        await page.evaluate(() => window.legendListRepro.setHidden(false));
+        await page.waitForFunction(() => typeof window.legendListRepro.preAlignmentGap === 'number' && !window.legendListRepro.isRestoring());
+      } else if (scenario === 'feedback') {
         await page
           .waitForFunction(() => window.legendListRepro?.updates === 80, null, {
             timeout: 3000,
@@ -131,11 +151,37 @@ try {
           .catch((error) => {
             assert.equal(error.name, 'TimeoutError');
           });
+      } else if (scenario === 'anchor') {
+        await page.evaluate(() => window.legendListRepro.scrollToAnchor());
+        const before = await page.evaluate(() => window.legendListRepro.anchorOffset());
+        await page.evaluate(() => window.legendListRepro.setHidden(true));
+        await page.waitForTimeout(100);
+        await page.evaluate(() => window.legendListRepro.refresh());
+        await page.waitForTimeout(100);
+        await page.evaluate(() => window.legendListRepro.setHidden(false));
+        await page.waitForFunction(() => !window.legendListRepro.isRestoring());
+        const after = await page.evaluate(() => window.legendListRepro.anchorOffset());
+        results.push({ variant: name, scenario: 'anchor-position', before, after });
+      } else if (scenario === 'finished-hidden') {
+        await page.evaluate(() => window.legendListRepro.setHidden(true));
+        await page.waitForTimeout(100);
+        for (let update = 0; update < 3; update++) {
+          await page.evaluate(() => window.legendListRepro.refresh());
+          await page.waitForTimeout(100);
+        }
+        const whileHidden = await page.evaluate(() => window.legendListRepro.snapshot);
+        await page.evaluate(() => window.legendListRepro.setHidden(false));
+        await page.waitForTimeout(1000);
+        results.push({ variant: name, scenario: 'finished-hidden-caches', snapshot: whileHidden });
       } else if (scenario === 'visibility') {
         await page.evaluate(() => window.legendListRepro.setHidden(true));
         await page.waitForFunction(() => getComputedStyle(document.querySelector('[data-repro-item]').closest('#root > div')).display === 'none');
         await page.evaluate(() => window.legendListRepro.refresh());
-        await page.waitForFunction(() => window.legendListRepro.snapshot.known === 0);
+        if (name !== 'patched') {
+          await page.waitForFunction(() => window.legendListRepro.snapshot.known === 0);
+        } else {
+          await page.waitForTimeout(100);
+        }
         await page.evaluate(() => window.legendListRepro.setHidden(false));
         await page.waitForFunction(() => document.querySelector('[data-repro-item]')?.getBoundingClientRect().height === 800);
         await page.evaluate(() => window.legendListRepro.refresh());
@@ -156,6 +202,9 @@ try {
       }
       const state = await page.evaluate(() => ({
         updates: window.legendListRepro.updates,
+        preAlignmentGap: window.legendListRepro.preAlignmentGap,
+        hiddenMeasurements: window.legendListRepro.hiddenMeasurements ?? 0,
+        scrollMetrics: window.legendListRepro.scrollMetrics(),
         snapshot: window.legendListRepro.snapshot,
         actualHeight: document.querySelector('[data-repro-item]')?.getBoundingClientRect().height,
       }));
@@ -190,6 +239,37 @@ try {
     assert.deepEqual(original.errors, []);
     assert.equal(original.snapshot.applied, original.actualHeight, 'Unpatched control failed to recover its size');
   }
+  const hiddenBaseline = findResult('deferral-only', 'finished-hidden-caches');
+  assert.equal(hiddenBaseline.snapshot.applied, 0, 'Previous fix no longer reproduces hidden cache corruption');
+  const hiddenPatched = findResult('patched', 'finished-hidden-caches');
+  assert.equal(hiddenPatched.snapshot.known, 800, 'Hidden updates replaced the last valid known height');
+  assert.equal(hiddenPatched.snapshot.applied, 800, 'Hidden updates replaced the last valid applied height');
+  const finished = findResult('patched', 'finished-hidden');
+  assert.deepEqual(finished.errors, [], 'Finished hidden task caused a browser error');
+  assert.equal(finished.updates, 3, 'Content changed again after the task was shown');
+  assert.equal(finished.hiddenMeasurements, 0, 'Hidden zero-size measurements were accepted');
+  assert.equal(finished.actualHeight, 1400);
+  assert.equal(finished.snapshot.known, finished.actualHeight);
+  assert.equal(finished.snapshot.applied, finished.actualHeight);
+  assert.equal(finished.snapshot.totalSize, finished.actualHeight);
+  assert.equal(finished.scrollMetrics.top, finished.scrollMetrics.maximum, 'Following task did not return to its end');
+  const anchor = findResult('patched', 'anchor-position');
+  assert.equal(anchor.before, -30, 'Paused baseline did not reach its anchor');
+  assert.equal(anchor.after, anchor.before, 'Paused scroll anchor changed after activation');
+  assert.deepEqual(findResult('patched', 'anchor').errors, []);
+  const restorationControl = findResult('restoration-control', 'settling-bottom');
+  assert.deepEqual(restorationControl.errors, []);
+  assert.ok(restorationControl.preAlignmentGap > 2, 'Restoration control did not produce a pending bottom gap');
+  assert.ok(
+    restorationControl.scrollMetrics.maximum - restorationControl.scrollMetrics.top > 2,
+    'Missing post-restoration alignment no longer reproduces the offset',
+  );
+  const settling = findResult('patched', 'settling-bottom');
+  assert.deepEqual(settling.errors, []);
+  assert.ok(settling.preAlignmentGap > 2, 'Settling scenario did not exercise the bottom-alignment race');
+  assert.equal(settling.actualHeight, 1100);
+  assert.equal(settling.snapshot.applied, settling.actualHeight);
+  assert.equal(settling.scrollMetrics.top, settling.scrollMetrics.maximum, 'Settled content was not aligned to the bottom');
   console.log('All reproduction assertions passed.');
 } finally {
   await browser?.close();
