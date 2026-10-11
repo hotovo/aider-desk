@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "wakatime",
@@ -34,7 +34,7 @@
       "capabilities": [
         "tracking"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "pirate",
@@ -58,7 +58,7 @@
         "commands",
         "example"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "questions",
@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "theme",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 97
+      "installCount": 98
     },
     {
       "id": "protected-paths",
@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "permission-gate",
@@ -116,7 +116,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "ultrathink",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "external-rules",
@@ -139,7 +139,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "external-skills",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 80
+      "installCount": 81
     },
     {
       "id": "legacy-system-prompt",
@@ -176,7 +176,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "sound-notification",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "sandbox",
@@ -233,7 +233,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "chunkhound-search",
@@ -257,7 +257,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "tree-sitter-repo-map",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 69
+      "installCount": 70
     },
     {
       "id": "context-autocompletion-words",
@@ -282,7 +282,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "lsp",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 79
+      "installCount": 80
     },
     {
       "id": "plannotator",
@@ -310,7 +310,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "programmatic-tool-calls",
@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "ui-placement-demo",
@@ -334,7 +334,7 @@
         "ui",
         "example"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "multi-model-run",
@@ -347,7 +347,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "providers-quota-extension",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "searxng-search",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "seek",
@@ -418,7 +418,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "tps-counter",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 90
+      "installCount": 91
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "bmad",
@@ -481,7 +481,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "cursor",
@@ -493,7 +493,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "cursor-sdk",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "github-copilot",
@@ -532,7 +532,7 @@
         "events",
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "codegraph",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "doom",
@@ -569,7 +569,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "my-minions",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "wigolo",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "git-log",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "skill-gallery",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 124
+      "installCount": 125
     },
     {
       "id": "task-scheduler",
@@ -646,7 +646,7 @@
         "commands",
         "events"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "reasoning-selector",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 118
+      "installCount": 119
     },
     {
       "id": "dbx",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 2
+      "installCount": 4
     },
     {
       "id": "compaction-studio",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 9
+      "installCount": 11
     }
   ]
 }
