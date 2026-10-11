@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MdKeyboardArrowDown, MdKeyboardArrowUp, MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { Message } from '@common/types';
 
-import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMap';
+import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMapUtils';
 import { MessageMapMarker } from './MessageMapMarker';
 
 import { Tooltip } from '@/components/ui/Tooltip';
