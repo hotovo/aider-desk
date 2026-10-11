@@ -1016,7 +1016,7 @@ export class Task {
     this.addUserMessage(userMessageId, prompt, promptContext, images);
     this.addLogMessage('loading');
 
-    this.telemetryManager.captureRunPrompt(mode);
+    await this.telemetryManager.captureRunPrompt(this, mode);
 
     let responses: ResponseCompletedData[] = [];
     if (!AIDER_MODES.includes(mode)) {
@@ -2297,6 +2297,14 @@ export class Task {
         resolve(['', undefined]);
       }
     });
+  }
+
+  public getAiderModelsData(): ModelsData | null {
+    return this.aiderManager.getAiderModelsData();
+  }
+
+  public getArchitectModel(): string | null {
+    return this.aiderManager.getArchitectModel();
   }
 
   public updateAiderModels(modelsData: ModelsData) {

@@ -44,12 +44,6 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   const networkManager = new NetworkManager();
   networkManager.init(store.getSettings());
 
-  // Initialize telemetry manager (non-blocking - analytics not critical for startup)
-  const telemetryManager = new TelemetryManager(store);
-  telemetryManager.init().catch((error) => {
-    logger.error('[Telemetry] Telemetry initialization failed, continuing without analytics:', error);
-  });
-
   // Initialize MCP manager
   const mcpManager = new McpManager(undefined, () => store.getSettings().language);
   mcpManager.init().catch((error) => {
@@ -73,6 +67,11 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 
   // Initialize model manager
   const modelManager = new ModelManager(store, eventManager, networkManager);
+
+  const telemetryManager = new TelemetryManager(store, modelManager);
+  telemetryManager.init().catch((error) => {
+    logger.error('[Telemetry] Telemetry initialization failed, continuing without analytics:', error);
+  });
 
   // Initialize data manager
   const dataManager = new DataManager();

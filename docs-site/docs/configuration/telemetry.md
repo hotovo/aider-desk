@@ -29,7 +29,15 @@ When telemetry is enabled, AiderDesk captures the following events:
     *   `count`: The total number of projects remaining open.
 *   **`run-prompt`**: Sent when a prompt is run.
     *   `mode`: The mode in which the prompt was run (e.g., `code`, `ask`, `agent`...).
+    *   `provider`: The agent provider type (e.g., `anthropic`, `openai`), when running in an agent mode. Provider profile IDs and credentials are not included.
+    *   `model`: The selected agent model, including any task-level override, when running in an agent mode.
+    *   `mainModel`: The current Aider main model, when available.
+    *   `weakModel`: The current Aider weak model, when available.
+    *   `architectModel`: The configured Aider architect model, when available.
+    *   Model identifiers include the provider type rather than a provider profile ID where applicable. Unavailable model fields are omitted or null; prompt content and API keys are never included.
 *   **`agent-run`**: Sent when an agent run is initiated.
+    *   `provider`: The agent provider type, including extension providers. Provider profile IDs and credentials are not included.
+    *   `model`: The selected model from the agent profile used for this run, including any task-level override applied to that profile.
     *   `maxIterations`: The maximum number of iterations configured for the agent.
     *   `maxTokens`: The maximum number of tokens configured for the agent.
     *   `customInstructionsDefined`: A boolean indicating whether custom instructions were provided.
