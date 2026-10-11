@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.86.0",
+  "version": "0.87.0",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -51,7 +51,7 @@
     "@ai-sdk/openai": "4.0.83",
     "@ai-sdk/openai-compatible": "3.0.62",
     "@ai-sdk/otel": "1.0.60",
-    "@aiderdesk/extensions": "0.36.0",
+    "@aiderdesk/extensions": "0.37.0",
     "@aws-sdk/client-bedrock": "3.1059.0",
     "@aws-sdk/credential-providers": "3.1059.0",
     "@dotenvx/dotenvx": "1.52.0",
@@ -61,7 +61,7 @@
     "@homebridge/node-pty-prebuilt-multiarch": "0.13.1",
     "@huggingface/transformers": "3.8.1",
     "@lancedb/lancedb": "0.22.3",
-    "@modelcontextprotocol/sdk": "1.30.0",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@openrouter/ai-sdk-provider": "3.1.0",
     "@opentelemetry/auto-instrumentations-node": "0.79.0",
     "@opentelemetry/exporter-trace-otlp-http": "0.219.0",
@@ -95,7 +95,7 @@
     "os-name": "6.1.0",
     "patch-package": "8.0.1",
     "posthog-node": "5.29.1",
-    "simple-git": "3.36.0",
+    "simple-git": "4.0.2",
     "slugify": "1.6.6",
     "socket.io": "4.8.3",
     "tar": "7.5.22",
