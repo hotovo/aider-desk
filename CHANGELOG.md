@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.87.0]
 
 - added option to skip Git hooks on commit
 - added icon support for extension custom modes from icon packs
