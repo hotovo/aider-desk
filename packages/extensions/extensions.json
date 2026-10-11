@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 98
+      "installCount": 99
     },
     {
       "id": "protected-paths",
@@ -139,7 +139,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "external-skills",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 81
+      "installCount": 82
     },
     {
       "id": "legacy-system-prompt",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 73
+      "installCount": 75
     },
     {
       "id": "context-autocompletion-words",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "seek",
@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 23
+      "installCount": 24
     },
     {
       "id": "auggie-sdk",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "kanban",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "git-log",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 125
+      "installCount": 126
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 119
+      "installCount": 120
     },
     {
       "id": "dbx",
