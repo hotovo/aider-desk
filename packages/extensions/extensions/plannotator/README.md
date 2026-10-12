@@ -20,6 +20,16 @@ The extension uses a **task-based state management** approach:
 - **Context Injection**: Automatically injects planning instructions when in plannotator mode
 - **Iterative Workflow**: Encourages exploring code, updating plan, and asking questions
 
+- **Auto-detected Address**: The plan review UI address is auto-detected from `os.networkInterfaces()` (falls back to `localhost`)
+
+### Task Directory Storage
+- PLAN.md is stored in `.aider-desk/tasks/{taskId}/PLAN.md` (AiderDesk's task-specific directory)
+- This keeps plans organized per-task and accessible to other extensions
+
+### SPEC.md Symlink
+- After plan approval, a `SPEC.md → PLAN.md` symlink is created in the same task directory
+- This bridges the planning → execution gap, allowing executor extensions (like Conductor) to find the plan via their `read-spec` tool
+
 ### Execution Tracking
 - **Checklist Parsing**: Parses `- [ ] n. Description` items from PLAN.md
 - **Progress Tracking**: Tracks completion via `[DONE:n]` markers in responses
@@ -30,7 +40,7 @@ The extension uses a **task-based state management** approach:
 
 ### Code Review
 
-The `/plannotator-review` command opens a browser-based code review UI for your current uncommitted git changes:
+The `/plannotator-review` command reviews your current uncommitted git changes. By default it runs **inline in the AiderDesk chat** (no browser required); when *Use browser-based review* is enabled in the extension settings, it opens the full browser-based UI instead:
 
 **Features:**
 - View git diffs (uncommitted, staged, last commit, branch comparison)
@@ -39,10 +49,9 @@ The `/plannotator-review` command opens a browser-based code review UI for your 
 
 **Workflow:**
 1. Run `/plannotator-review` command
-2. Browser opens with code review UI showing current diff
-3. Review changes, add annotations if needed
-4. Submit feedback
-5. If feedback is provided, agent receives a prompt to address the issues
+2. Diff is shown inline (or browser opens if browser review is enabled)
+3. Review the changes and approve or request changes
+4. If feedback is provided, agent receives a prompt to address the issues
 
 ### Tools
 - `exit_plan_mode` - Exit planning phase and start execution
@@ -66,14 +75,13 @@ The `/plannotator-review` command opens a browser-based code review UI for your 
 
 ### Phase 2: Review
 
-4. **Review Server Starts**:
-   - Extension starts HTTP review server on random port
-   - Browser opens to review URL (e.g., `http://localhost:3777`)
-   - User sees plan in browser UI
+4. **Plan Is Presented** (inline by default):
+   - **Inline (default)**: A review panel appears in the AiderDesk chat with the full plan, an optional feedback box, and Approve / Request-changes buttons. No browser or XDG-open is needed — works in headless and remote-server deployments.
+   - **Browser (optional)**: If *Use browser-based review* is enabled in settings, the extension starts an HTTP review server on a random port and opens it (e.g., `http://localhost:3777`). When AiderDesk runs as a remote/headless server, the reachable host is auto-detected from the machine's network interfaces; to override it, set the *Server Host / Base URL* setting so the review URL points at the reachable host instead.
 
 5. **User Reviews Plan**:
-   - **Approve**: Click "Approve Plan" (optionally add notes)
-   - **Request Changes**: Click "Request Changes" and provide feedback
+   - **Approve**: Click "Approve" (optionally add notes)
+   - **Request Changes**: Click "Request changes" and provide feedback
 
 6. **Decision Sent to Agent**:
    - **If approved**: Agent transitions to execution phase
@@ -94,8 +102,17 @@ If the plan is rejected:
 2. Agent reads current PLAN.md
 3. Agent uses `file_edit` to make targeted changes
 4. Agent calls `exit_plan_mode` again
-5. Browser opens for review again
+5. Review panel appears again
 6. Repeat until approved
+
+## Server / Remote Deployment
+
+The extension no longer assumes `localhost`. When AiderDesk runs as a remote or headless server, the review UI is shown **inline in the chat** by default, so nothing needs to be configured for plan reviews.
+
+For the optional browser-based review UI, configure the extension via **Settings → Extensions → Plannotator**:
+
+- **Server Host / Base URL** — The hostname (or full origin such as `https://plannotator.example.com`) the browser uses to reach this AiderDesk server. Bare hosts get the server's dynamic port appended automatically; full origins (with or without an explicit port) are used verbatim, since reverse-proxy endpoints on a fixed port would become unreachable if the dynamic review port were appended. Leave blank for auto-detected host. This is also respected as the environment variable `PLANNOTATOR_HOST`.
+- **Use browser-based review** — Off by default (inline review). Enable for the full browser reviewer on local/Electron setups.
 
 ## Mode vs Phase
 
@@ -275,8 +292,7 @@ The extension uses platform-specific commands to open browsers:
 - **Linux**: `xdg-open`
 
 Environment variables:
-- `PLANNOTATOR_BROWSER`: Custom browser command
-- `BROWSER`: Fallback browser command
+- `BROWSER`: Custom browser command (on macOS treated as an app name via `open -a`)
 
 ## Key Differences from Previous Version
 
