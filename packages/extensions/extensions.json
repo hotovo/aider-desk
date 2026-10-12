@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "sandbox",
@@ -519,7 +519,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "checkpoints",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 126
+      "installCount": 127
     },
     {
       "id": "task-scheduler",
