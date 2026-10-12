@@ -399,10 +399,10 @@ src/
           MessageBlock.tsx
           MessageBlockWrapper.tsx
           MessageImages.tsx
-          messageMap.ts
           MessageMap.tsx
           MessageMapMarker.tsx
           MessageMapPreview.tsx
+          messageMapUtils.ts
           Messages.tsx
           RebaseConflictsActions.tsx
           RebaseResolvedActions.tsx
@@ -726,6 +726,7 @@ src/
         useUpdatedFileDiff.ts
         useUserMessageNavigation.tsx
         useVersions.ts
+        useVirtualizedListActivation.ts
       i18n/
         index.ts
       icons/
@@ -819,6 +820,7 @@ src/
         string-utils.ts
         task-messages.ts
         task-utils.ts
+        virtualizedList.ts
       voice/
         gemini.ts
         index.ts
@@ -11389,6 +11391,10 @@ public async askQuestion(questionData: QuestionData, awaitAnswer = true): Promis
 ⋮----
 // Store the resolve function for the promise
 ⋮----
+public getAiderModelsData(): ModelsData | null
+⋮----
+public getArchitectModel(): string | null
+⋮----
 public updateAiderModels(modelsData: ModelsData)
 ⋮----
 public updateModels(mainModel: string, weakModel: string | null, editFormat: EditFormat = 'diff')
@@ -12028,7 +12034,11 @@ export const getPostHogAiderEnvironmentVariables = (baseDir: string, settings: S
 File: src/main/telemetry/telemetry-manager.ts
 ================
 import { PostHog } from 'posthog-node';
-import { AgentProfile, Mode, SettingsData, TaskData } from '@common/types';
+import { AgentProfile, AIDER_MODES, Mode, SettingsData, TaskData } from '@common/types';
+import { extractProviderModel } from '@common/utils';
+⋮----
+import type { Task } from '@/task/task';
+import type { ModelManager } from '@/models/model-manager';
 ⋮----
 import { Store } from '@/store';
 import logger from '@/logger';
@@ -12037,7 +12047,10 @@ import { getElectronApp } from '@/app';
 ⋮----
 export class TelemetryManager
 ⋮----
-constructor(store: Store)
+constructor(
+    store: Store,
+    private readonly modelManager: ModelManager,
+)
 ⋮----
 settingsChanged(oldSettings: SettingsData, newSettings: SettingsData)
 ⋮----
@@ -12049,9 +12062,15 @@ captureProjectOpened(openedProjectsCount: number)
 ⋮----
 captureProjectClosed(closedProjectsCount: number)
 ⋮----
-captureRunPrompt(mode?: Mode)
+async captureRunPrompt(task: Task, mode: Mode)
 ⋮----
 captureAgentRun(profile: AgentProfile, task?: TaskData, totalMcpServersCount = 0)
+⋮----
+private getTelemetryProviderName(providerId: string): string | undefined
+⋮----
+private getAgentModelProperties(profile: AgentProfile | null)
+⋮----
+private getTelemetryModelName(model?: string | null): string | null | undefined
 ⋮----
 captureCustomCommand(commandName: string, argsCount: number, mode: Mode)
 ⋮----
@@ -13856,8 +13875,6 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
 // Prevent unhandled promise rejections from crashing the process
 ⋮----
 // Initialize network manager FIRST — must be before any network calls
-⋮----
-// Initialize telemetry manager (non-blocking - analytics not critical for startup)
 ⋮----
 // Initialize MCP manager
 ⋮----
@@ -18399,7 +18416,73 @@ e.stopPropagation();
 handleExpandedClick();
 
 ================
-File: src/renderer/src/components/message/messageMap.ts
+File: src/renderer/src/components/message/MessageMap.tsx
+================
+import { memo, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { MdKeyboardArrowDown, MdKeyboardArrowUp, MdKeyboardDoubleArrowDown } from 'react-icons/md';
+import { Message } from '@common/types';
+⋮----
+import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMapUtils';
+import { MessageMapMarker } from './MessageMapMarker';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  messages: Message[];
+  visibleIndex: number;
+  onNavigate: (index: number, animated: boolean) => void;
+  onPreviousUserMessage: () => void;
+  onNextUserMessage: () => void;
+  hasPreviousUserMessage: boolean;
+  hasNextUserMessage: boolean;
+  onScrollToBottom: () => void;
+};
+
+================
+File: src/renderer/src/components/message/MessageMapMarker.tsx
+================
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+import { MessageMapRole } from './messageMapUtils';
+import { MessageMapPreview } from './MessageMapPreview';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  turnNumber: number;
+  role: MessageMapRole;
+  index: number;
+  preview: string;
+  active: boolean;
+  onNavigate: (index: number, animated: boolean) => void;
+};
+⋮----
+const handleClick = ()
+
+================
+File: src/renderer/src/components/message/MessageMapPreview.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+⋮----
+import { MessageMapRole } from './messageMapUtils';
+⋮----
+type Props = {
+  turnNumber: number;
+  role: MessageMapRole;
+  preview: string;
+};
+⋮----
+export const MessageMapPreview = (
+⋮----
+className=
+⋮----
+
+================
+File: src/renderer/src/components/message/messageMapUtils.ts
 ================
 import { isAssistantGroupMessage, isGroupMessage, isResponseMessage, isUserMessage, Message } from '@common/types';
 ⋮----
@@ -18449,72 +18532,6 @@ export const createMessageMapMarkers = (turns: MessageMapTurn[]): MessageMapMark
 // Selection follows user messages only: the active marker is the user message currently in the
 // scroll view, or the previous one when the viewport sits within that turn's replies.
 export const getActiveMarkerId = (markers: MessageMapMarkerItem[], visibleIndex: number): string | null =>
-
-================
-File: src/renderer/src/components/message/MessageMap.tsx
-================
-import { memo, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { MdKeyboardArrowDown, MdKeyboardArrowUp, MdKeyboardDoubleArrowDown } from 'react-icons/md';
-import { Message } from '@common/types';
-⋮----
-import { createMessageMapMarkers, createMessageMapTurns, getActiveMarkerId } from './messageMap';
-import { MessageMapMarker } from './MessageMapMarker';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-⋮----
-type Props = {
-  messages: Message[];
-  visibleIndex: number;
-  onNavigate: (index: number, animated: boolean) => void;
-  onPreviousUserMessage: () => void;
-  onNextUserMessage: () => void;
-  hasPreviousUserMessage: boolean;
-  hasNextUserMessage: boolean;
-  onScrollToBottom: () => void;
-};
-
-================
-File: src/renderer/src/components/message/MessageMapMarker.tsx
-================
-import { memo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { clsx } from 'clsx';
-⋮----
-import { MessageMapRole } from './messageMap';
-import { MessageMapPreview } from './MessageMapPreview';
-⋮----
-import { Tooltip } from '@/components/ui/Tooltip';
-⋮----
-type Props = {
-  turnNumber: number;
-  role: MessageMapRole;
-  index: number;
-  preview: string;
-  active: boolean;
-  onNavigate: (index: number, animated: boolean) => void;
-};
-⋮----
-const handleClick = ()
-
-================
-File: src/renderer/src/components/message/MessageMapPreview.tsx
-================
-import { useTranslation } from 'react-i18next';
-import { clsx } from 'clsx';
-⋮----
-import { MessageMapRole } from './messageMap';
-⋮----
-type Props = {
-  turnNumber: number;
-  role: MessageMapRole;
-  preview: string;
-};
-⋮----
-export const MessageMapPreview = (
-⋮----
-className=
-⋮----
 
 ================
 File: src/renderer/src/components/message/Messages.tsx
@@ -19400,7 +19417,9 @@ import { MessageMap } from './MessageMap';
 import { IconButton } from '@/components/common/IconButton';
 import { groupAssistantMessages, groupMessagesByPromptContext } from '@/components/message/utils';
 import { useUserMessageNavigation } from '@/hooks/useUserMessageNavigation';
+import { useVirtualizedListActivation } from '@/hooks/useVirtualizedListActivation';
 import { useSettingsStore } from '@/stores/settingsStore';
+import { getVirtualizedListBottomOffset } from '@/utils/virtualizedList';
 ⋮----
 export type VirtualizedMessagesRef = {
   exportToImage: () => void;
@@ -19411,6 +19430,7 @@ type Props = {
   baseDir: string;
   taskId: string;
   inProgress: boolean;
+  isActive?: boolean;
   messages: Message[];
   allFiles?: string[];
   renderMarkdown: boolean;
@@ -28433,6 +28453,24 @@ export const useVersions = () =>
 // eslint-disable-next-line react-hooks/set-state-in-effect
 
 ================
+File: src/renderer/src/hooks/useVirtualizedListActivation.ts
+================
+import { RefObject, useLayoutEffect, useRef } from 'react';
+import { LegendListRef } from '@legendapp/list/react';
+⋮----
+type Props = {
+  isActive: boolean;
+  listRef: RefObject<LegendListRef | null>;
+  itemKeys: string[];
+  scrollingPausedRef: RefObject<boolean>;
+  onRestored?: () => void;
+};
+⋮----
+export const useVirtualizedListActivation = (
+⋮----
+const restore = async () =>
+
+================
 File: src/renderer/src/i18n/index.ts
 ================
 import i18n from 'i18next';
@@ -32644,6 +32682,11 @@ const addTaskWithSubtasks = (task: TaskData, level: number) =>
 // Add pinned tasks first (without header)
 
 ================
+File: src/renderer/src/utils/virtualizedList.ts
+================
+export const getVirtualizedListBottomOffset = (element: HTMLElement) =>
+
+================
 File: src/renderer/src/voice/gemini.ts
 ================
 import { GeminiVoiceModel } from '@common/agent';
@@ -33299,7 +33342,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.87.0-dev",
+  "version": "0.88.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
