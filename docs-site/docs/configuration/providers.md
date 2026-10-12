@@ -519,6 +519,16 @@ Configure any OpenAI-compatible API endpoint to use custom models or self-hosted
 - **Model Library**: Use the [Model Library](../core/model-library.md) for advanced configuration and custom model management
 - **API Compatibility**: Configure all settings in the Model Library for unified experience across all modes
 
+### Example: Grokified
+
+[Grokified](https://grokified.com) is an OpenAI-compatible API for Grok models at 50% of the list price. It works through the OpenAI Compatible provider:
+
+- **Base URL**: `https://api.grokified.com/v1`
+- **API Key**: a `gk_live_...` key from [grokified.com/login](https://grokified.com/login)
+- **Models**: `grok-build-0.1,grok-4.6` (both work on any Grokified account)
+
+Then select `openai-compatible/grok-build-0.1` in the model selector. `grok-build-0.1` (256K context) is tuned for code, and `grok-4.6` has a 500K context. `grok-4.7` is left out of the list above because it needs a Basic or higher Grokified plan: add it to **Models** only on such a plan, since other accounts get a 403 `plan_capability_required` error for it. Free accounts are capped at 32,000 input tokens per request until they buy credit. See the [Grokified docs](https://grokified.com/docs) for the full model list.
+
 ---
 
 ## OpenCode
@@ -738,7 +748,7 @@ Requesty provides optimized model routing and caching for improved performance a
 
 - **API Key**: Your Requesty API key for authentication
   - Environment variable: `REQUESTY_API_KEY`
-  - Get your API key from [Requesty API Keys](https://app.requesty.ai/api-keys)
+  - Get your API key from the [Requesty dashboard](https://app.requesty.ai/) (open the API Keys section)
 - **Models**: List of available models (auto-populated when API key is provided)
 - **Auto Cache**: Enable automatic response caching for improved performance
 - **Reasoning Effort**: Control the level of reasoning for supported models
@@ -750,7 +760,7 @@ Requesty provides optimized model routing and caching for improved performance a
 
 ### Setup
 
-1. Go to [Requesty API Keys](https://app.requesty.ai/api-keys)
+1. Go to the [Requesty dashboard](https://app.requesty.ai/) and open the API Keys section
 2. Create a new API key
 3. Enter the API key in the Model Library Requesty configuration
 4. Select your preferred models from the auto-populated list
