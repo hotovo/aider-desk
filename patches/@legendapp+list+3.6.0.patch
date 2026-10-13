@@ -1,16 +1,17 @@
 diff --git a/node_modules/@legendapp/list/react-native.web.js b/node_modules/@legendapp/list/react-native.web.js
-index a0f962c..7ee204f 100644
+index a0f962c..dd496d6 100644
 --- a/node_modules/@legendapp/list/react-native.web.js
 +++ b/node_modules/@legendapp/list/react-native.web.js
-@@ -409,6 +409,7 @@
+@@ -409,6 +409,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
 +var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
++var pendingContainerMeasure = /* @__PURE__ */ new WeakMap();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5208,6 +5209,9 @@
+@@ -5208,6 +5210,9 @@ function applyItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem) {
    };
  }
  function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notifyTotalSize = true) {
@@ -20,7 +21,7 @@ index a0f962c..7ee204f 100644
    var _a3, _b;
    const state = ctx.state;
    const {
-@@ -5278,6 +5282,9 @@
+@@ -5278,6 +5283,9 @@ function measureContainersInLayoutEffect(ctx, targetContainerIds = null) {
      const element = viewRef == null ? void 0 : viewRef.current;
      if (itemKey !== void 0 && element) {
        const rect = element.getBoundingClientRect();
@@ -30,7 +31,7 @@ index a0f962c..7ee204f 100644
        setContainerLayoutBaseline(element, rect);
        measurements.push({
          containerId,
-@@ -5303,7 +5310,19 @@
+@@ -5303,7 +5311,46 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
      {
        const targetContainerIds = getContainerLayoutEffectScope(ctx);
        if (targetContainerIds !== void 0) {
@@ -38,32 +39,83 @@ index a0f962c..7ee204f 100644
 +        const now = Date.now();
 +        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
 +        if (now - lastMeasureAt < 50) {
-+          const deferredCtx = ctx;
-+          const deferredTargets = targetContainerIds;
-+          requestAnimationFrame(() => {
-+            lastContainerMeasureAt.set(deferredCtx, Date.now());
-+            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
-+          });
++          let pending = pendingContainerMeasure.get(ctx);
++          if (!pending) {
++            const deferredCtx = ctx;
++            pending = {
++              targets: targetContainerIds === null ? null : new Set(targetContainerIds),
++              frame: requestAnimationFrame(() => {
++                pendingContainerMeasure.delete(deferredCtx);
++                lastContainerMeasureAt.set(deferredCtx, Date.now());
++                measureContainersInLayoutEffect(deferredCtx, pending.targets);
++              })
++            };
++            pendingContainerMeasure.set(ctx, pending);
++          } else if (targetContainerIds === null) {
++            pending.targets = null;
++          } else if (pending.targets !== null) {
++            for (const id of targetContainerIds) {
++              pending.targets.add(id);
++            }
++          }
 +        } else {
++          const pending = pendingContainerMeasure.get(ctx);
++          let mergedTargets = targetContainerIds;
++          if (pending) {
++            cancelAnimationFrame(pending.frame);
++            pendingContainerMeasure.delete(ctx);
++            if (pending.targets === null || targetContainerIds === null) {
++              mergedTargets = null;
++            } else {
++              mergedTargets = new Set(pending.targets);
++              for (const id of targetContainerIds) {
++                mergedTargets.add(id);
++              }
++            }
++          }
 +          lastContainerMeasureAt.set(ctx, now);
-+          measureContainersInLayoutEffect(ctx, targetContainerIds);
++          measureContainersInLayoutEffect(ctx, mergedTargets);
 +        }
        }
      }
    }, [ctx, containerLayoutEpoch]);
+@@ -5693,8 +5740,10 @@ function useOnLayoutSync({
+     let prevRect;
+     if (measureInLayoutEffect) {
+       const rect = element.getBoundingClientRect();
+-      emit(toLayout(rect), true);
+-      prevRect = rect;
++      if (rect.width !== 0 || rect.height !== 0) {
++        emit(toLayout(rect), true);
++        prevRect = rect;
++      }
+     }
+     return createResizeObserver(element, (entry) => {
+       var _a4;
+@@ -5706,6 +5755,9 @@ function useOnLayoutSync({
+         top: entry.contentRect.top,
+         width: borderBoxSize.inlineSize
+       } : (_a4 = target == null ? void 0 : target.getBoundingClientRect()) != null ? _a4 : entry.contentRect;
++      if (rectObserved.width === 0 && rectObserved.height === 0) {
++        return;
++      }
+       const previousRect = prevRect != null ? prevRect : getContainerLayoutBaseline(element);
+       const didSizeChange = previousRect === void 0 || rectObserved.width !== previousRect.width || rectObserved.height !== previousRect.height;
+       prevRect = rectObserved;
 diff --git a/node_modules/@legendapp/list/react-native.web.mjs b/node_modules/@legendapp/list/react-native.web.mjs
-index 9338287..bede150 100644
+index 9338287..c710677 100644
 --- a/node_modules/@legendapp/list/react-native.web.mjs
 +++ b/node_modules/@legendapp/list/react-native.web.mjs
-@@ -388,6 +388,7 @@
+@@ -388,6 +388,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
 +var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
++var pendingContainerMeasure = /* @__PURE__ */ new WeakMap();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5187,6 +5188,9 @@
+@@ -5187,6 +5189,9 @@ function applyItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem) {
    };
  }
  function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notifyTotalSize = true) {
@@ -73,7 +125,7 @@ index 9338287..bede150 100644
    var _a3, _b;
    const state = ctx.state;
    const {
-@@ -5257,6 +5261,9 @@
+@@ -5257,6 +5262,9 @@ function measureContainersInLayoutEffect(ctx, targetContainerIds = null) {
      const element = viewRef == null ? void 0 : viewRef.current;
      if (itemKey !== void 0 && element) {
        const rect = element.getBoundingClientRect();
@@ -83,7 +135,7 @@ index 9338287..bede150 100644
        setContainerLayoutBaseline(element, rect);
        measurements.push({
          containerId,
-@@ -5282,7 +5289,19 @@
+@@ -5282,7 +5290,46 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
      {
        const targetContainerIds = getContainerLayoutEffectScope(ctx);
        if (targetContainerIds !== void 0) {
@@ -91,32 +143,83 @@ index 9338287..bede150 100644
 +        const now = Date.now();
 +        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
 +        if (now - lastMeasureAt < 50) {
-+          const deferredCtx = ctx;
-+          const deferredTargets = targetContainerIds;
-+          requestAnimationFrame(() => {
-+            lastContainerMeasureAt.set(deferredCtx, Date.now());
-+            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
-+          });
++          let pending = pendingContainerMeasure.get(ctx);
++          if (!pending) {
++            const deferredCtx = ctx;
++            pending = {
++              targets: targetContainerIds === null ? null : new Set(targetContainerIds),
++              frame: requestAnimationFrame(() => {
++                pendingContainerMeasure.delete(deferredCtx);
++                lastContainerMeasureAt.set(deferredCtx, Date.now());
++                measureContainersInLayoutEffect(deferredCtx, pending.targets);
++              })
++            };
++            pendingContainerMeasure.set(ctx, pending);
++          } else if (targetContainerIds === null) {
++            pending.targets = null;
++          } else if (pending.targets !== null) {
++            for (const id of targetContainerIds) {
++              pending.targets.add(id);
++            }
++          }
 +        } else {
++          const pending = pendingContainerMeasure.get(ctx);
++          let mergedTargets = targetContainerIds;
++          if (pending) {
++            cancelAnimationFrame(pending.frame);
++            pendingContainerMeasure.delete(ctx);
++            if (pending.targets === null || targetContainerIds === null) {
++              mergedTargets = null;
++            } else {
++              mergedTargets = new Set(pending.targets);
++              for (const id of targetContainerIds) {
++                mergedTargets.add(id);
++              }
++            }
++          }
 +          lastContainerMeasureAt.set(ctx, now);
-+          measureContainersInLayoutEffect(ctx, targetContainerIds);
++          measureContainersInLayoutEffect(ctx, mergedTargets);
 +        }
        }
      }
    }, [ctx, containerLayoutEpoch]);
+@@ -5672,8 +5719,10 @@ function useOnLayoutSync({
+     let prevRect;
+     if (measureInLayoutEffect) {
+       const rect = element.getBoundingClientRect();
+-      emit(toLayout(rect), true);
+-      prevRect = rect;
++      if (rect.width !== 0 || rect.height !== 0) {
++        emit(toLayout(rect), true);
++        prevRect = rect;
++      }
+     }
+     return createResizeObserver(element, (entry) => {
+       var _a4;
+@@ -5685,6 +5734,9 @@ function useOnLayoutSync({
+         top: entry.contentRect.top,
+         width: borderBoxSize.inlineSize
+       } : (_a4 = target == null ? void 0 : target.getBoundingClientRect()) != null ? _a4 : entry.contentRect;
++      if (rectObserved.width === 0 && rectObserved.height === 0) {
++        return;
++      }
+       const previousRect = prevRect != null ? prevRect : getContainerLayoutBaseline(element);
+       const didSizeChange = previousRect === void 0 || rectObserved.width !== previousRect.width || rectObserved.height !== previousRect.height;
+       prevRect = rectObserved;
 diff --git a/node_modules/@legendapp/list/react.js b/node_modules/@legendapp/list/react.js
-index a0f962c..7ee204f 100644
+index a0f962c..dd496d6 100644
 --- a/node_modules/@legendapp/list/react.js
 +++ b/node_modules/@legendapp/list/react.js
-@@ -409,6 +409,7 @@
+@@ -409,6 +409,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
 +var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
++var pendingContainerMeasure = /* @__PURE__ */ new WeakMap();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5208,6 +5209,9 @@
+@@ -5208,6 +5210,9 @@ function applyItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem) {
    };
  }
  function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notifyTotalSize = true) {
@@ -126,7 +229,7 @@ index a0f962c..7ee204f 100644
    var _a3, _b;
    const state = ctx.state;
    const {
-@@ -5278,6 +5282,9 @@
+@@ -5278,6 +5283,9 @@ function measureContainersInLayoutEffect(ctx, targetContainerIds = null) {
      const element = viewRef == null ? void 0 : viewRef.current;
      if (itemKey !== void 0 && element) {
        const rect = element.getBoundingClientRect();
@@ -136,7 +239,7 @@ index a0f962c..7ee204f 100644
        setContainerLayoutBaseline(element, rect);
        measurements.push({
          containerId,
-@@ -5303,7 +5310,19 @@
+@@ -5303,7 +5311,46 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
      {
        const targetContainerIds = getContainerLayoutEffectScope(ctx);
        if (targetContainerIds !== void 0) {
@@ -144,32 +247,83 @@ index a0f962c..7ee204f 100644
 +        const now = Date.now();
 +        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
 +        if (now - lastMeasureAt < 50) {
-+          const deferredCtx = ctx;
-+          const deferredTargets = targetContainerIds;
-+          requestAnimationFrame(() => {
-+            lastContainerMeasureAt.set(deferredCtx, Date.now());
-+            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
-+          });
++          let pending = pendingContainerMeasure.get(ctx);
++          if (!pending) {
++            const deferredCtx = ctx;
++            pending = {
++              targets: targetContainerIds === null ? null : new Set(targetContainerIds),
++              frame: requestAnimationFrame(() => {
++                pendingContainerMeasure.delete(deferredCtx);
++                lastContainerMeasureAt.set(deferredCtx, Date.now());
++                measureContainersInLayoutEffect(deferredCtx, pending.targets);
++              })
++            };
++            pendingContainerMeasure.set(ctx, pending);
++          } else if (targetContainerIds === null) {
++            pending.targets = null;
++          } else if (pending.targets !== null) {
++            for (const id of targetContainerIds) {
++              pending.targets.add(id);
++            }
++          }
 +        } else {
++          const pending = pendingContainerMeasure.get(ctx);
++          let mergedTargets = targetContainerIds;
++          if (pending) {
++            cancelAnimationFrame(pending.frame);
++            pendingContainerMeasure.delete(ctx);
++            if (pending.targets === null || targetContainerIds === null) {
++              mergedTargets = null;
++            } else {
++              mergedTargets = new Set(pending.targets);
++              for (const id of targetContainerIds) {
++                mergedTargets.add(id);
++              }
++            }
++          }
 +          lastContainerMeasureAt.set(ctx, now);
-+          measureContainersInLayoutEffect(ctx, targetContainerIds);
++          measureContainersInLayoutEffect(ctx, mergedTargets);
 +        }
        }
      }
    }, [ctx, containerLayoutEpoch]);
+@@ -5693,8 +5740,10 @@ function useOnLayoutSync({
+     let prevRect;
+     if (measureInLayoutEffect) {
+       const rect = element.getBoundingClientRect();
+-      emit(toLayout(rect), true);
+-      prevRect = rect;
++      if (rect.width !== 0 || rect.height !== 0) {
++        emit(toLayout(rect), true);
++        prevRect = rect;
++      }
+     }
+     return createResizeObserver(element, (entry) => {
+       var _a4;
+@@ -5706,6 +5755,9 @@ function useOnLayoutSync({
+         top: entry.contentRect.top,
+         width: borderBoxSize.inlineSize
+       } : (_a4 = target == null ? void 0 : target.getBoundingClientRect()) != null ? _a4 : entry.contentRect;
++      if (rectObserved.width === 0 && rectObserved.height === 0) {
++        return;
++      }
+       const previousRect = prevRect != null ? prevRect : getContainerLayoutBaseline(element);
+       const didSizeChange = previousRect === void 0 || rectObserved.width !== previousRect.width || rectObserved.height !== previousRect.height;
+       prevRect = rectObserved;
 diff --git a/node_modules/@legendapp/list/react.mjs b/node_modules/@legendapp/list/react.mjs
-index 9338287..bede150 100644
+index 9338287..c710677 100644
 --- a/node_modules/@legendapp/list/react.mjs
 +++ b/node_modules/@legendapp/list/react.mjs
-@@ -388,6 +388,7 @@
+@@ -388,6 +388,8 @@ var IsNewArchitecture = true;
  
  // src/core/containerLayoutBaseline.ts
  var containerLayoutBaselines = /* @__PURE__ */ new WeakMap();
 +var lastContainerMeasureAt = /* @__PURE__ */ new WeakMap();
++var pendingContainerMeasure = /* @__PURE__ */ new WeakMap();
  function getContainerLayoutBaseline(element) {
    return containerLayoutBaselines.get(element);
  }
-@@ -5187,6 +5188,9 @@
+@@ -5187,6 +5189,9 @@ function applyItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem) {
    };
  }
  function updateOneItemSize(ctx, itemKey, sizeObj, resolvedMeasurementItem, notifyTotalSize = true) {
@@ -179,7 +333,7 @@ index 9338287..bede150 100644
    var _a3, _b;
    const state = ctx.state;
    const {
-@@ -5257,6 +5261,9 @@
+@@ -5257,6 +5262,9 @@ function measureContainersInLayoutEffect(ctx, targetContainerIds = null) {
      const element = viewRef == null ? void 0 : viewRef.current;
      if (itemKey !== void 0 && element) {
        const rect = element.getBoundingClientRect();
@@ -189,7 +343,7 @@ index 9338287..bede150 100644
        setContainerLayoutBaseline(element, rect);
        measurements.push({
          containerId,
-@@ -5282,7 +5289,19 @@
+@@ -5282,7 +5290,46 @@ var ContainerLayoutCoordinator = typedMemo(function ContainerLayoutCoordinatorCo
      {
        const targetContainerIds = getContainerLayoutEffectScope(ctx);
        if (targetContainerIds !== void 0) {
@@ -197,16 +351,66 @@ index 9338287..bede150 100644
 +        const now = Date.now();
 +        const lastMeasureAt = lastContainerMeasureAt.get(ctx) || 0;
 +        if (now - lastMeasureAt < 50) {
-+          const deferredCtx = ctx;
-+          const deferredTargets = targetContainerIds;
-+          requestAnimationFrame(() => {
-+            lastContainerMeasureAt.set(deferredCtx, Date.now());
-+            measureContainersInLayoutEffect(deferredCtx, deferredTargets);
-+          });
++          let pending = pendingContainerMeasure.get(ctx);
++          if (!pending) {
++            const deferredCtx = ctx;
++            pending = {
++              targets: targetContainerIds === null ? null : new Set(targetContainerIds),
++              frame: requestAnimationFrame(() => {
++                pendingContainerMeasure.delete(deferredCtx);
++                lastContainerMeasureAt.set(deferredCtx, Date.now());
++                measureContainersInLayoutEffect(deferredCtx, pending.targets);
++              })
++            };
++            pendingContainerMeasure.set(ctx, pending);
++          } else if (targetContainerIds === null) {
++            pending.targets = null;
++          } else if (pending.targets !== null) {
++            for (const id of targetContainerIds) {
++              pending.targets.add(id);
++            }
++          }
 +        } else {
++          const pending = pendingContainerMeasure.get(ctx);
++          let mergedTargets = targetContainerIds;
++          if (pending) {
++            cancelAnimationFrame(pending.frame);
++            pendingContainerMeasure.delete(ctx);
++            if (pending.targets === null || targetContainerIds === null) {
++              mergedTargets = null;
++            } else {
++              mergedTargets = new Set(pending.targets);
++              for (const id of targetContainerIds) {
++                mergedTargets.add(id);
++              }
++            }
++          }
 +          lastContainerMeasureAt.set(ctx, now);
-+          measureContainersInLayoutEffect(ctx, targetContainerIds);
++          measureContainersInLayoutEffect(ctx, mergedTargets);
 +        }
        }
      }
    }, [ctx, containerLayoutEpoch]);
+@@ -5672,8 +5719,10 @@ function useOnLayoutSync({
+     let prevRect;
+     if (measureInLayoutEffect) {
+       const rect = element.getBoundingClientRect();
+-      emit(toLayout(rect), true);
+-      prevRect = rect;
++      if (rect.width !== 0 || rect.height !== 0) {
++        emit(toLayout(rect), true);
++        prevRect = rect;
++      }
+     }
+     return createResizeObserver(element, (entry) => {
+       var _a4;
+@@ -5685,6 +5734,9 @@ function useOnLayoutSync({
+         top: entry.contentRect.top,
+         width: borderBoxSize.inlineSize
+       } : (_a4 = target == null ? void 0 : target.getBoundingClientRect()) != null ? _a4 : entry.contentRect;
++      if (rectObserved.width === 0 && rectObserved.height === 0) {
++        return;
++      }
+       const previousRect = prevRect != null ? prevRect : getContainerLayoutBaseline(element);
+       const didSizeChange = previousRect === void 0 || rectObserved.width !== previousRect.width || rectObserved.height !== previousRect.height;
+       prevRect = rectObserved;

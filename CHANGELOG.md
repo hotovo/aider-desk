@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved performance when switching between loaded tasks by preserving virtualized message size caches
+
 ## [0.87.0]
 
 - added option to skip Git hooks on commit

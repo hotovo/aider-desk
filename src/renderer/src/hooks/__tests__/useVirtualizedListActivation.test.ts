@@ -11,8 +11,10 @@ const createList = () => {
   Object.defineProperties(element, {
     clientWidth: { configurable: true, value: 1000 },
     clientHeight: { configurable: true, value: 600 },
+    scrollHeight: { configurable: true, value: 1200 },
   });
-  const state = { start: 1, scroll: 240, positionAtIndex: () => 200 };
+  element.scrollTop = 400;
+  const state = { start: 1, scroll: 240, positionAtIndex: (index: number) => index * 200 };
   const list = {
     getState: vi.fn(() => state),
     getScrollableNode: vi.fn(() => element),
@@ -61,7 +63,7 @@ describe('useVirtualizedListActivation', () => {
     expect(list.clearCaches).not.toHaveBeenCalled();
   });
 
-  it('remeasures on activation and follows the finished task to its new end', async () => {
+  it('follows the finished task to its new end on activation without clearing cached sizes', async () => {
     const { list, listRef } = createList();
     const scrollingPausedRef = { current: false };
     const itemKeys = ['first', 'second'];
@@ -72,12 +74,34 @@ describe('useVirtualizedListActivation', () => {
     rerender({ isActive: true });
     expect(result.current.current).toBe(true);
     await flushFrame();
-    expect(list.clearCaches).toHaveBeenCalledWith({ mode: 'sizes' });
+    await flushFrame();
+    expect(list.clearCaches).not.toHaveBeenCalled();
     expect(list.scrollToEnd).toHaveBeenCalledWith({ animated: false });
     expect(scrollingPausedRef.current).toBe(false);
     expect(result.current.current).toBe(true);
     await flushFrame();
     expect(result.current.current).toBe(false);
+  });
+
+  it('skips scrollToEnd when the active task is already aligned at the bottom', async () => {
+    const { list, listRef, element } = createList();
+    element.scrollTop = 600;
+    list.getState().scroll = 600;
+    const onRestored = vi.fn();
+    const scrollingPausedRef = { current: false };
+    const itemKeys = ['first', 'second'];
+    const { result, rerender } = renderHook(({ isActive }) => useVirtualizedListActivation({ isActive, listRef, itemKeys, scrollingPausedRef, onRestored }), {
+      initialProps: { isActive: true },
+    });
+    rerender({ isActive: false });
+    rerender({ isActive: true });
+    await flushFrame();
+    await flushFrame();
+    expect(list.clearCaches).not.toHaveBeenCalled();
+    expect(list.scrollToEnd).not.toHaveBeenCalled();
+    await flushFrame();
+    expect(result.current.current).toBe(false);
+    expect(onRestored).toHaveBeenCalledTimes(1);
   });
 
   it('aligns to the settled DOM bottom after restoration finishes, excluding temporary padding', async () => {
@@ -105,6 +129,7 @@ describe('useVirtualizedListActivation', () => {
     });
     rerender({ isActive: true });
     await flushFrame();
+    await flushFrame();
     Object.defineProperty(element, 'scrollHeight', { configurable: true, value: 1600 });
     expect(result.current.current).toBe(true);
     await act(async () => finishRestore?.());
@@ -115,8 +140,9 @@ describe('useVirtualizedListActivation', () => {
     expect(element.scrollTop).toBe(900);
   });
 
-  it('does not realign a paused conversation after restoring its anchor', async () => {
-    const { listRef } = createList();
+  it('does not realign or scroll a paused conversation when its anchor position has not changed', async () => {
+    const { list, listRef, element } = createList();
+    element.scrollTop = 240;
     const scrollingPausedRef = { current: true };
     const itemKeys = ['first', 'second'];
     const onRestored = vi.fn();
@@ -127,6 +153,10 @@ describe('useVirtualizedListActivation', () => {
     rerender({ isActive: true });
     await flushFrame();
     await flushFrame();
+    await flushFrame();
+    expect(list.clearCaches).not.toHaveBeenCalled();
+    expect(list.scrollToIndex).not.toHaveBeenCalled();
+    expect(list.scrollToOffset).not.toHaveBeenCalled();
     expect(onRestored).not.toHaveBeenCalled();
   });
 
@@ -156,6 +186,8 @@ describe('useVirtualizedListActivation', () => {
     rerender({ isActive: false, itemKeys: ['inserted', 'first', 'second'] });
     rerender({ isActive: true, itemKeys: ['inserted', 'first', 'second'] });
     await flushFrame();
+    await flushFrame();
+    expect(list.clearCaches).not.toHaveBeenCalled();
     expect(list.scrollToIndex).toHaveBeenCalledWith({ index: 2, viewPosition: 0, viewOffset: -40, animated: false });
     expect(list.scrollToEnd).not.toHaveBeenCalled();
     expect(scrollingPausedRef.current).toBe(true);
@@ -171,11 +203,13 @@ describe('useVirtualizedListActivation', () => {
     list.getState().scroll = 0;
     rerender({ isActive: true, itemKeys: ['first'] });
     await flushFrame();
+    await flushFrame();
+    expect(list.clearCaches).not.toHaveBeenCalled();
     expect(list.scrollToOffset).toHaveBeenCalledWith({ offset: 240, animated: false });
     expect(list.scrollToIndex).not.toHaveBeenCalled();
   });
 
-  it('waits for a measurable scroll container before clearing sizes', async () => {
+  it('waits for a measurable scroll container before restoring scroll', async () => {
     const { list, listRef, element } = createList();
     Object.defineProperty(element, 'clientWidth', { configurable: true, value: 0 });
     const scrollingPausedRef = { current: false };
@@ -185,10 +219,12 @@ describe('useVirtualizedListActivation', () => {
     });
     rerender({ isActive: true });
     await flushFrame();
-    expect(list.clearCaches).not.toHaveBeenCalled();
+    expect(list.scrollToEnd).not.toHaveBeenCalled();
     Object.defineProperty(element, 'clientWidth', { configurable: true, value: 1000 });
     await flushFrame();
-    expect(list.clearCaches).toHaveBeenCalledTimes(1);
+    await flushFrame();
+    expect(list.scrollToEnd).toHaveBeenCalledTimes(1);
+    expect(list.clearCaches).not.toHaveBeenCalled();
   });
 
   it('cancels queued restoration if the task is hidden again', async () => {
@@ -201,7 +237,7 @@ describe('useVirtualizedListActivation', () => {
     rerender({ isActive: true });
     rerender({ isActive: false });
     await flushFrame();
-    expect(list.clearCaches).not.toHaveBeenCalled();
+    expect(list.scrollToEnd).not.toHaveBeenCalled();
     expect(result.current.current).toBe(false);
   });
 });

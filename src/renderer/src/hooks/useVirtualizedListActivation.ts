@@ -1,6 +1,8 @@
 import { RefObject, useLayoutEffect, useRef } from 'react';
 import { LegendListRef } from '@legendapp/list/react';
 
+import { getVirtualizedListBottomOffset } from '../utils/virtualizedList';
+
 type Props = {
   isActive: boolean;
   listRef: RefObject<LegendListRef | null>;
@@ -44,6 +46,11 @@ export const useVirtualizedListActivation = ({ isActive, listRef, itemKeys, scro
 
     let cancelled = false;
     let frame = 0;
+    const waitForNextFrame = () =>
+      new Promise<void>((resolve) => {
+        frame = requestAnimationFrame(() => resolve());
+      });
+
     const restore = async () => {
       if (cancelled) {
         return;
@@ -55,16 +62,26 @@ export const useVirtualizedListActivation = ({ isActive, listRef, itemKeys, scro
         return;
       }
       isRestoringRef.current = true;
-      const scroll = scrollOffsetRef.current ?? list.getState().scroll;
+      await waitForNextFrame();
+      if (cancelled) {
+        return;
+      }
+      const state = list.getState();
+      const scroll = scrollOffsetRef.current ?? state.scroll;
       const anchor = anchorRef.current;
       const index = anchor ? itemKeysRef.current.indexOf(anchor.key) : -1;
-      list.clearCaches({ mode: 'sizes' });
       try {
         if (!scrollingPausedRef.current) {
-          await list.scrollToEnd({ animated: false });
+          const bottomOffset = getVirtualizedListBottomOffset(element);
+          if (Math.abs(element.scrollTop - bottomOffset) > 1 || Math.abs(state.scroll - bottomOffset) > 1) {
+            await list.scrollToEnd({ animated: false });
+          }
         } else if (anchor && index >= 0) {
-          await list.scrollToIndex({ index, viewPosition: 0, viewOffset: -anchor.offset, animated: false });
-        } else {
+          const targetOffset = state.positionAtIndex(index) + anchor.offset;
+          if (Math.abs(state.scroll - targetOffset) > 1 || Math.abs(element.scrollTop - targetOffset) > 1) {
+            await list.scrollToIndex({ index, viewPosition: 0, viewOffset: -anchor.offset, animated: false });
+          }
+        } else if (Math.abs(state.scroll - scroll) > 1 || Math.abs(element.scrollTop - scroll) > 1) {
           await list.scrollToOffset({ offset: scroll, animated: false });
         }
       } finally {
