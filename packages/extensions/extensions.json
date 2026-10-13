@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "wakatime",
@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "theme",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 84
+      "installCount": 85
     },
     {
       "id": "legacy-system-prompt",
@@ -233,7 +233,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "chunkhound-search",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 81
+      "installCount": 82
     },
     {
       "id": "plannotator",
@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "ui-placement-demo",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 91
+      "installCount": 93
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "bmad",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 45
+      "installCount": 47
     },
     {
       "id": "doom",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 46
+      "installCount": 47
     },
     {
       "id": "git-log",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "skill-gallery",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 128
+      "installCount": 129
     },
     {
       "id": "task-scheduler",
@@ -646,7 +646,7 @@
         "commands",
         "events"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "reasoning-selector",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 120
+      "installCount": 121
     },
     {
       "id": "dbx",
