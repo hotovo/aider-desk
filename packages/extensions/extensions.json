@@ -371,7 +371,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "fff",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 72
+      "installCount": 73
     },
     {
       "id": "kanban",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 129
+      "installCount": 130
     },
     {
       "id": "task-scheduler",
