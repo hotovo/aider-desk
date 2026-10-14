@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "ui-placement-demo",
@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "auggie-sdk",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 73
+      "installCount": 75
     },
     {
       "id": "kanban",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "doom",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 130
+      "installCount": 131
     },
     {
       "id": "task-scheduler",
