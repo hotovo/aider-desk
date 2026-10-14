@@ -71,6 +71,13 @@ ADRs are grouped into context directories. **Numbering is global and sequential*
 | [0039](testing-tooling/0039-vitest-multi-config-and-playwright.md) | Vitest Multi-Config Testing and Playwright E2E | Accepted | 2026-08-28 |
 | [0040](testing-tooling/0040-electron-vite-build-system.md) | electron-vite Build System | Accepted | 2026-08-28 |
 | [0041](extensions/0041-mirror-surface-sync-for-shared-contracts.md) | Mirror-Surface Sync for Shared Contract Changes | Proposed | 2026-09-27 |
+| [0042](extensions/0042-extension-isolation.md) | Extension Isolation | Accepted | 2026-10-14 |
+
+## Extension Test Boundary
+
+[ADR-0042](extensions/0042-extension-isolation.md) requires extension-specific tests, fixtures, and helpers to stay inside their owning extension folder. This includes configuration UI tests: use an extension-local DOM environment rather than placing them in the core renderer suite. Core-owned tests for generic extension infrastructure remain beside the core modules and use synthetic fixtures, not specific bundled extensions.
+
+Its storage addendum also requires extension-owned configuration, uploaded assets, persistent state, generated files, and caches to remain inside the installed extension folder, not separate global or temporary directories. Explicitly selected user-owned external files may be referenced without becoming extension-owned storage.
 
 ## Creating a New ADR
 
