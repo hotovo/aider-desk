@@ -76,9 +76,9 @@ export const ExtensionSettingsDialog = ({ extensionId, extensionName, projectDir
 
   const executeExtensionAction = useCallback(
     async (action: string, ...args: unknown[]) => {
-      return await api.executeUIExtensionAction(extensionId, 'config', action, args);
+      return await api.executeUIExtensionAction(extensionId, 'config', action, args, projectDir);
     },
-    [api, extensionId],
+    [api, extensionId, projectDir],
   );
 
   const handleSave = useCallback(async () => {
