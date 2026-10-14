@@ -1,16 +1,13 @@
-import { exec } from 'child_process';
 import { createWriteStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
 import { join } from 'path';
-import { promisify } from 'util';
 import https from 'https';
 
 import type { Extension, ExtensionContext, PromptFinishedEvent, QuestionAskedEvent } from '@aiderdesk/extensions';
 
-const execAsync = promisify(exec);
+import { playAudio, SoundSource, storeUploadedAudio, validateAudioPath } from './audio';
 
 const PACKS_URL = 'https://raw.githubusercontent.com/PeonPing/og-packs/main';
-const CACHE_DIR = join(tmpdir(), 'aider-desk-sound-notification');
+const CACHE_DIR = join(__dirname, 'data', 'cache');
 const CONFIG_COMPONENT_ID = 'sound-config';
 
 interface PackSound {
@@ -26,6 +23,8 @@ interface SoundPack {
 }
 
 interface SoundConfig {
+  source?: SoundSource;
+  filePath?: string;
   pack: string;
   sound: string;
 }
@@ -46,8 +45,8 @@ const bundledPacks: SoundPack[] = JSON.parse(readFileSync(join(__dirname, 'packs
 export default class SoundNotificationExtension implements Extension {
   static metadata = {
     name: 'Sound Notification',
-    version: '2.1.0',
-    description: 'Plays sound notifications using packs from og-packs',
+    version: '2.2.0',
+    description: 'Plays sound notifications using og-packs or custom audio files',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
     capabilities: ['notifications'],
   };
@@ -85,15 +84,23 @@ export default class SoundNotificationExtension implements Extension {
   }
 
   async saveConfigData(configData: unknown): Promise<unknown> {
-    const data = configData as Partial<ExtensionConfig> & { packs?: SoundPack[] };
+    const data = configData as Partial<ExtensionConfig> & {
+      packs?: SoundPack[];
+    };
     const { packs: _, ...userConfig } = data;
     const merged = { ...DEFAULT_CONFIG, ...userConfig };
-    writeFileSync(this.configPath, JSON.stringify(merged, null, 2), 'utf-8');
+
+    for (const soundConfig of [merged.agentFinished, merged.questionAsked]) {
+      if (soundConfig.source === SoundSource.Custom && soundConfig.filePath) {
+        validateAudioPath(soundConfig.filePath);
+      }
+    }
 
     // Eagerly download selected WAVs
     await this.downloadSoundIfNeeded(merged.agentFinished);
     await this.downloadSoundIfNeeded(merged.questionAsked);
 
+    writeFileSync(this.configPath, JSON.stringify(merged, null, 2), 'utf-8');
     return merged;
   }
 
@@ -106,6 +113,31 @@ export default class SoundNotificationExtension implements Extension {
       const [packName, soundName] = args as [string, string];
       await this.playSound(packName, soundName, context);
       return { success: true };
+    }
+
+    if (action === 'upload-audio') {
+      try {
+        const filePath = storeUploadedAudio(args[0], args[1]);
+        return { success: true, filePath };
+      } catch (error) {
+        context.log(`Failed to upload audio: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        return { success: false };
+      }
+    }
+
+    if (action === 'play-custom-sound') {
+      try {
+        const [filePath] = args;
+        if (typeof filePath !== 'string') {
+          throw new Error('Invalid audio path.');
+        }
+        validateAudioPath(filePath);
+        await this.playAudioFile(filePath, context);
+        return { success: true };
+      } catch (error) {
+        context.log(`Failed to preview audio: ${error instanceof Error ? error.message : String(error)}`, 'error');
+        return { success: false };
+      }
     }
 
     if (action === 'refresh-packs') {
@@ -150,6 +182,17 @@ export default class SoundNotificationExtension implements Extension {
   }
 
   private async playEventSound(soundConfig: SoundConfig, context: ExtensionContext): Promise<void> {
+    if (soundConfig.source === SoundSource.Custom) {
+      if (soundConfig.filePath) {
+        validateAudioPath(soundConfig.filePath);
+        await this.playAudioFile(soundConfig.filePath, context);
+      }
+      return;
+    }
+    if (!soundConfig.sound) {
+      return;
+    }
+
     const pack = bundledPacks.find((p) => p.name === soundConfig.pack);
     if (!pack) {
       context.log(`Sound pack "${soundConfig.pack}" not found`, 'warn');
@@ -178,6 +221,7 @@ export default class SoundNotificationExtension implements Extension {
   }
 
   private async downloadSoundIfNeeded(soundConfig: SoundConfig): Promise<void> {
+    if (soundConfig.source === SoundSource.Custom) return;
     const pack = bundledPacks.find((p) => p.name === soundConfig.pack);
     if (!pack) return;
 
@@ -195,10 +239,7 @@ export default class SoundNotificationExtension implements Extension {
       if (!existsSync(packDir)) {
         mkdirSync(packDir, { recursive: true });
       }
-      await this.downloadFile(
-        `${PACKS_URL}/${soundConfig.pack}/${soundEntry.file}`,
-        cachePath,
-      );
+      await this.downloadFile(`${PACKS_URL}/${soundConfig.pack}/${soundEntry.file}`, cachePath);
     }
   }
 
@@ -276,40 +317,8 @@ export default class SoundNotificationExtension implements Extension {
   }
 
   private async playAudioFile(filePath: string, context: ExtensionContext): Promise<void> {
-    const platform = process.platform;
-    let command: string;
-
-    switch (platform) {
-      case 'darwin':
-        command = `afplay "${filePath}"`;
-        break;
-      case 'win32':
-        command = `powershell -c "Add-Type -AssemblyName presentationCore; $player = New-Object System.Windows.Media.MediaPlayer; $player.Open('${filePath.replace(/\\/g, '\\\\')}'); $player.Play(); Start-Sleep -Seconds 3"`;
-        break;
-      case 'linux':
-        command = `paplay "${filePath}" 2>/dev/null || mpg123 --quiet "${filePath}" 2>/dev/null || mpv --no-video --really-quiet "${filePath}" 2>/dev/null || ffplay -nodisp -autoexit -loglevel quiet "${filePath}" 2>/dev/null`;
-        break;
-      default:
-        context.log(`Unsupported platform: ${platform}`, 'warn');
-        return;
-    }
-
-    try {
-      await execAsync(command, { timeout: 10000 });
-      context.log('Sound played successfully', 'debug');
-    } catch {
-      if (platform === 'linux') {
-        try {
-          await execAsync(`aplay "${filePath}" 2>/dev/null`, { timeout: 10000 });
-          return;
-        } catch {
-          // All players failed
-        }
-        context.log('Failed to play sound: no audio player available', 'warn');
-      } else {
-        context.log('Failed to play sound', 'warn');
-      }
-    }
+    await playAudio(filePath);
+    context.log('Sound played successfully', 'debug');
   }
 
   private async refreshPacks(context: ExtensionContext): Promise<SoundPack[]> {
@@ -336,12 +345,18 @@ export default class SoundNotificationExtension implements Extension {
           const sounds: PackSound[] = [];
 
           if (data.categories) {
-            for (const cat of Object.values(data.categories) as { sounds?: PackSound[] }[]) {
+            for (const cat of Object.values(data.categories) as {
+              sounds?: PackSound[];
+            }[]) {
               if (cat.sounds) {
                 for (const s of cat.sounds) {
                   if (!seen.has(s.file)) {
                     seen.add(s.file);
-                    sounds.push({ file: s.file, label: s.label, sha256: s.sha256 });
+                    sounds.push({
+                      file: s.file,
+                      label: s.label,
+                      sha256: s.sha256,
+                    });
                   }
                 }
               }
@@ -374,17 +389,21 @@ export default class SoundNotificationExtension implements Extension {
 
   private fetchJson(url: string): Promise<unknown> {
     return new Promise((resolve, reject) => {
-      https.get(url, { headers: { 'User-Agent': 'AiderDesk' } }, (res) => {
-        let data = '';
-        res.on('data', (chunk) => { data += chunk; });
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(data));
-          } catch (e) {
-            reject(e);
-          }
-        });
-      }).on('error', reject);
+      https
+        .get(url, { headers: { 'User-Agent': 'AiderDesk' } }, (res) => {
+          let data = '';
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
+          res.on('end', () => {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(e);
+            }
+          });
+        })
+        .on('error', reject);
     });
   }
 }
