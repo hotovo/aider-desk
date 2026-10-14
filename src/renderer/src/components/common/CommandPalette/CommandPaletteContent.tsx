@@ -285,8 +285,8 @@ export const CommandPaletteContent = () => {
               onClick={() => executeItem(item)}
             >
               <span className="min-w-0 flex items-baseline gap-2">
-                <span className="truncate">{item.label}</span>
-                {item.description && <span className="truncate text-text-muted text-3xs">{item.description}</span>}
+                <span className={clsx('truncate', item.description && 'shrink-0 max-w-[70%]')}>{item.label}</span>
+                {item.description && <span className="min-w-0 truncate text-text-muted text-3xs">{item.description}</span>}
               </span>
               <span className="flex items-center gap-2 shrink-0">
                 {item.state && <TaskStateChip state={item.state} />}

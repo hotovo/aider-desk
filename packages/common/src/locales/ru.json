@@ -46,6 +46,12 @@
     "switchToLocal": "Переключить на локальный режим",
     "switchToWorktree": "Переключить на режим worktree",
     "switchWorkingMode": "Переключить рабочий режим",
+    "switchToAgentMode": "Переключить на режим Агент",
+    "switchToCodeMode": "Переключить на режим Код",
+    "switchToAskMode": "Переключить на режим Вопрос",
+    "switchToArchitectMode": "Переключить на режим Архитектор",
+    "switchToContextMode": "Переключить на режим Контекст",
+    "switchToMode": "Переключить на режим {{mode}}",
     "gitAction": "Действие Git",
     "gitBranches": "Показать ветки Git"
   },

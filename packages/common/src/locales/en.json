@@ -46,6 +46,12 @@
     "switchToLocal": "Switch to Local Mode",
     "switchToWorktree": "Switch to Worktree Mode",
     "switchWorkingMode": "Switch the working mode",
+    "switchToAgentMode": "Switch to Agent mode",
+    "switchToCodeMode": "Switch to Code mode",
+    "switchToAskMode": "Switch to Ask mode",
+    "switchToArchitectMode": "Switch to Architect mode",
+    "switchToContextMode": "Switch to Context mode",
+    "switchToMode": "Switch to {{mode}} mode",
     "gitAction": "Git action",
     "gitBranches": "Show Git Branches"
   },

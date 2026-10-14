@@ -46,6 +46,12 @@
     "switchToLocal": "로컬 모드로 전환",
     "switchToWorktree": "워크트리 모드로 전환",
     "switchWorkingMode": "작업 모드 전환",
+    "switchToAgentMode": "에이전트 모드로 전환",
+    "switchToCodeMode": "코드 모드로 전환",
+    "switchToAskMode": "질문 모드로 전환",
+    "switchToArchitectMode": "아키텍트 모드로 전환",
+    "switchToContextMode": "컨텍스트 모드로 전환",
+    "switchToMode": "{{mode}} 모드로 전환",
     "gitAction": "Git 작업",
     "gitBranches": "Git 브랜치 표시"
   },

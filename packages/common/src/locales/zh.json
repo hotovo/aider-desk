@@ -46,6 +46,12 @@
     "switchToLocal": "切换到本地模式",
     "switchToWorktree": "切换到工作树模式",
     "switchWorkingMode": "切换工作模式",
+    "switchToAgentMode": "切换到代理模式",
+    "switchToCodeMode": "切换到代码模式",
+    "switchToAskMode": "切换到提问模式",
+    "switchToArchitectMode": "切换到架构模式",
+    "switchToContextMode": "切换到上下文模式",
+    "switchToMode": "切换到 {{mode}} 模式",
     "gitAction": "Git 操作",
     "gitBranches": "显示 Git 分支"
   },

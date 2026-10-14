@@ -4,6 +4,7 @@
 
 - improved performance when switching between loaded tasks by preserving virtualized message size caches
 - fixed extension settings actions not respecting the selected project
+- added command palette actions for switching task modes
 
 ## [0.87.0]
 

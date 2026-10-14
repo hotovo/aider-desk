@@ -12,7 +12,7 @@ export const useCustomModes = (baseDir?: string) => {
     let cancelled = false;
     api.getCustomModes(baseDir).then((modes) => {
       if (!cancelled) {
-        setCustomModes(modes);
+        setCustomModes((prev) => (prev.length === 0 && modes.length === 0 ? prev : modes));
       }
     });
     return () => {

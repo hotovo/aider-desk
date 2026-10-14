@@ -175,6 +175,7 @@ describe('ProjectView', () => {
     vi.clearAllMocks();
     commandPaletteStoreMock.reset();
     mockApi.getTasks.mockResolvedValue([{ id: 'task-1', name: 'Task 1' }] as TaskData[]);
+    mockApi.getCustomModes.mockResolvedValue([]);
     vi.mocked(useApi).mockReturnValue(mockApi);
     vi.mocked(useSettingsStore).mockImplementation(((selector: (state: unknown) => unknown) =>
       selector({
@@ -421,6 +422,29 @@ describe('ProjectView', () => {
     act(() => invokeAction('task.state.done'));
 
     await waitFor(() => expect(mockApi.updateTask).toHaveBeenCalledWith(projectDir, 'child-1', { state: 'DONE' }));
+  });
+
+  it('switches the active task mode through built-in palette actions', async () => {
+    await setupSubtaskProject('Child Task');
+
+    act(() => invokeAction('task.mode.code'));
+
+    await waitFor(() => expect(mockApi.updateTask).toHaveBeenCalledWith(projectDir, 'child-1', { currentMode: 'code' }));
+  });
+
+  it('registers and invokes custom mode palette actions', async () => {
+    mockApi.getCustomModes.mockResolvedValue([{ name: 'plan', label: 'Plan', description: 'Plan first' }]);
+    await setupSubtaskProject('Child Task');
+
+    const planModeItem = await waitFor(() => {
+      const item = commandPaletteStoreMock.items.get('task.mode.plan');
+      expect(item).toBeDefined();
+      return item!;
+    });
+
+    act(() => planModeItem.action());
+
+    await waitFor(() => expect(mockApi.updateTask).toHaveBeenCalledWith(projectDir, 'child-1', { currentMode: 'plan' }));
   });
 
   it('registers a pin palette action with state-aware label', async () => {
