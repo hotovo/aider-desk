@@ -492,10 +492,23 @@ export interface AgentStepFinishedEvent {
   responseMessages: ContextMessage[];
 }
 
-/** Event payload for message optimization events */
+/** Event payload for stored-context to model-message transformations. */
+export interface TransformMessagesEvent {
+  readonly originalMessages: ContextMessage[];
+  transformedMessages: ContextMessage[];
+}
+
+/** Event payload for optional optimizations. Original messages are the transformation stage's output. */
 export interface OptimizeMessagesEvent {
   readonly originalMessages: ContextMessage[];
   optimizedMessages: ContextMessage[];
+}
+
+/** Event payload after provider compatibility and default cache annotation. */
+export interface ApplyCacheControlEvent {
+  readonly originalMessages: ContextMessage[];
+  readonly cacheControl?: CacheControl;
+  messages: ContextMessage[];
 }
 
 /** Event payload for important reminders events */
@@ -2050,8 +2063,21 @@ export interface Extension {
   onAgentStepFinished?(event: AgentStepFinishedEvent, context: ExtensionContext): Promise<void | Partial<AgentStepFinishedEvent>>;
 
   /**
+   * Override default context transformations, including Aider and subagent result reduction.
+   * Original messages include reminders. Transformations are not reapplied after this hook.
+   */
+  onTransformMessages?(event: TransformMessagesEvent, context: ExtensionContext): Promise<void | Partial<TransformMessagesEvent>>;
+
+  /**
+   * Override cache annotation after provider compatibility conversion, even without a default cache policy.
+   * Return originalMessages as messages to disable default cache annotation.
+   */
+  onApplyCacheControl?(event: ApplyCacheControlEvent, context: ExtensionContext): Promise<void | Partial<ApplyCacheControlEvent>>;
+
+  /**
    * Called when messages are optimized before being sent to the LLM
-   * Modify event.optimizedMessages to change the messages that will be sent
+   * Original messages are the transformation output, not raw stored context.
+   * Modify event.optimizedMessages to override optional optimizations
    * @returns void or partial event to modify optimized messages
    */
   onOptimizeMessages?(event: OptimizeMessagesEvent, context: ExtensionContext): Promise<void | Partial<OptimizeMessagesEvent>>;

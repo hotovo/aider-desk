@@ -157,8 +157,14 @@ interface Extension {
   /** Called after each agent step completes. */
   onAgentStepFinished?(event: AgentStepFinishedEvent, context: ExtensionContext): Promise<void | Partial<AgentStepFinishedEvent>>;
 
-  /** Called when messages are optimized before being sent to the LLM. Modify `event.optimizedMessages` to change what's sent. */
+  /** Override default Aider/subagent transformations. Receives originalMessages and transformedMessages; transformations are not reapplied. */
+  onTransformMessages?(event: TransformMessagesEvent, context: ExtensionContext): Promise<void | Partial<TransformMessagesEvent>>;
+
+  /** Override optional optimizations. originalMessages is the transformation output, not raw stored context. */
   onOptimizeMessages?(event: OptimizeMessagesEvent, context: ExtensionContext): Promise<void | Partial<OptimizeMessagesEvent>>;
+
+  /** Override final cache annotation. Receives originalMessages, messages, and optional cacheControl, even without a default policy. */
+  onApplyCacheControl?(event: ApplyCacheControlEvent, context: ExtensionContext): Promise<void | Partial<ApplyCacheControlEvent>>;
 
   /** Called when important reminders are added to the user message. Modify `event.remindersContent`. */
   onImportantReminders?(event: ImportantRemindersEvent, context: ExtensionContext): Promise<void | Partial<ImportantRemindersEvent>>;

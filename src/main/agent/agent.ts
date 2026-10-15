@@ -80,7 +80,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { optimizeMessages } from '@/agent/optimizer';
+import { prepareMessagesForModel } from '@/agent/message-preparation';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
@@ -915,32 +915,15 @@ export class Agent {
       });
 
       const getBaseModelCallParams = async () => {
-        const getOptimizedMessages = async () => {
-          const originalMessages = messages as ContextMessage[];
-          const optimized = await optimizeMessages(
-            messages,
-            cacheControl,
-            task,
-            profile,
-            projectProfiles,
-            initialUserRequestMessageIndex,
-            this.extensionManager,
-          );
-
-          const extensionResult = await this.extensionManager.dispatchEvent(
-            'onOptimizeMessages',
-            {
-              originalMessages,
-              optimizedMessages: optimized as ContextMessage[],
-            },
-            task.project,
-            task,
-          );
-
-          return (extensionResult.optimizedMessages as ModelMessage[]) ?? optimized;
-        };
-
-        const optimizedMessages = await getOptimizedMessages();
+        const optimizedMessages = await prepareMessagesForModel(
+          messages,
+          cacheControl,
+          task,
+          profile,
+          projectProfiles,
+          initialUserRequestMessageIndex,
+          this.extensionManager,
+        );
 
         return {
           providerOptions,
@@ -1695,7 +1678,7 @@ export class Agent {
       const result = await generateText({
         model,
         instructions: systemPrompt,
-        messages: await optimizeMessages(messages as ModelMessage[], cacheControl),
+        messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
@@ -1768,7 +1751,7 @@ export class Agent {
         model,
         output: Output.object({ schema }),
         instructions: systemPrompt,
-        messages: await optimizeMessages(messages as ModelMessage[], cacheControl),
+        messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
         abortSignal: effectiveAbortSignal,
         providerOptions,
         ...providerParameters,
@@ -1809,7 +1792,7 @@ export class Agent {
       const lastUserIndex = messages.map((m) => m.role).lastIndexOf('user');
       const userRequestMessageIndex = lastUserIndex >= 0 ? lastUserIndex : 0;
 
-      const optimizedMessages = await optimizeMessages(
+      const optimizedMessages = await prepareMessagesForModel(
         messages,
         cacheControl,
         task,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('@/logger');
-import { convertImageToolResults } from '../optimizer';
+import { convertImageToolResults } from '../message-preparation/provider-compatibility';
 
 import type { ModelMessage, ToolResultPart } from 'ai';
 

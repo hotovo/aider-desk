@@ -25,6 +25,7 @@ import { Task } from '@/task';
 import { isDirectory, isFileIgnored, withLock } from '@/utils';
 import { atomicWriteJsonFile, cleanupStaleTempFiles } from '@/utils/atomic-write';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
+import { getSubagentMessages, getSubagentFinalText } from '@/agent/message-preparation/tool-results';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 
@@ -638,17 +639,9 @@ export class ContextManager {
               },
             ];
 
-            if (part.output.value && Array.isArray(part.output.value) && part.output.value.length > 0) {
-              const lastMessage = part.output.value[part.output.value.length - 1];
-              if (lastMessage && typeof lastMessage === 'object' && 'role' in lastMessage && lastMessage.role === MessageRole.Assistant) {
-                const content = extractTextContent(lastMessage.content);
-                if (content) {
-                  messages.push({
-                    role: MessageRole.Assistant,
-                    content: content,
-                  });
-                }
-              }
+            const content = getSubagentFinalText(part.output.value);
+            if (content) {
+              messages.push({ role: MessageRole.Assistant, content });
             }
 
             return messages;
@@ -1045,14 +1038,8 @@ export class ContextManager {
         }
 
         // Handle agent tool results - process all messages from subagent
-        if (
-          serverName === SUBAGENTS_TOOL_GROUP_NAME &&
-          toolName === SUBAGENTS_TOOL_RUN_TASK &&
-          part.output?.value &&
-          typeof part.output.value === 'object' &&
-          'messages' in part.output.value
-        ) {
-          const messages = part.output.value.messages as unknown as ContextMessage[];
+        if (serverName === SUBAGENTS_TOOL_GROUP_NAME && toolName === SUBAGENTS_TOOL_RUN_TASK && getSubagentMessages(part.output?.value) !== undefined) {
+          const messages = getSubagentMessages(part.output.value);
           if (Array.isArray(messages)) {
             messages.forEach((subMessage: ContextMessage) => {
               if (subMessage.role === 'assistant') {

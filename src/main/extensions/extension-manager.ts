@@ -46,6 +46,8 @@ import type {
   InterruptedEvent,
   ModeDefinition,
   OptimizeMessagesEvent,
+  TransformMessagesEvent,
+  ApplyCacheControlEvent,
   ProjectStartedEvent,
   ProjectStoppedEvent,
   PromptFinishedEvent,
@@ -147,6 +149,8 @@ export type ExtensionEventMap = {
   onAgentStepStarted: AgentStepStartedEvent;
   onAgentStepFinished: AgentStepFinishedEvent;
   onOptimizeMessages: OptimizeMessagesEvent;
+  onTransformMessages: TransformMessagesEvent;
+  onApplyCacheControl: ApplyCacheControlEvent;
   onImportantReminders: ImportantRemindersEvent;
   onAiderPromptStarted: AiderPromptStartedEvent;
   onAiderPromptFinished: AiderPromptFinishedEvent;

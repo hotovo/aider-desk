@@ -27,6 +27,8 @@ Every Extension interface method dispatches a specific event type. All handlers 
 | `onAgentFinished` | `AgentFinishedEvent` | — |
 | `onAgentStepStarted` | `AgentStepStartedEvent` | — |
 | `onAgentStepFinished` | `AgentStepFinishedEvent` | — |
+| `onTransformMessages` | `TransformMessagesEvent` | — |
+| `onApplyCacheControl` | `ApplyCacheControlEvent` | — |
 | `onOptimizeMessages` | `OptimizeMessagesEvent` | — |
 | `onImportantReminders` | `ImportantRemindersEvent` | — |
 | `onInterrupted` | `InterruptedEvent` | ✅ Yes |

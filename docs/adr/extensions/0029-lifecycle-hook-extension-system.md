@@ -31,6 +31,16 @@ Third parties need to extend agent behavior: enforce tool policies, redact secre
 
 Implement extensibility as a **typed lifecycle-hook system**: extensions implement the `Extension` interface from `packages/common/src/extensions.ts` (published types; `extensions.d.ts` is generated from it — [ADR-0033](../packages-monorepo/0033-generated-extension-types.md)). The main-process `ExtensionManager` loads extensions, hands them an `ExtensionContext` (API access, task/project context), and dispatches lifecycle events. Dispatch results are contractual: `onToolApproval` may `block` (with reason) or `allow` and the `ApprovalManager` obeys ([ADR-0009](../agent-system/0009-tool-approval-and-autonomy-modes.md)); `onToolFinished` may rewrite results. Extensions register tools, commands, modes, agents, and UI components; the core learns of changes via explicit refresh callbacks. The extension UI surface is covered in [ADR-0030](0030-runtime-jsx-transpiled-extension-ui.md).
 
+### Message-preparation hook semantics amendment (2026-10-15)
+
+The message-preparation pipeline separates context transformation, optional optimization, provider compatibility, and cache annotation. This is an intentional breaking change to `onOptimizeMessages`, approved rather than preserving its previous final-dispatch boundary:
+
+- `onTransformMessages` receives context with reminders and the default transformed messages. Extensions can override Aider/subagent representation; transformations are not reapplied after hooks.
+- `onOptimizeMessages` receives the transformation output as `originalMessages`, not raw stored context. It runs after default optional optimizations but before provider compatibility conversion and cache annotation.
+- `onApplyCacheControl` runs last, after default cache annotation, even without a default cache policy. Its messages expose provider options at message and content-part levels.
+
+Migration is required for existing handlers that relied on the old semantics: move raw Aider/subagent payload customization to `onTransformMessages` (or explicitly retrieve stored context through the task API), and cache-marker customization to `onApplyCacheControl`. Existing optional-optimization overrides remain in `onOptimizeMessages`. There is no legacy dispatch mode; this breaking change and migration must be called out when released. Other lifecycle hooks retain the additive-only evolution policy below.
+
 ## Rationale
 
 A documented, typed hook interface keeps the core unaware of specific extensions while guaranteeing (via structured dispatch results) that extension verdicts actually gate behavior. Isolated loading/registration confines failures, and the published types make third-party development stable across releases.
@@ -56,7 +66,7 @@ A documented, typed hook interface keeps the core unaware of specific extensions
 
 ### Do
 
-- Treat `packages/common/src/extensions.ts` as a public API: additive changes only; update docs and regenerate types ([ADR-0033](../packages-monorepo/0033-generated-extension-types.md))
+- Treat `packages/common/src/extensions.ts` as a public API: additive changes only unless explicitly approved in an ADR amendment; update docs and regenerate types ([ADR-0033](../packages-monorepo/0033-generated-extension-types.md))
 - Respect dispatch results wherever they gate behavior (approval, tool results) — never ignore an extension verdict
 - Dispatch extension events at meaningful lifecycle steps for new agent/task capabilities
 

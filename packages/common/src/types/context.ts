@@ -64,17 +64,20 @@ export type ToolResultOutput =
 
 // Content part interfaces
 export interface TextPart {
+  providerOptions?: ProviderOptions;
   type: 'text';
   text: string;
 }
 
 export interface ImagePart {
+  providerOptions?: ProviderOptions;
   type: 'image';
   image: DataContent | URL;
   mediaType?: string;
 }
 
 export interface FilePart {
+  providerOptions?: ProviderOptions;
   type: 'file';
   data: DataContent | URL;
   filename?: string;
@@ -82,11 +85,13 @@ export interface FilePart {
 }
 
 export interface ReasoningPart {
+  providerOptions?: ProviderOptions;
   type: 'reasoning';
   text: string;
 }
 
 export interface ToolCallPart {
+  providerOptions?: ProviderOptions;
   type: 'tool-call';
   toolCallId: string;
   toolName: string;
@@ -94,6 +99,7 @@ export interface ToolCallPart {
 }
 
 export interface ToolResultPart {
+  providerOptions?: ProviderOptions;
   type: 'tool-result';
   toolCallId: string;
   toolName: string;
@@ -142,6 +148,7 @@ export enum MessageRole {
 
 // Base interface for all context messages with usage reporting
 interface BaseContextMessage {
+  providerOptions?: ProviderOptions;
   id: string;
   timestamp?: number;
   usageReport?: UsageReportData;
