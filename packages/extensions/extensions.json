@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "binary-files",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 64
+      "installCount": 65
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 85
+      "installCount": 86
     },
     {
       "id": "legacy-system-prompt",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 83
+      "installCount": 84
     },
     {
       "id": "plannotator",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "git-log",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 132
+      "installCount": 133
     },
     {
       "id": "task-scheduler",
