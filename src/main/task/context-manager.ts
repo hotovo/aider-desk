@@ -1029,7 +1029,7 @@ export class ContextManager {
                 commitMessage: response.commitMessage,
                 diff: response.diff,
                 usageReport: response.usageReport,
-                promptContext: message.promptContext,
+                promptContext,
                 timestamp: message.timestamp,
               };
               messagesData.push(responseCompletedData);

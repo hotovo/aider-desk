@@ -7,6 +7,7 @@
 - added command palette actions for switching task modes
 - added branch menu action to create a clean worktree from a selected branch without moving uncommitted changes
 - added extension hooks for message transformation and cache control; updated optimization hooks to use transformed messages
+- fixed Aider tool responses not staying grouped after reloading tasks
 
 ## [0.87.0]
 
