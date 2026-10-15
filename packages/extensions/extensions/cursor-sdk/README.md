@@ -66,13 +66,13 @@ When the user interrupts a running Cursor agent:
 2. The extension calls `run.cancel()` on the active Cursor SDK run (if supported)
 3. The stream drains naturally until it ends with a terminal `status: "cancelled"` event
 4. `{ blocked: true }` is returned to prevent AiderDesk's default interrupt handling
-5. The agent ID is cleared from task metadata so the next prompt starts a fresh agent
+5. The agent ID is retained so the next prompt resumes the same conversation
 
-## SDK Patches
+## SDK version and shell workspace
 
-The extension ships `patch-cursor-sdk.mjs`, wired as a `postinstall` hook, which patches the installed `@cursor/sdk` bundle (pinned to `1.0.23`):
+The extension uses `@cursor/sdk@1.0.37` without bundle patches. Shell executors are scoped to a conversation and initialized with the task workspace; changes to the shell working directory persist within that conversation. Calls without a conversation ID still use the base executor, so live parent/subagent CWD verification is recommended after SDK updates.
 
-- **Shell cwd fallback** — Upstream, shell tool calls without an explicit `workingDirectory` run in the terminal executor's tracked cwd, which is seeded from `process.cwd()` of the AiderDesk process (not the agent workspace). The patch makes `ShellCoreExecutor.getCwd()` fall back to the workspace path first, so such commands run in the project/task directory. Note that a `cd` in one shell call no longer persists to subsequent calls; the model can still use `workingDirectory` or `cd x && cmd` within a single call.
+Only one run per task is accepted, including during agent setup. Interruptions during setup prevent sending a prompt, and runs arriving after an interrupt are cancelled. Callback processing is serialized and drained before final persistence. SDK terminal errors are reported without automatic retries. Raw event payloads and conversation text are not included in diagnostic logs.
 
 ## Limitations / Known Gaps
 
@@ -81,3 +81,28 @@ The extension ships `patch-cursor-sdk.mjs`, wired as a `postinstall` hook, which
 - **Limited abort integration** — Cancellation relies on `run.cancel()`. If the run does not support cancellation (e.g., detached/replayed run handles), the stream will still drain naturally until it ends.
 - **Edit tool diff parsing** — The `edit` tool results are parsed from unified diffs into search/replace pairs. Complex edits (creates, deletes, renames) may not be accurately represented.
 - **Agent resumption** — If the extension is unloaded or AiderDesk restarts mid-run, the agent ID stored in task metadata may reference a stale agent that cannot be resumed.
+
+## Repairing historical context ordering
+
+Older versions could save tool results before the assistant messages containing their calls. The repair utility scans `.aider-desk/tasks/*/context.json` and reports eligible files without modifying them by default:
+
+```bash
+node packages/extensions/extensions/cursor-sdk/repair-context-order.mjs --project /path/to/project
+```
+
+To target just one context file instead, use `--file` (mutually exclusive with `--project`). It also defaults to dry-run; add `--apply` to repair it:
+
+```bash
+node packages/extensions/extensions/cursor-sdk/repair-context-order.mjs --file /path/to/context.json
+node packages/extensions/extensions/cursor-sdk/repair-context-order.mjs --file /path/to/context.json --apply
+```
+
+Review the JSON report first. Stop all tasks and close the project in AiderDesk before applying repairs, so in-memory context/autosave cannot overwrite the repaired files:
+
+```bash
+node packages/extensions/extensions/cursor-sdk/repair-context-order.mjs --project /path/to/project --apply
+```
+
+The script preserves message contents, IDs, context files, and non-tool message order. Calls and results must match uniquely within the same user turn and prompt context. Files with missing or ambiguous matches are skipped and reported for manual review; no calls or results are fabricated or deleted.
+
+Each changed file receives a byte-for-byte `context.json.order-backup-<id>` backup before atomic replacement. The script checks for concurrent changes before replacement, refuses non-regular context files, and is idempotent. To restore a backup, keep the project closed and copy that backup over its corresponding `context.json`.

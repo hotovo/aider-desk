@@ -3,6 +3,8 @@ import { join, resolve } from 'node:path';
 
 import { Agent, Cursor } from '@cursor/sdk';
 
+import { CursorRunSession } from './lifecycle';
+import { formatCursorError } from './diagnostics';
 import { createModelAliases, resolveModelSelection } from './model-selection';
 import {
   completeCursorTaskPromptContext,
@@ -21,7 +23,6 @@ import type {
   ConversationStep,
   InteractionUpdate,
   ModelSelection,
-  Run,
   SDKAgent,
   SDKImage,
   SDKUserMessage,
@@ -648,7 +649,7 @@ const configComponentJsx = readFileSync(join(__dirname, './ConfigComponent.jsx')
 export default class CursorSdkExtension implements Extension {
   static metadata = {
     name: 'Cursor SDK',
-    version: '4.7.0',
+    version: '4.8.0',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
@@ -656,7 +657,7 @@ export default class CursorSdkExtension implements Extension {
   };
 
   private configPath = join(__dirname, 'config.json');
-  private activeRuns = new Map<string, Run>();
+  private sessions = new Map<string, CursorRunSession>();
   private modelSelections = new Map<string, ModelSelection>();
 
   private loadConfig(): CursorConfig {
@@ -676,12 +677,7 @@ export default class CursorSdkExtension implements Extension {
   }
 
   async onUnload(): Promise<void> {
-    for (const run of this.activeRuns.values()) {
-      if (run.supports('cancel')) {
-        await run.cancel().catch(() => {});
-      }
-    }
-    this.activeRuns.clear();
+    await Promise.allSettled([...this.sessions.values()].map((session) => session.cancel()));
   }
 
   getProviders(context: ExtensionContext): ProviderDefinition[] {
@@ -725,7 +721,7 @@ export default class CursorSdkExtension implements Extension {
               return {
                 models: [],
                 success: false,
-                error: err instanceof Error ? err.message : String(err),
+                error: formatCursorError(err, [apiKey]),
               };
             }
           },
@@ -744,6 +740,42 @@ export default class CursorSdkExtension implements Extension {
       return undefined;
     }
 
+    const taskId = taskContext.data.id;
+    if (this.sessions.has(taskId)) {
+      taskContext.addLogMessage('warning', 'Cursor SDK: a run is already active for this task.');
+      return { blocked: true };
+    }
+    const session = new CursorRunSession();
+    this.sessions.set(taskId, session);
+    const signal = event.modelCallSettings?.abortSignal;
+    const cancel = () => {
+      void session.cancel().catch(() => context.log('Cursor cancellation failed', 'warn'));
+    };
+    signal?.addEventListener('abort', cancel, { once: true });
+    if (signal?.aborted) cancel();
+    try {
+      session.throwIfAborted();
+      return await this.runAgent(event, context, taskContext, session);
+    } catch (error) {
+      if (!session.aborted) {
+        const config = this.loadConfig();
+        const message = formatCursorError(error, [config.apiKey, process.env.CURSOR_API_KEY ?? '']);
+        context.log(`Cursor agent setup error: ${message}`, 'error');
+        taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
+      }
+      return { blocked: true };
+    } finally {
+      signal?.removeEventListener('abort', cancel);
+      if (this.sessions.get(taskId) === session) this.sessions.delete(taskId);
+    }
+  }
+
+  private async runAgent(
+    event: AgentStartedEvent,
+    context: ExtensionContext,
+    taskContext: TaskContext,
+    session: CursorRunSession,
+  ): Promise<Partial<AgentStartedEvent>> {
     configureVendoredRipgrepPath(context);
 
     const prompt = event.prompt || 'Continue where you left off.';
@@ -780,7 +812,6 @@ export default class CursorSdkExtension implements Extension {
       return { blocked: true };
     }
 
-    const taskId = taskContext.data.id;
     const rawModelId = event.model.replace(`${CURSOR_PROVIDER_ID}/`, '');
     const projectDir = taskContext.getTaskDir();
 
@@ -799,7 +830,7 @@ export default class CursorSdkExtension implements Extension {
           }
         }
       } catch (err) {
-        context.log(`Failed to refresh Cursor models: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+        context.log(`Failed to refresh Cursor models: ${formatCursorError(err, [apiKey])}`, 'warn');
       }
     }
 
@@ -819,19 +850,7 @@ export default class CursorSdkExtension implements Extension {
       },
     };
 
-    const abortSignal = event.modelCallSettings?.abortSignal;
-    let activeRun: Run | undefined;
-    let abortListener: (() => void) | undefined;
-    if (abortSignal) {
-      abortListener = () => {
-        if (activeRun?.supports('cancel')) {
-          context.log('Abort requested, cancelling Cursor run', 'info');
-          void activeRun.cancel().catch(() => {});
-        }
-      };
-      abortSignal.addEventListener('abort', abortListener);
-    }
-
+    session.throwIfAborted();
     let agent: SDKAgent | undefined;
     const existingAgentId = taskContext.data.metadata?.[AGENT_ID_METADATA_KEY] as string | undefined;
     const streamProcessor = createStreamProcessor(taskContext, context, rawModelId, modelConfig);
@@ -852,12 +871,14 @@ export default class CursorSdkExtension implements Extension {
         });
       }
 
+      session.throwIfAborted();
       try {
         await agent.reload();
       } catch (err) {
-        context.log(`Agent reload failed (non-fatal): ${err instanceof Error ? err.message : String(err)}`, 'warn');
+        context.log(`Agent reload failed (non-fatal): ${formatCursorError(err, [apiKey])}`, 'warn');
       }
 
+      session.throwIfAborted();
       if (prompt) {
         const userMessage: ContextUserMessage = {
           id: `user-cursor-${Date.now()}`,
@@ -886,15 +907,12 @@ export default class CursorSdkExtension implements Extension {
         onStep: ({ step }: { step: ConversationStep }) => streamProcessor.onStep(step),
       } as SendOptions;
 
-      if (abortSignal?.aborted) {
-        throw new Error('Aborted before the Cursor run started');
-      }
+      session.throwIfAborted();
 
       const run = await agent.send(sendMessage, sendOptions);
       context.log(`Cursor run started: ${run.id}`, 'info');
 
-      activeRun = run;
-      this.activeRuns.set(taskId, run);
+      await session.attach(run);
 
       taskContext.addLoadingMessage('Running Cursor agent...');
 
@@ -903,17 +921,20 @@ export default class CursorSdkExtension implements Extension {
       context.log(`[cursor-sdk] run.wait() result.usage: ${result.usage ? JSON.stringify(result.usage) : 'undefined'}`, 'debug');
 
       await streamProcessor.finish(result.usage ?? undefined);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      context.log(`Cursor agent error: ${message}`, 'error');
-      taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
-
-      await streamProcessor.finish().catch(() => {});
-    } finally {
-      if (abortSignal && abortListener) {
-        abortSignal.removeEventListener('abort', abortListener);
+      if (result.status === 'error') {
+        const message = formatCursorError(result.error ?? { message: 'Cursor run failed without error details' }, [apiKey]);
+        context.log(`Cursor agent error: ${message}`, 'error');
+        taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
       }
-      this.activeRuns.delete(taskId);
+    } catch (err) {
+      if (!session.aborted) {
+        const message = formatCursorError(err, [apiKey]);
+        context.log(`Cursor agent error: ${message}`, 'error');
+        taskContext.addLogMessage('error', `Cursor SDK error: ${message}`);
+      }
+      await session.cancel().catch(() => context.log('Cursor cancellation failed', 'warn'));
+      await streamProcessor.finish().catch(() => context.log('Cursor stream finalization failed', 'warn'));
+    } finally {
       taskContext.addLoadingMessage(undefined, true);
 
       if (agent) {
@@ -935,13 +956,11 @@ export default class CursorSdkExtension implements Extension {
     }
 
     const taskId = taskContext.data.id;
-    const run = this.activeRuns.get(taskId);
-    if (run) {
+    const session = this.sessions.get(taskId);
+    if (session) {
       context.log(`Interrupting Cursor agent for task ${taskId}`, 'info');
 
-      if (run.supports('cancel')) {
-        await run.cancel();
-      }
+      await session.cancel().catch(() => context.log('Cursor cancellation failed', 'warn'));
 
       await taskContext.updateTask({
         state: 'INTERRUPTED',
@@ -1017,7 +1036,7 @@ type PendingCursorTask = {
   completed: boolean;
 };
 
-function createStreamProcessor(
+export function createStreamProcessor(
   taskContext: TaskContext,
   context: ExtensionContext,
   modelName: string,
@@ -1033,19 +1052,37 @@ function createStreamProcessor(
   let hasActiveReasoning = false;
   let finishing = false;
   const pendingPersist: ContextMessage[] = [];
+  const persistedMessages = new Set<string>();
+  const nestedMessageIds = new Set<string>();
+  let persistenceQueue = Promise.resolve();
 
   const flushPendingPersist = async () => {
-    if (finishing) {
-      return;
-    }
-    const messages = pendingPersist.splice(0);
-    for (const message of messages) {
-      try {
-        await taskContext.addContextMessage(message);
-      } catch (err) {
-        context.log(`Cursor SDK: failed to persist context message: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+    persistenceQueue = persistenceQueue.then(async () => {
+      if (finishing) {
+        return;
       }
-    }
+      for (const message of contextMessages) {
+        if (persistedMessages.has(message.id)) {
+          continue;
+        }
+        if (message === currentAssistantMessage || !pendingPersist.includes(message)) {
+          break;
+        }
+        try {
+          await taskContext.addContextMessage(message);
+          persistedMessages.add(message.id);
+          for (let index = pendingPersist.length - 1; index >= 0; index--) {
+            if (pendingPersist[index] === message) {
+              pendingPersist.splice(index, 1);
+            }
+          }
+        } catch (err) {
+          context.log(`Cursor SDK: failed to persist context message: ${err instanceof Error ? err.message : String(err)}`, 'warn');
+          break;
+        }
+      }
+    });
+    await persistenceQueue;
   };
   let responseCounter = 0;
   let accumulatedUsage: TurnUsage | null = null;
@@ -1405,9 +1442,12 @@ function createStreamProcessor(
     );
 
     if (pendingTask && taskContextMessages.length > 0) {
+      const resultIndex = contextMessages.findIndex((message) => message.id === callId && message.role === 'tool');
+      contextMessages.splice(resultIndex === -1 ? contextMessages.length : resultIndex, 0, ...taskContextMessages);
       pendingTask.contextMessages = taskContextMessages;
       pendingTask.stepsRendered = true;
       for (const message of taskContextMessages) {
+        nestedMessageIds.add(message.id);
         pendingPersist.push(message);
       }
     }
@@ -1421,7 +1461,7 @@ function createStreamProcessor(
       status,
       getCursorTaskError(toolResult),
     );
-    const taskToolMessage =
+    let taskToolMessage =
       pendingTask?.toolMessage ?? contextMessages.find((message): message is ContextToolMessage => message.role === 'tool' && message.id === callId);
 
     if (taskToolMessage) {
@@ -1449,6 +1489,7 @@ function createStreamProcessor(
         promptContext: resultPromptContext,
       };
       contextMessages.push(newToolMessage);
+      taskToolMessage = newToolMessage;
       if (pendingTask) {
         pendingTask.toolMessage = newToolMessage;
       }
@@ -1490,9 +1531,8 @@ function createStreamProcessor(
     const status = (toolCall.result as { status?: string } | undefined)?.status ?? 'success';
 
     if (toolName === 'task') {
-      const taskAssistantMessage = await ensureTaskAssistantMessage(callId, toolArgs, getTaskPromptContext(callId, toolArgs));
+      await ensureTaskAssistantMessage(callId, toolArgs, getTaskPromptContext(callId, toolArgs));
       await handleTaskCompletion(callId, toolCall);
-      pendingPersist.push(taskAssistantMessage);
       await flushPendingPersist();
       return;
     }
@@ -1608,8 +1648,9 @@ function createStreamProcessor(
     await flushPendingPersist();
   };
 
+  const completedToolCalls = new Set<string>();
   const onDelta = async (update: InteractionUpdate) => {
-    context.log(`onDelta: ${JSON.stringify(update)}`, 'debug');
+    context.log(`Cursor delta: ${update.type}`, 'debug');
 
     switch (update.type) {
       case 'thinking-delta': {
@@ -1653,6 +1694,7 @@ function createStreamProcessor(
 
       case 'tool-call-started': {
         const { callId, toolCall } = update;
+        if (completedToolCalls.has(callId)) break;
         const toolArgs = (toolCall.args ?? {}) as Record<string, unknown>;
         const taskPromptContext = toolCall.type === 'task' ? getTaskPromptContext(callId, toolArgs) : undefined;
         const msg = taskPromptContext ? await ensureTaskAssistantMessage(callId, toolArgs, taskPromptContext) : ensureAssistantMessage();
@@ -1683,7 +1725,7 @@ function createStreamProcessor(
 
       case 'partial-tool-call': {
         const { callId, toolCall } = update;
-        if (!currentAssistantMessage) {
+        if (completedToolCalls.has(callId) || !currentAssistantMessage) {
           break;
         }
 
@@ -1713,7 +1755,9 @@ function createStreamProcessor(
       }
 
       case 'tool-call-completed': {
+        if (completedToolCalls.has(update.callId)) break;
         await handleToolCompletion(update.callId, update.toolCall);
+        completedToolCalls.add(update.callId);
         break;
       }
 
@@ -1750,12 +1794,12 @@ function createStreamProcessor(
   const onStep = async (step: ConversationStep) => {
     switch (step.type) {
       case 'assistantMessage':
-        context.log(`[cursor-sdk] Step finished. Type: assistantMessage, text: ${step.message.text.substring(0, 100)}`, 'debug');
+        context.log('[cursor-sdk] Step finished. Type: assistantMessage', 'debug');
         break;
 
       case 'thinkingMessage':
         context.log(
-          `[cursor-sdk] Step finished. Type: thinkingMessage, text: ${step.message.text.substring(0, 100)}, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`,
+          `[cursor-sdk] Step finished. Type: thinkingMessage, durationMs: ${step.message.thinkingDurationMs ?? 'n/a'}`,
           'debug',
         );
         break;
@@ -1763,7 +1807,7 @@ function createStreamProcessor(
       case 'toolCall': {
         const tc = step.message;
         const resultStatus = tc.result?.status ?? 'pending';
-        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}, ${JSON.stringify(tc.result)}`, 'debug');
+        context.log(`[cursor-sdk] Step finished. Type: toolCall, tool: ${tc.type}, resultStatus: ${resultStatus}`, 'debug');
 
         if (tc.type === 'task') {
           const pendingTask = findPendingTask(tc as ToolCall);
@@ -1813,12 +1857,8 @@ function createStreamProcessor(
 
       for (let i = contextMessages.length - 1; i >= 0; i--) {
         const msg = contextMessages[i];
-        if (msg.role === 'assistant') {
+        if (msg.role === 'assistant' && !nestedMessageIds.has(msg.id)) {
           msg.usageReport = usageReport;
-          if (!pendingPersist.includes(msg)) {
-            await taskContext.removeMessage(msg.id);
-            pendingPersist.push(msg);
-          }
           const assistantMsg = msg as ContextAssistantMessage;
           const parts = getParts(assistantMsg);
           const text = extractText(parts).trim();
@@ -1848,5 +1888,32 @@ function createStreamProcessor(
     return [];
   };
 
-  return { onDelta, onStep, finish };
+  let callbackQueue = Promise.resolve();
+  let callbackError: unknown;
+  let closed = false;
+  let finishPromise: Promise<ContextMessage[]> | undefined;
+  const enqueue = (callback: () => Promise<void>) => {
+    if (closed) return Promise.resolve();
+    const pending = callbackQueue.then(callback);
+    callbackQueue = pending.catch((error: unknown) => {
+      callbackError ??= error;
+    });
+    return callbackQueue;
+  };
+  return {
+    onDelta: (update) => enqueue(() => onDelta(update)),
+    onStep: (step) => enqueue(() => onStep(step)),
+    finish: (usage) => {
+      if (!finishPromise) {
+        closed = true;
+        finishPromise = (async () => {
+          await callbackQueue;
+          const messages = await finish(usage);
+          if (callbackError) throw callbackError;
+          return messages;
+        })();
+      }
+      return finishPromise;
+    },
+  };
 }
