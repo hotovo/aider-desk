@@ -11,12 +11,14 @@ import { IconButton } from '@/components/common/IconButton';
 import { GitBranchesButton } from '@/components/project/GitBranchesButton';
 import { GitInitButton } from '@/components/project/GitInitButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
+import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
+import { showErrorNotification } from '@/utils/notifications';
 
 enum LocalSwitchOption {
   Merge = 'merge',
@@ -62,6 +64,7 @@ export const TaskGitControls = ({
   const allTasks = useProjectTasks(task.baseDir);
   const [isSwitching, setIsSwitching] = useState(false);
   const [showConfirmLocal, setShowConfirmLocal] = useState(false);
+  const [showLocalTargetDialog, setShowLocalTargetDialog] = useState(false);
   const [showConfirmWorktree, setShowConfirmWorktree] = useState(false);
   const [localOption, setLocalOption] = useState<LocalSwitchOption>(LocalSwitchOption.Merge);
   const [worktreeOption, setWorktreeOption] = useState<WorktreeSwitchOption>(WorktreeSwitchOption.JustSwitch);
@@ -129,7 +132,7 @@ export const TaskGitControls = ({
   const willShowConfirmDialog = isWorktree ? hasWorktreeChanges : hasLocalChanges;
 
   const performSwitch = useCallback(
-    async (mode: WorkingMode, discardWorktreeChanges = false) => {
+    async (mode: WorkingMode, discardWorktreeChanges = false, baseBranch?: string) => {
       setShowConfirmLocal(false);
       setShowConfirmWorktree(false);
       setIsSwitching(true);
@@ -137,7 +140,7 @@ export const TaskGitControls = ({
         if (mode === 'local') {
           await api.switchToLocalWorkingMode(task.baseDir, task.id, { discardWorktreeChanges });
         } else {
-          await api.switchToWorktreeWorkingMode(task.baseDir, task.id);
+          await api.switchToWorktreeWorkingMode(task.baseDir, task.id, baseBranch ? { baseBranch } : undefined);
         }
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -182,11 +185,11 @@ export const TaskGitControls = ({
     [task.workingMode, task.baseDir, task.id, taskGitStatus, api, performSwitch, isWorktreeShared],
   );
 
-  const performMergeAndSwitch = async () => {
+  const performMergeAndSwitch = async (targetBranch = taskGitStatus?.worktree?.targetBranch) => {
     setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
-      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: taskGitStatus?.worktree?.targetBranch };
+      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch };
       await api.switchToLocalWorkingMode(task.baseDir, task.id, options);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -196,11 +199,11 @@ export const TaskGitControls = ({
     }
   };
 
-  const performMergeAndSwitchAll = async () => {
+  const performMergeAndSwitchAll = async (targetBranch = taskGitStatus?.worktree?.targetBranch) => {
     setShowConfirmLocal(false);
     setIsSwitching(true);
     try {
-      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch: taskGitStatus?.worktree?.targetBranch, switchAllInWorktree: true };
+      const options: SwitchToLocalOptions = { mergeBeforeSwitch: true, targetBranch, switchAllInWorktree: true };
       await api.switchToLocalWorkingMode(task.baseDir, task.id, options);
     } catch (error) {
       // eslint-disable-next-line no-console
@@ -210,13 +213,35 @@ export const TaskGitControls = ({
     }
   };
 
+  const handleLocalTargetConfirm = async (targetBranch: string) => {
+    setShowLocalTargetDialog(false);
+    if (localOption === LocalSwitchOption.MergeAll) {
+      await performMergeAndSwitchAll(targetBranch);
+    } else {
+      await performMergeAndSwitch(targetBranch);
+    }
+  };
+
+  const handleLocalTargetCancel = () => {
+    setShowLocalTargetDialog(false);
+  };
+
   const handleLocalConfirm = async () => {
     if (localOption === LocalSwitchOption.Remove) {
       await performSwitch('local', true);
-    } else if (localOption === LocalSwitchOption.MergeAll) {
-      await performMergeAndSwitchAll();
-    } else {
-      await performMergeAndSwitch();
+      return;
+    }
+    try {
+      const branches = await api.listBranches(task.baseDir);
+      const targetBranch = taskGitStatus?.worktree?.targetBranch;
+      if (!targetBranch || !branches.some((branch) => !branch.isRemote && branch.name === targetBranch)) {
+        setShowConfirmLocal(false);
+        setShowLocalTargetDialog(true);
+        return;
+      }
+      await handleLocalTargetConfirm(targetBranch);
+    } catch (error) {
+      showErrorNotification(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -269,8 +294,12 @@ export const TaskGitControls = ({
     handleWorkingModeChanged('local');
   };
 
-  const handleSwitchToWorktree = () => {
-    handleWorkingModeChanged('worktree');
+  const handleSwitchToWorktree = (baseBranch?: string) => {
+    if (baseBranch) {
+      void performSwitch('worktree', false, baseBranch);
+    } else {
+      void handleWorkingModeChanged('worktree');
+    }
   };
 
   useEffect(() => {
@@ -362,6 +391,15 @@ export const TaskGitControls = ({
             )
           )}
         </>
+      )}
+      {showLocalTargetDialog && (
+        <WorktreeActionDialog
+          baseDir={task.baseDir}
+          title={t('workingMode.confirmLocalTitle')}
+          confirmButtonText={t('common.ok')}
+          onCancel={handleLocalTargetCancel}
+          onConfirm={handleLocalTargetConfirm}
+        />
       )}
       {showConfirmLocal && (
         <BaseDialog

@@ -1033,6 +1033,7 @@ export interface SwitchToLocalOptions {
 }
 
 export interface SwitchToWorktreeOptions {
+  baseBranch?: string;
   carryOverUncommittedChanges?: boolean;
   dropSourceChanges?: boolean;
 }

@@ -4368,9 +4368,9 @@ ${error.stderr}`,
     this.eventManager.sendSkillsUpdated(this.project.baseDir, this.taskId, skills);
   }
 
-  private async initWorktree(): Promise<void> {
+  private async initWorktree(baseBranch?: string): Promise<void> {
     const branchName = this.generateBranchName();
-    this.task.worktree = await this.gitManager.createWorktree(this.project.baseDir, this.taskId, branchName);
+    this.task.worktree = await this.gitManager.createWorktree(this.project.baseDir, this.taskId, branchName, baseBranch);
 
     const settings = this.store.getSettings();
     if (settings.taskSettings.worktreeSymlinkFolders && settings.taskSettings.worktreeSymlinkFolders.length > 0) {
@@ -4741,7 +4741,7 @@ ${error.stderr}`,
     const existingWorktree = await this.gitManager.getTaskWorktree(this.project.baseDir, this.taskId);
     if (!existingWorktree && !this.task.worktree) {
       try {
-        await this.initWorktree();
+        await this.initWorktree(options?.baseBranch);
       } catch (error) {
         if (stashId) {
           try {

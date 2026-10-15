@@ -1,4 +1,4 @@
-import { exec, execSync } from 'child_process';
+import { exec, execFile, execSync } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -8,6 +8,7 @@ import logger from '@/logger';
 import { getElectronApp } from '@/app';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 let cachedPath: string | null = null;
 let isFirstCall: boolean = true;
@@ -731,17 +732,21 @@ export const initPath = (): void => {
 
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
-  command: string,
+  command: string | string[],
   options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number; signal?: AbortSignal; killSignal?: NodeJS.Signals | number },
 ): Promise<{ stdout: string; stderr: string }> => {
   logger.debug(`Executing command with shell path: ${command}`);
   const shellPath = getShellPath();
-  return execAsync(command, {
+  const execOptions = {
     ...options,
     env: {
       ...process.env,
       PATH: shellPath,
       ...options?.env,
     },
-  });
+  };
+  if (Array.isArray(command)) {
+    return execFileAsync(command[0], command.slice(1), execOptions);
+  }
+  return execAsync(command, execOptions);
 };

@@ -67,7 +67,7 @@ type Props = {
   taskName?: string;
   disabled?: boolean;
   onSwitchToLocal: () => void;
-  onSwitchToWorktree: () => void;
+  onSwitchToWorktree: (baseBranch?: string) => void;
   willShowConfirmDialog?: boolean;
   onMerge: (targetBranch?: string) => void;
   onSquash: (targetBranch?: string, commitMessage?: string) => void;
@@ -550,6 +550,13 @@ export const GitBranchesButton = ({
     }
   };
 
+  const handleCreateWorktreeFrom = (branch: BranchInfo) => {
+    if (!disabled) {
+      handleCloseDropdown();
+      onSwitchToWorktree(branch.name);
+    }
+  };
+
   const handleSwitchToWorktree = () => {
     if (!disabled) {
       handleCloseDropdown();
@@ -957,6 +964,7 @@ export const GitBranchesButton = ({
             worktreeMode={isWorktree}
             onSelect={handleSelect}
             onNewBranchFrom={handleNewBranchFrom}
+            onCreateWorktreeFrom={handleCreateWorktreeFrom}
             onUpdateBranch={handleUpdateBranch}
             onMergeIntoCurrent={handleMergeIntoCurrent}
             onRebaseOnto={handleRebaseOnto}

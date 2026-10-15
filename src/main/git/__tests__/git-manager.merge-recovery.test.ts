@@ -4,6 +4,7 @@ import { rm } from 'fs/promises';
 
 import { beforeEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { MergeState } from '@common/types';
+import { simpleGit } from 'simple-git';
 
 import { GitManager } from '../git-manager';
 
@@ -37,13 +38,16 @@ vi.mock('fs', async (importOriginal) => {
   };
 });
 
+vi.mock('simple-git', () => ({ simpleGit: vi.fn() }));
+
 import { execWithShellPath } from '@/utils';
 
 const projectPath = '/test/project';
 const worktreePath = '/test/project/.aider-desk/tasks/task-123/worktree';
 const rebaseMergeDir = '/test/worktree/.git/rebase-merge';
 
-const getCommands = (): string[] => (execWithShellPath as Mock).mock.calls.map((call: unknown[]) => call[0] as string);
+const getCommands = (): string[] =>
+  (execWithShellPath as Mock).mock.calls.map((call: unknown[]) => (Array.isArray(call[0]) ? call[0].join(' ') : call[0]) as string);
 
 const createCollisionError = (): Error =>
   Object.assign(new Error('Command failed: git stash apply stash@{0}'), {
@@ -57,13 +61,17 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     gitManager = new GitManager();
+    vi.mocked(simpleGit).mockReturnValue({ raw: vi.fn().mockResolvedValue('refs/heads/main\nrefs/heads/master\nrefs/heads/develop') } as unknown as ReturnType<
+      typeof simpleGit
+    >);
   });
 
   describe('mergeWorktreeToMainWithUncommitted - in-progress rebase guard', () => {
     const mockRebaseInProgress = () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
-          case 'git rev-parse master':
+          case 'git rev-parse --verify --end-of-options master':
             return { stdout: 'aaa111\n', stderr: '' };
           case 'git rev-parse HEAD':
             return { stdout: 'bbb222\n', stderr: '' };
@@ -111,9 +119,10 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
     });
 
     it('should abort its own rebase when the pre-merge rebase conflicts and no rebase was in progress', async () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
-          case 'git rev-parse master':
+          case 'git rev-parse --verify --end-of-options master':
             return { stdout: 'aaa111\n', stderr: '' };
           case 'git rev-parse HEAD':
             return { stdout: 'bbb222\n', stderr: '' };
@@ -131,7 +140,7 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
             throw new Error('No such file or directory');
           case 'git branch --show-current':
             return { stdout: 'task-branch\n', stderr: '' };
-          case 'git log --oneline master..HEAD':
+          case 'git log --oneline master..HEAD --':
             return { stdout: 'abc123 some commit\n', stderr: '' };
           case 'git rebase master':
             throw new Error('Command failed: git rebase master\nerror: could not apply abc123');
@@ -156,9 +165,10 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
     });
 
     it('should not abort a pre-existing rebase when its own rebase is blocked by it', async () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
-          case 'git rev-parse master':
+          case 'git rev-parse --verify --end-of-options master':
             return { stdout: 'aaa111\n', stderr: '' };
           case 'git rev-parse HEAD':
             return { stdout: 'bbb222\n', stderr: '' };
@@ -176,7 +186,7 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
             throw new Error('No such file or directory');
           case 'git branch --show-current':
             return { stdout: 'task-branch\n', stderr: '' };
-          case 'git log --oneline master..HEAD':
+          case 'git log --oneline master..HEAD --':
             return { stdout: 'abc123 some commit\n', stderr: '' };
           case 'git rebase master':
             throw Object.assign(new Error('Command failed: git rebase master'), {
@@ -202,9 +212,10 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
     });
 
     it('should complete a squash merge when no rebase is in progress', async () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
-          case 'git rev-parse master':
+          case 'git rev-parse --verify --end-of-options master':
             return { stdout: 'aaa111\n', stderr: '' };
           case 'git rev-parse HEAD':
             return { stdout: 'ccc333\n', stderr: '' };
@@ -222,13 +233,13 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
             throw new Error('No such file or directory');
           case 'git branch --show-current':
             return { stdout: 'task-branch\n', stderr: '' };
-          case 'git log --oneline master..HEAD':
+          case 'git log --oneline master..HEAD --':
             return { stdout: 'abc123 some commit\n', stderr: '' };
           case 'git rebase master':
             return { stdout: '', stderr: '' };
           case "git rev-parse 'ccc333^{tree}'":
             return { stdout: 'tree444\n', stderr: '' };
-          case "git rev-parse 'master^{tree}'":
+          case 'git rev-parse --verify --end-of-options master^{tree}':
             return { stdout: 'tree555\n', stderr: '' };
           case 'git stash list':
             return { stdout: '', stderr: '' };
@@ -258,9 +269,10 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
 
   describe('checkoutless merge into a different branch', () => {
     const setupCheckoutlessMocks = () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
-          case 'git rev-parse master':
+          case 'git rev-parse --verify --end-of-options master':
             return { stdout: 'aaa111\n', stderr: '' };
           case 'git rev-parse HEAD':
             return { stdout: 'ccc333\n', stderr: '' };
@@ -278,7 +290,7 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
             throw new Error('No such file or directory');
           case 'git branch --show-current':
             return { stdout: 'task-branch\n', stderr: '' };
-          case 'git log --oneline master..HEAD':
+          case 'git log --oneline master..HEAD --':
             return { stdout: 'abc123 some commit\n', stderr: '' };
           case 'git rebase master':
             return { stdout: '', stderr: '' };
@@ -336,7 +348,8 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
 
   describe('rebaseMainIntoWorktree - in-progress rebase guard', () => {
     it('should not start a rebase when one is already in progress', async () => {
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
           case 'git status --porcelain=v1':
             return { stdout: '', stderr: '' };
@@ -364,7 +377,8 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
 
     it('should remove an identical untracked file left by a partial apply and retry the apply', async () => {
       let applyCount = 0;
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
           case 'git stash list':
             return { stdout: `stash@{0}: WIP on master: 123456 ${stashId}\n`, stderr: '' };
@@ -396,7 +410,8 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
 
     it('should not remove a file with different content and report a clear error', async () => {
       let applyCount = 0;
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
           case 'git stash list':
             return { stdout: `stash@{0}: WIP on master: 123456 ${stashId}\n`, stderr: '' };
@@ -425,7 +440,8 @@ describe('GitManager - merge rebase guard and stash recovery', () => {
 
     it('should not remove tracked files even when they block the untracked restore', async () => {
       let applyCount = 0;
-      (execWithShellPath as Mock).mockImplementation(async (command: string) => {
+      (execWithShellPath as Mock).mockImplementation(async (input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         switch (command) {
           case 'git stash list':
             return { stdout: `stash@{0}: WIP on master: 123456 ${stashId}\n`, stderr: '' };

@@ -102,6 +102,29 @@ describe('WorktreeActionDialog', () => {
     await waitFor(() => expect(onConfirm).toHaveBeenCalledWith('feature-x', 'Squashed changes'));
   });
 
+  it('requires a local selection instead of confirming a remote default', async () => {
+    const onConfirm = vi.fn();
+    mockApiWithBranches([makeBranch({ name: 'main', isCurrent: true }), makeBranch({ name: 'origin/develop', isRemote: true })]);
+    render(<WorktreeActionDialog {...defaultProps} defaultBranch="origin/develop" onConfirm={onConfirm} />);
+
+    expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled();
+    await openDropdown(/main \(worktree.branchCurrent\)/);
+    expect(screen.queryByRole('option', { name: 'origin/develop' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('option', { name: 'main (worktree.branchCurrent)' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
+
+    expect(onConfirm).toHaveBeenCalledWith('main', undefined);
+  });
+
+  it('does not allow confirmation when no local branches are available', async () => {
+    mockApiWithBranches([]);
+    render(<WorktreeActionDialog {...defaultProps} defaultBranch="origin/develop" />);
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Merge' })).toBeDisabled());
+    fireEvent.click(screen.getByRole('button', { name: 'Merge' }));
+    expect(defaultProps.onConfirm).not.toHaveBeenCalled();
+  });
+
   it('prefers the default branch over the current branch', async () => {
     mockApiWithBranches([makeBranch({ name: 'main', isCurrent: true }), makeBranch({ name: 'develop' })]);
     render(<WorktreeActionDialog {...defaultProps} defaultBranch="develop" />);

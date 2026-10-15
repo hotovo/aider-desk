@@ -41,6 +41,7 @@ import {
   VersionsInfo,
   VoiceSession,
   ChangeRequestItem,
+  SwitchToWorktreeOptions,
 } from '@common/types';
 import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
@@ -728,11 +729,7 @@ export class EventsHandler {
     await task.switchToLocalWorkingMode(options);
   }
 
-  async switchToWorktreeWorkingMode(
-    baseDir: string,
-    taskId: string,
-    options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean },
-  ): Promise<void> {
+  async switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToWorktreeOptions): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
     await task.switchToWorktreeWorkingMode(options);
   }

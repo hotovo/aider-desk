@@ -2117,6 +2117,7 @@
     "recentBranches": "Недавние",
     "checkoutBranch": "Переключиться на '{{branch}}'",
     "newBranchFrom": "Новая ветка от '{{branch}}'...",
+    "createWorktreeFrom": "Создать рабочее дерево от '{{branch}}'",
     "mergeBranchInto": "Слить '{{branch}}' в '{{current}}'",
     "rebaseOnto": "Перебазировать '{{current}}' на '{{branch}}'",
     "deleteBranchName": "Удалить '{{branch}}'",

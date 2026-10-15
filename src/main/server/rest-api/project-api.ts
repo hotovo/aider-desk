@@ -325,6 +325,7 @@ const SwitchToLocalWorkingModeSchema = z.object({
 });
 
 const SwitchToWorktreeWorkingModeSchema = z.object({
+  baseBranch: z.string().min(1).optional(),
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
   carryOverUncommittedChanges: z.boolean().optional(),
@@ -1074,8 +1075,8 @@ export class ProjectApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, carryOverUncommittedChanges, dropSourceChanges } = parsed;
-        await this.eventsHandler.switchToWorktreeWorkingMode(projectDir, taskId, { carryOverUncommittedChanges, dropSourceChanges });
+        const { projectDir, taskId, baseBranch, carryOverUncommittedChanges, dropSourceChanges } = parsed;
+        await this.eventsHandler.switchToWorktreeWorkingMode(projectDir, taskId, { baseBranch, carryOverUncommittedChanges, dropSourceChanges });
         res.status(200).json({ message: 'Switched to worktree working mode' });
       }),
     );

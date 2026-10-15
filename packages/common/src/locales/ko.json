@@ -2117,6 +2117,7 @@
     "recentBranches": "최근",
     "checkoutBranch": "'{{branch}}' 체크아웃",
     "newBranchFrom": "'{{branch}}'에서 새 브랜치...",
+    "createWorktreeFrom": "'{{branch}}'에서 워크트리 생성",
     "mergeBranchInto": "'{{branch}}' 브랜치를 '{{current}}'에 병합",
     "rebaseOnto": "'{{current}}' 브랜치를 '{{branch}}' 위로 리베이스",
     "deleteBranchName": "'{{branch}}' 삭제",

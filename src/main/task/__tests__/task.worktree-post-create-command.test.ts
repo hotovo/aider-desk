@@ -196,7 +196,7 @@ describe('Task - initWorktree post-create command', () => {
 
     await (t as any).initWorktree();
 
-    expect(mockGitManager.createWorktree).toHaveBeenCalledWith(baseDir, 'test-task-id', worktreeBranch);
+    expect(mockGitManager.createWorktree).toHaveBeenCalledWith(baseDir, 'test-task-id', worktreeBranch, undefined);
     expect(execWithShellPathMock).toHaveBeenCalledWith('git submodule update --init --recursive', {
       cwd: worktreePath,
       env: {
@@ -220,6 +220,24 @@ describe('Task - initWorktree post-create command', () => {
     expect(mockGitManager.createWorktree).toHaveBeenCalled();
     expect(addLogMessageSpy).toHaveBeenCalledWith('warning', 'Worktree post-create command output:\ncommand not found');
     expect(addLogMessageSpy).toHaveBeenCalledWith('error', 'Worktree post-create command failed: datalad not found');
+  });
+
+  it('passes the selected base branch when switching without carrying over local changes', async () => {
+    const t = prepareTask({});
+    Object.assign(t, {
+      waitForCurrentPromptToFinish: vi.fn().mockResolvedValue(undefined),
+      updateTask: vi.fn().mockResolvedValue(undefined),
+      sendUpdatedFilesUpdated: vi.fn().mockResolvedValue(undefined),
+      updateAutocompletionData: vi.fn().mockResolvedValue(undefined),
+    });
+    mockGitManager.getTaskWorktree = vi.fn().mockResolvedValue(null);
+    mockGitManager.stashUncommittedChanges = vi.fn();
+
+    await t.switchToWorktreeWorkingMode({ baseBranch: 'develop' });
+
+    expect(mockGitManager.createWorktree).toHaveBeenCalledWith(baseDir, 'test-task-id', worktreeBranch, 'develop');
+    expect(mockGitManager.stashUncommittedChanges).not.toHaveBeenCalled();
+    expect(t.updateTask).toHaveBeenCalledWith({ workingMode: 'worktree' });
   });
 
   it('does not execute anything when no command is configured', async () => {

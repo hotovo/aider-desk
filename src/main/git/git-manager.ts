@@ -130,6 +130,21 @@ export class GitManager {
           await execWithShellPath('git init', { cwd: projectPath });
         }
 
+        let selectedBaseCommit: string | undefined;
+        if (baseBranch !== 'HEAD') {
+          const refs = await simpleGit(projectPath).raw(['for-each-ref', '--format=%(refname)', 'refs/heads/', 'refs/remotes/']);
+          const candidates = refs.trim().split('\n');
+          const baseRef = candidates.find((ref) => ref === `refs/heads/${baseBranch}`) || candidates.find((ref) => ref === `refs/remotes/${baseBranch}`);
+          if (!baseRef) {
+            throw new Error(`Base branch '${baseBranch}' does not exist`);
+          }
+          selectedBaseCommit = (await simpleGit(projectPath).raw(['rev-parse', '--verify', '--end-of-options', `${baseRef}^{commit}`])).trim();
+        }
+
+        if (selectedBaseCommit && branch) {
+          branch = await this.findUniqueBranchName(projectPath, branch);
+        }
+
         // 2. Clean up stale worktree registrations (e.g. the directory was deleted out-of-band)
         try {
           await execWithShellPath('git worktree prune', { cwd: projectPath });
@@ -175,7 +190,7 @@ export class GitManager {
           let branchExists = false;
           try {
             // Check if it's an actual branch (not just a commit SHA)
-            await execWithShellPath(`git show-ref --verify --quiet refs/heads/${branch}`, { cwd: projectPath });
+            await execWithShellPath(['git', 'show-ref', '--verify', '--quiet', `refs/heads/${branch}`], { cwd: projectPath });
             branchExists = true;
           } catch (error) {
             // Branch doesn't exist, it will be created from baseRef
@@ -189,14 +204,14 @@ export class GitManager {
               // git refuses to check out a branch that is already used by another worktree;
               // fall back to a unique sibling branch created from the original branch's tip
               branchToAdd = await this.findUniqueBranchName(projectPath, branch);
-              await execWithShellPath(`git worktree add -b ${branchToAdd} "${worktreePath}" ${branch}`, { cwd: projectPath });
+              await execWithShellPath(['git', 'worktree', 'add', '-b', branchToAdd, worktreePath, branch], { cwd: projectPath });
             } else {
-              await execWithShellPath(`git worktree add "${worktreePath}" ${branch}`, { cwd: projectPath });
+              await execWithShellPath(['git', 'worktree', 'add', worktreePath, branch], { cwd: projectPath });
             }
 
             // Get the base commit (the tip of the existing branch)
             baseCommit = (
-              await execWithShellPath(`git rev-parse ${branchToAdd}`, {
+              await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', branchToAdd], {
                 cwd: projectPath,
               })
             ).stdout.trim();
@@ -204,35 +219,26 @@ export class GitManager {
           } else {
             // A2. Create new branch from baseRef (which defaults to 'HEAD')
 
-            // Verify that the base branch exists if specified and is a branch name
-            if (baseBranch !== 'HEAD') {
-              try {
-                await execWithShellPath(`git show-ref --verify --quiet refs/heads/${baseBranch}`, { cwd: projectPath });
-              } catch {
-                throw new Error(`Base branch '${baseBranch}' does not exist`);
-              }
-            }
+            baseCommit =
+              selectedBaseCommit ||
+              (
+                await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', baseRef], {
+                  cwd: projectPath,
+                })
+              ).stdout.trim();
 
-            // Capture the base commit before creating the worktree
-            baseCommit = (
-              await execWithShellPath(`git rev-parse ${baseRef}`, {
-                cwd: projectPath,
-              })
-            ).stdout.trim();
-
-            // Create the new branch and checkout the worktree
-            await execWithShellPath(`git worktree add -b ${branch} "${worktreePath}" ${baseRef}`, { cwd: projectPath });
+            await execWithShellPath(['git', 'worktree', 'add', '-b', branch, worktreePath, selectedBaseCommit || baseRef], { cwd: projectPath });
             newBranchName = branch; // Use the newly created branch name
           }
         } else {
           // B. No branch name provided: Create detached worktree from current HEAD (or specified baseRef)
 
           // Note: git worktree add <path> defaults to current HEAD
-          await execWithShellPath(`git worktree add "${worktreePath}" ${baseRef}`, { cwd: projectPath });
+          await execWithShellPath(['git', 'worktree', 'add', worktreePath, selectedBaseCommit || baseRef], { cwd: projectPath });
 
           // Capture the base commit (the commit it's detached at)
           baseCommit = (
-            await execWithShellPath(`git rev-parse ${baseRef}`, {
+            await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', baseRef], {
               cwd: projectPath,
             })
           ).stdout.trim();
@@ -884,7 +890,7 @@ export class GitManager {
 
   async getCommitHash(worktreePath: string, ref: string): Promise<string | undefined> {
     try {
-      const { stdout } = await execWithShellPath(`git rev-parse ${ref}`, { cwd: worktreePath });
+      const { stdout } = await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', ref], { cwd: worktreePath });
       return stdout.trim();
     } catch {
       return undefined;
@@ -983,7 +989,7 @@ export class GitManager {
       // Use cross-platform approach
       let stdout = '0';
       try {
-        const result = await execWithShellPath(`git rev-list --count HEAD..${mainBranch}`, { cwd: worktreePath });
+        const result = await execWithShellPath(['git', 'rev-list', '--count', `HEAD..${mainBranch}`, '--'], { cwd: worktreePath });
         stdout = result.stdout;
       } catch {
         // Error checking, assume no changes
@@ -1014,13 +1020,13 @@ export class GitManager {
       }
 
       // Get the merge base
-      const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+      const { stdout: mergeBase } = await execWithShellPath(['git', 'merge-base', 'HEAD', mainBranch], { cwd: worktreePath });
       const base = mergeBase.trim();
 
       // Try a dry-run merge to detect conflicts
       // We use merge-tree to check for conflicts without modifying the working tree
       try {
-        const { stdout: mergeTreeOutput } = await execWithShellPath(`git merge-tree ${base} HEAD ${mainBranch}`, { cwd: worktreePath });
+        const { stdout: mergeTreeOutput } = await execWithShellPath(['git', 'merge-tree', base, 'HEAD', mainBranch], { cwd: worktreePath });
 
         // Parse merge-tree output for conflicts
         const conflictMarkers = mergeTreeOutput.match(/<<<<<<< /g);
@@ -1034,7 +1040,7 @@ export class GitManager {
             .split('\n')
             .filter((f) => f);
 
-          const { stdout: theirDiffOutput } = await execWithShellPath(`git diff --name-only ${base}...${mainBranch}`, { cwd: worktreePath });
+          const { stdout: theirDiffOutput } = await execWithShellPath(['git', 'diff', '--name-only', `${base}...${mainBranch}`, '--'], { cwd: worktreePath });
           const theirFiles = theirDiffOutput
             .trim()
             .split('\n')
@@ -1045,7 +1051,7 @@ export class GitManager {
 
           // Get commit info for better error reporting
           const { stdout: ourCommits } = await execWithShellPath(`git log --oneline ${base}..HEAD`, { cwd: worktreePath });
-          const { stdout: theirCommits } = await execWithShellPath(`git log --oneline ${base}..${mainBranch}`, { cwd: worktreePath });
+          const { stdout: theirCommits } = await execWithShellPath(['git', 'log', '--oneline', `${base}..${mainBranch}`, '--'], { cwd: worktreePath });
 
           logger.info(`Found conflicts in files: ${conflictingFiles.join(', ')}`);
 
@@ -1080,7 +1086,7 @@ export class GitManager {
           .split('\n')
           .filter((f) => f);
 
-        const { stdout: theirDiffOutput } = await execWithShellPath(`git diff --name-only ${base}...${mainBranch}`, { cwd: worktreePath });
+        const { stdout: theirDiffOutput } = await execWithShellPath(['git', 'diff', '--name-only', `${base}...${mainBranch}`, '--'], { cwd: worktreePath });
         const theirFiles = theirDiffOutput
           .trim()
           .split('\n')
@@ -1092,7 +1098,7 @@ export class GitManager {
         if (conflictingFiles.length > 0) {
           // Get commit info
           const { stdout: ourCommits } = await execWithShellPath(`git log --oneline ${base}..HEAD`, { cwd: worktreePath });
-          const { stdout: theirCommits } = await execWithShellPath(`git log --oneline ${base}..${mainBranch}`, { cwd: worktreePath });
+          const { stdout: theirCommits } = await execWithShellPath(['git', 'log', '--oneline', `${base}..${mainBranch}`, '--'], { cwd: worktreePath });
 
           logger.info(`Potential conflicts in files: ${conflictingFiles.join(', ')}`);
 
@@ -1204,9 +1210,12 @@ export class GitManager {
         // This avoids carrying over base branch commits that aren't in the target branch
         const command = effectiveBaseCommit ? `git rebase --onto ${mainBranch} ${effectiveBaseCommit}` : `git rebase ${mainBranch}`;
         executedCommands.push(`${command} (in ${worktreePath})`);
-        const rebaseResult = await execWithShellPath(command, {
-          cwd: worktreePath,
-        });
+        const rebaseResult = await execWithShellPath(
+          effectiveBaseCommit ? ['git', 'rebase', '--onto', mainBranch, effectiveBaseCommit] : ['git', 'rebase', mainBranch],
+          {
+            cwd: worktreePath,
+          },
+        );
         lastOutput = rebaseResult.stdout || rebaseResult.stderr || '';
 
         // 4. If rebase succeeds AND we had uncommitted changes, reset to uncommitted state
@@ -1343,7 +1352,7 @@ export class GitManager {
 
       // Check if there are any changes to merge (before rebase)
       command = `git log --oneline ${mainBranch}..HEAD`;
-      const { stdout: commits, stderr: stderr2 } = await execWithShellPath(command, { cwd: worktreePath });
+      const { stdout: commits, stderr: stderr2 } = await execWithShellPath(['git', 'log', '--oneline', `${mainBranch}..HEAD`, '--'], { cwd: worktreePath });
       lastOutput = commits || stderr2 || '';
       if (!commits.trim()) {
         return;
@@ -1368,9 +1377,12 @@ export class GitManager {
       command = effectiveBaseCommit ? `git rebase --onto ${mainBranch} ${effectiveBaseCommit}` : `git rebase ${mainBranch}`;
       executedCommands.push(`${command} (in ${worktreePath})`);
       try {
-        const rebaseWorktreeResult = await execWithShellPath(command, {
-          cwd: worktreePath,
-        });
+        const rebaseWorktreeResult = await execWithShellPath(
+          effectiveBaseCommit ? ['git', 'rebase', '--onto', mainBranch, effectiveBaseCommit] : ['git', 'rebase', mainBranch],
+          {
+            cwd: worktreePath,
+          },
+        );
         lastOutput = rebaseWorktreeResult.stdout || rebaseWorktreeResult.stderr || '';
         logger.debug(`Successfully rebased worktree onto ${mainBranch} before squashing`);
       } catch (error: unknown) {
@@ -1411,11 +1423,13 @@ export class GitManager {
         const { stdout: worktreeTree } = await execWithShellPath(`git rev-parse '${worktreeCommitHash}^{tree}'`, { cwd: worktreePath });
         const treeHash = worktreeTree.trim();
 
-        const { stdout: targetHead } = await execWithShellPath(`git rev-parse ${mainBranch}`, { cwd: projectPath });
+        const { stdout: targetHead } = await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', mainBranch], { cwd: projectPath });
         const targetHeadHash = targetHead.trim();
 
         // No-op check: nothing to squash if the trees are identical
-        const { stdout: targetTree } = await execWithShellPath(`git rev-parse '${mainBranch}^{tree}'`, { cwd: projectPath });
+        const { stdout: targetTree } = await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', `${mainBranch}^{tree}`], {
+          cwd: projectPath,
+        });
         if (treeHash === targetTree.trim()) {
           logger.info('No changes to squash merge (worktree tree is identical to target branch tree)');
           return;
@@ -1434,7 +1448,7 @@ export class GitManager {
 
           command = `git update-ref refs/heads/${mainBranch} ${newCommitHash} ${targetHeadHash}`;
           executedCommands.push(`git update-ref refs/heads/${mainBranch} ${newCommitHash} <old-hash> (in ${projectPath})`);
-          await execWithShellPath(command, {
+          await execWithShellPath(['git', 'update-ref', `refs/heads/${mainBranch}`, newCommitHash, targetHeadHash], {
             cwd: projectPath,
           });
 
@@ -1448,7 +1462,7 @@ export class GitManager {
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
       executedCommands.push(`git checkout ${mainBranch} (in ${projectPath})`);
-      const checkoutResult = await execWithShellPath(command, {
+      const checkoutResult = await execWithShellPath(['git', 'checkout', mainBranch], {
         cwd: projectPath,
       });
       lastOutput = checkoutResult.stdout || checkoutResult.stderr || '';
@@ -1546,7 +1560,7 @@ export class GitManager {
 
       // Check if there are any changes to merge
       command = `git log --oneline ${mainBranch}..HEAD`;
-      const { stdout: commits, stderr: stderr2 } = await execWithShellPath(command, { cwd: worktreePath });
+      const { stdout: commits, stderr: stderr2 } = await execWithShellPath(['git', 'log', '--oneline', `${mainBranch}..HEAD`, '--'], { cwd: worktreePath });
       lastOutput = commits || stderr2 || '';
       if (!commits.trim()) {
         return;
@@ -1556,7 +1570,7 @@ export class GitManager {
       command = `git rebase ${mainBranch}`;
       executedCommands.push(`git rebase ${mainBranch} (in ${worktreePath})`);
       try {
-        const rebaseWorktreeResult = await execWithShellPath(command, {
+        const rebaseWorktreeResult = await execWithShellPath(['git', 'rebase', mainBranch], {
           cwd: worktreePath,
         });
         lastOutput = rebaseWorktreeResult.stdout || rebaseWorktreeResult.stderr || '';
@@ -1596,7 +1610,7 @@ export class GitManager {
         // the project directory is on a different branch, and git guarantees the target
         // branch cannot be checked out in any other worktree
         try {
-          await execWithShellPath(`git merge-base --is-ancestor ${mainBranch} ${worktreeCommitHash}`, {
+          await execWithShellPath(['git', 'merge-base', '--is-ancestor', mainBranch, worktreeCommitHash], {
             cwd: projectPath,
           });
         } catch {
@@ -1606,10 +1620,10 @@ export class GitManager {
           );
         }
 
-        const { stdout: targetHead } = await execWithShellPath(`git rev-parse ${mainBranch}`, { cwd: projectPath });
+        const { stdout: targetHead } = await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', mainBranch], { cwd: projectPath });
         command = `git update-ref refs/heads/${mainBranch} ${worktreeCommitHash} ${targetHead.trim()}`;
         executedCommands.push(`git update-ref refs/heads/${mainBranch} ${worktreeCommitHash} <old-hash> (in ${projectPath})`);
-        await execWithShellPath(command, {
+        await execWithShellPath(['git', 'update-ref', `refs/heads/${mainBranch}`, worktreeCommitHash, targetHead.trim()], {
           cwd: projectPath,
         });
 
@@ -1620,7 +1634,7 @@ export class GitManager {
       // Switch to main branch in the main repository
       command = `git checkout ${mainBranch}`;
       executedCommands.push(`git checkout ${mainBranch} (in ${projectPath})`);
-      const checkoutResult = await execWithShellPath(command, {
+      const checkoutResult = await execWithShellPath(['git', 'checkout', mainBranch], {
         cwd: projectPath,
       });
       lastOutput = checkoutResult.stdout || checkoutResult.stderr || '';
@@ -1896,7 +1910,7 @@ export class GitManager {
       const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
 
       // Check if there are any commits in worktree that are not in main
-      const { stdout: commits } = await execWithShellPath(`git log --oneline ${mainBranch}..HEAD`, { cwd: worktreePath });
+      const { stdout: commits } = await execWithShellPath(['git', 'log', '--oneline', `${mainBranch}..HEAD`, '--'], { cwd: worktreePath });
 
       if (!commits.trim()) {
         // No commits in worktree, return empty string
@@ -2149,6 +2163,13 @@ export class GitManager {
     }
   }
 
+  private async requireLocalIntegrationTarget(projectPath: string, branch: string): Promise<void> {
+    const localRefs = await simpleGit(projectPath).raw(['for-each-ref', '--format=%(refname)', 'refs/heads/']);
+    if (!localRefs.trim().split('\n').includes(`refs/heads/${branch}`)) {
+      throw new Error(`Select an existing local branch as the integration target; '${branch}' is not a local branch`);
+    }
+  }
+
   /**
    * Merge worktree to main branch with uncommitted changes support
    * Returns MergeState for potential revert
@@ -2173,6 +2194,7 @@ export class GitManager {
       let mergeStarted = false;
 
       const mainBranch = targetBranch || (await this.getProjectMainBranch(projectPath));
+      await this.requireLocalIntegrationTarget(projectPath, mainBranch);
 
       // If the project directory is on a different branch, update the target branch ref directly
       // without checking it out (the working tree is left untouched)
@@ -2183,7 +2205,7 @@ export class GitManager {
         logger.info(`Starting ${squash ? 'squash' : 'merge'} operation with uncommitted changes support`);
 
         // 1. Track initial state
-        const { stdout: mainCommit } = await execWithShellPath(`git rev-parse ${mainBranch}`, { cwd: projectPath });
+        const { stdout: mainCommit } = await execWithShellPath(['git', 'rev-parse', '--verify', '--end-of-options', mainBranch], { cwd: projectPath });
         beforeMergeCommitHash = mainCommit.trim();
 
         const { stdout: worktreeCommit } = await execWithShellPath('git rev-parse HEAD', { cwd: worktreePath });
@@ -2266,7 +2288,7 @@ export class GitManager {
             // Checkoutless merge never touched the project working tree - only move the ref back
             if (beforeMergeCommitHash) {
               try {
-                await execWithShellPath(`git update-ref refs/heads/${mainBranch} ${beforeMergeCommitHash}`, { cwd: projectPath });
+                await execWithShellPath(['git', 'update-ref', `refs/heads/${mainBranch}`, beforeMergeCommitHash], { cwd: projectPath });
                 logger.info('Reverted target branch ref to pre-merge state');
               } catch (recoveryError) {
                 logger.error('Failed to reset target branch ref to pre-merge state:', { error: recoveryError });
@@ -2374,7 +2396,7 @@ export class GitManager {
       let unmergedCommits: string[] = [];
 
       try {
-        const { stdout: commits } = await execWithShellPath(`git log --oneline ${effectiveTargetBranch}..HEAD`, { cwd: worktreePath });
+        const { stdout: commits } = await execWithShellPath(['git', 'log', '--oneline', `${effectiveTargetBranch}..HEAD`, '--'], { cwd: worktreePath });
         const commitLines = commits
           .trim()
           .split('\n')
@@ -2410,7 +2432,7 @@ export class GitManager {
   }
 
   async getAheadCommits(worktreePath: string, targetBranch: string): Promise<GitAheadCommits> {
-    const { stdout } = await execWithShellPath(`git log --oneline ${targetBranch}..HEAD`, { cwd: worktreePath });
+    const { stdout } = await execWithShellPath(['git', 'log', '--oneline', `${targetBranch}..HEAD`, '--'], { cwd: worktreePath });
     const commits = stdout
       .trim()
       .split('\n')
@@ -2461,8 +2483,8 @@ export class GitManager {
         .filter((l) => l.length > 0);
 
     const [outgoing, incoming] = await Promise.all([
-      execWithShellPath(`git log --oneline ${baseRef}..HEAD`, { cwd: repoPath }),
-      execWithShellPath(`git log --oneline HEAD..${baseRef}`, { cwd: repoPath }),
+      execWithShellPath(['git', 'log', '--oneline', `${baseRef}..HEAD`, '--'], { cwd: repoPath }),
+      execWithShellPath(['git', 'log', '--oneline', `HEAD..${baseRef}`, '--'], { cwd: repoPath }),
     ]);
 
     const outgoingCommits = parseCommits(outgoing.stdout);
@@ -2665,7 +2687,9 @@ export class GitManager {
     // 1. Get commits in order (oldest first) between mainBranch and HEAD
     const commits: Array<{ hash: string; message: string }> = [];
     try {
-      const { stdout: logOutput } = await execWithShellPath(`git log --reverse --pretty=format:'%H|%s' ${mainBranch}..HEAD`, { cwd: worktreePath });
+      const { stdout: logOutput } = await execWithShellPath(['git', 'log', '--reverse', '--pretty=format:%H|%s', `${mainBranch}..HEAD`, '--'], {
+        cwd: worktreePath,
+      });
 
       for (const line of logOutput.split('\n')) {
         const trimmed = line.trim();
@@ -2777,7 +2801,7 @@ export class GitManager {
     // yet in this branch don't show up as reverse diffs.
     let base = mainBranch;
     try {
-      const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+      const { stdout: mergeBase } = await execWithShellPath(['git', 'merge-base', 'HEAD', mainBranch], { cwd: worktreePath });
       if (mergeBase.trim()) {
         base = mergeBase.trim();
       }
@@ -2788,7 +2812,7 @@ export class GitManager {
     try {
       // git diff (without ...) compares the base directly to the working tree,
       // including both committed and uncommitted changes.
-      const { stdout: numstatOutput } = await execWithShellPath(`git diff --numstat -z ${base}`, {
+      const { stdout: numstatOutput } = await execWithShellPath(['git', 'diff', '--numstat', '-z', base, '--'], {
         cwd: worktreePath,
       });
 
@@ -2954,7 +2978,7 @@ export class GitManager {
       let base = 'HEAD';
       if (workingMode === 'worktree' && mainBranch) {
         try {
-          const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+          const { stdout: mergeBase } = await execWithShellPath(['git', 'merge-base', 'HEAD', mainBranch], { cwd: worktreePath });
           if (mergeBase.trim()) {
             base = mergeBase.trim();
           } else {
@@ -2975,7 +2999,7 @@ export class GitManager {
         return '';
       }
 
-      const { stdout } = await execWithShellPath(`git diff --unified=3 ${base} -- "${escapedPath}"`, {
+      const { stdout } = await execWithShellPath(['git', 'diff', '--unified=3', base, '--', filePath], {
         cwd: worktreePath,
         maxBuffer: 10 * 1024 * 1024,
       });
@@ -3004,8 +3028,6 @@ export class GitManager {
     }
 
     try {
-      const escapedPath = filePath.replace(/"/g, '\\"');
-
       if (await this.checkBinaryOrSkip(worktreePath, filePath)) {
         return emptyContents;
       }
@@ -3013,8 +3035,8 @@ export class GitManager {
       if (commitHash) {
         const { stdout: parent } = await execWithShellPath(`git rev-parse ${commitHash}^`, { cwd: worktreePath });
         const parentHash = parent.trim();
-        const newContent = await this.safeGitShow(worktreePath, `${commitHash}`, escapedPath);
-        const oldContent = await this.safeGitShow(worktreePath, parentHash, escapedPath);
+        const newContent = await this.safeGitShow(worktreePath, `${commitHash}`, filePath);
+        const oldContent = await this.safeGitShow(worktreePath, parentHash, filePath);
         return { oldContent, newContent };
       }
 
@@ -3022,7 +3044,7 @@ export class GitManager {
       let base = 'HEAD';
       if (workingMode === 'worktree' && mainBranch) {
         try {
-          const { stdout: mergeBase } = await execWithShellPath(`git merge-base HEAD ${mainBranch}`, { cwd: worktreePath });
+          const { stdout: mergeBase } = await execWithShellPath(['git', 'merge-base', 'HEAD', mainBranch], { cwd: worktreePath });
           if (mergeBase.trim()) {
             base = mergeBase.trim();
           } else {
@@ -3043,7 +3065,7 @@ export class GitManager {
         .readFile(join(worktreePath, filePath))
         .then((data) => data.toString('utf8'))
         .catch(() => '');
-      const oldContent = await this.safeGitShow(worktreePath, base, escapedPath);
+      const oldContent = await this.safeGitShow(worktreePath, base, filePath);
       return { oldContent, newContent };
     } catch (error) {
       logger.warn(`Failed to get file contents for ${filePath}:`, error);
@@ -3051,9 +3073,9 @@ export class GitManager {
     }
   }
 
-  private async safeGitShow(worktreePath: string, ref: string, escapedPath: string): Promise<string> {
+  private async safeGitShow(worktreePath: string, ref: string, filePath: string): Promise<string> {
     try {
-      const { stdout } = await execWithShellPath(`git show ${ref}:"${escapedPath}"`, { cwd: worktreePath, maxBuffer: 10 * 1024 * 1024 });
+      const { stdout } = await execWithShellPath(['git', 'show', `${ref}:${filePath}`], { cwd: worktreePath, maxBuffer: 10 * 1024 * 1024 });
       return stdout;
     } catch {
       return '';
@@ -3639,6 +3661,7 @@ export class GitManager {
         logger.info('Starting merge revert operation', { mergeState });
 
         const targetBranch = mergeState.targetBranch || (await this.getProjectMainBranch(projectPath));
+        await this.requireLocalIntegrationTarget(projectPath, targetBranch);
         const projectCurrentBranch = await this.getProjectMainBranch(projectPath).catch(() => '');
         // For a checkoutless merge the ref is moved back directly, unless the user has since
         // checked out the target branch in the project directory
@@ -3655,14 +3678,14 @@ export class GitManager {
         if (checkoutlessRevert) {
           // 2. Move the target branch ref back to the pre-merge state without touching the project working tree
           logger.info(`Resetting ${targetBranch} branch to ${mergeState.beforeMergeCommitHash} (without checkout)`);
-          await execWithShellPath(`git update-ref refs/heads/${targetBranch} ${mergeState.beforeMergeCommitHash}`, { cwd: projectPath });
+          await execWithShellPath(['git', 'update-ref', `refs/heads/${targetBranch}`, mergeState.beforeMergeCommitHash], { cwd: projectPath });
         } else {
           // 2. Stash current uncommitted changes in main repo to clean the working directory
           // This is crucial to avoid conflicts with untracked files when applying the original stash
           mainRevertStashId = await this.stashUncommittedChanges(currentMainStashId, projectPath, 'Current uncommitted changes before revert', []);
 
           // 3. Switch to the branch we merged into, then reset it to previous state
-          await execWithShellPath(`git checkout ${targetBranch}`, {
+          await execWithShellPath(['git', 'checkout', targetBranch], {
             cwd: projectPath,
           });
 

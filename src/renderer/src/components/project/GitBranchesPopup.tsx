@@ -14,6 +14,7 @@ type Props = {
   worktreeMode?: boolean;
   onSelect: (branch: BranchInfo) => void;
   onNewBranchFrom: (branch: BranchInfo) => void;
+  onCreateWorktreeFrom?: (branch: BranchInfo) => void;
   onUpdateBranch?: (branch: BranchInfo) => void;
   onMergeIntoCurrent: (branch: BranchInfo) => void;
   onRebaseOnto: (branch: BranchInfo) => void;
@@ -83,6 +84,7 @@ export const GitBranchesPopup = ({
   worktreeMode,
   onSelect,
   onNewBranchFrom,
+  onCreateWorktreeFrom,
   onUpdateBranch,
   onMergeIntoCurrent,
   onRebaseOnto,
@@ -230,6 +232,16 @@ export const GitBranchesPopup = ({
           disabled: false,
           action: () => onNewBranchFrom(branch),
         },
+        ...(onCreateWorktreeFrom
+          ? [
+              {
+                key: 'create-worktree-from',
+                label: t('git.createWorktreeFrom', { branch: branch.name }),
+                disabled: false,
+                action: () => onCreateWorktreeFrom(branch),
+              },
+            ]
+          : []),
         ...(canUpdate
           ? [
               {
@@ -264,7 +276,19 @@ export const GitBranchesPopup = ({
           : []),
       ];
     },
-    [t, currentBranch, worktreeMode, onSelect, onNewBranchFrom, onUpdateBranch, onRebaseOnto, onMergeIntoCurrent, onRebaseWorktreeOnto, onDelete],
+    [
+      t,
+      currentBranch,
+      worktreeMode,
+      onSelect,
+      onNewBranchFrom,
+      onCreateWorktreeFrom,
+      onUpdateBranch,
+      onRebaseOnto,
+      onMergeIntoCurrent,
+      onRebaseWorktreeOnto,
+      onDelete,
+    ],
   );
 
   const submenuItems = useMemo(() => (openSubmenu ? getSubmenuItems(openSubmenu.branch) : []), [openSubmenu, getSubmenuItems]);

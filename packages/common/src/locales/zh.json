@@ -2271,6 +2271,7 @@
     "recentBranches": "最近",
     "checkoutBranch": "检出 '{{branch}}'",
     "newBranchFrom": "从 '{{branch}}' 新建分支...",
+    "createWorktreeFrom": "从 '{{branch}}' 创建工作树",
     "mergeBranchInto": "将 '{{branch}}' 合并到 '{{current}}'",
     "rebaseOnto": "将 '{{current}}' 变基到 '{{branch}}'",
     "deleteBranchName": "删除 '{{branch}}'",

@@ -35,7 +35,8 @@ describe('GitManager - branch operations', () => {
 
   describe('listBranches', () => {
     it('should return local branches with upstream tracking info', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git branch') {
           return Promise.resolve({ stdout: localBranchOutput, stderr: '' });
         }
@@ -67,7 +68,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should synthesize the current branch when the repository has no commits yet', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git branch') {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
@@ -93,7 +95,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should include remote branches when requested, skipping HEAD pointers, remote-name refs and local duplicates', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git branch') {
           return Promise.resolve({ stdout: localBranchOutput, stderr: '' });
         }
@@ -166,7 +169,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should detach the branch in other worktrees when takeOver is set', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({
             stdout: 'worktree /main/repo\nHEAD def5678\nbranch refs/heads/master\n\nworktree /other/task/worktree\nHEAD abc1234\nbranch refs/heads/feature-b\n',
@@ -183,7 +187,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should refuse to take over a branch held by the main working tree', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({
             stdout:
@@ -208,7 +213,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should checkout the existing local branch when tracking branch already exists', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git branch --list')) {
           return Promise.resolve({ stdout: '  feature-x\n', stderr: '' });
         }
@@ -231,7 +237,8 @@ describe('GitManager - branch operations', () => {
 
   describe('deleteBranch', () => {
     it('should refuse to delete a branch checked out in a worktree', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({
             stdout: 'worktree /main\nHEAD abc123\nbranch refs/heads/feature-a\n\nworktree /wt\nHEAD def456\nbranch refs/heads/feature-b\n',
@@ -245,7 +252,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should refuse to delete the currently checked out branch', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
@@ -259,7 +267,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should use -d by default and -D when force is set', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
@@ -277,7 +286,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should provide a friendly error for unmerged branches', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git worktree list')) {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
@@ -307,7 +317,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should detect conflicts and return conflicted files', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git merge')) {
           const error = new Error('CONFLICT') as Error & { stderr: string };
           error.stderr = 'CONFLICT (content): Merge conflict in file.txt';
@@ -336,7 +347,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should rebase onto a branch on success', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git status')) {
           return Promise.resolve({ stdout: '\0', stderr: '' });
         }
@@ -350,7 +362,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should detect conflicts during rebase', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command.startsWith('git status')) {
           return Promise.resolve({ stdout: '\0', stderr: '' });
         }
@@ -373,17 +386,18 @@ describe('GitManager - branch operations', () => {
 
   describe('getSyncCommits', () => {
     const mockUpstreamCommits = () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === "git rev-parse --abbrev-ref '@{upstream}'") {
           return Promise.resolve({ stdout: 'origin/main', stderr: '' });
         }
         if (command === 'git fetch --quiet') {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
-        if (command === 'git log --oneline origin/main..HEAD') {
+        if (command === 'git log --oneline origin/main..HEAD --') {
           return Promise.resolve({ stdout: '', stderr: '' });
         }
-        if (command === 'git log --oneline HEAD..origin/main') {
+        if (command === 'git log --oneline HEAD..origin/main --') {
           return Promise.resolve({ stdout: 'abc123 New remote commit\n', stderr: '' });
         }
         return Promise.resolve({ stdout: '', stderr: '' });
@@ -397,7 +411,7 @@ describe('GitManager - branch operations', () => {
 
       const calls = (execWithShellPath as Mock).mock.calls as [string, { cwd: string }][];
       const fetchIndex = calls.findIndex(([command]) => command === 'git fetch --quiet');
-      const logIndex = calls.findIndex(([command]) => command.startsWith('git log'));
+      const logIndex = calls.findIndex(([command]) => (Array.isArray(command) ? command.join(' ') : command).startsWith('git log'));
       expect(fetchIndex).toBeGreaterThanOrEqual(0);
       expect(fetchIndex).toBeLessThan(logIndex);
       expect(calls[fetchIndex][1]).toEqual({ cwd: projectPath });
@@ -407,14 +421,15 @@ describe('GitManager - branch operations', () => {
     });
 
     it('should not fail when fetching the remote fails', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === "git rev-parse --abbrev-ref '@{upstream}'") {
           return Promise.resolve({ stdout: 'origin/main', stderr: '' });
         }
         if (command === 'git fetch --quiet') {
           return Promise.reject(new Error('Could not resolve host'));
         }
-        if (command === 'git log --oneline HEAD..origin/main') {
+        if (command === 'git log --oneline HEAD..origin/main --') {
           return Promise.resolve({ stdout: 'def456 Stale remote commit\n', stderr: '' });
         }
         return Promise.resolve({ stdout: '', stderr: '' });
@@ -466,7 +481,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('pushes with --set-upstream and prefers origin when setUpstream is true', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git rev-parse --abbrev-ref HEAD') {
           return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
         }
@@ -483,7 +499,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('uses the first remote when origin is missing', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git rev-parse --abbrev-ref HEAD') {
           return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
         }
@@ -499,7 +516,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('combines --force with --set-upstream', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git rev-parse --abbrev-ref HEAD') {
           return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
         }
@@ -515,7 +533,8 @@ describe('GitManager - branch operations', () => {
     });
 
     it('throws when no remote is configured', async () => {
-      (execWithShellPath as Mock).mockImplementation((command: string) => {
+      (execWithShellPath as Mock).mockImplementation((input: string | string[]) => {
+        const command = Array.isArray(input) ? input.join(' ') : input;
         if (command === 'git rev-parse --abbrev-ref HEAD') {
           return Promise.resolve({ stdout: 'feature-x\n', stderr: '' });
         }

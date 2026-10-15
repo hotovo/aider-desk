@@ -1241,6 +1241,7 @@ export class BrowserApi implements ApplicationAPI {
     return this.post('/project/switch-to-worktree-working-mode', {
       projectDir: baseDir,
       taskId,
+      baseBranch: options?.baseBranch,
       carryOverUncommittedChanges: options?.carryOverUncommittedChanges,
       dropSourceChanges: options?.dropSourceChanges,
     });

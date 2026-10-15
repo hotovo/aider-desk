@@ -2263,6 +2263,7 @@
     "recentBranches": "Recent",
     "checkoutBranch": "Checkout '{{branch}}'",
     "newBranchFrom": "New branch from '{{branch}}'...",
+    "createWorktreeFrom": "Create worktree from '{{branch}}'",
     "mergeBranchInto": "Merge '{{branch}}' into '{{current}}'",
     "rebaseOnto": "Rebase '{{current}}' onto '{{branch}}'",
     "deleteBranchName": "Delete '{{branch}}'",

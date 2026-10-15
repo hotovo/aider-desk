@@ -15,6 +15,7 @@ import {
   TodoItem,
   AgentProfile,
   ChangeRequestItem,
+  SwitchToWorktreeOptions,
 } from '@common/types';
 import { ipcMain, clipboard, ClipboardItem } from 'electron';
 
@@ -576,12 +577,9 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     },
   );
 
-  ipcMain.handle(
-    'switch-to-worktree-working-mode',
-    async (_, baseDir: string, taskId: string, options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean }) => {
-      await eventsHandler.switchToWorktreeWorkingMode(baseDir, taskId, options);
-    },
-  );
+  ipcMain.handle('switch-to-worktree-working-mode', async (_, baseDir: string, taskId: string, options?: SwitchToWorktreeOptions) => {
+    await eventsHandler.switchToWorktreeWorkingMode(baseDir, taskId, options);
+  });
 
   ipcMain.handle('get-local-uncommitted-files', async (_, baseDir: string, taskId: string) => {
     return await eventsHandler.getLocalUncommittedFiles(baseDir, taskId);

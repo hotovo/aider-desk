@@ -195,7 +195,7 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
     const result = await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
     expect(result).toMatchObject({ success: true, ontoCommit: 'main123' });
-    expect(execWithShellPath).toHaveBeenCalledWith(`git rebase --onto ${mainBranch} ${baseCommit}`, { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith(['git', 'rebase', '--onto', mainBranch, baseCommit], { cwd: testPath });
   });
 
   it('should fall back to simple rebase when baseCommit is not ancestor of HEAD', async () => {
@@ -220,7 +220,7 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
 
     await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
-    expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith(['git', 'rebase', mainBranch], { cwd: testPath });
   });
 
   it('should fall back to simple rebase when baseCommit equals HEAD (empty --onto range would silently drop commits)', async () => {
@@ -245,7 +245,7 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
 
     await gitManager.rebaseMainIntoWorktree(testPath, mainBranch, baseCommit);
 
-    expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith(['git', 'rebase', mainBranch], { cwd: testPath });
   });
 
   it('should use simple rebase when baseCommit is not provided', async () => {
@@ -264,7 +264,7 @@ describe('GitManager - rebaseMainIntoWorktree baseCommit validation', () => {
 
     await gitManager.rebaseMainIntoWorktree(testPath, mainBranch);
 
-    expect(execWithShellPath).toHaveBeenCalledWith(`git rebase ${mainBranch}`, { cwd: testPath });
+    expect(execWithShellPath).toHaveBeenCalledWith(['git', 'rebase', mainBranch], { cwd: testPath });
   });
 });
 

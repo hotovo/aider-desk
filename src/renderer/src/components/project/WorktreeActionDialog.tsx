@@ -56,11 +56,13 @@ export const WorktreeActionDialog = ({
           return;
         }
 
-        setBranches(list);
+        const localBranches = list.filter((branch) => !branch.isRemote);
+        setBranches(localBranches);
 
-        if (!selectedBranch) {
-          const current = list.find((b) => b.isCurrent)?.name;
-          setSelectedBranch(defaultBranch || current || list[0]?.name || '');
+        if (!localBranches.some((branch) => branch.name === selectedBranch)) {
+          const current = localBranches.find((b) => b.isCurrent)?.name;
+          const validDefault = localBranches.find((branch) => branch.name === defaultBranch)?.name;
+          setSelectedBranch(validDefault || current || localBranches[0]?.name || '');
         }
       } catch {
         if (!cancelled) {
@@ -84,7 +86,7 @@ export const WorktreeActionDialog = ({
   }, [branches, t]);
 
   const handleConfirm = () => {
-    if (selectedBranch) {
+    if (branches.some((branch) => branch.name === selectedBranch)) {
       onConfirm(selectedBranch, showCommitMessage ? commitMessage : undefined);
     }
   };
@@ -98,7 +100,14 @@ export const WorktreeActionDialog = ({
   };
 
   return (
-    <ConfirmDialog title={title} onConfirm={handleConfirm} onCancel={onCancel} confirmButtonText={confirmButtonText} closeOnEscape>
+    <ConfirmDialog
+      title={title}
+      onConfirm={handleConfirm}
+      onCancel={onCancel}
+      confirmButtonText={confirmButtonText}
+      disabled={!branches.some((branch) => branch.name === selectedBranch)}
+      closeOnEscape
+    >
       {message && <p className="text-sm mb-3">{message}</p>}
 
       <div className="flex flex-col gap-3">
