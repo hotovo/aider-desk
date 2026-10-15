@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 47
+      "installCount": 48
     },
     {
       "id": "theme",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "external-rules",
@@ -334,7 +334,7 @@
         "ui",
         "example"
       ],
-      "installCount": 13
+      "installCount": 14
     },
     {
       "id": "multi-model-run",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 93
+      "installCount": 94
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "bmad",
@@ -532,7 +532,7 @@
         "events",
         "ui"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "codegraph",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 12
+      "installCount": 13
     }
   ]
 }
