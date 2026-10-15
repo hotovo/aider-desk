@@ -15452,6 +15452,8 @@ const handleBackdropClick = () =>
 const handleContentClick = (event: MouseEvent<HTMLDivElement>) =>
 ⋮----
 onClick=
+⋮----
+<span className=
 
 ================
 File: src/renderer/src/components/common/CommandPalette/index.ts
@@ -22563,6 +22565,7 @@ import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { useOverlayFocusRestore } from '@/hooks/useOverlayFocusRestore';
 import { useResponsive } from '@/hooks/useResponsive';
 import { useBooleanState } from '@/hooks/useBooleanState';
+import { useCustomModes } from '@/hooks/useCustomModes';
 import { showNotification } from '@/utils/browser-notifications';
 import { showErrorNotification, showInfoNotification, showWarningNotification } from '@/utils/notifications';
 import { ExtensionsProvider } from '@/contexts/ExtensionsContext';
@@ -28458,6 +28461,8 @@ File: src/renderer/src/hooks/useVirtualizedListActivation.ts
 import { RefObject, useLayoutEffect, useRef } from 'react';
 import { LegendListRef } from '@legendapp/list/react';
 ⋮----
+import { getVirtualizedListBottomOffset } from '../utils/virtualizedList';
+⋮----
 type Props = {
   isActive: boolean;
   listRef: RefObject<LegendListRef | null>;
@@ -28467,6 +28472,8 @@ type Props = {
 };
 ⋮----
 export const useVirtualizedListActivation = (
+⋮----
+const waitForNextFrame = ()
 ⋮----
 const restore = async () =>
 
