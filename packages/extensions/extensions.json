@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 82
+      "installCount": 83
     },
     {
       "id": "plannotator",
@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "auggie-sdk",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "wigolo",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 131
+      "installCount": 132
     },
     {
       "id": "task-scheduler",
@@ -683,7 +683,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 11
+      "installCount": 12
     }
   ]
 }
