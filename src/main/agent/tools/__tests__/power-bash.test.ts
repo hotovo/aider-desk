@@ -290,6 +290,25 @@ describe('Power Tools - bash shell initialization', () => {
       await import('fs/promises').then((fsp) => fsp.unlink(spillMatch![1]));
     });
 
+    it('returns output containing literal special tokens', async () => {
+      const output = '<|fim_middle|> <|endoftext|> <|endofprompt|>\n';
+      emitThenExit([output]);
+
+      await expect(execBash('special-token-output')).resolves.toEqual({ stdout: output, stderr: '', exitCode: 0 });
+    });
+
+    it('returns an error when output finalization fails', async () => {
+      const { BoundedOutputAccumulator } = await import('../../utils');
+      vi.spyOn(BoundedOutputAccumulator.prototype, 'finish').mockRejectedValueOnce(new Error('output failure'));
+      emitThenExit(['hello']);
+
+      await expect(execBash('output-failure')).resolves.toEqual({
+        stdout: '',
+        stderr: 'Error processing command output: output failure',
+        exitCode: 1,
+      });
+    });
+
     it('returns small outputs unchanged', async () => {
       emitThenExit(['hello\n', 'world\n']);
 
