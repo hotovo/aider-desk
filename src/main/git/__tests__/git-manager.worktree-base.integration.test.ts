@@ -24,6 +24,7 @@ describe('GitManager worktree base safety', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    vi.stubEnv('GIT_INDEX_FILE', undefined);
     projectPath = await mkdtemp(join(tmpdir(), 'aiderdesk-worktree-base-'));
     manager = new GitManager();
     const git = simpleGit(projectPath);
@@ -37,7 +38,11 @@ describe('GitManager worktree base safety', () => {
   });
 
   afterEach(async () => {
-    await rm(projectPath, { recursive: true, force: true });
+    try {
+      await rm(projectPath, { recursive: true, force: true });
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('rejects revision expressions before creating a worktree even when Git resolves them', async () => {
