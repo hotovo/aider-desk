@@ -1869,8 +1869,11 @@ export class Agent {
       text: text?.substring(0, 100), // Log truncated text
       toolCalls: toolCalls?.map((tc) => tc.toolName),
       toolResults: toolResults?.map((tr) => tr.toolName),
-      usage,
-      providerMetadata,
+      usage: {
+        inputTokens: usage?.inputTokens,
+        outputTokens: usage?.outputTokens,
+        totalTokens: usage?.totalTokens,
+      },
       promptContext,
       contentLength: content.length,
     });
