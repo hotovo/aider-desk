@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 133
+      "installCount": 134
     },
     {
       "id": "task-scheduler",
@@ -646,7 +646,7 @@
         "commands",
         "events"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "reasoning-selector",
