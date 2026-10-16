@@ -1342,6 +1342,9 @@ export class Agent {
       } else {
         task.addLogMessage('error', `${error instanceof Error ? error.message : String(error)}`, false, promptContext);
       }
+      if (profile.isSubagent) {
+        throw error;
+      }
       await task.updateTask({
         state: DefaultTaskState.Interrupted,
       });

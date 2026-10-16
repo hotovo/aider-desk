@@ -10,8 +10,8 @@
  * how many controllers were constructed by agent code.
  */
 import { describe, expect, it, vi } from 'vitest';
+import { DefaultTaskState, type AgentProfile } from '@common/types';
 
-import type { AgentProfile } from '@common/types';
 import type { Task } from '@/task';
 
 vi.mock('@/logger');
@@ -19,15 +19,21 @@ vi.mock('@/logger');
 const { Agent: AgentClass } = await import('../agent');
 type Agent = InstanceType<typeof AgentClass>;
 
-const createAgent = () => {
+const createAgent = (modelError?: Error) => {
   const modelManager = {
-    getProviders: vi.fn(() => [{ id: 'test-provider', name: 'Test Provider' }]),
+    getProviders: vi.fn(() => [{ id: 'test-provider', name: 'Test Provider', provider: { name: 'Test Provider' } }]),
     getCacheControl: vi.fn(() => null),
     getProviderParameters: vi.fn(() => ({})),
     getProviderOptions: vi.fn(() => ({})),
     // Escape hatch: stops the run right after controller registration
     normalizeMessages: vi.fn(() => {
+      if (modelError) {
+        return [];
+      }
       throw new Error('stop');
+    }),
+    createLlm: vi.fn(async () => {
+      throw modelError;
     }),
   };
 
@@ -48,6 +54,10 @@ const createAgent = () => {
       extensionManager,
     ] as unknown as ConstructorParameters<typeof AgentClass>),
   ) as unknown as Agent;
+
+  if (modelError) {
+    agent['getAvailableTools'] = vi.fn(async () => ({}));
+  }
 
   return { agent, extensionManager };
 };
@@ -137,5 +147,26 @@ describe('Agent.runAgent abort controller registration', () => {
 
     // one for the temporary onAgentStarted dispatch only - it stays unregistered
     expect(agentControllerCount).toBe(1);
+  });
+});
+
+describe('Agent.runAgent error propagation', () => {
+  it('propagates subagent errors instead of returning incomplete messages', async () => {
+    const error = new Error('model failure');
+    const { agent } = createAgent(error);
+    const task = createTask();
+
+    await expect(agent.runAgent(task, { ...profile, isSubagent: true }, 'prompt', 'subagent')).rejects.toBe(error);
+    expect(task.updateTask).not.toHaveBeenCalled();
+    expect(agent.isRunning()).toBe(false);
+  });
+
+  it('preserves interrupted-state handling for main agent errors', async () => {
+    const { agent } = createAgent(new Error('model failure'));
+    const task = createTask();
+
+    await expect(agent.runAgent(task, profile, 'prompt')).resolves.toBeDefined();
+    expect(task.updateTask).toHaveBeenCalledWith({ state: DefaultTaskState.Interrupted });
+    expect(agent.isRunning()).toBe(false);
   });
 });

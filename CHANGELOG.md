@@ -10,6 +10,7 @@
 - fixed Aider tool responses not staying grouped after reloading tasks
 - fixed special-token text crashing token counting, with fallback estimates when tokenization fails
 - fixed bash tool calls hanging when command output processing fails
+- fixed failed subagent runs returning success with empty or incomplete results
 
 ## [0.87.0]
 
