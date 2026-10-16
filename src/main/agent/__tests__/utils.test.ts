@@ -3,8 +3,9 @@ import path from 'path';
 import os from 'os';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encode } from 'gpt-tokenizer/model/gpt-4o';
 
-import { BoundedOutputAccumulator, readFileContent, safeJsonStringify, stringifyWithBudget, truncateToolResult } from '../utils';
+import { BoundedOutputAccumulator, estimateMessageTokens, readFileContent, safeJsonStringify, stringifyWithBudget, truncateToolResult } from '../utils';
 
 describe('truncateToolResult', () => {
   it('should return content unchanged when within both limits', async () => {
@@ -556,5 +557,45 @@ describe('readFileContent large files', () => {
     await fs.writeFile(filePath, Buffer.alloc(11 * 1024 * 1024, 0));
 
     await expect(readFileContent(filePath)).rejects.toThrow('Binary files cannot be read.');
+  });
+});
+
+describe('literal special tokens', () => {
+  it('reproduces the default tokenizer failure while safely processing the same tool output', async () => {
+    const content = 'Log contains <|endoftext|> as literal text.';
+
+    expect(() => encode(content)).toThrow('Disallowed special token found: <|endoftext|>');
+
+    await expect(truncateToolResult(content, 1000, 50, 50000, false)).resolves.toBe(content);
+    expect(estimateMessageTokens([{ role: 'tool', content: [{ type: 'tool-result', output: { type: 'text', value: content } }] }])).toBe(
+      encode(content, { disallowedSpecial: new Set() }).length,
+    );
+  });
+
+  const specialTokens = ['<|fim_middle|>', '<|fim_prefix|>', '<|fim_suffix|>', '<|endoftext|>', '<|endofprompt|>'];
+
+  it.each(specialTokens)('preserves %s in untruncated tool results', async (text) => {
+    await expect(truncateToolResult(text, 1000, 50, 50000, false)).resolves.toBe(text);
+  });
+
+  it.each(specialTokens)('counts %s as ordinary text in messages and tool results', (text) => {
+    const tokens = estimateMessageTokens([{ role: 'user', content: text }]);
+    expect(tokens).toBeGreaterThan(1);
+    expect(
+      estimateMessageTokens([
+        { role: 'assistant', content: [{ type: 'text', text }] },
+        { role: 'tool', content: [{ type: 'tool-result', output: { type: 'text', value: text } }] },
+      ]),
+    ).toBe(tokens * 2);
+  });
+
+  it('handles special tokens in both head and tail during token-based truncation', async () => {
+    const text = '<|endoftext|>';
+    const lineTokens = estimateMessageTokens([{ role: 'user', content: text }]);
+    const content = Array.from({ length: 10 }, () => text).join('\n');
+
+    const result = await truncateToolResult(content, 1000, 50, lineTokens * 2, false, 'truncated');
+
+    expect(result).toBe(text + '\n\n... 8 lines omitted. truncated\n\n' + text);
   });
 });

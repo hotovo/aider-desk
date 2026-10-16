@@ -8,6 +8,7 @@
 - added branch menu action to create a clean worktree from a selected branch without moving uncommitted changes
 - added extension hooks for message transformation and cache control; updated optimization hooks to use transformed messages
 - fixed Aider tool responses not staying grouped after reloading tasks
+- fixed special-token text crashing token counting, with fallback estimates when tokenization fails
 
 ## [0.87.0]
 

@@ -11,6 +11,8 @@ import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 
+import logger from '@/logger';
+
 /**
  * Zod schema that coerces string values to booleans before validation.
  * Handles the case where LLMs send boolean parameters as strings ("true"/"false").
@@ -479,6 +481,22 @@ const readLargeFileContent = async (absolutePath: string, withLines: boolean, li
   return result;
 };
 
+const TOKENIZER_WARNING_INTERVAL_MS = 60_000;
+let lastTokenizerWarningAt: number | undefined;
+
+const countTextTokens = (text: string): number => {
+  try {
+    return encode(text, { disallowedSpecial: new Set() }).length;
+  } catch {
+    const now = Date.now();
+    if (lastTokenizerWarningAt === undefined || now - lastTokenizerWarningAt >= TOKENIZER_WARNING_INTERVAL_MS) {
+      lastTokenizerWarningAt = now;
+      logger.warn('Tokenizer failed; using a length-based token estimate.');
+    }
+    return Math.ceil(text.length / 3);
+  }
+};
+
 export const truncateToolResult = async (
   content: string,
   maxLines = 1000,
@@ -494,7 +512,7 @@ export const truncateToolResult = async (
   // skip the expensive tokenizer pass when a cheaper limit is already exceeded
   let tokenCount = 0;
   if (lines.length <= maxLines && sizeKB <= maxSizeKB && maxTokens !== Infinity) {
-    tokenCount = encode(content).length;
+    tokenCount = countTextTokens(content);
   }
 
   if (lines.length <= maxLines && sizeKB <= maxSizeKB && tokenCount <= maxTokens) {
@@ -536,7 +554,7 @@ export const truncateToolResult = async (
     const headLines: string[] = [];
     let headTokens = 0;
     for (const line of lines) {
-      const lineTokens = encode(line).length;
+      const lineTokens = countTextTokens(line);
       if (headTokens + lineTokens > headBudget) {
         break;
       }
@@ -550,7 +568,7 @@ export const truncateToolResult = async (
       if (headLines.length + tailLines.length >= lines.length) {
         break;
       }
-      const lineTokens = encode(lines[i]).length;
+      const lineTokens = countTextTokens(lines[i]);
       if (tailTokens + lineTokens > tailBudget) {
         break;
       }
@@ -720,5 +738,5 @@ export const estimateMessageTokens = (messages: CountableMessage[]): number => {
     return { role: msg.role, content: textParts.join('\n\n') };
   });
 
-  return textOnlyMessages.reduce((sum, msg) => sum + encode(typeof msg.content === 'string' ? msg.content : '').length, 0) + estimatedImageTokens;
+  return textOnlyMessages.reduce((sum, msg) => sum + countTextTokens(typeof msg.content === 'string' ? msg.content : ''), 0) + estimatedImageTokens;
 };
