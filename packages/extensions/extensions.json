@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 100
+      "installCount": 101
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 86
+      "installCount": 87
     },
     {
       "id": "legacy-system-prompt",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 76
+      "installCount": 77
     },
     {
       "id": "context-autocompletion-words",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 75
+      "installCount": 76
     },
     {
       "id": "kanban",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 134
+      "installCount": 135
     },
     {
       "id": "task-scheduler",
