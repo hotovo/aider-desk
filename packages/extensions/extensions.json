@@ -469,7 +469,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "auggie-sdk",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 77
+      "installCount": 78
     },
     {
       "id": "kanban",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 123
+      "installCount": 124
     },
     {
       "id": "dbx",
