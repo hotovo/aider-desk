@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 87
+      "installCount": 88
     },
     {
       "id": "legacy-system-prompt",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 77
+      "installCount": 78
     },
     {
       "id": "context-autocompletion-words",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 84
+      "installCount": 86
     },
     {
       "id": "plannotator",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 94
+      "installCount": 95
     },
     {
       "id": "verifier",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 76
+      "installCount": 77
     },
     {
       "id": "kanban",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 55
+      "installCount": 57
     },
     {
       "id": "wigolo",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 138
+      "installCount": 139
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 122
+      "installCount": 123
     },
     {
       "id": "dbx",
