@@ -1,4 +1,15 @@
 {
+  "projectTrust": {
+    "title": "Trust this project?",
+    "warning": "This project contains agents, MCP servers, or extensions. They may run malicious code with your user permissions, access your files and credentials, or send data to external services.",
+    "review": "Review the listed files before continuing. Only trust this project if you trust its source. Cancel to leave the project unopened.",
+    "confirm": "Trust the project",
+    "agents": "Agents",
+    "mcpServers": "MCP servers",
+    "extensions": "Extensions",
+    "checking": "Checking project configuration…",
+    "checkFailed": "Unable to inspect the project configuration. The project was not opened. Check file permissions and configuration files, then try again."
+  },
   "languages": {
     "en": "English",
     "zh": "中文",

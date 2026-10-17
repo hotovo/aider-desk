@@ -31,6 +31,7 @@ import {
   OpenDialogResult,
   OS,
   ProjectData,
+  ProjectCheckResult,
   ProjectSettings,
   ProjectStartedData,
   ProviderModelsData,
@@ -487,6 +488,9 @@ export class BrowserApi implements ApplicationAPI {
   }
   getOpenProjects(): Promise<ProjectData[]> {
     return this.get('/projects');
+  }
+  checkProject(baseDir: string): Promise<ProjectCheckResult> {
+    return this.post('/project/check', { projectDir: baseDir });
   }
   addOpenProject(baseDir: string): Promise<ProjectData[]> {
     return this.post('/project/add-open', { projectDir: baseDir });

@@ -85,6 +85,7 @@ const api: ApplicationAPI = {
   showOpenDialog: (options: OpenDialogOptions) => ipcRenderer.invoke('show-open-dialog', options),
   getPathForFile: (file) => webUtils.getPathForFile(file),
   getOpenProjects: () => ipcRenderer.invoke('get-open-projects'),
+  checkProject: (baseDir) => ipcRenderer.invoke('check-project', baseDir),
   addOpenProject: (baseDir) => ipcRenderer.invoke('add-open-project', baseDir),
   setActiveProject: (baseDir) => ipcRenderer.invoke('set-active-project', baseDir),
   removeOpenProject: (baseDir) => ipcRenderer.invoke('remove-open-project', baseDir),

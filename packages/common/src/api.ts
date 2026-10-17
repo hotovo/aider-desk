@@ -36,6 +36,7 @@ import {
   OpenDialogResult,
   OS,
   ProjectData,
+  ProjectCheckResult,
   ProjectSettings,
   ProjectStartedData,
   ProviderModelsData,
@@ -127,6 +128,7 @@ export interface ApplicationAPI {
   showOpenDialog: (options: OpenDialogOptions) => Promise<OpenDialogResult>;
   getPathForFile: (file: File) => string;
   getOpenProjects: () => Promise<ProjectData[]>;
+  checkProject: (baseDir: string) => Promise<ProjectCheckResult>;
   addOpenProject: (baseDir: string) => Promise<ProjectData[]>;
   setActiveProject: (baseDir: string) => Promise<ProjectData[]>;
   removeOpenProject: (baseDir: string) => Promise<ProjectData[]>;

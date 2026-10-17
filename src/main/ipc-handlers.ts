@@ -114,6 +114,10 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return eventsHandler.getOpenProjects();
   });
 
+  ipcMain.handle('check-project', async (_, baseDir: string) => {
+    return eventsHandler.checkProject(baseDir);
+  });
+
   ipcMain.handle('add-open-project', async (_, baseDir: string) => {
     return eventsHandler.addOpenProject(baseDir);
   });

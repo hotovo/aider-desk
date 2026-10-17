@@ -55,6 +55,7 @@ import { McpManager, McpConfigManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { Project, ProjectManager } from '@/project';
+import { checkProject } from '@/project/check-project';
 import { CloudflareTunnelManager } from '@/server';
 import { Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
@@ -193,6 +194,8 @@ export class EventsHandler {
   getOpenProjects(): ProjectData[] {
     return this.store.getOpenProjects();
   }
+
+  checkProject = checkProject;
 
   async addOpenProject(baseDir: string): Promise<ProjectData[]> {
     const projects = this.store.getOpenProjects();

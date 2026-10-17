@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
-import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
+import { ProjectCheckResult } from '@common/types';
 import { ApplicationAPI } from '@common/api';
 
 import { OpenProjectDialog } from '../OpenProjectDialog';
@@ -46,8 +47,9 @@ vi.mock('@/hooks/useConfiguredHotkeys', async () => {
 
 describe('OpenProjectDialog', () => {
   const mockApi = {
+    checkProject: vi.fn((): Promise<ProjectCheckResult> => Promise.resolve({ agents: [], mcpServers: [], extensions: [] })),
     getOpenProjects: vi.fn(() => Promise.resolve([])),
-    getRecentProjects: vi.fn(() => Promise.resolve([])),
+    getRecentProjects: vi.fn((): Promise<string[]> => Promise.resolve([])),
     addRecentProject: vi.fn(),
     removeRecentProject: vi.fn(),
     openDirectory: vi.fn(() => Promise.resolve('/selected/path')),
@@ -61,6 +63,8 @@ describe('OpenProjectDialog', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockApi.checkProject.mockResolvedValue({ agents: [], mcpServers: [], extensions: [] });
+    mockApi.getRecentProjects.mockResolvedValue([]);
     localStorage.clear();
     vi.mocked(useApi).mockReturnValue(mockApi as unknown as ApplicationAPI);
   });
@@ -96,7 +100,7 @@ describe('OpenProjectDialog', () => {
 
     fireEvent.click(screen.getByText('common.open'));
 
-    expect(onAddProject).toHaveBeenCalledWith('/some/path');
+    await waitFor(() => expect(onAddProject).toHaveBeenCalledWith('/some/path'));
   });
 
   it('switches to clone mode and clones a repository', async () => {
@@ -226,5 +230,106 @@ describe('OpenProjectDialog', () => {
     expect(onClose).toHaveBeenCalled();
 
     resolveClone?.('/cloned/project');
+  });
+  const requestLocalProject = async () => {
+    mockApi.isProjectPath.mockResolvedValue(true);
+    fireEvent.change(screen.getByPlaceholderText('dialogs.projectPathPlaceholder'), { target: { value: '/some/path' } });
+    await waitFor(() => expect(screen.getByText('common.open')).not.toBeDisabled());
+    await act(async () => {
+      fireEvent.click(screen.getByText('common.open'));
+    });
+  };
+
+  it('requires explicit trust before opening a project with local configuration', async () => {
+    mockApi.checkProject.mockResolvedValue({
+      agents: [{ name: 'default', path: '.aider-desk/agents/default' }],
+      mcpServers: [{ name: 'test-server', path: '.aider-desk/mcp-servers.json' }],
+      extensions: [{ name: 'test-extension', path: '.aider-desk/extensions/test.ts' }],
+    });
+    const onAddProject = vi.fn();
+    const onClose = vi.fn();
+    render(<OpenProjectDialog onClose={onClose} onAddProject={onAddProject} openProjects={[]} />);
+    await requestLocalProject();
+    await screen.findByText('projectTrust.title');
+    expect(screen.getByText('test-server')).toBeInTheDocument();
+    expect(screen.getByText('test-extension')).toBeInTheDocument();
+    expect(screen.getByText('default')).toBeInTheDocument();
+    expect(onAddProject).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByText('projectTrust.confirm')).toHaveClass('bg-button-danger');
+    fireEvent.click(screen.getByText('projectTrust.confirm'));
+    expect(onAddProject).toHaveBeenCalledWith('/some/path');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('cancels opening when project trust is declined', async () => {
+    mockApi.checkProject.mockResolvedValue({ agents: [], mcpServers: [], extensions: [{ name: 'test', path: 'test.ts' }] });
+    const onAddProject = vi.fn();
+    const onClose = vi.fn();
+    render(<OpenProjectDialog onClose={onClose} onAddProject={onAddProject} openProjects={[]} />);
+    await requestLocalProject();
+    await screen.findByText('projectTrust.title');
+    fireEvent.click(screen.getByText('common.cancel'));
+    expect(onAddProject).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('blocks opening and shows an error when inspection fails', async () => {
+    mockApi.checkProject.mockRejectedValue(new Error('invalid configuration'));
+    const onAddProject = vi.fn();
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    await requestLocalProject();
+    expect(await screen.findByRole('alert')).toHaveTextContent('projectTrust.checkFailed');
+    expect(onAddProject).not.toHaveBeenCalled();
+  });
+
+  it('checks recent projects before opening', async () => {
+    mockApi.getRecentProjects.mockResolvedValue(['/recent/project']);
+    const onAddProject = vi.fn();
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    await screen.findByText('dialogs.recentProjects');
+    fireEvent.click(screen.getByText('dialogs.recentProjects'));
+    fireEvent.click(await screen.findByText('/recent/project'));
+    await waitFor(() => expect(onAddProject).toHaveBeenCalledWith('/recent/project'));
+    expect(mockApi.checkProject).toHaveBeenCalledWith('/recent/project');
+  });
+
+  it('does not open a project after an in-flight check is cancelled', async () => {
+    let resolveCheck: ((result: ProjectCheckResult) => void) | undefined;
+    mockApi.checkProject.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveCheck = resolve;
+        }),
+    );
+    const onAddProject = vi.fn();
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    await requestLocalProject();
+    await screen.findByText('projectTrust.checking');
+    fireEvent.click(screen.getByText('common.cancel'));
+    await act(async () => {
+      resolveCheck?.({ agents: [], mcpServers: [], extensions: [] });
+    });
+    await waitFor(() => expect(screen.queryByText('projectTrust.checking')).not.toBeInTheDocument());
+    expect(onAddProject).not.toHaveBeenCalled();
+  });
+
+  it('requires trust for a cloned project before opening it', async () => {
+    mockApi.cloneProject.mockResolvedValue('/cloned/project');
+    mockApi.checkProject.mockResolvedValue({
+      agents: [{ name: 'default', path: '.aider-desk/agents/default' }],
+      mcpServers: [],
+      extensions: [],
+    });
+    const onAddProject = vi.fn();
+    render(<OpenProjectDialog onClose={vi.fn()} onAddProject={onAddProject} openProjects={[]} />);
+    fireEvent.click(screen.getByText('dialogs.cloneFromGit'));
+    fireEvent.change(screen.getByTestId('repository-url-input'), { target: { value: 'https://github.com/owner/repo.git' } });
+    fireEvent.click(screen.getByText('common.clone'));
+    await screen.findByText('projectTrust.title');
+    expect(mockApi.checkProject).toHaveBeenCalledWith('/cloned/project');
+    expect(onAddProject).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText('projectTrust.confirm'));
+    expect(onAddProject).toHaveBeenCalledWith('/cloned/project');
   });
 });

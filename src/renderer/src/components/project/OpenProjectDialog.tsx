@@ -1,9 +1,11 @@
-import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { FaFolder } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
-import { ProjectData } from '@common/types';
+import { ProjectCheckResult, ProjectData } from '@common/types';
 import { useHotkeys } from 'react-hotkeys-hook';
+
+import { ProjectTrustDialog } from './ProjectTrustDialog';
 
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
@@ -48,6 +50,16 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
   const [showDestinationSuggestions, setShowDestinationSuggestions] = useState(true);
   const [isCloning, setIsCloning] = useState(false);
   const [cloneError, setCloneError] = useState<string | null>(null);
+  const [isChecking, setIsChecking] = useState(false);
+  const [checkError, setCheckError] = useState(false);
+  const [pendingTrust, setPendingTrust] = useState<{ path: string; inventory: ProjectCheckResult } | null>(null);
+  const cancelled = useRef(false);
+  useEffect(() => {
+    cancelled.current = false;
+    return () => {
+      cancelled.current = true;
+    };
+  }, []);
   const api = useApi();
   const isProjectAlreadyOpen = openProjects.some((project) => project.baseDir === projectPath);
   const isRepoUrlValid = isValidRepositoryUrl(repositoryUrl);
@@ -138,10 +150,49 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
     }
   }, [api]);
 
+  const requestOpenProject = async (baseDir: string) => {
+    if (isChecking || cancelled.current) {
+      return;
+    }
+    setIsChecking(true);
+    setCheckError(false);
+    try {
+      const inventory = await api.checkProject(baseDir);
+      if (cancelled.current) {
+        return;
+      }
+      setIsCloning(false);
+      if (inventory.agents.length || inventory.mcpServers.length || inventory.extensions.length) {
+        setPendingTrust({ path: baseDir, inventory });
+      } else {
+        onAddProject(baseDir);
+        onClose();
+      }
+    } catch {
+      if (!cancelled.current) {
+        setCheckError(true);
+        setIsCloning(false);
+      }
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  const handleCancel = () => {
+    cancelled.current = true;
+    onClose();
+  };
+
+  const handleTrust = () => {
+    if (pendingTrust) {
+      onAddProject(pendingTrust.path);
+      onClose();
+    }
+  };
+
   const handleAddProject = () => {
     if (projectPath && isValidPath && !isProjectAlreadyOpen) {
-      onAddProject(projectPath);
-      onClose();
+      void requestOpenProject(projectPath);
     }
   };
 
@@ -153,8 +204,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
     setCloneError(null);
     try {
       const clonedPath = await api.cloneProject(repositoryUrl.trim(), cloneDestination.trim() || undefined);
-      onAddProject(clonedPath);
-      onClose();
+      await requestOpenProject(clonedPath);
     } catch (error) {
       setIsCloning(false);
       setCloneError(error instanceof Error ? error.message : String(error));
@@ -162,6 +212,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
   };
 
   const handleCancelClone = () => {
+    cancelled.current = true;
     api.cancelCloneProject().catch((error) => {
       // eslint-disable-next-line no-console
       console.error('Failed to cancel cloning:', error);
@@ -202,6 +253,18 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
 
   const isConfirmDisabled = mode === OpenProjectMode.Clone ? !isRepoUrlValid || isCloning : !projectPath || !isValidPath || isProjectAlreadyOpen;
 
+  if (pendingTrust) {
+    return <ProjectTrustDialog projectPath={pendingTrust.path} inventory={pendingTrust.inventory} onTrust={handleTrust} onCancel={handleCancel} />;
+  }
+
+  if (isChecking && !isCloning) {
+    return (
+      <BaseDialog title={t('dialogs.openProjectTitle')} onClose={handleCancel}>
+        <div className="text-sm text-text-primary">{t('projectTrust.checking')}</div>
+      </BaseDialog>
+    );
+  }
+
   if (isCloning) {
     return (
       <BaseDialog title={t('dialogs.openProjectTitle')} onClose={handleCancelClone} width={600}>
@@ -216,13 +279,18 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
   return (
     <ConfirmDialog
       title={t('dialogs.openProjectTitle')}
-      onCancel={onClose}
+      onCancel={handleCancel}
       onConfirm={handleConfirm}
       confirmButtonText={mode === OpenProjectMode.Clone ? t('common.clone') : t('common.open')}
       disabled={isConfirmDisabled}
       width={600}
       closeOnEscape={true}
     >
+      {checkError && (
+        <div role="alert" className="text-error text-sm mb-3">
+          {t('projectTrust.checkFailed')}
+        </div>
+      )}
       <Tabs tabs={tabs} activeTabId={mode} onTabChange={handleModeChange} className="mb-3" />
 
       {mode === OpenProjectMode.Open && (
@@ -262,8 +330,7 @@ export const OpenProjectDialog = ({ onClose, onAddProject, openProjects }: Props
                   <button
                     key={path}
                     onClick={() => {
-                      onAddProject(path);
-                      onClose();
+                      void requestOpenProject(path);
                     }}
                     className="text-left p-1.5 rounded hover:bg-bg-tertiary-strong transition-colors truncate text-xs ml-2 flex-shrink-0"
                     title={path}

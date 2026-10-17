@@ -84,6 +84,7 @@ export const createMockApi = (overrides: Partial<ApplicationAPI> = {}): MockedOb
 
     // Open projects operations
     getOpenProjects: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
+    checkProject: vi.fn(() => Promise.resolve({ agents: [], mcpServers: [], extensions: [] })),
     addOpenProject: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
     setActiveProject: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),
     removeOpenProject: vi.fn((): Promise<ProjectData[]> => Promise.resolve([])),

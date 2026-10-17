@@ -1925,6 +1925,17 @@ export class ProjectApi extends BaseApi {
       }),
     );
 
+    router.post(
+      '/project/check',
+      this.handleRequest(async (req, res) => {
+        const parsed = this.validateRequest(AddOpenProjectSchema, req.body, res);
+        if (!parsed) {
+          return;
+        }
+        res.status(200).json(await this.eventsHandler.checkProject(parsed.projectDir));
+      }),
+    );
+
     // Add open project
     router.post(
       '/project/add-open',

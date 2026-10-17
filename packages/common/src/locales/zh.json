@@ -1,4 +1,15 @@
 {
+  "projectTrust": {
+    "title": "信任此项目？",
+    "warning": "此项目包含代理、MCP 服务器或扩展。它们可能以您的用户权限运行恶意代码、访问文件和凭据，或将数据发送到外部服务。",
+    "review": "继续前请检查下列文件。仅在信任项目来源时才信任此项目。取消将不会打开项目。",
+    "confirm": "信任此项目",
+    "agents": "代理",
+    "mcpServers": "MCP 服务器",
+    "extensions": "扩展",
+    "checking": "正在检查项目配置…",
+    "checkFailed": "无法检查项目配置。项目未打开。请检查文件权限和配置文件后重试。"
+  },
   "languages": {
     "en": "English",
     "zh": "中文",
