@@ -12,6 +12,7 @@
 - fixed bash tool calls hanging when command output processing fails
 - fixed failed subagent runs returning success with empty or incomplete results
 - optimized task list rendering, settings caching, and date formatting
+- added support for inline and block LaTeX formulas in chat messages
 
 ## [0.87.0]
 

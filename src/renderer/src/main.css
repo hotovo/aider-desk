@@ -1,8 +1,15 @@
 @import './fonts.css';
+@import 'katex/dist/katex.min.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25em 0;
+}
 
 .react-resizable {
   position: relative;

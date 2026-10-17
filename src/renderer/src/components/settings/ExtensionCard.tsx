@@ -9,7 +9,7 @@ import type { AvailableExtension, InstalledExtension } from '@common/types';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
 import { Toggle } from '@/components/common/Toggle';
-import { MARKDOWN_COMPONENTS, REMARK_PLUGINS } from '@/components/message/utils';
+import { MARKDOWN_COMPONENTS, REMARK_PLUGINS, REHYPE_PLUGINS } from '@/components/message/utils';
 import { Tooltip } from '@/components/ui/Tooltip';
 import { useOS } from '@/hooks/useOS';
 import { ExtensionSettingsDialog } from '@/components/settings/ExtensionSettingsDialog';
@@ -241,7 +241,7 @@ export const ExtensionCard = ({
           {isExpanded && (
             <div className="border-t border-border-default p-6">
               <div className="text-4xs text-text-primary max-w-none max-h-96 overflow-y-auto bg-bg-primary-light rounded-md p-4 scrollbar-thin scrollbar-track-bg-secondary scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth">
-                <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+                <ReactMarkdown remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
                   {data.readmeContent!}
                 </ReactMarkdown>
               </div>

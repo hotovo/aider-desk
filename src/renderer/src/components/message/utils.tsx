@@ -2,6 +2,8 @@ import { Fragment, ReactNode } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import {
   Group,
   AssistantGroupMessage,
@@ -41,7 +43,8 @@ const ALL_FENCES = [
   ['<sourcecode>', '</sourcecode>'],
 ] as const;
 
-export const REMARK_PLUGINS = [remarkGfm];
+export const REMARK_PLUGINS = [remarkGfm, remarkMath];
+export const REHYPE_PLUGINS = [rehypeKatex];
 export const MARKDOWN_COMPONENTS: Components = {
   h1: (props) => <h1 className="text-2xl font-bold my-4 first:mt-0 last:mb-0" {...props} />,
   h2: (props) => <h2 className="text-xl font-bold my-3 first:mt-0 last:mb-0" {...props} />,
@@ -138,7 +141,7 @@ export const parseMessageContent = (
     if (currentText.trimEnd()) {
       if (renderMarkdown) {
         parts.push(
-          <ReactMarkdown key={parts.length} remarkPlugins={REMARK_PLUGINS} components={MARKDOWN_COMPONENTS}>
+          <ReactMarkdown key={parts.length} remarkPlugins={REMARK_PLUGINS} rehypePlugins={REHYPE_PLUGINS} components={MARKDOWN_COMPONENTS}>
             {normalizeListBlocks(currentText.trimEnd())}
           </ReactMarkdown>,
         );
