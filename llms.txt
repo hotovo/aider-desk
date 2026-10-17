@@ -60,6 +60,14 @@ scripts/
 src/
   main/
     agent/
+      message-preparation/
+        cache-control.ts
+        index.ts
+        optimizations.ts
+        provider-compatibility.ts
+        reminders.ts
+        tool-results.ts
+        transformations.ts
       middlewares/
         extract-reasoning-middleware.ts
       tools/
@@ -79,7 +87,6 @@ src/
       mcp-config-manager.ts
       mcp-manager.ts
       mcp-oauth-manager.ts
-      optimizer.ts
       smart-compaction.ts
       subagent.ts
       utils.ts
@@ -1667,6 +1674,166 @@ File: scripts/validate-locales.mjs
 
 
 ================
+File: src/main/agent/message-preparation/cache-control.ts
+================
+import { cloneDeep } from 'lodash';
+⋮----
+import type { ModelMessage, TextPart } from 'ai';
+import type { CacheControl } from '@/models';
+⋮----
+export const applyCacheControl = (messages: ModelMessage[], cacheControl?: CacheControl): ModelMessage[] =>
+
+================
+File: src/main/agent/message-preparation/index.ts
+================
+import { cloneDeep } from 'lodash';
+⋮----
+import { addImportantReminders } from './reminders';
+import { transformMessages } from './transformations';
+import { optimizeMessages } from './optimizations';
+import { convertImageToolResults } from './provider-compatibility';
+import { applyCacheControl } from './cache-control';
+⋮----
+import type { ModelMessage } from 'ai';
+import type { CacheControl as ExtensionCacheControl } from '@common/extensions';
+import type { AgentProfile, ContextMessage } from '@common/types';
+import type { CacheControl } from '@/models';
+import type { Task } from '@/task';
+import type { ExtensionManager } from '@/extensions';
+⋮----
+export const prepareMessagesForModel = async (
+  messages: ModelMessage[],
+  cacheControl?: CacheControl,
+  task: Task | null = null,
+  profile: AgentProfile | null = null,
+  projectProfiles: AgentProfile[] = [],
+  userRequestMessageIndex: number = -1,
+  extensionManager?: ExtensionManager,
+): Promise<ModelMessage[]> =>
+
+================
+File: src/main/agent/message-preparation/optimizations.ts
+================
+import { convertMcpResultToModelOutput } from '../utils';
+⋮----
+import type { ModelMessage, ToolContent, ToolResultPart } from 'ai';
+⋮----
+import logger from '@/logger';
+⋮----
+const hasFileOutput = (output: ToolResultPart['output']): boolean =>
+⋮----
+/**
+ * Some models (Gemini Flash) are trying to call the same tool multiple times in a row.
+ * This function detects this pattern (assistant tool call -> tool result -> same assistant tool call)
+ * and modifies the result of the second tool call to return an error, preventing a loop.
+ */
+export const optimizeMessages = (messages: ModelMessage[]): ModelMessage[] =>
+⋮----
+// Need at least 4 messages for the pattern: assistant, tool, assistant, tool
+⋮----
+const newMessages = [...messages]; // Create a mutable copy
+⋮----
+// Iterate up to the point where the pattern can start
+⋮----
+// Check for the pattern: assistant(call) -> tool(result) -> assistant(call) -> tool(result)
+⋮----
+// Ensure both assistant messages contain tool calls
+⋮----
+// Compare the tool calls
+⋮----
+// This is a duplicate call. Modify the fourth message (the result of the duplicate call).
+⋮----
+// Match the tool result part to the duplicate tool call id
+⋮----
+// Replace the old tool message with the modified one
+⋮----
+// To prevent overlapping checks and unnecessary work, we can advance the index.
+// Since we've processed a block of 4, we can safely jump ahead.
+
+================
+File: src/main/agent/message-preparation/provider-compatibility.ts
+================
+import { convertMcpResultToModelOutput } from '../utils';
+⋮----
+import type { ModelMessage, ToolResultPart, FilePart, TextPart, UserModelMessage } from 'ai';
+⋮----
+import logger from '@/logger';
+⋮----
+/**
+ * Converts tool results containing image data (from MCP tools that return
+ * content with image parts) into a user message with image parts, and
+ * replaces the tool result output with text-only content.
+ *
+ * This is necessary because the OpenAI API (and OpenAI-compatible providers)
+ * only supports string content in tool results — images cannot be sent
+ * inline. By moving images to a user message, all providers can handle
+ * them via their native image support (e.g. OpenAI `image_url`, Anthropic
+ * `image` with base64, Google `inlineData`).
+ */
+export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] =>
+⋮----
+// Handle content-type outputs — extract file/image parts into user messages
+// since not all providers support file parts in tool results natively
+⋮----
+// If images were extracted, add a user message with the image parts
+
+================
+File: src/main/agent/message-preparation/reminders.ts
+================
+import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
+import { getSubagentId, isSubagentEnabled } from '@common/agent';
+import {
+  MEMORY_TOOL_GROUP_NAME,
+  MEMORY_TOOL_RETRIEVE,
+  MEMORY_TOOL_STORE,
+  TODO_TOOL_GET_ITEMS,
+  TODO_TOOL_GROUP_NAME,
+  TOOL_GROUP_NAME_SEPARATOR,
+} from '@common/tools';
+⋮----
+import type { ModelMessage, UserModelMessage } from 'ai';
+import type { Task } from '@/task';
+import type { ExtensionManager } from '@/extensions';
+⋮----
+export const addImportantReminders = async (
+  task: Task,
+  profile: AgentProfile,
+  projectProfiles: AgentProfile[],
+  userRequestMessageIndex: number,
+  messages: ModelMessage[],
+  extensionManager?: ExtensionManager,
+): Promise<ModelMessage[]> =>
+⋮----
+// Add reminder about automatic subagents
+⋮----
+// Add reminder about worktree mode
+⋮----
+// Dispatch event to extensions to allow modification of reminders
+
+================
+File: src/main/agent/message-preparation/tool-results.ts
+================
+import { extractTextContent } from '@common/utils';
+⋮----
+import type { ContextMessage } from '@common/types';
+⋮----
+export const getSubagentMessages = (value: unknown): ContextMessage[] | undefined =>
+⋮----
+export const getSubagentFinalText = (value: unknown): string | undefined =>
+
+================
+File: src/main/agent/message-preparation/transformations.ts
+================
+import { cloneDeep } from 'lodash';
+import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+⋮----
+import { getSubagentFinalText } from './tool-results';
+⋮----
+import type { ModelMessage } from 'ai';
+⋮----
+export const transformMessages = (messages: ModelMessage[]): ModelMessage[] =>
+
+================
 File: src/main/agent/middlewares/extract-reasoning-middleware.ts
 ================
 import type { LanguageModelV4StreamPart } from '@ai-sdk/provider';
@@ -2458,7 +2625,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { optimizeMessages } from '@/agent/optimizer';
+import { prepareMessagesForModel } from '@/agent/message-preparation';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
@@ -2593,8 +2760,6 @@ error: error.message, // Pass the validation error message
 // Get the model to use its temperature and max output tokens settings
 ⋮----
 const getBaseModelCallParams = async () =>
-⋮----
-const getOptimizedMessages = async () =>
 ⋮----
 const onStepEnd = async (stepResult: StepResult<typeof toolSet>) =>
 ⋮----
@@ -3155,128 +3320,6 @@ private save(): Promise<void>
 private async getSafeStorage()
 
 ================
-File: src/main/agent/optimizer.ts
-================
-import { type AgentProfile, AutonomyMode, InvocationMode, ToolApprovalState } from '@common/types';
-import { getSubagentId, isSubagentEnabled } from '@common/agent';
-import { cloneDeep } from 'lodash';
-import { type FilePart, type ModelMessage, type TextPart, type ToolContent, type ToolResultPart, type UserModelMessage } from 'ai';
-import {
-  AIDER_TOOL_GROUP_NAME,
-  AIDER_TOOL_RUN_PROMPT,
-  MEMORY_TOOL_GROUP_NAME,
-  MEMORY_TOOL_RETRIEVE,
-  MEMORY_TOOL_STORE,
-  SUBAGENTS_TOOL_GROUP_NAME,
-  SUBAGENTS_TOOL_RUN_TASK,
-  TODO_TOOL_GET_ITEMS,
-  TODO_TOOL_GROUP_NAME,
-  TOOL_GROUP_NAME_SEPARATOR,
-} from '@common/tools';
-import { extractTextContent } from '@common/utils';
-⋮----
-import { convertMcpResultToModelOutput } from './utils';
-⋮----
-import logger from '@/logger';
-import { type CacheControl } from '@/models';
-import { Task } from '@/task';
-import { ExtensionManager } from '@/extensions';
-⋮----
-/**
- * Optimizes the messages before sending them to the LLM. This should reduce the token count and improve the performance.
- */
-export const optimizeMessages = async (
-  messages: ModelMessage[],
-  cacheControl?: CacheControl,
-  task: Task | null = null,
-  profile: AgentProfile | null = null,
-  projectProfiles: AgentProfile[] = [],
-  userRequestMessageIndex: number = -1,
-  extensionManager?: ExtensionManager,
-): Promise<ModelMessage[]> =>
-⋮----
-const addImportantReminders = async (
-  task: Task,
-  profile: AgentProfile,
-  projectProfiles: AgentProfile[],
-  userRequestMessageIndex: number,
-  messages: ModelMessage[],
-  extensionManager?: ExtensionManager,
-): Promise<ModelMessage[]> =>
-⋮----
-// Add reminder about automatic subagents
-⋮----
-// Add reminder about worktree mode
-⋮----
-// Dispatch event to extensions to allow modification of reminders
-⋮----
-/**
- * For run_prompt tool, which returns `responses` array, we should replace this array with empty array.
- */
-const optimizeAiderMessages = (messages: ModelMessage[]): ModelMessage[] =>
-⋮----
-// @ts-expect-error result is expected to have responses
-⋮----
-// @ts-expect-error result is expected to have promptContext
-⋮----
-// ignore
-⋮----
-/**
- * For subagent tool, which now returns an array of messages, we should replace this array with only the last message for LLM processing.
- */
-const optimizeSubagentMessages = (messages: ModelMessage[]): ModelMessage[] =>
-⋮----
-// @ts-expect-error result is expected to have messages
-⋮----
-// ignore
-⋮----
-/**
- * Converts tool results containing image data (from MCP tools that return
- * content with image parts) into a user message with image parts, and
- * replaces the tool result output with text-only content.
- *
- * This is necessary because the OpenAI API (and OpenAI-compatible providers)
- * only supports string content in tool results — images cannot be sent
- * inline. By moving images to a user message, all providers can handle
- * them via their native image support (e.g. OpenAI `image_url`, Anthropic
- * `image` with base64, Google `inlineData`).
- */
-export const convertImageToolResults = (messages: ModelMessage[]): ModelMessage[] =>
-⋮----
-// Handle content-type outputs — extract file/image parts into user messages
-// since not all providers support file parts in tool results natively
-⋮----
-// If images were extracted, add a user message with the image parts
-⋮----
-/**
- * Some models (Gemini Flash) are trying to call the same tool multiple times in a row.
- * This function detects this pattern (assistant tool call -> tool result -> same assistant tool call)
- * and modifies the result of the second tool call to return an error, preventing a loop.
- */
-const removeDuplicateToolCalls = (messages: ModelMessage[]): ModelMessage[] =>
-⋮----
-// Need at least 4 messages for the pattern: assistant, tool, assistant, tool
-⋮----
-const newMessages = [...messages]; // Create a mutable copy
-⋮----
-// Iterate up to the point where the pattern can start
-⋮----
-// Check for the pattern: assistant(call) -> tool(result) -> assistant(call) -> tool(result)
-⋮----
-// Ensure both assistant messages contain tool calls
-⋮----
-// Compare the tool calls
-⋮----
-// This is a duplicate call. Modify the fourth message (the result of the duplicate call).
-⋮----
-// Match the tool result part to the duplicate tool call id
-⋮----
-// Replace the old tool message with the modified one
-⋮----
-// To prevent overlapping checks and unnecessary work, we can advance the index.
-// Since we've processed a block of 4, we can safely jump ahead.
-
-================
 File: src/main/agent/smart-compaction.ts
 ================
 import { ContextMessage, ContextToolMessage, ContextAssistantMessage, TextPart, ToolResultPart, ToolResultOutput } from '@common/types';
@@ -3518,6 +3561,8 @@ import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 ⋮----
+import logger from '@/logger';
+⋮----
 /**
  * Zod schema that coerces string values to booleans before validation.
  * Handles the case where LLMs send boolean parameters as strings ("true"/"false").
@@ -3635,6 +3680,8 @@ export const readFileContent = async (
 const readLargeFileContent = async (absolutePath: string, withLines: boolean, lineOffset: number, lineLimit: number, sizeLimit: number): Promise<string> =>
 ⋮----
 const finish = ()
+⋮----
+const countTextTokens = (text: string): number =>
 ⋮----
 export const truncateToolResult = async (
   content: string,
@@ -4553,6 +4600,8 @@ import type {
   InterruptedEvent,
   ModeDefinition,
   OptimizeMessagesEvent,
+  TransformMessagesEvent,
+  ApplyCacheControlEvent,
   ProjectStartedEvent,
   ProjectStoppedEvent,
   PromptFinishedEvent,
@@ -4652,6 +4701,8 @@ export type ExtensionEventMap = {
   onAgentStepStarted: AgentStepStartedEvent;
   onAgentStepFinished: AgentStepFinishedEvent;
   onOptimizeMessages: OptimizeMessagesEvent;
+  onTransformMessages: TransformMessagesEvent;
+  onApplyCacheControl: ApplyCacheControlEvent;
   onImportantReminders: ImportantRemindersEvent;
   onAiderPromptStarted: AiderPromptStartedEvent;
   onAiderPromptFinished: AiderPromptFinishedEvent;
@@ -5492,12 +5543,6 @@ const baseRef = baseBranch; // Will be 'HEAD' if not provided
 ⋮----
 // A2. Create new branch from baseRef (which defaults to 'HEAD')
 ⋮----
-// Verify that the base branch exists if specified and is a branch name
-⋮----
-// Capture the base commit before creating the worktree
-⋮----
-// Create the new branch and checkout the worktree
-⋮----
 newBranchName = branch; // Use the newly created branch name
 ⋮----
 // B. No branch name provided: Create detached worktree from current HEAD (or specified baseRef)
@@ -5885,6 +5930,8 @@ async dropStash(path: string, stashId: string): Promise<void>
 ⋮----
 // Don't throw - dropping stash is not critical
 ⋮----
+private async requireLocalIntegrationTarget(projectPath: string, branch: string): Promise<void>
+⋮----
 /**
    * Merge worktree to main branch with uncommitted changes support
    * Returns MergeState for potential revert
@@ -6093,7 +6140,7 @@ async getFileContents(
 ⋮----
 // Resolve the base the same way as getFileDiff
 ⋮----
-private async safeGitShow(worktreePath: string, ref: string, escapedPath: string): Promise<string>
+private async safeGitShow(worktreePath: string, ref: string, filePath: string): Promise<string>
 ⋮----
 /**
    * Check if the file at the given path (relative to worktreePath) is binary.
@@ -10660,6 +10707,7 @@ import { Task } from '@/task';
 import { isDirectory, isFileIgnored, withLock } from '@/utils';
 import { atomicWriteJsonFile, cleanupStaleTempFiles } from '@/utils/atomic-write';
 import { extractPromptContextFromToolResult } from '@/agent/utils';
+import { getSubagentMessages, getSubagentFinalText } from '@/agent/message-preparation/tool-results';
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 ⋮----
@@ -11804,7 +11852,7 @@ public async sendUpdatedFilesUpdated()
 ⋮----
 public async sendSkillsUpdated(): Promise<void>
 ⋮----
-private async initWorktree(): Promise<void>
+private async initWorktree(baseBranch?: string): Promise<void>
 ⋮----
 private async runWorktreePostCreateCommand(command: string): Promise<void>
 ⋮----
@@ -12622,7 +12670,7 @@ export const ensureRipgrepBinary = async (): Promise<boolean> =>
 ================
 File: src/main/utils/shell.ts
 ================
-import { exec, execSync } from 'child_process';
+import { exec, execFile, execSync } from 'child_process';
 ⋮----
 import { promisify } from 'util';
 ⋮----
@@ -12838,7 +12886,7 @@ export const initPath = (): void =>
 ⋮----
 // Wrapper for execAsync that includes enhanced PATH
 export const execWithShellPath = async (
-  command: string,
+  command: string | string[],
   options?: { cwd?: string; env?: NodeJS.ProcessEnv; maxBuffer?: number; signal?: AbortSignal; killSignal?: NodeJS.Signals | number },
 ): Promise<
 
@@ -13091,6 +13139,7 @@ import {
   VersionsInfo,
   VoiceSession,
   ChangeRequestItem,
+  SwitchToWorktreeOptions,
 } from '@common/types';
 import { compareBaseDirs, normalizeBaseDir } from '@common/utils';
 // @ts-expect-error istextorbinary is not typed properly
@@ -13311,11 +13360,7 @@ async switchToLocalWorkingMode(
     options?: { mergeBeforeSwitch?: boolean; targetBranch?: string; switchAllInWorktree?: boolean; discardWorktreeChanges?: boolean },
 ): Promise<void>
 ⋮----
-async switchToWorktreeWorkingMode(
-    baseDir: string,
-    taskId: string,
-    options?: { carryOverUncommittedChanges?: boolean; dropSourceChanges?: boolean },
-): Promise<void>
+async switchToWorktreeWorkingMode(baseDir: string, taskId: string, options?: SwitchToWorktreeOptions): Promise<void>
 ⋮----
 async getLocalUncommittedFiles(baseDir: string, taskId: string): Promise<
 ⋮----
@@ -13773,6 +13818,7 @@ import {
   TodoItem,
   AgentProfile,
   ChangeRequestItem,
+  SwitchToWorktreeOptions,
 } from '@common/types';
 import { ipcMain, clipboard, ClipboardItem } from 'electron';
 ⋮----
@@ -22048,7 +22094,7 @@ type Props = {
   taskName?: string;
   disabled?: boolean;
   onSwitchToLocal: () => void;
-  onSwitchToWorktree: () => void;
+  onSwitchToWorktree: (baseBranch?: string) => void;
   willShowConfirmDialog?: boolean;
   onMerge: (targetBranch?: string) => void;
   onSquash: (targetBranch?: string, commitMessage?: string) => void;
@@ -22114,6 +22160,8 @@ const handleBranchEditCancel = () =>
 ⋮----
 const handleSwitchToLocal = () =>
 ⋮----
+const handleCreateWorktreeFrom = (branch: BranchInfo) =>
+⋮----
 const handleSwitchToWorktree = () =>
 ⋮----
 
@@ -22177,6 +22225,7 @@ type Props = {
   worktreeMode?: boolean;
   onSelect: (branch: BranchInfo) => void;
   onNewBranchFrom: (branch: BranchInfo) => void;
+  onCreateWorktreeFrom?: (branch: BranchInfo) => void;
   onUpdateBranch?: (branch: BranchInfo) => void;
   onMergeIntoCurrent: (branch: BranchInfo) => void;
   onRebaseOnto: (branch: BranchInfo) => void;
@@ -22802,12 +22851,14 @@ import { IconButton } from '@/components/common/IconButton';
 import { GitBranchesButton } from '@/components/project/GitBranchesButton';
 import { GitInitButton } from '@/components/project/GitInitButton';
 import { WorktreeRevertButton } from '@/components/project/WorktreeRevertButton';
+import { WorktreeActionDialog } from '@/components/project/WorktreeActionDialog';
 import { BaseDialog } from '@/components/common/BaseDialog';
 import { RadioButton } from '@/components/common/RadioButton';
 import { useApi } from '@/contexts/ApiContext';
 import { useTaskGitStatus } from '@/hooks/useTaskGitStatus';
 import { useCommitChanges } from '@/hooks/useCommitChanges';
 import { useProjectTasks } from '@/stores/projectStore';
+import { showErrorNotification } from '@/utils/notifications';
 ⋮----
 enum LocalSwitchOption {
   Merge = 'merge',
@@ -22841,13 +22892,17 @@ type Props = {
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const performMergeAndSwitch = async () =>
+const performMergeAndSwitch = async (targetBranch = taskGitStatus?.worktree?.targetBranch) =>
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
-const performMergeAndSwitchAll = async () =>
+const performMergeAndSwitchAll = async (targetBranch = taskGitStatus?.worktree?.targetBranch) =>
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+const handleLocalTargetConfirm = async (targetBranch: string) =>
+⋮----
+const handleLocalTargetCancel = () =>
 ⋮----
 const handleLocalConfirm = async () =>
 ⋮----
@@ -22861,18 +22916,18 @@ const getWarningMessage = () =>
 ⋮----
 const handleSwitchToLocal = () =>
 ⋮----
-const handleSwitchToWorktree = () =>
+const handleSwitchToWorktree = (baseBranch?: string) =>
 ⋮----
 const handleCancelCommit = () =>
 ⋮----
+title=
+⋮----
 <Button onClick=
+
 ⋮----
 onChange=
 ⋮----
 <div className="font-medium">
-⋮----
-title=
-⋮----
 
 ================
 File: src/renderer/src/components/project/TaskView.tsx
