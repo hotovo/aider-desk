@@ -54,7 +54,7 @@ const MODULE_ACTIONS: Record<string, () => void> = {
 export const usePaletteCommands = () => {
   const { t, i18n } = useTranslation();
   const hotkeys = useConfiguredHotkeys();
-  const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
+  const setItemsProvider = useCommandPaletteStore((state) => state.setItemsProvider);
   const clearItems = useCommandPaletteStore((state) => state.clearItems);
   const showArchived = useTaskSidebarStore((state) => state.showArchived);
 
@@ -70,8 +70,7 @@ export const usePaletteCommands = () => {
       'task.hideArchived': showArchived,
     };
 
-    replaceItems(
-      GLOBAL_PALETTE_SCOPE,
+    setItemsProvider(GLOBAL_PALETTE_SCOPE, () =>
       UI_ACTIONS.filter((info) => archivedVisibilityIds[info.id] !== false).map(
         (info): PaletteItem => ({
           id: info.id,
@@ -90,5 +89,5 @@ export const usePaletteCommands = () => {
       }
       clearItems(GLOBAL_PALETTE_SCOPE);
     };
-  }, [t, i18n.language, hotkeys, showArchived, replaceItems, clearItems]);
+  }, [t, i18n.language, hotkeys, showArchived, setItemsProvider, clearItems]);
 };

@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { useLocalStorage } from '@reactuses/core';
 
 import { TaskStateChip } from '@/components/common/TaskStateChip';
-import { PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
+import { collectPaletteItems, PaletteItem, PaletteItemType, useCommandPaletteStore } from '@/stores/commandPaletteStore';
 
 const PAGE_SIZE = 20;
 
@@ -58,19 +58,19 @@ const getTabForItem = (item: PaletteItem): PaletteTab => {
 export const CommandPaletteContent = () => {
   const { t } = useTranslation();
   const closePalette = useCommandPaletteStore((state) => state.closePalette);
-  const items = useCommandPaletteStore((state) => state.items);
+  const providersByScope = useCommandPaletteStore((state) => state.providersByScope);
   const recentlyUsed = useCommandPaletteStore((state) => state.recentlyUsed);
   const addRecentlyUsed = useCommandPaletteStore((state) => state.addRecentlyUsed);
   const [storedActiveTab, setActiveTab] = useLocalStorage<PaletteTab>('command-palette-active-tab', PaletteTab.All);
   const activeTab = storedActiveTab ?? PaletteTab.All;
   const [search, setSearch] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [canScrollForMore, setCanScrollForMore] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const shouldScrollSelectionIntoViewRef = useRef(true);
-  const allItems = useMemo(() => Array.from(items.values()), [items]);
+  const allItems = useMemo(() => Array.from(collectPaletteItems(providersByScope).values()), [providersByScope]);
 
   const visibleItems = useMemo(() => {
     const sourceItems = activeTab === PaletteTab.All ? allItems : allItems.filter((item) => getTabForItem(item) === activeTab);
@@ -102,6 +102,16 @@ export const CommandPaletteContent = () => {
     const activeMatches = getMatches(activeItems);
     return activeMatches.length ? activeMatches : getMatches(sourceItems);
   }, [activeTab, allItems, recentlyUsed, search]);
+
+  const selectedIndex = Math.max(
+    0,
+    visibleItems.findIndex((item) => item.id === selectedId),
+  );
+
+  const currentSelectedId = visibleItems[selectedIndex]?.id ?? null;
+  if (selectedId !== currentSelectedId) {
+    setSelectedId(currentSelectedId);
+  }
 
   const selectedPageCount = Math.ceil((selectedIndex + 1) / PAGE_SIZE) * PAGE_SIZE;
   const loadedCount = Math.max(visibleCount, Math.min(selectedPageCount, visibleItems.length));
@@ -176,7 +186,7 @@ export const CommandPaletteContent = () => {
     (tab: PaletteTab) => {
       setActiveTab(tab);
       shouldScrollSelectionIntoViewRef.current = true;
-      setSelectedIndex(0);
+      setSelectedId(null);
       setVisibleCount(PAGE_SIZE);
       inputRef.current?.focus();
     },
@@ -186,7 +196,7 @@ export const CommandPaletteContent = () => {
   const handleSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
     setSearch(event.target.value);
     shouldScrollSelectionIntoViewRef.current = true;
-    setSelectedIndex(0);
+    setSelectedId(null);
     setVisibleCount(PAGE_SIZE);
   };
 
@@ -198,9 +208,9 @@ export const CommandPaletteContent = () => {
 
       const nextIndex = (selectedIndex + direction + visibleItems.length) % visibleItems.length;
       shouldScrollSelectionIntoViewRef.current = true;
-      setSelectedIndex(nextIndex);
+      setSelectedId(visibleItems[nextIndex].id);
     },
-    [selectedIndex, visibleItems.length],
+    [selectedIndex, visibleItems],
   );
 
   const handleKeyDown = useCallback(

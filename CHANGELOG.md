@@ -14,6 +14,7 @@
 - optimized task list rendering, settings caching, and date formatting
 - added support for inline and block LaTeX formulas in chat messages
 - fixed malformed or incomplete compact diffs crashing the chat, with plain-text fallback for unsupported diffs
+- improved background performance by building command palette items only while open and preserved selection during live updates
 
 ## [0.87.0]
 

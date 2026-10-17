@@ -46,9 +46,8 @@ describe('CommandPaletteContent keyboard pagination', () => {
     const { actions, items } = createItems();
     useCommandPaletteStore.setState({
       isOpen: true,
-      items,
+      providersByScope: new Map([['test', () => Array.from(items.values())]]),
       recentlyUsed: [],
-      itemIdsByScope: new Map(),
     });
     render(<CommandPaletteContent />);
 
@@ -124,9 +123,8 @@ describe('CommandPaletteContent keyboard pagination', () => {
     const { items } = createItems();
     useCommandPaletteStore.setState({
       isOpen: true,
-      items,
+      providersByScope: new Map([['test', () => Array.from(items.values())]]),
       recentlyUsed: [],
-      itemIdsByScope: new Map(),
     });
     const { unmount } = render(<CommandPaletteContent />);
 
@@ -147,9 +145,8 @@ describe('CommandPaletteContent keyboard pagination', () => {
     ]);
     useCommandPaletteStore.setState({
       isOpen: true,
-      items,
+      providersByScope: new Map([['test', () => Array.from(items.values())]]),
       recentlyUsed: [],
-      itemIdsByScope: new Map(),
     });
     render(<CommandPaletteContent />);
 
@@ -160,5 +157,64 @@ describe('CommandPaletteContent keyboard pagination', () => {
     fireEvent.change(input, { target: { value: 'Archived' } });
 
     expect(screen.getByText('Archived matching task')).toBeInTheDocument();
+  });
+
+  it('preserves selection by ID when live updates reorder items and executes the fresh callback', () => {
+    const { actions, input } = renderPalette();
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    const latestAction = vi.fn();
+    const { items } = createItems();
+    const reorderedItems = Array.from(items.values())
+      .reverse()
+      .map((item) => (item.id === 'item-2' ? { ...item, action: latestAction } : item));
+
+    act(() => useCommandPaletteStore.getState().setItemsProvider('test', () => reorderedItems));
+
+    expect(screen.getByRole('button', { name: 'Item 2' })).toHaveAttribute('data-selected', 'true');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(latestAction).toHaveBeenCalledOnce();
+    actions.forEach((action) => expect(action).not.toHaveBeenCalled());
+  });
+
+  it('preserves the initial selection when a live update inserts an item before it', () => {
+    const { input } = renderPalette();
+    const { items } = createItems();
+    const newItem: PaletteItem = { id: 'new', label: 'New item', type: PaletteItemType.Action, action: vi.fn() };
+
+    act(() => useCommandPaletteStore.getState().setItemsProvider('test', () => [newItem, ...items.values()]));
+
+    expect(screen.getByRole('button', { name: 'Item 1' })).toHaveAttribute('data-selected', 'true');
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(items.get('item-1')?.action).toHaveBeenCalledOnce();
+    expect(newItem.action).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the first item when the selected item disappears and handles an empty list', () => {
+    const { input } = renderPalette();
+    fireEvent.keyDown(input, { key: 'ArrowUp' });
+    const { items } = createItems();
+    const remaining = Array.from(items.values()).slice(0, 2);
+
+    act(() => useCommandPaletteStore.getState().setItemsProvider('test', () => remaining));
+    expect(screen.getByRole('button', { name: 'Item 1' })).toHaveAttribute('data-selected', 'true');
+
+    act(() => useCommandPaletteStore.getState().clearItems('test'));
+    fireEvent.keyDown(input, { key: 'ArrowDown' });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(useCommandPaletteStore.getState().isOpen).toBe(true);
+    remaining.forEach((item) => expect(item.action).not.toHaveBeenCalled());
+  });
+
+  it('does not recollect providers when only the search or selected tab changes', () => {
+    const { items } = createItems();
+    const provider = vi.fn(() => Array.from(items.values()));
+    useCommandPaletteStore.setState({ providersByScope: new Map([['test', provider]]), recentlyUsed: [], isOpen: true });
+    render(<CommandPaletteContent />);
+    provider.mockClear();
+
+    fireEvent.change(screen.getByPlaceholderText('commandPalette.placeholder'), { target: { value: 'Item' } });
+    fireEvent.click(screen.getByRole('button', { name: 'commandPalette.tabs.action' }));
+
+    expect(provider).not.toHaveBeenCalled();
   });
 });

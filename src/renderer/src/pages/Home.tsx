@@ -43,7 +43,7 @@ export const Home = () => {
   const api = useApi();
   const os = useOS();
   const { PROJECT_HOTKEYS } = useConfiguredHotkeys();
-  const replaceItems = useCommandPaletteStore((state) => state.replaceItems);
+  const setItemsProvider = useCommandPaletteStore((state) => state.setItemsProvider);
   const clearItems = useCommandPaletteStore((state) => state.clearItems);
   const [searchParams, setSearchParams] = useSearchParams();
   const [openProjects, setOpenProjects] = useState<ProjectData[]>([]);
@@ -483,19 +483,19 @@ export const Home = () => {
   }, [activeProject, handleCloseProject, cycleProject, showUsageDashboard, showModelLibrary, showLogs]);
 
   useEffect(() => {
-    const projects = optimisticOpenProjects.map((project) => ({
-      id: `project.switch.${project.baseDir}`,
-      label: project.baseDir.split(/[\\/]/).pop() || project.baseDir,
-      description: project.baseDir,
-      type: PaletteItemType.Project,
-      action: () => setActiveProject(project.baseDir),
-    }));
-
-    replaceItems('home', projects);
+    setItemsProvider('home', () =>
+      optimisticOpenProjects.map((project) => ({
+        id: `project.switch.${project.baseDir}`,
+        label: project.baseDir.split(/[\\/]/).pop() || project.baseDir,
+        description: project.baseDir,
+        type: PaletteItemType.Project,
+        action: () => setActiveProject(project.baseDir),
+      })),
+    );
     return () => {
       clearItems('home');
     };
-  }, [replaceItems, clearItems, optimisticOpenProjects, setActiveProject]);
+  }, [setItemsProvider, clearItems, optimisticOpenProjects, setActiveProject]);
 
   const renderProjectPanels = () =>
     optimisticOpenProjects.map((project) => (

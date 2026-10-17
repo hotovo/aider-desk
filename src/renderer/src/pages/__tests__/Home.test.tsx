@@ -75,7 +75,7 @@ vi.mock('@/components/common/StyledTooltip', () => ({
 vi.mock('@/stores/commandPaletteStore', () => ({
   useCommandPaletteStore: vi.fn((selector) =>
     selector({
-      replaceItems: vi.fn(),
+      setItemsProvider: vi.fn(),
       clearItems: vi.fn(),
     }),
   ),
