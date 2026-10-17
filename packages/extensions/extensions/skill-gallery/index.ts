@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, mkdirSync, rmSync, cpSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, relative, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exec } from 'node:child_process';
 import { homedir } from 'node:os';
@@ -22,6 +22,7 @@ const galleryJsx = readFileSync(join(__dirname, './ui/SkillGallery.jsx'), 'utf-8
 
 const COMPONENT_ID = 'skill-gallery';
 const GLOBAL_TARGET = 'global';
+const MAX_SCAN_DEPTH = 4;
 
 interface SkillSource {
   id: string;
@@ -41,6 +42,7 @@ const DEFAULT_SOURCES: SkillSource[] = [
   { id: 'addyosmani-agent-skills', name: 'Addy Osmani: Agent Skills', url: 'https://github.com/addyosmani/agent-skills.git', subPath: 'skills' },
   { id: 'reverse-skill', name: 'Reverse Skill', url: 'https://github.com/zhaoxuya520/reverse-skill.git', subPath: 'skills' },
   { id: 'cursor-pstack', name: 'Cursor Pstack', url: 'https://github.com/cursor/plugins.git', subPath: 'pstack/skills' },
+  { id: 'android', name: 'Android', url: 'https://github.com/android/skills.git', subPath: '' },
 ];
 
 interface GallerySkill {
@@ -84,7 +86,7 @@ function getSkillsDirForTarget(target: string): string {
 export default class SkillGalleryExtension implements Extension {
   static metadata = {
     name: 'Skill Gallery',
-    version: '1.5.0',
+    version: '1.6.0',
     description: 'Browse and install skills from popular skill repositories, including reverse engineering and security workflows',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
@@ -201,17 +203,53 @@ export default class SkillGalleryExtension implements Extension {
     if (!existsSync(scanDir)) return [];
 
     const skills: GallerySkill[] = [];
+    this.scanDirForSkills(scanDir, scanDir, source, skills, 0);
+    return skills;
+  }
+
+  private scanDirForSkills(dir: string, rootDir: string, source: SkillSource, skills: GallerySkill[], depth: number): void {
+    if (depth > MAX_SCAN_DEPTH) return;
+
+    const skillMdPath = join(dir, 'SKILL.md');
+    if (existsSync(skillMdPath)) {
+      let markdown: string;
+      try {
+        markdown = readFileSync(skillMdPath, 'utf-8');
+      } catch {
+        return;
+      }
+
+      const parsed = parseSkillFrontMatter(markdown);
+      if (!parsed) return;
+
+      const relativePath = relative(rootDir, dir).split('\\').join('/') || basename(rootDir);
+      const skillDirName = `${source.id}--${relativePath.split('/').join('--')}`;
+
+      skills.push({
+        id: `${source.id}/${relativePath}`,
+        name: parsed.name,
+        description: parsed.description,
+        sourceId: source.id,
+        sourceName: source.name,
+        sourceUrl: source.url.replace(/\.git$/, ''),
+        repoPath: dir,
+        skillDirName,
+        installed: false,
+      });
+      return;
+    }
+
     let entries: string[];
     try {
-      entries = readdirSync(scanDir);
+      entries = readdirSync(dir);
     } catch {
-      return [];
+      return;
     }
 
     for (const entry of entries) {
       if (entry.startsWith('.') || entry.startsWith('_')) continue;
 
-      const entryPath = join(scanDir, entry);
+      const entryPath = join(dir, entry);
       let stat;
       try {
         stat = statSync(entryPath);
@@ -220,35 +258,8 @@ export default class SkillGalleryExtension implements Extension {
       }
       if (!stat.isDirectory()) continue;
 
-      const skillMdPath = join(entryPath, 'SKILL.md');
-      if (!existsSync(skillMdPath)) continue;
-
-      let markdown: string;
-      try {
-        markdown = readFileSync(skillMdPath, 'utf-8');
-      } catch {
-        continue;
-      }
-
-      const parsed = parseSkillFrontMatter(markdown);
-      if (!parsed) continue;
-
-      const skillDirName = `${source.id}--${entry}`;
-
-      skills.push({
-        id: `${source.id}/${entry}`,
-        name: parsed.name,
-        description: parsed.description,
-        sourceId: source.id,
-        sourceName: source.name,
-        sourceUrl: source.url.replace(/\.git$/, ''),
-        repoPath: entryPath,
-        skillDirName,
-        installed: false,
-      });
+      this.scanDirForSkills(entryPath, rootDir, source, skills, depth + 1);
     }
-
-    return skills;
   }
 
   private installSkill(skillId: string, target: string): GallerySkill[] | null {

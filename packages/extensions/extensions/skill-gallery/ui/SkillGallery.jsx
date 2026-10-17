@@ -223,7 +223,8 @@
         map.set(s.sourceId, { value: s.sourceId, label: s.sourceName });
       }
     });
-    return [{ value: 'all', label: 'All Sources' }, ...Array.from(map.values())];
+    const options = Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+    return [{ value: 'all', label: 'All Sources' }, ...options];
   }, [skills]);
 
   const statusOptions = [
