@@ -11,18 +11,17 @@ import { BiArchiveIn } from 'react-icons/bi';
 
 import { TaskStatusIcon } from './TaskStatusIcon';
 import { TaskMenuButton } from './TaskMenuButton';
+import { TaskDeleteConfirm } from './TaskDeleteConfirm';
 
 import { InlineEditPanel } from '@/components/common/InlineEditPanel';
-import { Button } from '@/components/common/Button';
 import { LoadingText } from '@/components/common/LoadingText';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
 import { Tooltip } from '@/components/ui/Tooltip';
-import { countAllSubtasks } from '@/utils/task-utils';
 
 type Props = {
   task: TaskData;
-  tasks: TaskData[];
+  getAllSubtasksCount: (taskId: string) => number;
   readonly?: boolean;
   level: number;
   selectedTasks: Set<string>;
@@ -78,11 +77,6 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     return false;
   }
 
-  // Compare tasks array reference (used for subtasks computation)
-  if (prevProps.tasks !== nextProps.tasks) {
-    return false;
-  }
-
   // Compare primitive props
   if (
     prevProps.readonly !== nextProps.readonly ||
@@ -130,6 +124,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
     prevProps.onDuplicateTask !== nextProps.onDuplicateTask ||
     prevProps.handleConfirmDelete !== nextProps.handleConfirmDelete ||
     prevProps.handleCancelDelete !== nextProps.handleCancelDelete ||
+    prevProps.getAllSubtasksCount !== nextProps.getAllSubtasksCount ||
     prevProps.onToggleExpand !== nextProps.onToggleExpand ||
     prevProps.onDragStart !== nextProps.onDragStart ||
     prevProps.onDragEnd !== nextProps.onDragEnd ||
@@ -153,7 +148,7 @@ const arePropsEqual = (prevProps: Props, nextProps: Props): boolean => {
 export const TaskItem = memo(
   ({
     task,
-    tasks,
+    getAllSubtasksCount,
     readonly = false,
     level,
     selectedTasks,
@@ -232,7 +227,6 @@ export const TaskItem = memo(
 
     const isDragged = draggedTaskIds.has(task.id);
     const isDropTarget = dragOverTaskId === task.id && !isDragged;
-    const allSubtasksCount = countAllSubtasks(task.id, tasks);
 
     const handleDragStart = (e: DragEvent<HTMLDivElement>) => {
       isDraggingRef.current = true;
@@ -429,19 +423,7 @@ export const TaskItem = memo(
         )}
 
         {deleteConfirmTaskId === task.id && (
-          <div className="m-2 p-2 bg-bg-primary border border-border-default rounded-md">
-            <div className="text-2xs text-text-primary mb-2">
-              {allSubtasksCount > 0 ? t('taskSidebar.deleteConfirmWithSubtasks', { count: allSubtasksCount }) : t('taskSidebar.deleteConfirm')}
-            </div>
-            <div className="flex gap-2 justify-end">
-              <Button variant="text" size="xs" color="tertiary" onClick={handleCancelDelete}>
-                {t('common.cancel')}
-              </Button>
-              <Button variant="contained" color="danger" size="xs" onClick={() => void handleConfirmDelete(task.id)}>
-                {t('common.confirm')}
-              </Button>
-            </div>
-          </div>
+          <TaskDeleteConfirm taskId={task.id} getAllSubtasksCount={getAllSubtasksCount} onConfirm={handleConfirmDelete} onCancel={handleCancelDelete} />
         )}
       </div>
     );

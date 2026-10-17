@@ -252,7 +252,8 @@ export class ExtensionManager {
    * @returns Filtered extensions excluding disabled ones
    */
   private filterEnabledExtensions(extensions: LoadedExtension[]): LoadedExtension[] {
-    return extensions.filter((ext) => !this.isExtensionDisabled(ext.filePath));
+    const disabledExtensions = this.store.getSettings().extensions?.disabled || [];
+    return extensions.filter((ext) => !disabledExtensions.includes(ext.filePath));
   }
 
   /**

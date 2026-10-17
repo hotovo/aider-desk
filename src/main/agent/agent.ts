@@ -1882,7 +1882,8 @@ export class Agent {
     const usageReport: UsageReportData = this.modelManager.getUsageReport(task, provider, model, usage, providerMetadata);
 
     if (providerMetadata) {
-      await task.updateTask({ lastAgentProviderMetadata: providerMetadata });
+      // per-step metadata must not bump updatedAt, otherwise running tasks keep re-sorting in the task list
+      await task.updateTask({ lastAgentProviderMetadata: providerMetadata }, false);
     }
 
     const hasAssistantMessage = content.some((part) => (part.type === 'text' || part.type === 'reasoning') && part.text?.trim());

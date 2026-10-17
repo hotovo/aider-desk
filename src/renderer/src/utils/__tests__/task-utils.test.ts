@@ -83,6 +83,19 @@ describe('task-utils', () => {
       expect(sorted.map((t) => t.id)).toEqual(['1', '2', '3', '4', '5']);
     });
 
+    it('should sort sibling subtasks by their own most recent descendant', () => {
+      const tasks: Partial<TaskData>[] = [
+        { id: '1', name: 'Parent', updatedAt: '2026-01-14T08:00:00Z', pinned: false, parentId: null },
+        { id: '2', name: 'Child A', updatedAt: '2026-01-14T10:00:00Z', pinned: false, parentId: '1' },
+        { id: '3', name: 'Child B', updatedAt: '2026-01-14T09:00:00Z', pinned: false, parentId: '1' },
+        { id: '4', name: 'Grandchild B1', updatedAt: '2026-01-14T11:00:00Z', pinned: false, parentId: '3' },
+        { id: '5', name: 'Child C', updatedAt: '2026-01-14T09:30:00Z', pinned: false, parentId: '1' },
+      ];
+      const sorted = getSortedVisibleTasks(tasks as TaskData[], defaultStates);
+      // Child B is ordered first because its grandchild (11:00) is newer than Child A (10:00)
+      expect(sorted.map((t) => t.id)).toEqual(['1', '3', '4', '2', '5']);
+    });
+
     it('should handle tasks without updatedAt when considering subtasks', () => {
       const tasks: Partial<TaskData>[] = [
         { id: '1', name: 'Parent A', pinned: false, parentId: null },

@@ -32,7 +32,7 @@ import { TaskItem } from './TaskItem';
 import { TaskSectionHeader } from './TaskSectionHeader';
 
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { flattenTasksForVirtualization } from '@/utils/task-utils';
+import { countAllSubtasks, flattenTasksForVirtualization } from '@/utils/task-utils';
 import { Input } from '@/components/common/Input';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
@@ -367,6 +367,13 @@ const TaskSidebarComponent = (
     const taskItems = virtualItems.filter((item): item is { type: 'task'; id: string; task: TaskData; level: number } => item.type === 'task');
     return taskItems.map((item) => item.task);
   }, [virtualItems]);
+
+  // stable identity, so task items don't re-render on every tasks change just to be able to count subtasks
+  const tasksRef = useRef(tasks);
+  useEffect(() => {
+    tasksRef.current = tasks;
+  }, [tasks]);
+  const getAllSubtasksCount = useCallback((taskId: string) => countAllSubtasks(taskId, tasksRef.current), []);
 
   const handleDeleteClick = useCallback((taskId: string) => {
     setDeleteConfirmTaskId(taskId);
@@ -994,7 +1001,7 @@ const TaskSidebarComponent = (
                       >
                         <TaskItem
                           task={task}
-                          tasks={tasks}
+                          getAllSubtasksCount={getAllSubtasksCount}
                           readonly={readonly}
                           level={item.level}
                           selectedTasks={selectedTasks}

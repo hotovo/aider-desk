@@ -4285,7 +4285,7 @@ ${error.stderr}`,
     await this.aiderManager.start(true);
   }
 
-  public async updateTask(updates: Partial<TaskData>): Promise<TaskData> {
+  public async updateTask(updates: Partial<TaskData>, updateTimestamps = true): Promise<TaskData> {
     const previousTaskString = JSON.stringify(this.task);
 
     // Handle worktree configuration changes
@@ -4333,9 +4333,11 @@ ${error.stderr}`,
       return this.task;
     }
 
-    this.task.updatedAt = new Date().toISOString();
+    if (updateTimestamps) {
+      this.task.updatedAt = new Date().toISOString();
+    }
 
-    return this.saveTask(updates, !!this.task.createdAt);
+    return this.saveTask(updates, updateTimestamps && !!this.task.createdAt);
   }
 
   private async sendTaskGitStatusUpdated() {

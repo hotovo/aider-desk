@@ -9,18 +9,51 @@ export const getTaskDir = (task: TaskData): string => task.worktree?.path ?? tas
 export const countAllSubtasks = (taskId: string, allTasks: TaskData[]): number =>
   allTasks.filter((t) => t.parentId === taskId).reduce((count, subtask) => count + 1 + countAllSubtasks(subtask.id, allTasks), 0);
 
-const getMostRecentUpdatedAt = (task: TaskData, allTasks: TaskData[]): string | undefined => {
-  let mostRecent = task.updatedAt;
-
-  const subtasks = allTasks.filter((t) => t.parentId === task.id);
-  for (const subtask of subtasks) {
-    const subtaskMostRecent = getMostRecentUpdatedAt(subtask, allTasks);
-    if (subtaskMostRecent && (!mostRecent || subtaskMostRecent > mostRecent)) {
-      mostRecent = subtaskMostRecent;
+const groupByParentId = (tasks: TaskData[]): Map<string, TaskData[]> => {
+  const childrenByParentId = new Map<string, TaskData[]>();
+  for (const task of tasks) {
+    if (!task.parentId) {
+      continue;
+    }
+    const children = childrenByParentId.get(task.parentId);
+    if (children) {
+      children.push(task);
+    } else {
+      childrenByParentId.set(task.parentId, [task]);
     }
   }
+  return childrenByParentId;
+};
 
-  return mostRecent;
+// Returns a memoized resolver of the most recent updatedAt of a task including all its subtasks within allTasks
+const createMostRecentUpdatedAtResolver = (allTasks: TaskData[]): ((task: TaskData) => string | undefined) => {
+  const childrenByParentId = groupByParentId(allTasks);
+  const cache = new Map<string, string | undefined>();
+  const visiting = new Set<string>();
+
+  const resolve = (task: TaskData): string | undefined => {
+    if (cache.has(task.id)) {
+      return cache.get(task.id);
+    }
+    if (visiting.has(task.id)) {
+      return task.updatedAt;
+    }
+
+    visiting.add(task.id);
+    let mostRecent = task.updatedAt;
+    for (const subtask of childrenByParentId.get(task.id) ?? []) {
+      const subtaskMostRecent = resolve(subtask);
+      if (subtaskMostRecent && (!mostRecent || subtaskMostRecent > mostRecent)) {
+        mostRecent = subtaskMostRecent;
+      }
+    }
+    visiting.delete(task.id);
+
+    cache.set(task.id, mostRecent);
+    return mostRecent;
+  };
+
+  return resolve;
 };
 
 export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<string>, showArchived: boolean = false, searchQuery: string = ''): TaskData[] => {
@@ -42,12 +75,19 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
       return task.name.toLowerCase().includes(searchText);
     });
 
+  const tasksById = new Map<string, TaskData>();
+  for (const task of tasks) {
+    if (!tasksById.has(task.id)) {
+      tasksById.set(task.id, task);
+    }
+  }
+
   const isAnyAncestorArchived = (task: TaskData): boolean => {
     const visited = new Set<string>();
     let current = task;
     while (current.parentId && !visited.has(current.parentId)) {
       visited.add(current.parentId);
-      const parentTask = tasks.find((t) => t.id === current.parentId);
+      const parentTask = tasksById.get(current.parentId);
       if (!parentTask) {
         return false;
       }
@@ -61,8 +101,11 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
 
   const tasksWithValidParents = showArchived ? filteredTasks : filteredTasks.filter((task) => !isAnyAncestorArchived(task));
 
-  const topLevelTasks = tasksWithValidParents.filter((t) => !t.parentId || !tasksWithValidParents.some((p) => p.id === t.parentId));
-  const subtasks = tasksWithValidParents.filter((t) => t.parentId && tasksWithValidParents.some((p) => p.id === t.parentId));
+  const validTaskIds = new Set(tasksWithValidParents.map((t) => t.id));
+  const topLevelTasks = tasksWithValidParents.filter((t) => !t.parentId || !validTaskIds.has(t.parentId));
+  const subtasks = tasksWithValidParents.filter((t) => t.parentId && validTaskIds.has(t.parentId));
+  const subtasksByParentId = groupByParentId(subtasks);
+  const getMostRecentUpdatedAt = createMostRecentUpdatedAtResolver(filteredTasks);
 
   const sortFn = (a: TaskData, b: TaskData) => {
     // Pinned tasks come first
@@ -73,8 +116,8 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
       return 1;
     }
     // Then sort by most recent updatedAt (including subtasks, descending)
-    const aMostRecent = getMostRecentUpdatedAt(a, filteredTasks);
-    const bMostRecent = getMostRecentUpdatedAt(b, filteredTasks);
+    const aMostRecent = getMostRecentUpdatedAt(a);
+    const bMostRecent = getMostRecentUpdatedAt(b);
     if (aMostRecent && !bMostRecent) {
       return 1;
     } else if (!aMostRecent && bMostRecent) {
@@ -90,7 +133,7 @@ export const getSortedVisibleTasks = (tasks: TaskData[], selectedStates: Set<str
 
   const addTaskWithChildren = (task: TaskData) => {
     result.push(task);
-    const children = subtasks.filter((t) => t.parentId === task.id).sort(sortFn);
+    const children = [...(subtasksByParentId.get(task.id) ?? [])].sort(sortFn);
     children.forEach(addTaskWithChildren);
   };
 
@@ -108,7 +151,10 @@ export const flattenTasksForVirtualization = (
   searchQuery: string = '',
 ): VirtualTaskItem[] => {
   const sortedTasks = getSortedVisibleTasks(tasks, selectedStates, showArchived, searchQuery);
-  const topLevelTasks = sortedTasks.filter((task) => !task.parentId || !sortedTasks.some((t) => t.id === task.parentId));
+  const sortedTaskIds = new Set(sortedTasks.map((task) => task.id));
+  const topLevelTasks = sortedTasks.filter((task) => !task.parentId || !sortedTaskIds.has(task.parentId));
+  const subtasksByParentId = groupByParentId(sortedTasks);
+  const getMostRecentUpdatedAt = createMostRecentUpdatedAtResolver(sortedTasks);
 
   const pinnedTasks = topLevelTasks.filter((task) => task.pinned);
   const nonPinnedTasks = topLevelTasks.filter((task) => !task.pinned);
@@ -119,8 +165,7 @@ export const flattenTasksForVirtualization = (
     result.push({ type: 'task', id: task.id, task, level });
 
     if (expandedIds.has(task.id)) {
-      const subtasks = sortedTasks.filter((t) => t.parentId === task.id);
-      subtasks.forEach((subtask) => addTaskWithSubtasks(subtask, level + 1));
+      subtasksByParentId.get(task.id)?.forEach((subtask) => addTaskWithSubtasks(subtask, level + 1));
     }
   };
 
@@ -129,7 +174,7 @@ export const flattenTasksForVirtualization = (
 
   const groupedTasks = new Map<string, TaskData[]>();
   nonPinnedTasks.forEach((task) => {
-    const mostRecent = getMostRecentUpdatedAt(task, sortedTasks);
+    const mostRecent = getMostRecentUpdatedAt(task);
     const group = mostRecent ? getTaskDateGroup({ ...task, updatedAt: mostRecent }) : getTaskDateGroup(task);
     if (!groupedTasks.has(group)) {
       groupedTasks.set(group, []);

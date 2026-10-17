@@ -11,6 +11,7 @@
 - fixed special-token text crashing token counting, with fallback estimates when tokenization fails
 - fixed bash tool calls hanging when command output processing fails
 - fixed failed subagent runs returning success with empty or incomplete results
+- optimized task list rendering, settings caching, and date formatting
 
 ## [0.87.0]
 
