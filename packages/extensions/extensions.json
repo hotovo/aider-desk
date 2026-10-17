@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 101
+      "installCount": 102
     },
     {
       "id": "protected-paths",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "external-rules",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 65
+      "installCount": 66
     },
     {
       "id": "learn",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "sandbox",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "doom",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 63
+      "installCount": 64
     },
     {
       "id": "destructive-command-guard",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 135
+      "installCount": 138
     },
     {
       "id": "task-scheduler",
