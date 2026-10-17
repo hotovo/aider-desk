@@ -13,6 +13,7 @@
 - fixed failed subagent runs returning success with empty or incomplete results
 - optimized task list rendering, settings caching, and date formatting
 - added support for inline and block LaTeX formulas in chat messages
+- fixed malformed or incomplete compact diffs crashing the chat, with plain-text fallback for unsupported diffs
 
 ## [0.87.0]
 

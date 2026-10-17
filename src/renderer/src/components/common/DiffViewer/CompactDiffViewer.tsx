@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { HiOutlineSelector } from 'react-icons/hi';
 
 import { parseDiff, File, Hunk as HunkType, SkipBlock, Line as LineType } from './utils';
+import { DiffFallback } from './DiffFallback';
 
 import { highlightWithRefractor } from '@/utils/highlighter';
 import { useRefractorLanguage } from '@/hooks/useRefractorLanguage';
@@ -132,19 +133,33 @@ export const CompactDiffViewer = ({
       return [{ hunks: providedHunks, type: providedType, newPath: fileName } as File];
     }
 
-    let diffText = udiff;
-    if (!diffText && oldValue !== undefined && newValue !== undefined) {
-      const name = fileName || 'file';
-      const header = `diff --git a/${name} b/${name}\n`;
-      diffText = header + formatLines(diffLines(oldValue, newValue), { context: 100, aname: `a/${name}`, bname: `b/${name}` });
-    }
+    try {
+      let diffText = udiff;
+      if (!diffText && oldValue !== undefined && newValue !== undefined) {
+        const name = fileName || 'file';
+        const header = `diff --git a/${name} b/${name}\n`;
+        diffText = header + formatLines(diffLines(oldValue, newValue), { context: 100, aname: `a/${name}`, bname: `b/${name}` });
+      }
 
-    if (diffText) {
-      return parseDiff(diffText);
-    }
+      if (diffText) {
+        if (/^(?:diff --(?:cc|combined) |@@@)/m.test(diffText)) {
+          return null;
+        }
+        const parsed = parseDiff(diffText);
+        return parsed.length === 0 ? null : parsed;
+      }
 
-    return [];
+      return [];
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.warn('Error parsing compact diff:', error);
+      return null;
+    }
   }, [providedHunks, providedType, oldValue, newValue, udiff, fileName]);
+
+  if (files === null) {
+    return <DiffFallback udiff={udiff} oldValue={oldValue} newValue={newValue} />;
+  }
 
   if (files.length === 0) {
     return null;
