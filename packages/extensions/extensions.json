@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "theme",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 103
+      "installCount": 104
     },
     {
       "id": "protected-paths",
@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 47
+      "installCount": 49
     },
     {
       "id": "permission-gate",
@@ -116,7 +116,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 36
+      "installCount": 37
     },
     {
       "id": "ultrathink",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "sandbox",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 95
+      "installCount": 96
     },
     {
       "id": "verifier",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 141
+      "installCount": 142
     },
     {
       "id": "task-scheduler",
