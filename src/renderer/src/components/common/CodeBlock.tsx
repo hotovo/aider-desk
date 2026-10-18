@@ -139,7 +139,7 @@ export const CodeBlock = ({ baseDir, taskId, language, children, file, isComplet
       }
       return <DiffViewer oldValue={diffOldValue} newValue={diffNewValue} language={language} isComplete={isComplete} viewMode={diffViewMode} />;
     } else if (language === 'mermaid' && codeForSyntaxHighlight) {
-      return <MermaidDiagram code={codeForSyntaxHighlight} />;
+      return <MermaidDiagram code={codeForSyntaxHighlight} isComplete={isComplete} />;
     } else if (codeForSyntaxHighlight && language) {
       return (
         <pre

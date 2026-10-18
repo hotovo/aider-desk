@@ -298,7 +298,10 @@
     }
   },
   "mermaid": {
-    "renderFailed": "Failed to render diagram:"
+    "renderFailed": "Failed to render diagram:",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "resetZoom": "Reset zoom"
   },
   "modelLibrary": {
     "enableVoiceControl": "Enable Voice Control",

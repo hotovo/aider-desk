@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- improved Mermaid diagrams with theme-aware colors and fonts and smoother streaming using Pele library
+
 ## [0.88.0]
 
 - improved performance when switching between loaded tasks by preserving virtualized message size caches

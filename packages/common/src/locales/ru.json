@@ -298,7 +298,10 @@
     }
   },
   "mermaid": {
-    "renderFailed": "Не удалось отобразить диаграмму:"
+    "renderFailed": "Не удалось отобразить диаграмму:",
+    "zoomIn": "Увеличить",
+    "zoomOut": "Уменьшить",
+    "resetZoom": "Сбросить масштаб"
   },
   "neuralwatt": {
     "getApiKeyLink": "Получить API-ключ Neuralwatt",

@@ -298,7 +298,10 @@
     }
   },
   "mermaid": {
-    "renderFailed": "다이어그램 렌더링 실패:"
+    "renderFailed": "다이어그램 렌더링 실패:",
+    "zoomIn": "확대",
+    "zoomOut": "축소",
+    "resetZoom": "확대/축소 초기화"
   },
   "clinepass": {
     "getApiKeyLink": "ClinePass API 키 받기",

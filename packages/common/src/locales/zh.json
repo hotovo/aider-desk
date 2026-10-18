@@ -297,7 +297,10 @@
     }
   },
   "mermaid": {
-    "renderFailed": "渲染图表失败："
+    "renderFailed": "渲染图表失败：",
+    "zoomIn": "放大",
+    "zoomOut": "缩小",
+    "resetZoom": "重置缩放"
   },
   "modelLibrary": {
     "enableVoiceControl": "启用语音控制",
