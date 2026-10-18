@@ -1,4 +1,10 @@
-import { BedrockClient, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary, ListInferenceProfilesCommand } from '@aws-sdk/client-bedrock';
+import {
+  BedrockClient,
+  GetFoundationModelAvailabilityCommand,
+  type InferenceProfileSummary,
+  ListInferenceProfilesCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-bedrock';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
 import { BedrockProvider, isBedrockProvider } from '@common/agent';
@@ -101,7 +107,11 @@ export const loadBedrockModels = async (profile: ProviderProfile, settings: Sett
         const response = await client.send(availabilityCommand);
         return { profile: inferenceProfile, modelId, response };
       } catch (error) {
-        logger.error(`Error checking availability for profile ${inferenceProfile.inferenceProfileId!} with model ${modelId!}:`, error);
+        if (error instanceof ResourceNotFoundException) {
+          logger.debug(`Profile ${inferenceProfile.inferenceProfileId!} with model ${modelId} is no longer available: ${error.message}`);
+        } else {
+          logger.error(`Error checking availability for profile ${inferenceProfile.inferenceProfileId!} with model ${modelId!}:`, error);
+        }
         return null;
       }
     });
