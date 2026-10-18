@@ -2560,22 +2560,22 @@ export class Task {
     return await this.gitManager.getUpdatedFiles(this.getTaskDir(), this.task.workingMode, mainBranch, groupMode);
   }
 
-  public async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string> {
+  public async getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string> {
     const worktreePath = this.getTaskDir();
     let mainBranch: string | undefined = undefined;
     if (this.task.workingMode === 'worktree') {
       mainBranch = this.task.worktree?.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
     }
-    return await this.gitManager.getFileDiff(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash);
+    return await this.gitManager.getFileDiff(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash, previousPath);
   }
 
-  public async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+  public async getUpdatedFileContents(filePath: string, commitHash?: string, previousPath?: string): Promise<{ oldContent: string; newContent: string }> {
     const worktreePath = this.getTaskDir();
     let mainBranch: string | undefined = undefined;
     if (this.task.workingMode === 'worktree') {
       mainBranch = this.task.worktree?.baseBranch || (await this.gitManager.getProjectMainBranch(this.project.baseDir));
     }
-    return await this.gitManager.getFileContents(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash);
+    return await this.gitManager.getFileContents(worktreePath, this.task.workingMode, mainBranch, filePath, commitHash, previousPath);
   }
 
   public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]> {
@@ -4920,14 +4920,14 @@ ${error.stderr}`,
     await this.sendTaskGitStatusUpdated();
   }
 
-  public async restoreFile(filePath: string): Promise<void> {
+  public async restoreFile(filePath: string, previousPath?: string): Promise<void> {
     logger.info('Restoring file', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       filePath,
     });
 
-    await this.gitManager.restoreFile(this.getTaskDir(), filePath);
+    await this.gitManager.restoreFile(this.getTaskDir(), filePath, previousPath);
     await this.sendUpdatedFilesUpdated();
     await this.sendTaskGitStatusUpdated();
   }

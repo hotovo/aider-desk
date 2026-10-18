@@ -330,6 +330,7 @@ export interface ContextFilesUpdatedData {
 
 export interface UpdatedFile {
   path: string;
+  previousPath?: string;
   additions: number;
   deletions: number;
   diff?: string;

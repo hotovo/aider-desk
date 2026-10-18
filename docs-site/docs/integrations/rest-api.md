@@ -897,7 +897,7 @@ Renames the current worktree branch.
 - `POST /api/project/worktree/cancel-commit-changes` — Cancel an in-progress commit operation
 - `POST /api/project/worktree/apply-uncommitted` — Apply uncommitted changes to a target branch
 - `POST /api/project/worktree/revert-last-merge` — Revert the most recent merge
-- `POST /api/project/worktree/restore-file` — Restore a file from the target branch
+- `POST /api/project/worktree/restore-file` — Restore a file from HEAD (optional `previousPath` restores both sides of a rename)
 - `POST /api/project/worktree/abort-rebase` — Abort an in-progress rebase
 - `POST /api/project/worktree/continue-rebase` — Continue an in-progress rebase after resolving conflicts
 - `POST /api/project/worktree/resolve-conflicts-with-agent` — Use AI agent to resolve rebase conflicts

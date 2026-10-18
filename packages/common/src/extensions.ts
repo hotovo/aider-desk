@@ -929,9 +929,10 @@ export interface TaskContext {
    * Get the diff for a single updated file (lazily loaded from the backend)
    * @param filePath Path of the file (as returned by getUpdatedFiles)
    * @param commitHash Optional commit hash for per-commit diffs in grouped worktree mode
+   * @param previousPath Optional original path for renamed files (as returned by getUpdatedFiles)
    * @returns Unified diff string (empty for binary files or on error)
    */
-  getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>;
+  getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string>;
 
   /**
    * Get the cached repository map string.

@@ -17,6 +17,10 @@ Each updated file shows:
 - **File path** - The relative path to the modified file
 - **Line statistics** - Number of lines added (green) and removed (red)
 
+### Renamed Files
+
+Renames detected by Git appear under the new path, including renames with no content changes. A rename indicator shows the original path on hover. Diff views compare the original and renamed paths, and reverting an uncommitted rename restores the original path and removes the renamed copy. Unstaged filesystem moves may appear as a deletion and an untracked file until added to Git.
+
 ### Untracked Files
 
 Files that were newly created but are not yet tracked by Git also appear in the Updated Files section, marked as untracked. For these files, an **Add to Git** action is available directly on the file entry, so you can start tracking them without leaving the view. Once a file is tracked by Git, it participates in the normal diff and revert workflow like any other updated file.

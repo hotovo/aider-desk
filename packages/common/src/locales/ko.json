@@ -1309,6 +1309,7 @@
     "title": "에디터"
   },
   "contextFiles": {
+    "renamedFrom": "{{path}}에서 이름 변경됨",
     "workspaceTitle": "워크스페이스",
     "title": "컨텍스트 파일",
     "updatedFiles": "업데이트된 파일",

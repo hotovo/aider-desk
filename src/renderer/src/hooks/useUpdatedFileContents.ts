@@ -18,20 +18,20 @@ export const useUpdatedFileContents = (baseDir: string, taskId: string, file: Up
   const [loaded, setLoaded] = useState<LoadedContents | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const key = file ? `${file.commitHash ?? 'uncommitted'}:${file.path}` : null;
+  const key = file ? `${file.commitHash ?? 'uncommitted'}:${file.previousPath ?? ''}:${file.path}` : null;
   const contents = loaded?.key === key ? loaded.data : null;
 
   const load = useCallback(() => {
     if (!file || !taskId || !baseDir) {
       return;
     }
-    const fileKey = `${file.commitHash ?? 'uncommitted'}:${file.path}`;
+    const fileKey = `${file.commitHash ?? 'uncommitted'}:${file.previousPath ?? ''}:${file.path}`;
     if (loaded?.key === fileKey || loading) {
       return;
     }
     setLoading(true);
     api
-      .getUpdatedFileContents(baseDir, taskId, file.path, file.commitHash)
+      .getUpdatedFileContents(baseDir, taskId, file.path, file.commitHash, file.previousPath)
       .then((data) => setLoaded({ key: fileKey, data }))
       .catch((error) => {
         // eslint-disable-next-line no-console

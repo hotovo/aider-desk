@@ -1309,6 +1309,7 @@
     "title": "Редактор"
   },
   "contextFiles": {
+    "renamedFrom": "Переименован из {{path}}",
     "workspaceTitle": "Рабочая область",
     "title": "Файлы контекста",
     "updatedFiles": "Обновлённые файлы",

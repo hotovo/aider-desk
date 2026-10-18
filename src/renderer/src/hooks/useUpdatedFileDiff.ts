@@ -18,7 +18,7 @@ type UseUpdatedFileDiffResult = {
   load: () => void;
 };
 
-const fileDiffKey = (file: UpdatedFile): string => `${file.commitHash ?? 'uncommitted'}:${file.path}`;
+const fileDiffKey = (file: UpdatedFile): string => `${file.commitHash ?? 'uncommitted'}:${file.previousPath ?? ''}:${file.path}`;
 
 /**
  * Lazily fetches the diff for an updated file from the backend on demand.
@@ -37,6 +37,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
   const key = file ? fileDiffKey(file) : null;
   const filePath = file?.path ?? null;
   const commitHash = file?.commitHash ?? undefined;
+  const previousPath = file?.previousPath;
   const isLarge = !!file && file.additions + file.deletions > LARGE_DIFF_THRESHOLD;
 
   const load = useCallback(() => {
@@ -91,7 +92,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
     const fetchDiff = async () => {
       setLoading(true);
       try {
-        const result = await api.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash);
+        const result = await api.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash, previousPath);
         if (!cancelled) {
           cacheRef.current.set(key, { diff: result, timestamp: fetchTimestamp });
           setDiff(result);
@@ -115,7 +116,7 @@ export const useUpdatedFileDiff = (baseDir: string, taskId: string, file: Update
     return () => {
       cancelled = true;
     };
-  }, [api, baseDir, taskId, key, enabled, userRequestedLarge, diff, filePath, commitHash, isLarge]);
+  }, [api, baseDir, taskId, key, enabled, userRequestedLarge, diff, filePath, commitHash, previousPath, isLarge]);
 
   return { diff, loading, isLarge, load };
 };

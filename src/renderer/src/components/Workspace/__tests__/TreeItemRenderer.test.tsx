@@ -49,6 +49,18 @@ describe('TreeItemRenderer updated files', () => {
     expect(props.onRevertFile).not.toHaveBeenCalled();
   });
 
+  it('shows a rename indicator even without changed lines', () => {
+    const props = createProps();
+    props.updatedFiles[0] = { path: 'src/file.ts', previousPath: 'src/old.ts', additions: 0, deletions: 0 };
+
+    render(<TreeItemRenderer {...props} />);
+
+    expect(screen.getByLabelText('contextFiles.renamedFrom')).toBeInTheDocument();
+    expect(screen.getByText('file.ts')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button'));
+    expect(props.onRevertFile).toHaveBeenCalledWith('src/file.ts');
+  });
+
   it('keeps the original revert action for tracked unstaged files', () => {
     const props = createProps();
     const onAddFileToGit = vi.fn();

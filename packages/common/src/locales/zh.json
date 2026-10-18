@@ -1243,6 +1243,7 @@
     "title": "编辑器"
   },
   "contextFiles": {
+    "renamedFrom": "重命名自 {{path}}",
     "workspaceTitle": "工作区",
     "title": "上下文文件",
     "updatedFiles": "已更新文件",

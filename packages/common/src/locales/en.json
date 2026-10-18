@@ -1310,6 +1310,7 @@
     "title": "Editor"
   },
   "contextFiles": {
+    "renamedFrom": "Renamed from {{path}}",
     "workspaceTitle": "Workspace",
     "title": "Context Files",
     "updatedFiles": "Updated Files",

@@ -184,6 +184,7 @@ interface TaskContext {
   getAddableFiles(searchRegex?: string): Promise<string[]>;
   getAllFiles(useGit?: boolean): Promise<string[]>;
   getUpdatedFiles(): Promise<UpdatedFile[]>;
+  getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string>;
 
   // Context Messages
   getContextMessages(): Promise<ContextMessage[]>;

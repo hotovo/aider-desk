@@ -363,20 +363,26 @@ export class EventsHandler {
     return await task.getUpdatedFiles();
   }
 
-  async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string> {
+  async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string): Promise<string> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       return '';
     }
-    return await task.getUpdatedFileDiff(filePath, commitHash);
+    return await task.getUpdatedFileDiff(filePath, commitHash, previousPath);
   }
 
-  async getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
+  async getUpdatedFileContents(
+    baseDir: string,
+    taskId: string,
+    filePath: string,
+    commitHash?: string,
+    previousPath?: string,
+  ): Promise<{ oldContent: string; newContent: string }> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (!task) {
       return { oldContent: '', newContent: '' };
     }
-    return await task.getUpdatedFileContents(filePath, commitHash);
+    return await task.getUpdatedFileContents(filePath, commitHash, previousPath);
   }
 
   async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void> {
@@ -757,9 +763,9 @@ export class EventsHandler {
     await task.addFileToGit(filePath);
   }
 
-  async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
+  async restoreFile(baseDir: string, taskId: string, filePath: string, previousPath?: string): Promise<void> {
     const task = this.getTaskOrThrow(baseDir, taskId);
-    await task.restoreFile(filePath);
+    await task.restoreFile(filePath, previousPath);
   }
 
   async readFile(baseDir: string, taskId: string, filePath: string): Promise<string> {

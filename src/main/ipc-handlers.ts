@@ -178,12 +178,12 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.getUpdatedFiles(baseDir, taskId);
   });
 
-  ipcMain.handle('get-updated-file-diff', async (_, baseDir: string, taskId: string, filePath: string, commitHash?: string) => {
-    return await eventsHandler.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash);
+  ipcMain.handle('get-updated-file-diff', async (_, baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string) => {
+    return await eventsHandler.getUpdatedFileDiff(baseDir, taskId, filePath, commitHash, previousPath);
   });
 
-  ipcMain.handle('get-updated-file-contents', async (_, baseDir: string, taskId: string, filePath: string, commitHash?: string) => {
-    return await eventsHandler.getUpdatedFileContents(baseDir, taskId, filePath, commitHash);
+  ipcMain.handle('get-updated-file-contents', async (_, baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string) => {
+    return await eventsHandler.getUpdatedFileContents(baseDir, taskId, filePath, commitHash, previousPath);
   });
 
   ipcMain.handle('refresh-context-files', async (_, baseDir: string, taskId: string) => {
@@ -601,8 +601,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     await eventsHandler.addFileToGit(baseDir, taskId, filePath);
   });
 
-  ipcMain.handle('restore-file', async (_, baseDir: string, taskId: string, filePath: string) => {
-    await eventsHandler.restoreFile(baseDir, taskId, filePath);
+  ipcMain.handle('restore-file', async (_, baseDir: string, taskId: string, filePath: string, previousPath?: string) => {
+    await eventsHandler.restoreFile(baseDir, taskId, filePath, previousPath);
   });
 
   ipcMain.handle('read-file', async (_, baseDir: string, taskId: string, filePath: string) => {

@@ -518,6 +518,9 @@ interface TaskContext {
   /** Get files modified during the current task's execution (compares against main branch). */
   getUpdatedFiles(): Promise<UpdatedFile[]>;
 
+  /** Get a unified diff. Pass the entry's previousPath for rename-aware diffs. */
+  getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string>;
+
   /** Get the cached repository map string summarizing the codebase structure. */
   getRepoMap(): string;
 

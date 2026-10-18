@@ -571,24 +571,35 @@ export class BrowserApi implements ApplicationAPI {
   getUpdatedFiles(baseDir: string, taskId: string): Promise<{ path: string; additions: number; deletions: number }[]> {
     return this.post('/get-updated-files', { projectDir: baseDir, taskId });
   }
-  getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string> {
-    return this.post<{ projectDir: string; taskId: string; filePath: string; commitHash?: string }, { diff: string }>('/get-updated-file-diff', {
-      projectDir: baseDir,
-      taskId,
-      filePath,
-      commitHash,
-    }).then((res) => res.diff);
-  }
-  getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<{ oldContent: string; newContent: string }> {
-    return this.post<{ projectDir: string; taskId: string; filePath: string; commitHash?: string }, { oldContent: string; newContent: string }>(
-      '/get-updated-file-contents',
+  getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string): Promise<string> {
+    return this.post<{ projectDir: string; taskId: string; filePath: string; commitHash?: string; previousPath?: string }, { diff: string }>(
+      '/get-updated-file-diff',
       {
         projectDir: baseDir,
         taskId,
         filePath,
         commitHash,
+        previousPath,
       },
-    );
+    ).then((res) => res.diff);
+  }
+  getUpdatedFileContents(
+    baseDir: string,
+    taskId: string,
+    filePath: string,
+    commitHash?: string,
+    previousPath?: string,
+  ): Promise<{ oldContent: string; newContent: string }> {
+    return this.post<
+      { projectDir: string; taskId: string; filePath: string; commitHash?: string; previousPath?: string },
+      { oldContent: string; newContent: string }
+    >('/get-updated-file-contents', {
+      projectDir: baseDir,
+      taskId,
+      filePath,
+      commitHash,
+      previousPath,
+    });
   }
   async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string> {
     const res = await this.post<{ projectDir: string; taskId: string; filePaths?: string[] }, { message: string }>(
@@ -1280,11 +1291,12 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void> {
+  restoreFile(baseDir: string, taskId: string, filePath: string, previousPath?: string): Promise<void> {
     return this.post('/project/worktree/restore-file', {
       projectDir: baseDir,
       taskId,
       filePath,
+      previousPath,
     });
   }
 

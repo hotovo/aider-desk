@@ -334,7 +334,7 @@ export const UpdatedFilesSectionComponent = ({
 
     setIsRevertingFile(true);
     try {
-      await api.restoreFile(baseDir, taskId, fileToRevert);
+      await api.restoreFile(baseDir, taskId, fileToRevert, updatedFiles.find((file) => !file.commitHash && file.path === fileToRevert)?.previousPath);
       await fetchUpdatedFiles();
       setFileToRevert(null);
     } catch (error) {
@@ -343,7 +343,7 @@ export const UpdatedFilesSectionComponent = ({
     } finally {
       setIsRevertingFile(false);
     }
-  }, [api, baseDir, taskId, fileToRevert, fetchUpdatedFiles]);
+  }, [api, baseDir, taskId, fileToRevert, fetchUpdatedFiles, updatedFiles]);
 
   const handleRevertCancel = useCallback(() => {
     setFileToRevert(null);

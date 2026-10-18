@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 
 import { INDENT_PX, normalizePath } from './types';
+import { FileRenameBadge } from './FileRenameBadge';
 
 import type { SectionType, TreeItem } from './types';
 
@@ -222,6 +223,7 @@ export const TreeItemRenderer = ({
         return (
           <div className="flex items-center gap-2 min-w-0 cursor-pointer hover:text-text-tertiary" onClick={handleUpdatedFileClick}>
             <span className={className}>{title}</span>
+            <FileRenameBadge previousPath={updatedFile.previousPath} />
             <span className="text-4xs text-text-muted-dark flex-shrink-0 flex items-center gap-0.5 mt-0.5">
               {updatedFile.additions > 0 && <span className="text-success">+{updatedFile.additions}</span>}
               {updatedFile.deletions > 0 && <span className="text-error">-{updatedFile.deletions}</span>}

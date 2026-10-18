@@ -9,6 +9,7 @@ import { DiffViewMode, UpdatedFile } from '@common/types';
 import { clsx } from 'clsx';
 
 import { sortFilesByTreeOrder } from './group-files';
+import { FileRenameBadge } from './FileRenameBadge';
 
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { IconButton } from '@/components/common/IconButton';
@@ -315,7 +316,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
 
     setIsReverting(true);
     try {
-      await api.restoreFile(baseDir, taskId, currentFile.path);
+      await api.restoreFile(baseDir, taskId, currentFile.path, currentFile.previousPath);
       setShowRevertConfirm(false);
       onClose();
     } catch (error) {
@@ -644,6 +645,7 @@ export const UpdatedFilesDiffModal = ({ groups, initialFile, onClose, baseDir, t
                   </span>
                 )}
                 <span className="text-3xs sm:text-xs font-medium text-text-primary truncate">{currentFile.path}</span>
+                <FileRenameBadge previousPath={currentFile.previousPath} />
                 <>
                   {currentFile.additions > 0 && <span className="text-3xs sm:text-xs font-medium text-success shrink-0">+{currentFile.additions}</span>}
                   {currentFile.deletions > 0 && <span className="text-3xs sm:text-xs font-medium text-error shrink-0">-{currentFile.deletions}</span>}

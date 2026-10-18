@@ -2678,6 +2678,30 @@ export class GitManager {
     return /[\s"\\]/.test(filePath) ? JSON.stringify(filePath) : filePath;
   }
 
+  private parseUpdatedFileNumstat(worktreePath: string, output: string): UpdatedFile[] {
+    const entries = output.split('\0');
+    const files: UpdatedFile[] = [];
+    for (let index = 0; index < entries.length; index++) {
+      const parts = entries[index].split('\t');
+      if (parts.length < 3) {
+        continue;
+      }
+      const additions = parts[0] === '-' ? 0 : Number.parseInt(parts[0], 10);
+      const deletions = parts[1] === '-' ? 0 : Number.parseInt(parts[1], 10);
+      let filePath = parts.slice(2).join('\t');
+      let previousPath: string | undefined;
+      if (!filePath) {
+        previousPath = entries[++index];
+        filePath = entries[++index];
+      }
+      if (!filePath || !Number.isFinite(additions) || !Number.isFinite(deletions) || this.isSymlinkPath(worktreePath, filePath)) {
+        continue;
+      }
+      files.push({ path: filePath, ...(previousPath ? { previousPath } : {}), additions, deletions, diff: '' });
+    }
+    return files;
+  }
+
   /**
    * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
    */
@@ -2706,42 +2730,11 @@ export class GitManager {
     // 2. For each commit, get its files (diffs are lazy loaded via getFileDiff)
     for (const commit of commits) {
       try {
-        // Get numstat for this specific commit
-        const { stdout: numstatOutput } = await execWithShellPath(`git diff-tree --no-commit-id -r --numstat ${commit.hash}`, { cwd: worktreePath });
-
-        // Build a map of filePath -> {additions, deletions} from numstat
-        const fileStats = new Map<string, { additions: number; deletions: number }>();
-        for (const line of numstatOutput.split('\n')) {
-          const trimmed = line.trim();
-          if (!trimmed) {
-            continue;
-          }
-          const parts = trimmed.split('\t');
-          if (parts.length >= 3) {
-            const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-            const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-            const filePath = parts.slice(2).join('\t');
-            if (filePath) {
-              fileStats.set(filePath, { additions, deletions });
-            }
-          }
-        }
-
-        // Emit one UpdatedFile per file in this commit (diff not included - lazy loaded via getFileDiff)
-        for (const [filePath, stats] of fileStats.entries()) {
-          // Skip symlink paths (worktree infrastructure artifacts)
-          if (this.isSymlinkPath(worktreePath, filePath)) {
-            continue;
-          }
-
-          files.push({
-            path: filePath,
-            additions: stats.additions,
-            deletions: stats.deletions,
-            diff: '',
-            commitHash: commit.hash,
-            commitMessage: commit.message,
-          });
+        const { stdout: numstatOutput } = await execWithShellPath(['git', 'diff-tree', '--no-commit-id', '-r', '-M', '--numstat', '-z', commit.hash, '--'], {
+          cwd: worktreePath,
+        });
+        for (const file of this.parseUpdatedFileNumstat(worktreePath, numstatOutput)) {
+          files.push({ ...file, commitHash: commit.hash, commitMessage: commit.message });
         }
       } catch (commitError) {
         logger.warn(`Failed to get files for commit ${commit.hash}:`, commitError);
@@ -2757,32 +2750,11 @@ export class GitManager {
     }
 
     try {
-      const { stdout: uncommittedNumstat } = await execWithShellPath('git diff --numstat -z HEAD', {
+      const { stdout: uncommittedNumstat } = await execWithShellPath('git diff --numstat -z -M HEAD', {
         cwd: worktreePath,
       });
 
-      const entries = uncommittedNumstat.split('\0').filter((entry) => entry.trim() !== '');
-
-      for (const entry of entries) {
-        const parts = entry.split('\t');
-        if (parts.length < 3) {
-          continue;
-        }
-
-        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-        const filePath = parts.slice(2).join('\t');
-        if (!filePath) {
-          continue;
-        }
-
-        // Skip symlink paths (worktree infrastructure artifacts)
-        if (this.isSymlinkPath(worktreePath, filePath)) {
-          continue;
-        }
-
-        files.push({ path: filePath, additions, deletions, diff: '' });
-      }
+      files.push(...this.parseUpdatedFileNumstat(worktreePath, uncommittedNumstat));
     } catch (uncommittedError) {
       logger.warn('Failed to get uncommitted changes:', uncommittedError);
     }
@@ -2812,32 +2784,11 @@ export class GitManager {
     try {
       // git diff (without ...) compares the base directly to the working tree,
       // including both committed and uncommitted changes.
-      const { stdout: numstatOutput } = await execWithShellPath(['git', 'diff', '--numstat', '-z', base, '--'], {
+      const { stdout: numstatOutput } = await execWithShellPath(['git', 'diff', '--numstat', '-z', '-M', base, '--'], {
         cwd: worktreePath,
       });
 
-      const entries = numstatOutput.split('\0').filter((entry) => entry.trim() !== '');
-
-      for (const entry of entries) {
-        const parts = entry.split('\t');
-        if (parts.length < 3) {
-          continue;
-        }
-
-        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-        const filePath = parts.slice(2).join('\t');
-        if (!filePath) {
-          continue;
-        }
-
-        // Skip symlink paths (worktree infrastructure artifacts)
-        if (this.isSymlinkPath(worktreePath, filePath)) {
-          continue;
-        }
-
-        files.push({ path: filePath, additions, deletions, diff: '' });
-      }
+      files.push(...this.parseUpdatedFileNumstat(worktreePath, numstatOutput));
     } catch (baseDiffError) {
       logger.warn('Failed to get base diff for worktree:', baseDiffError);
     }
@@ -2855,34 +2806,11 @@ export class GitManager {
       return await this.getNoHeadUpdatedFiles(worktreePath);
     }
 
-    const { stdout } = await execWithShellPath('git diff --numstat -z HEAD', {
+    const { stdout } = await execWithShellPath('git diff --numstat -z -M HEAD', {
       cwd: worktreePath,
     });
 
-    const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
-    const files: UpdatedFile[] = [];
-
-    for (const entry of entries) {
-      const parts = entry.split('\t');
-      if (parts.length >= 3) {
-        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-        const filePath = parts.slice(2).join('\t');
-
-        if (!filePath) {
-          continue;
-        }
-
-        // Skip symlink paths (worktree infrastructure artifacts)
-        if (this.isSymlinkPath(worktreePath, filePath)) {
-          continue;
-        }
-
-        files.push({ path: filePath, additions, deletions, diff: '' });
-      }
-    }
-
-    return files;
+    return this.parseUpdatedFileNumstat(worktreePath, stdout);
   }
 
   /**
@@ -2897,31 +2825,11 @@ export class GitManager {
     const files: UpdatedFile[] = [];
 
     try {
-      const { stdout } = await execWithShellPath(`git diff --numstat -z ${EMPTY_TREE_HASH}`, {
+      const { stdout } = await execWithShellPath(`git diff --numstat -z -M ${EMPTY_TREE_HASH}`, {
         cwd: worktreePath,
       });
 
-      const entries = stdout.split('\0').filter((entry) => entry.trim() !== '');
-
-      for (const entry of entries) {
-        const parts = entry.split('\t');
-        if (parts.length < 3) {
-          continue;
-        }
-
-        const additions = parts[0] === '-' ? 0 : parseInt(parts[0], 10);
-        const deletions = parts[1] === '-' ? 0 : parseInt(parts[1], 10);
-        const filePath = parts.slice(2).join('\t');
-        if (!filePath) {
-          continue;
-        }
-
-        if (this.isSymlinkPath(worktreePath, filePath)) {
-          continue;
-        }
-
-        files.push({ path: filePath, additions, deletions, diff: '' });
-      }
+      files.push(...this.parseUpdatedFileNumstat(worktreePath, stdout));
     } catch (error) {
       logger.warn('Failed to get updated files for repo with no commits:', {
         error: error instanceof Error ? error.message : String(error),
@@ -2938,7 +2846,14 @@ export class GitManager {
    * - No commitHash: untracked file diff (synthesized) or file diff against HEAD,
    *   merge-base (worktree flat mode) or the empty tree hash (no commits yet).
    */
-  async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string, filePath?: string, commitHash?: string): Promise<string> {
+  async getFileDiff(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    filePath?: string,
+    commitHash?: string,
+    previousPath?: string,
+  ): Promise<string> {
     if (!(await this.ensureGitRepository(worktreePath, 'get file diff'))) {
       return '';
     }
@@ -2948,13 +2863,13 @@ export class GitManager {
     }
 
     try {
-      const escapedPath = filePath.replace(/"/g, '\\"');
+      const paths = previousPath ? [previousPath, filePath] : [filePath];
 
       if (commitHash) {
         if (await this.checkBinaryOrSkip(worktreePath, filePath)) {
           return '';
         }
-        const { stdout } = await execWithShellPath(`git diff-tree -p -r --unified=3 ${commitHash} -- "${escapedPath}"`, {
+        const { stdout } = await execWithShellPath(['git', 'diff-tree', '-p', '-r', '-M', '--unified=3', commitHash, '--', ...paths], {
           cwd: worktreePath,
           maxBuffer: 10 * 1024 * 1024,
         });
@@ -2964,7 +2879,7 @@ export class GitManager {
       // Untracked file: synthesize the diff from the file content
       let isTracked = false;
       try {
-        await execWithShellPath(`git ls-files --error-unmatch -- "${escapedPath}"`, { cwd: worktreePath });
+        await execWithShellPath(['git', 'ls-files', '--error-unmatch', '--', filePath], { cwd: worktreePath });
         isTracked = true;
       } catch {
         isTracked = false;
@@ -2999,7 +2914,7 @@ export class GitManager {
         return '';
       }
 
-      const { stdout } = await execWithShellPath(['git', 'diff', '--unified=3', base, '--', filePath], {
+      const { stdout } = await execWithShellPath(['git', 'diff', '-M', '--unified=3', base, '--', ...paths], {
         cwd: worktreePath,
         maxBuffer: 10 * 1024 * 1024,
       });
@@ -3021,6 +2936,7 @@ export class GitManager {
     mainBranch?: string,
     filePath?: string,
     commitHash?: string,
+    previousPath?: string,
   ): Promise<{ oldContent: string; newContent: string }> {
     const emptyContents = { oldContent: '', newContent: '' };
     if (!filePath) {
@@ -3036,7 +2952,7 @@ export class GitManager {
         const { stdout: parent } = await execWithShellPath(`git rev-parse ${commitHash}^`, { cwd: worktreePath });
         const parentHash = parent.trim();
         const newContent = await this.safeGitShow(worktreePath, `${commitHash}`, filePath);
-        const oldContent = await this.safeGitShow(worktreePath, parentHash, filePath);
+        const oldContent = await this.safeGitShow(worktreePath, parentHash, previousPath ?? filePath);
         return { oldContent, newContent };
       }
 
@@ -3065,7 +2981,7 @@ export class GitManager {
         .readFile(join(worktreePath, filePath))
         .then((data) => data.toString('utf8'))
         .catch(() => '');
-      const oldContent = await this.safeGitShow(worktreePath, base, filePath);
+      const oldContent = await this.safeGitShow(worktreePath, base, previousPath ?? filePath);
       return { oldContent, newContent };
     } catch (error) {
       logger.warn(`Failed to get file contents for ${filePath}:`, error);
@@ -3192,9 +3108,18 @@ export class GitManager {
     return { commitHash: commitHash.trim(), commitMessage: commitMessage.trim() };
   }
 
-  async restoreFile(worktreePath: string, filePath: string): Promise<void> {
+  async restoreFile(worktreePath: string, filePath: string, previousPath?: string): Promise<void> {
     if (!(await this.ensureGitRepository(worktreePath, 'restore file'))) {
       return;
+    }
+
+    if (previousPath && previousPath !== filePath) {
+      const uncommittedFiles = await this.getNonWorktreeUpdatedFiles(worktreePath);
+      const sourcePath = uncommittedFiles.find((file) => file.path === filePath)?.previousPath;
+      if (sourcePath) {
+        await execWithShellPath(['git', 'restore', '--staged', '--worktree', '--source=HEAD', '--', sourcePath, filePath], { cwd: worktreePath });
+        return;
+      }
     }
 
     try {

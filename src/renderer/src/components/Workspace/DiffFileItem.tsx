@@ -8,6 +8,8 @@ import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
+import { FileRenameBadge } from './FileRenameBadge';
+
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
@@ -128,6 +130,7 @@ export const DiffFileItem = ({
           <HiChevronDown className="h-4 w-4 text-text-secondary" />
         </motion.div>
         <span className="text-xs font-medium text-text-primary truncate text-left flex-1">{file.path}</span>
+        <FileRenameBadge previousPath={file.previousPath} />
         {isExpanded && (
           <IconButton
             icon={

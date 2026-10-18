@@ -40,6 +40,7 @@ const GetUpdatedFileDiffSchema = z.object({
   taskId: z.string().min(1, 'Task ID is required'),
   filePath: z.string().min(1, 'File path is required'),
   commitHash: z.string().optional(),
+  previousPath: z.string().min(1).optional(),
 });
 
 const RefreshContextFilesSchema = z.object({
@@ -159,8 +160,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, filePath, commitHash } = parsed;
-        const diff = await this.eventsHandler.getUpdatedFileDiff(projectDir, taskId, filePath, commitHash);
+        const { projectDir, taskId, filePath, commitHash, previousPath } = parsed;
+        const diff = await this.eventsHandler.getUpdatedFileDiff(projectDir, taskId, filePath, commitHash, previousPath);
         res.status(200).json({ diff });
       }),
     );
@@ -173,8 +174,8 @@ export class ContextApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, filePath, commitHash } = parsed;
-        const contents = await this.eventsHandler.getUpdatedFileContents(projectDir, taskId, filePath, commitHash);
+        const { projectDir, taskId, filePath, commitHash, previousPath } = parsed;
+        const contents = await this.eventsHandler.getUpdatedFileContents(projectDir, taskId, filePath, commitHash, previousPath);
         res.status(200).json(contents);
       }),
     );
