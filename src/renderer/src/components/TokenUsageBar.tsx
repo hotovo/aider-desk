@@ -16,7 +16,7 @@ const DEFAULT_TRESHOLD_CONFIG = {
 };
 
 const getDefaultThresholdTokens = (task: TaskData, thresholdConfig: { percentage: number; tokens: number }, maxInputTokens: number) => {
-  if (task.contextCompactingThresholdTokens !== undefined && task.contextCompactingThresholdTokens > 0) {
+  if (task.contextCompactingThresholdTokens !== undefined) {
     return task.contextCompactingThresholdTokens;
   }
   if (maxInputTokens <= 0) {

@@ -2018,6 +2018,9 @@ export class Agent {
       tokens: profile.autoCompactThresholdTokens ?? taskSettings.contextCompactingThreshold.tokens,
     };
     const taskTokensOverride = task.task.contextCompactingThresholdTokens;
+    if (taskTokensOverride === 0) {
+      return true;
+    }
     let contextCompactionType = profile.autoCompactionType ?? taskSettings.contextCompactionType ?? ContextCompactionType.Compact;
     if (profile.isSubagent && contextCompactionType === ContextCompactionType.Handoff) {
       // subagent cannot use Handoff, so we fallback to Smart compaction

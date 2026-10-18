@@ -877,8 +877,9 @@ describe('Agent - compactMessagesIfNeeded', () => {
     },
   ];
 
-  const runCompact = async (resultMessages: any[]) => {
+  const runCompact = async (resultMessages: any[], taskTokensOverride?: number) => {
     const task = createMockTask();
+    task.task.contextCompactingThresholdTokens = taskTokensOverride;
     task.compactConversation = vi.fn().mockResolvedValue(undefined);
     task.smartCompactConversation = vi.fn().mockResolvedValue([]);
     task.handoffConversation = vi.fn().mockResolvedValue(undefined);
@@ -918,6 +919,27 @@ describe('Agent - compactMessagesIfNeeded', () => {
     expect(task.compactConversation).toHaveBeenCalledTimes(1);
   });
 
+  it.each([200000, undefined])('should disable auto-compaction for a zero task override with context size %s', async (maxInputTokens) => {
+    agent = buildAgent(() => (maxInputTokens === undefined ? undefined : { maxInputTokens }));
+    mockProfile.autoCompactThresholdPercentage = 90;
+    mockProfile.autoCompactThresholdTokens = 50000;
+
+    const task = await runCompact(makeResultMessages(250000), 0);
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
+    expect(task.smartCompactConversation).not.toHaveBeenCalled();
+    expect(task.handoffConversation).not.toHaveBeenCalled();
+  });
+
+  it('should inherit the profile token threshold when the task override is unset', async () => {
+    agent = buildAgent(() => ({ maxInputTokens: 200000 }));
+    mockProfile.autoCompactThresholdTokens = 50000;
+
+    const task = await runCompact(makeResultMessages(60000));
+
+    expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
   it('should NOT compact when token usage is below the token threshold and context size is unknown', async () => {
     agent = buildAgent(() => undefined);
 
@@ -931,7 +953,8 @@ describe('Agent - compactMessagesIfNeeded', () => {
     agent = buildAgent(() => undefined);
 
     // Set a low task-level override so that 121000 tokens exceeds it
-    const task = createMockTask({ contextCompactingThresholdTokens: 50000 } as any);
+    const task = createMockTask();
+    task.task.contextCompactingThresholdTokens = 50000;
     task.compactConversation = vi.fn().mockResolvedValue(undefined);
     task.getContextMessages = vi.fn().mockResolvedValue([]);
     task.addLogMessage = vi.fn();

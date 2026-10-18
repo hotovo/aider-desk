@@ -15,6 +15,7 @@
 - added support for inline and block LaTeX formulas in chat messages
 - fixed malformed or incomplete compact diffs crashing the chat, with plain-text fallback for unsupported diffs
 - improved background performance by building command palette items only while open and preserved selection during live updates
+- fixed task auto-compaction not being disabled when its threshold was set to zero
 
 ## [0.87.0]
 
