@@ -34,6 +34,7 @@ import { fileTypeFromBuffer } from 'file-type';
 import { v4 as uuidv4 } from 'uuid';
 
 import type { ContextFile } from '@common/types';
+import type { ToolResultPart } from 'ai';
 
 // Re-export types that are needed
 import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
@@ -1020,6 +1021,43 @@ describe('Agent - compactMessagesIfNeeded', () => {
     const task = await runCompact(resultMessages);
 
     expect(task.compactConversation).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['json', 'text', 'content'] as const)('should estimate trailing %s image results as attachments without mutating them', async (outputType) => {
+    agent = buildAgent(() => ({ maxInputTokens: 200000 }));
+
+    const data = Buffer.from('binary image payload '.repeat(30000)).toString('base64');
+    const content = [
+      { type: 'text', text: 'Attached binary file image.png.' },
+      { type: 'media', data, mimeType: 'image/png' },
+    ];
+    const output: ToolResultPart['output'] =
+      outputType === 'content'
+        ? {
+            type: 'content',
+            value: [
+              { type: 'text', text: 'Attached binary file image.png.' },
+              { type: 'file', data: { type: 'data', data }, mediaType: 'image/png' },
+            ],
+          }
+        : outputType === 'json'
+          ? { type: 'json', value: { content } }
+          : { type: 'text', value: JSON.stringify({ content }) };
+    const toolMessage = {
+      id: 'tool-1',
+      role: 'tool',
+      content: [{ type: 'tool-result', toolCallId: 'call-1', toolName: 'read_binary_file', output }],
+    };
+    const originalMessage = structuredClone(toolMessage);
+
+    const task = await runCompact([...makeResultMessages(50000), toolMessage], 53000);
+
+    expect(task.compactConversation).not.toHaveBeenCalled();
+    expect(toolMessage).toEqual(originalMessage);
+
+    const taskNearThreshold = await runCompact([...makeResultMessages(50000), toolMessage], 51500);
+
+    expect(taskNearThreshold.compactConversation).toHaveBeenCalledTimes(1);
   });
 
   it('should not compact when the trailing tool result keeps the total below the threshold', async () => {

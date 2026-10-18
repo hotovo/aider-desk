@@ -58,6 +58,7 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
+import { convertImageToolResults } from './message-preparation/provider-compatibility';
 import {
   estimateMessageTokens,
   extractPromptContextFromToolResult,
@@ -2061,7 +2062,8 @@ export class Agent {
     // messages so the threshold reflects the real next-prompt size.
     const lastReportIndex = resultMessages.indexOf(lastUsageReportMessage);
     if (lastReportIndex >= 0 && lastReportIndex < resultMessages.length - 1) {
-      const trailingTokens = estimateMessageTokens(resultMessages.slice(lastReportIndex + 1));
+      const trailingMessages = convertImageToolResults(resultMessages.slice(lastReportIndex + 1) as ModelMessage[]);
+      const trailingTokens = estimateMessageTokens(trailingMessages);
       totalTokens += trailingTokens;
       logger.debug('Added trailing (post-usage-report) tokens to context total', { trailingTokens, totalTokens });
     }

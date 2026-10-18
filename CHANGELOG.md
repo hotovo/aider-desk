@@ -17,6 +17,7 @@
 - improved background performance by building command palette items only while open and preserved selection during live updates
 - fixed task auto-compaction not being disabled when its threshold was set to zero
 - added a trust confirmation before opening projects containing agents, MCP servers, or extensions through the UI
+- fixed image tool results triggering unnecessary auto-compaction due to inflated token estimates
 
 ## [0.87.0]
 
