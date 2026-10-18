@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 102
+      "installCount": 103
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 88
+      "installCount": 90
     },
     {
       "id": "legacy-system-prompt",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "seek",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 78
+      "installCount": 79
     },
     {
       "id": "kanban",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 48
+      "installCount": 49
     },
     {
       "id": "git-log",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 139
+      "installCount": 141
     },
     {
       "id": "task-scheduler",
