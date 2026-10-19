@@ -164,6 +164,7 @@ src/
       types.ts
       utils.ts
     project/
+      check-project.ts
       index.ts
       migrations.ts
       project-manager.ts
@@ -537,6 +538,7 @@ src/
           OpenProjectDialog.tsx
           ProjectTabContent.tsx
           ProjectTabs.tsx
+          ProjectTrustDialog.tsx
           ProjectView.tsx
           TaskBar.tsx
           TaskControlBar.tsx
@@ -633,6 +635,7 @@ src/
           FileEditorModal.tsx
           FileEditorTabs.tsx
           fileEditorUtils.ts
+          FileRenameBadge.tsx
           group-files.ts
           index.ts
           InlineChangeRequest.tsx
@@ -2606,6 +2609,7 @@ import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
 import { ApprovalManager } from './tools/approval-manager';
+import { convertImageToolResults } from './message-preparation/provider-compatibility';
 import {
   estimateMessageTokens,
   extractPromptContextFromToolResult,
@@ -5287,7 +5291,7 @@ async getAllFiles(useGit = true): Promise<string[]>
 ⋮----
 async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
-async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
+async getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string>
 ⋮----
 async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<
 ⋮----
@@ -6062,6 +6066,8 @@ private buildUntrackedFileDiff(fileContentBuffer: Buffer, filePath: string): str
 ⋮----
 private formatDiffPath(filePath: string): string
 ⋮----
+private parseUpdatedFileNumstat(worktreePath: string, output: string): UpdatedFile[]
+⋮----
 /**
    * Worktree mode: separate committed (per-commit) and uncommitted file diffs.
    */
@@ -6071,19 +6077,9 @@ private async getWorktreeUpdatedFiles(worktreePath: string, mainBranch: string):
 ⋮----
 // 2. For each commit, get its files (diffs are lazy loaded via getFileDiff)
 ⋮----
-// Get numstat for this specific commit
-⋮----
-// Build a map of filePath -> {additions, deletions} from numstat
-⋮----
-// Emit one UpdatedFile per file in this commit (diff not included - lazy loaded via getFileDiff)
-⋮----
-// Skip symlink paths (worktree infrastructure artifacts)
-⋮----
 // 3. Get uncommitted changes (diff against HEAD, not merge-base)
 ⋮----
 // Check if HEAD exists (no commits yet in worktree)
-⋮----
-// Skip symlink paths (worktree infrastructure artifacts)
 ⋮----
 /**
    * Worktree flat mode: all changed files with diff from base to working tree,
@@ -6099,14 +6095,10 @@ private async getWorktreeFlatUpdatedFiles(worktreePath: string, mainBranch: stri
 // git diff (without ...) compares the base directly to the working tree,
 // including both committed and uncommitted changes.
 ⋮----
-// Skip symlink paths (worktree infrastructure artifacts)
-⋮----
 /**
    * Non-worktree mode: simple uncommitted changes vs HEAD.
    */
 private async getNonWorktreeUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]>
-⋮----
-// Skip symlink paths (worktree infrastructure artifacts)
 ⋮----
 /**
    * No-HEAD mode: repo has no commits yet. Uses the well-known empty tree hash
@@ -6124,7 +6116,14 @@ private async getNoHeadUpdatedFiles(worktreePath: string): Promise<UpdatedFile[]
    * - No commitHash: untracked file diff (synthesized) or file diff against HEAD,
    *   merge-base (worktree flat mode) or the empty tree hash (no commits yet).
    */
-async getFileDiff(worktreePath: string, workingMode?: WorkingMode, mainBranch?: string, filePath?: string, commitHash?: string): Promise<string>
+async getFileDiff(
+    worktreePath: string,
+    workingMode?: WorkingMode,
+    mainBranch?: string,
+    filePath?: string,
+    commitHash?: string,
+    previousPath?: string,
+): Promise<string>
 ⋮----
 // Untracked file: synthesize the diff from the file content
 ⋮----
@@ -6141,6 +6140,7 @@ async getFileContents(
     mainBranch?: string,
     filePath?: string,
     commitHash?: string,
+    previousPath?: string,
 ): Promise<
 ⋮----
 // Resolve the base the same way as getFileDiff
@@ -6178,7 +6178,7 @@ async undoLastCommit(worktreePath: string): Promise<
 ⋮----
 // Reset --soft HEAD~1
 ⋮----
-async restoreFile(worktreePath: string, filePath: string): Promise<void>
+async restoreFile(worktreePath: string, filePath: string, previousPath?: string): Promise<void>
 ⋮----
 // Check if file exists in HEAD (committed)
 ⋮----
@@ -8622,6 +8622,24 @@ File: src/main/models/utils.ts
 import type { TlsPolicyOptions, TlsPolicyRegistrar } from '@common/types';
 ⋮----
 export const syncProviderTlsRule = (registrar: TlsPolicyRegistrar | undefined, baseUrl: string | undefined, sslVerify?: boolean, caCertPath?: string): void =>
+
+================
+File: src/main/project/check-project.ts
+================
+import fs from 'fs/promises';
+import path from 'path';
+⋮----
+import { ProjectCheckResult } from '@common/types';
+⋮----
+import { AIDER_DESK_AGENTS_DIR, AIDER_DESK_DIR, AIDER_DESK_EXTENSIONS_DIR, AIDER_DESK_MCP_SERVERS_FILE } from '@/constants';
+⋮----
+const isMissing = (error: unknown): boolean
+⋮----
+const readDirectory = async (directory: string): Promise<string[]> =>
+⋮----
+const exists = async (filePath: string): Promise<boolean> =>
+⋮----
+export const checkProject = async (baseDir: string): Promise<ProjectCheckResult> =>
 
 ================
 File: src/main/project/index.ts
@@ -11491,9 +11509,9 @@ public async getAllFiles(useGit = true): Promise<string[]>
 ⋮----
 public async getUpdatedFiles(): Promise<UpdatedFile[]>
 ⋮----
-public async getUpdatedFileDiff(filePath: string, commitHash?: string): Promise<string>
+public async getUpdatedFileDiff(filePath: string, commitHash?: string, previousPath?: string): Promise<string>
 ⋮----
-public async getUpdatedFileContents(filePath: string, commitHash?: string): Promise<
+public async getUpdatedFileContents(filePath: string, commitHash?: string, previousPath?: string): Promise<
 ⋮----
 public async getContextFiles(includeRuleFiles = false): Promise<ContextFile[]>
 ⋮----
@@ -11903,7 +11921,7 @@ public async revertLastMerge(): Promise<void>
 ⋮----
 public async addFileToGit(filePath: string): Promise<void>
 ⋮----
-public async restoreFile(filePath: string): Promise<void>
+public async restoreFile(filePath: string, previousPath?: string): Promise<void>
 ⋮----
 public async generateCommitMessage(filePaths?: string[]): Promise<string>
 ⋮----
@@ -13162,6 +13180,7 @@ import { McpManager, McpConfigManager, AgentProfileManager } from '@/agent';
 import { MemoryManager } from '@/memory/memory-manager';
 import { ModelManager } from '@/models';
 import { Project, ProjectManager } from '@/project';
+import { checkProject } from '@/project/check-project';
 import { CloudflareTunnelManager } from '@/server';
 import { Store } from '@/store';
 import { TelemetryManager } from '@/telemetry';
@@ -13267,9 +13286,15 @@ async refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async getUpdatedFiles(baseDir: string, taskId: string): Promise<UpdatedFile[]>
 ⋮----
-async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
+async getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string): Promise<string>
 ⋮----
-async getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<
+async getUpdatedFileContents(
+    baseDir: string,
+    taskId: string,
+    filePath: string,
+    commitHash?: string,
+    previousPath?: string,
+): Promise<
 ⋮----
 async addFile(baseDir: string, taskId: string, filePath: string, readOnly = false): Promise<void>
 ⋮----
@@ -13379,7 +13404,7 @@ async revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 async addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
-async restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
+async restoreFile(baseDir: string, taskId: string, filePath: string, previousPath?: string): Promise<void>
 ⋮----
 async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
@@ -14753,6 +14778,7 @@ import {
   OpenDialogResult,
   OS,
   ProjectData,
+  ProjectCheckResult,
   ProjectSettings,
   ProjectStartedData,
   ProviderModelsData,
@@ -14943,6 +14969,7 @@ isOpenDialogSupported(): boolean
 showOpenDialog(options: OpenDialogOptions): Promise<OpenDialogResult>
 getPathForFile(file: File): string
 getOpenProjects(): Promise<ProjectData[]>
+checkProject(baseDir: string): Promise<ProjectCheckResult>
 addOpenProject(baseDir: string): Promise<ProjectData[]>
 setActiveProject(baseDir: string): Promise<ProjectData[]>
 removeOpenProject(baseDir: string): Promise<ProjectData[]>
@@ -14966,8 +14993,14 @@ getAddableFiles(baseDir: string, taskId: string): Promise<string[]>
 getAllFiles(baseDir: string, taskId: string, useGit?: boolean): Promise<string[]>
 refreshContextFiles(baseDir: string, taskId: string): Promise<void>
 getUpdatedFiles(baseDir: string, taskId: string): Promise<
-getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<string>
-getUpdatedFileContents(baseDir: string, taskId: string, filePath: string, commitHash?: string): Promise<
+getUpdatedFileDiff(baseDir: string, taskId: string, filePath: string, commitHash?: string, previousPath?: string): Promise<string>
+getUpdatedFileContents(
+    baseDir: string,
+    taskId: string,
+    filePath: string,
+    commitHash?: string,
+    previousPath?: string,
+): Promise<
 async generateCommitMessage(baseDir: string, taskId: string, filePaths?: string[]): Promise<string>
 async commitChanges(baseDir: string, taskId: string, message: string, amend: boolean, skipGitHooks: boolean, filePaths?: string[]): Promise<void>
 async cancelCommitChanges(baseDir: string, taskId: string): Promise<void>
@@ -15158,7 +15191,7 @@ revertLastMerge(baseDir: string, taskId: string): Promise<void>
 ⋮----
 addFileToGit(baseDir: string, taskId: string, filePath: string): Promise<void>
 ⋮----
-restoreFile(baseDir: string, taskId: string, filePath: string): Promise<void>
+restoreFile(baseDir: string, taskId: string, filePath: string, previousPath?: string): Promise<void>
 ⋮----
 async readFile(baseDir: string, taskId: string, filePath: string): Promise<string>
 ⋮----
@@ -22508,12 +22541,14 @@ type Props = {
 ================
 File: src/renderer/src/components/project/OpenProjectDialog.tsx
 ================
-import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { CgSpinner } from 'react-icons/cg';
 import { FaFolder } from 'react-icons/fa';
 import { useTranslation } from 'react-i18next';
-import { ProjectData } from '@common/types';
+import { ProjectCheckResult, ProjectData } from '@common/types';
 import { useHotkeys } from 'react-hotkeys-hook';
+⋮----
+import { ProjectTrustDialog } from './ProjectTrustDialog';
 ⋮----
 import { useConfiguredHotkeys } from '@/hooks/useConfiguredHotkeys';
 import { AutocompletionInput } from '@/components/AutocompletionInput';
@@ -22538,6 +22573,8 @@ type Props = {
   openProjects: ProjectData[];
 };
 ⋮----
+export const OpenProjectDialog = (
+⋮----
 // eslint-disable-next-line no-console
 ⋮----
 // Browse for folder
@@ -22549,6 +22586,12 @@ const updateSuggestions = async () =>
 const updateDestinationSuggestions = async () =>
 ⋮----
 // eslint-disable-next-line no-console
+⋮----
+const requestOpenProject = async (baseDir: string) =>
+⋮----
+const handleCancel = () =>
+⋮----
+const handleTrust = () =>
 ⋮----
 const handleAddProject = () =>
 ⋮----
@@ -22575,8 +22618,7 @@ setProjectPath(value);
 ⋮----
 placeholder=
 ⋮----
-onAddProject(path);
-onClose();
+void requestOpenProject(path);
 
 ================
 File: src/renderer/src/components/project/ProjectTabContent.tsx
@@ -22649,6 +22691,24 @@ const handleDragEnd = (event: DragEndEvent) =>
 // useMemo for project IDs to prevent SortableContext from re-rendering unnecessarily
 ⋮----
 onChange=
+
+================
+File: src/renderer/src/components/project/ProjectTrustDialog.tsx
+================
+import { ProjectCheckResult } from '@common/types';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { BaseDialog } from '@/components/common/BaseDialog';
+import { Button } from '@/components/common/Button';
+⋮----
+type Props = {
+  projectPath: string;
+  inventory: ProjectCheckResult;
+  onTrust: () => void;
+  onCancel: () => void;
+};
+⋮----
+title=
 
 ================
 File: src/renderer/src/components/project/ProjectView.tsx
@@ -26152,6 +26212,8 @@ import { DiffViewMode, UpdatedFile } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 ⋮----
+import { FileRenameBadge } from './FileRenameBadge';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
 import { IconButton } from '@/components/common/IconButton';
@@ -26439,6 +26501,20 @@ export const remapLineAnchors = <T extends LineAnchor>(
 ): T[]
 
 ================
+File: src/renderer/src/components/Workspace/FileRenameBadge.tsx
+================
+import { VscArrowSwap } from 'react-icons/vsc';
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  previousPath?: string;
+};
+⋮----
+export const FileRenameBadge = (
+
+================
 File: src/renderer/src/components/Workspace/group-files.ts
 ================
 import { UpdatedFile } from '@common/types';
@@ -26657,6 +26733,7 @@ import { hotkeysCoreFeature, propMemoizationFeature, syncDataLoaderFeature } fro
 import { clsx } from 'clsx';
 ⋮----
 import { normalizePath, INDENT_PX } from './types';
+import { FileRenameBadge } from './FileRenameBadge';
 ⋮----
 import type { TreeItem, GroupTree } from './types';
 import type { ItemInstance } from '@headless-tree/core';
@@ -26781,6 +26858,7 @@ import { useTranslation } from 'react-i18next';
 import { twMerge } from 'tailwind-merge';
 ⋮----
 import { INDENT_PX, normalizePath } from './types';
+import { FileRenameBadge } from './FileRenameBadge';
 ⋮----
 import type { SectionType, TreeItem } from './types';
 ⋮----
@@ -26865,6 +26943,7 @@ import { DiffViewMode, UpdatedFile } from '@common/types';
 import { clsx } from 'clsx';
 ⋮----
 import { sortFilesByTreeOrder } from './group-files';
+import { FileRenameBadge } from './FileRenameBadge';
 ⋮----
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { IconButton } from '@/components/common/IconButton';
