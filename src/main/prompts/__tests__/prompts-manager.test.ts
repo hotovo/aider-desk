@@ -171,6 +171,31 @@ describe('Prompts with Handlebars', () => {
       expect(prompt).toContain('<DefaultSystemPrompt version="1.0">');
     });
 
+    it('should list pre-compaction snapshots as absolute paths in the system prompt', async () => {
+      const snapshotDir = await fs.mkdtemp(path.join(os.tmpdir(), 'aider-desk-snapshots-'));
+      try {
+        await fs.writeFile(path.join(snapshotDir, 'context.pre-compaction.001.json'), '{}', 'utf8');
+        await fs.writeFile(path.join(snapshotDir, 'context.pre-compaction.002.json'), '{}', 'utf8');
+        await fs.writeFile(path.join(snapshotDir, 'context.attachment.json'), '{}', 'utf8');
+
+        (mockTask as unknown as { getContextSnapshotDir: () => string }).getContextSnapshotDir = vi.fn(() => snapshotDir);
+        const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile);
+
+        expect(prompt).toContain('<ContextHistory>');
+        expect(prompt).toContain(`File path="${path.join(snapshotDir, 'context.pre-compaction.001.json')}"`);
+        expect(prompt).toContain(`File path="${path.join(snapshotDir, 'context.pre-compaction.002.json')}"`);
+        expect(prompt).not.toContain('context.attachment.json');
+      } finally {
+        await fs.rm(snapshotDir, { recursive: true, force: true });
+      }
+    });
+
+    it('should not include the ContextHistory section when there are no pre-compaction snapshots', async () => {
+      const prompt = await promptsManager.getSystemPrompt(mockSettings, mockTask, mockProfile);
+
+      expect(prompt).not.toContain('<ContextHistory>');
+    });
+
     it('should include both agent custom instructions and additional instructions', async () => {
       mockProfile.customInstructions = 'Prefer functional programming patterns';
       const additionalInstructions = 'Always use TypeScript strict mode';

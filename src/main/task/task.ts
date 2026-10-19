@@ -772,6 +772,10 @@ export class Task {
     return this.task.worktree ? this.task.worktree.path : this.project.baseDir;
   }
 
+  public getContextSnapshotDir() {
+    return this.contextManager.getSnapshotDir();
+  }
+
   public compileCustomSystemPrompt(template: string): Promise<string> {
     return this.promptsManager.compileCustomSystemPrompt(this, template);
   }
@@ -3520,7 +3524,7 @@ export class Task {
       return [];
     }
 
-    // backing up the current context before compacting for debugging purposes
+    // backing up the current context before compacting so the pre-compaction history stays available
     await this.contextManager.backupContext();
 
     if (options?.compactionLevel !== undefined) {
@@ -3584,6 +3588,9 @@ export class Task {
       this.addLogMessage('warning', 'No conversation to compact.', false, promptContext);
       return;
     }
+
+    // backing up the full context before compacting so the pre-compaction history stays available
+    await this.contextManager.backupContext();
 
     const currentTaskState = this.task.state;
     await this.saveTask({

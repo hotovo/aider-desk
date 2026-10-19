@@ -61,6 +61,7 @@ import type { Store } from '@/store';
 import { AIDER_DESK_BUILTIN_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
+import { getPreCompactionBackupFiles } from '@/task/context-manager';
 import { shouldUsePolling } from '@/utils/file-watch';
 
 export class PromptsManager {
@@ -373,9 +374,13 @@ export class PromptsManager {
     const osName = (await import('os-name')).default();
     const currentDate = new Date().toDateString();
 
+    const snapshotDir = task.getContextSnapshotDir();
+    const preCompactionHistoryFiles = (await getPreCompactionBackupFiles(snapshotDir)).map((file) => path.join(snapshotDir, file));
+
     const data: PromptTemplateData = {
       projectDir: task.getProjectDir(),
       taskDir: task.getTaskDir(),
+      preCompactionHistoryFiles,
       additionalInstructions,
       osName,
       currentDate,

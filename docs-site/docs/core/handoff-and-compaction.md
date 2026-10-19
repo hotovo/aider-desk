@@ -34,6 +34,20 @@ The original messages are replaced by the summary once generation completes. In 
 
 For a non-AI alternative, `/smart-compact` applies [smart compaction](#compaction-types) to the current conversation on demand.
 
+## Pre-compaction Snapshots
+
+Before each compaction (both `/compact` and `/smart-compact`, manual or automatic), AiderDesk saves the full pre-compaction context into the task directory:
+
+```
+context.pre-compaction.001.json
+context.pre-compaction.002.json
+...
+```
+
+Snapshots are numbered sequentially — a higher number means a newer snapshot — and nothing is ever removed from them, so no conversation content is lost to compaction. Agents using the built-in system prompt are informed about available snapshots as absolute paths and can read them whenever they need earlier history that is no longer part of the current context.
+
+Handoff does not create a snapshot: it keeps the original task intact, so its conversation is preserved as-is.
+
 ## Handoff to a New Task
 
 Run `/handoff [focus]` to extract what matters for your next goal into a brand-new task:

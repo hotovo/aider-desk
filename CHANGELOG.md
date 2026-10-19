@@ -4,6 +4,7 @@
 
 - improved Mermaid diagrams with theme-aware colors and fonts and smoother streaming using Pele library
 - added support for pushing worktree fixes to the base branch’s upstream from the Push dialog
+- added pre-compaction context snapshots kept across compactions and exposed to the agent in the system prompt
 
 ## [0.88.0]
 

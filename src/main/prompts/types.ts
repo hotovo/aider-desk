@@ -39,6 +39,7 @@ export interface PromptTemplateData {
   toolConstants: Record<string, string>;
   workflow: string;
   projectGitRootDirectory?: string;
+  preCompactionHistoryFiles?: string[];
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

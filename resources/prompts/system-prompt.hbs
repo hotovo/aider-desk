@@ -133,6 +133,17 @@
     {{#if projectGitRootDirectory}}<ProjectGitRootDirectory>{{projectGitRootDirectory}}</ProjectGitRootDirectory>{{/if}}
   </SystemInformation>
 
+  {{#if preCompactionHistoryFiles}}
+  <ContextHistory>
+    <Description>Before each conversation compaction, the complete pre-compaction context (including messages that are no longer part of the current context) is saved in the task directory. Read these files if you need earlier conversation history that was removed during compaction.</Description>
+    <Files ordered="oldest-to-newest">
+{{#each preCompactionHistoryFiles}}      <File path="{{this}}" />
+{{/each}}
+    </Files>
+    <Guideline>The files are listed oldest to newest; the highest number is the most recent snapshot and contains the newest pre-compaction history. Read them with the file read tool using the absolute paths shown above.</Guideline>
+  </ContextHistory>
+  {{/if}}
+
   <Knowledge>
     <Rules>
 {{{rulesFiles}}}

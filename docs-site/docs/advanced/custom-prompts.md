@@ -210,6 +210,8 @@ The `system-prompt.hbs` template has access to:
   };
   workflow: string;  // Rendered workflow template
   toolConstants: { /* All tool constants */ };
+  projectGitRootDirectory?: string;
+  preCompactionHistoryFiles?: string[];  // Absolute paths to pre-compaction context snapshots (context.pre-compaction.NNN.json) in the task data directory, ordered oldest to newest; empty when there are no snapshots
 }
 ```
 

@@ -88,7 +88,55 @@ describe('ContextManager - atomic save and corrupt recovery', () => {
     });
   });
 
+  describe('backupContext', () => {
+    it('creates numbered pre-compaction snapshots and continues the sequence after legacy backups', async () => {
+      const manager = new ContextManager(createTask(projectDir) as never, 'task-1');
+      await manager.getContextMessages();
+
+      manager.addContextMessage(createMessage('message-1', 'Snapshot me'));
+      await manager.save();
+      await manager.backupContext();
+      await manager.backupContext();
+
+      const dir = path.dirname(getContextPath(projectDir));
+      let dirFiles = await fs.readdir(dir);
+      expect(dirFiles).toContain('context.pre-compaction.001.json');
+      expect(dirFiles).toContain('context.pre-compaction.002.json');
+
+      const snapshot = JSON.parse(await fs.readFile(path.join(dir, 'context.pre-compaction.001.json'), 'utf8'));
+      expect(snapshot.contextMessages).toHaveLength(1);
+
+      await fs.writeFile(path.join(dir, 'context.backup.003.json'), '{}', 'utf8');
+      await manager.backupContext();
+
+      dirFiles = await fs.readdir(dir);
+      expect(dirFiles).toContain('context.pre-compaction.004.json');
+    });
+  });
+
   describe('corrupt context recovery', () => {
+    it('recovers from a pre-compaction snapshot when context.json is corrupt', async () => {
+      const dir = path.dirname(getContextPath(projectDir));
+      await fs.mkdir(dir, { recursive: true });
+
+      const snapshotMessages = [createMessage('snapshot-1', 'From pre-compaction snapshot')];
+      await fs.writeFile(
+        path.join(dir, 'context.pre-compaction.001.json'),
+        JSON.stringify({
+          version: 2,
+          contextMessages: snapshotMessages,
+          contextFiles: [],
+        }),
+        'utf8',
+      );
+      await fs.writeFile(getContextPath(projectDir), '{"version":2,"contextMessages":["truncated', 'utf8');
+
+      const manager = new ContextManager(createTask(projectDir) as never, 'task-1');
+
+      await expect(manager.load()).resolves.toBeUndefined();
+      await expect(manager.getContextMessages()).resolves.toEqual(snapshotMessages);
+    });
+
     it('moves a corrupt context.json aside and loads an empty context instead of throwing', async () => {
       const contextPath = getContextPath(projectDir);
       await fs.mkdir(path.dirname(contextPath), { recursive: true });

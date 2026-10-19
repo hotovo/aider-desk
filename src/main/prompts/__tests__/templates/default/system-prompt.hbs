@@ -2,4 +2,10 @@
   <Agent name="DefaultAgent">
     <Objective>Default objective from default templates</Objective>
   </Agent>
+  {{#if preCompactionHistoryFiles}}
+  <ContextHistory>
+{{#each preCompactionHistoryFiles}}    <File path="{{this}}" />
+{{/each}}
+  </ContextHistory>
+  {{/if}}
 </DefaultSystemPrompt>
