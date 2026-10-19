@@ -674,8 +674,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.gitPull(baseDir, taskId, rebase);
   });
 
-  ipcMain.handle('git-push', async (_, baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean) => {
-    return await eventsHandler.gitPush(baseDir, taskId, force, setUpstream);
+  ipcMain.handle('git-push', async (_, baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean, pushToBase?: boolean) => {
+    return await eventsHandler.gitPush(baseDir, taskId, force, setUpstream, pushToBase);
   });
 
   ipcMain.handle('resolve-git-error-with-agent', async (_, baseDir: string, taskId: string) => {

@@ -786,7 +786,7 @@ const api: ApplicationAPI = {
   initializeGitRepository: (baseDir, taskId) => ipcRenderer.invoke('git-init-repo', baseDir, taskId),
 
   gitPull: (baseDir, taskId, rebase) => ipcRenderer.invoke('git-pull', baseDir, taskId, rebase),
-  gitPush: (baseDir, taskId, force, setUpstream) => ipcRenderer.invoke('git-push', baseDir, taskId, force, setUpstream),
+  gitPush: (baseDir, taskId, force, setUpstream, pushToBase) => ipcRenderer.invoke('git-push', baseDir, taskId, force, setUpstream, pushToBase),
   resolveGitErrorWithAgent: (baseDir, taskId) => ipcRenderer.invoke('resolve-git-error-with-agent', baseDir, taskId),
 
   // Agent profile operations

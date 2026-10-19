@@ -1415,11 +1415,13 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  gitPush(baseDir: string, taskId: string, force?: boolean): Promise<{ output: string }> {
+  gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean, pushToBase?: boolean): Promise<{ output: string }> {
     return this.post('/project/git/push', {
       projectDir: baseDir,
       taskId,
       force,
+      setUpstream,
+      pushToBase,
     });
   }
 

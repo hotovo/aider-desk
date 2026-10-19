@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - improved Mermaid diagrams with theme-aware colors and fonts and smoother streaming using Pele library
+- added support for pushing worktree fixes to the base branch’s upstream from the Push dialog
 
 ## [0.88.0]
 

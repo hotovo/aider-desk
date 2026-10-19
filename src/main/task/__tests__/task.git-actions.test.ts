@@ -265,6 +265,28 @@ describe('Task - git actions', () => {
       expect(mockGitManager.gitPush).toHaveBeenCalledWith(baseDir, false, true);
     });
 
+    it('pushes to the persisted worktree base branch and ignores setUpstream', async () => {
+      const worktreeTask = createTask('worktree', { baseBranch: 'feature-a' });
+
+      await worktreeTask.gitPush(true, true, true);
+
+      expect(mockGitManager.gitPush).toHaveBeenCalledWith(worktreePath, true, false, 'feature-a');
+    });
+
+    it('rejects pushing to a base branch from local mode', async () => {
+      vi.spyOn(task, 'reportGitActionError').mockImplementation(() => undefined);
+      await expect(task.gitPush(true, false, true)).rejects.toThrow('requires a worktree with a base branch');
+      expect(mockGitManager.gitPush).not.toHaveBeenCalled();
+    });
+
+    it('rejects pushing to a base branch when worktree metadata has no base', async () => {
+      const worktreeTask = createTask('worktree');
+      vi.spyOn(worktreeTask, 'reportGitActionError').mockImplementation(() => undefined);
+
+      await expect(worktreeTask.gitPush(true, false, true)).rejects.toThrow('requires a worktree with a base branch');
+      expect(mockGitManager.gitPush).not.toHaveBeenCalled();
+    });
+
     it('deleteGitBranch delegates with task repo path and force flag', async () => {
       await task.deleteGitBranch('feature', true);
       expect(mockGitManager.deleteBranch).toHaveBeenCalledWith(baseDir, 'feature', true);

@@ -358,7 +358,7 @@ export interface ApplicationAPI {
   isGitRepository: (baseDir: string, taskId: string) => Promise<boolean>;
   initializeGitRepository: (baseDir: string, taskId: string) => Promise<void>;
   gitPull: (baseDir: string, taskId: string, rebase?: boolean) => Promise<{ output: string }>;
-  gitPush: (baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean) => Promise<{ output: string }>;
+  gitPush: (baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean, pushToBase?: boolean) => Promise<{ output: string }>;
   resolveGitErrorWithAgent: (baseDir: string, taskId: string) => Promise<void>;
 
   // Agent profile operations

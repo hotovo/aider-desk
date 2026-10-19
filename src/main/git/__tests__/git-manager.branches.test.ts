@@ -462,6 +462,109 @@ describe('GitManager - branch operations', () => {
   });
 
   describe('gitPush', () => {
+    beforeEach(() => {
+      vi.spyOn(gitManager, 'getRebaseState').mockResolvedValue({ inProgress: false, hasUnmergedPaths: false });
+    });
+
+    it.each([false, true])('rejects base pushes during a rebase with force=%s before resolving or pushing', async (force) => {
+      vi.mocked(gitManager.getRebaseState).mockResolvedValue({ inProgress: true, hasUnmergedPaths: true });
+
+      await expect(gitManager.gitPush(projectPath, force, false, 'feature-a')).rejects.toThrow('rebase is in progress');
+      expect(execWithShellPath).not.toHaveBeenCalled();
+    });
+
+    it.each([false, true])('pushes HEAD to the base upstream with force=%s without setting task upstream', async (force) => {
+      vi.mocked(execWithShellPath).mockResolvedValue({ stdout: 'refs/heads/feature-a\tgithub\trefs/heads/pr-branch\n', stderr: '' });
+
+      await gitManager.gitPush(projectPath, force, true, 'feature-a');
+
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'push', ...(force ? ['--force'] : []), '--', 'github', 'HEAD:refs/heads/pr-branch'], {
+        cwd: projectPath,
+      });
+    });
+
+    it('supports a remote-tracking base branch', async () => {
+      vi.mocked(execWithShellPath).mockImplementation(async (input) => {
+        if (input === 'git remote') {
+          return { stdout: 'origin\ngithub\n', stderr: '' };
+        }
+        if (Array.isArray(input) && input[1] === 'config') {
+          const remote = input[3] === 'remote.github.fetch' ? 'github' : 'origin';
+          return { stdout: `+refs/heads/*:refs/remotes/${remote}/*\n`, stderr: '' };
+        }
+        return { stdout: 'refs/remotes/github/feature/a\t\t\n', stderr: '' };
+      });
+
+      await gitManager.gitPush(projectPath, false, false, 'github/feature/a');
+
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'push', '--', 'github', 'HEAD:refs/heads/feature/a'], { cwd: projectPath });
+    });
+
+    it.each([
+      ['+refs/heads/*:refs/remotes/github/review/*', 'refs/heads/main'],
+      ['refs/heads/main:refs/remotes/github/review/main', 'refs/heads/main'],
+      ['+refs/heads/topic-*:refs/remotes/github/review/*', 'refs/heads/topic-main'],
+      ['+refs/heads/*:refs/remotes/github/review/*\n+refs/heads/*:refs/remotes/github/review/*', 'refs/heads/main'],
+      ['+refs/heads/*:refs/remotes/github/review/*\n^refs/heads/private/*', 'refs/heads/main'],
+    ])('resolves fetch mapping %s', async (refspecs, expectedRef) => {
+      vi.mocked(execWithShellPath).mockImplementation(async (input) => {
+        if (input === 'git remote') {
+          return { stdout: 'github\n', stderr: '' };
+        }
+        return { stdout: Array.isArray(input) && input[1] === 'config' ? refspecs : 'refs/remotes/github/review/main\t\t\n', stderr: '' };
+      });
+
+      await gitManager.gitPush(projectPath, true, false, 'github/review/main');
+
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'push', '--force', '--', 'github', `HEAD:${expectedRef}`], { cwd: projectPath });
+    });
+
+    it.each([
+      '+refs/heads/*:refs/remotes/github/review/*\n+refs/heads/other/*:refs/remotes/github/review/*',
+      '+refs/heads/*:refs/remotes/github/review/*\n^refs/heads/main',
+      '+refs/heads/*:refs/remotes/github/other/*',
+      'refs/heads/main',
+      '+refs/heads/*:refs/remotes/github/review/main',
+      '+refs/tags/*:refs/remotes/github/review/*',
+      '+refs/heads/*:refs/remotes/github/review/*\n^refs/heads/**',
+      '',
+    ])('rejects ambiguous, excluded, missing or unsupported mapping %s without pushing', async (refspecs) => {
+      vi.mocked(execWithShellPath).mockImplementation(async (input) => {
+        if (input === 'git remote') {
+          return { stdout: 'github\n', stderr: '' };
+        }
+        return { stdout: Array.isArray(input) && input[1] === 'config' ? refspecs : 'refs/remotes/github/review/main\t\t\n', stderr: '' };
+      });
+
+      await expect(gitManager.gitPush(projectPath, true, false, 'github/review/main')).rejects.toThrow('Cannot resolve');
+      expect(vi.mocked(execWithShellPath).mock.calls.some(([input]) => Array.isArray(input) && input[1] === 'push')).toBe(false);
+    });
+
+    it('rejects a remote-tracking ref mapped by multiple remotes', async () => {
+      vi.mocked(execWithShellPath).mockImplementation(async (input) => {
+        if (input === 'git remote') {
+          return { stdout: 'github\norigin\n', stderr: '' };
+        }
+        return {
+          stdout: Array.isArray(input) && input[1] === 'config' ? '+refs/heads/*:refs/remotes/github/review/*' : 'refs/remotes/github/review/main\t\t\n',
+          stderr: '',
+        };
+      });
+
+      await expect(gitManager.gitPush(projectPath, true, false, 'github/review/main')).rejects.toThrow('unique push destination');
+      expect(vi.mocked(execWithShellPath).mock.calls.some(([input]) => Array.isArray(input) && input[1] === 'push')).toBe(false);
+    });
+
+    it.each(['refs/heads/feature-a\t\t\n', 'refs/heads/feature-a\t.\trefs/heads/main\n', ''])(
+      'rejects a missing or non-remote upstream (%s)',
+      async (stdout) => {
+        vi.mocked(execWithShellPath).mockResolvedValue({ stdout, stderr: '' });
+
+        await expect(gitManager.gitPush(projectPath, true, false, 'feature-a')).rejects.toThrow('has no remote upstream configured');
+        expect(vi.mocked(execWithShellPath).mock.calls.some(([input]) => Array.isArray(input) && input[1] === 'push')).toBe(false);
+      },
+    );
+
     it('executes git push when force is false or undefined', async () => {
       (execWithShellPath as Mock).mockResolvedValue({ stdout: 'Everything up-to-date', stderr: '' });
 

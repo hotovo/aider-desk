@@ -1732,14 +1732,20 @@ export class GitManager {
     }
   }
 
-  async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
+  async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean, baseBranch?: string): Promise<{ output: string }> {
     if (!(await this.ensureGitRepository(worktreePath, 'push'))) {
       return { output: '' };
     }
 
     try {
-      let command = force ? 'git push --force' : 'git push';
-      if (setUpstream) {
+      let command: string | string[] = force ? 'git push --force' : 'git push';
+      if (baseBranch) {
+        if ((await this.getRebaseState(worktreePath)).inProgress) {
+          throw new Error('Cannot push to the base branch while a rebase is in progress. Continue or abort the rebase first.');
+        }
+        const { remote, ref } = await this.getBaseBranchPushTarget(worktreePath, baseBranch);
+        command = ['git', 'push', ...(force ? ['--force'] : []), '--', remote, `HEAD:${ref}`];
+      } else if (setUpstream) {
         const { stdout: branchOut } = await execWithShellPath('git rev-parse --abbrev-ref HEAD', {
           cwd: worktreePath,
         });
@@ -1764,6 +1770,98 @@ export class GitManager {
       gitError.workingDirectory = worktreePath;
       throw gitError;
     }
+  }
+
+  private async getBaseBranchPushTarget(repoPath: string, baseBranch: string): Promise<{ remote: string; ref: string }> {
+    const { stdout } = await execWithShellPath(
+      [
+        'git',
+        'for-each-ref',
+        '--format=%(refname)%09%(upstream:remotename)%09%(upstream:remoteref)',
+        '--',
+        `refs/heads/${baseBranch}`,
+        `refs/remotes/${baseBranch}`,
+      ],
+      { cwd: repoPath },
+    );
+    const refs = stdout
+      .trim()
+      .split('\n')
+      .map((line) => line.split('\t'));
+    const localRef = refs.find(([ref]) => ref === `refs/heads/${baseBranch}`);
+    if (localRef) {
+      const [, remote, ref] = localRef;
+      if (remote && remote !== '.' && ref?.startsWith('refs/heads/')) {
+        return { remote, ref };
+      }
+    } else if (refs.some(([ref]) => ref === `refs/remotes/${baseBranch}`)) {
+      return await this.resolveFetchRefspecPushTarget(repoPath, `refs/remotes/${baseBranch}`);
+    }
+    throw new Error(`Base branch '${baseBranch}' has no remote upstream configured.`);
+  }
+
+  private matchFetchRefspec(pattern: string, ref: string): string | undefined {
+    const wildcard = pattern.indexOf('*');
+    if (wildcard === -1) {
+      return pattern === ref ? '' : undefined;
+    }
+    const prefix = pattern.slice(0, wildcard);
+    const suffix = pattern.slice(wildcard + 1);
+    return ref.startsWith(prefix) && ref.endsWith(suffix) && ref.length >= prefix.length + suffix.length
+      ? ref.slice(prefix.length, ref.length - suffix.length)
+      : undefined;
+  }
+
+  private async resolveFetchRefspecPushTarget(repoPath: string, trackingRef: string): Promise<{ remote: string; ref: string }> {
+    const { stdout } = await execWithShellPath('git remote', { cwd: repoPath });
+    const targets = new Map<string, { remote: string; ref: string }>();
+    for (const remote of stdout.trim().split('\n').filter(Boolean)) {
+      let fetchOutput: string;
+      try {
+        fetchOutput = (await execWithShellPath(['git', 'config', '--get-all', `remote.${remote}.fetch`], { cwd: repoPath })).stdout;
+      } catch (error) {
+        if ((error as { code?: number }).code === 1) {
+          continue;
+        }
+        throw error;
+      }
+      const refspecs = fetchOutput.trim().split('\n').filter(Boolean);
+      const excludedSources = refspecs.filter((spec) => spec.startsWith('^')).map((spec) => spec.slice(1));
+      if (excludedSources.some((source) => !source.startsWith('refs/') || source.includes(':') || source.split('*').length > 2)) {
+        throw new Error(`Cannot resolve push destination: unsupported negative fetch refspec for remote '${remote}'.`);
+      }
+      for (const spec of refspecs.filter((value) => !value.startsWith('^'))) {
+        const parts = spec.replace(/^\+/, '').split(':');
+        const [source, destination] = parts;
+        const sourceWildcards = source.split('*').length - 1;
+        const destinationWildcards = destination?.split('*').length - 1;
+        if (
+          parts.length !== 2 ||
+          !source.startsWith('refs/') ||
+          !destination?.startsWith('refs/') ||
+          sourceWildcards > 1 ||
+          sourceWildcards !== destinationWildcards
+        ) {
+          throw new Error(`Cannot resolve push destination: unsupported fetch refspec for remote '${remote}'.`);
+        }
+        const match = this.matchFetchRefspec(destination, trackingRef);
+        if (match === undefined) {
+          continue;
+        }
+        const ref = source.replace('*', () => match);
+        if (excludedSources.some((pattern) => this.matchFetchRefspec(pattern, ref) !== undefined)) {
+          continue;
+        }
+        if (!ref.startsWith('refs/heads/')) {
+          throw new Error(`Cannot resolve push destination: '${trackingRef}' does not map to a remote branch.`);
+        }
+        targets.set(JSON.stringify([remote, ref]), { remote, ref });
+      }
+    }
+    if (targets.size !== 1) {
+      throw new Error(`Cannot resolve a unique push destination for '${trackingRef}' from configured fetch refspecs.`);
+    }
+    return targets.values().next().value!;
   }
 
   private async getDefaultRemote(repoPath: string): Promise<string> {

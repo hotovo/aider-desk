@@ -13,6 +13,9 @@ import { createMockApi } from '@/__tests__/mocks/api';
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, options?: Record<string, unknown>) => {
+      if (options && 'upstream' in options) {
+        return `${key}:${options.upstream}`;
+      }
       if (options && 'count' in options && 'branch' in options) {
         return `${key}:${options.branch}:${options.count}`;
       }
@@ -111,6 +114,99 @@ describe('GitBranchesButton', () => {
   });
 
   describe('push action', () => {
+    it.each([false, true])('pushes to the worktree base upstream with force=%s even without outgoing commits', async (force) => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([
+        { name: 'task-123', isCurrent: true, hasWorktree: true, upstream: 'origin/task-123' },
+        { name: 'main', isCurrent: false, hasWorktree: false, upstream: 'github/pr-branch' },
+      ]);
+      mockApi.getSyncCommits = vi.fn().mockResolvedValue({ outgoing: { count: 0, commits: [] }, incoming: { count: 0, commits: [] } });
+      render(<GitBranchesButton {...defaultProps} worktreePath="/worktree" status={mockStatus} />);
+      await waitFor(() => expect(mockApi.getSyncCommits).toHaveBeenCalled());
+
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+      expect(screen.getAllByRole('checkbox').every((checkbox) => !(checkbox as HTMLInputElement).checked)).toBe(true);
+      expect(screen.getByText('git.force').compareDocumentPosition(screen.getByText('git.pushToBaseUpstream')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      fireEvent.click(screen.getByText('git.pushToBaseUpstream'));
+      expect(screen.getByText('git.confirmPushToBaseMessage:github/pr-branch')).toBeInTheDocument();
+      expect(screen.getByText('git.pushToBaseDestination:github/pr-branch')).toBeInTheDocument();
+      expect(screen.queryByText('git.confirmPushMessage:0')).not.toBeInTheDocument();
+      if (force) {
+        fireEvent.click(screen.getByText('git.force'));
+      }
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+
+      await waitFor(() => expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', force, false, true));
+    });
+
+    it('resets push options when reopening the dialog and preserves normal task pushing', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([
+        { name: 'task-123', isCurrent: true, hasWorktree: true },
+        { name: 'main', isCurrent: false, hasWorktree: false, upstream: 'github/pr-branch' },
+      ]);
+      render(<GitBranchesButton {...defaultProps} worktreePath="/worktree" status={mockStatus} />);
+      await waitFor(() => expect(mockApi.getSyncCommits).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+      fireEvent.click(screen.getByText('git.pushToBaseUpstream'));
+      fireEvent.click(screen.getByText('git.force'));
+      fireEvent.click(screen.getByRole('button', { name: 'common.cancel' }));
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+      expect(screen.getAllByRole('checkbox').every((checkbox) => !(checkbox as HTMLInputElement).checked)).toBe(true);
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+      await waitFor(() => expect(mockApi.gitPush).toHaveBeenCalledWith('/project', 'task-123', false, true));
+    });
+
+    it('does not advise pulling the task branch when a base push is rejected', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([
+        { name: 'task-123', isCurrent: true, hasWorktree: true },
+        { name: 'main', isCurrent: false, hasWorktree: false, upstream: 'github/pr-branch' },
+      ]);
+      mockApi.gitPush = vi.fn().mockRejectedValue(new Error('non-fast-forward'));
+      render(<GitBranchesButton {...defaultProps} worktreePath="/worktree" status={mockStatus} />);
+      await waitFor(() => expect(mockApi.getSyncCommits).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+      fireEvent.click(screen.getByText('git.pushToBaseUpstream'));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push' }));
+
+      await waitFor(() => expect(showErrorNotification).toHaveBeenCalledWith('non-fast-forward'));
+      expect(showErrorNotification).not.toHaveBeenCalledWith('git.pushRejectedPullFirst');
+    });
+
+    it('hides the worktree base option if the base has no upstream', async () => {
+      render(<GitBranchesButton {...defaultProps} worktreePath="/worktree" status={mockStatus} />);
+      await waitFor(() => expect(mockApi.getSyncCommits).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+
+      expect(screen.queryByText('git.pushToBaseUpstream')).not.toBeInTheDocument();
+      expect(screen.queryByText('git.pushToBaseNoUpstream')).not.toBeInTheDocument();
+      expect(screen.getAllByRole('checkbox')).toHaveLength(1);
+      expect(screen.getByText('git.force')).toBeInTheDocument();
+      expect(screen.getByRole('checkbox')).toBeEnabled();
+    });
+
+    it('supports a remote-tracking worktree base', async () => {
+      mockApi.listGitBranches = vi.fn().mockResolvedValue([
+        { name: 'task-123', isCurrent: true, hasWorktree: true },
+        { name: 'github/pr-branch', isCurrent: false, hasWorktree: false, isRemote: true },
+      ]);
+      render(
+        <GitBranchesButton
+          {...defaultProps}
+          worktreePath="/worktree"
+          status={{ ...mockStatus, worktree: { ...mockStatus.worktree!, baseBranch: 'github/pr-branch' } }}
+        />,
+      );
+      await waitFor(() => expect(mockApi.getSyncCommits).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('button', { name: /task-123/i }));
+      fireEvent.click(screen.getByRole('button', { name: 'git.push...' }));
+      expect(screen.getByText('git.pushToBaseUpstream')).toBeInTheDocument();
+      expect(screen.getAllByRole('checkbox')[1]).toBeEnabled();
+    });
+
     it('disables push button when outgoing commit count is 0', async () => {
       mockApi.listGitBranches = vi.fn().mockResolvedValue([{ name: 'main', isCurrent: true, hasWorktree: false, isRemote: false, upstream: 'origin/main' }]);
       mockApi.getSyncCommits = vi.fn().mockResolvedValue({

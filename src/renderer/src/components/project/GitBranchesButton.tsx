@@ -143,6 +143,7 @@ export const GitBranchesButton = ({
   const [showResolveWithAgentConfirm, setShowResolveWithAgentConfirm] = useState(false);
   const [showPushConfirm, setShowPushConfirm] = useState(false);
   const [forcePush, setForcePush] = useState(false);
+  const [pushToBase, setPushToBase] = useState(false);
   const [showPullConfirm, setShowPullConfirm] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -156,6 +157,12 @@ export const GitBranchesButton = ({
   const hasUpstream = Boolean(branches.find((b) => b.isCurrent)?.upstream);
   const isWorktree = Boolean(worktreePath);
   const worktreeBaseBranch = isWorktree ? status?.worktree?.baseBranch || status?.worktree?.targetBranch : undefined;
+  const baseBranchInfo = branches.find((branch) => branch.name === worktreeBaseBranch);
+  const baseBranchUpstream = baseBranchInfo?.isRemote
+    ? baseBranchInfo.name
+    : baseBranchInfo?.upstream || branches.find((branch) => branch.upstream === worktreeBaseBranch)?.upstream;
+  const canPushToBase = Boolean(isWorktree && status?.worktree?.baseBranch && baseBranchUpstream && !baseBranchUpstream.startsWith('.'));
+  const isBasePush = isWorktree && pushToBase;
 
   const incomingCount = syncCommits.incoming.count;
   const outgoingCount = syncCommits.outgoing.count;
@@ -276,6 +283,7 @@ export const GitBranchesButton = ({
     setNewBranchFromName('');
     setShowPushConfirm(false);
     setForcePush(false);
+    setPushToBase(false);
   }, []);
 
   const handleCreateBranchConfirm = async () => {
@@ -490,32 +498,47 @@ export const GitBranchesButton = ({
   };
 
   const handlePush = useCallback(() => {
-    if (disabled || !currentBranch || (outgoingCount === 0 && hasUpstream)) {
+    if (disabled || !currentBranch || (!isWorktree && outgoingCount === 0 && hasUpstream)) {
       return;
     }
     handleCloseDropdown();
     setForcePush(false);
+    setPushToBase(false);
     setShowPushConfirm(true);
-  }, [disabled, currentBranch, outgoingCount, hasUpstream, handleCloseDropdown]);
+  }, [disabled, currentBranch, outgoingCount, hasUpstream, isWorktree, handleCloseDropdown]);
 
   const handlePushConfirm = async () => {
+    if (isBasePush && !canPushToBase) {
+      return;
+    }
     setShowPushConfirm(false);
     try {
-      await api.gitPush(baseDir, taskId, forcePush, !hasUpstream);
+      if (isBasePush) {
+        await api.gitPush(baseDir, taskId, forcePush, false, true);
+      } else {
+        await api.gitPush(baseDir, taskId, forcePush, !hasUpstream);
+      }
       showInfoNotification(t('git.pushSuccess'));
       await loadSyncCommits();
     } catch (error) {
       if (error instanceof Error && /fetch first|non-fast-forward|rejected because the tip|remote contains work/i.test(error.message)) {
-        showErrorNotification(t('git.pushRejectedPullFirst'));
+        showErrorNotification(isBasePush ? error.message : t('git.pushRejectedPullFirst'));
       } else {
         handleError(error);
       }
     }
   };
 
+  const handlePushToBaseChange = (checked: boolean) => {
+    if (canPushToBase) {
+      setPushToBase(checked);
+    }
+  };
+
   const handlePushCancel = () => {
     setShowPushConfirm(false);
     setForcePush(false);
+    setPushToBase(false);
   };
 
   const handleEditBranch = useCallback(() => {
@@ -949,12 +972,15 @@ export const GitBranchesButton = ({
                 {t('git.updateProject')}
                 {incomingCount > 0 && outgoingCount > 0 ? '...' : ''}
               </button>
-              <button onClick={handlePush} className={menuItemClass} disabled={disabled || !currentBranch || (outgoingCount === 0 && hasUpstream)}>
-                <FaUpload className="w-3 h-3" />
-                {t('git.push')}...
-              </button>
             </div>
           )}
+
+          <div className="border-b border-border-default-dark py-1">
+            <button onClick={handlePush} className={menuItemClass} disabled={disabled || !currentBranch || (!isWorktree && outgoingCount === 0 && hasUpstream)}>
+              <FaUpload className="w-3 h-3" />
+              {t('git.push')}...
+            </button>
+          </div>
 
           <GitBranchesPopup
             branches={branches}
@@ -1165,18 +1191,21 @@ export const GitBranchesButton = ({
       {showPushConfirm && (
         <ConfirmDialog
           title={t('git.confirmPushTitle')}
-          onConfirm={() => void handlePushConfirm()}
+          disabled={isBasePush && !canPushToBase}
+          onConfirm={handlePushConfirm}
           onCancel={handlePushCancel}
           confirmButtonText={t('git.push')}
           closeOnEscape
         >
           <div className="flex flex-col gap-3">
-            {!hasUpstream ? (
+            {isBasePush ? (
+              <p className="text-sm">{t('git.confirmPushToBaseMessage', { branch: currentBranch, upstream: baseBranchUpstream })}</p>
+            ) : !hasUpstream ? (
               <p className="text-sm">{t('git.confirmPushSetUpstreamMessage', { branch: currentBranch })}</p>
             ) : (
               <p className="text-sm">{t('git.confirmPushMessage', { count: outgoingCount })}</p>
             )}
-            {outgoingCount > 0 && (
+            {!isBasePush && outgoingCount > 0 && (
               <div className="max-h-48 overflow-y-auto space-y-1 rounded border border-border-default bg-bg-primary-light p-2 font-mono text-2xs text-text-secondary">
                 {syncCommits.outgoing.commits.map((commit, index) => (
                   <div key={index} className="truncate">
@@ -1186,6 +1215,12 @@ export const GitBranchesButton = ({
               </div>
             )}
             <Checkbox label={t('git.force')} checked={forcePush} onChange={setForcePush} />
+            {canPushToBase && (
+              <div className="space-y-2">
+                <Checkbox label={t('git.pushToBaseUpstream')} checked={pushToBase} onChange={handlePushToBaseChange} />
+                <p className="text-2xs text-text-muted">{t('git.pushToBaseDestination', { upstream: baseBranchUpstream })}</p>
+              </div>
+            )}
           </div>
         </ConfirmDialog>
       )}

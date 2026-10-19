@@ -5269,10 +5269,18 @@ ${error.stderr}`,
     return await this.runGitAction('pull', () => this.gitManager.gitPull(this.getTaskDir(), rebase));
   }
 
-  public async gitPush(force?: boolean, setUpstream?: boolean): Promise<{ output: string }> {
+  public async gitPush(force?: boolean, setUpstream?: boolean, pushToBase?: boolean): Promise<{ output: string }> {
     return await this.runGitAction(
       'push',
-      () => this.gitManager.gitPush(this.getTaskDir(), force, setUpstream),
+      () => {
+        if (pushToBase) {
+          if (this.task.workingMode !== 'worktree' || !this.task.worktree?.baseBranch) {
+            throw new Error('Pushing to the base branch requires a worktree with a base branch.');
+          }
+          return this.gitManager.gitPush(this.getTaskDir(), force, false, this.task.worktree.baseBranch);
+        }
+        return this.gitManager.gitPush(this.getTaskDir(), force, setUpstream);
+      },
       (error) => error instanceof Error && /fetch first|non-fast-forward|rejected because the tip|remote contains work/i.test(error.message),
     );
   }
