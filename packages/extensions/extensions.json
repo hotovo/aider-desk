@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "wakatime",
@@ -334,7 +334,7 @@
         "ui",
         "example"
       ],
-      "installCount": 14
+      "installCount": 15
     },
     {
       "id": "multi-model-run",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 98
+      "installCount": 99
     },
     {
       "id": "verifier",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 58
+      "installCount": 59
     },
     {
       "id": "wigolo",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 64
+      "installCount": 65
     },
     {
       "id": "destructive-command-guard",
