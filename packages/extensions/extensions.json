@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 96
+      "installCount": 97
     },
     {
       "id": "verifier",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 57
+      "installCount": 58
     },
     {
       "id": "wigolo",
