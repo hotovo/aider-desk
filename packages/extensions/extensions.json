@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 104
+      "installCount": 105
     },
     {
       "id": "protected-paths",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 66
+      "installCount": 67
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 90
+      "installCount": 91
     },
     {
       "id": "legacy-system-prompt",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 32
+      "installCount": 34
     },
     {
       "id": "sandbox",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 97
+      "installCount": 98
     },
     {
       "id": "verifier",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 79
+      "installCount": 81
     },
     {
       "id": "kanban",
@@ -608,7 +608,7 @@
         "security",
         "commands"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "git-log",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 142
+      "installCount": 144
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 124
+      "installCount": 126
     },
     {
       "id": "dbx",
