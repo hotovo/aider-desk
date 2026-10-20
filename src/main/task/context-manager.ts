@@ -46,9 +46,7 @@ export const getBackupSequence = (file: string): number => {
 export const getPreCompactionBackupFiles = async (dir: string): Promise<string[]> => {
   try {
     const files = await fs.readdir(dir);
-    return files
-      .filter((file) => getBackupSequence(file) > 0)
-      .sort((a, b) => getBackupSequence(a) - getBackupSequence(b));
+    return files.filter((file) => getBackupSequence(file) > 0).sort((a, b) => getBackupSequence(a) - getBackupSequence(b));
   } catch {
     return [];
   }
@@ -883,9 +881,7 @@ export class ContextManager {
     try {
       const dir = path.dirname(this.storagePath);
       const files = await fs.readdir(dir);
-      const backups = files
-        .filter((file) => getBackupSequence(file) > 0)
-        .sort((a, b) => getBackupSequence(b) - getBackupSequence(a));
+      const backups = files.filter((file) => getBackupSequence(file) > 0).sort((a, b) => getBackupSequence(b) - getBackupSequence(a));
 
       if (backups.length > 0) {
         const backupPath = path.join(dir, backups[0]);
