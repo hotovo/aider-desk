@@ -1,0 +1,21 @@
+{
+  "name": "opencode-free-extension",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenCode free models with native shell/read and AiderDesk MCP tools",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@ai-sdk/provider": "4.0.21",
+    "@modelcontextprotocol/sdk": "1.32.1",
+    "@opencode/cli": "2.0.32",
+    "@opencode/client": "2.0.24",
+    "ai": "7.0.127",
+    "ai-sdk-provider-opencode-sdk": "5.0.1"
+  }
+}
