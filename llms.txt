@@ -5856,7 +5856,13 @@ generateMergeCommands(mainBranch: string, branchName: string): string[]
 ⋮----
 async gitPull(worktreePath: string, rebase?: boolean): Promise<
 ⋮----
-async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean): Promise<
+async gitPush(worktreePath: string, force?: boolean, setUpstream?: boolean, baseBranch?: string): Promise<
+⋮----
+private async getBaseBranchPushTarget(repoPath: string, baseBranch: string): Promise<
+⋮----
+private matchFetchRefspec(pattern: string, ref: string): string | undefined
+⋮----
+private async resolveFetchRefspecPushTarget(repoPath: string, trackingRef: string): Promise<
 ⋮----
 private async getDefaultRemote(repoPath: string): Promise<string>
 ⋮----
@@ -6751,7 +6757,13 @@ export const getAzureProviderParameters = (llmProvider: LlmProvider, model: Mode
 ================
 File: src/main/models/providers/bedrock.ts
 ================
-import { BedrockClient, GetFoundationModelAvailabilityCommand, type InferenceProfileSummary, ListInferenceProfilesCommand } from '@aws-sdk/client-bedrock';
+import {
+  BedrockClient,
+  GetFoundationModelAvailabilityCommand,
+  type InferenceProfileSummary,
+  ListInferenceProfilesCommand,
+  ResourceNotFoundException,
+} from '@aws-sdk/client-bedrock';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Model, ModelInfo, ProviderProfile, SettingsData } from '@common/types';
 import { BedrockProvider, isBedrockProvider } from '@common/agent';
@@ -9049,6 +9061,7 @@ import type { Store } from '@/store';
 import { AIDER_DESK_BUILTIN_PROMPTS_DIR, AIDER_DESK_GLOBAL_PROMPTS_DIR, AIDER_DESK_PROMPTS_DIR } from '@/constants';
 import logger from '@/logger';
 import { Task } from '@/task';
+import { getPreCompactionBackupFiles } from '@/task/context-manager';
 import { shouldUsePolling } from '@/utils/file-watch';
 ⋮----
 export class PromptsManager
@@ -9142,6 +9155,7 @@ export interface PromptTemplateData {
   toolConstants: Record<string, string>;
   workflow: string;
   projectGitRootDirectory?: string;
+  preCompactionHistoryFiles?: string[];
 }
 ⋮----
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -10738,6 +10752,10 @@ import { getSubagentMessages, getSubagentFinalText } from '@/agent/message-prepa
 import { migrateContextV1toV2 } from '@/task/migrations/v1-to-v2';
 import { AIDER_DESK_TASKS_DIR } from '@/constants';
 ⋮----
+export const getBackupSequence = (file: string): number =>
+⋮----
+export const getPreCompactionBackupFiles = async (dir: string): Promise<string[]> =>
+⋮----
 export class ContextManager
 ⋮----
 constructor(
@@ -10841,10 +10859,13 @@ async save(): Promise<void>
 // crash mid-write never leaves context.json half-written.
 ⋮----
 /**
-   * Creates a backup of the current context.json file before a destructive operation
-   * (e.g., smart compaction). Backups are named context.backup.001.json, context.backup.002.json, etc.
-   * For debugging purposes only.
+   * Creates a snapshot of the current context.json file before a destructive operation
+   * (e.g., compaction). Snapshots are named context.pre-compaction.001.json, context.pre-compaction.002.json, etc.,
+   * higher numbers mean newer snapshots. They are kept in the task directory so the agent
+   * can read the full pre-compaction conversation history when needed.
    */
+getSnapshotDir(): string
+⋮----
 async backupContext(): Promise<void>
 ⋮----
 private async cleanupContext(): Promise<void>
@@ -11245,6 +11266,8 @@ public removeConnector(connector: Connector)
 public getProjectDir()
 ⋮----
 public getTaskDir()
+⋮----
+public getContextSnapshotDir()
 ⋮----
 public compileCustomSystemPrompt(template: string): Promise<string>
 ⋮----
@@ -11704,7 +11727,7 @@ public async smartCompactConversation(
     options?: SmartCompactionOptions,
 ): Promise<ContextMessage[]>
 ⋮----
-// backing up the current context before compacting for debugging purposes
+// backing up the current context before compacting so the pre-compaction history stays available
 ⋮----
 // Determine compaction level based on messages since last compaction
 ⋮----
@@ -11722,6 +11745,8 @@ public async compactConversation(
 ): Promise<void>
 ⋮----
 // Get profile if not provided
+⋮----
+// backing up the full context before compacting so the pre-compaction history stays available
 ⋮----
 // Find skill activation messages before generating summary
 ⋮----
@@ -11972,7 +11997,7 @@ public async updateGitBranch(branchName: string): Promise<
 ⋮----
 public async gitPull(rebase?: boolean): Promise<
 ⋮----
-public async gitPush(force?: boolean, setUpstream?: boolean): Promise<
+public async gitPush(force?: boolean, setUpstream?: boolean, pushToBase?: boolean): Promise<
 ⋮----
 public async renameGitBranch(newBranchName: string): Promise<void>
 ⋮----
@@ -13440,7 +13465,7 @@ async updateGitBranch(baseDir: string, taskId: string, branchName: string): Prom
 ⋮----
 async gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<
 ⋮----
-async gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean): Promise<
+async gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean, pushToBase?: boolean): Promise<
 ⋮----
 async getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string)
 ⋮----
@@ -15221,7 +15246,7 @@ initializeGitRepository(baseDir: string, taskId: string): Promise<void>
 ⋮----
 gitPull(baseDir: string, taskId: string, rebase?: boolean): Promise<
 ⋮----
-gitPush(baseDir: string, taskId: string, force?: boolean): Promise<
+gitPush(baseDir: string, taskId: string, force?: boolean, setUpstream?: boolean, pushToBase?: boolean): Promise<
 ⋮----
 resolveGitErrorWithAgent(baseDir: string, taskId: string): Promise<void>
 ⋮----
@@ -16631,17 +16656,23 @@ type Props = {
 ================
 File: src/renderer/src/components/common/MermaidDiagram.tsx
 ================
-import { useEffect, useId, useState } from 'react';
-import mermaid from 'mermaid';
+import { useEffect, useRef, useState } from 'react';
+import { detectType, load, mount, type Mounted } from 'pele/lazy';
 import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
 ⋮----
 type Props = {
   code: string;
   className?: string;
+  isComplete?: boolean;
 };
 ⋮----
 const renderDiagram = async () =>
+⋮----
+// Let mount display syntax errors while retaining the last valid diagram.
+⋮----
+<div className=
 
 ================
 File: src/renderer/src/components/common/ModalOverlayLayout.tsx
@@ -22257,6 +22288,8 @@ const handlePullStrategyChange = (value: string) =>
 const handleUpdateBranch = async (branch: BranchInfo) =>
 ⋮----
 const handlePushConfirm = async () =>
+⋮----
+const handlePushToBaseChange = (checked: boolean) =>
 ⋮----
 const handlePushCancel = () =>
 ⋮----
@@ -33183,6 +33216,20 @@ code {
 .cm-tooltip-autocomplete::-webkit-scrollbar-thumb:hover {
 ⋮----
 ::selection {
+⋮----
+.mermaid-diagram {
+⋮----
+.mermaid-diagram > div > svg.pele {
+⋮----
+.mermaid-diagram[data-streaming] .pele-error {
+⋮----
+.mermaid-diagram[data-streaming] svg.pele {
+⋮----
+.mermaid-diagram > div:has(> .pele-zoom) {
+⋮----
+.mermaid-diagram .pele-zoom {
+⋮----
+.mermaid-diagram .pele-zoom button:focus-visible {
 
 ================
 File: src/renderer/src/main.tsx
@@ -33563,7 +33610,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.88.0-dev",
+  "version": "0.89.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -33714,9 +33761,9 @@ File: package.json
     "lowlight": "3.3.0",
     "mark.js": "8.11.1",
     "match-sorter": "8.2.0",
-    "mermaid": "11.16.1",
     "ollama-ai-provider-v2": "4.0.1",
     "os-name": "6.1.0",
+    "pele": "1.6.0",
     "posthog-node": "5.29.1",
     "prismjs": "1.30.0",
     "react-country-flag": "3.1.0",
