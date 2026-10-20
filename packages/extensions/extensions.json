@@ -1,6 +1,18 @@
 {
   "extensions": [
     {
+      "id": "opencode-free",
+      "name": "OpenCode Free",
+      "description": "Free OpenCode models with native shell/read and AiderDesk tools over MCP",
+      "folder": "opencode-free",
+      "type": "folder",
+      "hasDependencies": true,
+      "capabilities": [
+        "providers"
+      ],
+      "installCount": 0
+    },
+    {
       "id": "jev",
       "name": "Jev",
       "description": "Jev decision-model tools: typed yes/no, choice, and score questions about files, command output, or state",
