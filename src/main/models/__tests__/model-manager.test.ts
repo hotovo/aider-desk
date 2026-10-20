@@ -105,6 +105,7 @@ const createManager = () => {
   const eventManager = {
     sendProviderModelsUpdated: vi.fn(),
     sendSettingsUpdated: vi.fn(),
+    sendProvidersUpdated: vi.fn(),
   } as unknown as EventManager;
   return new ModelManager(store, eventManager);
 };
@@ -137,6 +138,23 @@ describe('ModelManager - getUsageReport', () => {
     manager.getUsageReport(task, zaiProfile, 'glm-5.3', usage);
 
     expect(zaiPlanProviderStrategy.getUsageReport).toHaveBeenCalledWith(task, zaiProfile, loadedModel, usage, undefined);
+  });
+
+  it('forwards provider tool approvals through the extension strategy wrapper', async () => {
+    const manager = createManager();
+    const createLlm = vi.fn().mockReturnValue('test-model');
+    const provider = {
+      id: 'native-test',
+      name: 'Native Test',
+      provider: { name: 'native-test' },
+      strategy: { createLlm, loadModels: vi.fn().mockResolvedValue({ success: true, models: [] }) },
+    };
+    manager.registerExtensionProviders([{ extensionId: 'test', extensionName: 'Test', provider }]);
+    const profile = manager.getExtensionProviderProfiles()[0];
+    const model: Model = { id: 'free', providerId: profile.id };
+    const approveTool = vi.fn(async (): Promise<[boolean, string?]> => [true]);
+    expect(await manager.createLlm(profile, model, {} as SettingsData, '/workspace', {}, 'system', undefined, 'session', approveTool)).toBe('test-model');
+    expect(createLlm).toHaveBeenCalledExactlyOnceWith(profile, model, {}, '/workspace', {}, 'system', undefined, undefined, 'session', approveTool);
   });
 
   it('still throws for unsupported providers', () => {

@@ -293,7 +293,7 @@ interface AgentFinishedEvent {
 ```
 
 ### AgentStepFinishedEvent
-Called after each agent step completes.
+Called after each agent step completes. For streaming AI SDK providers, AiderDesk finalizes the step after consuming its `finish-step` event so queued deltas cannot append to already-finalized messages. This is not a direct timing alias for the SDK callback.
 
 ```typescript
 interface AgentStepFinishedEvent {
@@ -335,7 +335,7 @@ interface ImportantRemindersEvent {
 ## Tool Events
 
 ### ToolApprovalEvent
-Called when a tool requires approval.
+Called when a tool execution decision is checked, including provider-native calls routed through `ProviderToolApprovalHandler`. It can fire even when autonomy or pre-approval would otherwise avoid a question. Provider-native disabled-tool and denied bash-pattern checks reject before this event. The callback checks approval only; native execution does not automatically dispatch `onToolCalled`/`onToolFinished`. See [provider tool approvals](api-reference.md#providertoolapprovalhandler).
 
 ```typescript
 interface ToolApprovalEvent {
@@ -429,7 +429,7 @@ interface ResponseCompletedEvent {
 ## Approval Events
 
 ### HandleApprovalEvent
-Called when handling user approval requests.
+Called while handling an approval decision, before the default automatic/pre-approved or Manual decision. It does not imply that a question will be shown. Provider-native requests routed through `ProviderToolApprovalHandler` also use this hook unless an earlier check or `onToolApproval` decision has already resolved them.
 
 ```typescript
 interface HandleApprovalEvent {

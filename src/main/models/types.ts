@@ -1,5 +1,6 @@
 import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
+import { ProviderToolApprovalHandler } from '@common/extensions';
 
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
@@ -47,6 +48,7 @@ export interface LlmProviderStrategy {
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
     sessionId?: string,
+    approveTool?: ProviderToolApprovalHandler,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**

@@ -250,7 +250,7 @@ interface AgentStepStartedEvent {
 
 ### AgentStepFinishedEvent
 
-Dispatched at the end of each agent step/iteration.
+Dispatched at the end of each agent step/iteration. With streaming AI SDK providers, finalization follows the consumer reaching `finish-step`, after earlier chunks have been handled; do not treat this as the raw SDK callback timing.
 
 ```typescript
 interface AgentStepFinishedEvent {
@@ -310,7 +310,7 @@ interface InterruptedEvent {
 
 ### ToolApprovalEvent (Can Block)
 
-Dispatched when a tool requires approval. Set `blocked` to a boolean or string message to block; set `allowed: true` to auto-approve.
+Dispatched when checking a tool execution decision, including native calls routed through `ProviderToolApprovalHandler`, even if autonomy or pre-approval would otherwise skip the question. Set `blocked` to a boolean or string message to block; set `allowed: true` to auto-approve. Provider-native disabled-tool and denied bash-pattern checks reject before this event. Approval does not dispatch native execution hooks; see [external-agent-providers.md](external-agent-providers.md).
 
 ```typescript
 interface ToolApprovalEvent {
@@ -439,7 +439,7 @@ interface ResponseCompletedEvent {
 
 ### HandleApprovalEvent (Can Block)
 
-Dispatched when an approval dialog is about to be shown. Set `blocked: true` to prevent the dialog, or `allowed: true` to auto-approve.
+Dispatched while handling an approval decision, before default auto/pre-approval or a Manual prompt. It also applies to provider-native requests routed through `ProviderToolApprovalHandler` unless an earlier check or `onToolApproval` decision resolved them. This event does not guarantee a dialog will be shown. Set `blocked: true` to deny handling, or `allowed: true` to auto-approve.
 
 ```typescript
 interface HandleApprovalEvent {

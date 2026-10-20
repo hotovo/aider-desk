@@ -98,6 +98,20 @@ Do not use when:
 
 **Never:** Use `@/` imports in extension files
 
+### Rule: Integrate custom providers with the host contract
+
+**When:** Registering an LLM provider, especially one wrapping an external coding-agent SDK/server
+
+**Then:** Read [external-agent-providers.md](references/external-agent-providers.md) and the current `ExtensionProviderStrategy` in `packages/common/src/extensions.ts` before implementation
+
+**Must:** Keep the complete positional `createLlm` contract: `profile, model, settings, projectDir, toolSet?, systemPrompt?, providerMetadata?, tlsRegistrar?, sessionId?, approveTool?`. Providers can omit unused trailing arguments.
+
+**Must:** Use the optional `ProviderToolApprovalHandler` for native-tool decisions, mapping tool names/inputs to Power schemas. Reject native execution if the callback is absent; do not replace the shared autonomy, approval settings, bash patterns and veto hooks with unconditional questions.
+
+**Must:** Keep one execution owner, preserve original UI tool-result shapes, and deduplicate continuation replays. Separate persistent native sessions from transient processes/bridges, and scope parent/subagent conversations independently.
+
+**Must:** Tell the user when the extension requires core changes, document native execution limitations, and verify against the matching core build. Extension reload or renderer refresh cannot update an older main process.
+
 ### Rule: Add UI components when needed
 
 **When:** Extension needs to display UI elements in task page placements
@@ -194,7 +208,9 @@ Do not use when:
 
 **Then:** Store config files in extension directory
 
-**Never:** Store config outside extension directory
+**Never:** Store user-editable config outside the extension directory
+
+**Note:** Native session databases and runtime state are not user-editable config. They may use a separate documented, access-restricted extension-owned location; see [external-agent-providers.md](references/external-agent-providers.md). Temporary process cleanup must not erase sessions intended for reuse.
 
 ## Process Overview
 
@@ -276,6 +292,8 @@ After completing this skill, verify:
 - Extension loads without errors
 - Extension appears in extensions list
 - Extension capabilities work as expected
+- **If provider:** Current signatures and host compatibility checked; native approvals, streaming/result shapes, session continuity, subagent isolation and cleanup verified as applicable
+- **If core changes are required:** README and user handoff explicitly require the matching core build and main-process restart
 
 **Success metrics:**
 
@@ -492,6 +510,7 @@ After completing this skill, verify:
 ### Technical Reference (all targets)
 
 - [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) - Extension types and interfaces
+- [external-agent-providers.md](references/external-agent-providers.md) - Custom provider signatures, native approvals, MCP execution ownership, streaming, persistent sessions and host compatibility
 - [extension-interface.md](references/extension-interface.md) - Full Extension interface, ExtensionContext, TaskContext, ProjectContext, MemoryContext, and all supporting types
 - [extension-types.md](references/extension-types.md) - Single-file vs folder extensions, examples, extensions.json format
 - [event-types.md](references/event-types.md) - All event types, payloads, and extension method mappings

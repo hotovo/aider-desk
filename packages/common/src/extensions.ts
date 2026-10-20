@@ -158,6 +158,13 @@ export interface CacheControl {
   placement?: 'message' | 'message-part';
 }
 
+export type ProviderToolApprovalHandler = (
+  toolName: string,
+  input: Record<string, unknown>,
+  text: string,
+  subject?: string,
+) => Promise<[approved: boolean, reason?: string]>;
+
 /**
  * Simplified provider strategy for extensions.
  * Only `createLlm` and `loadModels` are required.
@@ -174,6 +181,7 @@ export interface ExtensionProviderStrategy {
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
     sessionId?: string,
+    approveTool?: ProviderToolApprovalHandler,
   ) => unknown | Promise<unknown>;
   loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 

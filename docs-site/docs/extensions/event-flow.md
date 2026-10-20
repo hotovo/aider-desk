@@ -171,11 +171,11 @@ These events fire during each iteration of the LLM processing:
 - **Can block**: ❌ No
 - **Use for**: Real-time response modification
 
-**onToolApproval** - When a tool requires approval
+**onToolApproval** - When a tool execution decision is checked, including provider-native approvals (not only Manual prompts)
 
 - **Can modify**: `allowed`, `blocked`
-- **Can block**: ✅ Yes (via `allowed`)
-- **Use for**: Auto-approve safe tools
+- **Can block**: ✅ Yes (via `blocked`); `allowed` grants approval
+- **Use for**: Auto-approve safe tools or veto execution before default autonomy/pre-approval. Provider-native disabled-tool and denied-pattern checks reject first; see [provider tool approvals](api-reference.md#providertoolapprovalhandler).
 
 **onToolCalled** - Before tool execution
 
@@ -189,7 +189,7 @@ These events fire during each iteration of the LLM processing:
 - **Can block**: ❌ No
 - **Use for**: Format tool outputs, add metadata
 
-**onAgentStepFinished** - After each LLM step
+**onAgentStepFinished** - After each LLM step; for streaming providers, after the consumer reaches `finish-step` and preceding chunks have been handled
 
 - **Can modify**: `finishReason`, `responseMessages`
 - **Can block**: ❌ No

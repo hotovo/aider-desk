@@ -642,15 +642,18 @@ interface ExtensionProviderStrategy {
     toolSet?: unknown,
     systemPrompt?: string,
     providerMetadata?: unknown,
+    tlsRegistrar?: TlsPolicyRegistrar,
+    sessionId?: string,
+    approveTool?: ProviderToolApprovalHandler,
   ) => unknown | Promise<unknown>;
-  loadModels: (profile: ProviderProfile, settings: SettingsData) => Promise<LoadModelsResponse>;
+  loadModels: (profile: ProviderProfile, settings: SettingsData, tlsRegistrar?: TlsPolicyRegistrar) => Promise<LoadModelsResponse>;
 
   getAiderMapping?: (provider: ProviderProfile, modelId: string, settings: SettingsData, projectDir: string) => AiderModelMapping;
   getUsageReport?: (task: unknown, provider: ProviderProfile, model: Model, usage: unknown, providerMetadata?: unknown) => UsageReportData;
-  getProviderOptions?: (model: Model) => Record<string, Record<string, JSONValue>> | undefined;
+  getProviderOptions?: (model: Model, reasoning?: Reasoning) => Record<string, Record<string, JSONValue | undefined>> | undefined;
   getCacheControl?: (model: Model) => CacheControl | undefined;
   getProviderTools?: (model: Model) => Record<string, Tool> | Promise<Record<string, Tool>>;
-  getProviderParameters?: (model: Model) => Record<string, unknown>;
+  getProviderParameters?: (model: Model, reasoning?: Reasoning) => Record<string, unknown>;
   createVoiceSession?: (profile: ProviderProfile, settings: SettingsData) => Promise<VoiceSession>;
   isRetryable?: (error: unknown) => boolean;
 }
@@ -660,27 +663,74 @@ interface ExtensionProviderStrategy {
 
 | Method | Required | Description |
 |--------|----------|-------------|
-| `createLlm(profile, model, settings, projectDir, toolSet?, systemPrompt?, providerMetadata?)` | Yes | Create and return an LLM instance for the given model. The returned type depends on the AI SDK provider being used. `toolSet` contains available tools, `systemPrompt` is the agent's system prompt, and `providerMetadata` carries state from previous provider calls. |
-| `loadModels(profile, settings)` | Yes | Load available models for this provider. Returns a `LoadModelsResponse`. |
+| `createLlm(profile, model, settings, projectDir, toolSet?, systemPrompt?, providerMetadata?, tlsRegistrar?, sessionId?, approveTool?)` | Yes | Create and return an LLM instance for the given model. The returned type depends on the AI SDK provider being used. `toolSet` contains available tools, `systemPrompt` is the agent's system prompt, and `providerMetadata` carries state from previous provider calls. `tlsRegistrar` supports scoped TLS policies, `sessionId` identifies the AiderDesk task (not a native provider session), and `approveTool` checks policy for externally executed tools without executing them. |
+| `loadModels(profile, settings, tlsRegistrar?)` | Yes | Load available models for this provider. Returns a `LoadModelsResponse`. |
 | `getAiderMapping(provider, modelId, settings, projectDir)` | No | Return Aider environment variable mappings for the given model (e.g., API keys, base URLs). |
 | `getUsageReport(task, provider, model, usage, providerMetadata?)` | No | Compute and return a usage report with token counts and cost information. |
-| `getProviderOptions(model)` | No | Return provider-specific options for AI SDK calls (e.g., reasoning effort, search grounding). |
+| `getProviderOptions(model, reasoning?)` | No | Return provider-specific options for AI SDK calls (e.g., reasoning effort, search grounding). |
 | `getCacheControl(model)` | No | Return cache control configuration for the provider. |
 | `getProviderTools(model)` | No | Return additional provider-specific tools (e.g., Google search grounding). |
-| `getProviderParameters(model)` | No | Return additional parameters to pass to the AI SDK provider. |
+| `getProviderParameters(model, reasoning?)` | No | Return additional parameters to pass to the AI SDK provider. |
 | `createVoiceSession(profile, settings)` | No | Create a voice session for real-time audio conversation. |
 | `isRetryable(error)` | No | Determine if a given error is retryable. |
+
+### ProviderToolApprovalHandler
+
+The optional final `createLlm` argument lets an external-agent provider check native-tool execution against the current run's AiderDesk approval policy:
+
+```typescript
+type ProviderToolApprovalHandler = (
+  toolName: string,
+  input: Record<string, unknown>,
+  text: string,
+  subject?: string,
+) => Promise<[approved: boolean, reason?: string]>;
+```
+
+Map the native call to its AiderDesk tool name and input schema first (for example, OpenCode `read` → `power---file_read` with `{ filePath }`, or `shell` → `power---bash` with `{ command, cwd }`). Await `approveTool` before replying to the external agent's permission request. The result is a decision and optional rejection reason, **not** tool output; the callback does not execute the tool.
+
+- A missing/disabled tool or **Never** approval state is denied in every autonomy mode. Power bash denied-command patterns are also enforced.
+- In **Manual** mode, **Always** skips the question and **Ask** prompts. Existing approval keys and “Always for This Run” decisions are shared with ordinary Power tools. Matching allowed bash patterns also skip the question.
+- In **Guided/Autonomous** mode, enabled tools do not prompt. For requests not rejected by the disabled-tool or denied-pattern checks, `onToolApproval` and `onHandleApproval` hooks still run before automatic/pre-approved decisions and can veto them.
+- This does **not** run Power's executor or automatically apply its `onToolCalled`/`onToolFinished` hooks, execution guards, sandboxing, or output processing. Document native-execution differences in the extension README.
+- The argument is optional for compatibility and may be absent outside a full agent run or in an older host. A native-tool adapter should reject execution with an actionable reason when it is absent, rather than silently auto-approve or reimplement policy with `TaskContext.askQuestion`.
+
+For example, this helper checks a native read request; the adapter must send the returned decision back to its native agent:
+
+```typescript
+import type { ProviderToolApprovalHandler } from '@aiderdesk/extensions';
+
+const approveNativeRead = async (
+  approveTool: ProviderToolApprovalHandler | undefined,
+  filePath: string,
+): Promise<[boolean, string?]> => {
+  if (!approveTool) {
+    return [false, 'This provider needs an AiderDesk build with provider tool approvals. Update and restart AiderDesk.'];
+  }
+  return approveTool('power---file_read', { filePath }, 'Approve native file read?', filePath);
+};
+```
+
+### External-agent providers
+
+Providers that wrap another coding agent have additional responsibilities:
+
+- **One execution owner:** native tools execute in the external agent; MCP-bridged AiderDesk tools execute through their supplied `toolSet` executors. Set `providerExecuted: true` on observed tool calls in the AI SDK adapter so AiderDesk does not execute them again. Approval continuations can replay tool calls; deduplicate by call ID and retain the original arguments.
+- **Output and streaming:** preserve the original wrapped-tool result for AiderDesk UI/history, even if MCP uses a different `toModelOutput` representation. Forward coherent text/reasoning block IDs and ordering; do not append replayed content as new content. AiderDesk owns message grouping for standard AI SDK streaming providers: tool/non-assistant boundaries close assistant groups, not every `text-end`, and step finalization follows consumption of `finish-step` rather than the raw SDK callback. An extension that renders its own messages must keep streamed and finalized messages aligned too.
+- **Session lifetime:** an external session ID is useful only while its backing store exists. Persist native session data separately from temporary server/bridge files, store scoped session metadata, and stop processes on completion/interruption/unload. Validate the workspace, model and completed history before resuming; rebuild from full AiderDesk history after edits, clearing, compaction, or a missing session. Do not label a pre-created empty session as an existing conversation if that prevents the SDK from importing prior history.
+- **Parent/subagent isolation:** the `sessionId` argument currently carries the AiderDesk task ID; subagents may share it with their parent. Scope native sessions and resource ownership per conversation/run rather than treating that ID as a unique native session.
+- **Host compatibility:** when the extension depends on a new core callback or streaming fix, test with the matching AiderDesk core. Hot-reloading the extension or refreshing the renderer does not update an older main process; update/build and restart the application.
+
+See [OpenCode Free](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/opencode-free/) for a native-tool/MCP adapter and [Cursor SDK](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) for extension-owned agent/message orchestration.
 
 ### Example
 
 ```typescript
 import type {
   Extension,
-  ExtensionContext,
   ProviderDefinition,
   ProviderProfile,
   Model,
-  SettingsData,
   LoadModelsResponse,
 } from '@aiderdesk/extensions';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
@@ -688,35 +738,24 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 const MY_PROVIDER_NAME = 'my-custom-provider';
 
 export default class MyProviderExtension implements Extension {
-  getProviders(_context: ExtensionContext): ProviderDefinition[] {
+  getProviders(): ProviderDefinition[] {
     return [
       {
         id: MY_PROVIDER_NAME,
         name: MY_PROVIDER_NAME,
         provider: { name: MY_PROVIDER_NAME, apiKey: '' },
         strategy: {
-          createLlm: (
-            profile: ProviderProfile,
-            model: Model,
-            _settings: SettingsData,
-            _projectDir: string,
-            toolSet?: unknown,
-            systemPrompt?: string,
-            _providerMetadata?: unknown,
-          ) => {
+          createLlm: (profile: ProviderProfile, model: Model) => {
             const providerConfig = profile.provider as { apiKey?: string; baseUrl?: string };
             const customProvider = createOpenAICompatible({
               name: MY_PROVIDER_NAME,
               apiKey: providerConfig.apiKey,
-              baseURL: providerConfig.baseUrl,
+              baseURL: providerConfig.baseUrl ?? 'https://example.com/v1',
             });
-            return customProvider.languageModel(model.id, {
-              system: systemPrompt,
-              tools: toolSet,
-            });
+            return customProvider.languageModel(model.id);
           },
 
-          loadModels: async (profile: ProviderProfile, _settings: SettingsData): Promise<LoadModelsResponse> => {
+          loadModels: async (profile: ProviderProfile): Promise<LoadModelsResponse> => {
             return {
               success: true,
               models: [
@@ -724,7 +763,7 @@ export default class MyProviderExtension implements Extension {
                   id: 'my-model-v1',
                   providerId: profile.id,
                   maxInputTokens: 128000,
-                  maxOutputTokens: 4096,
+                  maxOutputTokensLimit: 4096,
                   inputCostPerToken: 0.5,
                   outputCostPerToken: 1.5,
                 },

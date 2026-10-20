@@ -1,4 +1,8 @@
-import { AgentProfile, AutonomyMode, QuestionData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, BashToolSettings, QuestionData, ToolApprovalState } from '@common/types';
+import { ProviderToolApprovalHandler } from '@common/extensions';
+import { POWER_TOOL_BASH, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+
+import type { ToolSet } from 'ai';
 
 import { Task } from '@/task';
 
@@ -14,12 +18,39 @@ export class ApprovalManager {
     private readonly profile: AgentProfile,
   ) {}
 
+  createProviderToolApprovalHandler(tools: ToolSet): ProviderToolApprovalHandler {
+    return async (toolName, input, text, subject) => {
+      if (!tools[toolName] || this.profile.toolApprovals[toolName] === ToolApprovalState.Never) {
+        return [false, `Tool '${toolName}' is disabled.`];
+      }
+      let approvedBySettings = false;
+      if (toolName === `${POWER_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${POWER_TOOL_BASH}`) {
+        if (typeof input.command !== 'string') {
+          return [false, 'A bash command is required.'];
+        }
+        const command = input.command;
+        const settings = this.profile.toolSettings?.[toolName] as BashToolSettings | undefined;
+        const matches = (patterns?: string) =>
+          patterns
+            ?.split(';')
+            .filter(Boolean)
+            .some((pattern) => new RegExp(pattern).test(command));
+        if (matches(settings?.deniedPattern)) {
+          return [false, 'Bash command denied by Power bash settings. Do not work around this rejection.'];
+        }
+        approvedBySettings = !!matches(settings?.allowedPattern);
+      }
+      return this.handleToolApproval(toolName, input, toolName, text, subject, approvedBySettings);
+    };
+  }
+
   async handleToolApproval(
     toolName: string,
     input: Record<string, unknown> | undefined,
     key: string,
     text: string,
     subject?: string,
+    approvedBySettings = false,
   ): Promise<[boolean, string | undefined]> {
     const extensionResult = await this.task.dispatchExtensionEvent('onToolApproval', { toolName, input });
     if (extensionResult.blocked) {
@@ -29,10 +60,10 @@ export class ApprovalManager {
       return [true, undefined];
     }
 
-    return this.handleApproval(key, text, subject);
+    return this.handleApproval(key, text, subject, approvedBySettings);
   }
 
-  async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]> {
+  async handleApproval(key: string, text: string, subject?: string, approvedBySettings = false): Promise<[boolean, string | undefined]> {
     const extensionResult = await this.task.dispatchExtensionEvent('onHandleApproval', { key, text, subject });
     if (extensionResult.blocked) {
       return [false, undefined];
@@ -44,7 +75,7 @@ export class ApprovalManager {
     text = extensionResult.text;
     subject = extensionResult.subject;
 
-    if (isAutoApprove(this.task)) {
+    if (approvedBySettings || isAutoApprove(this.task)) {
       return [true, undefined]; // Auto-approve
     }
 

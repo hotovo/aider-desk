@@ -62,9 +62,13 @@ const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise
   return newLock;
 };
 
-export const createPowerToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext, abortSignal?: AbortSignal): ToolSet => {
-  const approvalManager = new ApprovalManager(task, profile);
-
+export const createPowerToolset = (
+  task: Task,
+  profile: AgentProfile,
+  promptContext?: PromptContext,
+  abortSignal?: AbortSignal,
+  approvalManager = new ApprovalManager(task, profile),
+): ToolSet => {
   const fileEditTool = tool({
     description: POWER_TOOL_DESCRIPTIONS[TOOL_FILE_EDIT],
     inputSchema: z.object({

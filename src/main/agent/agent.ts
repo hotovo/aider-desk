@@ -57,6 +57,7 @@ import { createHelpersToolset } from './tools/helpers';
 import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
+import { AssistantMessageState, StepResultQueue } from './assistant-message-state';
 import { ApprovalManager } from './tools/approval-manager';
 import { convertImageToolResults } from './message-preparation/provider-compatibility';
 import {
@@ -398,13 +399,12 @@ export class Agent {
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
+    approvalManager = new ApprovalManager(task, profile),
   ): Promise<ToolSet> {
     logger.debug('getAvailableTools', {
       enabledServers: profile.enabledServers,
       promptContext,
     });
-
-    const approvalManager = new ApprovalManager(task, profile);
 
     const toolSet: ToolSet = {};
 
@@ -425,7 +425,7 @@ export class Agent {
     }
 
     if (profile.usePowerTools) {
-      const powerTools = createPowerToolset(task, profile, promptContext, abortSignal);
+      const powerTools = createPowerToolset(task, profile, promptContext, abortSignal, approvalManager);
       Object.assign(toolSet, powerTools);
     }
 
@@ -770,6 +770,7 @@ export class Agent {
       return resultMessages;
     }
 
+    const approvalManager = new ApprovalManager(task, profile);
     const toolSet = await this.getAvailableTools(
       task,
       mode,
@@ -780,6 +781,7 @@ export class Agent {
       resultMessages,
       effectiveAbortSignal,
       promptContext,
+      approvalManager,
     );
 
     logger.info(`Running prompt with ${Object.keys(toolSet).length} tools.`);
@@ -806,6 +808,7 @@ export class Agent {
         systemPrompt,
         task.task.lastAgentProviderMetadata,
         task.task.id,
+        approvalManager.createProviderToolApprovalHandler(toolSet),
       );
       logger.debug('LLM model created successfully', {
         model: typeof model !== 'string' ? model.modelId : model,
@@ -968,7 +971,7 @@ export class Agent {
         let iterationError: unknown | null = null;
         let finishReason: null | FinishReason = null;
         let currentStepMessages: ContextMessage[] = [];
-        let responseMessageIndex: number = 0;
+        const assistantMessage = new AssistantMessageState();
 
         const onStepEnd = async (stepResult: StepResult<typeof toolSet>) => {
           finishReason = stepResult.finishReason;
@@ -1002,7 +1005,7 @@ export class Agent {
             finishReason = extensionResult.finishReason;
 
             currentResponseId = uuidv4();
-            responseMessageIndex = 0;
+            assistantMessage.reset();
             streamingMessageIds.clear();
 
             if (currentStepMessages.length > 0) {
@@ -1073,6 +1076,7 @@ export class Agent {
         } else {
           logger.debug('Streaming enabled, using streamText');
           const toolCallStreamingDisabled = this.modelManager.isToolCallStreamingDisabled(provider, modelName);
+          const streamedSteps = new StepResultQueue<StepResult<typeof toolSet>>();
           const result = streamText({
             ...(await getBaseModelCallParams()),
             experimental_transform: smoothStream({
@@ -1097,23 +1101,25 @@ export class Agent {
                 task.addLogMessage('error', JSON.stringify(error), false, promptContext);
               }
             },
-            onStepEnd,
+            onStepEnd: (step) => streamedSteps.push(step),
             experimental_repairToolCall: repairToolCall,
           });
 
-          let currentMessageHasReasoning = false;
           try {
             for await (const chunk of result.stream) {
-              logger.debug('Chunk:', { chunk, responseMessageIndex });
+              logger.debug('Chunk:', { chunk, responseMessageIndex: assistantMessage.index });
 
-              const responseMessageId = responseMessageIndex > 0 ? `${currentResponseId}-${responseMessageIndex}` : currentResponseId;
-              if (chunk.type === 'text-start') {
+              if (['tool-error', 'tool-approval-request', 'tool-approval-response', 'source', 'file', 'reasoning-file', 'custom'].includes(chunk.type)) {
+                assistantMessage.tool();
+              }
+              const responseMessageId = assistantMessage.messageId(currentResponseId);
+              if (chunk.type === 'finish-step') {
+                await onStepEnd(await streamedSteps.next());
+              } else if (chunk.type === 'text-start' || chunk.type === 'text-end') {
                 // no-op
-              } else if (chunk.type === 'text-end') {
-                responseMessageIndex++;
-                currentMessageHasReasoning = false;
               } else if (chunk.type === 'text-delta') {
                 if (chunk.text.trim()) {
+                  assistantMessage.text();
                   streamingMessageIds.add(responseMessageId);
                   await task.processResponseMessage({
                     id: responseMessageId,
@@ -1125,7 +1131,7 @@ export class Agent {
                 }
               } else if (chunk.type === 'reasoning-start') {
                 streamingMessageIds.add(responseMessageId);
-                if (currentMessageHasReasoning) {
+                if (assistantMessage.hasReasoning) {
                   await task.processResponseMessage({
                     id: responseMessageId,
                     action: 'response',
@@ -1137,7 +1143,7 @@ export class Agent {
                 }
               } else if (chunk.type === 'reasoning-delta') {
                 streamingMessageIds.add(responseMessageId);
-                currentMessageHasReasoning = true;
+                assistantMessage.reasoning(chunk.text);
                 await task.processResponseMessage({
                   id: responseMessageId,
                   action: 'response',
@@ -1165,9 +1171,11 @@ export class Agent {
                 }
                 task.finishToolInput(chunk.id);
               } else if (chunk.type === 'tool-call') {
+                assistantMessage.tool();
                 task.addLogMessage('loading', 'Executing tool...', false, promptContext);
                 streamingMessageIds.add(chunk.toolCallId);
               } else if (chunk.type === 'tool-result') {
+                assistantMessage.tool();
                 const [serverName, toolName] = extractServerNameToolName(chunk.toolName);
                 const toolPromptContext = extractPromptContextFromToolResult(chunk.output) ?? promptContext;
                 streamingMessageIds.add(chunk.toolCallId);

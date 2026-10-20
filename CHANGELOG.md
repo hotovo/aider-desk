@@ -6,6 +6,8 @@
 - added support for pushing worktree fixes to the base branch’s upstream from the Push dialog
 - added pre-compaction context snapshots kept across compactions and exposed to the agent in the system prompt
 - fixed message map scrollbar styling to match the rest of the interface
+- added native tool approval support for extension providers, respecting task autonomy and Power tool approval settings
+- fixed duplicated and incorrectly grouped assistant messages when streaming reasoning and tool calls
 
 ## [0.88.0]
 
