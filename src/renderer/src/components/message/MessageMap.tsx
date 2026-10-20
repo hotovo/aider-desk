@@ -49,7 +49,7 @@ export const MessageMap = memo(
             <MdKeyboardArrowUp className="h-5 w-5" />
           </button>
         </Tooltip>
-        <div className="w-full flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin flex flex-col items-center gap-0.5 py-1">
+        <div className="w-full flex-1 min-h-0 overflow-y-auto overscroll-contain scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-tertiary hover:scrollbar-thumb-bg-fourth flex flex-col items-center gap-0.5 py-1">
           {markers.map((marker) => (
             <MessageMapMarker
               key={marker.id}
