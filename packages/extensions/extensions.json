@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "permission-gate",
@@ -116,7 +116,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 37
+      "installCount": 39
     },
     {
       "id": "ultrathink",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "learn",
@@ -204,7 +204,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 12
+      "installCount": 13
     },
     {
       "id": "rtk",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 78
+      "installCount": 79
     },
     {
       "id": "context-autocompletion-words",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 99
+      "installCount": 100
     },
     {
       "id": "verifier",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "skill-gallery",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 144
+      "installCount": 145
     },
     {
       "id": "task-scheduler",
