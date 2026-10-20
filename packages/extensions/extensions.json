@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "permission-gate",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "wigolo",
