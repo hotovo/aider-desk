@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 105
+      "installCount": 106
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 91
+      "installCount": 92
     },
     {
       "id": "legacy-system-prompt",
@@ -176,7 +176,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "sound-notification",
@@ -401,7 +401,7 @@
         "tools",
         "search"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "seek",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 100
+      "installCount": 102
     },
     {
       "id": "verifier",
@@ -506,7 +506,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 10
+      "installCount": 11
     },
     {
       "id": "github-copilot",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 65
+      "installCount": 66
     },
     {
       "id": "destructive-command-guard",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 145
+      "installCount": 147
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 126
+      "installCount": 127
     },
     {
       "id": "dbx",
