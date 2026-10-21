@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 102
+      "installCount": 103
     },
     {
       "id": "verifier",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 127
+      "installCount": 128
     },
     {
       "id": "dbx",
