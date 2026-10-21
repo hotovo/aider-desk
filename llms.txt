@@ -82,6 +82,7 @@ src/
         todo.ts
       agent-profile-manager.ts
       agent.ts
+      assistant-message-state.ts
       compaction.ts
       index.ts
       mcp-config-manager.ts
@@ -1918,7 +1919,11 @@ export const createAiderToolset = (task: Task, profile: AgentProfile, promptCont
 ================
 File: src/main/agent/tools/approval-manager.ts
 ================
-import { AgentProfile, AutonomyMode, QuestionData, ToolApprovalState } from '@common/types';
+import { AgentProfile, AutonomyMode, BashToolSettings, QuestionData, ToolApprovalState } from '@common/types';
+import { ProviderToolApprovalHandler } from '@common/extensions';
+import { POWER_TOOL_BASH, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+⋮----
+import type { ToolSet } from 'ai';
 ⋮----
 import { Task } from '@/task';
 ⋮----
@@ -1928,15 +1933,20 @@ export class ApprovalManager
 ⋮----
 constructor(
 ⋮----
+createProviderToolApprovalHandler(tools: ToolSet): ProviderToolApprovalHandler
+⋮----
+const matches = (patterns?: string)
+⋮----
 async handleToolApproval(
     toolName: string,
     input: Record<string, unknown> | undefined,
     key: string,
     text: string,
     subject?: string,
+    approvedBySettings = false,
 ): Promise<[boolean, string | undefined]>
 ⋮----
-async handleApproval(key: string, text: string, subject?: string): Promise<[boolean, string | undefined]>
+async handleApproval(key: string, text: string, subject?: string, approvedBySettings = false): Promise<[boolean, string | undefined]>
 ⋮----
 return [true, undefined]; // Auto-approve
 ⋮----
@@ -2054,7 +2064,13 @@ import { RIPGREP_BINARY_PATH } from '@/constants';
  */
 const withFileLock = <T>(filePath: string, operation: () => Promise<T>): Promise<T> =>
 ⋮----
-export const createPowerToolset = (task: Task, profile: AgentProfile, promptContext?: PromptContext, abortSignal?: AbortSignal): ToolSet =>
+export const createPowerToolset = (
+  task: Task,
+  profile: AgentProfile,
+  promptContext?: PromptContext,
+  abortSignal?: AbortSignal,
+  approvalManager = new ApprovalManager(task, profile),
+): ToolSet =>
 ⋮----
 // Sanitize escape characters from searchTerm and replacementText
 const sanitize = (str: string) =>
@@ -2608,6 +2624,7 @@ import { createHelpersToolset } from './tools/helpers';
 import { createMemoryToolset } from './tools/memory';
 import { createSkillsToolset } from './tools/skills';
 import { McpManager } from './mcp-manager';
+import { AssistantMessageState, StepResultQueue } from './assistant-message-state';
 import { ApprovalManager } from './tools/approval-manager';
 import { convertImageToolResults } from './message-preparation/provider-compatibility';
 import {
@@ -2693,6 +2710,7 @@ private async getAvailableTools(
     resultMessages?: ContextMessage[],
     abortSignal?: AbortSignal,
     promptContext?: PromptContext,
+    approvalManager = new ApprovalManager(task, profile),
 ): Promise<ToolSet>
 ⋮----
 // MCP tools
@@ -2937,6 +2955,27 @@ private async compactMessagesIfNeeded(
 // reload messages after compacting
 ⋮----
 // Perform handoff
+
+================
+File: src/main/agent/assistant-message-state.ts
+================
+export class AssistantMessageState
+⋮----
+messageId(baseId: string): string
+⋮----
+reasoning(text?: string): void
+⋮----
+text(): void
+⋮----
+tool(): void
+⋮----
+reset(): void
+⋮----
+export class StepResultQueue<T>
+⋮----
+push(result: T): void
+⋮----
+next(): Promise<T>
 
 ================
 File: src/main/agent/compaction.ts
@@ -8187,7 +8226,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 ⋮----
 import { AVAILABLE_PROVIDERS, getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
-import { ProviderDefinition } from '@common/extensions';
+import { ProviderDefinition, ProviderToolApprovalHandler } from '@common/extensions';
 import {
   Model,
   ModelInfo,
@@ -8379,6 +8418,7 @@ createLlm(
     systemPrompt?: string,
     providerMetadata?: unknown,
     sessionId?: string,
+    approveTool?: ProviderToolApprovalHandler,
 ): LanguageModel | Promise<LanguageModel>
 ⋮----
 // Resolve Model object if string is provided
@@ -8444,6 +8484,7 @@ File: src/main/models/types.ts
 ================
 import { Model, ModelInfo, ProviderProfile, Reasoning, SettingsData, TlsPolicyRegistrar, UsageReportData, VoiceSession } from '@common/types';
 import { LlmProvider } from '@common/agent';
+import { ProviderToolApprovalHandler } from '@common/extensions';
 ⋮----
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
@@ -8491,6 +8532,7 @@ export interface LlmProviderStrategy {
     providerMetadata?: unknown,
     tlsRegistrar?: TlsPolicyRegistrar,
     sessionId?: string,
+    approveTool?: ProviderToolApprovalHandler,
   ) => LanguageModel | Promise<LanguageModel>;
 
   /**
