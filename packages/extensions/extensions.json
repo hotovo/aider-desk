@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 106
+      "installCount": 107
     },
     {
       "id": "protected-paths",
@@ -105,7 +105,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "permission-gate",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 68
+      "installCount": 69
     },
     {
       "id": "learn",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 92
+      "installCount": 95
     },
     {
       "id": "legacy-system-prompt",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 86
+      "installCount": 88
     },
     {
       "id": "plannotator",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 103
+      "installCount": 104
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "bmad",
@@ -557,7 +557,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "doom",
@@ -582,7 +582,7 @@
         "agents",
         "example"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "wigolo",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 149
+      "installCount": 151
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 128
+      "installCount": 129
     },
     {
       "id": "dbx",
