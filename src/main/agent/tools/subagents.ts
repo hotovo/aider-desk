@@ -1,8 +1,10 @@
 import { tool, type ToolSet } from 'ai';
 import { z } from 'zod';
-import { AgentProfile, ContextMessage, InvocationMode, SettingsData } from '@common/types';
+import { AgentProfile, ContextMessage, InvocationMode, SettingsData, ToolApprovalState } from '@common/types';
 import { getSubagentId } from '@common/agent';
 import { SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+
+import { ApprovalManager } from './approval-manager';
 
 import { AgentProfileManager } from '@/agent/agent-profile-manager';
 import { findEnabledSubagent, getEnabledSubagents, runSubagentTask } from '@/agent/subagent';
@@ -17,6 +19,8 @@ export const createSubagentsToolset = async (
   contextMessages: ContextMessage[] = [],
   currentMessages: ContextMessage[] = [],
 ): Promise<ToolSet> => {
+  const toolId = SUBAGENTS_TOOL_GROUP_NAME + TOOL_GROUP_NAME_SEPARATOR + SUBAGENTS_TOOL_RUN_TASK;
+  const approvalManager = new ApprovalManager(task, mainAgentProfile);
   const allProfiles = agentProfileManager.getProjectProfiles(task.project);
   const enabledSubagents = getEnabledSubagents(allProfiles, mainAgentProfile);
 
@@ -71,8 +75,19 @@ export const createSubagentsToolset = async (
         return `Error: Subagent with ID '${subagentId}' not found or not enabled.`;
       }
 
+      const [approved, userInput] = await approvalManager.handleToolApproval(
+        toolId,
+        { subagentId, prompt, description },
+        toolCallId,
+        "Approve running subagent '" + targetSubagent.name + "'?",
+        prompt,
+      );
+      if (!approved) {
+        return { error: 'Subagent execution denied by user.', userInput };
+      }
       const result = await runSubagentTask({
         task,
+        parentToolCallId: toolCallId,
         targetSubagent,
         prompt,
         description,
@@ -120,7 +135,7 @@ export const createSubagentsToolset = async (
 
   const toolSet: ToolSet = {};
 
-  if (enabledSubagents.length > 0) {
+  if (enabledSubagents.length > 0 && mainAgentProfile.toolApprovals[toolId] !== ToolApprovalState.Never) {
     toolSet[`${SUBAGENTS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${SUBAGENTS_TOOL_RUN_TASK}`] = runTaskTool;
   }
 

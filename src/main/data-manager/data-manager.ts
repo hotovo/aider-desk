@@ -43,6 +43,16 @@ export class DataManager {
           message_content_json TEXT
         );
 
+        CREATE TABLE IF NOT EXISTS agent_execution_journal
+        (
+          project TEXT NOT NULL,
+          task_id TEXT NOT NULL,
+          prompt_context_id TEXT NOT NULL,
+          state_json TEXT NOT NULL,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          PRIMARY KEY (project, task_id, prompt_context_id)
+        );
+
         CREATE TABLE IF NOT EXISTS extension_state
         (
           extension_id TEXT NOT NULL,
@@ -85,6 +95,27 @@ export class DataManager {
    * @param usageReport The usage report data.
    * @param content The content of the message.
    */
+  public getAgentExecutions(project: string, taskId: string): string[] {
+    const rows = this.db.prepare('SELECT state_json FROM agent_execution_journal WHERE project = ? AND task_id = ?').all(project, taskId) as {
+      state_json: string;
+    }[];
+    return rows.map((row) => row.state_json);
+  }
+
+  public saveAgentExecution(project: string, taskId: string, promptContextId: string, state: string): void {
+    this.db
+      .prepare(
+        `INSERT INTO agent_execution_journal (project, task_id, prompt_context_id, state_json)
+      VALUES (?, ?, ?, ?) ON CONFLICT(project, task_id, prompt_context_id)
+      DO UPDATE SET state_json = excluded.state_json, updated_at = CURRENT_TIMESTAMP`,
+      )
+      .run(project, taskId, promptContextId, state);
+  }
+
+  public deleteAgentExecution(project: string, taskId: string, promptContextId: string): void {
+    this.db.prepare('DELETE FROM agent_execution_journal WHERE project = ? AND task_id = ? AND prompt_context_id = ?').run(project, taskId, promptContextId);
+  }
+
   public saveMessage(
     id: string,
     type: 'tool' | 'assistant',

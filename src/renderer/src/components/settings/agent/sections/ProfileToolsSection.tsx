@@ -1,4 +1,4 @@
-import { AgentProfile, ExtensionToolInfo, GenericTool, McpServerConfig, ToolApprovalState } from '@common/types';
+import { AgentProfile, ExtensionToolInfo, GenericTool, McpServerConfig, ToolApprovalState, ToolRecoveryMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { FaPlug } from 'react-icons/fa';
 import {
@@ -6,6 +6,8 @@ import {
   AIDER_TOOL_DESCRIPTIONS,
   AIDER_TOOL_DROP_CONTEXT_FILES,
   AIDER_TOOL_GET_CONTEXT_FILES,
+  SUBAGENTS_TOOL_GROUP_NAME,
+  SUBAGENTS_TOOL_RUN_TASK,
   AIDER_TOOL_GROUP_NAME,
   AIDER_TOOL_RUN_PROMPT,
   POWER_TOOL_BASH,
@@ -48,6 +50,9 @@ import { GenericToolGroupItem } from '../GenericToolGroupItem';
 import { Button } from '@/components/common/Button';
 
 const tools: Record<string, GenericTool[]> = {
+  [SUBAGENTS_TOOL_GROUP_NAME]: [
+    { groupName: SUBAGENTS_TOOL_GROUP_NAME, name: SUBAGENTS_TOOL_RUN_TASK, description: POWER_TOOL_DESCRIPTIONS[SUBAGENTS_TOOL_RUN_TASK] },
+  ],
   [AIDER_TOOL_GROUP_NAME]: [
     {
       groupName: AIDER_TOOL_GROUP_NAME,
@@ -222,6 +227,9 @@ export const ProfileToolsSection = ({
   onOpenMcpServers,
 }: Props) => {
   const { t } = useTranslation();
+  const handleRecoveryModeChange = (toolId: string, recoveryMode: ToolRecoveryMode) => {
+    onSettingChange('toolRecoveryModes', { ...profile.toolRecoveryModes, [toolId]: recoveryMode });
+  };
 
   return (
     <div className="space-y-6">
@@ -235,7 +243,8 @@ export const ProfileToolsSection = ({
               (profile.useTodoTools && groupName === TODO_TOOL_GROUP_NAME) ||
               (profile.useTaskTools && groupName === TASKS_TOOL_GROUP_NAME) ||
               (profile.useMemoryTools && groupName === MEMORY_TOOL_GROUP_NAME) ||
-              (profile.useSkillsTools && groupName === SKILLS_TOOL_GROUP_NAME);
+              (profile.useSkillsTools && groupName === SKILLS_TOOL_GROUP_NAME) ||
+              (profile.useSubagents && groupName === SUBAGENTS_TOOL_GROUP_NAME);
             return (
               <div key={groupName}>
                 <GenericToolGroupItem
@@ -258,6 +267,8 @@ export const ProfileToolsSection = ({
                       onSettingChange('useMemoryTools', enabled);
                     } else if (groupName === SKILLS_TOOL_GROUP_NAME) {
                       onSettingChange('useSkillsTools', enabled);
+                    } else if (groupName === SUBAGENTS_TOOL_GROUP_NAME) {
+                      onSettingChange('useSubagents', enabled);
                     }
                   }}
                 />
@@ -269,6 +280,7 @@ export const ProfileToolsSection = ({
               groupName: extInfo.extensionId,
               name: tool.name,
               description: tool.description,
+              recoveryMode: tool.recoveryMode,
             }));
             const isExtEnabled = !(profile.disabledExtensionTools ?? []).includes(extInfo.extensionId);
             const handleExtEnabledChange = (enabled: boolean) => {
@@ -309,6 +321,8 @@ export const ProfileToolsSection = ({
                   config={serverConfig}
                   projectDir={profile.projectDir}
                   toolApprovals={profile.toolApprovals || {}}
+                  toolRecoveryModes={profile.toolRecoveryModes}
+                  onRecoveryModeChange={handleRecoveryModeChange}
                   onApprovalChange={onApprovalChange}
                   enabled={isServerEnabled}
                   onEnabledChange={(checked) => onToggleServerEnabled(serverName, checked)}

@@ -8,6 +8,7 @@
 - fixed message map scrollbar styling to match the rest of the interface
 - added native tool approval support for extension providers, respecting task autonomy and Power tool approval settings
 - fixed duplicated and incorrectly grouped assistant messages when streaming reasoning and tool calls
+- added automatic task and subagent recovery after app restarts, preserving completed tool results and supporting configurable per-tool replay modes
 
 ## [0.88.0]
 

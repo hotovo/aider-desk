@@ -9,6 +9,7 @@ import { Section } from '../common/Section';
 import { Slider } from '../common/Slider';
 import { InfoIcon } from '../common/InfoIcon';
 import { Input } from '../common/Input';
+import { Toggle } from '../common/Toggle';
 
 import { LanguageSelector } from './LanguageSelector';
 
@@ -82,6 +83,13 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
 
   const handleStartupModeClick = (value: string) => {
     handleStartupModeChange(value as ProjectStartMode);
+  };
+
+  const handleResumeAgentAfterRestartChange = (checked: boolean) => {
+    setSettings({
+      ...settings,
+      resumeAgentAfterRestart: checked,
+    });
   };
 
   const handleZoomChange = (value: string) => {
@@ -248,24 +256,45 @@ export const GeneralSettings = ({ settings, setSettings, onLanguageChange, onZoo
       </Section>
 
       <Section id="general-startup" title={t('settings.startup.title')}>
-        <div className="px-4 py-3 space-y-3 mt-2">
-          <RadioButton
-            id="startup-empty"
-            name="startup-mode"
-            value={ProjectStartMode.Empty}
-            checked={settings.startupMode === ProjectStartMode.Empty}
-            onChange={handleStartupModeClick}
-            label={t('settings.startup.emptyTask')}
-          />
+        <div className="px-4 py-5 grid grid-cols-2 gap-x-10 gap-y-6">
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium text-text-muted">{t('settings.startup.taskMode')}</h4>
+            <div className="space-y-3 ml-0.5">
+              <RadioButton
+                id="startup-empty"
+                name="startup-mode"
+                value={ProjectStartMode.Empty}
+                checked={settings.startupMode === ProjectStartMode.Empty}
+                onChange={handleStartupModeClick}
+                label={t('settings.startup.emptyTask')}
+              />
 
-          <RadioButton
-            id="startup-last"
-            name="startup-mode"
-            value={ProjectStartMode.Last}
-            checked={settings.startupMode === ProjectStartMode.Last}
-            onChange={handleStartupModeClick}
-            label={t('settings.startup.lastTask')}
-          />
+              <RadioButton
+                id="startup-last"
+                name="startup-mode"
+                value={ProjectStartMode.Last}
+                checked={settings.startupMode === ProjectStartMode.Last}
+                onChange={handleStartupModeClick}
+                label={t('settings.startup.lastTask')}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center space-x-1">
+              <h4 className="text-sm font-medium text-text-muted">{t('settings.startup.recovery')}</h4>
+              <InfoIcon tooltip={t('settings.startup.resumeAgentAfterRestartTooltip')} />
+            </div>
+            <div className="ml-0.5">
+              <Toggle
+                color="tertiary"
+                size="sm"
+                checked={settings.resumeAgentAfterRestart ?? true}
+                onChange={handleResumeAgentAfterRestartChange}
+                label={t('settings.startup.resumeAgentAfterRestart')}
+              />
+            </div>
+          </div>
         </div>
       </Section>
 

@@ -8,7 +8,7 @@ export * from './ui-actions';
 
 // extensions.ts re-exports some names that collide with types/ (ResponseMessage, TaskContext).
 // Re-export explicitly to resolve ambiguity — types/ versions take precedence.
-export { ContextMemoryMode, InvocationMode, ToolApprovalState, AIDER_DESK_EXTENSIONS_REPO_URL } from './extensions';
+export { ContextMemoryMode, InvocationMode, ToolApprovalState, ToolRecoveryMode, AIDER_DESK_EXTENSIONS_REPO_URL } from './extensions';
 
 export { prependCode, postpendCode, transpileJsxString } from './jsx-transpiler';
 export type {

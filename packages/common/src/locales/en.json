@@ -747,8 +747,12 @@
     },
     "startup": {
       "title": "Start Up",
+      "taskMode": "On start up",
+      "recovery": "Recovery",
       "emptyTask": "Start with empty task",
-      "lastTask": "Load last task"
+      "lastTask": "Load last task",
+      "resumeAgentAfterRestart": "Resume interrupted agent after restart",
+      "resumeAgentAfterRestartTooltip": "When enabled, an agent run that was interrupted by an app close or crash is automatically resumed the next time the project opens. Replay-safe tools may re-run; tools with side effects are not repeated. When disabled, interrupted runs are left as-is."
     },
     "tasks": {
       "title": "Tasks",
@@ -1491,6 +1495,18 @@
       "never": "Never",
       "always": "Always",
       "ask": "Ask"
+    },
+    "recovery": {
+      "forget": "Forget unfinished",
+      "safe": "Replay safely",
+      "notify": "Notify interrupted",
+      "label": "Recovery mode",
+      "description": "Controls how unfinished tool calls are handled when a task resumes after an unexpected interruption, such as an app crash.",
+      "descriptions": {
+        "forget": "Drop unfinished calls when the task resumes.",
+        "safe": "Re-run unfinished calls on resume. The tool must tolerate repetition.",
+        "notify": "Report an unknown outcome so the model verifies before retrying."
+      }
     }
   },
   "autocompletion": {
@@ -2290,5 +2306,28 @@
     "actionNotAvailableInWorktree": "This action is not available in worktree mode",
     "updateFromRemote": "Update from '{{upstream}}'",
     "branchUpdated": "Branch '{{branch}}' updated from remote"
+  },
+  "durability": {
+    "notices": {
+      "interrupted": "Tool execution was interrupted. Its outcome is unknown. Verify the state before retrying.",
+      "finalizationInterrupted": "Tool execution completed, but its finalized output is unavailable. Do not repeat it just to recover the output.",
+      "unavailable": "The interrupted tool is no longer available or permitted.",
+      "argumentsChanged": "Recovery stopped because the tool arguments changed or failed validation.",
+      "ownerChanged": "Recovery stopped because the tool owner changed.",
+      "identityConflict": "Execution refused: this call identity belongs to a different operation."
+    },
+    "labels": {
+      "interrupted": "Interrupted",
+      "finalizationInterrupted": "Finalize interrupted",
+      "unavailable": "Unavailable",
+      "argumentsChanged": "Arguments changed",
+      "ownerChanged": "Owner changed",
+      "identityConflict": "Identity conflict"
+    },
+    "recovery": {
+      "detailsTitle": "Preserved output",
+      "noOutput": "No additional output was preserved."
+    },
+    "missingProfile": "Unable to recover task: agent profile is unavailable."
   }
 }

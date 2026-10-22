@@ -176,7 +176,7 @@ describe('Project - createNewTask', () => {
     // Mock all other dependencies with minimal implementations
     mockMcpManager = {};
     mockTelemetryManager = {};
-    mockDataManager = {};
+    mockDataManager = { getAgentExecutions: vi.fn(() => []), saveAgentExecution: vi.fn(), deleteAgentExecution: vi.fn() };
     mockEventManager = {
       sendTaskCreated: vi.fn(),
       sendProjectStarted: vi.fn(),

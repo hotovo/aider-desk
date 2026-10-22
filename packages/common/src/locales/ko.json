@@ -746,8 +746,12 @@
     },
     "startup": {
       "title": "시작 방식",
+      "taskMode": "시작 시",
+      "recovery": "복구",
       "emptyTask": "빈 작업으로 시작",
-      "lastTask": "마지막 작업 불러오기"
+      "lastTask": "마지막 작업 불러오기",
+      "resumeAgentAfterRestart": "재시작 후 중단된 에이전트 재개",
+      "resumeAgentAfterRestartTooltip": "활성화하면 앱 종료나 충돌로 중단된 에이전트 실행이 다음에 프로젝트를 열 때 자동으로 재개됩니다. 재실행이 안전한 도구는 다시 실행될 수 있으며, 부작용이 있는 도구는 반복되지 않습니다. 비활성화하면 중단된 실행이 그대로 유지됩니다."
     },
     "tasks": {
       "title": "작업",
@@ -1487,6 +1491,18 @@
       "never": "안 함",
       "always": "항상",
       "ask": "물어보기"
+    },
+    "recovery": {
+      "forget": "미완료 호출 삭제",
+      "safe": "안전하게 재실행",
+      "notify": "중단 알림",
+      "label": "복구 모드",
+      "description": "앱 충돌과 같은 예기치 않은 중단 후 작업을 재개할 때 미완료 도구 호출을 처리하는 방식을 설정합니다.",
+      "descriptions": {
+        "forget": "작업 재개 시 미완료 호출을 삭제합니다.",
+        "safe": "재개 시 미완료 호출을 다시 실행합니다. 도구는 반복 실행을 허용해야 합니다.",
+        "notify": "결과를 알 수 없음으로 보고하여 모델이 재시도 전에 확인하도록 합니다."
+      }
     }
   },
   "autocompletion": {
@@ -2286,5 +2302,28 @@
     "caCertPath": "CA 인증서 경로",
     "caCertPathInfo": "공급자 엔드포인트를 검증하는 데 사용되는 CA 인증서 파일(PEM)의 절대 경로입니다. 자체 서명 또는 사설 CA 인증서를 사용할 때는 검증 비활성화보다 이 방법을 권장합니다.",
     "caCertPathPlaceholder": "/path/to/ca.pem"
+  },
+  "durability": {
+    "notices": {
+      "interrupted": "도구 실행이 중단되어 결과를 알 수 없습니다. 다시 시도하기 전에 상태를 확인하세요.",
+      "finalizationInterrupted": "도구 실행은 완료되었지만 최종 출력을 사용할 수 없습니다. 출력을 복구하기 위해 작업을 반복하지 마세요.",
+      "unavailable": "중단된 도구를 더 이상 사용할 수 없거나 실행이 허용되지 않습니다.",
+      "argumentsChanged": "도구 인수가 변경되었거나 검증에 실패하여 복구가 중지되었습니다.",
+      "ownerChanged": "도구 소유자가 변경되어 복구가 중지되었습니다.",
+      "identityConflict": "실행이 거부되었습니다. 이 호출 ID는 다른 작업에 속합니다."
+    },
+    "labels": {
+      "interrupted": "중단됨",
+      "finalizationInterrupted": "마무리 중단",
+      "unavailable": "사용 불가",
+      "argumentsChanged": "인수 변경됨",
+      "ownerChanged": "소유자 변경됨",
+      "identityConflict": "ID 충돌"
+    },
+    "recovery": {
+      "detailsTitle": "보존된 출력",
+      "noOutput": "추가로 보존된 출력이 없습니다."
+    },
+    "missingProfile": "에이전트 프로필을 사용할 수 없어 작업을 복구할 수 없습니다."
   }
 }

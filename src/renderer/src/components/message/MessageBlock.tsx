@@ -46,6 +46,8 @@ import {
   ToolMessage,
 } from '@common/types';
 
+import { getToolRecoveryCodes } from './localize-tool-recovery';
+import { RecoveryToolMessage } from './RecoveryToolMessage';
 import { CommandOutputMessageBlock } from './CommandOutputMessageBlock';
 import { LoadingMessageBlock } from './LoadingMessageBlock';
 import { LogMessageBlock } from './LogMessageBlock';
@@ -168,6 +170,18 @@ const MessageBlockComponent = ({
   }
 
   if (isToolMessage(message)) {
+    if (getToolRecoveryCodes(message.content).length > 0) {
+      return (
+        <RecoveryToolMessage
+          message={message}
+          onRemove={remove}
+          onFork={onFork}
+          onRemoveUpTo={onRemoveUpTo}
+          hideMessageBar={hideMessageBar}
+          compact={compact}
+        />
+      );
+    }
     const toolMessage = message as ToolMessage;
 
     switch (toolMessage.serverName) {

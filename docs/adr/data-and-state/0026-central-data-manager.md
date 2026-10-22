@@ -4,6 +4,8 @@
 
 Accepted (2026-08-28)
 
+The SQLite ownership boundary is partially superseded by [ADR-0042](0042-durable-agent-execution-journals.md): DataManager also provides storage operations for the authoritative application-local execution journal owned by DurabilityManager.
+
 ## Context
 
 AiderDesk persists data with different access and lifecycle requirements: global settings and provider profiles, task metadata and conversation context, usage records, extension state, agent memory, caches, and user-managed agent/MCP configuration. These domains do not fit one storage engine. The existing `DataManager` name can also be misleading: `src/main/data-manager/data-manager.ts` owns the SQLite database used for usage records and extension key/value state; it is not the persistence gateway for every subsystem.
@@ -70,7 +72,7 @@ The current architecture intentionally combines inspectable files, a small relat
 ### Do
 
 - Identify the owning domain before adding or changing persisted data
-- Use `Store` for global settings, task classes for task files, `DataManager` for usage/extension state, and `MemoryManager` for memory data
+- Use `Store` for global settings, task classes for task files, `DataManager` for usage/extension state and as the DurabilityManager journal adapter, and `MemoryManager` for memory data
 - Use established constants for application storage paths
 - Add migrations and tests in the owning subsystem when a versioned schema changes
 - Preserve existing serialization formats unless a migration is part of the change

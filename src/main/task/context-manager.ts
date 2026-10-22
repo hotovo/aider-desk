@@ -941,11 +941,13 @@ export class ContextManager {
     await this.cleanupContext();
   }
 
-  async loadMessages(messages: ContextMessage[], updateTaskState = true): Promise<void> {
+  async loadMessages(messages: ContextMessage[], updateTaskState = true, executionId?: string, createSnapshot = false): Promise<void> {
+    this.task.durabilityManager.checkpointTaskConversation(messages, executionId);
     // Clear all current messages
-    await this.task.clearContext(false, false, updateTaskState, false);
+    await this.task.clearContext(false, false, updateTaskState, createSnapshot, true);
 
     this.messages = messages;
+    await this.save();
 
     // Get the messages data and send them to the UI
     const messagesData = this.getContextMessagesData(messages);

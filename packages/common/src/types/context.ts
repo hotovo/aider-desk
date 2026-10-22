@@ -91,6 +91,7 @@ export interface ReasoningPart {
 }
 
 export interface ToolCallPart {
+  providerExecuted?: boolean;
   providerOptions?: ProviderOptions;
   type: 'tool-call';
   toolCallId: string;
@@ -106,9 +107,22 @@ export interface ToolResultPart {
   output: ToolResultOutput;
 }
 
+export interface ReasoningFilePart {
+  type: 'reasoning-file';
+  data: DataContent | URL;
+  mediaType: string;
+  providerOptions?: ProviderOptions;
+}
+
+export interface CustomPart {
+  type: 'custom';
+  kind: string;
+  providerOptions?: ProviderOptions;
+}
+
 // Content types
 export type UserContent = string | Array<TextPart | ImagePart | FilePart>;
-export type AssistantContent = string | Array<TextPart | FilePart | ReasoningPart | ToolCallPart | ToolResultPart>;
+export type AssistantContent = string | Array<TextPart | FilePart | ReasoningPart | ReasoningFilePart | CustomPart | ToolCallPart | ToolResultPart>;
 export type ToolContent = Array<ToolResultPart>;
 
 export interface LocalizedString {
@@ -137,6 +151,10 @@ export interface UsageReportData {
 }
 
 export interface PromptContext {
+  userMessageId?: string;
+  parentPromptContextId?: string;
+  parentToolCallId?: string;
+  parentChildIndex?: number;
   id: string;
   group?: Group;
 }

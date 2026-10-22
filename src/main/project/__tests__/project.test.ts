@@ -155,7 +155,7 @@ describe('Project - createNewTask', () => {
     // Mock all other dependencies with minimal implementations
     mockMcpManager = {};
     mockTelemetryManager = {};
-    mockDataManager = {};
+    mockDataManager = { getAgentExecutions: vi.fn(() => []), saveAgentExecution: vi.fn(), deleteAgentExecution: vi.fn() };
     mockEventManager = {
       sendTaskCreated: vi.fn(),
       sendProjectStarted: vi.fn(),
@@ -440,7 +440,7 @@ describe('Project - deleteTask', () => {
   beforeEach(async () => {
     mockMcpManager = {} as unknown as McpManager;
     mockTelemetryManager = {} as unknown as TelemetryManager;
-    mockDataManager = {} as unknown as DataManager;
+    mockDataManager = { getAgentExecutions: vi.fn(() => []), saveAgentExecution: vi.fn(), deleteAgentExecution: vi.fn() } as unknown as DataManager;
     mockMemoryManager = {} as unknown as MemoryManager;
 
     mockStore = {

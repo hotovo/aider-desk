@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { AgentProfile, BashToolSettings, GenericTool, ToolApprovalState } from '@common/types';
+import { AgentProfile, BashToolSettings, GenericTool, ToolApprovalState, ToolRecoveryMode } from '@common/types';
 import { POWER_TOOL_BASH, POWER_TOOL_GROUP_NAME, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
 import { GenericToolItem } from './GenericToolItem';
@@ -11,10 +11,11 @@ type Props = {
   tool: GenericTool;
   profile: AgentProfile;
   onApprovalChange?: (toolId: string, approval: ToolApprovalState) => void;
+  onRecoveryModeChange?: (toolId: string, recoveryMode: ToolRecoveryMode) => void;
   onProfileChange: (field: keyof AgentProfile, value: AgentProfile[keyof AgentProfile]) => void;
 };
 
-export const BashToolItem = ({ tool, profile, onApprovalChange, onProfileChange }: Props) => {
+export const BashToolItem = ({ tool, profile, onApprovalChange, onRecoveryModeChange, onProfileChange }: Props) => {
   const { t } = useTranslation();
 
   if (tool.groupName !== POWER_TOOL_GROUP_NAME || tool.name !== POWER_TOOL_BASH) {
@@ -73,5 +74,13 @@ export const BashToolItem = ({ tool, profile, onApprovalChange, onProfileChange 
     </div>
   );
 
-  return <GenericToolItem tool={tool} profile={profile} onApprovalChange={onApprovalChange} renderToolSettings={renderToolSettings} />;
+  return (
+    <GenericToolItem
+      tool={tool}
+      profile={profile}
+      onApprovalChange={onApprovalChange}
+      onRecoveryModeChange={onRecoveryModeChange}
+      renderToolSettings={renderToolSettings}
+    />
+  );
 };

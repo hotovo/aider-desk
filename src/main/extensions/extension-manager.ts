@@ -15,7 +15,7 @@ import {
   ToolApprovalState,
 } from '@common/types';
 import { TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
-import { AIDER_DESK_EXTENSIONS_REPO_URL, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
+import { AIDER_DESK_EXTENSIONS_REPO_URL, EXTENSION_ORIGIN, ProviderDefinition, Tool, UIComponentDefinition } from '@common/extensions';
 import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 
 import { ExtensionLoader } from './extension-loader';
@@ -39,6 +39,7 @@ import type {
   CustomCommandExecutedEvent,
   Extension,
   ExtensionContext,
+  ExtensionToolOrigin,
   FilesAddedEvent,
   FilesDroppedEvent,
   HandleApprovalEvent,
@@ -1095,7 +1096,9 @@ export class ExtensionManager {
           continue;
         }
 
-        const toolInfos = tools.filter((tool) => tool.name && tool.description).map((tool) => ({ name: tool.name, description: tool.description }));
+        const toolInfos = tools
+          .filter((tool) => tool.name && tool.description)
+          .map((tool) => ({ name: tool.name, description: tool.description, recoveryMode: tool.recoveryMode }));
 
         if (toolInfos.length > 0) {
           result.push({
@@ -1195,6 +1198,7 @@ export class ExtensionManager {
       // Tool approval filtering is handled in getTools()
 
       toolSet[toolId] = {
+        ...{ recoveryMode: tool.recoveryMode, recoveryModeKey: fullToolId, replayOwner: 'extension:' + fullToolId },
         description: tool.description,
         inputSchema: tool.inputSchema,
         execute: async (input: Record<string, unknown>, options: ToolExecutionOptions<unknown>) => {
@@ -1225,12 +1229,18 @@ export class ExtensionManager {
                 inputSchema: tool.inputSchema,
                 execute: async (input: Record<string, unknown>) => {
                   if (tool.execute) {
-                    return await tool.execute(input, {
+                    // Tools invoked internally by an extension must not be propagated to the UI
+                    // and must not take part in durability (honours the documented Tool contract).
+                    // The structured flags are prepared for a future opt-in where extensions could
+                    // enable UI surfacing and/or durable execution for their internal tool calls.
+                    const internalOptions = {
                       toolCallId: '',
                       abortSignal: abortSignal || options.abortSignal,
                       messages: [],
                       context: undefined as never,
-                    });
+                      [EXTENSION_ORIGIN]: { durable: false, surfaceInUi: false } as ExtensionToolOrigin,
+                    };
+                    return await tool.execute(input, internalOptions);
                   } else {
                     return 'Tool does not have an execute function';
                   }

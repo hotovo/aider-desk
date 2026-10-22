@@ -506,6 +506,12 @@ export interface ModelsData {
   error?: string;
 }
 
+export enum ToolRecoveryMode {
+  Forget = 'forget',
+  Safe = 'safe',
+  Notify = 'notify',
+}
+
 export enum ToolApprovalState {
   Always = 'always',
   Never = 'never',
@@ -571,6 +577,7 @@ export interface AgentProfile {
   temperature?: number; // overrides model temperature when set
   enabledServers: string[];
   toolApprovals: Record<string, ToolApprovalState>;
+  toolRecoveryModes?: Record<string, ToolRecoveryMode>;
   toolSettings: Record<string, ToolSettings>;
   includeContextFiles: boolean;
   includeRepoMap: boolean;
@@ -783,6 +790,7 @@ export interface SettingsData {
   onboardingFinished?: boolean;
   language: string;
   startupMode?: ProjectStartMode;
+  resumeAgentAfterRestart?: boolean;
   zoomLevel?: number;
   notificationsEnabled?: boolean;
   theme?: Theme;
@@ -944,6 +952,7 @@ export interface FileEdit {
 }
 
 export interface GenericTool {
+  recoveryMode?: ToolRecoveryMode;
   groupName: string;
   name: string;
   description: string;
@@ -1252,7 +1261,7 @@ export interface InstalledExtension {
 export interface ExtensionToolInfo {
   extensionId: string;
   extensionName: string;
-  tools: { name: string; description: string }[];
+  tools: { name: string; description: string; recoveryMode?: ToolRecoveryMode }[];
 }
 
 export interface AvailableExtension {

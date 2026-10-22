@@ -94,6 +94,7 @@ import type { WatchHandle } from '@/file-watcher-manager';
 import type { SmartCompactionPassSelection } from '@/agent/smart-compaction';
 import type { SmartCompactionOptions } from '@common/extensions';
 
+import { translate } from '@/utils/i18n';
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
 import { getAllFiles, isValidProjectFile } from '@/utils/file-system';
 import { atomicWriteJsonFile } from '@/utils/atomic-write';
@@ -106,8 +107,9 @@ import {
   WORKTREE_BRANCH_PREFIX,
 } from '@/constants';
 import { Agent, AgentProfileManager, McpConfigManager, McpManager } from '@/agent';
+import { DurabilityManager } from '@/agent/durability/durability-manager';
 import { safeJsonStringify } from '@/agent/utils';
-import { findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
+import { createSubagentPromptContext, findEnabledSubagent, runSubagentTask } from '@/agent/subagent';
 import { Connector } from '@/connector';
 import { DataManager } from '@/data-manager';
 import logger from '@/logger';
@@ -204,6 +206,7 @@ export class Task {
   private readonly skillManager: SkillManager;
 
   readonly task: TaskData;
+  readonly durabilityManager: DurabilityManager;
 
   constructor(
     public readonly project: Project,
@@ -232,6 +235,7 @@ export class Task {
     };
     this.taskDataPath = path.join(this.project.baseDir, AIDER_DESK_TASKS_DIR, this.taskId, 'settings.json');
     this.contextManager = new ContextManager(this, this.taskId);
+    this.durabilityManager = new DurabilityManager(dataManager, project.baseDir, taskId);
     this.skillManager = new SkillManager(project, extensionManager);
     this.agent = new Agent(
       this.store,
@@ -860,7 +864,7 @@ export class Task {
     if (clearContext) {
       this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, true);
     }
-    await this.interruptResponse();
+    await this.interruptResponse(undefined, true);
     this.resolveAgentRunPromises();
     this.cleanupChunkBuffers();
 
@@ -994,7 +998,8 @@ export class Task {
     }
 
     let promptContext: PromptContext = {
-      id: userMessageId,
+      id: AIDER_MODES.includes(mode) ? userMessageId : uuidv4(),
+      userMessageId,
     };
 
     const extensionResult = await this.extensionManager.dispatchEvent('onPromptStarted', { prompt, mode, promptContext }, this.project, this);
@@ -1221,6 +1226,10 @@ export class Task {
   ): Promise<ResponseCompletedData[]> {
     if (waitForCurrentAgentToFinish) {
       await this.waitForCurrentAgentToFinish();
+    }
+
+    if (waitForCurrentAgentToFinish && prompt !== null) {
+      await this.durabilityManager.discardPendingRoots(this.persistDurableMessages.bind(this), promptContext.id);
     }
 
     await this.saveTask({
@@ -1458,6 +1467,17 @@ export class Task {
       isSubagent: true,
     };
 
+    promptContext = this.durabilityManager.attachChildContext(promptContext ?? createSubagentPromptContext(profile));
+    const parentSignal = !abortController ? this.durabilityManager.getParentAbortSignal() : undefined;
+    abortController ??= new AbortController();
+    const childController = abortController;
+    const abortChild = () => childController.abort();
+    if (parentSignal?.aborted) {
+      abortChild();
+    } else {
+      parentSignal?.addEventListener('abort', abortChild, { once: true });
+    }
+
     // Register abort controller if provided and promptContext has interruptId
     const interruptId = promptContext?.group?.interruptId;
     if (abortController && interruptId) {
@@ -1517,6 +1537,7 @@ export class Task {
 
       return resultMessages;
     } finally {
+      parentSignal?.removeEventListener('abort', abortChild);
       // Unregister abort controller if it was registered
       if (abortController && interruptId) {
         this.unregisterSubagentAbortController(interruptId);
@@ -2878,6 +2899,53 @@ export class Task {
     await this.updateContextInfo();
   }
 
+  public async persistDurableMessages(messages: ContextMessage[]): Promise<void> {
+    const existingIds = new Set((await this.contextManager.getContextMessages()).map((message) => message.id));
+    for (const message of messages) {
+      if (!existingIds.has(message.id)) {
+        this.contextManager.addContextMessage(message);
+        existingIds.add(message.id);
+      }
+    }
+    await this.contextManager.save();
+  }
+
+  public publishDurableMessages(messages: ContextMessage[]): void {
+    this.reloadGroupMessages(messages);
+  }
+
+  public async recoverDurableExecutions(): Promise<void> {
+    await this.durabilityManager.flushCancelled(this.persistDurableMessages.bind(this));
+    if (this.store.getSettings().resumeAgentAfterRestart === false) {
+      return;
+    }
+    for (const execution of this.durabilityManager.getRecoverableRoots()) {
+      await this.init();
+      if (execution.profile.isSubagent) {
+        await this.runSubagent(
+          execution.profile,
+          '',
+          execution.contextMessages,
+          execution.contextFiles,
+          execution.systemPrompt,
+          undefined,
+          execution.promptContext,
+        );
+        continue;
+      }
+      const profile = await this.getTaskAgentProfile();
+      if (!profile) {
+        this.addLogMessage('error', translate(this.store.getSettings().language, 'durability.missingProfile'));
+        return;
+      }
+      await this.runPromptInAgent(profile, execution.mode, null, execution.promptContext);
+    }
+  }
+
+  public async restoreDurableConversation(messages: ContextMessage[]): Promise<void> {
+    await this.contextManager.loadMessages(messages, false);
+  }
+
   public async addContextMessage(message: ContextMessage, updateContextInfo = false) {
     this.contextManager.addContextMessage(message);
     if (updateContextInfo) {
@@ -2918,7 +2986,7 @@ export class Task {
     this.eventManager.sendTool(data);
   }
 
-  public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true, createSnapshot = true) {
+  public async clearContext(addToHistory = false, updateContextInfo = true, updateTaskState = true, createSnapshot = true, preserveExecution = false) {
     logger.info('Clearing context:', {
       baseDir: this.project.baseDir,
       addToHistory,
@@ -2933,6 +3001,9 @@ export class Task {
       });
     }
 
+    if (!preserveExecution) {
+      this.durabilityManager.clear();
+    }
     this.contextManager.clearMessages(true, createSnapshot);
     await this.runCommand('clear', addToHistory);
     this.eventManager.sendClearTask(this.project.baseDir, this.taskId, true, false);
@@ -2947,6 +3018,7 @@ export class Task {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
+    this.durabilityManager.clear();
     this.contextManager.clearContextFiles();
     this.contextManager.clearMessages();
     await this.contextManager.save();
@@ -2993,7 +3065,7 @@ export class Task {
     await this.contextManager.loadMessages(messages);
   }
 
-  public async interruptResponse(interruptId?: string) {
+  public async interruptResponse(interruptId?: string, preserveJournal = false) {
     const extensionResult = await this.extensionManager.dispatchEvent('onInterrupted', { interruptId }, this.project, this);
     if (extensionResult.blocked) {
       logger.debug('Interrupt blocked by extension', { interruptId });
@@ -3001,57 +3073,38 @@ export class Task {
     }
 
     interruptId = extensionResult.interruptId;
-
-    if (interruptId) {
-      // Check for subagent abort controller first
-      const subagentAbortController = this.subagentAbortControllers[interruptId];
-      if (subagentAbortController) {
-        logger.debug('Interrupting subagent:', {
-          baseDir: this.project.baseDir,
-          taskId: this.taskId,
-          interruptId,
-        });
-        subagentAbortController.abort();
-        delete this.subagentAbortControllers[interruptId];
-        logger.info('Aborted subagent', { interruptId });
-        return;
-      }
-
-      // Check for conflict resolution agent
-      const abortController = this.resolutionAbortControllers[interruptId];
-      if (abortController) {
-        logger.debug('Interrupting conflict resolution agent:', {
-          baseDir: this.project.baseDir,
-          taskId: this.taskId,
-          interruptId,
-        });
-        abortController.abort();
-        delete this.resolutionAbortControllers[interruptId];
-        logger.info('Aborted conflict resolution agent', { interruptId });
-        return;
-      }
-
-      logger.warn('No agent found for interruptId', {
-        interruptId,
-      });
-      return;
+    if (preserveJournal) {
+      this.durabilityManager.suspend();
+    } else if (interruptId) {
+      this.durabilityManager.cancelByInterruptId(interruptId);
+    } else {
+      this.durabilityManager.markCancelled();
     }
 
-    // No specific interruptId - check for running subagents first
-    const subagentInterruptIds = Object.keys(this.subagentAbortControllers);
-    if (subagentInterruptIds.length > 0) {
-      // Cancel the first running subagent
-      const firstInterruptId = subagentInterruptIds[0];
-      logger.debug('Interrupting first running subagent:', {
-        baseDir: this.project.baseDir,
-        taskId: this.taskId,
-        interruptId: firstInterruptId,
-      });
-      const abortController = this.subagentAbortControllers[firstInterruptId];
-      abortController.abort();
-      delete this.subagentAbortControllers[firstInterruptId];
-      logger.info('Aborted subagent', { interruptId: firstInterruptId });
+    if (interruptId) {
+      const subagentController = this.subagentAbortControllers[interruptId];
+      if (subagentController) {
+        subagentController.abort();
+        delete this.subagentAbortControllers[interruptId];
+        return;
+      }
+      const resolutionController = this.resolutionAbortControllers[interruptId];
+      if (resolutionController) {
+        resolutionController.abort();
+        delete this.resolutionAbortControllers[interruptId];
+        return;
+      }
+      logger.warn('No agent found for interruptId', { interruptId });
       return;
+    } else {
+      for (const controller of Object.values(this.subagentAbortControllers)) {
+        controller.abort();
+      }
+      for (const controller of Object.values(this.resolutionAbortControllers)) {
+        controller.abort();
+      }
+      this.subagentAbortControllers = {};
+      this.resolutionAbortControllers = {};
     }
 
     // Default behavior: interrupt main agent
@@ -3319,6 +3372,7 @@ export class Task {
       hasUpdatedImages: !!updatedImages,
     });
 
+    this.durabilityManager.clear();
     const removedMessages = this.contextManager.removeMessagesUpToUserMessage(messageId);
     const originalUserMessage = removedMessages[0];
     if (!originalUserMessage || originalUserMessage.role !== MessageRole.User) {
@@ -3384,7 +3438,8 @@ export class Task {
       logger.info('Resuming agent task...');
       this.addLogMessage('loading', 'Resuming task...');
 
-      void this.runPromptInAgent(profile, mode, null);
+      const execution = this.durabilityManager.getRecoverableRoots()[0];
+      void this.runPromptInAgent(profile, mode, null, execution?.promptContext);
     } else {
       // In other modes, check if last message is user
       if (lastMessage && lastMessage.role === MessageRole.User) {
@@ -3514,6 +3569,7 @@ export class Task {
     contextMessages?: ContextMessage[],
     infoMessage = 'Conversation smart-compacted.',
     options?: SmartCompactionOptions,
+    executionId?: string,
   ): Promise<ContextMessage[]> {
     if (!contextMessages) {
       contextMessages = await this.contextManager.getContextMessages();
@@ -3556,8 +3612,7 @@ export class Task {
 
     this.lastSmartCompactionMessageCount = compactedMessages.length;
 
-    this.contextManager.setContextMessages(compactedMessages);
-    await this.contextManager.loadMessages(compactedMessages, false);
+    await this.contextManager.loadMessages(compactedMessages, false, executionId, true);
     await this.updateContextInfo();
     this.addLogMessage('info', infoMessage, false, undefined, ['undoContextChange']);
 
@@ -3624,7 +3679,7 @@ export class Task {
           compactConversationAgentProfile,
           await this.promptsManager.getCompactConversationPrompt(this, customInstructions),
           'compact-conversation',
-          promptContext,
+          { ...promptContext, id: uuidv4() },
           contextMessages,
           [],
           undefined,
@@ -3642,9 +3697,7 @@ export class Task {
 
           const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, summaryMessage];
 
-          this.contextManager.setContextMessages(finalMessages);
-
-          await this.contextManager.loadMessages(await this.contextManager.getContextMessages());
+          await this.contextManager.loadMessages(finalMessages, true, promptContext?.id, true);
         }
       } else {
         const responses = await this.sendPromptToAider(

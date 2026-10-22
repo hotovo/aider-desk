@@ -45,6 +45,7 @@ import { migrateSettingsV21toV22 } from '@/store/migrations/v21-to-v22';
 export const DEFAULT_SETTINGS: SettingsData = {
   language: 'en',
   startupMode: ProjectStartMode.Empty,
+  resumeAgentAfterRestart: true,
   zoomLevel: 1,
   notificationsEnabled: false,
   theme: 'dark',

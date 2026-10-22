@@ -18,6 +18,7 @@ import {
 } from '@common/tools';
 import { ToolMessage } from '@common/types';
 
+import { localizeToolRecoveryContent } from './localize-tool-recovery';
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
@@ -38,7 +39,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
   const { t } = useTranslation();
   const isExecuting = message.content === '';
   const isStreaming = message.isStreaming === true;
-  const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
+  const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
 
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
 

@@ -5,6 +5,7 @@ import { VscError } from 'react-icons/vsc';
 import { clsx } from 'clsx';
 import { ToolMessage } from '@common/types';
 
+import { localizeToolRecoveryContent } from './localize-tool-recovery';
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
@@ -22,7 +23,7 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, o
   const { t } = useTranslation();
   const skillName = (message.args.skill as string) || '';
   const isExecuting = message.content === '';
-  const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
+  const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -145,6 +146,7 @@ export class McpManager {
       for (const toolDefinition of toolDefinitions.tools) {
         const toolId = `${mcpConnector.serverName}${TOOL_GROUP_NAME_SEPARATOR}${toolDefinition.name}`;
         const normalizedToolId = toolId.toLowerCase().replaceAll(/\s+/g, '_');
+        const replayOwner = 'mcp:' + toolId + ':' + createHash('sha256').update(JSON.stringify(mcpConnector.serverConfig)).digest('hex');
 
         const approvalState = profile.toolApprovals[toolId];
         if (approvalState === ToolApprovalState.Never) {
@@ -168,6 +170,7 @@ export class McpManager {
           lastToolCallTimeRef,
           promptContext,
         );
+        toolSet[normalizedToolId] = { ...toolSet[normalizedToolId], ...{ recoveryModeKey: toolId, replayOwner } };
       }
     }
 

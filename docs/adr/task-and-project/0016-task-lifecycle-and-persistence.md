@@ -4,6 +4,8 @@
 
 Accepted (2026-08-28)
 
+The unfinished execution-storage boundary is partially superseded by [ADR-0042](../data-and-state/0042-durable-agent-execution-journals.md). Finalized task files remain portable; application-local active journals do not travel with task directories.
+
 ## Context
 
 All user work is organized into **tasks**: a conversation with an agent or Aider, a set of context files, state (todo items, change requests, question flows), and associated settings. Tasks outlive app restarts, must be resumable, exportable (image/markdown), duplicable, and archivable. Task metadata and context are persisted as separate JSON files and are updated during active work, so write failures and interrupted writes must be handled explicitly as the formats evolve.
@@ -39,7 +41,7 @@ File-per-task aligns with how tasks are consumed (one at a time, in full), enabl
 
 ### Positive
 
-- Tasks are portable, inspectable, and safely deletable
+- Finalized task files are portable, inspectable, and safely deletable; active execution portability is limited by ADR-0042
 - Task metadata and conversation context persist across app restarts
 - Export (image/markdown) and duplication are straightforward file operations
 
@@ -62,7 +64,7 @@ File-per-task aligns with how tasks are consumed (one at a time, in full), enabl
 
 ### Don't
 
-- Never invent a second storage location/format for task data
+- Never invent a second storage location/format for task data without a superseding decision; the active execution journal is the exception in ADR-0042
 - Never assume a task directory is mutable by outsiders while its task is running
 - Never drop unknown fields when (de)serializing task JSON — forward compatibility matters
 

@@ -1,4 +1,4 @@
-import { McpOAuthStatus, McpServerConfig, McpTool, ToolApprovalState } from '@common/types';
+import { McpOAuthStatus, McpServerConfig, McpTool, ToolApprovalState, ToolRecoveryMode } from '@common/types';
 import { extractIpcErrorMessage } from '@common/utils';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -22,6 +22,8 @@ type Props = {
   config: McpServerConfig;
   onRemove?: () => void;
   onEdit?: () => void;
+  toolRecoveryModes?: Record<string, ToolRecoveryMode>;
+  onRecoveryModeChange?: (toolId: string, recoveryMode: ToolRecoveryMode) => void;
   toolApprovals?: Record<string, ToolApprovalState>;
   onApprovalChange?: (toolId: string | string[], approval: ToolApprovalState) => void;
   reloadTrigger?: number;
@@ -36,6 +38,8 @@ export const McpServerItem = ({
   onRemove,
   onEdit,
   toolApprovals,
+  toolRecoveryModes,
+  onRecoveryModeChange,
   onApprovalChange,
   reloadTrigger = 0,
   enabled,
@@ -220,7 +224,15 @@ export const McpServerItem = ({
                 </div>
               )}
               {tools.map((tool) => (
-                <McpToolItem key={tool.name} tool={tool} toolApprovals={toolApprovals} onApprovalChange={onApprovalChange} serverName={serverName} />
+                <McpToolItem
+                  toolRecoveryModes={toolRecoveryModes}
+                  onRecoveryModeChange={onRecoveryModeChange}
+                  key={tool.name}
+                  tool={tool}
+                  toolApprovals={toolApprovals}
+                  onApprovalChange={onApprovalChange}
+                  serverName={serverName}
+                />
               ))}
             </div>
           </div>

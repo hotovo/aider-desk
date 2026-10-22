@@ -1,4 +1,4 @@
-import { AgentProfile, GenericTool, ToolApprovalState } from '@common/types';
+import { AgentProfile, GenericTool, ToolApprovalState, ToolRecoveryMode } from '@common/types';
 import { useTranslation } from 'react-i18next';
 import { POWER_TOOL_BASH, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 
@@ -21,6 +21,9 @@ type Props = {
 
 export const GenericToolGroupItem = ({ name, displayName, tools, profile, onApprovalChange, onProfileChange, enabled, onEnabledChange }: Props) => {
   const { t } = useTranslation();
+  const handleRecoveryModeChange = (toolId: string, mode: ToolRecoveryMode) => {
+    onProfileChange('toolRecoveryModes', { ...profile.toolRecoveryModes, [toolId]: mode });
+  };
 
   const renderTitle = () => {
     const enabledCount =
@@ -55,10 +58,27 @@ export const GenericToolGroupItem = ({ name, displayName, tools, profile, onAppr
               <div className="text-xs text-text-muted-light ml-1">{t('mcp.tools')}</div>
               {tools.map((tool) => {
                 if (tool.name === POWER_TOOL_BASH) {
-                  return <BashToolItem key={tool.name} tool={tool} profile={profile} onApprovalChange={onApprovalChange} onProfileChange={onProfileChange} />;
+                  return (
+                    <BashToolItem
+                      key={tool.name}
+                      tool={tool}
+                      profile={profile}
+                      onApprovalChange={onApprovalChange}
+                      onRecoveryModeChange={handleRecoveryModeChange}
+                      onProfileChange={onProfileChange}
+                    />
+                  );
                 }
 
-                return <GenericToolItem key={tool.name} tool={tool} profile={profile} onApprovalChange={onApprovalChange} />;
+                return (
+                  <GenericToolItem
+                    key={tool.name}
+                    tool={tool}
+                    profile={profile}
+                    onApprovalChange={onApprovalChange}
+                    onRecoveryModeChange={handleRecoveryModeChange}
+                  />
+                );
               })}
             </div>
           </div>

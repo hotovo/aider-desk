@@ -746,8 +746,12 @@
     },
     "startup": {
       "title": "启动",
+      "taskMode": "启动时",
+      "recovery": "恢复",
       "emptyTask": "启动时创建新任务",
-      "lastTask": "加载上次任务"
+      "lastTask": "加载上次任务",
+      "resumeAgentAfterRestart": "重启后恢复中断的智能体",
+      "resumeAgentAfterRestartTooltip": "启用后，因应用关闭或崩溃而中断的智能体运行会在下次打开项目时自动恢复。可安全重放的工具可能会重新运行；有副作用的工具不会重复执行。禁用后，中断的运行将保持原样。"
     },
     "tasks": {
       "title": "任务",
@@ -1445,6 +1449,18 @@
       "never": "从不",
       "always": "总是",
       "ask": "询问"
+    },
+    "recovery": {
+      "forget": "忘记未完成调用",
+      "safe": "安全重放",
+      "notify": "通知中断",
+      "label": "恢复模式",
+      "description": "控制任务在应用崩溃等意外中断后恢复时如何处理未完成的工具调用。",
+      "descriptions": {
+        "forget": "任务恢复时丢弃未完成的调用。",
+        "safe": "恢复时重新执行未完成的调用。工具必须允许重复执行。",
+        "notify": "报告结果未知，让模型在重试前先核实。"
+      }
     }
   },
   "autocompletion": {
@@ -2298,5 +2314,28 @@
     "actionNotAvailableInWorktree": "此操作在工作树模式下不可用",
     "updateFromRemote": "从 '{{upstream}}' 更新",
     "branchUpdated": "分支 '{{branch}}' 已从远程更新"
+  },
+  "durability": {
+    "notices": {
+      "interrupted": "工具执行已中断，结果未知。重试前请检查当前状态。",
+      "finalizationInterrupted": "工具执行已完成，但最终输出不可用。请勿仅为恢复输出而重复执行。",
+      "unavailable": "中断的工具已不可用或不再获准使用。",
+      "argumentsChanged": "工具参数已更改或验证失败，恢复已停止。",
+      "ownerChanged": "工具所属方已更改，恢复已停止。",
+      "identityConflict": "执行已拒绝：此调用标识属于另一项操作。"
+    },
+    "labels": {
+      "interrupted": "已中断",
+      "finalizationInterrupted": "定稿中断",
+      "unavailable": "不可用",
+      "argumentsChanged": "参数已更改",
+      "ownerChanged": "所属方已更改",
+      "identityConflict": "标识冲突"
+    },
+    "recovery": {
+      "detailsTitle": "保留的输出",
+      "noOutput": "没有保留额外的输出。"
+    },
+    "missingProfile": "无法恢复任务：智能体配置不可用。"
   }
 }

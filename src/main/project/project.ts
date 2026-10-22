@@ -73,6 +73,12 @@ export class Project {
 
         await this.extensionManager.dispatchEvent('onProjectStarted', { baseDir: this.baseDir }, this);
         this.eventManager.sendProjectStarted(this.baseDir);
+        await this.tasksLoadingPromise;
+        for (const task of this.tasks.values()) {
+          void task.recoverDurableExecutions().catch((error) => {
+            logger.error('Failed to recover durable task', { taskId: task.taskId, error });
+          });
+        }
       })();
     }
     return this.startPromise;
@@ -449,6 +455,7 @@ export class Project {
     }
 
     await task.close();
+    task.durabilityManager.clear();
     this.tasks.delete(taskId);
     this.eventManager.sendTaskDeleted(task.task);
 

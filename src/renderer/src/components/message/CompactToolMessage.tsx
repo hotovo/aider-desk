@@ -20,6 +20,7 @@ import {
 } from '@common/tools';
 import { ToolMessage } from '@common/types';
 
+import { getToolRecoveryCodes, localizeToolRecoveryContent } from './localize-tool-recovery';
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ToolResultImages } from './ToolResultImages';
@@ -35,7 +36,8 @@ type Props = {
 const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) => {
   const { t } = useTranslation();
   const isExecuting = message.content === '';
-  const parsedResult = !isExecuting ? parseToolContent(message.content) : null;
+  const recoveryCodes = getToolRecoveryCodes(message.content);
+  const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
 
   const getToolLabel = (toolMessage: ToolMessage): ReactNode => {
     const defaultLabel = () => t('toolMessage.toolLabel', { server: formatName(toolMessage.serverName), tool: formatName(toolMessage.toolName) });
@@ -163,9 +165,16 @@ const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) =
         </div>
         <div className={clsx('text-xs text-text-primary whitespace-pre flex items-center gap-1 flex-1', isExecuting && 'animate-pulse')}>
           {getToolLabel(message)}
+          {recoveryCodes.length > 0 && (
+            <span className="whitespace-normal text-warning" role="status">
+              {recoveryCodes.map((code) => t('durability.notices.' + code)).join(' ')}
+            </span>
+          )}
         </div>
         {isExecuting && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
-        {!isExecuting && parsedResult?.isError === true && <VscError className="text-error flex-shrink-0" />}
+        {!isExecuting && (parsedResult?.isError === true || recoveryCodes.length > 0) && (
+          <VscError className={clsx('flex-shrink-0', { 'text-warning': recoveryCodes.length > 0, 'text-error': recoveryCodes.length === 0 })} />
+        )}
       </button>
 
       {/* Expanded content */}

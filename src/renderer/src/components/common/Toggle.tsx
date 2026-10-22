@@ -1,4 +1,5 @@
 import { clsx } from 'clsx';
+import { ReactNode } from 'react';
 
 export type ToggleColor = 'primary' | 'secondary' | 'tertiary' | 'danger';
 export type ToggleSize = 'sm' | 'md';
@@ -27,12 +28,13 @@ type Props = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  label?: ReactNode;
   'aria-label'?: string;
   color?: ToggleColor;
   size?: ToggleSize;
 };
 
-export const Toggle = ({ checked, onChange, disabled = false, 'aria-label': ariaLabel, color = 'primary', size = 'md' }: Props) => {
+export const Toggle = ({ checked, onChange, disabled = false, label, 'aria-label': ariaLabel, color = 'primary', size = 'md' }: Props) => {
   const handleChange = () => {
     if (!disabled) {
       onChange(!checked);
@@ -42,11 +44,11 @@ export const Toggle = ({ checked, onChange, disabled = false, 'aria-label': aria
   const { track, knob, translate } = sizeClasses[size];
 
   return (
-    <label className={clsx('relative inline-block', disabled ? 'cursor-not-allowed' : 'cursor-pointer')}>
+    <label className={clsx('relative inline-flex items-center gap-2', disabled ? 'cursor-not-allowed' : 'cursor-pointer')}>
       <input type="checkbox" className="sr-only peer" checked={checked} onChange={handleChange} disabled={disabled} aria-label={ariaLabel} />
       <div
         className={clsx(
-          'rounded-full transition-colors duration-200',
+          'relative shrink-0 rounded-full transition-colors duration-200',
           'after:content-[""] after:absolute after:top-[2px] after:left-[2px]',
           'after:bg-text-primary after:rounded-full',
           'after:transition-transform after:duration-200',
@@ -57,6 +59,7 @@ export const Toggle = ({ checked, onChange, disabled = false, 'aria-label': aria
           checked ? colorClasses[color] : 'bg-border-default',
         )}
       ></div>
+      {label != null && <span className={clsx('select-none text-text-primary', size === 'sm' ? 'text-xs' : 'text-sm')}>{label}</span>}
     </label>
   );
 };
