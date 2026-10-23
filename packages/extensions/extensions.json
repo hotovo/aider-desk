@@ -58,7 +58,7 @@
         "commands",
         "example"
       ],
-      "installCount": 24
+      "installCount": 25
     },
     {
       "id": "questions",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 79
+      "installCount": 80
     },
     {
       "id": "context-autocompletion-words",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 88
+      "installCount": 89
     },
     {
       "id": "plannotator",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "skill-gallery",
