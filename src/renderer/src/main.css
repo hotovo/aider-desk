@@ -5,6 +5,23 @@
 @tailwind components;
 @tailwind utilities;
 
+.Toastify__toast-container {
+  max-width: 90vw;
+}
+
+.Toastify__toast-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media only screen and (max-width: 480px) {
+  .Toastify .Toastify__toast-container {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}
+
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
