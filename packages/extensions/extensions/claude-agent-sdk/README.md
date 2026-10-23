@@ -86,6 +86,7 @@ No additional configuration is needed. Once the extension is loaded and Claude C
 
 ### Limitations
 
+- **Binary Files**: The Binary Files extension supports PNG, JPEG, GIF, WebP images and PDFs with this provider. Other binary formats return an unsupported-media error; they are not sent as base64 text. Attachments are preserved when resuming a session.
 - **Message Editing**: Redo user message, Edit last user message, and Delete message actions do not work as expected because the provider does not support session modification
 - **Token Usage Tracking**: Currently, it's not possible to properly track the model's token usage
 
@@ -103,3 +104,13 @@ No additional configuration is needed. Once the extension is loaded and Claude C
 **Mode Compatibility**:
 - Remember: This provider only works in Agent mode
 - If you need Code/Ask/Architect modes, use the standard Anthropic provider instead
+
+## Development Tests
+
+Install this extension's dependencies first (`npm install` in this directory), then run from the repository root:
+
+```sh
+npx vitest run --config packages/extensions/extensions/claude-agent-sdk/vitest.config.ts --no-color
+```
+
+These extension-local tests are separate from the core test suite.
