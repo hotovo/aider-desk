@@ -18,6 +18,7 @@ type Props<T> = {
   overscanCount?: number;
   disableHeader?: boolean;
   getRowClassName?: (row: T, index: number) => string | undefined;
+  minTableWidth?: number;
 };
 
 export const VirtualTable = <T extends object>({
@@ -28,6 +29,7 @@ export const VirtualTable = <T extends object>({
   overscanCount = 10,
   disableHeader = false,
   getRowClassName,
+  minTableWidth,
 }: Props<T>) => {
   const [sortState, setSortState] = useState<SortState>({ columnKey: '', direction: null });
 
@@ -81,12 +83,15 @@ export const VirtualTable = <T extends object>({
     overscan: overscanCount,
   });
 
+  const minWidthStyle = minTableWidth ? { minWidth: minTableWidth } : undefined;
+
   return (
-    <div className="flex-grow flex flex-col border border-border-dark-light">
+    <div className={`flex-grow flex flex-col border border-border-dark-light ${minTableWidth ? 'overflow-x-auto' : ''}`}>
       {/* Header - Outside virtualized area */}
       {!disableHeader && (
         <div
           className="text-xs text-text-primary uppercase bg-bg-secondary-light border-b border-border-dark-light pr-[8px]"
+          style={minWidthStyle}
           key={`${sortState.columnKey}-${sortState.direction}`}
         >
           <div className="flex">
@@ -128,6 +133,7 @@ export const VirtualTable = <T extends object>({
       <div
         ref={parentRef}
         className="flex-grow scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-tertiary overflow-y-scroll relative"
+        style={minWidthStyle}
       >
         <div style={{ height: `${virtualizer.getTotalSize()}px`, width: '100%' }}>
           <div className="flex flex-col">
@@ -174,7 +180,7 @@ export const VirtualTable = <T extends object>({
 
       {/* Footer - Outside virtualized area */}
       {footerColumns && (
-        <div className="sticky bottom-0 bg-bg-secondary-light text-xs uppercase text-text-primary border-t border-border-dark-light">
+        <div className="sticky bottom-0 bg-bg-secondary-light text-xs uppercase text-text-primary border-t border-border-dark-light" style={minWidthStyle}>
           <div className="flex">
             {footerColumns.map((col, index) => (
               <div

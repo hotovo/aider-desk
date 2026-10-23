@@ -11,6 +11,7 @@
 - added automatic task and subagent recovery after app restarts, preserving completed tool results and supporting configurable per-tool replay modes
 - fixed notification overflow and centering on small screens
 - fixed dialog overflow on small screens with responsive widths and wrapping footer buttons
+- fixed Model Library layout on small screens with a wrapping toolbar and a horizontally scrollable models table
 
 ## [0.88.0]
 
