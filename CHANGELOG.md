@@ -10,6 +10,7 @@
 - fixed duplicated and incorrectly grouped assistant messages when streaming reasoning and tool calls
 - added automatic task and subagent recovery after app restarts, preserving completed tool results and supporting configurable per-tool replay modes
 - fixed notification overflow and centering on small screens
+- fixed dialog overflow on small screens with responsive widths and wrapping footer buttons
 
 ## [0.88.0]
 

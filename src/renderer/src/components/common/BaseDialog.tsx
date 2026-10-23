@@ -44,7 +44,7 @@ export const BaseDialog = ({
   const dialogContent = (
     <div
       style={{ width: `${width}px` }}
-      className="bg-bg-secondary-light-strongest shadow-2xl rounded-xl border border-bg-tertiary-strong max-h-[90vh] flex flex-col"
+      className="bg-bg-secondary-light-strongest shadow-2xl rounded-xl border border-bg-tertiary-strong max-w-[min(90vw,100%)] min-w-0 max-h-[90vh] flex flex-col [overflow-wrap:anywhere]"
       ref={dialogRef}
     >
       <div className="px-6 py-4 border-b border-bg-tertiary-strong flex-shrink-0">
@@ -58,7 +58,7 @@ export const BaseDialog = ({
       >
         {children}
       </div>
-      <div className="px-6 py-4 border-t border-bg-tertiary-strong flex justify-end space-x-3 flex-shrink-0">
+      <div className="px-6 py-4 border-t border-bg-tertiary-strong flex flex-wrap justify-end gap-3 flex-shrink-0">
         {footer || (
           <button onClick={onClose} className="bg-bg-fourth text-text-primary px-4 py-2 rounded hover:bg-bg-fifth">
             {closeButtonText || t('common.cancel')}
