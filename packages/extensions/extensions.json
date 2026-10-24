@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 95
+      "installCount": 96
     },
     {
       "id": "legacy-system-prompt",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 81
+      "installCount": 82
     },
     {
       "id": "kanban",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 151
+      "installCount": 152
     },
     {
       "id": "task-scheduler",
