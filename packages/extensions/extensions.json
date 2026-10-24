@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 108
+      "installCount": 109
     },
     {
       "id": "protected-paths",
@@ -164,7 +164,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 97
+      "installCount": 98
     },
     {
       "id": "legacy-system-prompt",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 106
+      "installCount": 107
     },
     {
       "id": "verifier",
@@ -443,7 +443,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 55
+      "installCount": 56
     },
     {
       "id": "bmad",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 153
+      "installCount": 154
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 131
+      "installCount": 132
     },
     {
       "id": "dbx",
