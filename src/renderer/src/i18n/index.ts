@@ -3,6 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 // Import your translation files
 import en from '@common/locales/en.json';
+import de from '@common/locales/de.json';
 import zh from '@common/locales/zh.json';
 import ru from '@common/locales/ru.json';
 import ko from '@common/locales/ko.json';
@@ -11,6 +12,10 @@ export const SUPPORTED_LANGUAGES = {
   en: {
     label: 'English',
     countryCode: 'US',
+  },
+  de: {
+    label: 'Deutsch',
+    countryCode: 'DE',
   },
   zh: {
     label: '简体中文',
@@ -33,6 +38,7 @@ void i18n
   .init({
     resources: {
       en: { translation: en },
+      de: { translation: de },
       zh: { translation: zh },
       ru: { translation: ru },
       ko: { translation: ko },
