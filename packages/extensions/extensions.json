@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "binary-files",
@@ -188,7 +188,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "sandbox",
@@ -270,7 +270,7 @@
         "context",
         "commands"
       ],
-      "installCount": 80
+      "installCount": 81
     },
     {
       "id": "context-autocompletion-words",
@@ -295,7 +295,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 90
+      "installCount": 91
     },
     {
       "id": "plannotator",
@@ -310,7 +310,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "programmatic-tool-calls",
@@ -359,7 +359,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 8
+      "installCount": 9
     },
     {
       "id": "openai-codex",
@@ -388,7 +388,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "searxng-search",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 105
+      "installCount": 106
     },
     {
       "id": "verifier",
@@ -545,7 +545,7 @@
         "tools",
         "search"
       ],
-      "installCount": 83
+      "installCount": 84
     },
     {
       "id": "kanban",
@@ -595,7 +595,7 @@
         "tools",
         "search"
       ],
-      "installCount": 67
+      "installCount": 68
     },
     {
       "id": "destructive-command-guard",
@@ -620,7 +620,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "skill-gallery",
