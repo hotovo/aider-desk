@@ -17440,6 +17440,7 @@ type Props<T> = {
   overscanCount?: number;
   disableHeader?: boolean;
   getRowClassName?: (row: T, index: number) => string | undefined;
+  minTableWidth?: number;
 };
 ⋮----
 // Apply manual sorting to data
@@ -33561,6 +33562,12 @@ File: src/renderer/src/main.css
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+⋮----
+.Toastify__toast-container {
+⋮----
+.Toastify__toast-body {
+⋮----
+.Toastify .Toastify__toast-container {
 ⋮----
 .katex-display {
 ⋮----
