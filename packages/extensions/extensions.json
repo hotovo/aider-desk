@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 38
+      "installCount": 39
     },
     {
       "id": "ui-placement-demo",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 132
+      "installCount": 133
     },
     {
       "id": "dbx",
