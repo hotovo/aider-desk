@@ -3,9 +3,12 @@ import { RiMessage3Line, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircle
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   message: ToolMessage;
@@ -22,6 +25,7 @@ export const GetTaskMessageToolMessage = ({ message, onRemove, compact = false, 
   const taskId = (message.args.taskId as string) || '';
   const index = message.args.messageIndex as number | undefined;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError =
     content &&
     typeof content === 'string' &&
@@ -68,6 +72,10 @@ export const GetTaskMessageToolMessage = ({ message, onRemove, compact = false, 
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

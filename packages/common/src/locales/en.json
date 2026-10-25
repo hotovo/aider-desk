@@ -1549,6 +1549,11 @@
     "answer": "ANSWER"
   },
   "toolMessage": {
+    "truncatedResult": {
+      "notice": "Tool result truncated. Only a preview is available.",
+      "originalLength": "Original result: {{length}} characters",
+      "unavailable": "The result could not be serialized; no preview is available."
+    },
     "toolLabel": "{{server}}: {{tool}}",
     "arguments": "Arguments:",
     "executing": "Executing tool...",

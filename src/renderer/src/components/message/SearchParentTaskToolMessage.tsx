@@ -4,9 +4,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineContentPasteSearch } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
 
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   message: ToolMessage;
@@ -22,6 +25,7 @@ export const SearchParentTaskToolMessage = ({ message, onRemove, compact = false
 
   const query = (message.args.query as string) || '';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error');
   const isDenied = content && typeof content === 'string' && content.startsWith('Parent task search denied');
 
@@ -53,6 +57,10 @@ export const SearchParentTaskToolMessage = ({ message, onRemove, compact = false
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isError) {
       return (
         <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">

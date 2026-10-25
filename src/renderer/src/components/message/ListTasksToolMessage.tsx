@@ -4,9 +4,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { LuClipboardList } from 'react-icons/lu';
 import { ToolMessage } from '@common/types';
 
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 
 type Props = {
   message: ToolMessage;
@@ -34,6 +37,7 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false, onFor
   const limit = message.args.limit as number | undefined;
   const state = (message.args.state as string) ?? undefined;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error listing tasks:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Listing tasks denied by user.');
 
@@ -71,6 +75,15 @@ export const ListTasksToolMessage = ({ message, onRemove, compact = false, onFor
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return (
+        <>
+          {limit != null && <div className="px-4 text-2xs text-text-muted">{`${t('toolMessage.power.glob.for')} offset=${offset}, limit=${limit}`}</div>}
+          <TruncatedToolResultContent result={truncatedResult} />
+        </>
+      );
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

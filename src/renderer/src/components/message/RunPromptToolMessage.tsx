@@ -4,6 +4,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdPlayArrow } from 'react-icons/md';
 import { DefaultTaskState, ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -26,6 +29,7 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
   const mode = message.args.mode as string | undefined;
   const executeAndWait = message.args.executeAndWait as boolean | undefined;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error running prompt on task:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Running prompt on task denied by user.');
   const isNotFound = content && typeof content === 'string' && content.startsWith('Task with ID') && content.includes('not found');
@@ -95,6 +99,7 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-3">
+          {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
           <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">
             <pre className="whitespace-pre-wrap text-3xs text-text-primary max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
               {prompt}

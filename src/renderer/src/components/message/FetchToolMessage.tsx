@@ -3,6 +3,9 @@ import { RiLinkM, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } 
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { highlightWithLowlight } from '@/utils/highlighter';
@@ -24,6 +27,7 @@ export const FetchToolMessage = ({ message, onRemove, compact = false, onFork, o
   const url = (message.args.url as string) || '';
   const format = (message.args.format as string) || 'markdown';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('URL fetch from');
 
@@ -64,6 +68,10 @@ export const FetchToolMessage = ({ message, onRemove, compact = false, onFork, o
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

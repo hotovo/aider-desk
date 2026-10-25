@@ -4,6 +4,9 @@ import { FaSearchengin } from 'react-icons/fa6';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
@@ -40,6 +43,7 @@ export const SemanticSearchToolMessage = ({ message, taskDir, onRemove, compact 
   const searchQuery = (message.args.searchQuery as string) || (message.args.query as string) || '';
   const path = (message.args.path as string) || '.';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Search execution denied by user.');
 
@@ -81,6 +85,10 @@ export const SemanticSearchToolMessage = ({ message, taskDir, onRemove, compact 
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isError) {
       return (
         <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">

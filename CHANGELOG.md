@@ -12,6 +12,7 @@
 - fixed notification overflow and centering on small screens
 - fixed dialog overflow on small screens with responsive widths and wrapping footer buttons
 - fixed Model Library layout on small screens with a wrapping toolbar and a horizontally scrollable models table
+- fixed crashes when displaying truncated tool results while preserving tool details and input parameters
 
 ## [0.88.0]
 

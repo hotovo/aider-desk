@@ -3,9 +3,12 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { Tooltip } from '@/components/ui/Tooltip';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 
 type Props = {
   message: ToolMessage;
@@ -36,6 +39,7 @@ export const DeleteMemoryToolMessage = ({ message, onRemove, compact = false, on
 
   const id = (message.args.id as string) || '';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to delete memory');
   const isDenied = typeof content === 'string' && (content.includes('cancelled') || content.includes('denied'));
 
@@ -96,6 +100,7 @@ export const DeleteMemoryToolMessage = ({ message, onRemove, compact = false, on
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-3">
+          {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
           {/* Memory Details */}
           <div className="space-y-2">
             <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">

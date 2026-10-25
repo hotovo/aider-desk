@@ -3,8 +3,11 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 
 type Props = {
   message: ToolMessage;
@@ -20,6 +23,7 @@ export const UpdateMemoryToolMessage = ({ message, onRemove, compact = false, on
 
   const id = (message.args.id as string) || '';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to update memory');
   const isDenied = typeof content === 'string' && (content.includes('cancelled') || content.includes('denied'));
 
@@ -82,6 +86,7 @@ export const UpdateMemoryToolMessage = ({ message, onRemove, compact = false, on
     return (
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-3">
+          {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
           {/* Memory ID */}
           <div className="space-y-2">
             <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">

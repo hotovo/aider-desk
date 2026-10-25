@@ -4,6 +4,9 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTrash }
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { IconButton } from '@/components/common/IconButton';
@@ -27,6 +30,7 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
   const query = (message.args.query as string) || '';
   const limit = (message.args.limit as number) ?? 3;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to retrieve memories');
   const isDenied = content && typeof content === 'string' && content.includes('denied');
   const memoryCount = Array.isArray(content) ? content.length : 0;
@@ -83,7 +87,7 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
         {!content ? (
           <span>{t('toolMessage.memory.retrievingMemories')}</span>
-        ) : isError || isDenied ? (
+        ) : isError || isDenied || truncatedResult ? (
           <span>{t('toolMessage.memory.retrievingMemories')}</span>
         ) : (
           <span>{memoryCount > 0 ? t('toolMessage.memory.foundMemories', { count: memoryCount }) : t('toolMessage.memory.noMemoriesFound')}</span>
@@ -129,7 +133,7 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
       );
     }
 
-    if (Array.isArray(content)) {
+    if (Array.isArray(content) || truncatedResult) {
       return (
         <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="space-y-3">
@@ -143,7 +147,9 @@ export const RetrieveMemoryToolMessage = ({ message, onRemove, compact = false, 
               </div>
             </div>
             {/* Memory List */}
-            {content.length > 0 ? (
+            {truncatedResult ? (
+              <TruncatedToolResultContent result={truncatedResult} />
+            ) : content.length > 0 ? (
               <div className="space-y-2">
                 {content.map((memory) => {
                   const memoryExists = currentMemories.has(memory.id);

@@ -4,6 +4,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdAssignment } from 'react-icons/md';
 import { ContextFile, ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -23,6 +26,7 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false, onFork,
 
   const taskId = (message.args.taskId as string) || '';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError =
     content &&
     typeof content === 'string' &&
@@ -66,6 +70,10 @@ export const GetTaskToolMessage = ({ message, onRemove, compact = false, onFork,
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

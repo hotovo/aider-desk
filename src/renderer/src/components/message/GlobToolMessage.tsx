@@ -6,6 +6,8 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
 import { areMessagesEqual } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -26,6 +28,7 @@ const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
 
   const pattern = (message.args.pattern as string) || '';
   const content = useMemo(() => message.content && JSON.parse(message.content), [message.content]);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && !Array.isArray(content) && typeof content === 'string' && content.startsWith('Error:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Glob search with pattern');
 
@@ -69,7 +72,7 @@ const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
         {!content ? (
           <span>{t('toolMessage.power.glob.findingFiles')}</span>
-        ) : isError || isDenied ? (
+        ) : isError || isDenied || truncatedResult ? (
           <span>{t('toolMessage.power.glob.title')}</span>
         ) : fileCount > 0 ? (
           <span>{t('toolMessage.power.glob.foundFiles', { count: fileCount })}</span>
@@ -98,6 +101,10 @@ const GlobToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (!content) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

@@ -23,6 +23,8 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { ToolResultImages } from './ToolResultImages';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 import { CodeInline } from '@/components/common/CodeInline';
 
@@ -40,6 +42,7 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
   const isExecuting = message.content === '';
   const isStreaming = message.isStreaming === true;
   const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
+  const truncatedResult = getTruncatedToolResult(parsedResult?.json);
 
   const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
 
@@ -134,6 +137,10 @@ export const ToolMessageBlock = ({ message, onRemove, compact = false, onFork, o
   };
 
   const getResultContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (!parsedResult) {
       return null;
     }

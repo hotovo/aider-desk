@@ -9,6 +9,8 @@ import { localizeToolRecoveryContent } from './localize-tool-recovery';
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 type Props = {
   message: ToolMessage;
@@ -24,6 +26,7 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, o
   const skillName = (message.args.skill as string) || '';
   const isExecuting = message.content === '';
   const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
+  const truncatedResult = getTruncatedToolResult(parsedResult?.json);
 
   const title = (
     <div className="flex items-center gap-2 w-full text-left">
@@ -47,6 +50,10 @@ export const ActivateSkillToolMessage = ({ message, onRemove, compact = false, o
   }
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (isExecuting) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

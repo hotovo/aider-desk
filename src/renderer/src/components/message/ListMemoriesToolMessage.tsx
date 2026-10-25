@@ -3,6 +3,9 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
@@ -37,6 +40,7 @@ export const ListMemoriesToolMessage = ({ message, onRemove, compact = false, on
 
   const type = (message.args.type as string) || '';
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Failed to list memories');
   const isDenied = content && typeof content === 'string' && content.includes('denied');
   const memoryCount = Array.isArray(content) ? content.length : 0;
@@ -77,6 +81,10 @@ export const ListMemoriesToolMessage = ({ message, onRemove, compact = false, on
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (!content) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">

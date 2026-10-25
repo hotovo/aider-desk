@@ -24,6 +24,8 @@ import { getToolRecoveryCodes, localizeToolRecoveryContent } from './localize-to
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ToolResultImages } from './ToolResultImages';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 import { CodeInline } from '@/components/common/CodeInline';
 
@@ -38,6 +40,7 @@ const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) =
   const isExecuting = message.content === '';
   const recoveryCodes = getToolRecoveryCodes(message.content);
   const parsedResult = !isExecuting ? parseToolContent(localizeToolRecoveryContent(message.content, t)) : null;
+  const truncatedResult = getTruncatedToolResult(parsedResult?.json);
 
   const getToolLabel = (toolMessage: ToolMessage): ReactNode => {
     const defaultLabel = () => t('toolMessage.toolLabel', { server: formatName(toolMessage.serverName), tool: formatName(toolMessage.toolName) });
@@ -107,6 +110,10 @@ const CompactToolMessageComponent = ({ message, isExpanded, onToggle }: Props) =
   };
 
   const getResultContent = () => {
+    if (truncatedResult) {
+      return <TruncatedToolResultContent result={truncatedResult} />;
+    }
+
     if (!parsedResult) {
       return null;
     }

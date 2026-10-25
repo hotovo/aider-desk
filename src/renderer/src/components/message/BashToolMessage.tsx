@@ -5,6 +5,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -43,6 +46,7 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
   const timeout = message.args.timeout as number | undefined;
   const cwd = message.args.cwd as string | undefined;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isStandardOutput = isStandardBashOutput(content);
   const hasError = hasErrorProperty(content);
   const hasDenied = hasDeniedProperty(content);
@@ -146,7 +150,23 @@ export const BashToolMessage = ({ message, onRemove, compact = false, onFork, on
     return (
       <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-2">
-          {content && typeof content === 'string' ? (
+          {truncatedResult ? (
+            <>
+              <TruncatedToolResultContent result={truncatedResult} />
+              {cwd && (
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.workingDir')}:</div>
+                  <div className="break-all">{cwd}</div>
+                </div>
+              )}
+              {timeout != null && (
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold text-text-secondary">{t('toolMessage.power.bash.timeout')}:</div>
+                  <div>{`${timeout}ms`}</div>
+                </div>
+              )}
+            </>
+          ) : content && typeof content === 'string' ? (
             <div className={isDenied ? 'text-warning' : 'text-error'}>
               <div className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono">
                 {content}

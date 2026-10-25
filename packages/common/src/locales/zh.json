@@ -1503,6 +1503,11 @@
     "answer": "回答"
   },
   "toolMessage": {
+    "truncatedResult": {
+      "notice": "工具结果已截断，仅提供预览。",
+      "originalLength": "原始结果：{{length}} 个字符",
+      "unavailable": "无法序列化结果，预览不可用。"
+    },
     "toolLabel": "工具: {{server}}/{{tool}}",
     "arguments": "参数:",
     "executing": "执行工具...",

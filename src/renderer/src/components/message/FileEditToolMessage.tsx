@@ -5,6 +5,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -29,6 +32,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
   const isRegex = (message.args.isRegex as boolean) ?? false;
   const replaceAll = (message.args.replaceAll as boolean) ?? false;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const language = getLanguageFromPath(filePath);
 
   const isDenied = typeof content === 'string' && content.startsWith('File edit to');
@@ -61,6 +65,10 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
           <Tooltip content={content}>
             <RiCloseCircleFill className="w-3 h-3 text-warning shrink-0" />
           </Tooltip>
+        ) : truncatedResult ? (
+          <Tooltip content={t('toolMessage.truncatedResult.notice')}>
+            <RiErrorWarningFill className="w-3 h-3 text-warning shrink-0" />
+          </Tooltip>
         ) : (
           <Tooltip content={content}>
             <RiErrorWarningFill className="w-3 h-3 text-error shrink-0" />
@@ -71,6 +79,7 @@ export const FileEditToolMessage = ({ message, onRemove, compact = false, onFork
 
   const renderContent = () => (
     <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
+      {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
       {isDenied ? (
         <div className="text-warning">
           <pre className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono">

@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { FileWriteMode, ToolMessage } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -27,6 +30,7 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFor
   const filePath = (message.args.filePath as string) || '';
   const language = getLanguageFromPath(filePath);
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const isError = typeof content === 'string' && content.startsWith('Error:');
   const isDenied = typeof content === 'string' && content.startsWith('File write to');
   const shouldCloseOnError = typeof content === 'string' && content && !content.startsWith('Successfully');
@@ -79,6 +83,7 @@ export const FileWriteToolMessage = ({ message, onRemove, compact = false, onFor
 
   const renderContent = () => (
     <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
+      {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
       {isDenied ? (
         <div className="text-warning">
           <pre className="whitespace-pre-wrap bg-bg-primary-light p-3 rounded text-2xs max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth font-mono">

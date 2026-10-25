@@ -4,6 +4,9 @@ import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -42,6 +45,7 @@ export const FileReadToolMessage = ({ message, onRemove, compact = false, onFork
   const lineOffset = (message.args.lineOffset as number) ?? 0;
   const lineLimit = (message.args.lineLimit as number) ?? 1000;
   const content = message.content && JSON.parse(message.content);
+  const truncatedResult = getTruncatedToolResult(content);
   const codeBlockContent =
     typeof content === 'string'
       ? withLines
@@ -88,12 +92,15 @@ export const FileReadToolMessage = ({ message, onRemove, compact = false, onFork
 
   const renderContent = () => (
     <div className="px-3 text-xs text-text-tertiary bg-bg-secondary">
-      {!isError && !isDenied && codeBlockContent && (
+      {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
+      {!isError && !isDenied && (codeBlockContent || truncatedResult) && (
         <>
           {/* File content - filter out line numbers if present */}
-          <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
-            {codeBlockContent}
-          </CodeBlock>
+          {codeBlockContent && (
+            <CodeBlock baseDir="" language={language} file={filePath} isComplete={true}>
+              {codeBlockContent}
+            </CodeBlock>
+          )}
 
           {/* Parameter information */}
           <div className="mb-2 p-2 bg-bg-primary-light rounded text-2xs">

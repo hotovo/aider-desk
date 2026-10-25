@@ -6,6 +6,8 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 
 import { areMessagesEqual } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -115,6 +117,7 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
       return message.content;
     }
   }, [message.content]);
+  const truncatedResult = getTruncatedToolResult(rawContent);
   const isMarkdown = rawContent && typeof rawContent === 'string' && rawContent.startsWith('## Grep Results:');
   const isError =
     rawContent &&
@@ -164,7 +167,7 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
       <div className="text-xs text-text-primary flex flex-wrap gap-1">
         {!rawContent ? (
           <span>{t('toolMessage.power.grep.findingMatches')}</span>
-        ) : isError || isDenied ? (
+        ) : isError || isDenied || truncatedResult ? (
           <span>{t('toolMessage.power.grep.title')}</span>
         ) : matchCount > 0 ? (
           <span>{t('toolMessage.power.grep.foundMatches', { count: matchCount })}</span>
@@ -198,6 +201,15 @@ const GrepToolMessageComponent = ({ message, onRemove, compact = false, onFork, 
   );
 
   const renderContent = () => {
+    if (truncatedResult) {
+      return (
+        <>
+          {contextLines > 0 && <div className="px-4 text-2xs text-text-muted">{t('toolMessage.power.grep.contextLines', { count: contextLines })}</div>}
+          <TruncatedToolResultContent result={truncatedResult} />
+        </>
+      );
+    }
+
     if (!rawContent) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
