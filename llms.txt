@@ -29124,6 +29124,7 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 // Import your translation files
 import en from '@common/locales/en.json';
+import de from '@common/locales/de.json';
 import zh from '@common/locales/zh.json';
 import ru from '@common/locales/ru.json';
 import ko from '@common/locales/ko.json';
