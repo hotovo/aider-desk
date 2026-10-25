@@ -371,7 +371,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "fff",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 154
+      "installCount": 155
     },
     {
       "id": "task-scheduler",
