@@ -322,7 +322,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "ui-placement-demo",
@@ -371,7 +371,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 32
+      "installCount": 34
     },
     {
       "id": "fff",
