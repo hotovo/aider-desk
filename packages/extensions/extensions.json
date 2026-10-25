@@ -71,7 +71,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 49
+      "installCount": 50
     },
     {
       "id": "theme",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "external-rules",
@@ -418,7 +418,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "tps-counter",
@@ -430,7 +430,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 108
+      "installCount": 109
     },
     {
       "id": "verifier",
