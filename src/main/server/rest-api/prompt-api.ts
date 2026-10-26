@@ -12,6 +12,7 @@ const RunPromptSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().optional(),
   prompt: z.string().min(1, 'Prompt is required'),
+  requestId: z.string().uuid().optional(),
   mode: z.string().optional(),
   images: z.array(z.string()).optional(),
   model: z.string().optional(),
@@ -69,36 +70,95 @@ const SSE_ALLOWED_EVENT_TYPES = new Set([
   'task-created',
 ]);
 
+const REQUEST_ID_RETENTION_MS = 24 * 60 * 60 * 1000;
+const MAX_TRACKED_REQUEST_IDS = 10_000;
+
 export class PromptApi extends BaseApi {
+  private readonly requestIds = new Map<string, number>();
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
   }
 
   registerRoutes(router: Router): void {
-    router.post('/run-prompt', (req: Request, res: Response) => {
-      const acceptsSSE = req.accepts('text/event-stream');
-      const acceptsJSON = req.accepts('application/json');
+    router.post(
+      '/run-prompt',
+      this.handleRequest(async (req: Request, res: Response) => {
+        const acceptsSSE = req.accepts('text/event-stream');
+        const acceptsJSON = req.accepts('application/json');
 
-      if (!acceptsSSE && !acceptsJSON) {
-        res.status(406).json({ error: 'Accept header must be application/json or text/event-stream' });
-        return;
-      }
+        if (!acceptsSSE && !acceptsJSON) {
+          res.status(406).json({ error: 'Accept header must be application/json or text/event-stream' });
+          return;
+        }
 
-      const parsed = RunPromptSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ error: parsed.error.flatten() });
-        return;
-      }
+        const parsed = RunPromptSchema.safeParse(req.body);
+        if (!parsed.success) {
+          res.status(400).json({ error: parsed.error.flatten() });
+          return;
+        }
 
-      const { projectDir, taskId, prompt, mode, images, model, agentProfileId, autonomyMode } = parsed.data;
-      const isSSE = acceptsSSE && !acceptsJSON;
+        const { projectDir, taskId, prompt, mode, images, model, agentProfileId, autonomyMode, requestId } = parsed.data;
+        const isSSE = acceptsSSE && !acceptsJSON;
+        const receivedAt = Date.now();
+        const requestLogContext = {
+          requestId: requestId ?? null,
+          serverRequestId: uuidv4(),
+          projectDir,
+          taskId,
+          mode,
+          isSSE,
+        };
 
-      if (isSSE) {
-        void this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
-      } else {
-        void this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
-      }
-    });
+        logger.debug('Run prompt request received', requestLogContext);
+        res.on('finish', () => {
+          logger.debug('Run prompt response finished', {
+            ...requestLogContext,
+            statusCode: res.statusCode,
+            durationMs: Date.now() - receivedAt,
+          });
+        });
+        res.on('close', () => {
+          logger.debug('Run prompt connection closed', {
+            ...requestLogContext,
+            responseFinished: res.writableFinished,
+            durationMs: Date.now() - receivedAt,
+          });
+        });
+
+        if (requestId) {
+          for (const [id, expiresAt] of this.requestIds) {
+            if (expiresAt <= receivedAt) {
+              this.requestIds.delete(id);
+            }
+          }
+
+          if (this.requestIds.has(requestId)) {
+            logger.debug('Run prompt duplicate request rejected', requestLogContext);
+            res.status(409).json({ error: 'Request ID has already been submitted', requestId });
+            return;
+          }
+
+          if (this.requestIds.size >= MAX_TRACKED_REQUEST_IDS) {
+            res.status(503).json({ error: 'Request ID tracking capacity reached; try again later' });
+            return;
+          }
+
+          this.requestIds.set(requestId, Infinity);
+        }
+
+        try {
+          if (isSSE) {
+            await this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
+          } else {
+            await this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
+          }
+        } finally {
+          if (requestId) {
+            this.requestIds.set(requestId, Date.now() + REQUEST_ID_RETENTION_MS);
+          }
+        }
+      }),
+    );
 
     router.post(
       '/save-prompt',

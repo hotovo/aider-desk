@@ -412,7 +412,7 @@ export class BrowserApi implements ApplicationAPI {
     this.post('/project/tasks/restart-aider-connector', { projectDir: baseDir, taskId });
   }
   runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void {
-    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode, images });
+    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode, images, requestId: uuidv4() });
   }
   savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void> {
     return this.post('/save-prompt', { projectDir: baseDir, taskId, prompt });

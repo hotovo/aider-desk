@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed duplicate prompt execution when mobile clients replayed requests after reconnecting
+
 ## [0.89.0]
 
 - improved Mermaid diagrams with theme-aware colors and fonts and smoother streaming using Pele library
