@@ -233,7 +233,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "redact-secrets",
