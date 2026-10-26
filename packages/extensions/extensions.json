@@ -10,7 +10,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "binary-files",
@@ -23,7 +23,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 40
+      "installCount": 42
     },
     {
       "id": "wakatime",
@@ -93,7 +93,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 109
+      "installCount": 111
     },
     {
       "id": "protected-paths",
@@ -127,7 +127,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "external-rules",
@@ -139,7 +139,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "external-skills",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "learn",
@@ -334,7 +334,7 @@
         "ui",
         "example"
       ],
-      "installCount": 15
+      "installCount": 16
     },
     {
       "id": "multi-model-run",
@@ -371,7 +371,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "fff",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 155
+      "installCount": 157
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 133
+      "installCount": 134
     },
     {
       "id": "dbx",
