@@ -22,7 +22,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "binary-files",
@@ -83,7 +83,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "theme",
@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 111
+      "installCount": 112
     },
     {
       "id": "protected-paths",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 99
+      "installCount": 100
     },
     {
       "id": "legacy-system-prompt",
@@ -188,7 +188,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "sound-notification",
@@ -294,7 +294,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 25
+      "installCount": 26
     },
     {
       "id": "lsp",
@@ -307,7 +307,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 91
+      "installCount": 92
     },
     {
       "id": "plannotator",
@@ -334,7 +334,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "ui-placement-demo",
@@ -383,7 +383,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 35
+      "installCount": 36
     },
     {
       "id": "fff",
@@ -413,7 +413,7 @@
         "tools",
         "search"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "seek",
@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 109
+      "installCount": 110
     },
     {
       "id": "verifier",
@@ -544,7 +544,7 @@
         "events",
         "ui"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "codegraph",
@@ -607,7 +607,7 @@
         "tools",
         "search"
       ],
-      "installCount": 68
+      "installCount": 69
     },
     {
       "id": "destructive-command-guard",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 157
+      "installCount": 158
     },
     {
       "id": "task-scheduler",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 134
+      "installCount": 135
     },
     {
       "id": "dbx",
