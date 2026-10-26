@@ -38,7 +38,7 @@ const gitLogJsx = readFileSync(join(__dirname, './ui/GitLog.jsx'), 'utf-8');
 export default class GitLogExtension implements Extension {
   static metadata = {
     name: 'Git Log',
-    version: '1.1.2',
+    version: '1.2.0',
     description: 'Browse the git history of open projects with an IntelliJ IDEA-style log viewer',
     author: 'wladimiiir',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/git-log/icon.png',
@@ -113,7 +113,13 @@ export default class GitLogExtension implements Extension {
           if (!(await isGitRepo(projectDir))) {
             return { commits: [], hasMore: false, error: 'Not a git repository' };
           }
-          return await getLog(projectDir, branch, skip, limit);
+          const filters = args[4] && typeof args[4] === 'object' ? args[4] as Record<string, unknown> : {};
+          return await getLog(projectDir, branch, skip, limit, {
+            includeCheckpoints: filters.includeCheckpoints === true,
+            includeAiderDeskBranches: filters.includeAiderDeskBranches !== false,
+            includeRemoteBranches: filters.includeRemoteBranches !== false,
+            includeTags: filters.includeTags !== false,
+          });
         } catch (err) {
           context.log(`get-log failed: ${this.getError(err)}`, 'error');
           return { commits: [], hasMore: false, error: this.getError(err) };

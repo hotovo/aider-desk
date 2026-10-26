@@ -6,6 +6,7 @@
     FiGitCommit,
     FiSearch,
     FiRefreshCw,
+    FiFilter,
     FiAlertCircle,
     FiFileText,
     FiArrowLeft,
@@ -70,6 +71,13 @@
   const [activeFilePath, setActiveFilePath] = useState(null);
   const [branchQuery, setBranchQuery] = useState('');
   const [branchOpen, setBranchOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [logFilters, setLogFilters] = useState({
+    includeCheckpoints: false,
+    includeAiderDeskBranches: true,
+    includeRemoteBranches: true,
+    includeTags: true,
+  });
   const [gitCtx, setGitCtx] = useState(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [dialog, setDialog] = useState(null);
@@ -87,6 +95,7 @@
   const detailContainerRef = useRef(null);
   const loadingMoreRef = useRef(false);
   const branchContainerRef = useRef(null);
+  const filtersContainerRef = useRef(null);
   const contextMenuRef = useRef(null);
   const bannerTimerRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -127,6 +136,9 @@
     const handler = (e) => {
       if (branchContainerRef.current && !branchContainerRef.current.contains(e.target)) {
         setBranchOpen(false);
+      }
+      if (filtersContainerRef.current && !filtersContainerRef.current.contains(e.target)) {
+        setFiltersOpen(false);
       }
       if (contextMenu && contextMenuRef.current && !contextMenuRef.current.contains(e.target)) {
         setContextMenu(null);
@@ -183,10 +195,16 @@
 
   const filteredBranches = useMemo(() => {
     const q = branchQuery.trim().toLowerCase();
-    const list = q ? branches.filter((b) => b.name.toLowerCase().includes(q)) : branches;
+    const list = branches.filter((b) => {
+      if (b.name !== selectedBranch) {
+        if (!logFilters.includeRemoteBranches && b.remote) return false;
+        if (!logFilters.includeAiderDeskBranches && !b.remote && b.name.startsWith('aider-desk/')) return false;
+      }
+      return !q || b.name.toLowerCase().includes(q);
+    });
     const limited = list.slice(0, 200);
     return { list: limited, total: list.length, hasMore: list.length > limited.length };
-  }, [branches, branchQuery]);
+  }, [branches, branchQuery, logFilters, selectedBranch]);
 
   const filteredCommits = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -202,7 +220,7 @@
   }, [commits, searchQuery]);
 
   const selectProject = useCallback(
-    async (dir) => {
+    async (dir, preferredBranch) => {
       if (!dir) return;
       setSelectedProject(dir);
       setError(null);
@@ -225,9 +243,10 @@
           setError(branchResult.error);
         }
       }
+      branch = preferredBranch || branch;
       setSelectedBranch(branch);
 
-      const logResult = await executeExtensionAction('get-log', dir, branch, 0, PAGE_SIZE);
+      const logResult = await executeExtensionAction('get-log', dir, branch, 0, PAGE_SIZE, logFilters);
       if (logResult) {
         if (logResult.error) {
           setError(logResult.error);
@@ -241,7 +260,7 @@
       setGitCtx(ctxResult && !ctxResult.error ? ctxResult : null);
       setLoading(false);
     },
-    [executeExtensionAction],
+    [executeExtensionAction, logFilters],
   );
 
   const handleOpen = useCallback(async () => {
@@ -275,7 +294,7 @@
   );
 
   const handleBranchChange = useCallback(
-    async (value) => {
+    async (value, filters = logFilters) => {
       setSelectedBranch(value);
       setError(null);
       setLoading(true);
@@ -284,7 +303,7 @@
       setSelectedCommit(null);
       setCommitDetail(null);
       setActiveFilePath(null);
-      const result = await executeExtensionAction('get-log', selectedProject, value, 0, PAGE_SIZE);
+      const result = await executeExtensionAction('get-log', selectedProject, value, 0, PAGE_SIZE, filters);
       if (result) {
         if (result.error) {
           setError(result.error);
@@ -298,17 +317,35 @@
       setGitCtx(ctxResult && !ctxResult.error ? ctxResult : null);
       setLoading(false);
     },
-    [executeExtensionAction, selectedProject],
+    [executeExtensionAction, selectedProject, logFilters],
   );
 
   const handleBranchSelect = useCallback(
     (value) => {
       setBranchQuery('');
       setBranchOpen(false);
+      setFiltersOpen(false);
       void handleBranchChange(value);
     },
     [handleBranchChange],
   );
+
+  const handleFilterChange = useCallback((key, checked) => {
+    if (loading || loadingMoreRef.current || actionBusy) return;
+    const nextFilters = { ...logFilters, [key]: checked };
+    setLogFilters(nextFilters);
+    void handleBranchChange(selectedBranch, nextFilters);
+  }, [actionBusy, handleBranchChange, loading, logFilters, selectedBranch]);
+
+  const handleToggleFilters = useCallback(() => {
+    setBranchOpen(false);
+    setFiltersOpen((open) => !open);
+  }, []);
+
+  const handleBranchFocus = useCallback(() => {
+    setFiltersOpen(false);
+    setBranchOpen(true);
+  }, []);
 
   const handleRefresh = useCallback(() => {
     void handleBranchChange(selectedBranch);
@@ -327,7 +364,7 @@
     loadingMoreRef.current = true;
     setLoadingMore(true);
     const skip = commits.length;
-    executeExtensionAction('get-log', selectedProject, selectedBranch, skip, PAGE_SIZE)
+    executeExtensionAction('get-log', selectedProject, selectedBranch, skip, PAGE_SIZE, logFilters)
       .then((result) => {
         if (result && !result.error) {
           setCommits((prev) => [...prev, ...(result.commits || [])]);
@@ -338,7 +375,7 @@
         loadingMoreRef.current = false;
         setLoadingMore(false);
       });
-  }, [executeExtensionAction, selectedProject, selectedBranch, commits.length]);
+  }, [executeExtensionAction, selectedProject, selectedBranch, commits.length, logFilters]);
 
   const handleScroll = useCallback(
     (e) => {
@@ -403,10 +440,10 @@
       if (opts && opts.successMsg) {
         showBanner('success', opts.successMsg);
       }
-      await selectProject(selectedProject);
+      await selectProject(selectedProject, selectedBranch);
       return result;
     },
-    [actionBusy, executeExtensionAction, selectProject, selectedProject, showBanner],
+    [actionBusy, executeExtensionAction, selectProject, selectedProject, selectedBranch, showBanner],
   );
 
   const handleCopyHash = useCallback(
@@ -837,9 +874,9 @@
                 value={branchQuery}
                 onChange={(e) => {
                   setBranchQuery(e.target.value);
-                  setBranchOpen(true);
+                  handleBranchFocus();
                 }}
-                onFocus={() => setBranchOpen(true)}
+                onFocus={handleBranchFocus}
                 placeholder={selectedBranch === 'all' ? 'All branches' : selectedBranch}
                 size="sm"
                 className="pl-9 w-full"
@@ -890,6 +927,33 @@
               className="pl-9 w-full"
               wrapperClassName="w-full"
             />
+          </div>
+          <div className="relative flex-shrink-0" ref={filtersContainerRef}>
+            <Button onClick={handleToggleFilters} size="sm">
+              <FiFilter className="w-3.5 h-3.5 mr-1.5" />
+              Filters
+            </Button>
+            {filtersOpen && (
+              <div className="absolute right-0 top-full mt-1 z-50 bg-bg-secondary-light border border-border-default rounded shadow-lg p-3 space-y-2 w-64">
+                {[
+                  ['includeCheckpoints', 'Include checkpoints'],
+                  ['includeAiderDeskBranches', 'Include AiderDesk branches'],
+                  ['includeRemoteBranches', 'Include remote branches'],
+                  ['includeTags', 'Include tags'],
+                ].map(([key, label]) => (
+                  <Checkbox
+                    key={key}
+                    checked={logFilters[key]}
+                    onChange={(checked) => handleFilterChange(key, checked)}
+                    label={label}
+                    disabled={loading || loadingMore || actionBusy}
+                  />
+                ))}
+                <p className="text-2xs text-text-muted">
+                  History filters apply to All branches. The selected branch and current HEAD remain visible.
+                </p>
+              </div>
+            )}
           </div>
           <IconButton
             icon={<FiRefreshCw className={'w-4 h-4 ' + (loading ? 'animate-spin' : '')} />}

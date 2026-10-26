@@ -108,8 +108,22 @@ export async function getBranches(cwd: string): Promise<GitBranch[]> {
   return branches;
 }
 
-export async function getLog(cwd: string, branch: string, skip: number, limit: number): Promise<LogResult> {
-  const rangeArgs = branch && branch !== 'all' ? [branch] : ['--all'];
+export interface LogFilters {
+  includeCheckpoints?: boolean;
+  includeAiderDeskBranches?: boolean;
+  includeRemoteBranches?: boolean;
+  includeTags?: boolean;
+}
+
+export async function getLog(cwd: string, branch: string, skip: number, limit: number, filters: LogFilters = {}): Promise<LogResult> {
+  const rangeArgs = branch && branch !== 'all' ? [branch] : [
+    ...(filters.includeAiderDeskBranches === false ? ['--exclude=aider-desk/*'] : []),
+    '--branches',
+    ...(filters.includeRemoteBranches === false ? [] : ['--remotes']),
+    ...(filters.includeTags === false ? [] : ['--tags']),
+    ...(filters.includeCheckpoints ? ['--glob=refs/aiderdesk-checkpoints/*'] : []),
+    'HEAD',
+  ];
   const format = ['%H', '%h', '%an', '%ae', '%ad', '%D', '%s', '%b'].join(FIELD_SEP) + RECORD_SEP;
 
   const out = await runGit(
