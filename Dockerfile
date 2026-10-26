@@ -1,6 +1,6 @@
 # Multi-stage build for AiderDesk Docker image
 # Python 3.12 is required for Aider connector
-FROM node:24-slim AS builder
+FROM node:24.22.1-slim AS builder
 
 # These are set automatically by buildx - amd64, arm64
 ARG TARGETARCH=amd64
@@ -10,6 +10,7 @@ ARG POSTHOG_PUBLIC_API_KEY=''
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python3 \
+    ca-certificates \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -43,7 +44,7 @@ RUN node scripts/download-probe.mjs
 RUN POSTHOG_PUBLIC_API_KEY=${POSTHOG_PUBLIC_API_KEY} npm run build:server
 
 # Production stage
-FROM node:24-slim
+FROM node:24.22.1-slim
 
 ARG TARGETARCH=amd64
 
@@ -73,7 +74,7 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl && \
     export UV_INSTALL_DIR=/usr/local/bin && \
-    curl -LsSf https://astral.sh/uv/install.sh | sh && \
+    curl -LsSf https://astral.sh/uv/0.13.4/install.sh | sh && \
     apt-get purge -y --auto-remove curl && rm -rf /var/lib/apt/lists/*
 
 # Set Python 3.12 as default
@@ -105,7 +106,7 @@ RUN mkdir -p ${AIDER_DESK_DATA_DIR} && \
 # Install Python packages into the virtual environment
 RUN uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
         --python ${AIDER_DESK_DATA_DIR}/python-venv/bin/python \
-        pip \
+        pip==26.2.2 \
         aider-chat \
         python-socketio==5.12.1 \
         websocket-client==1.8.0 \
@@ -115,7 +116,11 @@ RUN uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
         opentelemetry-sdk==1.35.0 \
         portalocker==3.2.0
 
-RUN touch ${AIDER_DESK_DATA_DIR}/setup-complete
+RUN uv pip install --upgrade --no-progress --no-cache-dir --link-mode=copy \
+        --python ${AIDER_DESK_DATA_DIR}/python-venv/bin/python \
+        "certifi==2026.10.19" && \
+    ${AIDER_DESK_DATA_DIR}/python-venv/bin/python -c 'import importlib.metadata; assert importlib.metadata.version("certifi") == "2026.10.19", "Certificate bundle verification failed"' && \
+    touch ${AIDER_DESK_DATA_DIR}/setup-complete
 
 # Set environment variables
 ENV NODE_ENV=production

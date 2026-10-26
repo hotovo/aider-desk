@@ -222,7 +222,7 @@
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.6",
     "dts-bundle-generator": "9.5.1",
-    "electron": "44.7.0",
+    "electron": "44.9.1",
     "electron-builder": "26.15.7",
     "electron-vite": "5.0.0",
     "encoding": "0.1.13",

@@ -7,6 +7,7 @@ import { AIDER_DESK_BIN_DIR, PYTHON_COMMAND, PYTHON_VENV_DIR, UV_EXECUTABLE } fr
 import logger from '@/logger';
 
 const execAsync = promisify(exec);
+const UV_VERSION = '0.13.4';
 
 let resolvedUvPath: string | null = null;
 let downloadingUv = false;
@@ -105,7 +106,9 @@ const isUvWorking = async (uvPath: string): Promise<boolean> => {
     });
 
     const output = (stdout || '') + (stderr || '');
-    if (!output.includes('uv')) {
+    const version = output.trim().match(/^uv (\d+\.\d+\.\d+)(?:\s|$)/)?.[1];
+    if (!version || version.localeCompare(UV_VERSION, undefined, { numeric: true }) < 0) {
+      logger.warn(`uv at ${uvPath} must be updated to ${UV_VERSION} or later`);
       return false;
     }
 
@@ -117,7 +120,6 @@ const isUvWorking = async (uvPath: string): Promise<boolean> => {
 };
 
 const downloadUv = async (): Promise<void> => {
-  const UV_VERSION = '0.7.13';
   const BASE_URL = `https://github.com/astral-sh/uv/releases/download/${UV_VERSION}`;
 
   const platform = process.platform;

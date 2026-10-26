@@ -9,6 +9,8 @@ import { getCurrentPythonLibVersion, getLatestPythonLibVersion, getPythonVenvBin
 import { AIDER_DESK_CONNECTOR_DIR, AIDER_DESK_DATA_DIR, PYTHON_VENV_DIR, RESOURCES_DIR, SETUP_COMPLETE_FILENAME } from '@/constants';
 
 const execAsync = promisify(exec);
+const MINIMUM_CERTIFI_VERSION = '2026.10.19';
+const MINIMUM_PIP_VERSION = '26.2.2';
 
 export type PythonInstallStatus =
   | { state: 'idle' }
@@ -156,6 +158,7 @@ export class PythonDependenciesInstaller {
     await this.createVirtualEnvInternal();
 
     await this.setupAiderConnectorInternal(true);
+    await this.ensureSafePythonTlsDependencies();
 
     // Mark setup as complete
     logger.info(`Creating setup complete file: ${SETUP_COMPLETE_FILENAME}`);
@@ -168,6 +171,8 @@ export class PythonDependenciesInstaller {
   }
 
   private async performUpdateCheck(): Promise<void> {
+    await this.ensureSafePythonTlsDependencies();
+
     if (process.env.AIDER_DESK_NO_UPDATES === 'true') {
       logger.info('Skipping update checks (AIDER_DESK_NO_UPDATES is set)');
       this.setStatus({ state: 'ready' });
@@ -186,11 +191,49 @@ export class PythonDependenciesInstaller {
 
     // Run update check (install/upgrade packages)
     await this.setupAiderConnectorInternal(false);
+    await this.ensureSafePythonTlsDependencies();
 
     this.setStatus({ state: 'ready' });
     this.readyResolve?.();
     this.installing = false;
     logger.info('Python dependencies update check completed');
+  }
+
+  private async ensureSafePythonTlsDependencies(): Promise<void> {
+    await this.ensureSafePythonPackage('certifi', MINIMUM_CERTIFI_VERSION);
+    await this.ensureSafePythonPackage('pip', MINIMUM_PIP_VERSION);
+  }
+
+  private async ensureSafePythonPackage(packageName: string, minimumVersion: string): Promise<void> {
+    const isPatched = (version: string | null): boolean =>
+      version !== null && /^\d+\.\d+\.\d+$/.test(version) && version.localeCompare(minimumVersion, undefined, { numeric: true }) >= 0;
+
+    if (isPatched(await getCurrentPythonLibVersion(packageName))) {
+      return;
+    }
+
+    const requirement = `${packageName}==${minimumVersion}`;
+    if (process.env.AIDER_DESK_NO_UPDATES === 'true') {
+      throw new Error(`Aider requires ${packageName} ${minimumVersion} or later. Update the managed Python environment or unset AIDER_DESK_NO_UPDATES.`);
+    }
+
+    this.setStatus({ state: 'installing-packages', package: packageName, current: 1, total: 1 });
+    try {
+      await execAsync(`"${await getResolvedUvPath()}" pip install --upgrade --no-progress --no-cache-dir --link-mode=copy "${requirement}"`, {
+        windowsHide: true,
+        env: {
+          ...process.env,
+          VIRTUAL_ENV: PYTHON_VENV_DIR,
+          PATH: `${getPythonVenvBinPath()}${path.delimiter}${process.env.PATH}`,
+        },
+      });
+    } catch (error) {
+      throw new Error(`Failed to install ${requirement}; refusing to start Aider with an unsafe certificate bundle.`, { cause: error });
+    }
+
+    if (!isPatched(await getCurrentPythonLibVersion(packageName))) {
+      throw new Error(`Aider requires ${packageName} ${minimumVersion} or later; certificate bundle verification failed.`);
+    }
   }
 
   private async checkUvAvailableInternal(): Promise<void> {
@@ -244,7 +287,7 @@ export class PythonDependenciesInstaller {
     }
 
     const packages = [
-      'pip',
+      `pip==${MINIMUM_PIP_VERSION}`,
       aiderVersionSpecifier,
       'python-socketio==5.12.1',
       'websocket-client==1.8.0',
