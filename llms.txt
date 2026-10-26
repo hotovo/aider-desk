@@ -437,6 +437,8 @@ src/
           ThinkingAnswerBlock.tsx
           ToolMessageBlock.tsx
           ToolResultImages.tsx
+          truncated-tool-result.ts
+          TruncatedToolResultContent.tsx
           UpdateMemoryToolMessage.tsx
           UsageInfo.tsx
           UserMessageBlock.tsx
@@ -17823,6 +17825,8 @@ import { localizeToolRecoveryContent } from './localize-tool-recovery';
 import { CopyMessageButton } from './CopyMessageButton';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { parseToolContent } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -17878,6 +17882,9 @@ import { RiTerminalLine, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircle
 import { CgSpinner } from 'react-icons/cg';
 import { MdKeyboardDoubleArrowDown } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
@@ -17964,6 +17971,8 @@ import { getToolRecoveryCodes, localizeToolRecoveryContent } from './localize-to
 import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ToolResultImages } from './ToolResultImages';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
@@ -17975,9 +17984,7 @@ type Props = {
 ⋮----
 const defaultLabel = () => t('toolMessage.toolLabel',
 ⋮----
-if (!parsedResult)
-⋮----
-
+if (truncatedResult)
 ⋮----
 className=
 ⋮----
@@ -18020,9 +18027,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdAssignmentAdd } from 'react-icons/md';
 import { AutonomyMode, TaskExecutionMode, ToolMessage } from '@common/types';
 ⋮----
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -18116,9 +18126,12 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -18139,6 +18152,9 @@ import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'rea
 import { CgSpinner } from 'react-icons/cg';
 import { LiaFolderMinusSolid } from 'react-icons/lia';
 import { ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -18197,6 +18213,9 @@ import { RiLinkM, RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } 
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { highlightWithLowlight } from '@/utils/highlighter';
@@ -18226,6 +18245,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { useTranslation } from 'react-i18next';
 import { ToolMessage } from '@common/types';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -18250,6 +18272,9 @@ import { RiFileTextLine, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircle
 import { getLanguageFromPath } from '@common/utils';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
@@ -18280,6 +18305,9 @@ import { useTranslation } from 'react-i18next';
 import { FileWriteMode, ToolMessage } from '@common/types';
 import { getLanguageFromPath } from '@common/utils';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { CodeBlock } from '@/components/common/CodeBlock';
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock, ExpandableMessageBlockRef } from '@/components/message/ExpandableMessageBlock';
@@ -18304,9 +18332,12 @@ import { RiMessage3Line, RiCheckboxCircleFill, RiErrorWarningFill, RiCloseCircle
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -18327,6 +18358,9 @@ import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill } from 'rea
 import { CgSpinner } from 'react-icons/cg';
 import { MdAssignment } from 'react-icons/md';
 import { ContextFile, ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -18363,6 +18397,8 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
 import { areMessagesEqual } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -18389,6 +18425,8 @@ import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
 import { areMessagesEqual } from './utils';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -18516,6 +18554,9 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
@@ -18545,9 +18586,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { LuClipboardList } from 'react-icons/lu';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { TaskStateChip } from '@/components/common/TaskStateChip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -19207,6 +19251,9 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTrash }
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { StreamingToolMessage } from '@/components/message/StreamingToolMessage';
 import { IconButton } from '@/components/common/IconButton';
@@ -19252,6 +19299,9 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdPlayArrow } from 'react-icons/md';
 import { DefaultTaskState, ToolMessage } from '@common/types';
 ⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
@@ -19277,9 +19327,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineContentPasteSearch } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -19299,9 +19352,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { MdOutlineContentPasteSearch } from 'react-icons/md';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { CodeInline } from '@/components/common/CodeInline';
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -19320,6 +19376,9 @@ import { RiErrorWarningFill, RiCheckboxCircleFill, RiCloseCircleFill } from 'rea
 import { FaSearchengin } from 'react-icons/fa6';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
@@ -19344,6 +19403,9 @@ import { useTranslation } from 'react-i18next';
 import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle, FaTrash } from 'react-icons/fa';
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
+⋮----
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { IconButton } from '@/components/common/IconButton';
@@ -19416,9 +19478,12 @@ import { CgSpinner } from 'react-icons/cg';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { MessageBar } from '@/components/message/MessageBar';
-import { CopyMessageButton } from '@/components/message/CopyMessageButton';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { CopyMessageButton } from '@/components/message/CopyMessageButton';
+import { MessageBar } from '@/components/message/MessageBar';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -19566,6 +19631,8 @@ import { CopyMessageButton } from './CopyMessageButton';
 import { formatName, parseToolContent } from './utils';
 import { ExpandableMessageBlock } from './ExpandableMessageBlock';
 import { ToolResultImages } from './ToolResultImages';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
@@ -19612,6 +19679,31 @@ type Props = {
 export const ToolResultImages = (
 
 ================
+File: src/renderer/src/components/message/truncated-tool-result.ts
+================
+export type TruncatedToolResult = {
+  truncated: true;
+  note: string;
+  originalLength?: number;
+  preview?: string;
+};
+⋮----
+export const getTruncatedToolResult = (value: unknown): TruncatedToolResult | null =>
+
+================
+File: src/renderer/src/components/message/TruncatedToolResultContent.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { RiErrorWarningLine } from 'react-icons/ri';
+⋮----
+import { CopyMessageButton } from './CopyMessageButton';
+import { TruncatedToolResult } from './truncated-tool-result';
+⋮----
+type Props = {
+  result: TruncatedToolResult;
+};
+
+================
 File: src/renderer/src/components/message/UpdateMemoryToolMessage.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -19619,8 +19711,11 @@ import { FaBrain, FaCheckCircle, FaExclamationTriangle, FaTimesCircle } from 're
 import { CgSpinner } from 'react-icons/cg';
 import { ToolMessage } from '@common/types';
 ⋮----
-import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
+import { getTruncatedToolResult } from './truncated-tool-result';
+import { TruncatedToolResultContent } from './TruncatedToolResultContent';
+⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
+import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 ⋮----
 type Props = {
   message: ToolMessage;
