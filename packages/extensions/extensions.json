@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 1
+      "installCount": 2
     },
     {
       "id": "jev",
@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "bmad",
