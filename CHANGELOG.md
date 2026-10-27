@@ -4,6 +4,7 @@
 
 - updated Electron, Node.js, and uv for security fixes, added automatic Python certificate bundle updates and warnings for unpatched Node.js versions
 - fixed duplicate prompt execution when mobile clients replayed requests after reconnecting
+- added separate model overrides for conversation compaction and handoff in Context Management settings
 
 ## [0.89.0]
 

@@ -67,6 +67,7 @@ describe('summary execution identity', () => {
     const loadMessages = vi.fn(async () => undefined);
     const fake = {
       task: { state: 'in-progress' },
+      store: { getSettings: () => ({ taskSettings: {} }) },
       project: { baseDir: '/project' },
       updateContextInfo: vi.fn(async () => undefined),
       saveTask: vi.fn(async () => undefined),
@@ -77,6 +78,7 @@ describe('summary execution identity', () => {
       contextManager: { setContextMessages: vi.fn(), loadMessages, backupContext: vi.fn(async () => undefined) },
       runNextQueuedPrompt: vi.fn(async () => undefined),
     };
+    Object.setPrototypeOf(fake, Task.prototype);
     await Task.prototype.compactConversation.call(fake as unknown as Task, 'agent', undefined, profile, [user], { id: 'main' }, undefined, false);
     expect(runAgent).toHaveBeenCalledOnce();
     expect(runAgent.mock.calls[0][4]?.id).not.toBe('main');
@@ -106,6 +108,7 @@ it.each(['smart', 'summary'])('keeps manual %s compaction durable and undoable w
   const task = {
     taskId: 'task',
     task: { state: 'interrupted' },
+    store: { getSettings: () => ({ taskSettings: {} }) },
     project: { baseDir: '/project' },
     getProjectDir: () => '/project',
     durabilityManager: manager,
@@ -125,6 +128,7 @@ it.each(['smart', 'summary'])('keeps manual %s compaction durable and undoable w
     smartCompactionLevel: 1,
     lastSmartCompactionMessageCount: 0,
   };
+  Object.setPrototypeOf(task, Task.prototype);
   const context = new ContextManager(task as unknown as Task, 'task', original);
   task.contextManager = context;
   vi.spyOn(context, 'getContextMessages').mockImplementation(async () => context['messages']);

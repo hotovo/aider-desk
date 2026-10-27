@@ -67,13 +67,7 @@ import {
   parseSkillCommand,
   parseUsageReport,
 } from '@common/utils';
-import {
-  COMPACT_CONVERSATION_AGENT_PROFILE,
-  CONFLICT_RESOLUTION_PROFILE,
-  HANDOFF_AGENT_PROFILE,
-  INIT_PROJECT_AGENTS_PROFILE,
-  getSubagentId,
-} from '@common/agent';
+import { COMPACT_CONVERSATION_AGENT_PROFILE, CONFLICT_RESOLUTION_PROFILE, INIT_PROJECT_AGENTS_PROFILE, getSubagentId } from '@common/agent';
 import {
   POWER_TOOL_BASH,
   POWER_TOOL_GROUP_NAME,
@@ -3665,10 +3659,12 @@ export class Task {
           throw new Error('No active Agent profile found');
         }
 
+        const modelId = this.getAuxiliaryModelId(profile, this.store.getSettings().taskSettings.compactionModel);
+        const [provider, model] = extractProviderModel(modelId);
         const compactConversationAgentProfile: AgentProfile = {
           ...COMPACT_CONVERSATION_AGENT_PROFILE,
-          provider: profile.provider,
-          model: profile.model,
+          provider,
+          model,
         };
 
         if (waitForAgentCompletion) {
@@ -3792,17 +3788,13 @@ export class Task {
           throw new Error('No active Agent profile found');
         }
 
-        const handoffAgentProfile: AgentProfile = {
-          ...HANDOFF_AGENT_PROFILE,
-          provider: profile.provider,
-          model: profile.model,
-        };
+        const modelId = this.getAuxiliaryModelId(profile, this.store.getSettings().taskSettings.handoffModel);
 
         if (waitForAgentCompletion) {
           await this.waitForCurrentAgentToFinish();
         }
         generatedPrompt = await this.agent.generateText(
-          `${handoffAgentProfile.provider}/${handoffAgentProfile.model}`,
+          modelId,
           '',
           handoffPrompt,
           this.getProjectDir(),

@@ -802,6 +802,10 @@
       "commitMessageModel": "Commit-Nachricht",
       "commitMessageModelTooltip": "Modell, das zum Generieren von Commit-Nachrichten verwendet wird",
       "inheritModel": "Vererben",
+      "compactionModel": "Kompaktierungsmodell",
+      "handoffModel": "Übergabemodell",
+      "useCurrentTaskModel": "Aktuelles Modell der Aufgabe verwenden",
+      "contextModelTooltip": "Modell für manuelle und automatische Kompaktierung oder Übergabe im Agentenmodus. Jeder Typ behält seine eigene Auswahl. Ein anderes Modell muss die Kontextgröße der Unterhaltung unterstützen und kann zwischengespeicherte Eingaben möglicherweise nicht wiederverwenden.",
       "defaultWorkingMode": "Standard-Arbeitsmodus",
       "defaultWorkingModeTooltip": "Der Standard-Arbeitsmodus für neue Aufgaben. Lokal arbeitet direkt im Projektverzeichnis, Worktree verwendet einen isolierten Git-Worktree."
     },

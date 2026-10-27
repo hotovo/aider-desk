@@ -750,6 +750,8 @@ export interface TaskSettings {
   taskNameModel?: string | null;
   taskStateModel?: string | null;
   commitMessageModel?: string | null;
+  compactionModel?: string | null;
+  handoffModel?: string | null;
   defaultWorkingMode: WorkingMode;
   defaultTaskMode?: Mode | 'last';
   defaultProjectMode?: Mode;

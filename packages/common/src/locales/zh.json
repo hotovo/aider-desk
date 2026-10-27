@@ -805,6 +805,10 @@
       "commitMessageModel": "提交消息",
       "commitMessageModelTooltip": "用于生成提交消息的模型",
       "inheritModel": "继承",
+      "compactionModel": "压缩模型",
+      "handoffModel": "交接模型",
+      "useCurrentTaskModel": "使用任务当前的模型",
+      "contextModelTooltip": "用于代理模式下手动和自动压缩或交接的模型。每种类型分别保存所选模型。其他模型必须支持对话的上下文大小，且可能无法复用缓存的输入。",
       "defaultWorkingMode": "默认工作模式",
       "defaultWorkingModeTooltip": "新任务的默认工作模式。本地模式直接在项目目录中工作，工作树模式使用隔离的 git 工作树。"
     },

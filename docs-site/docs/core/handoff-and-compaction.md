@@ -30,7 +30,7 @@ Run `/compact` in the prompt field to summarize the current conversation. The ge
 
 You can guide the summary: `/compact Summarize only the code changes.`
 
-The original messages are replaced by the summary once generation completes. In Agent Mode a dedicated `compact` agent profile performs the summarization; in other modes aider's main model is used.
+The original messages are replaced by the summary once generation completes. In Agent Mode a dedicated `compact` agent profile performs the summarization using the configured compaction model (or the task's current model by default); in other modes aider's main model is used.
 
 For a non-AI alternative, `/smart-compact` applies [smart compaction](#compaction-types) to the current conversation on demand.
 
@@ -94,6 +94,14 @@ When the threshold is exceeded mid-task, the configured strategy runs automatica
 ![Auto-compaction settings](../images/auto-compaction-settings.png)
 
 Per-profile overrides are available in [Agent Profiles](../agent-mode/agent-profiles.md) — useful when a subagent should always use Smart compaction while interactive tasks stay manual.
+
+## Compaction and Handoff Models
+
+In **Settings → Tasks → Context Management**, selecting **Compact** shows the **Compaction model** selector; selecting **Handoff** shows the **Handoff model** selector. **Smart** does not use an AI model and shows no model selector.
+
+Both selections are saved independently, so switching the automatic compaction type does not clear either override. The default, **Use task’s current model**, follows the task's current agent model. A selected override applies to both manual commands (`/compact` or `/handoff`) and automatic compaction in Agent Mode, without changing the task's working model. Manual commands use their respective model override regardless of the automatic compaction type. Aider modes continue to use aider's main model.
+
+An auxiliary model must support the conversation's context size. Switching models may also prevent reuse of cached input, so a smaller model is not necessarily cheaper or faster.
 
 ## Which One Should I Use?
 

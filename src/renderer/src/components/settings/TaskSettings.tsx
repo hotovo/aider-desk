@@ -143,6 +143,17 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
     });
   };
 
+  const handleContextModelChange = (model: Model | null) => {
+    const modelKey = settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff ? 'handoffModel' : 'compactionModel';
+    setSettings({
+      ...settings,
+      taskSettings: {
+        ...settings.taskSettings,
+        [modelKey]: model ? getProviderModelId(model) : null,
+      },
+    });
+  };
+
   const handleTaskNameModelChange = (model: Model | null) => {
     const modelId = model ? getProviderModelId(model) : null;
     setSettings({
@@ -398,48 +409,80 @@ export const TaskSettings = ({ settings, setSettings }: Props) => {
 
           <div className="text-2xs text-text-muted mb-4">{t('settings.tasks.contextCompactingThresholdLowerNote')}</div>
 
-          <div className="flex items-center gap-1 mb-2">
-            <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactionType')}</label>
-            <InfoIcon tooltip={t('settings.tasks.contextCompactionTypeTooltip')} />
-          </div>
+          <div className="flex flex-col gap-6 lg:flex-row lg:gap-16 items-start">
+            <div className="flex-1">
+              <div className="flex items-center gap-1 mb-2">
+                <label className="text-xs text-text-primary font-medium">{t('settings.tasks.contextCompactionType')}</label>
+                <InfoIcon tooltip={t('settings.tasks.contextCompactionTypeTooltip')} />
+              </div>
 
-          <div className="flex gap-2">
-            <Tooltip content={t('settings.tasks.contextCompactionTypeCompactTooltip')}>
-              <button
-                onClick={() => handleCompactionTypeChange(ContextCompactionType.Compact)}
-                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
-                  settings.taskSettings.contextCompactionType === ContextCompactionType.Compact
-                    ? 'bg-bg-primary border-border-light text-text-primary'
-                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
-                }`}
-              >
-                {t('settings.tasks.contextCompactionTypeCompact')}
-              </button>
-            </Tooltip>
-            <Tooltip content={t('settings.tasks.contextCompactionTypeSmartTooltip')}>
-              <button
-                onClick={() => handleCompactionTypeChange(ContextCompactionType.Smart)}
-                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
-                  settings.taskSettings.contextCompactionType === ContextCompactionType.Smart
-                    ? 'bg-bg-primary border-border-light text-text-primary'
-                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
-                }`}
-              >
-                {t('settings.tasks.contextCompactionTypeSmart')}
-              </button>
-            </Tooltip>
-            <Tooltip content={t('settings.tasks.contextCompactionTypeHandoffTooltip')}>
-              <button
-                onClick={() => handleCompactionTypeChange(ContextCompactionType.Handoff)}
-                className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
-                  settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
-                    ? 'bg-bg-primary border-border-light text-text-primary'
-                    : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
-                }`}
-              >
-                {t('settings.tasks.contextCompactionTypeHandoff')}
-              </button>
-            </Tooltip>
+              <div className="flex gap-2">
+                <Tooltip content={t('settings.tasks.contextCompactionTypeCompactTooltip')}>
+                  <button
+                    onClick={() => handleCompactionTypeChange(ContextCompactionType.Compact)}
+                    className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                      settings.taskSettings.contextCompactionType === ContextCompactionType.Compact
+                        ? 'bg-bg-primary border-border-light text-text-primary'
+                        : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                    }`}
+                  >
+                    {t('settings.tasks.contextCompactionTypeCompact')}
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('settings.tasks.contextCompactionTypeSmartTooltip')}>
+                  <button
+                    onClick={() => handleCompactionTypeChange(ContextCompactionType.Smart)}
+                    className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                      settings.taskSettings.contextCompactionType === ContextCompactionType.Smart
+                        ? 'bg-bg-primary border-border-light text-text-primary'
+                        : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                    }`}
+                  >
+                    {t('settings.tasks.contextCompactionTypeSmart')}
+                  </button>
+                </Tooltip>
+                <Tooltip content={t('settings.tasks.contextCompactionTypeHandoffTooltip')}>
+                  <button
+                    onClick={() => handleCompactionTypeChange(ContextCompactionType.Handoff)}
+                    className={`w-[100px] px-3 py-1.5 text-xs rounded border transition-colors ${
+                      settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
+                        ? 'bg-bg-primary border-border-light text-text-primary'
+                        : 'bg-bg-secondary border-border-default text-text-muted hover:border-border-light hover:text-text-primary'
+                    }`}
+                  >
+                    {t('settings.tasks.contextCompactionTypeHandoff')}
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
+            {settings.taskSettings.contextCompactionType !== ContextCompactionType.Smart && (
+              <div className="flex-1 space-y-2">
+                <div className="flex items-center gap-1">
+                  <label className="text-xs text-text-primary font-medium">
+                    {t(
+                      settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
+                        ? 'settings.tasks.handoffModel'
+                        : 'settings.tasks.compactionModel',
+                    )}
+                  </label>
+                  <InfoIcon tooltip={t('settings.tasks.contextModelTooltip')} />
+                </div>
+                <div className="w-64 p-2 bg-bg-secondary-light border-2 border-border-default rounded focus-within:outline-none focus-within:border-border-light">
+                  <ModelSelectorWrapper
+                    className="w-full justify-between"
+                    selectedModelId={
+                      (settings.taskSettings.contextCompactionType === ContextCompactionType.Handoff
+                        ? settings.taskSettings.handoffModel
+                        : settings.taskSettings.compactionModel) || null
+                    }
+                    onChange={handleContextModelChange}
+                    labelOnNull={t('settings.tasks.useCurrentTaskModel')}
+                    skipPreferredModelsUpdate
+                    usePortal
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Section>
