@@ -620,7 +620,7 @@
         "security",
         "commands"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "git-log",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 159
+      "installCount": 160
     },
     {
       "id": "task-scheduler",
