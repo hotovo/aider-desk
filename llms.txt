@@ -14783,6 +14783,12 @@ private async performUpdateCheck(): Promise<void>
 ⋮----
 // Run update check (install/upgrade packages)
 ⋮----
+private async ensureSafePythonTlsDependencies(): Promise<void>
+⋮----
+private async ensureSafePythonPackage(packageName: string, minimumVersion: string): Promise<void>
+⋮----
+const isPatched = (version: string | null): boolean
+⋮----
 private async checkUvAvailableInternal(): Promise<void>
 ⋮----
 private async createVirtualEnvInternal(): Promise<void>
@@ -34111,7 +34117,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.89.0-dev",
+  "version": "0.90.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -34333,7 +34339,7 @@ File: package.json
     "autoprefixer": "10.4.24",
     "concurrently": "10.0.6",
     "dts-bundle-generator": "9.5.1",
-    "electron": "44.7.0",
+    "electron": "44.9.1",
     "electron-builder": "26.15.7",
     "electron-vite": "5.0.0",
     "encoding": "0.1.13",
