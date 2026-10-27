@@ -139,7 +139,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "external-rules",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 100
+      "installCount": 101
     },
     {
       "id": "legacy-system-prompt",
@@ -322,7 +322,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "programmatic-tool-calls",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "wigolo",
@@ -607,7 +607,7 @@
         "tools",
         "search"
       ],
-      "installCount": 69
+      "installCount": 70
     },
     {
       "id": "destructive-command-guard",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 55
+      "installCount": 56
     },
     {
       "id": "skill-gallery",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 158
+      "installCount": 159
     },
     {
       "id": "task-scheduler",
@@ -658,7 +658,7 @@
         "commands",
         "events"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "reasoning-selector",
