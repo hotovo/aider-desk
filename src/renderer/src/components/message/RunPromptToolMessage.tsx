@@ -2,17 +2,24 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill, RiPauseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdPlayArrow } from 'react-icons/md';
-import { DefaultTaskState, ToolMessage } from '@common/types';
+import { AutonomyMode, DefaultTaskState, TaskExecutionMode, ToolMessage } from '@common/types';
 
 import { getTruncatedToolResult } from './truncated-tool-result';
 import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
-import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useProjectStore } from '@/stores/projectStore';
+
+const autonomyLabelKeys = {
+  [AutonomyMode.Manual]: 'common.autonomyManual',
+  [AutonomyMode.Guided]: 'common.autonomyGuided',
+  [AutonomyMode.Autonomous]: 'common.autonomyAutonomous',
+};
 
 type Props = {
+  baseDir: string;
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
@@ -21,18 +28,21 @@ type Props = {
   hideMessageBar?: boolean;
 };
 
-export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
+export const RunPromptToolMessage = ({ baseDir, message, onRemove, compact = false, onFork, onRemoveUpTo, hideMessageBar }: Props) => {
   const { t } = useTranslation();
 
   const taskId = (message.args.taskId as string) || '';
   const prompt = (message.args.prompt as string) || '';
   const mode = message.args.mode as string | undefined;
-  const executeAndWait = message.args.executeAndWait as boolean | undefined;
+  const autonomyMode = message.args.autonomyMode as AutonomyMode | undefined;
+  const executionMode =
+    (message.args.executionMode as TaskExecutionMode | undefined) ??
+    (message.args.executeAndWait === false ? TaskExecutionMode.RunInBackground : TaskExecutionMode.WaitForFinish);
+  const taskName = useProjectStore((state) => state.projectTasksMap.get(baseDir)?.find((task) => task.id === taskId)?.name) || taskId;
   const content = message.content && JSON.parse(message.content);
   const truncatedResult = getTruncatedToolResult(content);
-  const isError = content && typeof content === 'string' && content.startsWith('Error running prompt on task:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Running prompt on task denied by user.');
-  const isNotFound = content && typeof content === 'string' && content.startsWith('Task with ID') && content.includes('not found');
+  const isError = content && typeof content === 'string' && !isDenied;
   const taskState = content && typeof content === 'object' ? (content.state as string | undefined) : undefined;
   const isInterrupted = taskState === DefaultTaskState.Interrupted;
 
@@ -40,7 +50,7 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
     if (!content) {
       return <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />;
     }
-    if (isError || isNotFound) {
+    if (isError) {
       return (
         <Tooltip content={content}>
           <RiErrorWarningFill className="w-3 h-3 text-error shrink-0" />
@@ -67,16 +77,14 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
       </div>
       <div className="text-xs text-text-primary flex gap-3 overflow-hidden">
         <span className="flex-shrink-0">{t('toolMessage.tasks.runPrompt')}</span>
-        <span className="overflow-hidden text-ellipsis max-w-[600px]">
-          <CodeInline className="bg-bg-primary-light whitespace-nowrap">{prompt}</CodeInline>
-        </span>
+        <span className="text-text-tertiary truncate max-w-[600px]">{taskName}</span>
       </div>
       {renderStatusIcon()}
     </div>
   );
 
   const renderContent = () => {
-    if (isError || isNotFound) {
+    if (isError) {
       return (
         <div className="p-3 text-2xs text-text-tertiary bg-bg-secondary">
           <div className="text-error">{content}</div>
@@ -100,11 +108,13 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
       <div className="px-4 py-1 text-2xs text-text-tertiary bg-bg-secondary">
         <div className="space-y-3">
           {truncatedResult && <TruncatedToolResultContent result={truncatedResult} />}
-          <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">
-            <pre className="whitespace-pre-wrap text-3xs text-text-primary max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
-              {prompt}
-            </pre>
-          </div>
+          {prompt && (
+            <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">
+              <pre className="whitespace-pre-wrap text-3xs text-text-primary max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-track-bg-primary-light scrollbar-thumb-bg-secondary-light hover:scrollbar-thumb-bg-fourth">
+                {prompt}
+              </pre>
+            </div>
+          )}
 
           <div className="border border-border-dark-light rounded bg-bg-primary-light px-3 py-2 space-y-1">
             <div className="text-3xs">
@@ -125,15 +135,15 @@ export const RunPromptToolMessage = ({ message, onRemove, compact = false, onFor
                 <span className="text-text-muted">{t('toolMessage.tasks.mode')}:</span> {mode}
               </div>
             )}
-            {executeAndWait ? (
+            {autonomyMode && (
               <div className="text-3xs">
-                <span className="text-text-muted">{t('toolMessage.tasks.executeAndWait')}:</span> {t('toolMessage.tasks.yes')}
-              </div>
-            ) : (
-              <div className="text-3xs">
-                <span className="text-text-muted">{t('toolMessage.tasks.executeInBackground')}:</span> {t('toolMessage.tasks.yes')}
+                <span className="text-text-muted">{t('toolMessage.tasks.autonomyMode')}:</span> {t(autonomyLabelKeys[autonomyMode])}
               </div>
             )}
+            <div className="text-3xs">
+              <span className="text-text-muted">{t('toolMessage.tasks.executionMode')}:</span>{' '}
+              {t(executionMode === TaskExecutionMode.RunInBackground ? 'toolMessage.tasks.runInBackground' : 'toolMessage.tasks.waitForFinish')}
+            </div>
           </div>
         </div>
       </div>

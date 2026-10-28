@@ -121,10 +121,9 @@ Creates a new task in the current project with an initial prompt.
 - `mode` (string, optional): Optional mode to use for the task (only when explicitly requested)
 - `asSubtask` (boolean, optional): Create as a subtask of the current task; alternatively pass an explicit `parentTaskId`
 - `parentTaskId` (string, optional): Create as a subtask of the specified parent task
-- `autonomyMode` (string, optional): Autonomy mode for the new task (`manual`, `guided`, or `autonomous`)
+- `autonomyMode` (string, optional): `manual` asks for tool and plan approvals; `guided` (default) auto-approves tools but requires plan approval; `autonomous` proceeds without tool or plan approval pauses. Select `autonomous` for user-requested unattended execution.
 - `worktree` (boolean, optional): Create the task in worktree mode
-- `executeAndWait` (boolean, optional): If true, the task will be created and executed immediately, and the call waits for it to complete before returning
-- `executeInBackground` (boolean, optional): Create and run the task in the background without waiting
+- `executionMode` (string, optional): `create_only` (default) saves the task without execution; `wait_for_finish` executes and waits for completion; `run_in_background` starts execution and returns immediately. This does not change autonomy or approval requirements.
 
 **Returns:** Task object with id, name, and result message
 
@@ -171,13 +170,16 @@ Permanently deletes a task and all its associated data.
 
 ### `tasks---run_prompt`
 
-Runs a prompt on an existing task. Use this to send additional instructions to a task, continue work on it, or delegate follow-up work.
+Starts a prepared task, resumes an existing conversation, or sends new instructions to an existing task. Omit `prompt` to start or resume without adding a new prompt.
 
 **Parameters:**
 - `taskId` (string, required): The ID of the existing task to run the prompt on
-- `prompt` (string, required): The prompt to run on the task
-- `executeAndWait` (boolean, optional): If true (default), waits for the prompt to complete before returning; if false, runs in the background
-- `mode` (string, optional): Optional mode to use for the prompt
+- `prompt` (string, optional): New instructions. Omit to execute the saved prompt or resume the existing conversation.
+- `executionMode` (string, optional): `wait_for_finish` (default) waits for execution to finish and returns the task state and last message; `run_in_background` starts execution and returns immediately. `create_only` is not supported.
+- `autonomyMode` (string, optional): `manual` asks for tool and plan approvals; `guided` auto-approves tools but requires plan approval; `autonomous` proceeds without tool or plan approval pauses. Select `autonomous` for user-requested unattended execution, whether waiting or running in the background. Omit to preserve the existing setting; explicit values are saved for future runs.
+- `mode` (string, optional): Optional execution mode, only when explicitly requested.
+
+Execution mode controls waiting, not user approvals: background execution alone does not enable autonomous mode. The current task and already-running tasks cannot be executed through this tool. A task without a saved prompt or conversation requires a new `prompt`.
 
 **Use Cases:**
 - Continuing work on a paused or interrupted task

@@ -3379,9 +3379,11 @@ export class Task {
     const originalText = extractTextContent(originalUserMessage.content);
     const promptToRun = updatedPrompt ?? originalText;
     const imagesToRun = updatedImages ?? (updatedPrompt !== undefined ? undefined : extractImagesFromContent(originalUserMessage.content));
-    if (this.tryCustomCommand(promptToRun, mode)) {
+    const customCommand = this.tryCustomCommand(promptToRun, mode);
+    if (customCommand) {
       this.sendTaskMessageRemoved(removedMessages.map((msg) => msg.id));
       await this.updateContextInfo();
+      await customCommand;
       return;
     }
 
@@ -3394,35 +3396,33 @@ export class Task {
 
       await this.updateContextInfo();
 
-      // No need to await runPrompt here, let it run in the background
-      void this.runPrompt(promptToRun, mode, false, originalUserMessage.id, true, imagesToRun);
+      await this.runPrompt(promptToRun, mode, false, originalUserMessage.id, true, imagesToRun);
     } else {
       logger.warn('Could not find a previous user message to redo or an updated prompt to run.');
     }
   }
 
-  public async resumeTask() {
+  public async resumeTask(mode: Mode = this.getCurrentMode()) {
     logger.info('Resuming task:', {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
     });
 
-    const mode = this.getCurrentMode();
     const contextMessages = await this.contextManager.getContextMessages();
     const lastMessage = contextMessages[contextMessages.length - 1];
 
-    if (lastMessage?.role === MessageRole.User && this.tryCustomCommand(extractTextContent(lastMessage.content), mode)) {
+    const customCommand = lastMessage?.role === MessageRole.User ? this.tryCustomCommand(extractTextContent(lastMessage.content), mode) : undefined;
+    if (customCommand) {
       const removedMessageIds = this.contextManager.removeMessageById(lastMessage.id);
       this.sendTaskMessageRemoved(removedMessageIds);
+      await customCommand;
       return;
     }
 
     if (!AIDER_MODES.includes(mode)) {
       const profile = await this.getTaskAgentProfile();
       if (!profile) {
-        logger.error('No active Agent profile found for resume');
-        this.addLogMessage('error', 'No active Agent profile found');
-        return;
+        throw new Error('No active Agent profile found for resume');
       }
 
       if (!this.task.agentProfileId) {
@@ -3433,41 +3433,40 @@ export class Task {
       this.addLogMessage('loading', 'Resuming task...');
 
       const execution = this.durabilityManager.getRecoverableRoots()[0];
-      void this.runPromptInAgent(profile, mode, null, execution?.promptContext);
+      await this.runPromptInAgent(profile, mode, null, execution?.promptContext);
     } else {
       // In other modes, check if last message is user
       if (lastMessage && lastMessage.role === MessageRole.User) {
         // Last message is from user, redo it
         logger.info('Last message is from user, redoing prompt');
         this.addLogMessage('loading', 'Resuming task...');
-        void this.redoUserPrompt(lastMessage.id, mode);
+        await this.redoUserPrompt(lastMessage.id, mode);
       } else {
         // Last message is not from user, send "Continue" to aider
         logger.info('Last message is not from user, sending Continue prompt');
-        void this.runPrompt('Continue', mode, false);
+        await this.runPrompt('Continue', mode, false);
       }
     }
   }
 
-  private tryCustomCommand(prompt: string, mode: Mode): boolean {
+  private tryCustomCommand(prompt: string, mode: Mode): Promise<void> | undefined {
     if (!prompt.startsWith('/')) {
-      return false;
+      return undefined;
     }
 
     const [name, ...args] = parseCommandArgs(prompt.slice(1));
     if (!name) {
-      return false;
+      return undefined;
     }
 
     const isExtensionCommand = this.extensionManager.getCommands(this.project).some(({ command }) => command.name === name);
     const isCustomCommand = !!this.customCommandManager.getCommand(name);
     if (!isExtensionCommand && !isCustomCommand) {
-      return false;
+      return undefined;
     }
 
     logger.info('Executing custom command from user prompt', { name, args });
-    void this.runCustomCommand(name, args, mode);
-    return true;
+    return this.runCustomCommand(name, args, mode);
   }
 
   private getCurrentMode() {
@@ -3848,7 +3847,7 @@ export class Task {
     await newTask.addFiles(...contextFiles);
 
     if (execute) {
-      await newTask.resumeTask();
+      void newTask.resumeTask();
     }
 
     // Send task-created event to trigger activation and handoff

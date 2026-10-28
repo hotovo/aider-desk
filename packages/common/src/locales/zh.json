@@ -67,6 +67,9 @@
     "gitBranches": "显示 Git 分支"
   },
   "common": {
+    "autonomyManual": "手动",
+    "autonomyGuided": "引导",
+    "autonomyAutonomous": "自动",
     "settings": "设置",
     "cancel": "取消",
     "save": "保存",
@@ -1538,7 +1541,7 @@
       "createTask": "创建任务",
       "createSubtask": "创建子任务",
       "deleteTask": "删除任务",
-      "runPrompt": "在任务上运行提示",
+      "runPrompt": "运行任务",
       "searchTask": "搜索任务:",
       "inTask": "在",
       "searchTaskNoMatches": "未找到匹配项。",
@@ -1726,11 +1729,8 @@
     "savePrompt": "保存提示",
     "savePromptDescription": "保存提示而不执行",
     "saveError": "保存提示失败: {{error}}",
-    "autonomyManual": "手动",
     "autonomyManualTooltip": "手动模式：每次工具执行和计划都需要您的明确批准才能继续。适用于不熟悉的代码库或高风险操作。",
-    "autonomyGuided": "引导",
     "autonomyGuidedTooltip": "引导模式：代理在行动前制定计划，并等待您的批准后再执行更改。工具执行自动批准。适用于日常开发。",
-    "autonomyAutonomous": "自动",
     "autonomyAutonomousTooltip": "自主模式：代理不间断地规划和执行，直到任务完成。适用于您想离开的受信任任务。",
     "autonomyLockTooltip": "锁定后，新建任务将保持当前自主模式",
     "placeholders": {

@@ -67,6 +67,9 @@
     "gitBranches": "Git-Zweige anzeigen"
   },
   "common": {
+    "autonomyManual": "Manuell",
+    "autonomyGuided": "Geführt",
+    "autonomyAutonomous": "Automatisch",
     "settings": "Einstellungen",
     "cancel": "Abbrechen",
     "save": "Speichern",
@@ -1563,7 +1566,7 @@
       "createTask": "Aufgabe erstellen",
       "createSubtask": "Unteraufgabe erstellen",
       "deleteTask": "Aufgabe löschen",
-      "runPrompt": "Prompt auf Aufgabe ausführen",
+      "runPrompt": "Aufgabe ausführen",
       "searchTask": "Aufgabe durchsuchen:",
       "inTask": "in",
       "searchTaskNoMatches": "Keine Übereinstimmungen gefunden.",
@@ -1754,11 +1757,8 @@
     "savePrompt": "Prompt speichern",
     "savePromptDescription": "Prompt speichern, ohne ihn auszuführen",
     "saveError": "Prompt konnte nicht gespeichert werden: {{error}}",
-    "autonomyManual": "Manuell",
     "autonomyManualTooltip": "Manueller Modus: Jede Werkzeugausführung und jeder Plan erfordert Ihre ausdrückliche Genehmigung, bevor fortgefahren wird. Am besten für unbekannte Codebasen oder riskante Vorgänge.",
-    "autonomyGuided": "Geführt",
     "autonomyGuidedTooltip": "Geführter Modus: Der Agent plant, bevor er handelt, und wartet auf Ihre Genehmigung, bevor Änderungen ausgeführt werden. Werkzeugausführungen werden automatisch genehmigt. Am besten für die alltägliche Entwicklung.",
-    "autonomyAutonomous": "Automatisch",
     "autonomyAutonomousTooltip": "Autonomer Modus: Der Agent plant und führt ohne Unterbrechung aus, bis die Aufgabe abgeschlossen ist. Am besten für vertrauenswürdige Aufgaben, bei denen Sie wegtreten möchten.",
     "autonomyLockTooltip": "Durch das Sperren wird der aktuelle Autonomiemodus für neu erstellte Aufgaben beibehalten",
     "placeholders": {

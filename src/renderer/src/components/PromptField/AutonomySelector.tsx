@@ -19,17 +19,17 @@ type Props = {
 const MODE_CONFIG: Record<AutonomyMode, { icon: typeof LuHand; labelKey: string; tooltipKey: string }> = {
   [AutonomyMode.Manual]: {
     icon: LuHand,
-    labelKey: 'promptField.autonomyManual',
+    labelKey: 'common.autonomyManual',
     tooltipKey: 'promptField.autonomyManualTooltip',
   },
   [AutonomyMode.Guided]: {
     icon: FaRegCompass,
-    labelKey: 'promptField.autonomyGuided',
+    labelKey: 'common.autonomyGuided',
     tooltipKey: 'promptField.autonomyGuidedTooltip',
   },
   [AutonomyMode.Autonomous]: {
     icon: LuZap,
-    labelKey: 'promptField.autonomyAutonomous',
+    labelKey: 'common.autonomyAutonomous',
     tooltipKey: 'promptField.autonomyAutonomousTooltip',
   },
 };

@@ -67,6 +67,9 @@
     "gitBranches": "Git 브랜치 표시"
   },
   "common": {
+    "autonomyManual": "수동",
+    "autonomyGuided": "가이드",
+    "autonomyAutonomous": "자동",
     "settings": "설정",
     "cancel": "취소",
     "save": "저장",
@@ -1579,7 +1582,7 @@
       "createTask": "작업 생성",
       "createSubtask": "하위 작업 생성",
       "deleteTask": "작업 삭제",
-      "runPrompt": "작업에서 프롬프트 실행",
+      "runPrompt": "작업 실행",
       "searchTask": "작업 검색:",
       "inTask": "위치:",
       "searchTaskNoMatches": "일치하는 항목이 없습니다.",
@@ -1771,11 +1774,8 @@
     "savePrompt": "프롬프트 저장",
     "savePromptDescription": "실행하지 않고 프롬프트 저장",
     "saveError": "프롬프트를 저장하지 못했습니다: {{error}}",
-    "autonomyManual": "수동",
     "autonomyManualTooltip": "수동 모드: 진행하기 전에 모든 도구 실행과 계획에 명시적인 승인이 필요합니다. 익숙하지 않은 코드베이스나 위험한 작업에 적합합니다.",
-    "autonomyGuided": "가이드",
     "autonomyGuidedTooltip": "가이드 모드: 에이전트가 실행 전에 계획을 세우고 변경 사항을 실행하기 전에 사용자의 승인을 기다립니다. 도구 실행은 자동으로 승인됩니다. 일상적인 개발에 적합합니다.",
-    "autonomyAutonomous": "자동",
     "autonomyAutonomousTooltip": "자율 모드: 에이전트가 작업이 완료될 때까지 중단 없이 계획하고 실행합니다. 신뢰할 수 있는 작업에서 자리를 비우고 싶을 때 적합합니다.",
     "autonomyLockTooltip": "잠그면 새로 생성되는 작업에 대해서도 현재 자율성 모드가 유지됩니다",
     "placeholders": {

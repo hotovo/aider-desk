@@ -59,9 +59,9 @@ export const UI_ACTIONS = [
   { id: 'task.mode.context', labelKey: 'uiActions.switchToContextMode', descriptionKey: 'modeTooltip.context' },
 
   // Task: autonomy modes
-  { id: 'task.autonomy.manual', labelKey: 'promptField.autonomyManual', descriptionKey: 'uiActions.setAutonomyMode' },
-  { id: 'task.autonomy.guided', labelKey: 'promptField.autonomyGuided', descriptionKey: 'uiActions.setAutonomyMode' },
-  { id: 'task.autonomy.autonomous', labelKey: 'promptField.autonomyAutonomous', descriptionKey: 'uiActions.setAutonomyMode' },
+  { id: 'task.autonomy.manual', labelKey: 'common.autonomyManual', descriptionKey: 'uiActions.setAutonomyMode' },
+  { id: 'task.autonomy.guided', labelKey: 'common.autonomyGuided', descriptionKey: 'uiActions.setAutonomyMode' },
+  { id: 'task.autonomy.autonomous', labelKey: 'common.autonomyAutonomous', descriptionKey: 'uiActions.setAutonomyMode' },
 
   // Task: working mode
   { id: 'task.workingMode.local', labelKey: 'uiActions.switchToLocal', descriptionKey: 'uiActions.switchWorkingMode' },

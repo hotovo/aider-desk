@@ -361,7 +361,7 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
         .enum(AutonomyMode)
         .optional()
         .describe(
-          'The autonomy mode for the new task. "manual" requires approval for every tool and plan, "guided" (default) auto-approves tools but waits for plan approval from user, "autonomous" runs without interruption.',
+          'Controls user intervention, independently of executionMode. "manual" asks for tool and plan approvals; "guided" (default) auto-approves tools but requires plan approval; "autonomous" proceeds without tool or plan approval pauses. Set "autonomous" when the user requests unattended execution or delegation without user intervention, whether waiting or running in the background. Background execution alone does not change autonomy.',
         ),
       worktree: z
         .boolean()
@@ -505,31 +505,38 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
   const runPromptTool = tool({
     description: TASKS_TOOL_DESCRIPTIONS[TASKS_TOOL_RUN_PROMPT],
     inputSchema: z.object({
-      taskId: z.string().describe('The ID of the existing task to run the prompt on'),
-      prompt: z.string().describe('The prompt to run on the task'),
-      mode: z.string().optional().describe('Optional mode to use for the prompt. Use only when explicitly requested by the user.'),
-      executeAndWait: z
-        .boolean()
+      taskId: z.string().describe('The ID of the existing task to start, resume, or run a prompt on'),
+      prompt: z
+        .string()
+        .min(1)
         .optional()
-        .default(true)
-        .describe('If true (default), the tool will wait for the prompt to complete before returning. If false, the prompt will run in the background.'),
+        .describe(
+          'Optional new instructions. Omit to start a prepared task using its saved prompt or resume the existing conversation without adding a new prompt.',
+        ),
+      mode: z.string().optional().describe('Optional mode to use for execution. Use only when explicitly requested by the user.'),
+      autonomyMode: z
+        .enum(AutonomyMode)
+        .optional()
+        .describe(
+          'Controls user intervention, independently of executionMode. "manual" asks for tool and plan approvals; "guided" auto-approves tools but requires plan approval; "autonomous" proceeds without tool or plan approval pauses. Set "autonomous" when the user requests unattended execution or delegation without user intervention, whether waiting or running in the background. Omit to preserve the existing autonomy mode. Background execution alone does not change autonomy. An explicit value is saved on the target task for future runs.',
+        ),
+      executionMode: z
+        .enum([TaskExecutionMode.WaitForFinish, TaskExecutionMode.RunInBackground])
+        .optional()
+        .default(TaskExecutionMode.WaitForFinish)
+        .describe(
+          'wait_for_finish (default): wait for execution to finish before returning the task state and last message. run_in_background: start execution and return immediately. This controls waiting only, not user approvals; use autonomyMode="autonomous" for unattended execution.',
+        ),
     }),
     execute: async (input, { toolCallId }) => {
-      const { taskId, prompt, mode, executeAndWait = true } = input;
-      task.addToolMessage(
-        toolCallId,
-        TASKS_TOOL_GROUP_NAME,
-        TASKS_TOOL_RUN_PROMPT,
-        { taskId, prompt, mode, executeAndWait },
-        undefined,
-        undefined,
-        promptContext,
-      );
+      const { taskId, prompt, mode, autonomyMode, executionMode = TaskExecutionMode.WaitForFinish } = input;
+      const waitForFinish = executionMode === TaskExecutionMode.WaitForFinish;
+      task.addToolMessage(toolCallId, TASKS_TOOL_GROUP_NAME, TASKS_TOOL_RUN_PROMPT, input, undefined, undefined, promptContext);
 
       const toolName = `${TASKS_TOOL_GROUP_NAME}${TOOL_GROUP_NAME_SEPARATOR}${TASKS_TOOL_RUN_PROMPT}`;
       const questionKey = toolName;
-      const questionText = `Approve running prompt on task ${taskId}?`;
-      const questionSubject = `Task ID: ${taskId}\nPrompt: ${prompt}${executeAndWait ? '\nWait for completion: true' : '\nRun in background: true'}`;
+      const questionText = `Approve running task ${taskId}?`;
+      const questionSubject = `Task ID: ${taskId}\n${prompt === undefined ? 'Start or resume saved task' : `Prompt: ${prompt}`}\nExecution mode: ${executionMode}\nAutonomy mode: ${autonomyMode ?? 'preserve current'}`;
 
       const [isApproved, userInput] = await approvalManager.handleToolApproval(toolName, input, questionKey, questionText, questionSubject);
 
@@ -538,40 +545,59 @@ export const createTasksToolset = (settings: SettingsData, task: Task, profile: 
       }
 
       try {
+        if (taskId === task.taskId) {
+          return 'Cannot run the current task from its own task tool';
+        }
+
         const targetTask = task.getProject().getTask(taskId);
 
         if (!targetTask) {
           return `Task with ID ${taskId} not found`;
         }
 
-        const effectiveMode = mode || targetTask.task.currentMode || 'agent';
+        await targetTask.init();
+        if (targetTask.isPromptRunning() || targetTask.task.state === DefaultTaskState.InProgress) {
+          return `Task ${taskId} is already running`;
+        }
 
-        const run = targetTask.runPrompt(prompt, effectiveMode, false);
-        if (executeAndWait) {
+        if (prompt === undefined && (await targetTask.getContextMessages()).length === 0) {
+          return `Task ${taskId} has no saved prompt or conversation to resume. Provide a prompt.`;
+        }
+
+        if (autonomyMode !== undefined) {
+          await targetTask.saveTask({ autonomyMode });
+        }
+
+        const run = prompt === undefined ? targetTask.resumeTask(mode) : targetTask.runPrompt(prompt, mode, false);
+        if (waitForFinish) {
           await run;
+        } else {
+          void run.catch((error: unknown) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error('Error running task in background:', { taskId, error });
+            targetTask.addLogMessage('error', `Background task execution failed: ${errorMessage}`);
+          });
         }
 
         const taskState = targetTask.task.state;
-        const contextMessages = await targetTask.getContextMessages();
+        let resultMessage = waitForFinish ? 'Task has been executed successfully' : 'Task has been started in the background';
 
-        let resultMessage = executeAndWait ? 'Prompt has been executed successfully' : 'Prompt has been started in the background';
-
-        if (executeAndWait && taskState === DefaultTaskState.Interrupted) {
+        if (waitForFinish && taskState === DefaultTaskState.Interrupted) {
           resultMessage = 'Task has been interrupted';
-        } else if (executeAndWait && taskState === DefaultTaskState.Delegated) {
+        } else if (waitForFinish && taskState === DefaultTaskState.Delegated) {
           resultMessage = 'Task has been delegated to a subagent';
         }
 
+        const contextMessages = waitForFinish ? await targetTask.getContextMessages() : [];
         const lastContextMessage = contextMessages[contextMessages.length - 1];
 
         return {
           taskId,
           result: resultMessage,
           state: taskState,
-          ...(executeAndWait &&
-            lastContextMessage && {
-              lastMessage: { ...lastContextMessage, content: stripProviderOptions(lastContextMessage.content) },
-            }),
+          ...(lastContextMessage && {
+            lastMessage: { ...lastContextMessage, content: stripProviderOptions(lastContextMessage.content) },
+          }),
         };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

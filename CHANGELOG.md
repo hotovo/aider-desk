@@ -7,6 +7,7 @@
 - added separate model overrides for conversation compaction and handoff in Context Management settings
 - added file tree sidebar, tab context menus, and editor state persistence to the file editor modal
 - added extension hooks for worktree creation and merging to support project-specific automation
+- improved Task tools with support for starting and resuming prepared tasks, explicit execution and autonomy controls, and task names in tool messages
 
 ## [0.89.0]
 

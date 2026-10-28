@@ -350,6 +350,7 @@ const MessageBlockComponent = ({
           case TASKS_TOOL_RUN_PROMPT:
             return (
               <RunPromptToolMessage
+                baseDir={baseDir}
                 message={toolMessage}
                 onRemove={remove}
                 compact={compact}

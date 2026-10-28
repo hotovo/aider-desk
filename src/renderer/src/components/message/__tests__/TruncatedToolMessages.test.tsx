@@ -149,7 +149,7 @@ describe('truncated tool messages', () => {
     renderMessage(
       createMessage('tasks', 'create_task', envelope, { prompt: 'TASK_PROMPT', name: 'TASK_NAME', agentProfileId: 'AGENT_INPUT', modelId: 'MODEL_INPUT' }),
     );
-    expect(screen.getByText('TASK_NAME', { exact: false })).toBeInTheDocument();
+    expect(screen.getAllByText('TASK_NAME', { exact: false })).toHaveLength(2);
     expect(screen.getByText('AGENT_INPUT', { exact: false })).toBeInTheDocument();
     expect(screen.getByText('MODEL_INPUT', { exact: false })).toBeInTheDocument();
     expect(screen.queryByText('toolMessage.tasks.taskId:')).not.toBeInTheDocument();

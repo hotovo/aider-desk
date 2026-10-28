@@ -567,6 +567,75 @@ describe('Task - findSkillActivationMessages', () => {
       };
     };
 
+    it.each([
+      { mode: 'agent', role: MessageRole.User },
+      { mode: 'code', role: MessageRole.User },
+      { mode: 'code', role: MessageRole.Assistant },
+    ])('awaits execution in $mode mode after a $role message', async ({ mode, role }) => {
+      let finish = () => {};
+      let started = () => {};
+      const execution = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const executionStarted = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      const run = vi.fn(async () => {
+        started();
+        await execution;
+        return [];
+      });
+      Object.assign(task, {
+        getTaskAgentProfile: vi.fn().mockResolvedValue({ id: 'profile' }),
+        runPromptInAgent: run,
+      });
+      vi.spyOn(task, 'saveTask').mockResolvedValue(task.task);
+      vi.spyOn(task, 'addLogMessage').mockImplementation(() => {});
+      vi.spyOn(task, 'runPrompt').mockImplementation(run);
+      vi.spyOn(task, 'updateContextInfo').mockResolvedValue();
+      getContextManager().contextManager.addContextMessage({ id: 'saved', role, content: 'Saved prompt' });
+      let returned = false;
+      const resumed = (async () => {
+        await task.resumeTask(mode);
+        returned = true;
+      })();
+
+      await executionStarted;
+      expect(returned).toBe(false);
+      finish();
+      await resumed;
+      expect(returned).toBe(true);
+    });
+
+    it('awaits saved custom command execution', async () => {
+      let finish = () => {};
+      let started = () => {};
+      const execution = new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      const executionStarted = new Promise<void>((resolve) => {
+        started = resolve;
+      });
+      mockCustomCommandManager.getCommand.mockReturnValue({ name: 'commit' });
+      vi.spyOn(task, 'runCustomCommand').mockImplementation(async () => {
+        started();
+        await execution;
+      });
+      getContextManager().contextManager.addContextMessage({ id: 'saved-command', role: MessageRole.User, content: '/commit' });
+      let returned = false;
+      const resumed = (async () => {
+        await task.resumeTask('agent');
+        returned = true;
+      })();
+
+      await executionStarted;
+      expect(returned).toBe(false);
+      expect(await getContextManager().contextManager.getContextMessages()).toEqual([]);
+      finish();
+      await resumed;
+      expect(returned).toBe(true);
+    });
+
     it('executes a saved file-based custom command and removes the original prompt', async () => {
       mockCustomCommandManager.getCommand.mockReturnValue({ name: 'commit' });
       const runCustomCommand = vi.spyOn(task, 'runCustomCommand').mockResolvedValue();

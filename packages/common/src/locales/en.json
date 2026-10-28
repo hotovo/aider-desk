@@ -67,6 +67,9 @@
     "gitBranches": "Show Git Branches"
   },
   "common": {
+    "autonomyManual": "Manual",
+    "autonomyGuided": "Guided",
+    "autonomyAutonomous": "Auto",
     "settings": "Settings",
     "cancel": "Cancel",
     "save": "Save",
@@ -1584,7 +1587,7 @@
       "createTask": "Create task",
       "createSubtask": "Create subtask",
       "deleteTask": "Delete task",
-      "runPrompt": "Run prompt on task",
+      "runPrompt": "Run task",
       "searchTask": "Search task:",
       "inTask": "in",
       "searchTaskNoMatches": "No matches found.",
@@ -1775,11 +1778,8 @@
     "savePrompt": "Save Prompt",
     "savePromptDescription": "Save prompt without executing",
     "saveError": "Failed to save prompt: {{error}}",
-    "autonomyManual": "Manual",
     "autonomyManualTooltip": "Manual mode: Every tool execution and plan requires your explicit approval before proceeding. Best for unfamiliar codebases or risky operations.",
-    "autonomyGuided": "Guided",
     "autonomyGuidedTooltip": "Guided mode: The agent plans before acting and waits for your approval before executing changes. Tool executions are auto-approved. Best for everyday development.",
-    "autonomyAutonomous": "Auto",
     "autonomyAutonomousTooltip": "Autonomous mode: The agent plans and executes without interruption until the task is complete. Best for trusted tasks where you want to step away.",
     "autonomyLockTooltip": "Locking keeps the current autonomy mode for newly created tasks",
     "placeholders": {

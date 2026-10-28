@@ -9,7 +9,6 @@ import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { CodeInline } from '@/components/common/CodeInline';
 
 type Props = {
   message: ToolMessage;
@@ -46,6 +45,7 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
     }
   };
   const content = message.content && JSON.parse(message.content);
+  const taskName = (content && typeof content === 'object' && typeof content.name === 'string' && content.name) || name;
   const truncatedResult = getTruncatedToolResult(content);
   const isError = content && typeof content === 'string' && content.startsWith('Error creating task:');
   const isDenied = content && typeof content === 'string' && content.startsWith('Creating task denied by user.');
@@ -57,9 +57,7 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
       </div>
       <div className="text-xs text-text-primary flex gap-3 overflow-hidden">
         <span className="flex-shrink-0">{t(isSubtask ? 'toolMessage.tasks.createSubtask' : 'toolMessage.tasks.createTask')}</span>
-        <span className="overflow-hidden text-ellipsis max-w-[600px]">
-          <CodeInline className="bg-bg-primary-light whitespace-nowrap">{prompt}</CodeInline>
-        </span>
+        <span className="text-text-tertiary truncate max-w-[600px]">{taskName || prompt}</span>
       </div>
       {!content && <CgSpinner className="animate-spin w-3 h-3 text-text-muted-light flex-shrink-0" />}
       {content &&
@@ -120,9 +118,9 @@ export const CreateTaskToolMessage = ({ message, onRemove, compact = false, onFo
                   <span className="text-text-muted">{t('toolMessage.tasks.taskId')}:</span> {content.id}
                 </div>
               )}
-              {name && (
+              {taskName && (
                 <div className="text-3xs">
-                  <span className="text-text-muted">{t('toolMessage.tasks.name')}:</span> {name}
+                  <span className="text-text-muted">{t('toolMessage.tasks.name')}:</span> {taskName}
                 </div>
               )}
               {parentTaskId !== undefined && (
