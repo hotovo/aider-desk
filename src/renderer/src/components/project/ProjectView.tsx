@@ -1,6 +1,6 @@
 import { AutonomyMode, InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -540,7 +540,7 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
       handleOpenEditor();
     },
     {
-      enabled: !!activeTaskId,
+      enabled: isProjectActive && !!activeTaskId,
       scopes: 'task',
       enableOnFormTags: true,
       enableOnContentEditable: true,
@@ -960,7 +960,11 @@ export const ProjectView = ({ projectDir, isProjectActive = false, initialTaskId
               );
             })}
           </div>
-          {isEditorOpen && editorOpenFiles.length > 0 && <FileEditorModal baseDir={projectDir} onClose={() => closeEditor(projectDir)} />}
+          {(isEditorOpen || editorOpenFiles.length > 0) && (
+            <Activity mode={isEditorOpen ? 'visible' : 'hidden'}>
+              <FileEditorModal baseDir={projectDir} activeTaskId={activeTaskId ?? undefined} onClose={() => closeEditor(projectDir)} />
+            </Activity>
+          )}
         </div>
       </ExtensionsProvider>
     </TasksProvider>

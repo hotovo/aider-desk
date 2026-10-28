@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
-import { parseCommandArgs, parseSkillCommand } from '../utils';
+import { getRelativePath, parseCommandArgs, parseSkillCommand } from '../utils';
+import { OS } from '../types';
 
 describe('parseCommandArgs', () => {
   it('should parse simple space-separated arguments', () => {
@@ -82,5 +83,30 @@ describe('parseSkillCommand', () => {
       skillName: 'pdf',
       prompt: 'extract\ntables\nfrom document',
     });
+  });
+});
+
+describe('getRelativePath', () => {
+  it.each([
+    { base: '/project', target: '/project/.worktrees/Fix', os: OS.Linux, expected: '.worktrees/Fix' },
+    { base: '/project/', target: '/project/src/', os: OS.Linux, expected: 'src' },
+    { base: '/project', target: '/project/', os: OS.Linux, expected: '' },
+    { base: '/project', target: '/Project/src', os: OS.Linux, expected: '/Project/src' },
+    { base: '/project', target: '/project-other/src', os: OS.Linux, expected: '/project-other/src' },
+    { base: '/project', target: '/other/worktree', os: OS.Linux, expected: '/other/worktree' },
+    { base: '/', target: '/project/src', os: OS.Linux, expected: 'project/src' },
+    { base: '/project', target: '/project/Src', os: OS.MacOS, expected: 'Src' },
+    { base: '', target: '/project', os: OS.Linux, expected: '/project' },
+    { base: '/project', target: '', os: OS.Linux, expected: '' },
+    { base: String.raw`C:\Projects\App`, target: String.raw`c:\projects\app\.worktrees\Fix`, os: OS.Windows, expected: '.worktrees/Fix' },
+    { base: String.raw`C:\Projects\App`, target: 'c:/projects/app/Src/', os: OS.Windows, expected: 'Src' },
+    { base: 'C:/Projects/App/', target: String.raw`c:\projects\APP`, os: OS.Windows, expected: '' },
+    { base: 'C:/Projects/App', target: 'C:/Projects/AppOther/Src', os: OS.Windows, expected: 'C:/Projects/AppOther/Src' },
+    { base: 'C:/Projects/App', target: String.raw`D:\Worktrees\Fix`, os: OS.Windows, expected: String.raw`D:\Worktrees\Fix` },
+    { base: 'C:/', target: String.raw`c:\Projects\App`, os: OS.Windows, expected: 'Projects/App' },
+    { base: String.raw`\\Server\Share\App`, target: String.raw`\\server\share\app\Src`, os: OS.Windows, expected: 'Src' },
+    { base: '/home/user/app', target: String.raw`\\wsl.localhost\Ubuntu\home\user\app\Src`, os: OS.Linux, expected: 'Src' },
+  ])('resolves $target against $base on $os', ({ base, target, os, expected }) => {
+    expect(getRelativePath(base, target, os)).toBe(expected);
   });
 });

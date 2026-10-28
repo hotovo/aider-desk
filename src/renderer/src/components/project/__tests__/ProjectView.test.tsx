@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TaskCreatedData, TaskData, TaskStateData } from '@common/types';
+import { HotkeysProvider } from 'react-hotkeys-hook';
 
 import { ProjectView } from '../ProjectView';
 
@@ -285,6 +286,77 @@ describe('ProjectView', () => {
       expect(activeView).toHaveTextContent('Task 2');
     });
     expect(screen.getByTestId('file-editor-modal')).toHaveAttribute('data-task-id', 'task-1');
+  });
+
+  it('keeps the file editor mounted while closed and reuses it on reopen', async () => {
+    const { useFileEditorStore } = await import('@/stores/fileEditorStore');
+    render(<ProjectView projectDir={projectDir} isProjectActive={true} />);
+
+    act(() => useFileEditorStore.getState().openFile(projectDir, 'src/file.ts', 'task-1'));
+    const editor = await screen.findByTestId('file-editor-modal');
+    expect(editor).toBeVisible();
+
+    act(() => useFileEditorStore.getState().closeEditor(projectDir));
+    expect(editor).toBeInTheDocument();
+    expect(editor).not.toBeVisible();
+
+    act(() => useFileEditorStore.getState().openEditor(projectDir));
+    expect(screen.getByTestId('file-editor-modal')).toBe(editor);
+    expect(editor).toBeVisible();
+  });
+
+  it('opens the editor with Ctrl+E when no files have been opened', async () => {
+    const { useFileEditorStore } = await import('@/stores/fileEditorStore');
+    const emptyProjectDir = '/mock/empty-project';
+    render(
+      <HotkeysProvider initiallyActiveScopes={['task']}>
+        <ProjectView projectDir={emptyProjectDir} isProjectActive={true} />
+      </HotkeysProvider>,
+    );
+    await screen.findByTestId('task-view');
+    expect(screen.queryByTestId('file-editor-modal')).not.toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'e', code: 'KeyE', ctrlKey: true });
+    expect(screen.getByTestId('file-editor-modal')).toBeVisible();
+    expect(useFileEditorStore.getState().projectsMap.get(emptyProjectDir)?.openFiles).toEqual([]);
+    fireEvent.keyUp(document, { key: 'e', code: 'KeyE', ctrlKey: true });
+  });
+
+  it('opens the editor only in the active project with Ctrl+E after switching projects', async () => {
+    const { useFileEditorStore } = await import('@/stores/fileEditorStore');
+    const otherProjectDir = '/mock/other-project';
+    const renderProjects = (activeProjectDir: string) => (
+      <HotkeysProvider initiallyActiveScopes={['task']}>
+        <ProjectView projectDir={projectDir} isProjectActive={activeProjectDir === projectDir} />
+        <ProjectView projectDir={otherProjectDir} isProjectActive={activeProjectDir === otherProjectDir} />
+      </HotkeysProvider>
+    );
+    const { rerender } = render(renderProjects(projectDir));
+    await waitFor(() => expect(screen.getAllByTestId('task-view')).toHaveLength(1));
+
+    rerender(renderProjects(otherProjectDir));
+    await waitFor(() => expect(screen.getAllByTestId('task-view')).toHaveLength(2));
+
+    act(() => {
+      const store = useFileEditorStore.getState();
+      store.openFile(projectDir, 'src/file.ts', 'task-1');
+      store.closeEditor(projectDir);
+      store.openFile(otherProjectDir, 'src/file.ts', 'task-1');
+      store.closeEditor(otherProjectDir);
+    });
+
+    fireEvent.keyDown(document, { key: 'e', code: 'KeyE', ctrlKey: true });
+    expect(useFileEditorStore.getState().projectsMap.get(otherProjectDir)?.isEditorOpen).toBe(true);
+    expect(useFileEditorStore.getState().projectsMap.get(projectDir)?.isEditorOpen).toBe(false);
+    fireEvent.keyUp(document, { key: 'e', code: 'KeyE', ctrlKey: true });
+
+    act(() => useFileEditorStore.getState().closeEditor(otherProjectDir));
+    rerender(renderProjects(projectDir));
+
+    fireEvent.keyDown(document, { key: 'e', code: 'KeyE', ctrlKey: true });
+    expect(useFileEditorStore.getState().projectsMap.get(projectDir)?.isEditorOpen).toBe(true);
+    expect(useFileEditorStore.getState().projectsMap.get(otherProjectDir)?.isEditorOpen).toBe(false);
+    fireEvent.keyUp(document, { key: 'e', code: 'KeyE', ctrlKey: true });
   });
 
   it('never evicts in-progress tasks from the mount pool', async () => {

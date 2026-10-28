@@ -92,7 +92,7 @@ export const useFileEditorStore = createWithEqualityFn<FileEditorStore>()(
       openFile: (projectDir, path, taskId) =>
         set((state) => {
           const projectState = getProjectState(state.projectsMap, projectDir);
-          const openFiles = [...projectState.openFiles.filter((file) => file.path !== path), { path, taskId }];
+          const openFiles = projectState.openFiles.some((file) => file.path === path) ? projectState.openFiles : [...projectState.openFiles, { path, taskId }];
           return {
             projectsMap: withProjectState(
               state.projectsMap,
@@ -105,9 +105,6 @@ export const useFileEditorStore = createWithEqualityFn<FileEditorStore>()(
       openEditor: (projectDir) =>
         set((state) => {
           const projectState = getProjectState(state.projectsMap, projectDir);
-          if (projectState.openFiles.length === 0) {
-            return state;
-          }
           return {
             projectsMap: withProjectState(state.projectsMap, projectDir, { ...projectState, isEditorOpen: true }),
           };
@@ -120,9 +117,8 @@ export const useFileEditorStore = createWithEqualityFn<FileEditorStore>()(
             return state;
           }
           const openFiles = projectState.openFiles.filter((file) => file.path !== path);
-          const isEditorOpen = openFiles.length > 0 && projectState.isEditorOpen;
           return {
-            projectsMap: withProjectState(state.projectsMap, projectDir, normalizeState({ ...projectState, openFiles, isEditorOpen })),
+            projectsMap: withProjectState(state.projectsMap, projectDir, normalizeState({ ...projectState, openFiles })),
           };
         }),
 
@@ -137,9 +133,8 @@ export const useFileEditorStore = createWithEqualityFn<FileEditorStore>()(
           if (openFiles.length === projectState.openFiles.length) {
             return state;
           }
-          const isEditorOpen = openFiles.length > 0 && projectState.isEditorOpen;
           return {
-            projectsMap: withProjectState(state.projectsMap, projectDir, normalizeState({ ...projectState, openFiles, isEditorOpen })),
+            projectsMap: withProjectState(state.projectsMap, projectDir, normalizeState({ ...projectState, openFiles })),
           };
         }),
 

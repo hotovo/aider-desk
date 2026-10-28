@@ -127,6 +127,27 @@ export const compareBaseDirs = (baseDir1: string, baseDir2: string, os?: OS): bo
   return normalizeBaseDir(baseDir1, os) === normalizeBaseDir(baseDir2, os);
 };
 
+export const getRelativePath = (baseDir: string, targetPath: string, os: OS = detectOS()): string => {
+  if (!baseDir || !targetPath) {
+    return targetPath;
+  }
+
+  const normalizedBaseDir = normalizeBaseDir(baseDir, os).replace(/\\/g, '/').replace(/\/+$/, '');
+  const normalizedTargetPath = normalizeBaseDir(targetPath, os).replace(/\\/g, '/').replace(/\/+$/, '');
+  if (normalizedTargetPath === normalizedBaseDir) {
+    return '';
+  }
+  if (!normalizedTargetPath.startsWith(`${normalizedBaseDir}/`)) {
+    return targetPath;
+  }
+
+  const displayPath = os === OS.Windows ? targetPath : normalizeBaseDir(targetPath, os);
+  return displayPath
+    .replace(/\\/g, '/')
+    .replace(/\/+$/, '')
+    .slice(normalizedBaseDir.length + 1);
+};
+
 /**
  * Extracts the inner error message from Electron IPC errors.
  * Electron wraps errors with format: "Error invoking remote method 'METHOD_NAME': InnerError"

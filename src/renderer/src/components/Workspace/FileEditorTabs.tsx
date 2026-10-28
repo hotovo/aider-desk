@@ -1,7 +1,11 @@
-import { type MouseEvent, type ReactNode } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
 import { clsx } from 'clsx';
+
+import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
+import { useApi } from '@/contexts/ApiContext';
+import { showSuccessNotification } from '@/utils/notifications';
 
 export type OpenEditorFile = {
   path: string;
@@ -9,16 +13,46 @@ export type OpenEditorFile = {
 };
 
 type Props = {
+  baseDir: string;
   openFiles: OpenEditorFile[];
   activeFilePath: string | null;
   dirtyPaths: Set<string>;
   actions?: ReactNode;
   onSelect: (path: string) => void;
   onClose: (path: string) => void;
+  onCloseOthers: (path: string) => void;
+  onCloseAll: () => void;
 };
 
-export const FileEditorTabs = ({ openFiles, activeFilePath, dirtyPaths, actions, onSelect, onClose }: Props) => {
+const isAbsolutePath = (filePath: string): boolean => /^(?:[a-zA-Z]:[\\/]|\\\\|\/)/.test(filePath);
+
+const toAbsolutePath = (baseDir: string, filePath: string): string => {
+  if (isAbsolutePath(filePath)) {
+    return filePath;
+  }
+  const separator = baseDir.includes('\\') && !baseDir.includes('/') ? '\\' : '/';
+  return `${baseDir}${separator}${filePath}`;
+};
+
+const toRelativePath = (baseDir: string, filePath: string): string => {
+  for (const separator of ['/', '\\']) {
+    const prefix = `${baseDir}${separator}`;
+    if (filePath.startsWith(prefix)) {
+      return filePath.slice(prefix.length);
+    }
+  }
+  return filePath;
+};
+
+export const FileEditorTabs = ({ baseDir, openFiles, activeFilePath, dirtyPaths, actions, onSelect, onClose, onCloseOthers, onCloseAll }: Props) => {
   const { t } = useTranslation();
+  const api = useApi();
+  const { showMenu } = useContextMenu();
+  const activeTabRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [activeFilePath]);
 
   if (openFiles.length === 0) {
     return null;
@@ -49,14 +83,65 @@ export const FileEditorTabs = ({ openFiles, activeFilePath, dirtyPaths, actions,
             }
           };
 
+          const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+            event.preventDefault();
+
+            const options: MenuOption[] = [
+              {
+                label: t('contextMenu.close'),
+                action: () => onClose(file.path),
+              },
+            ];
+
+            if (openFiles.length > 1) {
+              options.push(
+                {
+                  label: t('contextMenu.closeOtherTabs'),
+                  action: () => onCloseOthers(file.path),
+                },
+                {
+                  label: t('contextMenu.closeAllTabs'),
+                  action: () => onCloseAll(),
+                },
+              );
+            }
+
+            options.push(
+              {
+                label: t('fileEditor.copyAbsolutePath'),
+                action: async () => {
+                  await api.writeToClipboard(toAbsolutePath(baseDir, file.path));
+                  showSuccessNotification(t('fileEditor.pathCopied'));
+                },
+              },
+              {
+                label: t('fileEditor.copyRelativePath'),
+                action: async () => {
+                  await api.writeToClipboard(toRelativePath(baseDir, file.path));
+                  showSuccessNotification(t('fileEditor.pathCopied'));
+                },
+              },
+              {
+                label: t('fileEditor.openInExternal'),
+                action: () => {
+                  void api.openPath(toAbsolutePath(baseDir, file.path));
+                },
+              },
+            );
+
+            showMenu(event.clientX, event.clientY, options, event.currentTarget);
+          };
+
           return (
             <div
               key={file.path}
+              ref={isActive ? activeTabRef : undefined}
               role="tab"
               aria-selected={isActive}
               title={file.path}
               onClick={handleSelect}
               onAuxClick={handleAuxClick}
+              onContextMenu={handleContextMenu}
               className={clsx(
                 'group flex items-center gap-1.5 pl-3 pr-1.5 py-2 text-xs cursor-pointer border-b-2 whitespace-nowrap shrink-0 select-none',
                 isActive

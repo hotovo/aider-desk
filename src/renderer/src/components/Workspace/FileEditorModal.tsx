@@ -1,28 +1,40 @@
-import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { HiOutlineExclamation } from 'react-icons/hi';
+import { HiOutlineExclamation, HiOutlineFolder } from 'react-icons/hi';
+import { VscWorktreeSmall } from 'react-icons/vsc';
 import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
 import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
+import { useLocalStorage } from '@reactuses/core';
+import { ResizableBox, type ResizeCallbackData } from 'react-resizable';
+import 'react-resizable/css/styles.css';
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
-import { openSearchPanel } from '@codemirror/search';
+import { gotoLine, openSearchPanel } from '@codemirror/search';
 import { Prec } from '@codemirror/state';
-import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
+import { EditorView, GutterMarker, gutter, keymap, lineNumbers } from '@codemirror/view';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { type Extension } from '@uiw/react-codemirror';
+import { getRelativePath } from '@common/utils';
 
 import { remapLineAnchors } from './fileEditorUtils';
 import { createInlineChangeRequestsExtension } from './fileEditorInlineRequests';
 import { CommentsPanel } from './CommentsPanel';
 import { FileEditorTabs } from './FileEditorTabs';
+import { FileEditorFileTree } from './FileEditorFileTree';
 
+import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
+import { setTaskAllFiles, useTaskAllFiles, useTaskFilesStore } from '@/stores/taskFilesStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { getTaskDir } from '@/utils/task-utils';
+import { getPathBasename } from '@/utils/path-utils';
 import { useApi } from '@/contexts/ApiContext';
+import { useOS } from '@/hooks/useOS';
 import { showErrorNotification, showSuccessNotification, showWarningNotification } from '@/utils/notifications';
 
 const EDITOR_THEME = githubDarkInit({
@@ -194,6 +206,71 @@ const EDITOR_LAYOUT = EditorView.theme({
   '.cm-panel.cm-search [name=close]:hover': {
     color: 'var(--color-text-primary)',
   },
+  '.cm-panel.cm-dialog': {
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    fontFamily: 'inherit',
+    fontSize: '12px',
+    gap: '6px',
+    padding: '8px 12px',
+  },
+  '.cm-panel.cm-dialog form': {
+    alignItems: 'center',
+    display: 'flex',
+    flexWrap: 'wrap',
+    flex: '1',
+    gap: '6px',
+  },
+  '.cm-panel.cm-dialog label': {
+    alignItems: 'center',
+    color: 'var(--color-text-primary)',
+    display: 'flex',
+    fontFamily: 'var(--font-family)',
+    fontSize: '12px',
+    gap: '8px',
+  },
+  '.cm-panel.cm-dialog .cm-textfield': {
+    backgroundColor: 'var(--color-bg-secondary-light)',
+    border: '2px solid var(--color-border-default)',
+    borderRadius: '4px',
+    color: 'var(--color-text-primary)',
+    fontSize: '12px',
+    padding: '6px',
+    width: '120px',
+  },
+  '.cm-panel.cm-dialog .cm-textfield:focus': {
+    borderColor: 'var(--color-border-light)',
+    outline: 'none',
+  },
+  '.cm-panel.cm-dialog .cm-button': {
+    backgroundColor: 'var(--color-bg-primary)',
+    backgroundImage: 'none',
+    border: '1px solid var(--color-border-default)',
+    borderRadius: '4px',
+    color: 'var(--color-text-primary)',
+    cursor: 'pointer',
+    fontSize: '12px',
+    fontWeight: '500',
+    padding: '4px 8px',
+  },
+  '.cm-panel.cm-dialog .cm-button:hover': {
+    backgroundColor: 'var(--color-bg-primary-light)',
+  },
+  '.cm-panel.cm-dialog .cm-dialog-close': {
+    backgroundColor: 'transparent',
+    border: 'none',
+    color: 'var(--color-text-muted)',
+    cursor: 'pointer',
+    fontSize: '16px',
+    lineHeight: '1',
+    marginLeft: 'auto',
+    order: '2',
+    padding: '2px 4px',
+  },
+  '.cm-panel.cm-dialog .cm-dialog-close:hover': {
+    color: 'var(--color-text-primary)',
+  },
   '.cm-searchMatch': {
     backgroundColor: '#fcd34d',
     color: '#000',
@@ -224,6 +301,12 @@ const FIND_SHORTCUT_HANDLER = Prec.highest(
     },
   }),
 );
+
+const GOTO_LINE_KEYMAP = Prec.highest(keymap.of([{ key: 'Mod-g', run: gotoLine, preventDefault: true }]));
+
+const FILE_TREE_MIN_WIDTH = 180;
+const FILE_TREE_MAX_WIDTH = 480;
+const FILE_TREE_DEFAULT_WIDTH = 256;
 
 type PendingComment = {
   id: string;
@@ -306,10 +389,11 @@ class ChangeRequestGutterMarker extends GutterMarker {
 
 type Props = {
   baseDir: string;
+  activeTaskId?: string;
   onClose: () => void;
 };
 
-export const FileEditorModal = ({ baseDir, onClose }: Props) => {
+export const FileEditorModal = ({ baseDir, activeTaskId, onClose }: Props) => {
   const { t } = useTranslation();
   const api = useApi();
   const openFiles = useFileEditorStore((state) => state.projectsMap.get(baseDir)?.openFiles ?? []);
@@ -317,6 +401,9 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   const closeTab = useFileEditorStore((state) => state.closeTab);
   const closeTabs = useFileEditorStore((state) => state.closeTabs);
   const setActiveFile = useFileEditorStore((state) => state.setActiveFile);
+  const openFile = useFileEditorStore((state) => state.openFile);
+
+  const [fileTreeWidth, setFileTreeWidth] = useLocalStorage(`file-editor-tree-width-${baseDir}`, FILE_TREE_DEFAULT_WIDTH);
 
   const { enableScope, disableScope } = useHotkeysContext();
   useEffect(() => {
@@ -338,7 +425,7 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   const [editCommentInfo, setEditCommentInfo] = useState<EditCommentInfo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createNewTask, setCreateNewTask] = useState(false);
-  const [confirmCloseTabPath, setConfirmCloseTabPath] = useState<string | null>(null);
+  const [pendingCloseTabPaths, setPendingCloseTabPaths] = useState<string[] | null>(null);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const activeFile = openFiles.find((file) => file.path === activeFilePath) ?? openFiles[openFiles.length - 1] ?? null;
@@ -347,6 +434,52 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   activePathRef.current = activePath;
   const activeTab = activePath ? (tabsState[activePath] ?? null) : null;
   const activeFilePendingComments = useMemo(() => pendingComments.filter((c) => c.filePath === activePath), [pendingComments, activePath]);
+  const editorTaskId = activeFile?.taskId ?? activeTaskId;
+  const activeTask = useProjectStore((state) => state.projectTasksMap.get(baseDir)?.find((task) => task.id === editorTaskId));
+  const taskId = activeTask?.id;
+  const taskDir = activeTask ? getTaskDir(activeTask) : undefined;
+  const os = useOS();
+  const directoryLabel = taskDir ? getRelativePath(baseDir, taskDir, os ?? undefined) || getPathBasename(taskDir) : undefined;
+  const projectFiles = useTaskAllFiles(taskDir);
+  const hasProjectFiles = useTaskFilesStore((state) => !!taskDir && state.allFilesMap.has(taskDir));
+  const openFilePaths = useMemo(() => new Set(openFiles.map((file) => file.path)), [openFiles]);
+
+  useEffect(() => {
+    if (!taskId || !taskDir || hasProjectFiles) {
+      return;
+    }
+
+    let cancelled = false;
+    const loadProjectFiles = async () => {
+      try {
+        const files = await api.getAllFiles(baseDir, taskId);
+        if (!cancelled && !useTaskFilesStore.getState().allFilesMap.has(taskDir)) {
+          setTaskAllFiles(taskId, taskDir, files);
+        }
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to load editor project files:', error);
+      }
+    };
+
+    void loadProjectFiles();
+    return () => {
+      cancelled = true;
+    };
+  }, [api, baseDir, taskId, taskDir, hasProjectFiles]);
+
+  useLayoutEffect(() => {
+    const viewStates = tabViewStatesRef.current;
+    return () => {
+      const path = activePathRef.current;
+      const view = editorViewRef.current;
+      if (path && view) {
+        const { anchor, head } = view.state.selection.main;
+        viewStates[path] = { anchor, head, scrollTop: view.scrollDOM.scrollTop };
+      }
+      editorViewRef.current = null;
+    };
+  }, []);
 
   const isTabDirty = useCallback(
     (path: string) => {
@@ -510,6 +643,14 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
       { passive: true },
     );
 
+    // When CodeMirror's search panel or go-to-line dialog handles Escape it calls preventDefault;
+    // stop that keydown from bubbling to the modal's Escape handler so only the panel closes.
+    view.dom.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && event.defaultPrevented) {
+        event.stopPropagation();
+      }
+    });
+
     view.focus();
   }, []);
 
@@ -639,6 +780,7 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
       lineNumbers(),
       EDITOR_LAYOUT,
       FIND_SHORTCUT_HANDLER,
+      GOTO_LINE_KEYMAP,
       captureSelection,
       inlineChangeRequests,
       ...(languageSupport ? [languageSupport] : []),
@@ -752,10 +894,21 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
     [baseDir, closeTab, removeTabBuffers],
   );
 
+  const closeTabsInternal = useCallback(
+    (paths: string[]) => {
+      if (paths.length === 0) {
+        return;
+      }
+      paths.forEach(removeTabBuffers);
+      closeTabs(baseDir, paths);
+    },
+    [baseDir, closeTabs, removeTabBuffers],
+  );
+
   const handleCloseTab = useCallback(
     (path: string) => {
       if (isTabDirty(path)) {
-        setConfirmCloseTabPath(path);
+        setPendingCloseTabPaths([path]);
         setShowDiscardConfirm(true);
         return;
       }
@@ -764,28 +917,69 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
     [closeTabInternal, isTabDirty],
   );
 
-  const handleClose = useCallback(() => {
-    if (dirtyPaths.size > 0) {
-      setConfirmCloseTabPath(null);
+  const handleCloseOtherTabs = useCallback(
+    (path: string) => {
+      const otherPaths = openFiles.filter((file) => file.path !== path).map((file) => file.path);
+      if (otherPaths.length === 0) {
+        return;
+      }
+      if (otherPaths.some((otherPath) => isTabDirty(otherPath))) {
+        setPendingCloseTabPaths(otherPaths);
+        setShowDiscardConfirm(true);
+        return;
+      }
+      closeTabsInternal(otherPaths);
+    },
+    [closeTabsInternal, isTabDirty, openFiles],
+  );
+
+  const handleCloseAllTabs = useCallback(() => {
+    const allPaths = openFiles.map((file) => file.path);
+    if (allPaths.length === 0) {
+      return;
+    }
+    if (allPaths.some((path) => isTabDirty(path))) {
+      setPendingCloseTabPaths(allPaths);
       setShowDiscardConfirm(true);
       return;
     }
+    closeTabsInternal(allPaths);
+  }, [closeTabsInternal, isTabDirty, openFiles]);
+
+  const handleClose = useCallback(() => {
+    if (dirtyPaths.size > 0) {
+      setPendingCloseTabPaths(null);
+      setShowDiscardConfirm(true);
+      return;
+    }
+    setActiveLineInfo(null);
+    setEditCommentInfo(null);
+    updatePendingComments(() => []);
     onClose();
-  }, [dirtyPaths.size, onClose]);
+  }, [dirtyPaths.size, onClose, updatePendingComments]);
 
   const handleDiscardChanges = useCallback(() => {
     setShowDiscardConfirm(false);
-    if (confirmCloseTabPath) {
-      closeTabInternal(confirmCloseTabPath);
-      setConfirmCloseTabPath(null);
+    if (pendingCloseTabPaths) {
+      closeTabsInternal(pendingCloseTabPaths);
+      setPendingCloseTabPaths(null);
       return;
     }
+    for (const path of dirtyPaths) {
+      const tab = tabsStateRef.current[path];
+      if (tab) {
+        setTabState(path, { ...tab, editorContent: tab.savedContent });
+      }
+    }
+    setActiveLineInfo(null);
+    setEditCommentInfo(null);
+    updatePendingComments(() => []);
     onClose();
-  }, [closeTabInternal, confirmCloseTabPath, onClose]);
+  }, [closeTabsInternal, pendingCloseTabPaths, dirtyPaths, onClose, setTabState, updatePendingComments]);
 
   const handleDiscardCancel = useCallback(() => {
     setShowDiscardConfirm(false);
-    setConfirmCloseTabPath(null);
+    setPendingCloseTabPaths(null);
   }, []);
 
   const handleCreateNewTaskChange = useCallback((value: boolean) => {
@@ -802,6 +996,30 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
       setActiveFile(baseDir, openFiles[nextIndex].path);
     },
     [activePath, baseDir, openFiles, setActiveFile],
+  );
+
+  const handleSelectTab = useCallback(
+    (path: string) => {
+      setActiveFile(baseDir, path);
+    },
+    [baseDir, setActiveFile],
+  );
+
+  const handleOpenFileFromTree = useCallback(
+    (path: string) => {
+      if (!editorTaskId) {
+        return;
+      }
+      openFile(baseDir, path, editorTaskId);
+    },
+    [editorTaskId, baseDir, openFile],
+  );
+
+  const handleResizeFileTree = useCallback(
+    (_event: unknown, data: ResizeCallbackData) => {
+      setFileTreeWidth(data.size.width);
+    },
+    [setFileTreeWidth],
   );
 
   const handleEscape = useCallback(() => {
@@ -873,6 +1091,36 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
     [cycleTab],
   );
 
+  useHotkeys(
+    ['ctrl+w', 'meta+w'],
+    (event) => {
+      event.preventDefault();
+      if (activePath) {
+        handleCloseTab(activePath);
+      }
+    },
+    {
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [activePath, handleCloseTab],
+  );
+
+  useHotkeys(
+    ['ctrl+shift+w', 'meta+shift+w'],
+    (event) => {
+      event.preventDefault();
+      if (activePath) {
+        handleCloseOtherTabs(activePath);
+      }
+    },
+    {
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+    },
+    [activePath, handleCloseOtherTabs],
+  );
+
   const renderLoading = () => (
     <div className="flex items-center justify-center h-full">
       <AiOutlineLoading3Quarters className="w-8 h-8 text-text-muted animate-spin" />
@@ -890,11 +1138,14 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
   return (
     <ModalOverlayLayout title={t('fileEditor.title')} onClose={handleClose} closeOnEscape={!activeLineInfo && !editCommentInfo && !showDiscardConfirm}>
       <FileEditorTabs
+        baseDir={baseDir}
         openFiles={openFiles}
         activeFilePath={activePath}
         dirtyPaths={dirtyPaths}
-        onSelect={(path) => setActiveFile(baseDir, path)}
+        onSelect={handleSelectTab}
         onClose={handleCloseTab}
+        onCloseOthers={handleCloseOtherTabs}
+        onCloseAll={handleCloseAllTabs}
         actions={
           <>
             {dirtyPaths.size > 1 && (
@@ -911,6 +1162,30 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
         }
       />
       <div className="flex-1 flex overflow-hidden">
+        <ResizableBox
+          width={fileTreeWidth || FILE_TREE_DEFAULT_WIDTH}
+          height={Infinity}
+          minConstraints={[FILE_TREE_MIN_WIDTH, Infinity]}
+          maxConstraints={[FILE_TREE_MAX_WIDTH, Infinity]}
+          axis="x"
+          resizeHandles={['e']}
+          className="flex flex-col h-full shrink-0"
+          onResize={handleResizeFileTree}
+        >
+          <div className="flex flex-col h-full overflow-hidden border-r border-border-default bg-bg-primary-light-strong">
+            <Tooltip content={taskDir} delayDuration={1000}>
+              <div className="flex items-center gap-2 px-3 py-2 text-2xs text-text-muted border-b border-border-default select-none">
+                {activeTask?.worktree ? (
+                  <VscWorktreeSmall className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <HiOutlineFolder className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                )}
+                <span className="min-w-0 flex-1 truncate">{directoryLabel ?? t('fileEditor.fileTree')}</span>
+              </div>
+            </Tooltip>
+            <FileEditorFileTree allFiles={projectFiles} activeFilePath={activePath} openFilePaths={openFilePaths} onOpenFile={handleOpenFileFromTree} />
+          </div>
+        </ResizableBox>
         <div className="flex-1 overflow-hidden bg-bg-primary-light relative p-2 pr-4">
           <div className="h-full bg-bg-code-block rounded-lg overflow-hidden relative">
             {activeLineInfo && <DiffLineCommentPanel onSubmit={handleCommentSubmit} onCancel={handleCommentCancel} anchorRect={activeLineInfo.viewportRect} />}
@@ -922,7 +1197,6 @@ export const FileEditorModal = ({ baseDir, onClose }: Props) => {
                 anchorRect={editCommentInfo.viewportRect}
               />
             )}
-            {!activeFile && renderLoading()}
             {activeFile && activeTab?.isLoading && renderLoading()}
             {activeFile && activeTab && !activeTab.isLoading && activeTab.error && renderError()}
             {activeFile && activeTab && !activeTab.isLoading && !activeTab.error && activeTab.editorContent !== null && (

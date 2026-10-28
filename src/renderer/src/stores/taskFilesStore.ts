@@ -151,5 +151,13 @@ export const releaseTaskFiles = (taskId: string) => useTaskFilesStore.getState()
 export const useTaskAllFiles = (taskDir: string | undefined) =>
   useTaskFilesStore(useShallow((state) => (taskDir ? state.allFilesMap.get(taskDir) : undefined) ?? EMPTY_ALL_FILES));
 
+export const useTaskAllFilesByTaskId = (taskId: string | undefined) =>
+  useTaskFilesStore(
+    useShallow((state) => {
+      const taskDir = taskId ? state.taskDirByTaskIdMap.get(taskId) : undefined;
+      return (taskDir ? state.allFilesMap.get(taskDir) : undefined) ?? EMPTY_ALL_FILES;
+    }),
+  );
+
 export const useTaskAutocompletionWords = (taskDir: string | undefined) =>
   useTaskFilesStore(useShallow((state) => (taskDir ? state.autocompletionWordsMap.get(taskDir) : undefined) ?? EMPTY_AUTOCOMPLETION_WORDS));
