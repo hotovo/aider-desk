@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 3
+      "installCount": 4
     },
     {
       "id": "jev",
@@ -151,7 +151,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 32
+      "installCount": 33
     },
     {
       "id": "external-skills",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 101
+      "installCount": 102
     },
     {
       "id": "legacy-system-prompt",
@@ -269,7 +269,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "tree-sitter-repo-map",
@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 82
+      "installCount": 83
     },
     {
       "id": "context-autocompletion-words",
