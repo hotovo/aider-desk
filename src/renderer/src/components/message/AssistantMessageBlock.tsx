@@ -23,12 +23,12 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
   const { responseMessage, toolMessages } = message;
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const parsedContent = useParsedContent(baseDir, responseMessage.content, allFiles, renderMarkdown, true, responseMessage.reasoning);
+  const parsedContent = useParsedContent(baseDir, responseMessage?.content, allFiles, renderMarkdown, true, responseMessage?.reasoning);
 
   const hasContent = parsedContent && (!Array.isArray(parsedContent) || parsedContent.length > 0);
 
   const aggregateUsage = (): UsageReportData | undefined => {
-    const allMessages = [responseMessage, ...toolMessages];
+    const allMessages = responseMessage ? [responseMessage, ...toolMessages] : toolMessages;
     const messagesWithUsage = allMessages.filter(
       (msg): msg is typeof msg & { usageReport: UsageReportData } => (isResponseMessage(msg) || isToolMessage(msg)) && !!msg.usageReport,
     );
@@ -52,13 +52,15 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
 
   const aggregatedUsage = aggregateUsage();
 
-  const allContent = [responseMessage.reasoning, responseMessage.content, ...toolMessages.map((t) => t.content)].filter(Boolean).join('\n\n');
+  const allContent = [responseMessage?.reasoning, responseMessage?.content, ...toolMessages.map((t) => t.content)].filter(Boolean).join('\n\n');
 
   const handleRemove = useCallback(() => {
     if (!remove) {
       return;
     }
-    remove(responseMessage);
+    if (responseMessage) {
+      remove(responseMessage);
+    }
     toolMessages.forEach((toolMessage) => remove(toolMessage));
   }, [remove, responseMessage, toolMessages]);
 
@@ -67,15 +69,20 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
       return;
     }
     const target = toolMessages.length > 0 ? toolMessages[toolMessages.length - 1] : responseMessage;
-    onRemoveUpTo(target);
+    if (target) {
+      onRemoveUpTo(target);
+    }
   }, [onRemoveUpTo, toolMessages, responseMessage]);
 
   const handleFork = useCallback(() => {
     if (!onFork) {
       return;
     }
-    onFork(responseMessage);
-  }, [onFork, responseMessage]);
+    const target = responseMessage ?? toolMessages[0];
+    if (target) {
+      onFork(target);
+    }
+  }, [onFork, responseMessage, toolMessages]);
 
   return (
     <div
@@ -89,7 +96,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
       )}
     >
       {/* Response content */}
-      {hasContent && (
+      {responseMessage && hasContent && (
         <MessageBlockWrapper
           key={responseMessage.id}
           baseDir={baseDir}
@@ -104,7 +111,7 @@ const AssistantMessageBlockComponent = ({ baseDir, taskId, message, allFiles, re
 
       {/* Tool messages */}
       {toolMessages.length > 0 && (
-        <div className={clsx(hasContent && 'mt-1 ml-6 space-y-1')}>
+        <div className={clsx('space-y-1', hasContent && 'mt-1 ml-6')}>
           {toolMessages.map((toolMessage) => (
             <MessageBlockWrapper
               key={toolMessage.id}

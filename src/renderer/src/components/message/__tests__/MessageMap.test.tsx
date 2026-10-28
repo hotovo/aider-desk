@@ -219,6 +219,16 @@ describe('createMessageMapTurns', () => {
     expect(turns[1].lastAssistantPreview).toBe('Compact answer');
   });
 
+  it('ignores tool-only groups when building conversational navigation', () => {
+    const toolGroup: AssistantGroupMessage = {
+      id: 'tools',
+      type: 'assistant-group',
+      content: '',
+      toolMessages: [],
+    };
+    expect(createMessageMapTurns([messages[0], toolGroup])).toEqual(createMessageMapTurns([messages[0]]));
+  });
+
   it('bounds preview length', () => {
     const turns = createMessageMapTurns([{ id: 'long', type: 'user', content: 'x'.repeat(10000) }]);
     expect(turns[0].userPreview).toHaveLength(280);

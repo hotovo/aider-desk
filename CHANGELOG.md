@@ -8,6 +8,7 @@
 - added file tree sidebar, tab context menus, and editor state persistence to the file editor modal
 - added extension hooks for worktree creation and merging to support project-specific automation
 - improved Task tools with support for starting and resuming prepared tasks, explicit execution and autonomy controls, and task names in tool messages
+- fixed grouping and spacing of tool-only messages in Compact message view
 
 ## [0.89.0]
 

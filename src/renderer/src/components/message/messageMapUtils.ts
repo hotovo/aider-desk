@@ -31,7 +31,9 @@ export const createMessageMapEntries = (messages: Message[]): MessageMapEntry[] 
     if (isGroupMessage(message)) {
       message.children.forEach((child, childIndex) => addMessage(child, index, `${path}-${childIndex}`));
     } else if (isAssistantGroupMessage(message)) {
-      addMessage(message.responseMessage, index, path);
+      if (message.responseMessage) {
+        addMessage(message.responseMessage, index, path);
+      }
     } else if (isUserMessage(message) || isResponseMessage(message)) {
       entries.push({
         id: `${path}-${message.id}`,

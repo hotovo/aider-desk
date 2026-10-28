@@ -593,7 +593,9 @@ export const parseToolContent = (rawContent: string): ToolContentResult => {
 
 export const includeMessageProperty = (message: Message): boolean => {
   if (isAssistantGroupMessage(message)) {
-    return message.responseMessage.finished === true;
+    return message.responseMessage
+      ? message.responseMessage.finished === true
+      : message.toolMessages.length > 0 && message.toolMessages.every((toolMessage) => toolMessage.finished === true);
   }
   if (isGroupMessage(message)) {
     return message.group.finished === true;
@@ -611,7 +613,7 @@ export const includeMessageProperty = (message: Message): boolean => {
  * Rules:
  * - A ResponseMessage followed by ToolMessages forms a single group
  * - A new ResponseMessage starts a new group
- * - Orphan ToolMessages (without preceding ResponseMessage) remain standalone
+ * - Consecutive ToolMessages without a preceding ResponseMessage form a tool-only group
  * - Other message types remain standalone
  */
 export const groupAssistantMessages = (messages: Message[]): Message[] => {
@@ -636,24 +638,21 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
   };
 
   const flushCurrentGroup = () => {
-    if (currentResponse) {
-      if (currentToolMessages.length > 0) {
-        // Create an AssistantGroupMessage
-        const assistantGroup: AssistantGroupMessage = {
-          id: nextUniqueId(currentResponse),
-          type: 'assistant-group',
-          content: '',
-          responseMessage: currentResponse,
-          toolMessages: currentToolMessages,
-        };
-        result.push(assistantGroup);
-      } else {
-        // No tool messages, just push the response as-is
-        pushWithUniqueId(currentResponse);
-      }
-      currentResponse = null;
-      currentToolMessages = [];
+    const firstMessage = currentResponse ?? currentToolMessages[0];
+    if (firstMessage && currentToolMessages.length > 0) {
+      const assistantGroup: AssistantGroupMessage = {
+        id: nextUniqueId(firstMessage),
+        type: 'assistant-group',
+        content: '',
+        responseMessage: currentResponse ?? undefined,
+        toolMessages: currentToolMessages,
+      };
+      result.push(assistantGroup);
+    } else if (currentResponse) {
+      pushWithUniqueId(currentResponse);
     }
+    currentResponse = null;
+    currentToolMessages = [];
   };
 
   for (const message of messages) {
@@ -662,13 +661,7 @@ export const groupAssistantMessages = (messages: Message[]): Message[] => {
       flushCurrentGroup();
       currentResponse = message;
     } else if (isToolMessage(message)) {
-      if (currentResponse) {
-        // Add to current group
-        currentToolMessages.push(message);
-      } else {
-        // Orphan tool message - push as-is
-        pushWithUniqueId(message);
-      }
+      currentToolMessages.push(message);
     } else {
       // Other message types - flush current group and push as-is
       flushCurrentGroup();
@@ -749,7 +742,11 @@ export const areMessagesEqual = (prevMessage: Message, nextMessage: Message): bo
   }
 
   if (isAssistantGroupMessage(prevMessage) && isAssistantGroupMessage(nextMessage)) {
-    if (!areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage)) {
+    if (
+      prevMessage.responseMessage && nextMessage.responseMessage
+        ? !areMessagesEqual(prevMessage.responseMessage, nextMessage.responseMessage)
+        : prevMessage.responseMessage !== nextMessage.responseMessage
+    ) {
       return false;
     }
     if (prevMessage.toolMessages.length !== nextMessage.toolMessages.length) {

@@ -112,7 +112,7 @@ export const isTaskInfoMessage = (message: Message): message is TaskInfoMessage 
 
 export interface AssistantGroupMessage extends Message {
   type: 'assistant-group';
-  responseMessage: ResponseMessage;
+  responseMessage?: ResponseMessage;
   toolMessages: ToolMessage[];
 }
 
