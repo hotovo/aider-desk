@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 81
+      "installCount": 82
     },
     {
       "id": "context-autocompletion-words",
@@ -294,7 +294,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 26
+      "installCount": 27
     },
     {
       "id": "lsp",
@@ -334,7 +334,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 41
+      "installCount": 42
     },
     {
       "id": "ui-placement-demo",
@@ -400,7 +400,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 40
+      "installCount": 41
     },
     {
       "id": "searxng-search",
@@ -557,7 +557,7 @@
         "tools",
         "search"
       ],
-      "installCount": 84
+      "installCount": 85
     },
     {
       "id": "kanban",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 160
+      "installCount": 162
     },
     {
       "id": "task-scheduler",
