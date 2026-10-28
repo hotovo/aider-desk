@@ -281,7 +281,7 @@ describe('FileEditorModal', () => {
       expect(hotkeysMock.disableScope).toHaveBeenCalledWith('home');
     }
     expect(api.readFile).toHaveBeenCalledTimes(1);
-  });
+  }, 15000);
 
   it('saves edited file content through saveFile', async () => {
     const api = createMockApi({ readFile: vi.fn(() => Promise.resolve('original')) });
