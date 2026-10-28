@@ -6,6 +6,9 @@ import { ExtensionManager } from '../extension-manager';
 import { ExtensionRegistry } from '../extension-registry';
 
 import type { PathLike } from 'fs';
+import type { Project } from '@/project';
+import type { Task } from '@/task';
+import type { WorktreeMergedEvent } from '@common/extensions';
 import type { Store } from '@/store';
 import type { ModelManager } from '@/models';
 import type { EventManager } from '@/events';
@@ -879,6 +882,43 @@ describe('ExtensionManager', () => {
       mockTask = { task: { id: 'task-1', name: 'Test Task' } };
       // dispatchEvent waits for initialization, which these tests assume completed
       (manager as any).initialized = true;
+    });
+
+    it.each(['onWorktreeCreated', 'onWorktreeMerged'] as const)('dispatches %s to matching projects and isolates handler failures', async (eventName) => {
+      const failedHandler = vi.fn().mockRejectedValue(new Error('setup failed'));
+      const projectHandler = vi.fn().mockResolvedValue(undefined);
+      const unrelatedHandler = vi.fn();
+      const extension = (name: string, handler: typeof failedHandler, projectDir?: string) => ({
+        id: name,
+        instance: { [eventName]: handler },
+        metadata: { name, version: '1.0.0', description: 'Test', author: 'Test' },
+        filePath: `/extensions/${name}.ts`,
+        initialized: true,
+        projectDir,
+      });
+      (mockRegistry as ExtensionRegistry).getExtensions = vi
+        .fn()
+        .mockReturnValue([
+          extension('project', projectHandler, mockProject.baseDir),
+          extension('unrelated', unrelatedHandler, '/another/project'),
+          extension('global', failedHandler),
+        ]);
+      const event: WorktreeMergedEvent = {
+        task: mockTask.task as Task['task'],
+        worktree: { path: '/source', branch: 'feature' },
+        targetPath: '/target',
+        targetBranch: 'main',
+        squash: false,
+        includeUncommitted: true,
+      };
+
+      await expect(manager.dispatchEvent(eventName, event, mockProject as Project, mockTask as Task)).resolves.toEqual(event);
+
+      expect(failedHandler).toHaveBeenCalledWith(event, expect.any(Object));
+      expect(projectHandler).toHaveBeenCalledWith(event, expect.any(Object));
+      expect(unrelatedHandler).not.toHaveBeenCalled();
+      expect(failedHandler.mock.invocationCallOrder[0]).toBeLessThan(projectHandler.mock.invocationCallOrder[0]);
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining(eventName), expect.any(Error));
     });
 
     it('should dispatch event to all extension handlers', async () => {

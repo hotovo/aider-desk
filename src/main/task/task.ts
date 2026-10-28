@@ -4435,6 +4435,8 @@ ${error.stderr}`,
     if (postCreateCommand) {
       await this.runWorktreePostCreateCommand(postCreateCommand);
     }
+
+    await this.extensionManager.dispatchEvent('onWorktreeCreated', { task: this.task, worktree: { ...this.task.worktree } }, this.project, this);
   }
 
   private async runWorktreePostCreateCommand(command: string): Promise<void> {
@@ -4591,6 +4593,20 @@ ${error.stderr}`,
       // Store merge state for potential revert
       await this.saveTask({ lastMergeState: mergeState });
 
+      await this.extensionManager.dispatchEvent(
+        'onWorktreeMerged',
+        {
+          task: this.task,
+          worktree: { ...this.task.worktree },
+          targetPath: this.project.baseDir,
+          targetBranch: effectiveTargetBranch,
+          squash,
+          includeUncommitted: true,
+        },
+        this.project,
+        this,
+      );
+
       this.addLogMessage(
         'info',
         squash
@@ -4680,6 +4696,20 @@ ${error.stderr}`,
         );
 
         await this.saveTask({ lastMergeState: mergeState });
+
+        await this.extensionManager.dispatchEvent(
+          'onWorktreeMerged',
+          {
+            task: this.task,
+            worktree: { ...this.task.worktree },
+            targetPath: this.project.baseDir,
+            targetBranch: effectiveTargetBranch,
+            squash: false,
+            includeUncommitted: true,
+          },
+          this.project,
+          this,
+        );
 
         this.addLogMessage('info', `Successfully merged worktree to ${effectiveTargetBranch} branch`, true);
       } catch (error) {
@@ -4915,6 +4945,19 @@ ${error.stderr}`,
     await this.waitForCurrentPromptToFinish();
 
     await this.gitManager.mergeWorktreeToWorktree(this.task.worktree.path, targetWorktreeDir, includeUncommitted);
+
+    await this.extensionManager.dispatchEvent(
+      'onWorktreeMerged',
+      {
+        task: this.task,
+        worktree: { ...this.task.worktree },
+        targetPath: targetWorktreeDir,
+        squash: false,
+        includeUncommitted,
+      },
+      this.project,
+      this,
+    );
 
     await this.sendUpdatedFilesUpdated();
   }

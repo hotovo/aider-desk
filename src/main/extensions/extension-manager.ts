@@ -67,6 +67,8 @@ import type {
   TaskInitializedEvent,
   TaskPreparedEvent,
   TaskUpdatedEvent,
+  WorktreeCreatedEvent,
+  WorktreeMergedEvent,
   ToolApprovalEvent,
   ToolCalledEvent,
   ToolDefinition,
@@ -142,6 +144,8 @@ export type ExtensionEventMap = {
   onTaskClosed: TaskClosedEvent;
   onTaskUpdated: TaskUpdatedEvent;
   onTaskDeleted: TaskDeletedEvent;
+  onWorktreeCreated: WorktreeCreatedEvent;
+  onWorktreeMerged: WorktreeMergedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
   onPromptTemplate: PromptTemplateEvent;

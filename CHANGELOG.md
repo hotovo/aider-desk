@@ -6,6 +6,7 @@
 - fixed duplicate prompt execution when mobile clients replayed requests after reconnecting
 - added separate model overrides for conversation compaction and handoff in Context Management settings
 - added file tree sidebar, tab context menus, and editor state persistence to the file editor modal
+- added extension hooks for worktree creation and merging to support project-specific automation
 
 ## [0.89.0]
 

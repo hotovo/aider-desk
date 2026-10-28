@@ -116,6 +116,21 @@ interface Extension {
 }
 ```
 
+### Worktree Events
+
+```typescript
+interface Extension {
+  onWorktreeCreated?(event: WorktreeCreatedEvent, context: ExtensionContext): Promise<void>;
+  onWorktreeMerged?(event: WorktreeMergedEvent, context: ExtensionContext): Promise<void>;
+}
+```
+
+`WorktreeCreatedEvent` contains `task` and `worktree`. It runs after new worktree creation, symlinks, and the legacy post-create command, not when reusing a worktree. The task may not yet be fully initialized; use `event.worktree.path` as the command working directory.
+
+`WorktreeMergedEvent` contains `task`, source `worktree`, `targetPath`, optional `targetBranch`, `squash`, and `includeUncommitted`. It runs after successful merges to a project branch (including merge-before-switch-to-local) or another worktree, before source cleanup. `targetBranch` is omitted for worktree-to-worktree merges. Checkoutless merges update a branch without checking it out at `targetPath`.
+
+Both are awaited notifications, not cancellable operations. Handler errors are logged without undoing the Git operation. Project-local extensions are suitable for project-specific setup commands.
+
 ### Project Events
 
 ```typescript

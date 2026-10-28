@@ -127,6 +127,8 @@ vi.mock('uuid', () => ({
 
 import { Task } from '../task';
 
+const dispatchEvent = vi.fn().mockResolvedValue(undefined);
+
 describe('Task - initWorktree post-create command', () => {
   const baseDir = '/test/project';
   const worktreePath = '/test/project/.aider-desk/tasks/test-task-id/worktree';
@@ -152,7 +154,7 @@ describe('Task - initWorktree post-create command', () => {
       mockGitManager,
       {} as any,
       {} as any,
-      { isInitialized: vi.fn(() => false) } as any,
+      { isInitialized: vi.fn(() => false), dispatchEvent } as any,
       {} as any,
       {
         workingMode: 'local',
@@ -246,5 +248,160 @@ describe('Task - initWorktree post-create command', () => {
     await (t as any).initWorktree();
 
     expect(execWithShellPathMock).not.toHaveBeenCalled();
+  });
+
+  it('dispatches creation after symlinks and the legacy command finish', async () => {
+    const order: string[] = [];
+    mockGitManager.createSymlinks.mockImplementation(async () => {
+      order.push('symlinks');
+    });
+    execWithShellPathMock.mockImplementation(async () => {
+      order.push('command');
+      return { stdout: '', stderr: '' };
+    });
+    dispatchEvent.mockImplementationOnce(async () => {
+      order.push('hook');
+    });
+    const t = prepareTask({ worktreeSymlinkFolders: ['node_modules'], worktreePostCreateCommand: 'npm install' });
+
+    await (t as unknown as { initWorktree(): Promise<void> }).initWorktree();
+
+    expect(order).toEqual(['symlinks', 'command', 'hook']);
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'onWorktreeCreated',
+      {
+        task: t.task,
+        worktree: t.task.worktree,
+      },
+      mockProject,
+      t,
+    );
+  });
+
+  it('does not dispatch creation when reusing a worktree', async () => {
+    const t = prepareTask({});
+    Object.assign(t, {
+      waitForCurrentPromptToFinish: vi.fn().mockResolvedValue(undefined),
+      updateTask: vi.fn().mockResolvedValue(undefined),
+      sendUpdatedFilesUpdated: vi.fn().mockResolvedValue(undefined),
+      updateAutocompletionData: vi.fn().mockResolvedValue(undefined),
+    });
+    mockGitManager.getTaskWorktree = vi.fn().mockResolvedValue({ path: worktreePath });
+
+    await t.switchToWorktreeWorkingMode();
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch creation if creating the worktree fails', async () => {
+    const t = prepareTask({});
+    mockGitManager.createWorktree.mockRejectedValueOnce(new Error('creation failed'));
+
+    await expect((t as unknown as { initWorktree(): Promise<void> }).initWorktree()).rejects.toThrow('creation failed');
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  const prepareMergeTask = () => {
+    const t = prepareTask({});
+    t.task.worktree = { path: worktreePath, branch: worktreeBranch, baseBranch: 'main' };
+    Object.assign(t, {
+      waitForCurrentPromptToFinish: vi.fn().mockResolvedValue(undefined),
+      saveTask: vi.fn().mockResolvedValue(undefined),
+      updateTask: vi.fn().mockResolvedValue(undefined),
+      updateAutocompletionData: vi.fn().mockResolvedValue(undefined),
+      sendUpdatedFilesUpdated: vi.fn().mockResolvedValue(undefined),
+      sendTaskGitStatusUpdated: vi.fn().mockResolvedValue(undefined),
+    });
+    mockGitManager.mergeWorktreeToMainWithUncommitted = vi.fn().mockResolvedValue({ timestamp: 1 });
+    mockGitManager.mergeWorktreeToWorktree = vi.fn().mockResolvedValue(undefined);
+    mockGitManager.getRebaseState = vi.fn().mockResolvedValue({ inProgress: false });
+    return t;
+  };
+
+  it.each([false, true])('dispatches after merging to the project (squash: %s)', async (squash) => {
+    const t = prepareMergeTask();
+
+    await t.mergeWorktreeToMain(squash, 'develop', 'Test merge');
+
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'onWorktreeMerged',
+      {
+        task: t.task,
+        worktree: t.task.worktree,
+        targetPath: baseDir,
+        targetBranch: 'develop',
+        squash,
+        includeUncommitted: true,
+      },
+      mockProject,
+      t,
+    );
+    expect(mockGitManager.mergeWorktreeToMainWithUncommitted.mock.invocationCallOrder[0]).toBeLessThan(dispatchEvent.mock.invocationCallOrder[0]);
+  });
+
+  it('dispatches merge before switching to local mode', async () => {
+    const t = prepareMergeTask();
+
+    await t.switchToLocalWorkingMode({ mergeBeforeSwitch: true });
+
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'onWorktreeMerged',
+      expect.objectContaining({
+        targetPath: baseDir,
+        targetBranch: 'main',
+        squash: false,
+      }),
+      mockProject,
+      t,
+    );
+    expect(dispatchEvent.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(t.updateTask).mock.invocationCallOrder[0]);
+  });
+
+  it.each([false, true])('dispatches after a worktree-to-worktree merge (uncommitted: %s)', async (includeUncommitted) => {
+    const t = prepareMergeTask();
+
+    await t.mergeWorktreeToWorktree('/target', includeUncommitted);
+
+    expect(dispatchEvent).toHaveBeenCalledWith(
+      'onWorktreeMerged',
+      {
+        task: t.task,
+        worktree: t.task.worktree,
+        targetPath: '/target',
+        squash: false,
+        includeUncommitted,
+      },
+      mockProject,
+      t,
+    );
+  });
+
+  it('does not dispatch after a failed merge to the project', async () => {
+    const t = prepareMergeTask();
+    mockGitManager.mergeWorktreeToMainWithUncommitted.mockRejectedValueOnce(new Error('merge failed'));
+
+    await t.mergeWorktreeToMain(false);
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch after a failed merge when switching to local mode', async () => {
+    const t = prepareMergeTask();
+    mockGitManager.mergeWorktreeToMainWithUncommitted.mockRejectedValueOnce(new Error('merge failed'));
+
+    await expect(t.switchToLocalWorkingMode({ mergeBeforeSwitch: true })).rejects.toThrow('merge failed');
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
+    expect(t.updateTask).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch after a failed worktree-to-worktree merge', async () => {
+    const t = prepareMergeTask();
+    mockGitManager.mergeWorktreeToWorktree.mockRejectedValueOnce(new Error('merge failed'));
+
+    await expect(t.mergeWorktreeToWorktree('/target')).rejects.toThrow('merge failed');
+
+    expect(dispatchEvent).not.toHaveBeenCalled();
   });
 });

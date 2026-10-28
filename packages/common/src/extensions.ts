@@ -42,6 +42,7 @@ import {
   UsageReportData,
   VoiceSession,
   UncommittedFiles,
+  Worktree,
 } from '@common/types';
 
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState, ToolRecoveryMode };
@@ -402,6 +403,20 @@ export interface TaskPreparedEvent {
 /** Event payload for task initialization events */
 export interface TaskInitializedEvent {
   readonly task: TaskData;
+}
+
+export interface WorktreeCreatedEvent {
+  readonly task: TaskData;
+  readonly worktree: Worktree;
+}
+
+export interface WorktreeMergedEvent {
+  readonly task: TaskData;
+  readonly worktree: Worktree;
+  readonly targetPath: string;
+  readonly targetBranch?: string;
+  readonly squash: boolean;
+  readonly includeUncommitted: boolean;
 }
 
 /** Event payload for task closed events */
@@ -2038,6 +2053,14 @@ export interface Extension {
    * @returns void or partial event to block deletion
    */
   onTaskDeleted?(event: TaskDeletedEvent, context: ExtensionContext): Promise<void | Partial<TaskDeletedEvent>>;
+
+  // Worktree Events
+
+  /** Called after a new worktree, symlinks, and the configured post-create command are ready. Not called for reused worktrees. */
+  onWorktreeCreated?(event: WorktreeCreatedEvent, context: ExtensionContext): Promise<void>;
+
+  /** Called after a successful merge, before source worktree cleanup. targetBranch is provided for merges to a project branch. */
+  onWorktreeMerged?(event: WorktreeMergedEvent, context: ExtensionContext): Promise<void>;
 
   // Project Events
 

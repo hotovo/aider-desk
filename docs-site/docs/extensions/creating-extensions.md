@@ -556,6 +556,40 @@ export default class ProtectedPathsExtension implements Extension {
 }
 ```
 
+### Worktree Lifecycle Hooks
+
+Use a project-local extension at `.aider-desk/extensions/worktree-setup.ts` to run project-specific setup whenever AiderDesk creates a worktree:
+
+```typescript
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
+import type { Extension, ExtensionContext, WorktreeCreatedEvent, WorktreeMergedEvent } from '@aiderdesk/extensions';
+
+const execAsync = promisify(exec);
+
+export default class WorktreeSetupExtension implements Extension {
+  static metadata = {
+    name: 'Project Worktree Setup',
+    version: '1.0.0',
+    description: 'Install project dependencies in newly created worktrees',
+  };
+
+  async onWorktreeCreated(event: WorktreeCreatedEvent, context: ExtensionContext): Promise<void> {
+    const { stdout, stderr } = await execAsync('npm ci', { cwd: event.worktree.path });
+    context.log([stdout, stderr].filter(Boolean).join('\n'), 'info');
+  }
+
+  async onWorktreeMerged(event: WorktreeMergedEvent, context: ExtensionContext): Promise<void> {
+    context.log(`Merged ${event.worktree.path} into ${event.targetBranch ?? event.targetPath}`, 'info');
+  }
+}
+```
+
+- **`onWorktreeCreated`** receives `{ task, worktree }`. It is awaited after worktree creation, symlink setup, and the existing `worktreePostCreateCommand` (if configured). It also covers switching an existing task to a newly created worktree. Loading or sharing an existing worktree does not trigger it. The task may not yet be fully initialized, so use `event.worktree.path` rather than relying on task readiness or its current working mode.
+- **`onWorktreeMerged`** receives `{ task, worktree, targetPath, targetBranch?, squash, includeUncommitted }`. It is awaited after successful merge-to-project, merge-before-switch-to-local, and worktree-to-worktree operations, before source cleanup. Failed merges do not trigger it. `worktree` describes the source; `targetPath` identifies the destination repository. `targetBranch` is supplied for merges to a project branch, and omitted for worktree-to-worktree merges. For checkoutless merges, the target branch is updated without checking it out in `targetPath`; do not assume that directory has the merged files checked out. `includeUncommitted` records whether the operation includes uncommitted changes, not whether any were present.
+
+Both hooks are post-operation notifications returning `Promise<void>`; they cannot cancel or alter the completed Git operation. Handler failures are logged and other extensions continue. The existing `worktreePostCreateCommand` remains supported; clear it when moving the same setup into an extension to avoid running it twice. Project-local extensions only receive events for their own project. Only run commands you trust; these hooks execute without agent tool approval.
+
 ### Extension with Memory Integration
 
 Extensions can access AiderDesk's built-in memory system via `context.getMemoryContext()`. This enables storing and retrieving knowledge across tasks — useful for auto-extracting insights from agent interactions or building context-aware extensions.

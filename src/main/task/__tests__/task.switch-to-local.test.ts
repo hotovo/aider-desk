@@ -146,7 +146,7 @@ describe('Task - switchToLocalWorkingMode with merge', () => {
       mockGitManager,
       {} as any,
       {} as any,
-      { isInitialized: vi.fn(() => false) } as any,
+      { isInitialized: vi.fn(() => false), dispatchEvent: vi.fn().mockResolvedValue(undefined) } as any,
       {} as any,
       {
         workingMode: 'worktree',
