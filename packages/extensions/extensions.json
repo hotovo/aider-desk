@@ -468,7 +468,7 @@
         "modes",
         "ui"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "claude-agent-sdk",
@@ -569,7 +569,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 50
+      "installCount": 51
     },
     {
       "id": "doom",
@@ -695,7 +695,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 13
+      "installCount": 14
     }
   ]
 }
