@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 4
+      "installCount": 5
     },
     {
       "id": "jev",
@@ -569,7 +569,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "doom",
