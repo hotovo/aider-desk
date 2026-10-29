@@ -513,7 +513,7 @@ export interface AgentStepFinishedEvent {
   readonly agentProfile: AgentProfile;
   readonly currentResponseId: string;
   readonly stepResult: AgentStepResult;
-  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other';
+  finishReason: 'stop' | 'length' | 'content-filter' | 'tool-calls' | 'error' | 'other' | 'interrupted';
   responseMessages: ContextMessage[];
 }
 
