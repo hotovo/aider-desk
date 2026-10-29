@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "learn",
@@ -607,7 +607,7 @@
         "tools",
         "search"
       ],
-      "installCount": 70
+      "installCount": 71
     },
     {
       "id": "destructive-command-guard",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 162
+      "installCount": 163
     },
     {
       "id": "task-scheduler",
