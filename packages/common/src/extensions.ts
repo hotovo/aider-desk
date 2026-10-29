@@ -48,6 +48,34 @@ import {
 export { AutonomyMode, ContextMemoryMode, InvocationMode, OS, ToolApprovalState, ToolRecoveryMode };
 export type { ModelCallSettings, ModelCallTimeout, Reasoning, SwitchToLocalOptions, SwitchToWorktreeOptions, UncommittedFiles };
 
+export interface ContextGenerationOptions {
+  abortSignal?: AbortSignal;
+  maxOutputTokens?: number;
+}
+
+export interface ContextGenerationUsage {
+  inputTokens: number | undefined;
+  outputTokens: number | undefined;
+  totalTokens: number | undefined;
+  inputTokenDetails: {
+    noCacheTokens: number | undefined;
+    cacheReadTokens: number | undefined;
+    cacheWriteTokens: number | undefined;
+  };
+  outputTokenDetails: {
+    textTokens: number | undefined;
+    reasoningTokens: number | undefined;
+  };
+  raw?: unknown;
+}
+
+export interface ContextGenerationResult<T> {
+  output: T;
+  usage: ContextGenerationUsage;
+  providerMetadata?: unknown;
+  finishReason: string;
+}
+
 export type AgentStepResult = unknown;
 export type { ModeDefinition };
 
@@ -1146,6 +1174,16 @@ export interface TaskContext {
    * @returns The generated object matching the schema, or undefined if generation failed
    */
   generateObject<T = unknown>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>;
+
+  /**
+   * Generate one response from a snapshot of the task's current prepared context and selected agent profile.
+   * Retains tool definitions with toolChoice none; never executes tools or persists the generated messages.
+   * Does not reproduce transient overrides from an earlier agent execution. Cache reuse is provider-dependent.
+   */
+  generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>>;
+
+  /** Generate structured output from task context with the same read-only semantics as generateTextFromContext. */
+  generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>>;
 
   // User Interaction
 

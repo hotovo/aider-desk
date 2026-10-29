@@ -86,7 +86,7 @@ import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 import type { WatchHandle } from '@/file-watcher-manager';
 import type { SmartCompactionPassSelection } from '@/agent/smart-compaction';
-import type { SmartCompactionOptions } from '@common/extensions';
+import type { ContextGenerationOptions, ContextGenerationResult, SmartCompactionOptions } from '@common/extensions';
 
 import { translate } from '@/utils/i18n';
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
@@ -5807,6 +5807,14 @@ ${error.stderr}`,
 
   public async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined> {
     return this.agent.generateObject(modelId, systemPrompt, prompt, schema, this.getProjectDir(), [], true, undefined, this.task.id);
+  }
+
+  public async generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>> {
+    return this.agent.generateTextFromContext(this, prompt, options);
+  }
+
+  public async generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>> {
+    return this.agent.generateObjectFromContext(this, prompt, schema, options);
   }
 
   async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void> {

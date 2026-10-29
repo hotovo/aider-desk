@@ -206,6 +206,9 @@ interface TaskContext {
   runCommand(command: string): Promise<void>;
   interruptResponse(): Promise<void>;
   generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>;
+  generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>;
+  generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>>;
+  generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>>;
 
   // User Interaction
   askQuestion(text: string, options?: QuestionOptions): Promise<string>;
@@ -255,6 +258,31 @@ interface TaskContext {
   resumeTask(): Promise<void>;
 }
 ```
+
+### Read-only context generation
+
+`generateTextFromContext` and `generateObjectFromContext` make one model call using the task's selected agent profile, normal system prompt, current context messages/files, tool schemas, and message preparation/cache-control pipeline. They append the supplied prompt to a local copy and return `{ output, usage, providerMetadata, finishReason }` without saving the prompt or response to task context or emitting a main-agent response.
+
+```typescript
+const result = await taskContext.generateObjectFromContext(
+  'Review the existing evidence. Has the objective been met? Do not use tools.',
+  z.object({ complete: z.boolean(), reason: z.string() }),
+  { abortSignal: controller.signal, maxOutputTokens: 2048 },
+);
+context.log(JSON.stringify(result.usage));
+```
+
+`ContextGenerationOptions` accepts an optional `abortSignal` and `maxOutputTokens`. Calls use independent cancellation: `interruptResponse()` does not cancel them. Errors, cancellation, and invalid structured output reject the promise. Extensions should abort their outstanding calls on unload.
+
+Tool definitions remain in the request with `toolChoice: 'none'`, but local execute handlers are removed and provider-native tool approval is denied. A returned tool call is rejected rather than executed. Provider sessions use a fresh ID and do not resume the main agent's native session.
+
+These helpers rebuild **current task context**, not an exact snapshot of a previous request: transient `onAgentStarted`/`onAgentStepStarted` overrides are not replayed, while message transformation/optimization/cache-control hooks still run. Keep the task idle when comparing repeated requests. Preparation hooks should not mutate task state during side generation.
+
+Usage includes `inputTokens`, `outputTokens`, `totalTokens`, `inputTokenDetails` (`noCacheTokens`, `cacheReadTokens`, `cacheWriteTokens`), `outputTokenDetails` (`textTokens`, `reasoningTokens`), and optional provider `raw` usage. Missing counts remain `undefined`, not zero. These calls are billable; usage is returned to the caller rather than added to the main agent's cost totals.
+
+Preserving the request prefix makes provider caching possible, not guaranteed. Structured-output schemas, provider routing, minimum token thresholds, and cache expiry may affect reuse. Some adapters implement structured output through a synthetic output tool; check provider behavior and measured cache-read tokens rather than assuming request equivalence. The tools-plus-`none` serialization is covered for OpenAI Chat/Responses and Anthropic.
+
+These calls use non-streaming generation unless the model requires streaming, in which case the stream is collected silently. New APIs require an updated main process; reloading an extension alone cannot update an older core.
 
 ## ProjectContext
 
@@ -688,7 +716,7 @@ const model: Model = {
 
 Both flags are also available in provider settings and model overrides in Model Library. Resolution follows model-declared defaults, then provider settings, then model `providerOverrides` (highest priority). Enabling either flag clears the opposite inherited flag. Explicit `false` overrides that flag without enabling the opposite behavior. If both flags are `true` at the same level in imported configuration, `requireStreaming` wins.
 
-The main agent streams normally unless streaming is disabled. One-shot generation (`generateText` and `generateObject`) uses non-streaming calls unless streaming is required. For required streaming, the host consumes the stream silently and returns the final output. It does not publish partial responses to the task.
+The main agent streams normally unless streaming is disabled. One-shot generation (`generateText`, `generateObject`, `generateTextFromContext`, and `generateObjectFromContext`) uses non-streaming calls unless streaming is required. For required streaming, the host consumes the stream silently and returns the final output and, for context generation, usage and provider metadata. It does not publish partial responses to the task.
 
 ### ProviderToolApprovalHandler
 

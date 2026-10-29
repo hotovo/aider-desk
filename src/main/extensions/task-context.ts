@@ -15,7 +15,15 @@ import {
   UncommittedFiles,
 } from '@common/types';
 
-import type { QuestionOptions, SmartCompactionOptions, SmartCompactionResult, TaskContext, ResponseMessage } from '@common/extensions';
+import type {
+  ContextGenerationOptions,
+  ContextGenerationResult,
+  QuestionOptions,
+  SmartCompactionOptions,
+  SmartCompactionResult,
+  TaskContext,
+  ResponseMessage,
+} from '@common/extensions';
 import type { z } from 'zod';
 import type { Task } from '@/task';
 
@@ -226,6 +234,14 @@ export class TaskContextImpl implements TaskContext {
 
   async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined> {
     return this.task.generateObject(modelId, systemPrompt, prompt, schema);
+  }
+
+  async generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>> {
+    return this.task.generateTextFromContext(prompt, options);
+  }
+
+  async generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>> {
+    return this.task.generateObjectFromContext(prompt, schema, options);
   }
 
   // User Interaction

@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { cloneDeep } from 'lodash';
 import { createToolRecoveryNotice, isToolRecoveryNotice, ToolRecoveryCode, DEFAULT_TOOL_RECOVERY_MODES } from '@common/tool-recovery';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -77,7 +78,7 @@ import {
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 
-import type { ExtensionToolOrigin, ToolsetToolEntry } from '@common/extensions';
+import type { ContextGenerationOptions, ContextGenerationResult, ExtensionToolOrigin, ToolsetToolEntry } from '@common/extensions';
 import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
 import type { LanguageModelV4 } from '@ai-sdk/provider';
@@ -1909,6 +1910,103 @@ export class Agent {
     }
 
     return messages;
+  }
+
+  async generateTextFromContext(task: Task, prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>> {
+    const result = await this.generateFromContext(task, prompt, undefined, options);
+    return { output: result.text, usage: result.usage, providerMetadata: result.providerMetadata, finishReason: result.finishReason };
+  }
+
+  async generateObjectFromContext<T>(
+    task: Task,
+    prompt: string,
+    schema: z.ZodType<T>,
+    options?: ContextGenerationOptions,
+  ): Promise<ContextGenerationResult<T>> {
+    const result = await this.generateFromContext(task, prompt, schema, options);
+    return { output: result.output as T, usage: result.usage, providerMetadata: result.providerMetadata, finishReason: result.finishReason };
+  }
+
+  private async generateFromContext<T>(task: Task, prompt: string, schema?: z.ZodType<T>, options: ContextGenerationOptions = {}) {
+    const profile = await task.getTaskAgentProfile();
+    if (!profile) {
+      throw new Error('No agent profile selected for this task');
+    }
+    const provider = this.modelManager.getProviders().find((entry) => entry.id === profile.provider);
+    if (!provider) {
+      throw new Error(`Provider ${profile.provider} not found`);
+    }
+    options.abortSignal?.throwIfAborted();
+    const settings = this.store.getSettings();
+    const contextMessages = cloneDeep(await task.getContextMessages());
+    const contextFiles = cloneDeep(await task.getContextFiles());
+    const systemPrompt = await this.promptsManager.getSystemPrompt(settings, task, profile);
+    const messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
+    const firstUserMessage = contextMessages[0];
+    const userIndex = firstUserMessage
+      ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
+      : messages.length;
+    messages.push({ role: 'user', content: prompt });
+    const toolSet = await this.getAvailableTools(
+      task,
+      task.task.currentMode || this.store.getProjectSettings(task.project.baseDir).currentMode || 'agent',
+      profile,
+      provider,
+      profile.model,
+      contextMessages,
+      [],
+      options.abortSignal,
+    );
+    const tools: ToolSet = Object.fromEntries(Object.entries(toolSet).map(([name, tool]) => [name, { ...tool, execute: undefined }]));
+    const model = await this.modelManager.createLlm(
+      provider,
+      profile.model,
+      settings,
+      task.getProjectDir(),
+      tools,
+      systemPrompt,
+      undefined,
+      uuidv4(),
+      async () => [false, 'Tools cannot execute during context generation'],
+    );
+    const modelSettings = this.modelManager.getModelSettings(provider.id, profile.model);
+    const preparedMessages = await prepareMessagesForModel(
+      messages,
+      this.modelManager.getCacheControl(provider, profile.model),
+      task,
+      profile,
+      this.agentProfileManager.getProjectProfiles(task.project),
+      userIndex,
+      this.extensionManager,
+    );
+    const result = await generateOnce(
+      {
+        ...this.modelManager.getProviderParameters(provider, profile.model),
+        model: wrapLanguageModel({ model: model as LanguageModelV4, middleware: extractReasoningMiddleware({ tagName: 'think' }) }),
+        instructions: systemPrompt,
+        messages: preparedMessages,
+        tools,
+        toolChoice: 'none',
+        output: schema ? Output.object({ schema }) : undefined,
+        providerOptions: this.modelManager.getProviderOptions(provider, profile.model),
+        temperature: profile.temperature ?? modelSettings?.temperature,
+        maxOutputTokens: options.maxOutputTokens ?? profile.maxTokens ?? modelSettings?.maxOutputTokens,
+        maxRetries: MAX_RETRIES,
+        abortSignal: options.abortSignal,
+        telemetry: this.getTelemetrySettings(),
+      },
+      this.modelManager.isStreamingRequired(provider, profile.model),
+    );
+    if (result.toolCalls.length > 0) {
+      throw new Error('Context generation returned a tool call despite toolChoice none');
+    }
+    return {
+      text: result.text,
+      output: schema ? result.output : undefined,
+      usage: result.usage,
+      providerMetadata: result.providerMetadata,
+      finishReason: result.finishReason,
+    };
   }
 
   async generateText(
