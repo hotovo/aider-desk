@@ -640,6 +640,7 @@ src/
           DiffFileItem.tsx
           DiffFilesSidebar.tsx
           EmptyContextInfo.tsx
+          FileEditorFileTree.tsx
           fileEditorInlineRequests.tsx
           FileEditorModal.tsx
           FileEditorTabs.tsx
@@ -4889,6 +4890,8 @@ import type {
   TaskInitializedEvent,
   TaskPreparedEvent,
   TaskUpdatedEvent,
+  WorktreeCreatedEvent,
+  WorktreeMergedEvent,
   ToolApprovalEvent,
   ToolCalledEvent,
   ToolDefinition,
@@ -4962,6 +4965,8 @@ export type ExtensionEventMap = {
   onTaskClosed: TaskClosedEvent;
   onTaskUpdated: TaskUpdatedEvent;
   onTaskDeleted: TaskDeletedEvent;
+  onWorktreeCreated: WorktreeCreatedEvent;
+  onWorktreeMerged: WorktreeMergedEvent;
   onPromptStarted: PromptStartedEvent;
   onPromptFinished: PromptFinishedEvent;
   onPromptTemplate: PromptTemplateEvent;
@@ -11949,9 +11954,7 @@ public reloadGroupMessages(messages: ContextMessage[])
 ⋮----
 public async redoUserPrompt(messageId: string, mode: Mode, updatedPrompt?: string, updatedImages?: string[])
 ⋮----
-// No need to await runPrompt here, let it run in the background
-⋮----
-public async resumeTask()
+public async resumeTask(mode: Mode = this.getCurrentMode())
 ⋮----
 // In other modes, check if last message is user
 ⋮----
@@ -11959,7 +11962,7 @@ public async resumeTask()
 ⋮----
 // Last message is not from user, send "Continue" to aider
 ⋮----
-private tryCustomCommand(prompt: string, mode: Mode): boolean
+private tryCustomCommand(prompt: string, mode: Mode): Promise<void> | undefined
 ⋮----
 private getCurrentMode()
 ⋮----
@@ -18032,7 +18035,6 @@ import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
 import { Tooltip } from '@/components/ui/Tooltip';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
-import { CodeInline } from '@/components/common/CodeInline';
 ⋮----
 type Props = {
   message: ToolMessage;
@@ -19297,17 +19299,18 @@ import { useTranslation } from 'react-i18next';
 import { RiCheckboxCircleFill, RiCloseCircleFill, RiErrorWarningFill, RiPauseCircleFill } from 'react-icons/ri';
 import { CgSpinner } from 'react-icons/cg';
 import { MdPlayArrow } from 'react-icons/md';
-import { DefaultTaskState, ToolMessage } from '@common/types';
+import { AutonomyMode, DefaultTaskState, TaskExecutionMode, ToolMessage } from '@common/types';
 ⋮----
 import { getTruncatedToolResult } from './truncated-tool-result';
 import { TruncatedToolResultContent } from './TruncatedToolResultContent';
 ⋮----
-import { CodeInline } from '@/components/common/CodeInline';
 import { ExpandableMessageBlock } from '@/components/message/ExpandableMessageBlock';
 import { TaskStateChip } from '@/components/common/TaskStateChip';
 import { Tooltip } from '@/components/ui/Tooltip';
+import { useProjectStore } from '@/stores/projectStore';
 ⋮----
 type Props = {
+  baseDir: string;
   message: ToolMessage;
   onRemove?: () => void;
   compact?: boolean;
@@ -19317,6 +19320,7 @@ type Props = {
 };
 ⋮----
 const renderStatusIcon = () =>
+⋮----
 
 ================
 File: src/renderer/src/components/message/SearchParentTaskToolMessage.tsx
@@ -23194,7 +23198,7 @@ File: src/renderer/src/components/project/ProjectView.tsx
 ================
 import { AutonomyMode, InputHistoryData, ProjectStartMode, TaskCreatedData, TaskData, DefaultTaskState } from '@common/types';
 import { useTranslation } from 'react-i18next';
-import { startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
+import { Activity, startTransition, useCallback, useEffect, useOptimistic, useRef, useState } from 'react';
 import { useLocalStorage } from '@reactuses/core';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { clsx } from 'clsx';
@@ -26833,6 +26837,42 @@ type Props = {
 };
 
 ================
+File: src/renderer/src/components/Workspace/FileEditorFileTree.tsx
+================
+import { type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { hotkeysCoreFeature, propMemoizationFeature, syncDataLoaderFeature } from '@headless-tree/core';
+import { useTree } from '@headless-tree/react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { HiChevronDown, HiChevronRight } from 'react-icons/hi';
+import { VscFile } from 'react-icons/vsc';
+import { clsx } from 'clsx';
+⋮----
+import { INDENT_PX, createFileTree, normalizePath } from './types';
+⋮----
+import type { TreeItem } from './types';
+import type { ContextFile } from '@common/types';
+import type { Virtualizer } from '@tanstack/react-virtual';
+⋮----
+type Props = {
+  allFiles: string[];
+  activeFilePath: string | null;
+  openFilePaths: Set<string>;
+  onOpenFile: (path: string) => void;
+};
+⋮----
+const getAncestorIds = (path: string): string[] =>
+⋮----
+// useVirtualizer returns a stateful instance with methods, which React Compiler cannot memoize.
+// eslint-disable-next-line react-hooks/incompatible-library
+⋮----
+const handleClick = (event: MouseEvent<HTMLDivElement>) =>
+⋮----
+key=
+⋮----
+itemInstanceProps.ref?.(el);
+
+================
 File: src/renderer/src/components/Workspace/fileEditorInlineRequests.tsx
 ================
 import { createRoot, type Root } from 'react-dom/client';
@@ -26886,31 +26926,43 @@ export const createInlineChangeRequestsExtension = (options: Options): Extension
 ================
 File: src/renderer/src/components/Workspace/FileEditorModal.tsx
 ================
-import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ComponentProps, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
-import { HiOutlineExclamation } from 'react-icons/hi';
+import { HiOutlineExclamation, HiOutlineFolder } from 'react-icons/hi';
+import { VscWorktreeSmall } from 'react-icons/vsc';
 import { MdLibraryAddCheck, MdSave } from 'react-icons/md';
 import { useHotkeys, useHotkeysContext } from 'react-hotkeys-hook';
+import { useLocalStorage } from '@reactuses/core';
+import { ResizableBox, type ResizeCallbackData } from 'react-resizable';
+⋮----
 import { LanguageDescription } from '@codemirror/language';
 import { languages } from '@codemirror/language-data';
-import { openSearchPanel } from '@codemirror/search';
+import { gotoLine, openSearchPanel } from '@codemirror/search';
 import { Prec } from '@codemirror/state';
-import { EditorView, GutterMarker, gutter, lineNumbers } from '@codemirror/view';
+import { EditorView, GutterMarker, gutter, keymap, lineNumbers } from '@codemirror/view';
 import { githubDarkInit } from '@uiw/codemirror-theme-github';
 import CodeMirror, { type Extension } from '@uiw/react-codemirror';
+import { getRelativePath } from '@common/utils';
 ⋮----
 import { remapLineAnchors } from './fileEditorUtils';
 import { createInlineChangeRequestsExtension } from './fileEditorInlineRequests';
 import { CommentsPanel } from './CommentsPanel';
 import { FileEditorTabs } from './FileEditorTabs';
+import { FileEditorFileTree } from './FileEditorFileTree';
 ⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
 import { Button } from '@/components/common/Button';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { DiffLineCommentPanel } from '@/components/common/DiffViewer';
 import { ModalOverlayLayout } from '@/components/common/ModalOverlayLayout';
 import { useFileEditorStore } from '@/stores/fileEditorStore';
+import { setTaskAllFiles, useTaskAllFiles, useTaskFilesStore } from '@/stores/taskFilesStore';
+import { useProjectStore } from '@/stores/projectStore';
+import { getTaskDir } from '@/utils/task-utils';
+import { getPathBasename } from '@/utils/path-utils';
 import { useApi } from '@/contexts/ApiContext';
+import { useOS } from '@/hooks/useOS';
 import { showErrorNotification, showSuccessNotification, showWarningNotification } from '@/utils/notifications';
 ⋮----
 type PendingComment = {
@@ -26965,10 +27017,18 @@ toDOM(): HTMLElement
 ⋮----
 type Props = {
   baseDir: string;
+  activeTaskId?: string;
   onClose: () => void;
 };
 ⋮----
+const loadProjectFiles = async () =>
+⋮----
+// eslint-disable-next-line no-console
+⋮----
 const fetchLanguageSupport = async () =>
+⋮----
+// When CodeMirror's search panel or go-to-line dialog handles Escape it calls preventDefault;
+// stop that keydown from bubbling to the modal's Escape handler so only the panel closes.
 ⋮----
 const getLineNumber = (position: number)
 const mapPosition = (position: number)
@@ -26986,10 +27046,14 @@ title=
 ================
 File: src/renderer/src/components/Workspace/FileEditorTabs.tsx
 ================
-import { type MouseEvent, type ReactNode } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoMdClose } from 'react-icons/io';
 import { clsx } from 'clsx';
+⋮----
+import { MenuOption, useContextMenu } from '@/contexts/ContextMenuContext';
+import { useApi } from '@/contexts/ApiContext';
+import { showSuccessNotification } from '@/utils/notifications';
 ⋮----
 export type OpenEditorFile = {
   path: string;
@@ -26997,13 +27061,22 @@ export type OpenEditorFile = {
 };
 ⋮----
 type Props = {
+  baseDir: string;
   openFiles: OpenEditorFile[];
   activeFilePath: string | null;
   dirtyPaths: Set<string>;
   actions?: ReactNode;
   onSelect: (path: string) => void;
   onClose: (path: string) => void;
+  onCloseOthers: (path: string) => void;
+  onCloseAll: () => void;
 };
+⋮----
+const isAbsolutePath = (filePath: string): boolean
+⋮----
+const toAbsolutePath = (baseDir: string, filePath: string): string =>
+⋮----
+const toRelativePath = (baseDir: string, filePath: string): string =>
 ⋮----
 const handleSelect = () =>
 ⋮----
@@ -27011,7 +27084,7 @@ const handleCloseClick = (event: MouseEvent<HTMLButtonElement>) =>
 ⋮----
 const handleAuxClick = (event: MouseEvent<HTMLDivElement>) =>
 ⋮----
-className=
+const handleContextMenu = (event: MouseEvent<HTMLDivElement>) =>
 ⋮----
 onMouseDown=
 aria-label=
@@ -30858,6 +30931,8 @@ export const setTaskAutocompletionWords = (taskId: string, taskDir: string, auto
 export const releaseTaskFiles = (taskId: string)
 ⋮----
 export const useTaskAllFiles = (taskDir: string | undefined)
+⋮----
+export const useTaskAllFilesByTaskId = (taskId: string | undefined)
 ⋮----
 export const useTaskAutocompletionWords = (taskDir: string | undefined)
 
