@@ -1,11 +1,12 @@
 import { getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderProfile } from '@common/types';
+import { StreamingConfig } from '@common/streaming';
 import { useTranslation } from 'react-i18next';
 import { ComponentType, forwardRef, useImperativeHandle, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 
-import { DisableStreaming } from './DisableStreaming';
+import { StreamingSettings } from './StreamingSettings';
 import { DisableToolCallStreaming } from './DisableToolCallStreaming';
 
 import {
@@ -134,9 +135,9 @@ export const ProviderProfileForm = forwardRef<ProviderProfileFormRef, Props>(
       setHeaders(headers.filter((h) => h.id !== id));
     };
 
-    const handleDisableStreamingChange = (disableStreaming: boolean) => {
+    const handleStreamingChange = (value: Required<StreamingConfig>) => {
       if (parameters) {
-        setParameters({ ...parameters, disableStreaming });
+        setParameters({ ...parameters, ...value });
       }
     };
 
@@ -264,10 +265,9 @@ export const ProviderProfileForm = forwardRef<ProviderProfileFormRef, Props>(
             </Accordion>
           </div>
 
-          {/* Disable streaming checkbox */}
           {parameters && (
             <div className="mt-4 mx-2 space-y-2">
-              <DisableStreaming checked={parameters.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
+              <StreamingSettings value={parameters} onChange={handleStreamingChange} />
               <DisableToolCallStreaming checked={parameters.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
             </div>
           )}

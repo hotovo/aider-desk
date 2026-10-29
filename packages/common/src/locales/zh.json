@@ -384,6 +384,8 @@
     },
     "disableStreaming": "禁用流式传输",
     "disableStreamingInfo": "禁用响应流式传输。当提供商或模型不支持流式传输时使用此选项。",
+    "requireStreaming": "强制流式传输",
+    "requireStreamingInfo": "所有请求（包括后台生成）都必须使用流式传输。适用于拒绝非流式请求的模型。",
     "disableToolCallStreaming": "禁用工具调用流式传输",
     "disableToolCallStreamingInfo": "禁用工具调用输入的流式传输。工具调用仍将执行，但其参数不会逐步显示。",
     "trackTokenUsage": "跟踪 Token 使用量",

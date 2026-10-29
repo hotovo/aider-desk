@@ -1,5 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { LlmProvider, LlmProviderName } from '@common/agent';
+import { Model } from '@common/types';
+import { resolveStreamingConfig, StreamingConfig } from '@common/streaming';
 import { ComponentType } from 'react';
 
 import { OpenRouterModelOverrides } from './providers/OpenRouterModelOverrides';
@@ -12,6 +14,7 @@ import { RequestyModelOverrides } from './providers/RequestyModelOverrides';
 import { AzureModelOverrides } from './providers/AzureModelOverrides';
 import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleModelOverrides';
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
+import { StreamingSettings } from './StreamingSettings';
 import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
 import { AlibabaPlanModelOverrides } from './providers/AlibabaPlanModelOverrides';
 import { DeepseekModelOverrides } from './providers/DeepseekModelOverrides';
@@ -57,16 +60,21 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
 
 type Props = {
   provider: LlmProvider;
+  model?: Partial<Model>;
   overrides: Record<string, unknown>;
   onChange: (overrides: Record<string, unknown>) => void;
   className?: string;
 };
 
-export const ModelParameterOverrides = ({ provider, overrides, onChange, className = '' }: Props) => {
+export const ModelParameterOverrides = ({ provider, model, overrides, onChange, className = '' }: Props) => {
   const { t } = useTranslation();
 
   const handleProviderOverrideChange = (providerOverrides: Record<string, unknown>) => {
-    onChange(providerOverrides);
+    onChange({ ...overrides, ...providerOverrides });
+  };
+
+  const handleStreamingChange = (value: Required<StreamingConfig>) => {
+    onChange({ ...overrides, ...value });
   };
 
   const handleResetToDefaults = () => {
@@ -74,7 +82,7 @@ export const ModelParameterOverrides = ({ provider, overrides, onChange, classNa
   };
 
   const hasOverrides = Object.keys(overrides).length > 0;
-  const OverridesComponent = PROVIDER_OVERRIDES_MAP[provider.name];
+  const OverridesComponent = PROVIDER_OVERRIDES_MAP[provider.name] ?? DefaultModelOverrides;
 
   return (
     <div className={`space-y-2 ${className}`}>
@@ -93,7 +101,8 @@ export const ModelParameterOverrides = ({ provider, overrides, onChange, classNa
         className="border border-bg-tertiary rounded-lg"
       >
         <div className="space-y-3 p-3 pb-4">
-          {OverridesComponent && <OverridesComponent provider={provider} overrides={overrides || {}} onChange={handleProviderOverrideChange} />}
+          <OverridesComponent provider={provider} overrides={overrides || {}} onChange={handleProviderOverrideChange} />
+          <StreamingSettings value={resolveStreamingConfig(model, provider, overrides)} onChange={handleStreamingChange} />
         </div>
       </Accordion>
     </div>

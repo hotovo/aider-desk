@@ -1,6 +1,5 @@
 import { getDefaultProviderParams, LlmProvider, NeuralwattProvider } from '@common/agent';
 
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { NeuralwattAdvancedSettings } from './NeuralwattAdvancedSettings';
@@ -21,7 +20,6 @@ export const NeuralwattModelOverrides = ({ provider, overrides, onChange }: Prop
   const handleProviderChange = (updatedProvider: NeuralwattProvider) => {
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
-      disableStreaming: updatedProvider.disableStreaming,
       disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
@@ -29,12 +27,6 @@ export const NeuralwattModelOverrides = ({ provider, overrides, onChange }: Prop
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
-  };
-
-  // Handle disable streaming change separately
-  const handleDisableStreamingChange = (disableStreaming: boolean) => {
-    const updatedProvider = { ...fullProvider, disableStreaming };
-    handleProviderChange(updatedProvider);
   };
 
   const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
@@ -45,7 +37,6 @@ export const NeuralwattModelOverrides = ({ provider, overrides, onChange }: Prop
   return (
     <div className="space-y-4">
       <NeuralwattAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
-      <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
       <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );

@@ -167,3 +167,38 @@ describe('ModelManager - getUsageReport', () => {
     expect(() => manager.getUsageReport(task, unknownProfile, 'glm-5.3', usage)).toThrow('Unsupported LLM provider');
   });
 });
+
+describe('ModelManager streaming requirements', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network disabled')));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    [{}, {}, {}, false, false],
+    [{ requireStreaming: true }, {}, {}, true, false],
+    [{ requireStreaming: true }, { disableStreaming: false }, {}, true, false],
+    [{ requireStreaming: true }, { disableStreaming: true }, {}, false, true],
+    [{}, { requireStreaming: true }, { disableStreaming: true }, false, true],
+    [{}, { disableStreaming: true }, { requireStreaming: true }, true, false],
+    [{ requireStreaming: true }, {}, { requireStreaming: false }, false, false],
+    [{}, { requireStreaming: true }, { requireStreaming: false }, false, false],
+    [{}, {}, { disableStreaming: true, requireStreaming: true }, true, false],
+  ])('resolves model %j, provider %j and overrides %j', (modelFlags, providerFlags, overrides, required, disabled) => {
+    const manager = createManager();
+    const provider = { id: 'test', provider: { name: 'openai', apiKey: '', ...providerFlags } } as ProviderProfile;
+    setProviderModels(manager, { test: [{ id: 'model', providerId: 'test', ...modelFlags, providerOverrides: overrides }] });
+    expect(manager.isStreamingRequired(provider, 'model')).toBe(required);
+    expect(manager.isStreamingDisabled(provider, 'model')).toBe(disabled);
+  });
+
+  it('uses provider defaults when a model is not loaded', () => {
+    const manager = createManager();
+    const provider = { id: 'test', provider: { name: 'openai', apiKey: '', requireStreaming: true } } as ProviderProfile;
+    expect(manager.isStreamingRequired(provider, 'missing')).toBe(true);
+    expect(manager.isStreamingDisabled(provider, 'missing')).toBe(false);
+  });
+});

@@ -16,6 +16,7 @@ import {
   VoiceSession,
 } from '@common/types';
 import { extractProviderModel } from '@common/utils';
+import { resolveStreamingConfig } from '@common/streaming';
 
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
@@ -823,23 +824,17 @@ export class ModelManager {
     return strategy.getCacheControl(llmProvider, modelObj);
   }
 
+  private getStreamingConfig(provider: ProviderProfile, modelId: string) {
+    const model = this.providerModels[provider.id]?.find((entry) => entry.id === modelId);
+    return resolveStreamingConfig(model, provider.provider, model?.providerOverrides);
+  }
+
   isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean {
-    const llmProvider = provider.provider;
-    const models = this.providerModels[provider.id] || [];
-    const modelObj = models.find((m) => m.id === modelId);
+    return this.getStreamingConfig(provider, modelId).disableStreaming;
+  }
 
-    if (!modelObj) {
-      logger.warn(`Model ${modelId} not found in provider ${provider.id}, using provider settings for streaming`, {
-        modelId,
-        providerId: provider.id,
-        streamingDisabled: llmProvider.disableStreaming,
-      });
-      return llmProvider.disableStreaming ?? false;
-    }
-
-    return typeof modelObj.providerOverrides?.disableStreaming === 'boolean'
-      ? modelObj.providerOverrides.disableStreaming
-      : (llmProvider.disableStreaming ?? false);
+  isStreamingRequired(provider: ProviderProfile, modelId: string): boolean {
+    return this.getStreamingConfig(provider, modelId).requireStreaming;
   }
 
   isToolCallStreamingDisabled(provider: ProviderProfile, modelId: string): boolean {

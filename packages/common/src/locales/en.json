@@ -385,6 +385,8 @@
     },
     "disableStreaming": "Disable streaming",
     "disableStreamingInfo": "Disables response streaming. Use this when the provider or model does not support streaming responses.",
+    "requireStreaming": "Require streaming",
+    "requireStreamingInfo": "Requires streaming for all requests, including background generation. Use this for models that reject non-streaming requests.",
     "disableToolCallStreaming": "Disable tool call streaming",
     "disableToolCallStreamingInfo": "Disables streaming of tool call input. Tool calls will still execute but their arguments won't be shown progressively.",
     "trackTokenUsage": "Track token usage",

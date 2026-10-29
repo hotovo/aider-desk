@@ -389,6 +389,8 @@
     },
     "disableStreaming": "스트리밍 비활성화",
     "disableStreamingInfo": "응답 스트리밍을 비활성화합니다. 공급자 또는 모델이 스트리밍 응답을 지원하지 않을 때 사용하세요.",
+    "requireStreaming": "스트리밍 필수",
+    "requireStreamingInfo": "백그라운드 생성을 포함한 모든 요청에 스트리밍을 사용합니다. 비스트리밍 요청을 거부하는 모델에 사용하세요.",
     "disableToolCallStreaming": "도구 호출 스트리밍 비활성화",
     "disableToolCallStreamingInfo": "도구 호출 입력의 스트리밍을 비활성화합니다. 도구 호출은 여전히 실행되지만 인수가 점진적으로 표시되지 않습니다.",
     "trackTokenUsage": "토큰 사용량 추적",

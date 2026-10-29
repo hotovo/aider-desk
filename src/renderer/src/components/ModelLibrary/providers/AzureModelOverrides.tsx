@@ -1,6 +1,5 @@
 import { getDefaultProviderParams, AzureProvider, LlmProvider } from '@common/agent';
 
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { AzureAdvancedSettings } from './AzureAdvancedSettings';
@@ -21,18 +20,12 @@ export const AzureModelOverrides = ({ provider, overrides, onChange }: Props) =>
   const handleProviderChange = (updatedProvider: AzureProvider) => {
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
-      disableStreaming: updatedProvider.disableStreaming,
       disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
-  };
-
-  const handleDisableStreamingChange = (disableStreaming: boolean) => {
-    const updatedProvider = { ...fullProvider, disableStreaming };
-    handleProviderChange(updatedProvider);
   };
 
   const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
@@ -43,7 +36,6 @@ export const AzureModelOverrides = ({ provider, overrides, onChange }: Props) =>
   return (
     <div className="space-y-4">
       <AzureAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
-      <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
       <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );

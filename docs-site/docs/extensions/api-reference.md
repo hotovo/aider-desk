@@ -674,6 +674,22 @@ interface ExtensionProviderStrategy {
 | `createVoiceSession(profile, settings)` | No | Create a voice session for real-time audio conversation. |
 | `isRetryable(error)` | No | Determine if a given error is retryable. |
 
+### Streaming requirements
+
+Models returned by `loadModels` can declare `requireStreaming: true` when their endpoint rejects non-streaming requests, or `disableStreaming: true` when streaming is unsupported:
+
+```typescript
+const model: Model = {
+  id: 'streaming-only-model',
+  providerId: profile.id,
+  requireStreaming: true,
+};
+```
+
+Both flags are also available in provider settings and model overrides in Model Library. Resolution follows model-declared defaults, then provider settings, then model `providerOverrides` (highest priority). Enabling either flag clears the opposite inherited flag. Explicit `false` overrides that flag without enabling the opposite behavior. If both flags are `true` at the same level in imported configuration, `requireStreaming` wins.
+
+The main agent streams normally unless streaming is disabled. One-shot generation (`generateText` and `generateObject`) uses non-streaming calls unless streaming is required. For required streaming, the host consumes the stream silently and returns the final output. It does not publish partial responses to the task.
+
 ### ProviderToolApprovalHandler
 
 The optional final `createLlm` argument lets an external-agent provider check native-tool execution against the current run's AiderDesk approval policy:

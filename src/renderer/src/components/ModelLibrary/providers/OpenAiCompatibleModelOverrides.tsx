@@ -1,6 +1,5 @@
 import { getDefaultProviderParams, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { OpenAiCompatibleAdvancedSettings } from './OpenAiCompatibleAdvancedSettings';
@@ -24,7 +23,6 @@ export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }
     const newOverrides = {
       reasoningEffort: updatedProvider.reasoningEffort,
       trackTokenUsage: updatedProvider.trackTokenUsage,
-      disableStreaming: updatedProvider.disableStreaming,
       extraBody: updatedProvider.extraBody,
     };
 
@@ -32,12 +30,6 @@ export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
-  };
-
-  // Handle disable streaming change separately
-  const handleDisableStreamingChange = (disableStreaming: boolean) => {
-    const updatedProvider = { ...fullProvider, disableStreaming };
-    handleProviderChange(updatedProvider);
   };
 
   const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
@@ -48,7 +40,6 @@ export const OpenAiCompatibleModelOverrides = ({ provider, overrides, onChange }
   return (
     <div className="space-y-4">
       <OpenAiCompatibleAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
-      <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
       <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );

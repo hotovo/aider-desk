@@ -1,6 +1,5 @@
 import { getDefaultProviderParams, LlmProvider, VertexAiProvider } from '@common/agent';
 
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 
 import { VertexAiAdvancedSettings } from './VertexAiAdvancedSettings';
@@ -24,7 +23,6 @@ export const VertexAiModelOverrides = ({ provider, overrides, onChange }: Props)
     const newOverrides = {
       thinkingBudget: updatedProvider.thinkingBudget,
       includeThoughts: updatedProvider.includeThoughts,
-      disableStreaming: updatedProvider.disableStreaming,
       disableToolCallStreaming: updatedProvider.disableToolCallStreaming,
     };
 
@@ -32,12 +30,6 @@ export const VertexAiModelOverrides = ({ provider, overrides, onChange }: Props)
     const cleanedOverrides = Object.fromEntries(Object.entries(newOverrides).filter(([, value]) => value !== undefined));
 
     onChange(cleanedOverrides);
-  };
-
-  // Handle disable streaming change separately
-  const handleDisableStreamingChange = (disableStreaming: boolean) => {
-    const updatedProvider = { ...fullProvider, disableStreaming };
-    handleProviderChange(updatedProvider);
   };
 
   const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) => {
@@ -48,7 +40,6 @@ export const VertexAiModelOverrides = ({ provider, overrides, onChange }: Props)
   return (
     <div className="space-y-4">
       <VertexAiAdvancedSettings provider={fullProvider} onChange={handleProviderChange} />
-      <DisableStreaming checked={fullProvider.disableStreaming ?? false} onChange={handleDisableStreamingChange} />
       <DisableToolCallStreaming checked={fullProvider.disableToolCallStreaming ?? false} onChange={handleDisableToolCallStreamingChange} />
     </div>
   );

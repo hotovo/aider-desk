@@ -385,6 +385,8 @@
     },
     "disableStreaming": "Streaming deaktivieren",
     "disableStreamingInfo": "Deaktiviert das Streaming von Antworten. Verwenden Sie dies, wenn der Anbieter oder das Modell keine Streaming-Antworten unterstützt.",
+    "requireStreaming": "Streaming erforderlich",
+    "requireStreamingInfo": "Erfordert Streaming für alle Anfragen, einschließlich Hintergrundgenerierung. Verwenden Sie dies für Modelle, die Anfragen ohne Streaming ablehnen.",
     "disableToolCallStreaming": "Tool-Call-Streaming deaktivieren",
     "disableToolCallStreamingInfo": "Deaktiviert das Streaming der Tool-Call-Eingabe. Tool-Aufrufe werden weiterhin ausgeführt, aber ihre Argumente werden nicht schrittweise angezeigt.",
     "trackTokenUsage": "Token-Nutzung verfolgen",

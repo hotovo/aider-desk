@@ -67,6 +67,7 @@ export type LlmProviderName =
 export interface LlmProviderBase {
   name: LlmProviderName;
   disableStreaming?: boolean;
+  requireStreaming?: boolean;
   disableToolCallStreaming?: boolean;
   voiceEnabled?: boolean;
 }

@@ -52,6 +52,8 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
         cacheReadInputTokenCost: model.cacheReadInputTokenCost,
         cacheWriteInputTokenCost: model.cacheWriteInputTokenCost,
         supportsTools: model.supportsTools,
+        requireStreaming: model.requireStreaming,
+        disableStreaming: model.disableStreaming,
         isHidden: model.isHidden,
       };
       const newCostDisplayValues = {
@@ -339,7 +341,7 @@ export const ModelDialog = ({ model, providers, onSave, onCancel }: Props) => {
         {/* Advanced Settings - Provider Overrides */}
         {selectedProvider && (
           <div className="pt-2">
-            <ModelParameterOverrides provider={selectedProvider.provider} overrides={providerOverrides} onChange={setProviderOverrides} />
+            <ModelParameterOverrides provider={selectedProvider.provider} model={formData} overrides={providerOverrides} onChange={setProviderOverrides} />
           </div>
         )}
 

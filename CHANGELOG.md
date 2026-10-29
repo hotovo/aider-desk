@@ -9,6 +9,7 @@
 - added extension hooks for worktree creation and merging to support project-specific automation
 - improved Task tools with support for starting and resuming prepared tasks, explicit execution and autonomy controls, and task names in tool messages
 - fixed grouping and spacing of tool-only messages in Compact message view
+- added required streaming settings for providers and individual models
 
 ## [0.89.0]
 

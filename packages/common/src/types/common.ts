@@ -1161,6 +1161,8 @@ export interface Model {
   cacheWriteInputTokenCost?: number;
   cacheReadInputTokenCost?: number;
   supportsTools?: boolean;
+  disableStreaming?: boolean;
+  requireStreaming?: boolean;
   isCustom?: boolean;
   isHidden?: boolean;
   hasModelOverrides?: boolean;

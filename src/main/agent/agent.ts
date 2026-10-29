@@ -54,6 +54,7 @@ import {
 } from '@common/tools';
 import { EXTENSION_ORIGIN } from '@common/extensions';
 
+import { generateOnce } from './generate-once';
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
@@ -1093,36 +1094,39 @@ export class Agent {
         // Attempt generic repair for other types of errors
         try {
           logger.warn(`Attempting generic repair for tool call error: ${toolCall.toolName}`);
-          const result = await generateText({
-            model,
-            system,
-            messages: [
-              ...messages,
-              {
-                role: 'assistant',
-                parts: [
-                  {
-                    type: 'tool-call',
-                    toolCallId: toolCall.toolCallId,
-                    toolName: toolCall.toolName,
-                    input: JSON.stringify(toolCall.input),
-                  },
-                ],
-              },
-              {
-                role: 'tool' as const,
-                parts: [
-                  {
-                    type: 'tool-result',
-                    toolCallId: toolCall.toolCallId,
-                    toolName: toolCall.toolName,
-                    result: error.message,
-                  },
-                ],
-              },
-            ],
-            tools,
-          });
+          const result = await generateOnce(
+            {
+              model,
+              system,
+              messages: [
+                ...messages,
+                {
+                  role: 'assistant',
+                  parts: [
+                    {
+                      type: 'tool-call',
+                      toolCallId: toolCall.toolCallId,
+                      toolName: toolCall.toolName,
+                      input: JSON.stringify(toolCall.input),
+                    },
+                  ],
+                },
+                {
+                  role: 'tool' as const,
+                  parts: [
+                    {
+                      type: 'tool-result',
+                      toolCallId: toolCall.toolCallId,
+                      toolName: toolCall.toolName,
+                      result: error.message,
+                    },
+                  ],
+                },
+              ],
+              tools,
+            },
+            this.modelManager.isStreamingRequired(provider, profile.model),
+          );
 
           logger.debug('Repair tool call result:', result);
           const newToolCall = result.toolCalls.find((newToolCall) => newToolCall.toolName === toolCall.toolName);
@@ -1952,15 +1956,18 @@ export class Agent {
     });
 
     try {
-      const result = await generateText({
-        model,
-        instructions: systemPrompt,
-        messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
-        abortSignal: effectiveAbortSignal,
-        providerOptions,
-        ...providerParameters,
-        telemetry: this.getTelemetrySettings(),
-      });
+      const result = await generateOnce(
+        {
+          model,
+          instructions: systemPrompt,
+          messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
+          abortSignal: effectiveAbortSignal,
+          providerOptions,
+          ...providerParameters,
+          telemetry: this.getTelemetrySettings(),
+        },
+        this.modelManager.isStreamingRequired(provider, modelName),
+      );
 
       return result.text;
     } catch (error) {
@@ -2024,16 +2031,19 @@ export class Agent {
     });
 
     try {
-      const result = await generateText({
-        model,
-        output: Output.object({ schema }),
-        instructions: systemPrompt,
-        messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
-        abortSignal: effectiveAbortSignal,
-        providerOptions,
-        ...providerParameters,
-        telemetry: this.getTelemetrySettings(),
-      });
+      const result = await generateOnce(
+        {
+          model,
+          output: Output.object({ schema }),
+          instructions: systemPrompt,
+          messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
+          abortSignal: effectiveAbortSignal,
+          providerOptions,
+          ...providerParameters,
+          telemetry: this.getTelemetrySettings(),
+        },
+        this.modelManager.isStreamingRequired(provider, modelName),
+      );
 
       return result.output as T;
     } catch (error) {
