@@ -608,7 +608,7 @@ interface UIComponents {
   Slider: UIComponent;                 // Range slider
   DatePicker: UIComponent;             // Date picker
   Chip: UIComponent;                   // Tag/chip component
-  ModelSelector: UIComponent;          // AiderDesk model selector
+  ModelSelector: UIComponent;          // Accepts ModelSelectorProps (see creating-extensions)
   Tooltip: UIComponent;                // Tooltip wrapper
   LoadingOverlay: UIComponent;         // Loading spinner with message
   ConfirmDialog: UIComponent;          // Confirmation dialog modal

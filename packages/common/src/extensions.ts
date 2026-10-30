@@ -331,6 +331,26 @@ export interface MessageFilter {
  */
 export type UIComponent = object;
 
+/** Props accepted by the extension-exposed ui.ModelSelector wrapper. */
+export interface ModelSelectorProps {
+  className?: string;
+  selectedModelId?: string | null;
+  onChange: (model: Model | null) => void;
+  /** Overrides the core catalog, including favorites. An empty array allows no models. */
+  models?: Model[];
+  /** Overrides provider labels and disabled state; defaults to core providers. */
+  providers?: ProviderProfile[];
+  /** Controlled provider-qualified IDs. When supplied (even empty), core favorites are never changed. */
+  preferredModels?: string[];
+  /** Receives the next complete controlled list; the extension must update its props and persist it. */
+  onPreferredModelsChange?: (preferredModels: string[]) => void;
+  popupPlacement?: 'top' | 'bottom';
+  labelOnNull?: string;
+  /** Suppresses selection-driven favorite updates, not explicit removal. */
+  skipPreferredModelsUpdate?: boolean;
+  usePortal?: boolean;
+}
+
 /**
  * Common UI components available to extension JSX components
  */
@@ -346,6 +366,7 @@ export interface UIComponents {
   Slider: UIComponent;
   DatePicker: UIComponent;
   Chip: UIComponent;
+  /** Accepts ModelSelectorProps at runtime. */
   ModelSelector: UIComponent;
   Tooltip: UIComponent;
   LoadingOverlay: UIComponent;

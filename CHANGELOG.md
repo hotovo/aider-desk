@@ -11,6 +11,7 @@
 - fixed grouping and spacing of tool-only messages in Compact message view
 - added required streaming settings for providers and individual models
 - added extension APIs for background generation from task context
+- added custom model catalogs and independent favorites for extension model selectors
 
 ## [0.89.0]
 
