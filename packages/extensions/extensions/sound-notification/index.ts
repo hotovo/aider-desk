@@ -45,7 +45,7 @@ const bundledPacks: SoundPack[] = JSON.parse(readFileSync(join(__dirname, 'packs
 export default class SoundNotificationExtension implements Extension {
   static metadata = {
     name: 'Sound Notification',
-    version: '2.2.0',
+    version: '2.3.0',
     description: 'Plays sound notifications using og-packs or custom audio files',
     iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
     capabilities: ['notifications'],
@@ -149,11 +149,10 @@ export default class SoundNotificationExtension implements Extension {
 
   async onPromptFinished(_event: PromptFinishedEvent, context: ExtensionContext): Promise<void> {
     const config = await this.loadConfig();
-    try {
-      await this.playEventSound(config.agentFinished, context);
-    } catch (error) {
+    // Fire-and-forget: playback must never block the prompt-finished chain
+    void this.playEventSound(config.agentFinished, context).catch((error: unknown) => {
       context.log(`Failed to play agent finished sound: ${error instanceof Error ? error.message : String(error)}`, 'error');
-    }
+    });
   }
 
   async onQuestionAsked(event: QuestionAskedEvent, context: ExtensionContext): Promise<void> {
@@ -162,11 +161,10 @@ export default class SoundNotificationExtension implements Extension {
     }
 
     const config = await this.loadConfig();
-    try {
-      await this.playEventSound(config.questionAsked, context);
-    } catch (error) {
+    // Fire-and-forget: playback must never block the question chain
+    void this.playEventSound(config.questionAsked, context).catch((error: unknown) => {
       context.log(`Failed to play question asked sound: ${error instanceof Error ? error.message : String(error)}`, 'error');
-    }
+    });
   }
 
   private async loadConfig(): Promise<ExtensionConfig> {

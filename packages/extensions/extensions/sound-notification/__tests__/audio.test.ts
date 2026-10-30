@@ -76,25 +76,63 @@ describe('custom audio files', () => {
     expect(() => validateAudioPath('/audio/missing.wav')).toThrow('ENOENT');
   });
 
+  const expectedOptions = { timeout: 10000, killSignal: 'SIGKILL' };
+
   it('passes macOS paths as arguments without shell interpolation', async () => {
     const filePath = '/audio/My "sound" $(touch nope).wav';
     await playAudio(filePath, 'darwin');
-    expect(execFile).toHaveBeenCalledWith('afplay', [filePath], { timeout: 10000 }, expect.any(Function));
+    expect(execFile).toHaveBeenCalledWith('afplay', [filePath], expectedOptions, expect.any(Function));
   });
 
-  it('tries Linux fallback players without invoking a shell', async () => {
+  it('tries Linux wav players in paplay, aplay, ffplay, mpv order without invoking a shell', async () => {
     mockExec(2);
     const filePath = '/audio/sound; touch nope.wav';
     await playAudio(filePath, 'linux');
-    expect(execFile).toHaveBeenNthCalledWith(1, 'paplay', [filePath], { timeout: 10000 }, expect.any(Function));
-    expect(execFile).toHaveBeenNthCalledWith(2, 'mpg123', ['--quiet', filePath], { timeout: 10000 }, expect.any(Function));
-    expect(execFile).toHaveBeenNthCalledWith(3, 'mpv', ['--no-video', '--really-quiet', filePath], { timeout: 10000 }, expect.any(Function));
+    expect(execFile).toHaveBeenNthCalledWith(1, 'paplay', [filePath], expectedOptions, expect.any(Function));
+    expect(execFile).toHaveBeenNthCalledWith(2, 'aplay', [filePath], expectedOptions, expect.any(Function));
+    expect(execFile).toHaveBeenNthCalledWith(3, 'mpv', ['--no-video', '--really-quiet', filePath], expectedOptions, expect.any(Function));
+    expect(execFile).not.toHaveBeenCalledWith('ffplay', expect.anything(), expect.anything(), expect.anything());
   });
 
   it('reports failure when no Linux player works', async () => {
-    mockExec(5);
+    mockExec(4);
     await expect(playAudio('/audio/sound.wav', 'linux')).rejects.toThrow('Could not play audio');
-    expect(execFile).toHaveBeenCalledTimes(5);
+    expect(execFile).toHaveBeenCalledTimes(4);
+  });
+
+  it('plays mp3 files with ffplay first and never invokes paplay, aplay or mpg123 before it', async () => {
+    mockExec(1);
+    await playAudio('/audio/sound.mp3', 'linux');
+    expect(execFile).toHaveBeenNthCalledWith(1, 'ffplay', ['-nodisp', '-autoexit', '-loglevel', 'quiet', '/audio/sound.mp3'], expectedOptions, expect.any(Function));
+    expect(execFile).toHaveBeenNthCalledWith(2, 'mpv', ['--no-video', '--really-quiet', '/audio/sound.mp3'], expectedOptions, expect.any(Function));
+    expect(execFile).not.toHaveBeenCalledWith('paplay', expect.anything(), expect.anything(), expect.anything());
+    expect(execFile).not.toHaveBeenCalledWith('aplay', expect.anything(), expect.anything(), expect.anything());
+    expect(execFile).not.toHaveBeenCalledWith('mpg123', expect.anything(), expect.anything(), expect.anything());
+  });
+
+  it('does not retry with other players when one is killed after the timeout', async () => {
+    vi.mocked(execFile).mockImplementation((...args: unknown[]) => {
+      const callback = args[args.length - 1] as (error: Error & { killed?: boolean }) => void;
+      const killError: Error & { killed?: boolean } = new Error('Process killed');
+      killError.killed = true;
+      callback(killError);
+      return undefined as unknown as ReturnType<typeof execFile>;
+    });
+    await playAudio('/audio/sound.wav', 'linux');
+    expect(execFile).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves via watchdog even when every player hangs', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.mocked(execFile).mockImplementation(() => undefined as unknown as ReturnType<typeof execFile>);
+      const playing = playAudio('/audio/sound.wav', 'linux');
+      const expectation = expect(playing).resolves.toBeUndefined();
+      await vi.advanceTimersByTimeAsync(15100);
+      await expectation;
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('encodes Windows playback and escapes apostrophes as PowerShell literals', async () => {
