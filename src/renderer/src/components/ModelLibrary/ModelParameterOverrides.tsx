@@ -42,6 +42,7 @@ const PROVIDER_OVERRIDES_MAP: Partial<Record<LlmProviderName, ComponentType<Prov
   'openai-compatible': OpenAiCompatibleModelOverrides,
   // Providers without specific overrides use DefaultModelOverrides
   anthropic: DefaultModelOverrides,
+  atlascloud: DefaultModelOverrides,
   bedrock: DefaultModelOverrides,
   cerebras: DefaultModelOverrides,
   clinepass: DefaultModelOverrides,
