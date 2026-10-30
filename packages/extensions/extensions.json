@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 114
+      "installCount": 115
     },
     {
       "id": "protected-paths",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 72
+      "installCount": 74
     },
     {
       "id": "learn",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 102
+      "installCount": 103
     },
     {
       "id": "legacy-system-prompt",
@@ -322,7 +322,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "programmatic-tool-calls",
@@ -334,7 +334,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "ui-placement-demo",
@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 110
+      "installCount": 111
     },
     {
       "id": "verifier",
@@ -481,7 +481,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 27
+      "installCount": 28
     },
     {
       "id": "auggie-sdk",
@@ -695,7 +695,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 14
+      "installCount": 15
     }
   ]
 }
