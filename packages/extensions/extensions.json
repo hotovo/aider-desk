@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 116
+      "installCount": 117
     },
     {
       "id": "protected-paths",
@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 83
+      "installCount": 84
     },
     {
       "id": "context-autocompletion-words",
@@ -346,7 +346,7 @@
         "ui",
         "example"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "multi-model-run",
@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "bmad",
@@ -557,7 +557,7 @@
         "tools",
         "search"
       ],
-      "installCount": 85
+      "installCount": 86
     },
     {
       "id": "kanban",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 65
+      "installCount": 66
     },
     {
       "id": "wigolo",
