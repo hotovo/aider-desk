@@ -2932,7 +2932,8 @@ export class Task {
         this.addLogMessage('error', translate(this.store.getSettings().language, 'durability.missingProfile'));
         return;
       }
-      await this.runPromptInAgent(profile, execution.mode, null, execution.promptContext);
+      const responses = await this.runPromptInAgent(profile, execution.mode, null, execution.promptContext);
+      await this.extensionManager.dispatchEvent('onPromptFinished', { responses }, this.project, this);
     }
   }
 
@@ -3433,7 +3434,8 @@ export class Task {
       this.addLogMessage('loading', 'Resuming task...');
 
       const execution = this.durabilityManager.getRecoverableRoots()[0];
-      await this.runPromptInAgent(profile, mode, null, execution?.promptContext);
+      const responses = await this.runPromptInAgent(profile, mode, null, execution?.promptContext);
+      await this.extensionManager.dispatchEvent('onPromptFinished', { responses }, this.project, this);
     } else {
       // In other modes, check if last message is user
       if (lastMessage && lastMessage.role === MessageRole.User) {

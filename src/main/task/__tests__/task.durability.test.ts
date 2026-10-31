@@ -52,7 +52,7 @@ const createFixture = () => {
     initialized: false,
     init: vi.fn(async () => undefined),
     getTaskAgentProfile: vi.fn(async () => profile),
-    runPromptInAgent: vi.fn(async () => undefined),
+    runPromptInAgent: vi.fn(async () => []),
     persistDurableMessages: vi.fn(async () => undefined),
     store: { getSettings: () => ({ language: 'en', resumeAgentAfterRestart: true }) },
   };
@@ -107,6 +107,39 @@ describe('Task durability lifecycle', () => {
     await Task.prototype.recoverDurableExecutions.call(task);
     expect(fake.init).toHaveBeenCalledOnce();
     expect(fake.runPromptInAgent).toHaveBeenCalledExactlyOnceWith(profile, 'agent', null, { id: 'root' });
+    expect(fake.extensionManager.dispatchEvent).toHaveBeenCalledExactlyOnceWith('onPromptFinished', { responses: [] }, fake.project, task);
+  });
+
+  it('waits for recovered execution before dispatching prompt finished', async () => {
+    const { task, fake } = createFixture();
+    let finish = () => {};
+    let started = () => {};
+    const execution = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const executionStarted = new Promise<void>((resolve) => {
+      started = resolve;
+    });
+    fake.runPromptInAgent.mockImplementation(async () => {
+      started();
+      await execution;
+      return [];
+    });
+
+    const recovery = Task.prototype.recoverDurableExecutions.call(task);
+    await executionStarted;
+    expect(fake.extensionManager.dispatchEvent).not.toHaveBeenCalled();
+    finish();
+    await recovery;
+    expect(fake.extensionManager.dispatchEvent).toHaveBeenCalledExactlyOnceWith('onPromptFinished', { responses: [] }, fake.project, task);
+  });
+
+  it('does not dispatch prompt finished when recovery throws', async () => {
+    const { task, fake } = createFixture();
+    fake.runPromptInAgent.mockRejectedValue(new Error('Recovery failed'));
+
+    await expect(Task.prototype.recoverDurableExecutions.call(task)).rejects.toThrow('Recovery failed');
+    expect(fake.extensionManager.dispatchEvent).not.toHaveBeenCalled();
   });
 
   it('does not auto-resume executions when resume-after-restart is disabled, but still finalizes cancelled ones', async () => {
@@ -127,6 +160,19 @@ describe('Task durability lifecycle', () => {
     await Task.prototype.recoverDurableExecutions.call(task);
     expect(runSubagent).toHaveBeenCalledExactlyOnceWith(subagentProfile, '', [], [], undefined, undefined, { id: 'standalone' });
     expect(fake.runPromptInAgent).toHaveBeenCalledOnce();
+    expect(fake.extensionManager.dispatchEvent).toHaveBeenCalledExactlyOnceWith('onPromptFinished', { responses: [] }, fake.project, task);
+  });
+
+  it('does not dispatch prompt finished for standalone subagent recovery', async () => {
+    const { task, fake, manager, profile } = createFixture();
+    manager.clear();
+    manager.begin({ promptContext: { id: 'standalone' }, profile: { ...profile, isSubagent: true }, mode: 'subagent', contextMessages: [], contextFiles: [] });
+    Object.assign(fake, { runSubagent: vi.fn(async () => []) });
+
+    await Task.prototype.recoverDurableExecutions.call(task);
+
+    expect(fake.runPromptInAgent).not.toHaveBeenCalled();
+    expect(fake.extensionManager.dispatchEvent).not.toHaveBeenCalled();
   });
 
   it('finalizes and clears cancelled journals without restarting tasks', async () => {
@@ -168,6 +214,7 @@ it('uses fresh execution attempts when rerunning the same user message and rejec
   await Task.prototype.runPrompt.call(fake as unknown as Task, 'Original request', 'agent', false, 'retained-user-message', false);
   await Task.prototype.runPrompt.call(fake as unknown as Task, 'Revised request', 'agent', false, 'retained-user-message', false);
   expect(attempts).toHaveLength(2);
+  expect(fake.extensionManager.dispatchEvent.mock.calls.filter(([name]) => name === 'onPromptFinished')).toHaveLength(2);
   expect(attempts[0].id).not.toBe(attempts[1].id);
   expect(attempts.map((attempt) => attempt.userMessageId)).toEqual(['retained-user-message', 'retained-user-message']);
   manager.completeTool(attempts[0].id, 'read', 'Stale result');

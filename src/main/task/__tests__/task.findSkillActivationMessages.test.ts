@@ -186,6 +186,7 @@ describe('Task - findSkillActivationMessages', () => {
     mockExtensionManager = {
       isInitialized: vi.fn(() => false),
       getCommands: vi.fn(() => []),
+      dispatchEvent: vi.fn(async (_name: string, event: Record<string, unknown>) => event),
     };
 
     // Create Task instance
@@ -602,9 +603,16 @@ describe('Task - findSkillActivationMessages', () => {
 
       await executionStarted;
       expect(returned).toBe(false);
+      expect(mockExtensionManager.dispatchEvent).not.toHaveBeenCalledWith('onPromptFinished', expect.anything(), expect.anything(), expect.anything());
       finish();
       await resumed;
       expect(returned).toBe(true);
+      if (mode === 'agent') {
+        expect(mockExtensionManager.dispatchEvent).toHaveBeenCalledExactlyOnceWith('onPromptFinished', { responses: [] }, mockProject, task);
+      } else {
+        expect(mockExtensionManager.dispatchEvent).not.toHaveBeenCalledWith('onPromptFinished', expect.anything(), expect.anything(), expect.anything());
+      }
+      expect(mockExtensionManager.dispatchEvent).not.toHaveBeenCalledWith('onPromptStarted', expect.anything(), expect.anything(), expect.anything());
     });
 
     it('awaits saved custom command execution', async () => {
