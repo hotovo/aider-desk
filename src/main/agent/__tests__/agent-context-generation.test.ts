@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { MockLanguageModelV4 } from 'ai/test';
 import { z } from 'zod';
-import { AutonomyMode } from '@common/types';
+import { AutonomyMode, ModelModality } from '@common/types';
 
 import type { LanguageModelV4GenerateResult, LanguageModelV4StreamPart } from '@ai-sdk/provider';
 import type { ContextMessage } from '@common/types';
@@ -72,6 +72,7 @@ const createFixture = (modelResponse = response(), requireStreaming = false) => 
     getProviderOptions: vi.fn(() => ({ test: { option: true } })),
     getProviderParameters: vi.fn(() => ({})),
     getCacheControl: vi.fn(() => ({ providerOptions: { test: { cacheControl: 'enabled' } } })),
+    getModelModalities: vi.fn(() => ({ input: [ModelModality.Text], output: [ModelModality.Text] })),
   };
   const extensionManager = { dispatchEvent: vi.fn(async (_name: string, event: Record<string, unknown>) => event) };
   const agent = new Agent(

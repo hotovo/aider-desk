@@ -9,6 +9,34 @@ AiderDesk supports multiple Large Language Model (LLM) providers to power your A
 
 ![Provider configuration with API keys](../images/provider-api-key.gif)
 
+## Model modalities
+
+Edit a model in **Model Library** to review or override its **Input (understanding)** and **Output (generation)** modalities independently. Supported values are text, image, audio, video, and PDF. Image input means vision; only image output declares image-generation capability. Neither vision nor a model's name implies image output.
+
+Where available, AiderDesk loads modality metadata from models.dev. Metadata declared by a provider takes precedence over models.dev, and saved model overrides take precedence over both. Input and output selections are always visible and editable. When metadata is absent, modalities remain unknown: the table shows an unknown indicator, the editor has nothing selected, and agent requests skip attachment validation. The provider may reject unsupported attachments. Changing a modality selection saves a model-specific override; saving unrelated settings does not turn inherited metadata into an override. Existing explicit overrides are preserved. Empty selections explicitly declare no supported modalities. This metadata describes capabilities; it does not itself add an image-generation API or change how chat requests are sent.
+
+The shared TypeScript contract (also usable by extension providers) is:
+
+```typescript
+export enum ModelModality {
+  Text = 'text',
+  Image = 'image',
+  Audio = 'audio',
+  Video = 'video',
+  Pdf = 'pdf',
+}
+
+export interface ModelModalities {
+  input: ModelModality[];
+  output: ModelModality[];
+}
+
+// Both Model and ModelInfo expose this optional property:
+modalities?: ModelModalities;
+```
+
+Absent `modalities` remains `undefined` in the effective model and skips attachment validation. When present, both arrays are required; an empty array declares no known supported modalities in that direction. Unrecognized models.dev modality values are ignored. Consumers should check `model.modalities?.output.includes(ModelModality.Image) === true` to require explicitly declared image output, and must not use the input array as a generation capability check. Saved overrides replace the entire modalities object, not individual arrays. Existing model files without this optional field remain compatible. Effective `Model` objects also expose `hasModalitiesOverride` to distinguish saved modality overrides from inherited metadata; this flag is not stored in model override files.
+
 ## Table of Contents
 
 - [Alibaba Plan](#alibaba-plan)

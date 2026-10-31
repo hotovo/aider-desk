@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { generateText, type ToolSet } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
-import { ToolRecoveryMode, ContextCompactionType, type ContextMessage, type TaskSettings } from '@common/types';
+import { ModelModality, ToolRecoveryMode, ContextCompactionType, type ContextMessage, type TaskSettings } from '@common/types';
 
 import { DurabilityManager } from '../durability-manager';
 
@@ -185,6 +185,7 @@ describe('Agent execution recovery', () => {
       getModelSettings: vi.fn(() => ({})),
       isStreamingDisabled: vi.fn(() => true),
       getUsageReport: vi.fn(() => undefined),
+      getModelModalities: vi.fn(() => ({ input: [ModelModality.Text], output: [ModelModality.Text] })),
     };
     const agent = new Agent(
       ...([

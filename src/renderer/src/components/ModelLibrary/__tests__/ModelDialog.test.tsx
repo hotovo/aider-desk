@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
-import { Model, ProviderProfile } from '@common/types';
+import { Model, ModelModality, ProviderProfile } from '@common/types';
 import { LlmProvider } from '@common/agent';
 
 import { ModelDialog } from '../ModelDialog';
@@ -212,5 +212,73 @@ describe('ModelDialog', () => {
       fireEvent.change(inputCost, { target: { value: '' } });
       expect(inputCost).toHaveValue(null);
     });
+  });
+});
+
+describe('ModelDialog modalities', () => {
+  const model: Model = {
+    id: 'vision',
+    providerId: 'provider-1',
+    modalities: { input: [ModelModality.Text, ModelModality.Image], output: [ModelModality.Text] },
+  };
+
+  it('displays inherited modalities without saving them as overrides', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={model} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.image' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'modelLibrary.modalities.output: modelLibrary.modalities.image' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: undefined }));
+  });
+
+  it('edits image output independently of image input', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={model} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'modelLibrary.modalities.output: modelLibrary.modalities.image' }));
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: { ...model.modalities, output: [ModelModality.Text, ModelModality.Image] } }));
+  });
+
+  it('preserves existing explicit overrides when saving unrelated settings', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={{ ...model, hasModalitiesOverride: true }} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: model.modalities }));
+  });
+
+  it('leaves unknown modalities unselected without creating an override', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={{ id: 'old', providerId: 'provider-1' }} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    expect(screen.queryByText('modelLibrary.modalities.override')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.text' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'modelLibrary.modalities.output: modelLibrary.modalities.text' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: undefined }));
+  });
+
+  it('creates explicit modalities from unknown capabilities and supports empty selections', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={{ id: 'old', providerId: 'provider-1' }} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.text' }));
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: { input: [], output: [] } }));
+  });
+
+  it('only selects the edited modality when starting from unknown capabilities', () => {
+    const onSave = vi.fn();
+    render(<ModelDialog model={{ id: 'unknown', providerId: 'provider-1' }} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.image' }));
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: { input: [ModelModality.Image], output: [] } }));
+  });
+
+  it('preserves explicit empty selections instead of defaulting them to text', () => {
+    const onSave = vi.fn();
+    const empty = { input: [], output: [] };
+    render(<ModelDialog model={{ ...model, modalities: empty, hasModalitiesOverride: true }} providers={mockProviders} onSave={onSave} onCancel={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'modelLibrary.modalities.input: modelLibrary.modalities.text' })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(screen.getByText('common.confirm'));
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ modalities: empty }));
   });
 });

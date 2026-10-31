@@ -6,9 +6,11 @@ import { ProviderDefinition, ProviderToolApprovalHandler } from '@common/extensi
 import {
   Model,
   ModelInfo,
+  ModelModality,
   ModelOverrides,
   ProviderModelsData,
   ProviderProfile,
+  ModelModalities,
   Reasoning,
   SettingsData,
   TlsPolicyRegistrar,
@@ -51,7 +53,7 @@ import type { RegisteredProvider } from '@/extensions/extension-manager';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -63,7 +65,7 @@ const MODEL_LOAD_TIMEOUT_MS = 30_000;
 const MODELS_META_URL = 'https://models.dev/api.json';
 const MODELS_FILE = path.join(AIDER_DESK_DATA_DIR, 'models.json');
 const PROVIDER_MODELS_CACHE_FILE = path.join(AIDER_DESK_CACHE_DIR, 'provider-models.json');
-const PROVIDER_MODELS_CACHE_VERSION = 3;
+const PROVIDER_MODELS_CACHE_VERSION = 6;
 
 type ProviderModelsCache = {
   version: number;
@@ -84,6 +86,7 @@ type ModelsMetaResponse = Record<
           cache_read?: number;
           cache_write?: number;
         };
+        modalities?: { input: string[]; output: string[] };
         temperature?: boolean;
         limit: {
           context: number;
@@ -292,6 +295,12 @@ export class ModelManager {
           cacheReadInputTokenCost: modelData.cost?.cache_read ? modelData.cost.cache_read / 1_000_000 : undefined,
           cacheWriteInputTokenCost: modelData.cost?.cache_write ? modelData.cost.cache_write / 1_000_000 : undefined,
           useTemperature: modelData.temperature,
+          modalities: modelData.modalities
+            ? {
+                input: modelData.modalities.input.filter((value): value is ModelModality => Object.values(ModelModality).includes(value as ModelModality)),
+                output: modelData.modalities.output.filter((value): value is ModelModality => Object.values(ModelModality).includes(value as ModelModality)),
+              }
+            : undefined,
         } satisfies ModelInfo;
       }
     }
@@ -456,22 +465,21 @@ export class ModelManager {
     const enrichedModels = [...models];
 
     for (const model of enrichedModels) {
-      if (strategy.getModelInfo) {
-        const modelInfo = strategy.getModelInfo(profile, model.id, this.modelsInfo);
-        if (modelInfo) {
-          logger.debug(`Enriching model ${model.id} with info`, modelInfo);
+      const modelInfo = strategy.getModelInfo?.(profile, model.id, this.modelsInfo);
+      model.modalities = model.modalities ?? modelInfo?.modalities ?? getDefaultModelInfo(profile, model.id, this.modelsInfo)?.modalities;
+      if (modelInfo) {
+        logger.debug(`Enriching model ${model.id} with info`, modelInfo);
 
-          model.maxInputTokens = model.maxInputTokens ?? modelInfo.maxInputTokens;
-          model.maxOutputTokensLimit = model.maxOutputTokensLimit ?? modelInfo.maxOutputTokens;
-          model.inputCostPerToken = model.inputCostPerToken ?? modelInfo.inputCostPerToken;
-          model.outputCostPerToken = model.outputCostPerToken ?? modelInfo.outputCostPerToken;
-          model.cacheWriteInputTokenCost = model.cacheWriteInputTokenCost ?? modelInfo.cacheWriteInputTokenCost;
-          model.cacheReadInputTokenCost = model.cacheReadInputTokenCost ?? modelInfo.cacheReadInputTokenCost;
+        model.maxInputTokens = model.maxInputTokens ?? modelInfo.maxInputTokens;
+        model.maxOutputTokensLimit = model.maxOutputTokensLimit ?? modelInfo.maxOutputTokens;
+        model.inputCostPerToken = model.inputCostPerToken ?? modelInfo.inputCostPerToken;
+        model.outputCostPerToken = model.outputCostPerToken ?? modelInfo.outputCostPerToken;
+        model.cacheWriteInputTokenCost = model.cacheWriteInputTokenCost ?? modelInfo.cacheWriteInputTokenCost;
+        model.cacheReadInputTokenCost = model.cacheReadInputTokenCost ?? modelInfo.cacheReadInputTokenCost;
 
-          // remove temperature if model does not support it
-          if (modelInfo.useTemperature === false) {
-            model.temperature = undefined;
-          }
+        // remove temperature if model does not support it
+        if (modelInfo.useTemperature === false) {
+          model.temperature = undefined;
         }
       }
     }
@@ -507,7 +515,43 @@ export class ModelManager {
       }
     }
 
-    return enrichedModels;
+    return enrichedModels.map((model) => ({
+      ...model,
+      hasModalitiesOverride: providerModelOverrides.some((override) => override.id === model.id && override.modalities !== undefined),
+    }));
+  }
+
+  /**
+   * Resolves the effective input/output modalities for a model following the
+   * enrichment precedence (persisted override > provider-declared metadata >
+   * models.dev data). Unknown modalities remain undefined.
+   */
+  getModelModalities(providerId: string, modelId: string): ModelModalities | undefined {
+    const provider = this.getProviders().find((p) => p.id === providerId);
+
+    const cachedModel = this.providerModels[providerId]?.find((m) => m.id === modelId);
+    if (cachedModel?.modalities) {
+      return cachedModel.modalities;
+    }
+
+    const override = this.modelOverrides.find((modelOverride) => modelOverride.providerId === providerId && modelOverride.id === modelId);
+    if (override?.modalities) {
+      return override.modalities;
+    }
+
+    if (provider) {
+      const strategyModelInfo = this.providerRegistry[provider.provider.name]?.getModelInfo?.(provider, modelId, this.modelsInfo);
+      if (strategyModelInfo?.modalities) {
+        return strategyModelInfo.modalities;
+      }
+
+      const defaultModelInfo = getDefaultModelInfo(provider, modelId, this.modelsInfo);
+      if (defaultModelInfo?.modalities) {
+        return defaultModelInfo.modalities;
+      }
+    }
+
+    return undefined;
   }
 
   /**
@@ -591,6 +635,17 @@ export class ModelManager {
     }
   }
 
+  private createModelOverride(providerId: string, modelId: string, model: Model): Model {
+    const modelOverride: Model = {
+      ...model,
+      id: modelId,
+      providerId,
+      modalities: model.hasModalitiesOverride === false ? undefined : model.modalities,
+    };
+    delete modelOverride.hasModalitiesOverride;
+    return modelOverride;
+  }
+
   async upsertModel(providerId: string, modelId: string, model: Model): Promise<void> {
     await this.initPromise;
 
@@ -600,11 +655,7 @@ export class ModelManager {
 
     const existingIndex = this.modelOverrides.findIndex((m) => m.id === modelId && m.providerId === providerId);
 
-    const modelOverride: Model = {
-      ...model,
-      id: modelId,
-      providerId,
-    };
+    const modelOverride = this.createModelOverride(providerId, modelId, model);
 
     if (existingIndex >= 0) {
       this.modelOverrides[existingIndex] = modelOverride;
@@ -649,11 +700,7 @@ export class ModelManager {
     for (const { providerId, modelId, model } of modelUpdates) {
       const existingIndex = this.modelOverrides.findIndex((m) => m.id === modelId && m.providerId === providerId);
 
-      const modelOverride: Model = {
-        ...model,
-        id: modelId,
-        providerId,
-      };
+      const modelOverride = this.createModelOverride(providerId, modelId, model);
 
       if (existingIndex >= 0) {
         this.modelOverrides[existingIndex] = modelOverride;

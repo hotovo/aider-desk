@@ -109,6 +109,7 @@ export const VirtualTable = <T extends object>({
                     }`}
                     style={{
                       maxWidth: column.maxWidth,
+                      minWidth: column.minWidth,
                       flex: '2',
                       width: 1,
                     }}
@@ -163,6 +164,7 @@ export const VirtualTable = <T extends object>({
                         }`}
                         style={{
                           maxWidth: column.maxWidth,
+                          minWidth: column.minWidth,
                           flex: '2',
                           width: 1,
                         }}
@@ -188,6 +190,7 @@ export const VirtualTable = <T extends object>({
                 className={`px-4 py-2 font-medium flex items-center flex-shrink-0 whitespace-break-spaces text-ellipsis ${col.className || ''}`}
                 style={{
                   maxWidth: columns[index]?.maxWidth,
+                  minWidth: columns[index]?.minWidth,
                   flex: '2',
                   width: 1,
                 }}

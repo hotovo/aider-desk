@@ -307,6 +307,21 @@
     "resetZoom": "Reset zoom"
   },
   "modelLibrary": {
+    "modalities": {
+      "label": "Modalities",
+      "input": "Input",
+      "inputTooltip": "Modalities the model can understand as input.",
+      "output": "Output",
+      "outputTooltip": "Modalities the model can generate as output.",
+      "text": "Text",
+      "image": "Image",
+      "audio": "Audio",
+      "video": "Video",
+      "pdf": "PDF",
+      "unknown": "Unknown modalities",
+      "unknownTooltip": "Model capabilities are unknown. Attachment validation is skipped.",
+      "description": "Image input means vision, not image generation. When metadata is unavailable, no modalities are selected and attachment validation is skipped. Editing these selections saves model-specific capabilities; unrelated settings do not override them. Empty selections explicitly declare no supported modalities."
+    },
     "enableVoiceControl": "Enable Voice Control",
     "enableVoiceControlOnlyOneInfo": "Only one provider can be enabled at a time.",
     "voiceControl": "Voice control",

@@ -12,6 +12,7 @@
 - added required streaming settings for providers and individual models
 - added extension APIs for background generation from task context
 - added custom model catalogs and independent favorites for extension model selectors
+- added editable model input and output modalities with attachment filtering for known capabilities while preserving attachments for unknown models
 
 ## [0.89.0]
 

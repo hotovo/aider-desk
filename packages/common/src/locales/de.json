@@ -307,6 +307,21 @@
     "resetZoom": "Zoom zurücksetzen"
   },
   "modelLibrary": {
+    "modalities": {
+      "label": "Modalitäten",
+      "input": "Eingabe",
+      "inputTooltip": "Modalitäten, die das Modell als Eingabe verstehen kann.",
+      "output": "Ausgabe",
+      "outputTooltip": "Modalitäten, die das Modell als Ausgabe erzeugen kann.",
+      "text": "Text",
+      "image": "Bild",
+      "audio": "Audio",
+      "video": "Video",
+      "pdf": "PDF",
+      "unknown": "Unbekannte Modalitäten",
+      "unknownTooltip": "Die Modellfähigkeiten sind unbekannt. Die Anhangsprüfung wird übersprungen.",
+      "description": "Bildeingabe bedeutet Bilderkennung, nicht Bilderzeugung. Ohne Metadaten sind keine Modalitäten ausgewählt und die Anhangsprüfung wird übersprungen. Änderungen an dieser Auswahl speichern modellspezifische Fähigkeiten; andere Einstellungen überschreiben sie nicht. Eine leere Auswahl bedeutet ausdrücklich keine unterstützten Modalitäten."
+    },
     "enableVoiceControl": "Sprachsteuerung aktivieren",
     "enableVoiceControlOnlyOneInfo": "Es kann jeweils nur ein Anbieter aktiviert sein.",
     "voiceControl": "Sprachsteuerung",

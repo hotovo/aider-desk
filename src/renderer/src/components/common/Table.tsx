@@ -10,6 +10,7 @@ export type Column<T> = {
   cellClassName?: string;
   align?: 'left' | 'center' | 'right';
   maxWidth?: string | number;
+  minWidth?: string | number;
   sort?: (a: T, b: T) => number;
 };
 
@@ -77,7 +78,7 @@ export const Table = <T extends object>({ data, columns, footerColumns }: Props<
                 const sortDirection = isSorted ? sortState.direction : null;
 
                 return (
-                  <th key={index} className={`px-4 py-2 ${column.headerClassName || ''}`} style={{ maxWidth: column.maxWidth }}>
+                  <th key={index} className={`px-4 py-2 ${column.headerClassName || ''}`} style={{ maxWidth: column.maxWidth, minWidth: column.minWidth }}>
                     <div
                       className={`flex items-center gap-1 ${isSortable ? 'cursor-pointer hover:text-text-primary' : ''} ${column.align === 'center' ? 'justify-center' : column.align === 'right' ? 'justify-end' : ''}`}
                       onClick={() => handleSort(column)}
@@ -105,7 +106,7 @@ export const Table = <T extends object>({ data, columns, footerColumns }: Props<
                     <td
                       key={colIndex}
                       className={`px-4 py-2 ${column.cellClassName || ''} ${column.align === 'center' ? 'text-center' : column.align === 'right' ? 'text-right' : ''}`}
-                      style={{ maxWidth: column.maxWidth }}
+                      style={{ maxWidth: column.maxWidth, minWidth: column.minWidth }}
                     >
                       {column.cell ? column.cell(value, row) : (value as ReactNode)}
                     </td>

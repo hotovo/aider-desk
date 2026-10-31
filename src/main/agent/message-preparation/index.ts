@@ -5,6 +5,7 @@ import { transformMessages } from './transformations';
 import { optimizeMessages } from './optimizations';
 import { convertImageToolResults } from './provider-compatibility';
 import { applyCacheControl } from './cache-control';
+import { filterAttachmentsForModel, type AttachmentFilterContext, type FilteredAttachment } from './modality-validation';
 
 import type { ModelMessage } from 'ai';
 import type { CacheControl as ExtensionCacheControl } from '@common/extensions';
@@ -12,6 +13,18 @@ import type { AgentProfile, ContextMessage } from '@common/types';
 import type { CacheControl } from '@/models';
 import type { Task } from '@/task';
 import type { ExtensionManager } from '@/extensions';
+
+export interface PreparedMessagesOptions extends AttachmentFilterContext {
+  allowWarnings?: boolean;
+}
+
+const reportRemovedAttachments = (task: Task, modelLabel: string, removed: FilteredAttachment[]): void => {
+  const summary = removed.map((attachment) => `${attachment.mediaType} (${attachment.origin})`).join(', ');
+  task.addLogMessage(
+    'warning',
+    `Removed attachment(s) not supported by model ${modelLabel}: ${summary}. Switch to a model with the required input modality or update the model capabilities in the Model Library.`,
+  );
+};
 
 export const prepareMessagesForModel = async (
   messages: ModelMessage[],
@@ -21,6 +34,7 @@ export const prepareMessagesForModel = async (
   projectProfiles: AgentProfile[] = [],
   userRequestMessageIndex: number = -1,
   extensionManager?: ExtensionManager,
+  options?: PreparedMessagesOptions,
 ): Promise<ModelMessage[]> => {
   let preparedMessages = cloneDeep(messages);
   if (task && profile && preparedMessages.length > 0) {
@@ -66,6 +80,18 @@ export const prepareMessagesForModel = async (
       task,
     );
     preparedMessages = (result.messages as ModelMessage[]) ?? preparedMessages;
+  }
+  if (options) {
+    const modelLabel = `${options.providerId}/${options.modelName}`;
+    const filterResult = filterAttachmentsForModel(preparedMessages, {
+      providerId: options.providerId,
+      modelName: options.modelName,
+      resolveModalities: options.resolveModalities,
+    });
+    preparedMessages = filterResult.messages;
+    if (options.allowWarnings && task && filterResult.removed.length > 0) {
+      reportRemovedAttachments(task, modelLabel, filterResult.removed);
+    }
   }
   return preparedMessages;
 };

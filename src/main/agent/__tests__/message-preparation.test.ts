@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
+import { ModelModality } from '@common/types';
 
 import { prepareMessagesForModel } from '../message-preparation';
 import { transformMessages } from '../message-preparation/transformations';
@@ -9,6 +10,7 @@ import { getSubagentFinalText } from '../message-preparation/tool-results';
 import type { ModelMessage, ToolResultPart } from 'ai';
 import type { ExtensionManager } from '@/extensions';
 import type { Task } from '@/task';
+import type { PreparedMessagesOptions } from '../message-preparation';
 
 vi.mock('@/logger');
 
@@ -175,6 +177,73 @@ describe('duplicate screenshot preservation', () => {
       type: 'text',
       value: expect.stringContaining('Duplicate tool call detected'),
     });
+  });
+});
+
+describe('attachment filtering', () => {
+  const filteringOptions: PreparedMessagesOptions = {
+    providerId: 'provider',
+    modelName: 'text-only',
+    allowWarnings: true,
+    resolveModalities: (providerId: string, modelName: string) =>
+      providerId === 'provider' && modelName === 'text-only'
+        ? { input: [ModelModality.Text], output: [ModelModality.Text] }
+        : { input: [ModelModality.Text], output: [ModelModality.Text] },
+  };
+
+  const warningsTask = () => {
+    const logs: Array<{ type: string; message: string }> = [];
+    const taskObject = {
+      project: {},
+      addLogMessage: (type: string, message: string) => logs.push({ type, message }),
+    } as unknown as Task;
+    return { taskObject, logs };
+  };
+
+  it('filters unsupported attachments at the end of the chain and warns once', async () => {
+    const messages = [
+      toolMessage('image-tool', {
+        type: 'json',
+        value: { content: [{ type: 'image', data: 'aGVsbG8=', mimeType: 'image/png' }] },
+      }),
+    ];
+    const { taskObject, logs } = warningsTask();
+    const result = await prepareMessagesForModel(messages, undefined, taskObject, null, [], -1, undefined, filteringOptions);
+    expect(JSON.stringify(result)).not.toContain('"type":"file"');
+    expect(JSON.stringify(result)).toContain('Attachment omitted');
+    expect(logs).toHaveLength(1);
+    expect(logs[0].type).toBe('warning');
+    expect(logs[0].message).toContain('provider/text-only');
+  });
+
+  it('filters silently when warnings are not allowed', async () => {
+    const messages = [
+      toolMessage('image-tool', {
+        type: 'json',
+        value: { content: [{ type: 'image', data: 'aGVsbG8=', mimeType: 'image/png' }] },
+      }),
+    ];
+    const { taskObject, logs } = warningsTask();
+    const result = await prepareMessagesForModel(messages, undefined, taskObject, null, [], -1, undefined, {
+      ...filteringOptions,
+      allowWarnings: false,
+    });
+    expect(JSON.stringify(result)).not.toContain('"type":"file"');
+    expect(logs).toHaveLength(0);
+  });
+
+  it('keeps messages unfiltered without model options', async () => {
+    const messages = [
+      toolMessage('image-tool', {
+        type: 'json',
+        value: { content: [{ type: 'image', data: 'aGVsbG8=', mimeType: 'image/png' }] },
+      }),
+    ];
+    const result = await prepareMessagesForModel(messages, undefined, null, null, [], -1);
+    const images = result.flatMap((message) =>
+      message.role === 'user' && Array.isArray(message.content) ? message.content.filter((part) => part.type === 'file') : [],
+    );
+    expect(images).toHaveLength(1);
   });
 });
 
