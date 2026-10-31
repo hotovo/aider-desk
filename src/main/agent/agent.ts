@@ -204,7 +204,7 @@ export class Agent {
         imageParts.push({
           type: 'file',
           data: file!.imageBase64,
-          mediaType: 'image',
+          mediaType: file!.mimeType ?? 'image',
         });
       } else if (!file!.isImage && file!.content) {
         // Add to textFileContents array
@@ -336,7 +336,7 @@ export class Agent {
                 imageParts.push({
                   type: 'file',
                   data: imageBase64,
-                  mediaType: 'image',
+                  mediaType: detected.mime,
                 });
                 continue;
               }

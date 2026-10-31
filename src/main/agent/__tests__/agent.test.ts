@@ -583,6 +583,72 @@ describe('Agent - getContextFilesAsToolCallMessages', () => {
     });
   });
 
+  describe('Context Image mediaType', () => {
+    it('should preserve the detected MIME type in file parts emitted by getFilesContentForPrompt', async () => {
+      const imageBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+      mockIsBinary.mockReturnValue(true);
+      mockFileTypeFromBuffer.mockResolvedValue({ mime: 'image/png', ext: 'png' });
+      mockTask.resolveContextFilePath = vi.fn((p: string) => Promise.resolve(`/test/project/${p}`));
+      mockFsReadFile.mockResolvedValueOnce(imageBuffer);
+
+      const contextFiles: ContextFile[] = [{ path: 'image.png', readOnly: true }];
+
+      const { imageParts } = await agent['getFilesContentForPrompt'](contextFiles, mockTask);
+
+      const filePart = imageParts.find((part) => part.type === 'file');
+      expect(filePart).toBeDefined();
+      expect(filePart).toEqual({
+        type: 'file',
+        data: imageBuffer.toString('base64'),
+        mediaType: 'image/png',
+      });
+    });
+
+    it('should preserve the detected MIME type in file parts emitted by getWorkingFilesMessages', async () => {
+      const imageBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0]);
+
+      mockIsBinary.mockReturnValue(true);
+      mockFileTypeFromBuffer.mockResolvedValue({ mime: 'image/jpeg', ext: 'jpg' });
+      mockTask.resolveContextFilePath = vi.fn((p: string) => Promise.resolve(`/test/project/${p}`));
+      mockFsReadFile.mockResolvedValueOnce(imageBuffer);
+
+      const contextFiles: ContextFile[] = [{ path: 'photo.jpeg', readOnly: true }];
+
+      const result = await agent['getWorkingFilesMessages'](mockTask, contextFiles);
+
+      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'text');
+      expect(imageUserMessage).toBeDefined();
+
+      const filePart = (imageUserMessage!.content as any[]).find((part: any) => part.type === 'file');
+      expect(filePart).toBeDefined();
+      expect(filePart.mediaType).toBe('image/jpeg');
+      expect(filePart.data).toBe(imageBuffer.toString('base64'));
+    });
+
+    it('should preserve the detected MIME type in image parts emitted via getContextFilesMessages', async () => {
+      const imageBuffer = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
+
+      mockIsBinary.mockReturnValue(true);
+      mockFileTypeFromBuffer.mockResolvedValue({ mime: 'image/gif', ext: 'gif' });
+      mockTask.resolveContextFilePath = vi.fn((p: string) => Promise.resolve(`/test/project/${p}`));
+      mockFsReadFile.mockResolvedValueOnce(imageBuffer);
+      mockProfile.toolApprovals = { [fileReadToolId]: ToolApprovalState.Never };
+      agent['getContextFilesMessages'] = originalGetContextFilesMessages;
+
+      const contextFiles: ContextFile[] = [{ path: 'animation.gif', readOnly: true }];
+
+      const result = await agent['getContextFilesAsToolCallMessages'](mockTask, mockProfile, contextFiles);
+
+      const imageUserMessage = result.find((msg: any) => msg.role === 'user' && Array.isArray(msg.content) && (msg.content as any)[0]?.type === 'text');
+      expect(imageUserMessage).toBeDefined();
+
+      const filePart = (imageUserMessage!.content as any[]).find((part: any) => part.type === 'file');
+      expect(filePart).toBeDefined();
+      expect(filePart.mediaType).toBe('image/gif');
+    });
+  });
+
   describe('File Content Reading', () => {
     beforeEach(() => {
       mockProfile.toolApprovals = {
