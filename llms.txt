@@ -17041,21 +17041,14 @@ File: src/renderer/src/components/common/ModelSelectorWrapper.tsx
 ================
 import { forwardRef, useCallback, useMemo } from 'react';
 import { Model } from '@common/types';
+import { ModelSelectorProps } from '@common/extensions';
 import { getProviderModelId } from '@common/agent';
 ⋮----
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 ⋮----
-type Props = {
-  className?: string;
-  selectedModelId?: string | null;
-  onChange: (model: Model | null) => void;
-  popupPlacement?: 'top' | 'bottom';
-  labelOnNull?: string;
-  skipPreferredModelsUpdate?: boolean;
-  usePortal?: boolean;
-};
+type Props = ModelSelectorProps;
 
 ================
 File: src/renderer/src/components/common/MultiSelect.tsx
