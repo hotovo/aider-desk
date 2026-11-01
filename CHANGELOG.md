@@ -15,6 +15,7 @@
 - added editable model input and output modalities with attachment filtering for known capabilities while preserving attachments for unknown models
 - fixed missing `onPromptFinished` extension hook after agent resume and restart recovery
 - fixed context image attachments emitting a generic image media type instead of the detected MIME type, which could fail model requests for less common formats
+- prevented OS command injection in extension repository clone path
 
 ## [0.89.0]
 
