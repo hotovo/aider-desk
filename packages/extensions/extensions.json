@@ -117,7 +117,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "permission-gate",
@@ -139,7 +139,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 54
+      "installCount": 55
     },
     {
       "id": "external-rules",
@@ -233,7 +233,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 31
+      "installCount": 33
     },
     {
       "id": "redact-secrets",
