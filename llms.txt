@@ -65,6 +65,7 @@ src/
       message-preparation/
         cache-control.ts
         index.ts
+        modality-validation.ts
         optimizations.ts
         provider-compatibility.ts
         reminders.ts
@@ -512,6 +513,8 @@ src/
           index.ts
           ModelDialog.tsx
           ModelLibrary.tsx
+          ModelModalitiesCell.tsx
+          ModelModalitiesEditor.tsx
           ModelParameterOverrides.tsx
           ModelTableSection.tsx
           ProviderCard.tsx
@@ -1901,6 +1904,7 @@ import { transformMessages } from './transformations';
 import { optimizeMessages } from './optimizations';
 import { convertImageToolResults } from './provider-compatibility';
 import { applyCacheControl } from './cache-control';
+import { filterAttachmentsForModel, type AttachmentFilterContext, type FilteredAttachment } from './modality-validation';
 ⋮----
 import type { ModelMessage } from 'ai';
 import type { CacheControl as ExtensionCacheControl } from '@common/extensions';
@@ -1908,6 +1912,12 @@ import type { AgentProfile, ContextMessage } from '@common/types';
 import type { CacheControl } from '@/models';
 import type { Task } from '@/task';
 import type { ExtensionManager } from '@/extensions';
+⋮----
+export interface PreparedMessagesOptions extends AttachmentFilterContext {
+  allowWarnings?: boolean;
+}
+⋮----
+const reportRemovedAttachments = (task: Task, modelLabel: string, removed: FilteredAttachment[]): void =>
 ⋮----
 export const prepareMessagesForModel = async (
   messages: ModelMessage[],
@@ -1917,7 +1927,74 @@ export const prepareMessagesForModel = async (
   projectProfiles: AgentProfile[] = [],
   userRequestMessageIndex: number = -1,
   extensionManager?: ExtensionManager,
+  options?: PreparedMessagesOptions,
 ): Promise<ModelMessage[]> =>
+
+================
+File: src/main/agent/message-preparation/modality-validation.ts
+================
+import { ModelModality } from '@common/types';
+⋮----
+import type { ModelModalities } from '@common/types';
+import type { ModelMessage, ToolResultPart } from 'ai';
+⋮----
+export type ResolveModelModalities = (providerId: string, modelName: string) => ModelModalities | undefined;
+⋮----
+export interface AttachmentFilterContext {
+  providerId: string;
+  modelName: string;
+  resolveModalities: ResolveModelModalities;
+}
+⋮----
+const isTextualMediaType = (mediaType: string): boolean
+⋮----
+export interface AttachmentClassification {
+  modality?: ModelModality;
+  binaryUnsupported: boolean;
+  isAttachment: boolean;
+}
+⋮----
+export const classifyAttachmentMediaType = (mediaType: string | undefined): AttachmentClassification =>
+⋮----
+export enum AttachmentRemovalReason {
+  UnsupportedModality = 'unsupported-modality',
+  UnsupportedMediaType = 'unsupported-media-type',
+}
+⋮----
+export interface FilteredAttachment {
+  mediaType: string;
+  modality?: ModelModality;
+  origin: string;
+  reason: AttachmentRemovalReason;
+}
+⋮----
+export interface AttachmentFilterResult {
+  messages: ModelMessage[];
+  removed: FilteredAttachment[];
+}
+⋮----
+const removalNote = (attachment: FilteredAttachment, modelLabel: string): string =>
+⋮----
+type MessageContentPart = {
+  type: string;
+  mediaType?: string;
+  text?: string;
+  [key: string]: unknown;
+};
+⋮----
+const extractToolNameFromToolMessage = (message: ModelMessage): string | undefined =>
+⋮----
+const findContextFileReference = (parts: MessageContentPart[]): string | undefined =>
+⋮----
+const patchImageRenderedPlaceholder = (toolMessage: ModelMessage, modelLabel: string): void =>
+⋮----
+export const filterAttachmentsForModel = (messages: ModelMessage[], context: AttachmentFilterContext): AttachmentFilterResult =>
+⋮----
+// The user message injected by convertImageToolResults follows the tool
+// message whose result contained the media.
+⋮----
+// Preserve a trace in the conversation so the model does not assume it
+// received the attachment, even when every part of the message was removed.
 
 ================
 File: src/main/agent/message-preparation/optimizations.ts
@@ -2859,7 +2936,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { prepareMessagesForModel } from '@/agent/message-preparation';
+import { prepareMessagesForModel, type PreparedMessagesOptions } from '@/agent/message-preparation';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
@@ -3113,6 +3190,8 @@ async generateObject<T>(
     abortSignal?: AbortSignal,
     sessionId?: string,
 ): Promise<T | undefined>
+⋮----
+private getAttachmentFilterOptions(providerId: string, modelName: string, allowWarnings: boolean): PreparedMessagesOptions
 ⋮----
 async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
 ⋮----
@@ -3847,6 +3926,8 @@ import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 ⋮----
+import { classifyAttachmentMediaType } from './message-preparation/modality-validation';
+⋮----
 import logger from '@/logger';
 ⋮----
 /**
@@ -3996,6 +4077,11 @@ export const isNetworkError = (error: unknown): boolean =>
 export const convertMcpResultToModelOutput = (output: unknown): ToolResultOutput =>
 ⋮----
 type CountableMessage = { role: string; content: unknown };
+⋮----
+// Tool outputs can embed base64 media payloads; tokenizing them as text would
+// wildly overestimate. Replace large opaque-looking strings with short markers.
+⋮----
+const summarizeLargePayloads = (value: unknown, seen = 0): unknown =>
 ⋮----
 const extractToolResultText = (output: unknown): string =>
 ⋮----
@@ -7286,7 +7372,7 @@ import logger from '@/logger';
 ⋮----
 export const getDefaultModelInfo = (provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
-// Try provider.name prefix first
+// Try the provider type before profile-specific names or IDs
 ⋮----
 // If not found, try provider.id prefix
 ⋮----
@@ -8496,9 +8582,11 @@ import { ProviderDefinition, ProviderToolApprovalHandler } from '@common/extensi
 import {
   Model,
   ModelInfo,
+  ModelModality,
   ModelOverrides,
   ProviderModelsData,
   ProviderProfile,
+  ModelModalities,
   Reasoning,
   SettingsData,
   TlsPolicyRegistrar,
@@ -8541,7 +8629,7 @@ import type { RegisteredProvider } from '@/extensions/extension-manager';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -8568,6 +8656,7 @@ type ModelsMetaResponse = Record<
           cache_read?: number;
           cache_write?: number;
         };
+        modalities?: { input: string[]; output: string[] };
         temperature?: boolean;
         limit: {
           context: number;
@@ -8648,6 +8737,13 @@ private enrichWithOverrides(models: Model[], providerId: string): Model[]
 // maxOutputTokens and temperature should be also overridden by undefined values
 ⋮----
 /**
+   * Resolves the effective input/output modalities for a model following the
+   * enrichment precedence (persisted override > provider-declared metadata >
+   * models.dev data). Unknown modalities remain undefined.
+   */
+getModelModalities(providerId: string, modelId: string): ModelModalities | undefined
+⋮----
+/**
    * Detect and add automatic providers from environment variables
    */
 private updateEnvVarsProviders()
@@ -8661,6 +8757,8 @@ async getProviderModels(reload = false): Promise<ProviderModelsData>
 private async loadModelOverrides(): Promise<void>
 ⋮----
 private async saveModelOverrides(): Promise<void>
+⋮----
+private createModelOverride(providerId: string, modelId: string, model: Model): Model
 ⋮----
 async upsertModel(providerId: string, modelId: string, model: Model): Promise<void>
 ⋮----
@@ -17291,6 +17389,7 @@ export type Column<T> = {
   cellClassName?: string;
   align?: 'left' | 'center' | 'right';
   maxWidth?: string | number;
+  minWidth?: string | number;
   sort?: (a: T, b: T) => number;
 };
 ⋮----
@@ -21471,6 +21570,7 @@ import { startTransition, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
 ⋮----
+import { ModelModalitiesEditor } from './ModelModalitiesEditor';
 import { ModelParameterOverrides } from './ModelParameterOverrides';
 ⋮----
 import { Input } from '@/components/common/Input';
@@ -21498,6 +21598,8 @@ const handleSubmit = () =>
 const handleInputChange = (field: keyof Model, value: unknown) =>
 ⋮----
 // Clear error when user starts typing
+⋮----
+const handleModalitiesChange = (modalities: Model['modalities']) =>
 ⋮----
 const handleCostBlur = (field: keyof Model, displayField: keyof typeof costDisplayValues, inputValue: string) =>
 ⋮----
@@ -21583,6 +21685,49 @@ const handleBulkToggleHidden = async (modelIds: string[], isHidden: boolean) =>
 onCancel=
 
 ================
+File: src/renderer/src/components/ModelLibrary/ModelModalitiesCell.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { LuArrowRight, LuCircleHelp } from 'react-icons/lu';
+import { Model } from '@common/types';
+⋮----
+import { MODALITY_ICONS } from './ModelModalitiesEditor';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  value: Model['modalities'];
+};
+⋮----
+<span className="flex items-center text-text-muted" role="img" aria-label=
+⋮----
+const renderGroup = (direction: 'input' | 'output') =>
+
+================
+File: src/renderer/src/components/ModelLibrary/ModelModalitiesEditor.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+import { LuAudioLines, LuFileText, LuImage, LuType, LuVideo } from 'react-icons/lu';
+import { Model, ModelModality } from '@common/types';
+⋮----
+import type { IconType } from 'react-icons';
+⋮----
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  value: Model['modalities'];
+  onChange: (value: Model['modalities']) => void;
+};
+⋮----
+const handleToggle = (direction: 'input' | 'output', modality: ModelModality) =>
+⋮----
+const handleClick = ()
+⋮----
+className=
+
+================
 File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
 ================
 import { useTranslation } from 'react-i18next';
@@ -21639,12 +21784,14 @@ const handleResetToDefaults = () =>
 ================
 File: src/renderer/src/components/ModelLibrary/ModelTableSection.tsx
 ================
-import { useState, ReactNode, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
 import { Model, ProviderProfile } from '@common/types';
 import { MdThermostat } from 'react-icons/md';
+⋮----
+import { ModelModalitiesCell } from './ModelModalitiesCell';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
