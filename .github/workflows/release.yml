@@ -5,6 +5,7 @@ on:
 
 jobs:
   release-linux:
+    if: false
     name: Release Linux packages
     runs-on: ubuntu-latest
     container:
@@ -117,6 +118,7 @@ jobs:
           gh release upload "$RELEASE_TAG" dist/latest-linux.yml --clobber
 
   release-linux-arm64:
+    if: false
     name: Release Linux ARM64 packages
     runs-on: ubuntu-22.04-arm
     env:
@@ -167,6 +169,7 @@ jobs:
         run: npm run build:linux -- --arm64 -p always
 
   release-win:
+    if: false
     name: Release Windows packages
     runs-on: windows-2022
 
@@ -263,6 +266,7 @@ jobs:
           path: dist/latest-mac.yml
 
   release-docker:
+    if: false
     name: Release Docker image
     runs-on: ubuntu-latest
     env:
