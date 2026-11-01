@@ -1,6 +1,6 @@
 # Changelog
 
-## [UNRELEASED]
+## [0.90.0]
 
 - updated Electron, Node.js, and uv for security fixes, added automatic Python certificate bundle updates and warnings for unpatched Node.js versions
 - fixed duplicate prompt execution when mobile clients replayed requests after reconnecting
