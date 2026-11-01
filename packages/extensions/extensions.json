@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 5
+      "installCount": 6
     },
     {
       "id": "jev",
@@ -83,7 +83,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 51
+      "installCount": 52
     },
     {
       "id": "theme",
@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 117
+      "installCount": 118
     },
     {
       "id": "protected-paths",
@@ -117,7 +117,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "permission-gate",
@@ -128,7 +128,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 39
+      "installCount": 40
     },
     {
       "id": "ultrathink",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 75
+      "installCount": 77
     },
     {
       "id": "learn",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 105
+      "installCount": 108
     },
     {
       "id": "legacy-system-prompt",
@@ -200,7 +200,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 35
+      "installCount": 37
     },
     {
       "id": "sandbox",
@@ -245,7 +245,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 30
+      "installCount": 31
     },
     {
       "id": "chunkhound-search",
@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 84
+      "installCount": 85
     },
     {
       "id": "context-autocompletion-words",
@@ -294,7 +294,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "lsp",
@@ -307,7 +307,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 92
+      "installCount": 93
     },
     {
       "id": "plannotator",
@@ -322,7 +322,7 @@
         "commands",
         "workflows"
       ],
-      "installCount": 29
+      "installCount": 30
     },
     {
       "id": "programmatic-tool-calls",
@@ -334,7 +334,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 44
+      "installCount": 45
     },
     {
       "id": "ui-placement-demo",
@@ -359,7 +359,7 @@
         "ui",
         "workflows"
       ],
-      "installCount": 16
+      "installCount": 17
     },
     {
       "id": "providers-quota-extension",
@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 111
+      "installCount": 112
     },
     {
       "id": "verifier",
@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 61
+      "installCount": 62
     },
     {
       "id": "bmad",
@@ -481,7 +481,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 28
+      "installCount": 29
     },
     {
       "id": "auggie-sdk",
@@ -544,7 +544,7 @@
         "events",
         "ui"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "codegraph",
@@ -581,7 +581,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "my-minions",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 66
+      "installCount": 68
     },
     {
       "id": "wigolo",
@@ -607,7 +607,7 @@
         "tools",
         "search"
       ],
-      "installCount": 71
+      "installCount": 72
     },
     {
       "id": "destructive-command-guard",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 57
+      "installCount": 58
     },
     {
       "id": "skill-gallery",
@@ -658,7 +658,7 @@
         "commands",
         "events"
       ],
-      "installCount": 31
+      "installCount": 33
     },
     {
       "id": "reasoning-selector",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 138
+      "installCount": 141
     },
     {
       "id": "dbx",
