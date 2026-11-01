@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 74
+      "installCount": 75
     },
     {
       "id": "learn",
@@ -176,7 +176,7 @@
         "commands",
         "tools"
       ],
-      "installCount": 103
+      "installCount": 105
     },
     {
       "id": "legacy-system-prompt",
@@ -334,7 +334,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "ui-placement-demo",
@@ -346,7 +346,7 @@
         "ui",
         "example"
       ],
-      "installCount": 18
+      "installCount": 19
     },
     {
       "id": "multi-model-run",
@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 60
+      "installCount": 61
     },
     {
       "id": "bmad",
@@ -531,7 +531,7 @@
         "providers",
         "agent-loop"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "checkpoints",
@@ -557,7 +557,7 @@
         "tools",
         "search"
       ],
-      "installCount": 86
+      "installCount": 87
     },
     {
       "id": "kanban",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 56
+      "installCount": 57
     },
     {
       "id": "skill-gallery",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 165
+      "installCount": 166
     },
     {
       "id": "task-scheduler",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 137
+      "installCount": 138
     },
     {
       "id": "dbx",
