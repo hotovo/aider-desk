@@ -1,6 +1,6 @@
 {
   "name": "@aiderdesk/aiderdesk",
-  "version": "0.89.0",
+  "version": "0.90.0",
   "description": "AiderDesk - AI-Powered Development Platform",
   "bin": {
     "aiderdesk": "./bin/aiderdesk.js"
@@ -51,7 +51,7 @@
     "@ai-sdk/openai": "4.0.104",
     "@ai-sdk/openai-compatible": "3.0.80",
     "@ai-sdk/otel": "1.0.156",
-    "@aiderdesk/extensions": "0.39.0",
+    "@aiderdesk/extensions": "0.40.0",
     "@aws-sdk/client-bedrock": "3.1059.0",
     "@aws-sdk/credential-providers": "3.1059.0",
     "@dotenvx/dotenvx": "1.52.0",
@@ -102,14 +102,14 @@
     "tree-kill": "1.2.2",
     "turndown": "7.2.2",
     "typescript": "5.9.3",
-    "undici": "8.11.2",
+    "undici": "8.12.3",
     "uuid": "14.0.0",
     "winston": "3.19.0",
     "winston-daily-rotate-file": "5.0.0",
     "winston-transport": "4.9.0",
     "yaml": "2.8.3",
     "yaml-front-matter": "4.1.1",
-    "zod": "4.3.6"
+    "zod": "4.6.7"
   },
   "overrides": {
     "@ai-sdk/provider": "4.0.34",
