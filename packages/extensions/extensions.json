@@ -200,7 +200,7 @@
       "capabilities": [
         "notifications"
       ],
-      "installCount": 37
+      "installCount": 38
     },
     {
       "id": "sandbox",
@@ -233,7 +233,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 33
+      "installCount": 34
     },
     {
       "id": "redact-secrets",
@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 112
+      "installCount": 113
     },
     {
       "id": "verifier",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 141
+      "installCount": 142
     },
     {
       "id": "dbx",
