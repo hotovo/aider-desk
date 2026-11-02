@@ -4796,6 +4796,8 @@ private async getAvailableExtensionsInternal(repositories: string[], forceRefres
 ⋮----
 async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
+private async ensureReposCacheDir(): Promise<void>
+⋮----
 private getRepoDirName(repoUrl: string): string
 ⋮----
 // fall through
