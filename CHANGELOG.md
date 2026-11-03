@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- centralized terminal emulator startup and cleanup with libterminal, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
+
 ## [0.90.0]
 
 - updated Electron, Node.js, and uv for security fixes, added automatic Python certificate bundle updates and warnings for unpatched Node.js versions

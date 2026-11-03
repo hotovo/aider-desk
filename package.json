@@ -200,6 +200,7 @@
     "@electron/notarize": "3.1.1",
     "@eslint/js": "9.39.5",
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@openclaw/libterminal": "0.4.0",
     "@playwright/test": "1.60.0",
     "@tailwindcss/typography": "0.5.19",
     "@testing-library/jest-dom": "6.9.1",
