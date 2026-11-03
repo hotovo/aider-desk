@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 62
+      "installCount": 63
     },
     {
       "id": "bmad",
@@ -569,7 +569,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "doom",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 68
+      "installCount": 69
     },
     {
       "id": "wigolo",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 166
+      "installCount": 167
     },
     {
       "id": "task-scheduler",
