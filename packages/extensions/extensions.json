@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 118
+      "installCount": 120
     },
     {
       "id": "protected-paths",
@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 85
+      "installCount": 86
     },
     {
       "id": "context-autocompletion-words",
@@ -307,7 +307,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 93
+      "installCount": 94
     },
     {
       "id": "plannotator",
@@ -544,7 +544,7 @@
         "events",
         "ui"
       ],
-      "installCount": 43
+      "installCount": 44
     },
     {
       "id": "codegraph",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 70
+      "installCount": 72
     },
     {
       "id": "wigolo",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 59
+      "installCount": 60
     },
     {
       "id": "skill-gallery",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 167
+      "installCount": 168
     },
     {
       "id": "task-scheduler",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 143
+      "installCount": 144
     },
     {
       "id": "dbx",
