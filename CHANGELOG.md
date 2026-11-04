@@ -3,6 +3,7 @@
 ## [UNRELEASED]
 
 - fixed OS command injection via commit messages and file paths in git operations
+- fixed terminal startup cleanup and retries, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
 
 ## [0.90.0]
 

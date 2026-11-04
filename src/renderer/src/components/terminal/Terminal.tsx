@@ -1,10 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback, ChangeEvent } from 'react';
-import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
+import { FitAddon, Terminal as GhosttyTerminal } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 
 import './Terminal.scss';
+import { createTerminalEmulator, TerminalEmulator } from './terminal-emulator';
+
 import { useApi } from '@/contexts/ApiContext';
 import { setTabPtyId } from '@/stores/terminalStore';
 
@@ -41,15 +43,6 @@ const useIsTouchDevice = (): boolean => {
   return isTouch;
 };
 
-// Load the ghostty WASM module once per app, not once per terminal instance
-let ghosttyLoadPromise: Promise<InstanceType<typeof Ghostty>> | null = null;
-const loadGhostty = (): Promise<InstanceType<typeof Ghostty>> => {
-  if (!ghosttyLoadPromise) {
-    ghosttyLoadPromise = Ghostty.load();
-  }
-  return ghosttyLoadPromise;
-};
-
 const KEY_SEQUENCES: Record<string, string> = {
   Enter: '\r',
   Backspace: '\x7f',
@@ -71,15 +64,13 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
   const touchInputRef = useRef<HTMLTextAreaElement>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isEmulatorReady, setIsEmulatorReady] = useState(false);
   const [creationEpoch, setCreationEpoch] = useState(0);
   const isTouch = useIsTouchDevice();
-  const ghosttyInstanceRef = useRef<InstanceType<typeof Ghostty> | null>(null);
   const api = useApi();
 
   const { t } = useTranslation();
-  const isConnecting = isInitialized && visible && !ptyId;
+  const isConnecting = isEmulatorReady && visible && !ptyId;
 
   const writeToPty = useCallback(
     (data: string) => {
@@ -124,100 +115,101 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     },
   }));
 
-  // Initialize ghostty-web WASM once
-  useEffect(() => {
-    let cancelled = false;
-
-    loadGhostty()
-      .then((instance) => {
-        if (!cancelled) {
-          ghosttyInstanceRef.current = instance;
-          setIsInitialized(true);
-        }
-      })
-      .catch((error) => {
-        // eslint-disable-next-line no-console
-        console.error('Failed to initialize ghostty-web:', error);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   // Initialize terminal emulator once - its lifetime is independent of the PTY session
   useEffect(() => {
-    if (!isInitialized || !terminalContainerRef.current) {
+    if (!terminalContainerRef.current) {
       return;
     }
 
-    const terminal = new GhosttyTerminal({
-      theme: {
-        background: '#0a0a0a',
-        foreground: '#e5e5e5',
-        cursor: '#e5e5e5',
-        cursorAccent: '#0a0a0a',
-        selectionBackground: '#404040',
-        black: '#000000',
-        red: '#ef4444',
-        green: '#22c55e',
-        yellow: '#eab308',
-        blue: '#3b82f6',
-        magenta: '#a855f7',
-        cyan: '#06b6d4',
-        white: '#f5f5f5',
-        brightBlack: '#404040',
-        brightRed: '#f87171',
-        brightGreen: '#4ade80',
-        brightYellow: '#facc15',
-        brightBlue: '#60a5fa',
-        brightMagenta: '#c084fc',
-        brightCyan: '#22d3ee',
-        brightWhite: '#ffffff',
+    const abortController = new AbortController();
+    let emulator: TerminalEmulator | null = null;
+    const disposeEmulator = () => {
+      emulator?.terminal.dispose();
+      emulator = null;
+    };
+    void createTerminalEmulator(
+      terminalContainerRef.current,
+      {
+        theme: {
+          background: '#0a0a0a',
+          foreground: '#e5e5e5',
+          cursor: '#e5e5e5',
+          cursorAccent: '#0a0a0a',
+          selectionBackground: '#404040',
+          black: '#000000',
+          red: '#ef4444',
+          green: '#22c55e',
+          yellow: '#eab308',
+          blue: '#3b82f6',
+          magenta: '#a855f7',
+          cyan: '#06b6d4',
+          white: '#f5f5f5',
+          brightBlack: '#404040',
+          brightRed: '#f87171',
+          brightGreen: '#4ade80',
+          brightYellow: '#facc15',
+          brightBlue: '#60a5fa',
+          brightMagenta: '#c084fc',
+          brightCyan: '#22d3ee',
+          brightWhite: '#ffffff',
+        },
+        fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+        fontSize: 12,
+        cursorBlink: true,
+        cursorStyle: 'block',
+        scrollback: 1000,
       },
-      fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-      fontSize: 12,
-      cursorBlink: true,
-      cursorStyle: 'block',
-      scrollback: 1000,
-      ghostty: ghosttyInstanceRef.current!,
-    });
+      abortController.signal,
+    )
+      .then((instance) => {
+        if (!instance) {
+          return;
+        }
+        emulator = instance;
+        if (abortController.signal.aborted) {
+          disposeEmulator();
+          return;
+        }
 
-    const fitAddon = new FitAddon();
+        instance.fitAddon.fit();
+        if (abortController.signal.aborted) {
+          disposeEmulator();
+          return;
+        }
+        const terminal = instance.terminal;
+        terminal.onData(writeToPty);
+        terminal.onResize(({ cols, rows }) => {
+          const currentPtyId = ptyIdRef.current;
+          if (currentPtyId) {
+            void api.resizeTerminal(currentPtyId, cols, rows);
+          }
+        });
 
-    terminal.loadAddon(fitAddon);
-
-    terminal.open(terminalContainerRef.current);
-    fitAddon.fit();
-
-    // Handle terminal input
-    terminal.onData((data) => {
-      writeToPty(data);
-    });
-
-    // Handle terminal resize
-    terminal.onResize(({ cols, rows }) => {
-      const currentPtyId = ptyIdRef.current;
-      if (currentPtyId) {
-        void api.resizeTerminal(currentPtyId, cols, rows);
-      }
-    });
-
-    terminalRef.current = terminal;
-    fitAddonRef.current = fitAddon;
-    setIsEmulatorReady(true);
+        terminalRef.current = terminal;
+        fitAddonRef.current = instance.fitAddon;
+        setIsEmulatorReady(true);
+      })
+      .catch((error) => {
+        disposeEmulator();
+        if (!abortController.signal.aborted) {
+          abortController.abort();
+          // eslint-disable-next-line no-console
+          console.error('Failed to initialize ghostty-web:', error);
+        }
+      });
 
     return () => {
-      terminal.dispose();
+      abortController.abort();
+      disposeEmulator();
       terminalRef.current = null;
       fitAddonRef.current = null;
       setIsEmulatorReady(false);
     };
-  }, [isInitialized, api, writeToPty]);
+  }, [api, writeToPty]);
 
   // Create the PTY process when visible and no session is attached
   useEffect(() => {
-    if (!visible || ptyId || !isInitialized || creatingRef.current) {
+    if (!visible || ptyId || !isEmulatorReady || creatingRef.current) {
       return;
     }
 
@@ -232,6 +224,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
 
     const createTerminal = async () => {
       try {
+        // A hidden mount can only be measured when this creation attempt becomes visible.
+        fitAddonRef.current?.fit();
         const cols = term.cols || 160;
         const rows = term.rows || 10;
         const id = await api.createTerminal(baseDir, taskId, cols, rows);
@@ -259,7 +253,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     return () => {
       cancelled = true;
     };
-  }, [baseDir, taskId, sessionKey, tabId, ptyId, visible, isInitialized, api, creationEpoch]);
+  }, [baseDir, taskId, sessionKey, tabId, ptyId, visible, isEmulatorReady, api, creationEpoch]);
 
   // Attach to the PTY session: reset the emulator, replay the recent output,
   // and only then subscribe to live events so no output is rendered twice
@@ -400,7 +394,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
       input.removeEventListener('keydown', handleKeyDown);
       input.removeEventListener('beforeinput', handleBeforeInput);
     };
-  }, [isTouch, isInitialized, writeToPty]);
+  }, [isTouch, writeToPty]);
 
   const handleTouchInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
