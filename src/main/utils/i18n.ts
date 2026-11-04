@@ -1,9 +1,10 @@
 import en from '@common/locales/en.json';
+import it from '@common/locales/it.json';
 import ko from '@common/locales/ko.json';
 import ru from '@common/locales/ru.json';
 import zh from '@common/locales/zh.json';
 
-const resources: Record<string, Record<string, unknown>> = { en, zh, ru, ko };
+const resources: Record<string, Record<string, unknown>> = { en, zh, ru, ko, it };
 
 const getNested = (obj: Record<string, unknown>, key: string): unknown => {
   return key.split('.').reduce<unknown>((acc, part) => {
