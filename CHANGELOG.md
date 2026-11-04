@@ -1,5 +1,9 @@
 # Changelog
 
+## [UNRELEASED]
+
+- fixed OS command injection via commit messages and file paths in git operations
+
 ## [0.90.0]
 
 - updated Electron, Node.js, and uv for security fixes, added automatic Python certificate bundle updates and warnings for unpatched Node.js versions
