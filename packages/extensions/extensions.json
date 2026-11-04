@@ -35,7 +35,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 42
+      "installCount": 43
     },
     {
       "id": "wakatime",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 69
+      "installCount": 70
     },
     {
       "id": "wigolo",
@@ -632,7 +632,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 58
+      "installCount": 59
     },
     {
       "id": "skill-gallery",
