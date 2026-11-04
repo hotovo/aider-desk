@@ -1,11 +1,12 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback, ChangeEvent } from 'react';
-import { Terminal as GhosttyTerminal } from 'ghostty-web';
-import { createGhosttyTerminal, GhosttyTerminalController } from '@openclaw/libterminal/browser';
+import { FitAddon, Terminal as GhosttyTerminal } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 
 import './Terminal.scss';
+import { createTerminalEmulator, TerminalEmulator } from './terminal-emulator';
+
 import { useApi } from '@/contexts/ApiContext';
 import { setTabPtyId } from '@/stores/terminalStore';
 
@@ -56,7 +57,7 @@ const KEY_SEQUENCES: Record<string, string> = {
 export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, baseDir, taskId, visible, ptyId, onClose, className }, ref) => {
   const terminalContainerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<GhosttyTerminal | null>(null);
-  const controllerRef = useRef<GhosttyTerminalController | null>(null);
+  const fitAddonRef = useRef<FitAddon | null>(null);
   const ptyIdRef = useRef<string | null>(ptyId);
   const creatingRef = useRef(false);
   const skipReplayRef = useRef(false);
@@ -93,7 +94,7 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
       terminalRef.current?.clear();
     },
     resize: () => {
-      controllerRef.current?.fit();
+      fitAddonRef.current?.fit();
     },
     getOutput: () => {
       if (!terminalRef.current) {
@@ -121,12 +122,14 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
     }
 
     const abortController = new AbortController();
-    void createGhosttyTerminal({
-      parent: terminalContainerRef.current,
-      readOnly: false,
-      autoFit: false,
-      signal: abortController.signal,
-      terminalOptions: {
+    let emulator: TerminalEmulator | null = null;
+    const disposeEmulator = () => {
+      emulator?.terminal.dispose();
+      emulator = null;
+    };
+    void createTerminalEmulator(
+      terminalContainerRef.current,
+      {
         theme: {
           background: '#0a0a0a',
           foreground: '#e5e5e5',
@@ -156,14 +159,24 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
         cursorStyle: 'block',
         scrollback: 1000,
       },
-    })
-      .then((controller) => {
+      abortController.signal,
+    )
+      .then((instance) => {
+        if (!instance) {
+          return;
+        }
+        emulator = instance;
         if (abortController.signal.aborted) {
+          disposeEmulator();
           return;
         }
 
-        controller.fit();
-        const terminal = controller.terminal;
+        instance.fitAddon.fit();
+        if (abortController.signal.aborted) {
+          disposeEmulator();
+          return;
+        }
+        const terminal = instance.terminal;
         terminal.onData(writeToPty);
         terminal.onResize(({ cols, rows }) => {
           const currentPtyId = ptyIdRef.current;
@@ -173,10 +186,11 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
         });
 
         terminalRef.current = terminal;
-        controllerRef.current = controller;
+        fitAddonRef.current = instance.fitAddon;
         setIsEmulatorReady(true);
       })
       .catch((error) => {
+        disposeEmulator();
         if (!abortController.signal.aborted) {
           abortController.abort();
           // eslint-disable-next-line no-console
@@ -186,8 +200,9 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
 
     return () => {
       abortController.abort();
+      disposeEmulator();
       terminalRef.current = null;
-      controllerRef.current = null;
+      fitAddonRef.current = null;
       setIsEmulatorReady(false);
     };
   }, [api, writeToPty]);
@@ -209,6 +224,8 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
 
     const createTerminal = async () => {
       try {
+        // A hidden mount can only be measured when this creation attempt becomes visible.
+        fitAddonRef.current?.fit();
         const cols = term.cols || 160;
         const rows = term.rows || 10;
         const id = await api.createTerminal(baseDir, taskId, cols, rows);
@@ -321,9 +338,9 @@ export const Terminal = forwardRef<TerminalRef, Props>(({ sessionKey, tabId, bas
 
   // Handle resize when visibility changes
   useEffect(() => {
-    if (visible && controllerRef.current) {
+    if (visible && fitAddonRef.current) {
       const timer = setTimeout(() => {
-        controllerRef.current?.fit();
+        fitAddonRef.current?.fit();
       }, 100);
       return () => clearTimeout(timer);
     }

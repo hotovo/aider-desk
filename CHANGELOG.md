@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- centralized terminal emulator startup and cleanup with libterminal, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
+- fixed terminal startup cleanup and retries, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
 
 ## [0.90.0]
 

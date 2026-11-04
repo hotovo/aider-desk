@@ -1,15 +1,15 @@
 import { createRef, StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createGhosttyTerminal, GhosttyTerminalController } from '@openclaw/libterminal/browser';
 
+import { createTerminalEmulator, TerminalEmulator } from '../terminal-emulator';
 import { Terminal, TerminalRef } from '../Terminal';
 
 import { createMockApi } from '@/__tests__/mocks/api';
 import { useApi } from '@/contexts/ApiContext';
 import { setTabPtyId } from '@/stores/terminalStore';
 
-vi.mock('@openclaw/libterminal/browser', () => ({ createGhosttyTerminal: vi.fn() }));
+vi.mock('../terminal-emulator', () => ({ createTerminalEmulator: vi.fn() }));
 vi.mock('@/contexts/ApiContext', () => ({ useApi: vi.fn() }));
 vi.mock('@/stores/terminalStore', () => ({ setTabPtyId: vi.fn() }));
 
@@ -23,7 +23,7 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-const createController = () => {
+const createEmulator = () => {
   const terminal = {
     cols: 80,
     rows: 24,
@@ -34,22 +34,24 @@ const createController = () => {
     reset: vi.fn(),
     clear: vi.fn(),
     focus: vi.fn(),
-    buffer: { active: { length: 1, getLine: vi.fn(() => ({ translateToString: () => 'terminal output' })) } },
-  };
-  const controller: GhosttyTerminalController = {
-    terminal: terminal as unknown as GhosttyTerminalController['terminal'],
-    readOnly: false,
-    fit: vi.fn(() => {
-      terminal.cols = 120;
-      terminal.rows = 30;
-    }),
-    write: vi.fn(),
-    resize: vi.fn(),
-    setReadOnly: vi.fn(),
-    attach: vi.fn(async () => {}),
     dispose: vi.fn(),
+    buffer: {
+      active: {
+        length: 1,
+        getLine: vi.fn(() => ({ translateToString: () => 'terminal output' })),
+      },
+    },
   };
-  return { controller, terminal };
+  const instance: TerminalEmulator = {
+    terminal: terminal as unknown as TerminalEmulator['terminal'],
+    fitAddon: {
+      fit: vi.fn(() => {
+        terminal.cols = 120;
+        terminal.rows = 30;
+      }),
+    } as unknown as TerminalEmulator['fitAddon'],
+  };
+  return { instance, terminal };
 };
 
 const props = {
@@ -64,17 +66,26 @@ const props = {
 
 describe('Terminal lifecycle', () => {
   let api: ReturnType<typeof createMockApi>;
-  let emulator: ReturnType<typeof createController>;
+  let emulator: ReturnType<typeof createEmulator>;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    emulator = createController();
-    api = createMockApi({ getTerminalBuffer: vi.fn(async () => ({ exists: true, data: 'replayed output' })) });
+    emulator = createEmulator();
+    api = createMockApi({
+      getTerminalBuffer: vi.fn(async () => ({
+        exists: true,
+        data: 'replayed output',
+      })),
+    });
     vi.mocked(useApi).mockReturnValue(api);
-    vi.mocked(createGhosttyTerminal).mockResolvedValue(emulator.controller);
+    vi.mocked(createTerminalEmulator).mockResolvedValue(emulator.instance);
     vi.stubGlobal(
       'matchMedia',
-      vi.fn(() => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })),
+      vi.fn(() => ({
+        matches: false,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
     );
   });
 
@@ -86,16 +97,16 @@ describe('Terminal lifecycle', () => {
   });
 
   it('waits for the emulator and its initial fit before creating a PTY', async () => {
-    const startup = deferred<GhosttyTerminalController>();
-    vi.mocked(createGhosttyTerminal).mockReturnValue(startup.promise);
+    const startup = deferred<TerminalEmulator>();
+    vi.mocked(createTerminalEmulator).mockReturnValue(startup.promise);
     const view = render(<Terminal {...props} />);
     expect(api.createTerminal).not.toHaveBeenCalled();
-    expect(createGhosttyTerminal).toHaveBeenCalledWith(expect.objectContaining({ readOnly: false, autoFit: false }));
+    expect(createTerminalEmulator).toHaveBeenCalledWith(expect.any(HTMLDivElement), expect.objectContaining({ fontSize: 12 }), expect.any(AbortSignal));
 
-    await act(async () => startup.resolve(emulator.controller));
+    await act(async () => startup.resolve(emulator.instance));
     expect(api.createTerminal).toHaveBeenCalledWith('/project', 'task', 120, 30);
     expect(setTabPtyId).toHaveBeenCalledWith(props.sessionKey, 'tab', 'mock-terminal-id');
-    expect(emulator.controller.fit).toHaveBeenCalledBefore(emulator.terminal.onResize);
+    expect(emulator.instance.fitAddon.fit).toHaveBeenCalledBefore(emulator.terminal.onResize);
 
     view.rerender(<Terminal {...props} ptyId="mock-terminal-id" />);
     expect(api.getTerminalBuffer).not.toHaveBeenCalled();
@@ -104,69 +115,82 @@ describe('Terminal lifecycle', () => {
   });
 
   it('aborts pending startup on unmount without creating or closing a PTY', async () => {
-    const startup = deferred<GhosttyTerminalController>();
-    vi.mocked(createGhosttyTerminal).mockReturnValue(startup.promise);
+    const startup = deferred<TerminalEmulator>();
+    vi.mocked(createTerminalEmulator).mockReturnValue(startup.promise);
     const view = render(<Terminal {...props} />);
-    const signal = vi.mocked(createGhosttyTerminal).mock.calls[0][0].signal;
+    const signal = vi.mocked(createTerminalEmulator).mock.calls[0][2];
     view.unmount();
     expect(signal?.aborted).toBe(true);
-    await act(async () => startup.resolve(emulator.controller));
-    expect(emulator.controller.fit).not.toHaveBeenCalled();
+    await act(async () => startup.resolve(emulator.instance));
+    expect(emulator.instance.fitAddon.fit).not.toHaveBeenCalled();
+    expect(emulator.terminal.dispose).toHaveBeenCalledOnce();
     expect(api.createTerminal).not.toHaveBeenCalled();
     expect(api.closeTerminal).not.toHaveBeenCalled();
   });
 
   it('ignores an earlier startup after StrictMode restarts the effect', async () => {
-    const first = deferred<GhosttyTerminalController>();
-    const second = deferred<GhosttyTerminalController>();
-    const earlier = createController();
-    vi.mocked(createGhosttyTerminal).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const first = deferred<TerminalEmulator>();
+    const second = deferred<TerminalEmulator>();
+    const earlier = createEmulator();
+    vi.mocked(createTerminalEmulator).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
     render(
       <StrictMode>
         <Terminal {...props} />
       </StrictMode>,
     );
-    expect(createGhosttyTerminal).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(createGhosttyTerminal).mock.calls[0][0].signal?.aborted).toBe(true);
-    await act(async () => second.resolve(emulator.controller));
-    await act(async () => first.resolve(earlier.controller));
-    expect(earlier.controller.fit).not.toHaveBeenCalled();
+    expect(createTerminalEmulator).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(createTerminalEmulator).mock.calls[0][2]?.aborted).toBe(true);
+    await act(async () => second.resolve(emulator.instance));
+    await act(async () => first.resolve(earlier.instance));
+    expect(earlier.instance.fitAddon.fit).not.toHaveBeenCalled();
+    expect(earlier.terminal.dispose).toHaveBeenCalledOnce();
     expect(api.createTerminal).toHaveBeenCalledExactlyOnceWith('/project', 'task', 120, 30);
   });
 
   it.each([true, false])('creates a hidden tab only when visible (ready first: %s)', async (readyFirst) => {
-    const startup = deferred<GhosttyTerminalController>();
-    vi.mocked(createGhosttyTerminal).mockReturnValue(startup.promise);
+    const startup = deferred<TerminalEmulator>();
+    vi.mocked(createTerminalEmulator).mockReturnValue(startup.promise);
+    let hidden = true;
+    vi.mocked(emulator.instance.fitAddon.fit).mockImplementation(() => {
+      // Ghostty cannot measure a display:none container until it becomes visible.
+      if (!hidden) {
+        emulator.terminal.cols = 120;
+        emulator.terminal.rows = 30;
+      }
+    });
     const view = render(<Terminal {...props} visible={false} />);
     if (readyFirst) {
-      await act(async () => startup.resolve(emulator.controller));
+      await act(async () => startup.resolve(emulator.instance));
       expect(api.createTerminal).not.toHaveBeenCalled();
+      hidden = false;
       view.rerender(<Terminal {...props} />);
     } else {
+      hidden = false;
       view.rerender(<Terminal {...props} />);
       expect(api.createTerminal).not.toHaveBeenCalled();
-      await act(async () => startup.resolve(emulator.controller));
+      await act(async () => startup.resolve(emulator.instance));
     }
     await waitFor(() => expect(api.createTerminal).toHaveBeenCalledExactlyOnceWith('/project', 'task', 120, 30));
-    expect(createGhosttyTerminal).toHaveBeenCalledOnce();
+    expect(createTerminalEmulator).toHaveBeenCalledOnce();
   });
 
-  it('aborts the controller when initial fitting fails and never publishes readiness', async () => {
+  it('disposes the emulator when initial fitting fails and never publishes readiness', async () => {
     const error = new Error('fit failed');
-    vi.mocked(emulator.controller.fit).mockImplementation(() => {
+    vi.mocked(emulator.instance.fitAddon.fit).mockImplementation(() => {
       throw error;
     });
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     render(<Terminal {...props} />);
     await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to initialize ghostty-web:', error));
-    expect(vi.mocked(createGhosttyTerminal).mock.calls[0][0].signal?.aborted).toBe(true);
+    expect(vi.mocked(createTerminalEmulator).mock.calls[0][2]?.aborted).toBe(true);
     expect(api.createTerminal).not.toHaveBeenCalled();
     expect(emulator.terminal.onData).not.toHaveBeenCalled();
+    expect(emulator.terminal.dispose).toHaveBeenCalledOnce();
   });
 
   it('allows a new mount after startup rejects', async () => {
     const error = new Error('WASM unavailable');
-    vi.mocked(createGhosttyTerminal).mockRejectedValueOnce(error);
+    vi.mocked(createTerminalEmulator).mockRejectedValueOnce(error);
     const log = vi.spyOn(console, 'error').mockImplementation(() => {});
     const view = render(<Terminal {...props} />);
     await waitFor(() => expect(log).toHaveBeenCalledWith('Failed to initialize ghostty-web:', error));
@@ -190,12 +214,19 @@ describe('Terminal lifecycle', () => {
     const onData = api.addTerminalDataListener.mock.calls[0][1];
 
     view.rerender(<Terminal {...props} ptyId="existing" visible={false} />);
-    act(() => onData({ terminalId: 'existing', baseDir: '/project', taskId: 'task', data: 'hidden output' }));
+    act(() =>
+      onData({
+        terminalId: 'existing',
+        baseDir: '/project',
+        taskId: 'task',
+        data: 'hidden output',
+      }),
+    );
     expect(emulator.terminal.write).toHaveBeenLastCalledWith('hidden output');
     view.rerender(<Terminal {...props} ptyId="existing" />);
     await act(async () => vi.advanceTimersByTimeAsync(100));
-    expect(emulator.controller.fit).toHaveBeenCalledTimes(2);
-    expect(createGhosttyTerminal).toHaveBeenCalledOnce();
+    expect(emulator.instance.fitAddon.fit).toHaveBeenCalledTimes(2);
+    expect(createTerminalEmulator).toHaveBeenCalledOnce();
     expect(api.getTerminalBuffer).toHaveBeenCalledOnce();
     expect(api.createTerminal).not.toHaveBeenCalled();
     expect(api.closeTerminal).not.toHaveBeenCalled();
@@ -216,7 +247,7 @@ describe('Terminal lifecycle', () => {
     ref.current?.resize();
     expect(emulator.terminal.focus).toHaveBeenCalledOnce();
     expect(emulator.terminal.clear).toHaveBeenCalledOnce();
-    expect(emulator.controller.fit).toHaveBeenCalledTimes(2);
+    expect(emulator.instance.fitAddon.fit).toHaveBeenCalledTimes(2);
   });
 
   it('unsubscribes and aborts the emulator without closing an attached PTY', async () => {
@@ -229,7 +260,8 @@ describe('Terminal lifecycle', () => {
     view.unmount();
     expect(removeData).toHaveBeenCalledOnce();
     expect(removeExit).toHaveBeenCalledOnce();
-    expect(vi.mocked(createGhosttyTerminal).mock.calls[0][0].signal?.aborted).toBe(true);
+    expect(emulator.terminal.dispose).toHaveBeenCalledOnce();
+    expect(vi.mocked(createTerminalEmulator).mock.calls[0][2]?.aborted).toBe(true);
     expect(api.closeTerminal).not.toHaveBeenCalled();
   });
 
@@ -245,7 +277,11 @@ describe('Terminal lifecycle', () => {
   });
 
   it('forwards touch input and control keys without changing their string protocol', async () => {
-    vi.mocked(window.matchMedia).mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList);
+    vi.mocked(window.matchMedia).mockReturnValue({
+      matches: true,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    } as unknown as MediaQueryList);
     const ref = createRef<TerminalRef>();
     const view = render(<Terminal {...props} ptyId="existing" ref={ref} />);
     await waitFor(() => expect(api.addTerminalDataListener).toHaveBeenCalledOnce());
