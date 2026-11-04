@@ -65,6 +65,7 @@ src/
       message-preparation/
         cache-control.ts
         index.ts
+        modality-validation.ts
         optimizations.ts
         provider-compatibility.ts
         reminders.ts
@@ -86,6 +87,7 @@ src/
       agent.ts
       assistant-message-state.ts
       compaction.ts
+      generate-once.ts
       index.ts
       mcp-config-manager.ts
       mcp-manager.ts
@@ -511,6 +513,8 @@ src/
           index.ts
           ModelDialog.tsx
           ModelLibrary.tsx
+          ModelModalitiesCell.tsx
+          ModelModalitiesEditor.tsx
           ModelParameterOverrides.tsx
           ModelTableSection.tsx
           ProviderCard.tsx
@@ -519,6 +523,8 @@ src/
           ProviderProfileDialog.tsx
           ProviderProfileForm.tsx
           ProviderSelection.tsx
+          RequireStreaming.tsx
+          StreamingSettings.tsx
         onboarding/
           OnboardingPathChoice.tsx
           OnboardingProviderSetup.tsx
@@ -1898,6 +1904,7 @@ import { transformMessages } from './transformations';
 import { optimizeMessages } from './optimizations';
 import { convertImageToolResults } from './provider-compatibility';
 import { applyCacheControl } from './cache-control';
+import { filterAttachmentsForModel, type AttachmentFilterContext, type FilteredAttachment } from './modality-validation';
 ⋮----
 import type { ModelMessage } from 'ai';
 import type { CacheControl as ExtensionCacheControl } from '@common/extensions';
@@ -1905,6 +1912,12 @@ import type { AgentProfile, ContextMessage } from '@common/types';
 import type { CacheControl } from '@/models';
 import type { Task } from '@/task';
 import type { ExtensionManager } from '@/extensions';
+⋮----
+export interface PreparedMessagesOptions extends AttachmentFilterContext {
+  allowWarnings?: boolean;
+}
+⋮----
+const reportRemovedAttachments = (task: Task, modelLabel: string, removed: FilteredAttachment[]): void =>
 ⋮----
 export const prepareMessagesForModel = async (
   messages: ModelMessage[],
@@ -1914,7 +1927,74 @@ export const prepareMessagesForModel = async (
   projectProfiles: AgentProfile[] = [],
   userRequestMessageIndex: number = -1,
   extensionManager?: ExtensionManager,
+  options?: PreparedMessagesOptions,
 ): Promise<ModelMessage[]> =>
+
+================
+File: src/main/agent/message-preparation/modality-validation.ts
+================
+import { ModelModality } from '@common/types';
+⋮----
+import type { ModelModalities } from '@common/types';
+import type { ModelMessage, ToolResultPart } from 'ai';
+⋮----
+export type ResolveModelModalities = (providerId: string, modelName: string) => ModelModalities | undefined;
+⋮----
+export interface AttachmentFilterContext {
+  providerId: string;
+  modelName: string;
+  resolveModalities: ResolveModelModalities;
+}
+⋮----
+const isTextualMediaType = (mediaType: string): boolean
+⋮----
+export interface AttachmentClassification {
+  modality?: ModelModality;
+  binaryUnsupported: boolean;
+  isAttachment: boolean;
+}
+⋮----
+export const classifyAttachmentMediaType = (mediaType: string | undefined): AttachmentClassification =>
+⋮----
+export enum AttachmentRemovalReason {
+  UnsupportedModality = 'unsupported-modality',
+  UnsupportedMediaType = 'unsupported-media-type',
+}
+⋮----
+export interface FilteredAttachment {
+  mediaType: string;
+  modality?: ModelModality;
+  origin: string;
+  reason: AttachmentRemovalReason;
+}
+⋮----
+export interface AttachmentFilterResult {
+  messages: ModelMessage[];
+  removed: FilteredAttachment[];
+}
+⋮----
+const removalNote = (attachment: FilteredAttachment, modelLabel: string): string =>
+⋮----
+type MessageContentPart = {
+  type: string;
+  mediaType?: string;
+  text?: string;
+  [key: string]: unknown;
+};
+⋮----
+const extractToolNameFromToolMessage = (message: ModelMessage): string | undefined =>
+⋮----
+const findContextFileReference = (parts: MessageContentPart[]): string | undefined =>
+⋮----
+const patchImageRenderedPlaceholder = (toolMessage: ModelMessage, modelLabel: string): void =>
+⋮----
+export const filterAttachmentsForModel = (messages: ModelMessage[], context: AttachmentFilterContext): AttachmentFilterResult =>
+⋮----
+// The user message injected by convertImageToolResults follows the tool
+// message whose result contained the media.
+⋮----
+// Preserve a trace in the conversation so the model does not assume it
+// received the attachment, even when every part of the message was removed.
 
 ================
 File: src/main/agent/message-preparation/optimizations.ts
@@ -2768,6 +2848,7 @@ File: src/main/agent/agent.ts
 import fs from 'fs/promises';
 import path from 'path';
 ⋮----
+import { cloneDeep } from 'lodash';
 import { createToolRecoveryNotice, isToolRecoveryNotice, ToolRecoveryCode, DEFAULT_TOOL_RECOVERY_MODES } from '@common/tool-recovery';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -2821,6 +2902,7 @@ import {
 } from '@common/tools';
 import { EXTENSION_ORIGIN } from '@common/extensions';
 ⋮----
+import { generateOnce } from './generate-once';
 import { createPowerToolset } from './tools/power';
 import { createTodoToolset } from './tools/todo';
 import { createSearchParentTaskTool, createTasksToolset } from './tools/tasks';
@@ -2843,7 +2925,7 @@ import {
 import { extractReasoningMiddleware } from './middlewares/extract-reasoning-middleware';
 import { CompactionLevel, generateCompactedSummary, getReloadableMessages, getSubagentOldResultIds, smartCompactMessages } from './compaction';
 ⋮----
-import type { ExtensionToolOrigin, ToolsetToolEntry } from '@common/extensions';
+import type { ContextGenerationOptions, ContextGenerationResult, ExtensionToolOrigin, ToolsetToolEntry } from '@common/extensions';
 import type { TextPart } from '@ai-sdk/provider-utils';
 import type { z } from 'zod';
 import type { LanguageModelV4 } from '@ai-sdk/provider';
@@ -2854,7 +2936,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { prepareMessagesForModel } from '@/agent/message-preparation';
+import { prepareMessagesForModel, type PreparedMessagesOptions } from '@/agent/message-preparation';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
@@ -3075,6 +3157,17 @@ private async prepareMessages(task: Task, profile: AgentProfile, contextMessages
 ⋮----
 // Add message history after working files
 ⋮----
+async generateTextFromContext(task: Task, prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>>
+⋮----
+async generateObjectFromContext<T>(
+    task: Task,
+    prompt: string,
+    schema: z.ZodType<T>,
+    options?: ContextGenerationOptions,
+): Promise<ContextGenerationResult<T>>
+⋮----
+private async generateFromContext<T>(task: Task, prompt: string, schema?: z.ZodType<T>, options: ContextGenerationOptions =
+⋮----
 async generateText(
     modelId: string,
     systemPrompt: string,
@@ -3097,6 +3190,8 @@ async generateObject<T>(
     abortSignal?: AbortSignal,
     sessionId?: string,
 ): Promise<T | undefined>
+⋮----
+private getAttachmentFilterOptions(providerId: string, modelName: string, allowWarnings: boolean): PreparedMessagesOptions
 ⋮----
 async estimateTokens(task: Task, profile: AgentProfile): Promise<number>
 ⋮----
@@ -3222,6 +3317,13 @@ export const generateCompactedSummary = async (
     sessionId?: string,
   ) => Promise<string | undefined> = async () => undefined,
 ): Promise<ContextMessage[]> =>
+
+================
+File: src/main/agent/generate-once.ts
+================
+import { generateText, streamText } from 'ai';
+⋮----
+export const generateOnce = async (parameters: Parameters<typeof generateText>[0], requireStreaming: boolean) =>
 
 ================
 File: src/main/agent/index.ts
@@ -3824,6 +3926,8 @@ import { encode } from 'gpt-tokenizer/model/gpt-4o';
 import { z } from 'zod';
 import { ContextMessage, ContextUserMessage, JSONValue, MessageRole, PromptContext, ToolResultOutput } from '@common/types';
 ⋮----
+import { classifyAttachmentMediaType } from './message-preparation/modality-validation';
+⋮----
 import logger from '@/logger';
 ⋮----
 /**
@@ -3973,6 +4077,11 @@ export const isNetworkError = (error: unknown): boolean =>
 export const convertMcpResultToModelOutput = (output: unknown): ToolResultOutput =>
 ⋮----
 type CountableMessage = { role: string; content: unknown };
+⋮----
+// Tool outputs can embed base64 media payloads; tokenizing them as text would
+// wildly overestimate. Replace large opaque-looking strings with short markers.
+⋮----
+const summarizeLargePayloads = (value: unknown, seen = 0): unknown =>
 ⋮----
 const extractToolResultText = (output: unknown): string =>
 ⋮----
@@ -4686,6 +4795,8 @@ async getAvailableExtensions(repositories: string[], forceRefresh = false): Prom
 private async getAvailableExtensionsInternal(repositories: string[], forceRefresh: boolean): Promise<AvailableExtension[]>
 ⋮----
 async fetchExtensionsFromRepo(repoUrl: string, forceRefresh: boolean): Promise<AvailableExtension[]>
+⋮----
+private async ensureReposCacheDir(): Promise<void>
 ⋮----
 private getRepoDirName(repoUrl: string): string
 ⋮----
@@ -5497,7 +5608,15 @@ import {
   UncommittedFiles,
 } from '@common/types';
 ⋮----
-import type { QuestionOptions, SmartCompactionOptions, SmartCompactionResult, TaskContext, ResponseMessage } from '@common/extensions';
+import type {
+  ContextGenerationOptions,
+  ContextGenerationResult,
+  QuestionOptions,
+  SmartCompactionOptions,
+  SmartCompactionResult,
+  TaskContext,
+  ResponseMessage,
+} from '@common/extensions';
 import type { z } from 'zod';
 import type { Task } from '@/task';
 ⋮----
@@ -5611,6 +5730,10 @@ async interruptResponse(): Promise<void>
 async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>
 ⋮----
 async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>
+⋮----
+async generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>>
+⋮----
+async generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>>
 ⋮----
 // User Interaction
 ⋮----
@@ -7251,7 +7374,7 @@ import logger from '@/logger';
 ⋮----
 export const getDefaultModelInfo = (provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined =>
 ⋮----
-// Try provider.name prefix first
+// Try the provider type before profile-specific names or IDs
 ⋮----
 // If not found, try provider.id prefix
 ⋮----
@@ -8461,9 +8584,11 @@ import { ProviderDefinition, ProviderToolApprovalHandler } from '@common/extensi
 import {
   Model,
   ModelInfo,
+  ModelModality,
   ModelOverrides,
   ProviderModelsData,
   ProviderProfile,
+  ModelModalities,
   Reasoning,
   SettingsData,
   TlsPolicyRegistrar,
@@ -8471,6 +8596,7 @@ import {
   VoiceSession,
 } from '@common/types';
 import { extractProviderModel } from '@common/utils';
+import { resolveStreamingConfig } from '@common/streaming';
 ⋮----
 import { anthropicProviderStrategy } from './providers/anthropic';
 import { anthropicCompatibleProviderStrategy } from './providers/anthropic-compatible';
@@ -8505,7 +8631,7 @@ import type { RegisteredProvider } from '@/extensions/extension-manager';
 import type { SharedV4ProviderOptions } from '@ai-sdk/provider';
 import type { LanguageModel, LanguageModelUsage, ModelMessage, ToolSet } from 'ai';
 ⋮----
-import { getDefaultUsageReport } from '@/models/providers/default';
+import { getDefaultModelInfo, getDefaultUsageReport } from '@/models/providers/default';
 import { AIDER_DESK_CACHE_DIR, AIDER_DESK_DATA_DIR } from '@/constants';
 import logger from '@/logger';
 import { Store } from '@/store';
@@ -8532,6 +8658,7 @@ type ModelsMetaResponse = Record<
           cache_read?: number;
           cache_write?: number;
         };
+        modalities?: { input: string[]; output: string[] };
         temperature?: boolean;
         limit: {
           context: number;
@@ -8612,6 +8739,13 @@ private enrichWithOverrides(models: Model[], providerId: string): Model[]
 // maxOutputTokens and temperature should be also overridden by undefined values
 ⋮----
 /**
+   * Resolves the effective input/output modalities for a model following the
+   * enrichment precedence (persisted override > provider-declared metadata >
+   * models.dev data). Unknown modalities remain undefined.
+   */
+getModelModalities(providerId: string, modelId: string): ModelModalities | undefined
+⋮----
+/**
    * Detect and add automatic providers from environment variables
    */
 private updateEnvVarsProviders()
@@ -8625,6 +8759,8 @@ async getProviderModels(reload = false): Promise<ProviderModelsData>
 private async loadModelOverrides(): Promise<void>
 ⋮----
 private async saveModelOverrides(): Promise<void>
+⋮----
+private createModelOverride(providerId: string, modelId: string, model: Model): Model
 ⋮----
 async upsertModel(providerId: string, modelId: string, model: Model): Promise<void>
 ⋮----
@@ -8663,7 +8799,11 @@ getUsageReport(task: Task, provider: ProviderProfile, model: string | Model, usa
 ⋮----
 getCacheControl(provider: ProviderProfile, modelId: string): CacheControl | undefined
 ⋮----
+private getStreamingConfig(provider: ProviderProfile, modelId: string)
+⋮----
 isStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
+⋮----
+isStreamingRequired(provider: ProviderProfile, modelId: string): boolean
 ⋮----
 isToolCallStreamingDisabled(provider: ProviderProfile, modelId: string): boolean
 ⋮----
@@ -11367,7 +11507,7 @@ import type { ToolContent, JSONValue } from '@common/types';
 import type { RegisteredCommand } from '@/extensions/extension-manager';
 import type { WatchHandle } from '@/file-watcher-manager';
 import type { SmartCompactionPassSelection } from '@/agent/smart-compaction';
-import type { SmartCompactionOptions } from '@common/extensions';
+import type { ContextGenerationOptions, ContextGenerationResult, SmartCompactionOptions } from '@common/extensions';
 ⋮----
 import { translate } from '@/utils/i18n';
 import { ExtensionEventMap, ExtensionManager } from '@/extensions/extension-manager';
@@ -12345,6 +12485,10 @@ public isInitialized()
 public async generateText(modelId: string, systemPrompt: string, prompt: string): Promise<string | undefined>
 ⋮----
 public async generateObject<T>(modelId: string, systemPrompt: string, prompt: string, schema: z.ZodType<T>): Promise<T | undefined>
+⋮----
+public async generateTextFromContext(prompt: string, options?: ContextGenerationOptions): Promise<ContextGenerationResult<string>>
+⋮----
+public async generateObjectFromContext<T>(prompt: string, schema: z.ZodType<T>, options?: ContextGenerationOptions): Promise<ContextGenerationResult<T>>
 ⋮----
 async runCodeChangeRequests(requests: ChangeRequestItem[], contextSize: number = 5, createNewTask?: boolean): Promise<void>
 
@@ -16997,21 +17141,14 @@ File: src/renderer/src/components/common/ModelSelectorWrapper.tsx
 ================
 import { forwardRef, useCallback, useMemo } from 'react';
 import { Model } from '@common/types';
+import { ModelSelectorProps } from '@common/extensions';
 import { getProviderModelId } from '@common/agent';
 ⋮----
 import { ModelSelector, ModelSelectorRef } from '@/components/ModelSelector';
 import { useModelProviders } from '@/contexts/ModelProviderContext';
 import { useSaveSettings, useSettingsStore } from '@/stores/settingsStore';
 ⋮----
-type Props = {
-  className?: string;
-  selectedModelId?: string | null;
-  onChange: (model: Model | null) => void;
-  popupPlacement?: 'top' | 'bottom';
-  labelOnNull?: string;
-  skipPreferredModelsUpdate?: boolean;
-  usePortal?: boolean;
-};
+type Props = ModelSelectorProps;
 
 ================
 File: src/renderer/src/components/common/MultiSelect.tsx
@@ -17254,6 +17391,7 @@ export type Column<T> = {
   cellClassName?: string;
   align?: 'left' | 'center' | 'right';
   maxWidth?: string | number;
+  minWidth?: string | number;
   sort?: (a: T, b: T) => number;
 };
 ⋮----
@@ -19971,7 +20109,7 @@ export const includeMessageProperty = (message: Message): boolean =>
  * Rules:
  * - A ResponseMessage followed by ToolMessages forms a single group
  * - A new ResponseMessage starts a new group
- * - Orphan ToolMessages (without preceding ResponseMessage) remain standalone
+ * - Consecutive ToolMessages without a preceding ResponseMessage form a tool-only group
  * - Other message types remain standalone
  */
 export const groupAssistantMessages = (messages: Message[]): Message[] =>
@@ -19982,15 +20120,7 @@ const pushWithUniqueId = (message: Message) =>
 ⋮----
 const flushCurrentGroup = () =>
 ⋮----
-// Create an AssistantGroupMessage
-⋮----
-// No tool messages, just push the response as-is
-⋮----
 // Flush any previous group before starting a new one
-⋮----
-// Add to current group
-⋮----
-// Orphan tool message - push as-is
 ⋮----
 // Other message types - flush current group and push as-is
 ⋮----
@@ -20212,7 +20342,6 @@ File: src/renderer/src/components/ModelLibrary/providers/AzureModelOverrides.tsx
 ================
 import { getDefaultProviderParams, AzureProvider, LlmProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { AzureAdvancedSettings } from './AzureAdvancedSettings';
@@ -20226,8 +20355,6 @@ type Props = {
 export const AzureModelOverrides = (
 ⋮----
 const handleProviderChange = (updatedProvider: AzureProvider) =>
-⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20334,7 +20461,6 @@ File: src/renderer/src/components/ModelLibrary/providers/DeepseekModelOverrides.
 import { getDefaultProviderParams, DeepseekProvider, DeepseekReasoningEffort, LlmProvider } from '@common/agent';
 import { useTranslation } from 'react-i18next';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { Checkbox } from '@/components/common/Checkbox';
@@ -20349,8 +20475,6 @@ type Props = {
 const handleThinkingEnabledChange = (checked: boolean) =>
 ⋮----
 const handleReasoningEffortChange = (value: string) =>
-⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 ⋮----
@@ -20390,7 +20514,6 @@ File: src/renderer/src/components/ModelLibrary/providers/DefaultModelOverrides.t
 ================
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 type Props = {
@@ -20400,8 +20523,6 @@ type Props = {
 };
 ⋮----
 export const DefaultModelOverrides = (
-⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20447,7 +20568,6 @@ File: src/renderer/src/components/ModelLibrary/providers/GeminiModelOverrides.ts
 ================
 import { getDefaultProviderParams, GeminiProvider, LlmProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { GeminiAdvancedSettings } from './GeminiAdvancedSettings';
@@ -20466,9 +20586,6 @@ export const GeminiModelOverrides = (
 const handleProviderChange = (updatedProvider: GeminiProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20693,7 +20810,6 @@ File: src/renderer/src/components/ModelLibrary/providers/NeuralwattModelOverride
 ================
 import { getDefaultProviderParams, LlmProvider, NeuralwattProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { NeuralwattAdvancedSettings } from './NeuralwattAdvancedSettings';
@@ -20709,9 +20825,6 @@ export const NeuralwattModelOverrides = (
 const handleProviderChange = (updatedProvider: NeuralwattProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20815,7 +20928,6 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenAiCompatibleModelOv
 ================
 import { getDefaultProviderParams, LlmProvider, OpenAiCompatibleProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenAiCompatibleAdvancedSettings } from './OpenAiCompatibleAdvancedSettings';
@@ -20834,9 +20946,6 @@ export const OpenAiCompatibleModelOverrides = (
 const handleProviderChange = (updatedProvider: OpenAiCompatibleProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20871,7 +20980,6 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenAiModelOverrides.ts
 ================
 import { getDefaultProviderParams, LlmProvider, OpenAiProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenAiAdvancedSettings } from './OpenAiAdvancedSettings';
@@ -20890,9 +20998,6 @@ export const OpenAiModelOverrides = (
 const handleProviderChange = (updatedProvider: OpenAiProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20935,7 +21040,6 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenCodeGoModelOverride
 ================
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 type Props = {
@@ -20945,8 +21049,6 @@ type Props = {
 };
 ⋮----
 export const OpenCodeGoModelOverrides = (
-⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -20974,7 +21076,6 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenCodeModelOverrides.
 ================
 import { getDefaultProviderParams, LlmProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 type Props = {
@@ -20984,8 +21085,6 @@ type Props = {
 };
 ⋮----
 export const OpenCodeModelOverrides = (
-⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -21039,7 +21138,6 @@ File: src/renderer/src/components/ModelLibrary/providers/OpenRouterModelOverride
 ================
 import { getDefaultProviderParams, LlmProvider, OpenRouterProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { OpenRouterAdvancedSettings } from './OpenRouterAdvancedSettings';
@@ -21058,9 +21156,6 @@ export const OpenRouterModelOverrides = (
 const handleProviderChange = (updatedProvider: OpenRouterProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -21160,7 +21255,6 @@ File: src/renderer/src/components/ModelLibrary/providers/RequestyModelOverrides.
 ================
 import { getDefaultProviderParams, LlmProvider, RequestyProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { RequestyAdvancedSettings } from './RequestyAdvancedSettings';
@@ -21179,9 +21273,6 @@ export const RequestyModelOverrides = (
 const handleProviderChange = (updatedProvider: RequestyProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -21296,7 +21387,6 @@ File: src/renderer/src/components/ModelLibrary/providers/VertexAiModelOverrides.
 ================
 import { getDefaultProviderParams, LlmProvider, VertexAiProvider } from '@common/agent';
 ⋮----
-import { DisableStreaming } from '../DisableStreaming';
 import { DisableToolCallStreaming } from '../DisableToolCallStreaming';
 ⋮----
 import { VertexAiAdvancedSettings } from './VertexAiAdvancedSettings';
@@ -21315,9 +21405,6 @@ export const VertexAiModelOverrides = (
 const handleProviderChange = (updatedProvider: VertexAiProvider) =>
 ⋮----
 // Remove undefined values
-⋮----
-// Handle disable streaming change separately
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 
@@ -21485,6 +21572,7 @@ import { startTransition, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Model, ProviderProfile } from '@common/types';
 ⋮----
+import { ModelModalitiesEditor } from './ModelModalitiesEditor';
 import { ModelParameterOverrides } from './ModelParameterOverrides';
 ⋮----
 import { Input } from '@/components/common/Input';
@@ -21512,6 +21600,8 @@ const handleSubmit = () =>
 const handleInputChange = (field: keyof Model, value: unknown) =>
 ⋮----
 // Clear error when user starts typing
+⋮----
+const handleModalitiesChange = (modalities: Model['modalities']) =>
 ⋮----
 const handleCostBlur = (field: keyof Model, displayField: keyof typeof costDisplayValues, inputValue: string) =>
 ⋮----
@@ -21597,10 +21687,55 @@ const handleBulkToggleHidden = async (modelIds: string[], isHidden: boolean) =>
 onCancel=
 
 ================
+File: src/renderer/src/components/ModelLibrary/ModelModalitiesCell.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { LuArrowRight, LuCircleHelp } from 'react-icons/lu';
+import { Model } from '@common/types';
+⋮----
+import { MODALITY_ICONS } from './ModelModalitiesEditor';
+⋮----
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  value: Model['modalities'];
+};
+⋮----
+<span className="flex items-center text-text-muted" role="img" aria-label=
+⋮----
+const renderGroup = (direction: 'input' | 'output') =>
+
+================
+File: src/renderer/src/components/ModelLibrary/ModelModalitiesEditor.tsx
+================
+import { useTranslation } from 'react-i18next';
+import { clsx } from 'clsx';
+import { LuAudioLines, LuFileText, LuImage, LuType, LuVideo } from 'react-icons/lu';
+import { Model, ModelModality } from '@common/types';
+⋮----
+import type { IconType } from 'react-icons';
+⋮----
+import { InfoIcon } from '@/components/common/InfoIcon';
+import { Tooltip } from '@/components/ui/Tooltip';
+⋮----
+type Props = {
+  value: Model['modalities'];
+  onChange: (value: Model['modalities']) => void;
+};
+⋮----
+const handleToggle = (direction: 'input' | 'output', modality: ModelModality) =>
+⋮----
+const handleClick = ()
+⋮----
+className=
+
+================
 File: src/renderer/src/components/ModelLibrary/ModelParameterOverrides.tsx
 ================
 import { useTranslation } from 'react-i18next';
 import { LlmProvider, LlmProviderName } from '@common/agent';
+import { Model } from '@common/types';
+import { resolveStreamingConfig, StreamingConfig } from '@common/streaming';
 import { ComponentType } from 'react';
 ⋮----
 import { OpenRouterModelOverrides } from './providers/OpenRouterModelOverrides';
@@ -21613,6 +21748,7 @@ import { RequestyModelOverrides } from './providers/RequestyModelOverrides';
 import { AzureModelOverrides } from './providers/AzureModelOverrides';
 import { OpenAiCompatibleModelOverrides } from './providers/OpenAiCompatibleModelOverrides';
 import { DefaultModelOverrides } from './providers/DefaultModelOverrides';
+import { StreamingSettings } from './StreamingSettings';
 import { ZaiPlanModelOverrides } from './providers/ZaiPlanModelOverrides';
 import { AlibabaPlanModelOverrides } from './providers/AlibabaPlanModelOverrides';
 import { DeepseekModelOverrides } from './providers/DeepseekModelOverrides';
@@ -21631,6 +21767,7 @@ type ProviderOverridesProps = {
 ⋮----
 type Props = {
   provider: LlmProvider;
+  model?: Partial<Model>;
   overrides: Record<string, unknown>;
   onChange: (overrides: Record<string, unknown>) => void;
   className?: string;
@@ -21638,19 +21775,25 @@ type Props = {
 ⋮----
 const handleProviderOverrideChange = (providerOverrides: Record<string, unknown>) =>
 ⋮----
+const handleStreamingChange = (value: Required<StreamingConfig>) =>
+⋮----
 const handleResetToDefaults = () =>
 ⋮----
 <div className="text-sm font-medium text-text-primary">
+⋮----
+<StreamingSettings value=
 
 ================
 File: src/renderer/src/components/ModelLibrary/ModelTableSection.tsx
 ================
-import { useState, ReactNode, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
 import { Model, ProviderProfile } from '@common/types';
 import { MdThermostat } from 'react-icons/md';
+⋮----
+import { ModelModalitiesCell } from './ModelModalitiesCell';
 ⋮----
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
@@ -21848,12 +21991,13 @@ File: src/renderer/src/components/ModelLibrary/ProviderProfileForm.tsx
 ================
 import { getDefaultProviderParams, LlmProvider, LlmProviderName } from '@common/agent';
 import { ProviderProfile } from '@common/types';
+import { StreamingConfig } from '@common/streaming';
 import { useTranslation } from 'react-i18next';
 import { ComponentType, forwardRef, useImperativeHandle, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 ⋮----
-import { DisableStreaming } from './DisableStreaming';
+import { StreamingSettings } from './StreamingSettings';
 import { DisableToolCallStreaming } from './DisableToolCallStreaming';
 ⋮----
 import {
@@ -21923,7 +22067,7 @@ const addHeader = () =>
 ⋮----
 const removeHeader = (id: string) =>
 ⋮----
-const handleDisableStreamingChange = (disableStreaming: boolean) =>
+const handleStreamingChange = (value: Required<StreamingConfig>) =>
 ⋮----
 const handleDisableToolCallStreamingChange = (disableToolCallStreaming: boolean) =>
 ⋮----
@@ -21936,8 +22080,6 @@ const handleSave = () =>
 placeholder=
 ⋮----
 onChange=
-⋮----
-{/* Disable streaming checkbox */}
 
 ================
 File: src/renderer/src/components/ModelLibrary/ProviderSelection.tsx
@@ -21988,6 +22130,40 @@ type Props = {
 };
 ⋮----
 onClick=
+
+================
+File: src/renderer/src/components/ModelLibrary/RequireStreaming.tsx
+================
+import { useTranslation } from 'react-i18next';
+⋮----
+import { Checkbox } from '@/components/common/Checkbox';
+import { InfoIcon } from '@/components/common/InfoIcon';
+⋮----
+type Props = {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+};
+⋮----
+<Checkbox label=
+
+================
+File: src/renderer/src/components/ModelLibrary/StreamingSettings.tsx
+================
+import { resolveStreamingConfig, StreamingConfig } from '@common/streaming';
+⋮----
+import { DisableStreaming } from './DisableStreaming';
+import { RequireStreaming } from './RequireStreaming';
+⋮----
+type Props = {
+  value: StreamingConfig;
+  onChange: (value: Required<StreamingConfig>) => void;
+};
+⋮----
+export const StreamingSettings = (
+⋮----
+const handleDisableStreamingChange = (disableStreaming: boolean) =>
+⋮----
+const handleRequireStreamingChange = (requireStreaming: boolean) =>
 
 ================
 File: src/renderer/src/components/onboarding/OnboardingPathChoice.tsx
@@ -34189,7 +34365,7 @@ File: package.json
 ================
 {
   "name": "aider-desk",
-  "version": "0.90.0-dev",
+  "version": "0.91.0-dev",
   "description": "Aider desktop application wrapper",
   "main": "./out/main/index.js",
   "author": "Hotovo",
@@ -34239,21 +34415,21 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node validate:locales"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "2.0.60",
-    "@ai-sdk/amazon-bedrock": "5.0.105",
-    "@ai-sdk/anthropic": "4.0.71",
-    "@ai-sdk/azure": "4.0.90",
-    "@ai-sdk/cerebras": "3.0.62",
-    "@ai-sdk/deepseek": "3.0.58",
-    "@ai-sdk/google": "4.0.87",
-    "@ai-sdk/google-vertex": "5.0.101",
-    "@ai-sdk/groq": "4.0.54",
-    "@ai-sdk/mcp": "2.0.66",
-    "@ai-sdk/mistral": "4.0.56",
-    "@ai-sdk/openai": "4.0.83",
-    "@ai-sdk/openai-compatible": "3.0.62",
-    "@ai-sdk/otel": "1.0.127",
-    "@ai-sdk/provider": "4.0.21",
+    "@ai-sdk/alibaba": "2.0.78",
+    "@ai-sdk/amazon-bedrock": "5.0.127",
+    "@ai-sdk/anthropic": "4.0.91",
+    "@ai-sdk/azure": "4.0.112",
+    "@ai-sdk/cerebras": "3.0.80",
+    "@ai-sdk/deepseek": "3.0.75",
+    "@ai-sdk/google": "4.0.107",
+    "@ai-sdk/google-vertex": "5.0.126",
+    "@ai-sdk/groq": "4.0.72",
+    "@ai-sdk/mcp": "2.0.86",
+    "@ai-sdk/mistral": "4.0.74",
+    "@ai-sdk/openai": "4.0.104",
+    "@ai-sdk/openai-compatible": "3.0.80",
+    "@ai-sdk/otel": "1.0.156",
+    "@ai-sdk/provider": "4.0.34",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "5.2.0",
     "@aws-sdk/client-bedrock": "3.1059.0",
@@ -34303,7 +34479,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "4.25.4",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "2.9.5",
-    "ai": "7.0.127",
+    "ai": "7.0.156",
     "apache-arrow": "18.1.0",
     "axios": "1.20.0",
     "babel-plugin-react-compiler": "1.0.0",
@@ -34340,7 +34516,7 @@ File: package.json
     "lowlight": "3.3.0",
     "mark.js": "8.11.1",
     "match-sorter": "8.2.0",
-    "ollama-ai-provider-v2": "4.0.1",
+    "ollama-ai-provider-v2": "4.1.0",
     "os-name": "6.1.0",
     "pele": "1.6.0",
     "posthog-node": "5.29.1",
@@ -34444,8 +34620,8 @@ File: package.json
     "vitest": "4.1.12"
   },
   "overrides": {
-    "@ai-sdk/provider": "4.0.21",
-    "@ai-sdk/provider-utils": "5.0.53",
+    "@ai-sdk/provider": "4.0.34",
+    "@ai-sdk/provider-utils": "5.0.70",
     "@huggingface/transformers": {
       "sharp": "npm:empty-npm-package@1.0.0"
     },

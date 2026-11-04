@@ -126,6 +126,18 @@ Do not use when:
 
 **If:** Component triggers actions, implement `executeUIExtensionAction()`
 
+### Rule: Keep extension model catalogs and favorites independent
+
+**When:** Extension UI uses `ui.ModelSelector` with a custom catalog or extension-owned favorites
+
+**Then:** Read [ModelSelector props and preference semantics](references/ui-components.md#modelselector) and use the public `ModelSelectorProps` contract
+
+**Must:** Pass `models` to restrict the catalog (including displayed favorites); pass `providers` only when overriding core provider labels and disabled-state lookup
+
+**Must:** For extension-owned favorites, supply `preferredModels` and handle `onPreferredModelsChange(next)` by updating extension state and persisting independently through an extension action. Initialize `preferredModels` to `[]` while loading so selection cannot accidentally update core favorites.
+
+**Note:** Supplied preferences without a callback are read-only. Out-of-catalog IDs are hidden, not deleted from saved preferences. Omitting `preferredModels` retains core favorite persistence; a callback alone does not enable controlled mode. `skipPreferredModelsUpdate` suppresses selection-driven updates, not explicit removal.
+
 ### Rule: Use external libraries when UI components need npm packages
 
 **When:** Extension UI components need third-party npm packages (charts, calendars, kanban boards, etc.)

@@ -6,9 +6,14 @@ import { Task } from '@/task';
 import logger from '@/logger';
 
 export const getDefaultModelInfo = (provider: ProviderProfile, modelId: string, allModelInfos: Record<string, ModelInfo>): ModelInfo | undefined => {
-  // Try provider.name prefix first
-  let fullModelId = `${provider.name}/${modelId}`;
+  // Try the provider type before profile-specific names or IDs
+  let fullModelId = `${provider.provider.name}/${modelId}`;
   let modelInfo = allModelInfos[fullModelId];
+
+  if (!modelInfo && provider.name) {
+    fullModelId = `${provider.name}/${modelId}`;
+    modelInfo = allModelInfos[fullModelId];
+  }
 
   // If not found, try provider.id prefix
   if (!modelInfo) {

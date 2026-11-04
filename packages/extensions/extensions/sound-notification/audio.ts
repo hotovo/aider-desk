@@ -49,8 +49,43 @@ export const storeUploadedAudio = (fileName: unknown, base64: unknown): string =
   return filePath;
 };
 
+const PLAY_TIMEOUT_MS = 10000;
+const PLAY_WATCHDOG_MS = 15000;
+const execOptions = { timeout: PLAY_TIMEOUT_MS, killSignal: 'SIGKILL' } as const;
+
+// paplay and mpg123 are deliberately not preferred for mp3 files: paplay cannot open them and
+// mpg123 can hang at process exit on some pipewire setups, while ffplay exits cleanly.
+type WATCHABLE_PLAYER = { command: string; args: (filePath: string) => string[] };
+const WAV_PLAYERS: WATCHABLE_PLAYER[] = [
+  { command: 'paplay', args: (filePath) => [filePath] },
+  { command: 'aplay', args: (filePath) => [filePath] },
+  { command: 'mpv', args: (filePath) => ['--no-video', '--really-quiet', filePath] },
+  { command: 'ffplay', args: (filePath) => ['-nodisp', '-autoexit', '-loglevel', 'quiet', filePath] },
+];
+const MP3_PLAYERS: WATCHABLE_PLAYER[] = [
+  { command: 'ffplay', args: (filePath) => ['-nodisp', '-autoexit', '-loglevel', 'quiet', filePath] },
+  { command: 'mpv', args: (filePath) => ['--no-video', '--really-quiet', filePath] },
+  { command: 'mpg123', args: (filePath) => ['--quiet', filePath] },
+];
+const MPV_ONLY_PLAYERS: WATCHABLE_PLAYER[] = [{ command: 'mpv', args: (filePath) => ['--no-video', '--really-quiet', filePath] }];
+
+const WAV_EXTENSIONS = new Set(['.wav', '.oga', '.ogg', '.flac']);
+const MP3_EXTENSIONS = new Set(['.mp3']);
+
+const getPlayersForExtension = (extension: string): WATCHABLE_PLAYER[] => {
+  if (WAV_EXTENSIONS.has(extension)) {
+    return WAV_PLAYERS;
+  }
+  if (MP3_EXTENSIONS.has(extension)) {
+    return MP3_PLAYERS;
+  }
+  return MPV_ONLY_PLAYERS;
+};
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const playAudio = async (filePath: string, platform: NodeJS.Platform = process.platform): Promise<void> => {
-  const options = { timeout: 10000 };
+  const options = execOptions;
   if (platform === 'darwin') {
     await execFileAsync('afplay', [filePath], options);
     return;
@@ -61,25 +96,28 @@ export const playAudio = async (filePath: string, platform: NodeJS.Platform = pr
     return;
   }
   if (platform === 'linux') {
-    const players = [
-      { command: 'paplay', args: [filePath] },
-      { command: 'mpg123', args: ['--quiet', filePath] },
-      { command: 'mpv', args: ['--no-video', '--really-quiet', filePath] },
-      {
-        command: 'ffplay',
-        args: ['-nodisp', '-autoexit', '-loglevel', 'quiet', filePath],
-      },
-      { command: 'aplay', args: [filePath] },
-    ];
-    for (const player of players) {
-      try {
-        await execFileAsync(player.command, player.args, options);
-        return;
-      } catch {
-        continue;
+    const players = getPlayersForExtension(extname(filePath).toLowerCase());
+    const chain = (async () => {
+      for (const player of players) {
+        try {
+          await execFileAsync(player.command, player.args(filePath), options);
+          return;
+        } catch (error) {
+          const killed = (error as { killed?: boolean }).killed;
+          if (killed) {
+            // The player was killed after the timeout — it may have played already.
+            // Retrying another player would play the sound a second time, so stop here.
+            return;
+          }
+          continue;
+        }
       }
-    }
-    throw new Error('Could not play audio. Install an audio player and check that it supports this file format.');
+      throw new Error('Could not play audio. Install an audio player and check that it supports this file format.');
+    })();
+
+    // Never let a stuck audio player hold the caller for longer than the watchdog window
+    await Promise.race([chain, sleep(PLAY_WATCHDOG_MS)]);
+    return;
   }
   throw new Error(`Unsupported platform: ${platform}`);
 };

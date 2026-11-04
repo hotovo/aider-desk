@@ -89,7 +89,7 @@ import { AIDER_DESK_PROJECT_RULES_DIR } from '@/constants';
 import { Task } from '@/task';
 import { Store } from '@/store';
 import logger from '@/logger';
-import { prepareMessagesForModel } from '@/agent/message-preparation';
+import { prepareMessagesForModel, type PreparedMessagesOptions } from '@/agent/message-preparation';
 import { ModelManager } from '@/models/model-manager';
 import { TelemetryManager } from '@/telemetry/telemetry-manager';
 import { ResponseMessage } from '@/messages';
@@ -204,7 +204,7 @@ export class Agent {
         imageParts.push({
           type: 'file',
           data: file!.imageBase64,
-          mediaType: 'image',
+          mediaType: file!.mimeType ?? 'image',
         });
       } else if (!file!.isImage && file!.content) {
         // Add to textFileContents array
@@ -336,7 +336,7 @@ export class Agent {
                 imageParts.push({
                   type: 'file',
                   data: imageBase64,
-                  mediaType: 'image',
+                  mediaType: detected.mime,
                 });
                 continue;
               }
@@ -1157,6 +1157,8 @@ export class Agent {
         ...providerParameters,
       });
 
+      let allowAttachmentWarnings = true;
+
       const getBaseModelCallParams = async () => {
         const optimizedMessages = await prepareMessagesForModel(
           messages,
@@ -1166,7 +1168,9 @@ export class Agent {
           projectProfiles,
           initialUserRequestMessageIndex,
           this.extensionManager,
+          this.getAttachmentFilterOptions(provider.id, modelName, allowAttachmentWarnings),
         );
+        allowAttachmentWarnings = false;
 
         return {
           providerOptions,
@@ -1978,6 +1982,7 @@ export class Agent {
       this.agentProfileManager.getProjectProfiles(task.project),
       userIndex,
       this.extensionManager,
+      this.getAttachmentFilterOptions(provider.id, profile.model, true),
     );
     const result = await generateOnce(
       {
@@ -2058,7 +2063,16 @@ export class Agent {
         {
           model,
           instructions: systemPrompt,
-          messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
+          messages: await prepareMessagesForModel(
+            messages as ModelMessage[],
+            cacheControl,
+            null,
+            null,
+            [],
+            -1,
+            this.extensionManager,
+            this.getAttachmentFilterOptions(provider.id, modelName, true),
+          ),
           abortSignal: effectiveAbortSignal,
           providerOptions,
           ...providerParameters,
@@ -2134,7 +2148,16 @@ export class Agent {
           model,
           output: Output.object({ schema }),
           instructions: systemPrompt,
-          messages: await prepareMessagesForModel(messages as ModelMessage[], cacheControl),
+          messages: await prepareMessagesForModel(
+            messages as ModelMessage[],
+            cacheControl,
+            null,
+            null,
+            [],
+            -1,
+            this.extensionManager,
+            this.getAttachmentFilterOptions(provider.id, modelName, true),
+          ),
           abortSignal: effectiveAbortSignal,
           providerOptions,
           ...providerParameters,
@@ -2157,6 +2180,15 @@ export class Agent {
         this.abortControllers.delete(controllerId);
       }
     }
+  }
+
+  private getAttachmentFilterOptions(providerId: string, modelName: string, allowWarnings: boolean): PreparedMessagesOptions {
+    return {
+      providerId,
+      modelName,
+      allowWarnings,
+      resolveModalities: (resolvedProviderId: string, resolvedModelName: string) => this.modelManager.getModelModalities(resolvedProviderId, resolvedModelName),
+    };
   }
 
   async estimateTokens(task: Task, profile: AgentProfile): Promise<number> {
@@ -2184,6 +2216,8 @@ export class Agent {
         profile,
         this.agentProfileManager.getProjectProfiles(task.project),
         userRequestMessageIndex,
+        undefined,
+        this.getAttachmentFilterOptions(provider.id, profile.model, false),
       );
 
       // Format tools for the prompt

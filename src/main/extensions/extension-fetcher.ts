@@ -23,6 +23,9 @@ const FRAMEWORK_ENUM_VALUES: Record<string, unknown> = {
 };
 
 export class ExtensionFetcher {
+  private static readonly GITHUB_OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+  private static readonly GITHUB_REPO = /^[A-Za-z0-9_.-]{1,100}$/;
+
   private cache = new Map<string, CacheEntry>();
   private getAvailableExtensionsPromise: Promise<AvailableExtension[]> | null = null;
 
@@ -87,6 +90,10 @@ export class ExtensionFetcher {
     }
   }
 
+  private async ensureReposCacheDir(): Promise<void> {
+    await fs.mkdir(EXTENSIONS_REPOS_CACHE_DIR, { recursive: true });
+  }
+
   private getRepoDirName(repoUrl: string): string {
     try {
       const url = new URL(repoUrl);
@@ -114,7 +121,7 @@ export class ExtensionFetcher {
     if (dirExists) {
       try {
         logger.debug(`[ExtensionFetcher] Pulling existing repository cache at ${repoDir}`);
-        await execWithShellPath(`git -C "${repoDir}" pull`, { cwd: repoDir });
+        await execWithShellPath(['git', '-C', repoDir, 'pull'], { cwd: repoDir });
         return repoDir;
       } catch (pullError) {
         logger.warn(`[ExtensionFetcher] git pull failed for ${repoDir}, removing and re-cloning:`, pullError);
@@ -122,10 +129,10 @@ export class ExtensionFetcher {
       }
     }
 
-    await fs.mkdir(EXTENSIONS_REPOS_CACHE_DIR, { recursive: true });
+    await this.ensureReposCacheDir();
 
     logger.info(`[ExtensionFetcher] Cloning repository to ${repoDir}`);
-    await execWithShellPath(`git clone "${cloneUrl}" "${repoDir}"`, { cwd: EXTENSIONS_REPOS_CACHE_DIR });
+    await execWithShellPath(['git', 'clone', cloneUrl, repoDir], { cwd: EXTENSIONS_REPOS_CACHE_DIR });
 
     return repoDir;
   }
@@ -133,7 +140,7 @@ export class ExtensionFetcher {
   private getCloneUrl(webUrl: string): string | null {
     try {
       const url = new URL(webUrl);
-      if (url.hostname !== 'github.com') {
+      if (url.protocol !== 'https:' || url.hostname !== 'github.com') {
         return null;
       }
 
@@ -143,7 +150,15 @@ export class ExtensionFetcher {
       }
 
       const owner = pathParts[0];
-      const repo = pathParts[1];
+      const repo = pathParts[1].replace(/\.git$/, '');
+
+      if (!ExtensionFetcher.GITHUB_OWNER.test(owner)) {
+        return null;
+      }
+      if (repo === '.' || repo === '..' || !ExtensionFetcher.GITHUB_REPO.test(repo)) {
+        return null;
+      }
+
       return `https://github.com/${owner}/${repo}.git`;
     } catch {
       return null;

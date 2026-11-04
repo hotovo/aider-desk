@@ -1007,7 +1007,26 @@ export enum FileWriteMode {
   CreateOnly = 'create_only',
 }
 
+export enum ModelModality {
+  Text = 'text',
+  Image = 'image',
+  Audio = 'audio',
+  Video = 'video',
+  Pdf = 'pdf',
+}
+
+export interface ModelModalities {
+  input: ModelModality[];
+  output: ModelModality[];
+}
+
+export const DEFAULT_MODEL_MODALITIES: ModelModalities = {
+  input: [ModelModality.Text],
+  output: [ModelModality.Text],
+};
+
 export interface ModelInfo {
+  modalities?: ModelModalities;
   maxInputTokens?: number;
   maxOutputTokens?: number;
   inputCostPerToken?: number;
@@ -1150,6 +1169,8 @@ export interface UsageDataRow {
 }
 
 export interface Model {
+  modalities?: ModelModalities;
+  hasModalitiesOverride?: boolean;
   id: string;
   providerId: string;
   maxInputTokens?: number;

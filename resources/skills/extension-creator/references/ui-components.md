@@ -378,14 +378,39 @@ The `ui` prop provides pre-built AiderDesk components:
 
 ### ModelSelector
 ```jsx
-<ui.ModelSelector 
-  models={models}
-  providers={providers}
+<ui.ModelSelector
+  models={imageModels}
+  providers={imageProviders}
   selectedModelId={modelId}
   onChange={handleModelChange}
-  popupPlacement="top" // or "bottom"
+  preferredModels={preferredModels}
+  onPreferredModelsChange={handlePreferredModelsChange}
+  popupPlacement="top"
 />
 ```
+
+The public props type is `ModelSelectorProps`. `models?: Model[]` and
+`providers?: ProviderProfile[]` override core catalogs independently. With `models`
+supplied, favorites are strictly limited to that list (`[]` allows no models).
+Without a custom catalog, unknown favorites keep their normal core behavior.
+
+`selectedModelId` is a provider-qualified string (`providerId/modelId`), `null`
+for no selection, or `undefined` to disable the selector. `onChange` receives a
+`Model | null`, not an ID.
+
+`preferredModels?: string[]` controls favorites independently from core settings,
+including when it is `[]`. `onPreferredModelsChange(next: string[])` receives the
+complete next list; update extension state and persist via an extension action.
+Selection prepends/deduplicates the ID; removal removes it; clearing selection
+does not change favorites. IDs outside the custom catalog are hidden, not erased
+from saved preferences or callback updates. Without a callback, controlled
+favorites are read-only and have no removal controls. No controlled operation
+writes core favorites. Initialize to `[]` while loading extension preferences.
+
+Omit `preferredModels` for the default core favorites/persistence behavior; the
+callback alone does not change that behavior. `skipPreferredModelsUpdate` skips
+selection-driven updates but still allows removal. Also supported: `className`,
+`labelOnNull` (clearing option), `usePortal`, `popupPlacement` (`top`/`bottom`).
 
 ### Slider
 ```jsx

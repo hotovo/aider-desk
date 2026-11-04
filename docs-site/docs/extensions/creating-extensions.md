@@ -421,6 +421,33 @@ The following components are available via `props.ui`:
 | `LoadingOverlay` | Loading spinner with message |
 | `ConfirmDialog` | Confirmation dialog modal |
 
+#### ModelSelector catalogs and extension-owned favorites
+
+`ui.ModelSelector` accepts the exported `ModelSelectorProps` contract:
+
+```jsx
+<ui.ModelSelector
+  models={imageModels}
+  providers={imageProviders}
+  selectedModelId={selectedModelId}
+  onChange={handleModelChange}
+  preferredModels={preferredModels}
+  onPreferredModelsChange={handlePreferredModelsChange}
+  popupPlacement="bottom"
+/>
+```
+
+- `models?: Model[]` replaces the core catalog. Only IDs in that array can appear as favorites; `[]` shows no models. Without this prop, unavailable/unknown favorites retain their ordinary core behavior. The supplied array is not mutated.
+- `providers?: ProviderProfile[]` replaces core providers for names and disabled-state lookup. Omit it to use core providers.
+- `selectedModelId?: string | null` uses a provider-qualified ID (`providerId/modelId`); use `null` for an enabled selector with no selection. `undefined` disables the selector button. `onChange(model: Model | null)` receives the selected model, not its ID.
+- `preferredModels?: string[]` is a **controlled** list of provider-qualified IDs. Supplying it, including `[]`, isolates favorites completely from core settings. Selection prepends/deduplicates the selected ID; explicit removal removes that ID. Clearing selection does not change favorites.
+- `onPreferredModelsChange?: (next: string[]) => void` receives the complete next list. The extension must update its state/props and persist the list independently (for example through an extension UI action). Without this callback, supplied favorites are read-only and removal controls are hidden; selection still calls `onChange`. The callback is used only when `preferredModels` is supplied.
+- Out-of-catalog favorite IDs are hidden, not deleted from the controlled list or emitted updates. This allows switching catalogs without losing saved preferences.
+- `skipPreferredModelsUpdate?: boolean` suppresses selection-driven favorite updates in either mode, but not explicit removal. Omit both preference props to retain core favorites and persistence, even when using a custom catalog.
+- Existing optional props remain available: `className`, `popupPlacement` (`"top" | "bottom"`), `labelOnNull` (adds a clearing option), and `usePortal`.
+
+Initialize extension-owned favorites to `[]` while loading persisted data rather than omitting `preferredModels`, so the selector never temporarily uses core favorites.
+
 #### Component Props
 
 **Note:** The `React` object is globally available (not a prop). Access hooks via `React.useState`, `React.useEffect`, etc.

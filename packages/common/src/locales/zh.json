@@ -306,6 +306,21 @@
     "resetZoom": "重置缩放"
   },
   "modelLibrary": {
+    "modalities": {
+      "label": "模态",
+      "input": "输入",
+      "inputTooltip": "模型可以作为输入理解的模态。",
+      "output": "输出",
+      "outputTooltip": "模型可以作为输出生成的模态。",
+      "text": "文本",
+      "image": "图像",
+      "audio": "音频",
+      "video": "视频",
+      "pdf": "PDF",
+      "unknown": "未知模态",
+      "unknownTooltip": "模型能力未知，将跳过附件验证。",
+      "description": "图像输入表示视觉理解，而非图像生成。元数据不可用时，不选择任何模态，并跳过附件验证。修改这些选项会保存模型专属能力；修改其他设置不会覆盖它们。空选项明确表示不支持任何模态。"
+    },
     "enableVoiceControl": "启用语音控制",
     "enableVoiceControlOnlyOneInfo": "为此提供商启用语音控制。一次只能启用一个提供商。",
     "voiceControl": "语音控制",

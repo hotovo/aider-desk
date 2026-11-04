@@ -1,9 +1,11 @@
-import { useState, ReactNode, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, RefObject, useCallback, useMemo } from 'react';
 import { useDebounce } from '@reactuses/core';
 import { useTranslation } from 'react-i18next';
 import { FiEdit2, FiTrash2, FiPlus, FiEye, FiSliders, FiRefreshCw, FiChevronDown } from 'react-icons/fi';
 import { Model, ProviderProfile } from '@common/types';
 import { MdThermostat } from 'react-icons/md';
+
+import { ModelModalitiesCell } from './ModelModalitiesCell';
 
 import { Input } from '@/components/common/Input';
 import { Button } from '@/components/common/Button';
@@ -153,15 +155,30 @@ export const ModelTableSection = ({
           </Tooltip>
         ),
         cellClassName: 'text-xs overflow-hidden',
+        minWidth: 180,
       },
       {
         accessor: 'providerId',
         header: t('modelLibrary.provider'),
         cell: (value) => {
           const provider = providers.find((p) => p.id === value);
-          return provider ? provider.name || t(`providers.${provider.provider.name}`) : (value as ReactNode);
+          const label = provider ? provider.name || t(`providers.${provider.provider.name}`) : String(value ?? '');
+          return (
+            <Tooltip content={label} delayDuration={1000}>
+              <span className="truncate block">{label}</span>
+            </Tooltip>
+          );
         },
+        cellClassName: 'text-xs overflow-hidden',
+        minWidth: 140,
+      },
+      {
+        accessor: 'modalities',
+        header: t('modelLibrary.modalities.label'),
+        cell: (_, row) => <ModelModalitiesCell value={row.modalities} />,
         cellClassName: 'text-xs',
+        minWidth: 150,
+        maxWidth: 220,
       },
       {
         accessor: 'maxInputTokens',
@@ -376,7 +393,7 @@ export const ModelTableSection = ({
             data={filteredModels}
             columns={columns}
             getRowClassName={getRowClassName}
-            minTableWidth={1100}
+            minTableWidth={1260}
           />
         )}
       </div>

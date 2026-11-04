@@ -599,3 +599,38 @@ describe('literal special tokens', () => {
     expect(result).toBe(text + '\n\n... 8 lines omitted. truncated\n\n' + text);
   });
 });
+
+describe('attachment token estimation', () => {
+  const ATTACHMENT_TOKEN_ESTIMATE = 1000;
+
+  it('counts pdf, audio, and video attachments like images', () => {
+    const messages = [
+      { role: 'user', content: [{ type: 'file', mediaType: 'application/pdf', data: 'pdf' }] },
+      { role: 'user', content: [{ type: 'file', mediaType: 'audio/mpeg', data: 'audio' }] },
+      { role: 'user', content: [{ type: 'file', mediaType: 'video/mp4', data: 'video' }] },
+      { role: 'user', content: [{ type: 'image', image: 'image', mediaType: 'image/png' }] },
+    ];
+
+    expect(estimateMessageTokens(messages as never)).toBe(4 * ATTACHMENT_TOKEN_ESTIMATE);
+  });
+
+  it('does not count unsupported binary types as text or attachments', () => {
+    const messages = [{ role: 'user', content: [{ type: 'file', mediaType: 'application/octet-stream', data: 'blob' }] }];
+
+    expect(estimateMessageTokens(messages as never)).toBe(0);
+  });
+
+  it('summarizes base64 media payloads in tool result JSON instead of tokenizing them', () => {
+    const base64 = 'A'.repeat(4096);
+    const messages = [
+      {
+        role: 'tool',
+        content: [{ type: 'tool-result', output: { type: 'json', value: { content: [{ type: 'media', data: base64, mimeType: 'image/png' }] } } }],
+      },
+    ];
+
+    const tokens = estimateMessageTokens(messages as never);
+    expect(tokens).toBeLessThan(50);
+    expect(JSON.stringify(messages)).toContain(base64);
+  });
+});

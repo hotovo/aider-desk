@@ -2,6 +2,13 @@
 
 ## [UNRELEASED]
 
+- fixed OS command injection via commit messages and file paths in git operations
+- fixed terminal startup cleanup and retries, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
+- added Italian locale
+- safely render non-JSON subagent tool results
+
+## [0.90.0]
+
 - updated Electron, Node.js, and uv for security fixes, added automatic Python certificate bundle updates and warnings for unpatched Node.js versions
 - fixed duplicate prompt execution when mobile clients replayed requests after reconnecting
 - added separate model overrides for conversation compaction and handoff in Context Management settings
@@ -11,6 +18,11 @@
 - fixed grouping and spacing of tool-only messages in Compact message view
 - added required streaming settings for providers and individual models
 - added extension APIs for background generation from task context
+- added custom model catalogs and independent favorites for extension model selectors
+- added editable model input and output modalities with attachment filtering for known capabilities while preserving attachments for unknown models
+- fixed missing `onPromptFinished` extension hook after agent resume and restart recovery
+- fixed context image attachments emitting a generic image media type instead of the detected MIME type, which could fail model requests for less common formats
+- prevented OS command injection in extension repository clone path
 
 ## [0.89.0]
 

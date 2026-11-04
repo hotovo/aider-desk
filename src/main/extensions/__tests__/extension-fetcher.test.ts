@@ -6,6 +6,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { ExtensionFetcher } from '../extension-fetcher';
 
+import { execWithShellPath } from '@/utils/shell';
+
 vi.mock('typescript', async (importOriginal) => {
   const actual = await importOriginal<typeof import('typescript')>();
   return {
@@ -545,6 +547,83 @@ describe('ExtensionFetcher', () => {
       expect(result1).toEqual(mockExtensions);
       expect(result2).toEqual(mockExtensions);
       expect(result3).toEqual(mockExtensions);
+    });
+  });
+
+  describe('getCloneUrl', () => {
+    const getCloneUrl = () => (fetcher as unknown as { getCloneUrl: (webUrl: string) => string | null }).getCloneUrl.bind(fetcher);
+
+    it('should return a .git clone URL for a normal owner/repo URL', () => {
+      expect(getCloneUrl()('https://github.com/owner/repo')).toBe('https://github.com/owner/repo.git');
+    });
+
+    it('should accept an owner/repo/tree/branch/subpath URL', () => {
+      expect(getCloneUrl()('https://github.com/owner/repo/tree/main/extensions')).toBe('https://github.com/owner/repo.git');
+    });
+
+    it('should strip a trailing .git from the repo segment', () => {
+      expect(getCloneUrl()('https://github.com/owner/repo.git')).toBe('https://github.com/owner/repo.git');
+    });
+
+    it('should reject command substitution in path segments', () => {
+      expect(getCloneUrl()('https://github.com/$(touch /tmp/pwned)/x')).toBeNull();
+    });
+
+    it('should reject semicolons in path segments', () => {
+      expect(getCloneUrl()('https://github.com/owner;rm -rf/repo')).toBeNull();
+    });
+
+    it('should reject an owner starting with a dash (argument injection)', () => {
+      expect(getCloneUrl()('https://github.com/-owner/repo')).toBeNull();
+    });
+
+    it('should reject a repo equal to . or ..', () => {
+      expect(getCloneUrl()('https://github.com/owner/.')).toBeNull();
+      expect(getCloneUrl()('https://github.com/owner/..')).toBeNull();
+    });
+
+    it('should reject non-github hosts', () => {
+      expect(getCloneUrl()('https://gitlab.com/owner/repo')).toBeNull();
+    });
+
+    it('should reject non-https protocols', () => {
+      expect(getCloneUrl()('http://github.com/owner/repo')).toBeNull();
+    });
+
+    it('should reject URLs with fewer than two path segments', () => {
+      expect(getCloneUrl()('https://github.com/owner')).toBeNull();
+    });
+
+    it('should return null for invalid URLs', () => {
+      expect(getCloneUrl()('not-a-valid-url')).toBeNull();
+    });
+  });
+
+  describe('ensureRepoCloned', () => {
+    it('should invoke git clone with array arguments when the repo is not cached', async () => {
+      vi.mocked(execWithShellPath).mockResolvedValue({ stdout: '', stderr: '' });
+      vi.spyOn(fetcher as unknown as { fileExists: (filePath: string) => Promise<boolean> }, 'fileExists').mockResolvedValue(false);
+      const mkdirMock = vi.spyOn(fetcher as unknown as { ensureReposCacheDir: () => Promise<void> }, 'ensureReposCacheDir').mockResolvedValue(undefined);
+
+      await fetcher.ensureRepoCloned('https://github.com/owner/repo');
+
+      mkdirMock.mockRestore();
+
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'clone', 'https://github.com/owner/repo.git', expect.any(String)], expect.any(Object));
+    });
+
+    it('should invoke git pull with array arguments when the repo is already cached', async () => {
+      vi.mocked(execWithShellPath).mockResolvedValue({ stdout: '', stderr: '' });
+      vi.spyOn(fetcher as unknown as { fileExists: (filePath: string) => Promise<boolean> }, 'fileExists').mockResolvedValue(true);
+
+      await fetcher.ensureRepoCloned('https://github.com/owner/repo');
+
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', '-C', expect.any(String), 'pull'], expect.any(Object));
+    });
+
+    it('should throw for an invalid repository URL without invoking git', async () => {
+      await expect(fetcher.ensureRepoCloned('https://github.com/$(touch /tmp/pwned)/x')).rejects.toThrow('Invalid repository URL');
+      expect(execWithShellPath).not.toHaveBeenCalled();
     });
   });
 
