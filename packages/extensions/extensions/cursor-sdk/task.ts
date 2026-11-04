@@ -179,7 +179,7 @@ export const mapCursorTaskResult = (messages: ContextMessage[], promptContext: P
   if (status === 'error') {
     const errorMessage = `Error: ${String(error ?? 'Cursor task failed')}`;
     return {
-      resultStr: errorMessage,
+      resultStr: JSON.stringify(errorMessage),
       output: { type: 'error-text', value: errorMessage },
     };
   }

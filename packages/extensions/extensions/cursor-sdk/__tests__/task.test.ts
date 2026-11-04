@@ -66,6 +66,17 @@ describe('Cursor task mapping', () => {
     expect(getCursorTaskConversationSteps(result)).toEqual(steps);
   });
 
+  it.each([
+    ['Task failed', 'Error: Task failed'],
+    [undefined, 'Error: Cursor task failed'],
+  ])('JSON-encodes task errors while keeping the tool output as plain text: %s', (error, expected) => {
+    const promptContext = createCursorTaskPromptContext(args);
+    const result = mapCursorTaskResult([], promptContext, 'error', error);
+
+    expect(JSON.parse(result.resultStr)).toBe(expected);
+    expect(result.output).toEqual({ type: 'error-text', value: expected });
+  });
+
   it('uses the AiderDesk subagent result shape', () => {
     const promptContext = createCursorTaskPromptContext(args);
     const result = mapCursorTaskResult([], promptContext, 'success');
