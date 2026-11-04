@@ -41,12 +41,12 @@ describe('GitManager - restoreFile', () => {
       await gitManager.restoreFile(worktreePath, 'tracked-file.txt');
 
       // First call should be to check if file exists in HEAD
-      expect(execWithShellPath).toHaveBeenCalledWith('git cat-file -e HEAD:"tracked-file.txt"', {
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'cat-file', '-e', 'HEAD:tracked-file.txt'], {
         cwd: worktreePath,
       });
 
       // Second call should be git restore with both staged and worktree
-      expect(execWithShellPath).toHaveBeenCalledWith('git restore --staged --worktree --source=HEAD -- "tracked-file.txt"', {
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'restore', '--staged', '--worktree', '--source=HEAD', '--', 'tracked-file.txt'], {
         cwd: worktreePath,
       });
     });
@@ -58,20 +58,21 @@ describe('GitManager - restoreFile', () => {
       await gitManager.restoreFile(worktreePath, 'deleted-file.txt');
 
       // Should call git restore to recreate the file from HEAD
-      expect(execWithShellPath).toHaveBeenCalledWith('git restore --staged --worktree --source=HEAD -- "deleted-file.txt"', {
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'restore', '--staged', '--worktree', '--source=HEAD', '--', 'deleted-file.txt'], {
         cwd: worktreePath,
       });
     });
 
-    it('should escape quotes in file path for tracked files', async () => {
+    it('should pass quotes and shell metacharacters in file path literally as argv (no shell, no escaping)', async () => {
       (execWithShellPath as Mock).mockResolvedValueOnce({ stdout: '', stderr: '' });
 
-      await gitManager.restoreFile(worktreePath, 'file with "quotes".txt');
+      const maliciousPath = 'file with "quotes" $(touch pwned) `whoami`.txt';
+      await gitManager.restoreFile(worktreePath, maliciousPath);
 
-      // Check that quotes are escaped in both commands
+      // Paths are passed as discrete argv elements, unchanged and unescaped
       const calls = (execWithShellPath as Mock).mock.calls;
-      expect(calls[0][0]).toBe('git cat-file -e HEAD:"file with \\"quotes\\".txt"');
-      expect(calls[1][0]).toBe('git restore --staged --worktree --source=HEAD -- "file with \\"quotes\\".txt"');
+      expect(calls[0][0]).toEqual(['git', 'cat-file', '-e', `HEAD:${maliciousPath}`]);
+      expect(calls[1][0]).toEqual(['git', 'restore', '--staged', '--worktree', '--source=HEAD', '--', maliciousPath]);
     });
   });
 
@@ -88,12 +89,12 @@ describe('GitManager - restoreFile', () => {
       await gitManager.restoreFile(worktreePath, 'new-file.txt');
 
       // First call should be to check if file exists in HEAD
-      expect(execWithShellPath).toHaveBeenCalledWith('git cat-file -e HEAD:"new-file.txt"', {
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'cat-file', '-e', 'HEAD:new-file.txt'], {
         cwd: worktreePath,
       });
 
       // Second call should remove from index
-      expect(execWithShellPath).toHaveBeenCalledWith('git rm --cached -f -- "new-file.txt"', {
+      expect(execWithShellPath).toHaveBeenCalledWith(['git', 'rm', '--cached', '-f', '--', 'new-file.txt'], {
         cwd: worktreePath,
       });
 
@@ -226,8 +227,8 @@ describe('GitManager - restoreFile', () => {
       await gitManager.restoreFile(worktreePath, 'path with spaces/file.txt');
 
       const calls = (execWithShellPath as Mock).mock.calls;
-      expect(calls[0][0]).toContain('"path with spaces/file.txt"');
-      expect(calls[1][0]).toContain('"path with spaces/file.txt"');
+      expect(calls[0][0]).toContain('HEAD:path with spaces/file.txt');
+      expect(calls[1][0]).toContain('path with spaces/file.txt');
     });
 
     it('should handle relative paths', async () => {
@@ -236,8 +237,8 @@ describe('GitManager - restoreFile', () => {
       await gitManager.restoreFile(worktreePath, '../relative/file.txt');
 
       const calls = (execWithShellPath as Mock).mock.calls;
-      expect(calls[0][0]).toContain('"../relative/file.txt"');
-      expect(calls[1][0]).toContain('"../relative/file.txt"');
+      expect(calls[0][0]).toContain('HEAD:../relative/file.txt');
+      expect(calls[1][0]).toContain('../relative/file.txt');
     });
   });
 });

@@ -1438,9 +1438,8 @@ export class GitManager {
         const commitMessageFile = join(os.tmpdir(), `aiderdesk-squash-message-${Date.now()}.txt`);
         await fs.writeFile(commitMessageFile, commitMessage, 'utf-8');
         try {
-          command = `git commit-tree ${treeHash} -p ${targetHeadHash} -F "${commitMessageFile}"`;
           executedCommands.push(`git commit-tree ${treeHash} -p ${targetHeadHash} -F <message-file> (in ${projectPath})`);
-          const commitResult = await execWithShellPath(command, {
+          const commitResult = await execWithShellPath(['git', 'commit-tree', treeHash, '-p', targetHeadHash, '-F', commitMessageFile], {
             cwd: projectPath,
           });
           lastOutput = commitResult.stdout || commitResult.stderr || '';
@@ -1496,11 +1495,9 @@ export class GitManager {
       }
 
       // Commit the squashed changes with the provided message
-      const escapedMessage = commitMessage.replace(/"/g, '\\"');
-      command = `git commit -m "${escapedMessage}"`;
       executedCommands.push(`git commit -m "..." (in ${projectPath})`);
       try {
-        const commitResult = await execWithShellPath(command, {
+        const commitResult = await execWithShellPath(['git', 'commit', '-m', commitMessage], {
           cwd: projectPath,
         });
         lastOutput = commitResult.stdout || commitResult.stderr || '';
@@ -3144,13 +3141,12 @@ export class GitManager {
     // (git check-ignore is unreliable here: negation rules under an excluded parent directory,
     // e.g. .aider* + !.aider-desk/rules, report "not ignored" but git add still refuses),
     // -A stages deletions (git add fails with "pathspec did not match any files" for files removed on disk)
-    const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
     try {
-      await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
+      await execWithShellPath(['git', 'add', '--', filePath], { cwd: worktreePath });
     } catch (error) {
       logger.debug(`Failed to stage ${filePath}, retrying with -A -f (file may be deleted or gitignored):`, error);
       try {
-        await execWithShellPath(`git add -A -f -- "${escapedPath}"`, { cwd: worktreePath });
+        await execWithShellPath(['git', 'add', '-A', '-f', '--', filePath], { cwd: worktreePath });
       } catch (retryError) {
         if (retryError instanceof Error && retryError.message.includes('did not match any files')) {
           // The file exists neither on disk nor in the index (e.g. an already-staged deletion):
@@ -3168,8 +3164,7 @@ export class GitManager {
       return false;
     }
 
-    const escapedPath = filePath.replace(/(["\\$`])/g, '\\$1');
-    await execWithShellPath(`git add -- "${escapedPath}"`, { cwd: worktreePath });
+    await execWithShellPath(['git', 'add', '--', filePath], { cwd: worktreePath });
     return true;
   }
 
@@ -3222,12 +3217,11 @@ export class GitManager {
 
     try {
       logger.info(`Restoring file: ${filePath}`, { worktreePath });
-      const escapedPath = filePath.replace(/"/g, '\\"');
 
       // Check if file exists in HEAD (committed)
       let existsInHead = false;
       try {
-        await execWithShellPath(`git cat-file -e HEAD:"${escapedPath}"`, { cwd: worktreePath });
+        await execWithShellPath(['git', 'cat-file', '-e', `HEAD:${filePath}`], { cwd: worktreePath });
         existsInHead = true;
       } catch {
         existsInHead = false;
@@ -3235,13 +3229,13 @@ export class GitManager {
 
       if (existsInHead) {
         // File exists in HEAD - restore both staged area and working tree from HEAD
-        await execWithShellPath(`git restore --staged --worktree --source=HEAD -- "${escapedPath}"`, {
+        await execWithShellPath(['git', 'restore', '--staged', '--worktree', '--source=HEAD', '--', filePath], {
           cwd: worktreePath,
         });
       } else {
         // New file not in HEAD - remove from index and delete working tree copy
         try {
-          await execWithShellPath(`git rm --cached -f -- "${escapedPath}"`, { cwd: worktreePath });
+          await execWithShellPath(['git', 'rm', '--cached', '-f', '--', filePath], { cwd: worktreePath });
         } catch {
           // File might not be in the index
         }
@@ -3269,10 +3263,10 @@ export class GitManager {
   }
 
   async getUncommittedDiff(worktreePath: string, filePaths?: string[]): Promise<string | null> {
-    const pathspecs = (filePaths ?? []).map((filePath) => ` -- "${filePath.replace(/"/g, '\\"')}"`).join('');
+    const pathspecArgs = filePaths && filePaths.length > 0 ? ['--', ...filePaths] : [];
 
     try {
-      const { stdout } = await execWithShellPath(`git diff HEAD${pathspecs}`, { cwd: worktreePath });
+      const { stdout } = await execWithShellPath(['git', 'diff', 'HEAD', ...pathspecArgs], { cwd: worktreePath });
       return stdout || null;
     } catch (error) {
       // Unborn HEAD (repository with no commits yet): fall back to diffing against the empty tree
@@ -3292,7 +3286,7 @@ export class GitManager {
 
     let diffText = '';
     try {
-      const { stdout } = await execWithShellPath(`git diff 4b825dc642cb6eb9a060e54bf8d69288fbee4904${pathspecs}`, { cwd: worktreePath });
+      const { stdout } = await execWithShellPath(['git', 'diff', '4b825dc642cb6eb9a060e54bf8d69288fbee4904', ...pathspecArgs], { cwd: worktreePath });
       diffText = stdout || '';
     } catch (error) {
       logger.warn('Failed to get diff against empty tree:', error);
@@ -3360,8 +3354,7 @@ export class GitManager {
         let filesToStage = selectedFiles;
         const usePathspecCommit = !amend && !!filePaths && selectedFiles.length < updatedFiles.length;
         if (usePathspecCommit) {
-          const selectedPathspecs = selectedFiles.map((file) => ` "${file.path.replace(/"/g, '\\"')}"`).join('');
-          const { stdout: trackedFilesOutput } = await execWithShellPath(`git ls-files -z${selectedPathspecs}`, options);
+          const { stdout: trackedFilesOutput } = await execWithShellPath(['git', 'ls-files', '-z', ...selectedFiles.map((file) => file.path)], options);
           const trackedFiles = new Set(trackedFilesOutput.split('\0').filter(Boolean));
           filesToStage = selectedFiles.filter((file) => !trackedFiles.has(file.path));
         }
@@ -3371,9 +3364,8 @@ export class GitManager {
             logger.info('Commit cancelled while staging files', { worktreePath });
             return false;
           }
-          const escapedPath = file.path.replace(/"/g, '\\"');
           try {
-            await execWithShellPath(`git add -- "${escapedPath}"`, options);
+            await execWithShellPath(['git', 'add', '--', file.path], options);
           } catch (error) {
             if (isAbortError(error)) {
               throw error;
@@ -3385,7 +3377,7 @@ export class GitManager {
             // despite a negation pattern)
             logger.debug(`Failed to stage ${file.path}, retrying with -A -f (file may be deleted or gitignored):`, error);
             try {
-              await execWithShellPath(`git add -A -f -- "${escapedPath}"`, options);
+              await execWithShellPath(['git', 'add', '-A', '-f', '--', file.path], options);
             } catch (retryError) {
               if (retryError instanceof Error && retryError.message.includes('did not match any files')) {
                 // The file exists neither on disk nor in the index (e.g. an already-staged
@@ -3408,18 +3400,21 @@ export class GitManager {
         return false;
       }
 
-      // Escape the commit message for shell
-      const escapedMessage = message.replace(/"/g, '\\"');
-      const amendFlag = amend ? ' --amend' : '';
-      const noVerifyFlag = skipGitHooks ? ' --no-verify' : '';
-      // If amending and message is empty, use --no-edit to keep previous message
-      let commitCommand =
-        amend && !message.trim() ? `git commit --amend${noVerifyFlag} --no-edit` : `git commit${amendFlag}${noVerifyFlag} -m "${escapedMessage}"`;
+      // Build the commit as an argv array so arguments are passed literally (no shell),
+      // preventing command injection via the commit message or file paths.
+      // If amending and message is empty, use --no-edit to keep previous message.
+      const commitCommand = [
+        'git',
+        'commit',
+        ...(amend ? ['--amend'] : []),
+        ...(skipGitHooks ? ['--no-verify'] : []),
+        ...(amend && !message.trim() ? ['--no-edit'] : ['-m', message]),
+      ];
       // When a file selection is provided, commit only those paths (--only pathspec form).
       // Plain `git commit` would also include any other files already staged in the index,
       // which breaks partial commits when edited files are left staged.
       if (!amend && filePaths && selectedFiles.length > 0 && selectedFiles.length < updatedFiles.length) {
-        commitCommand += selectedFiles.map((file) => ` "${file.path.replace(/"/g, '\\"')}"`).join('');
+        commitCommand.push(...selectedFiles.map((file) => file.path));
       }
       await execWithShellPath(commitCommand, options);
 
@@ -3505,7 +3500,7 @@ export class GitManager {
 
   async getStageFileContent(worktreePath: string, stage: 1 | 2 | 3, filePath: string): Promise<string | null> {
     try {
-      const { stdout } = await execWithShellPath(`git show :${stage}:${filePath}`, { cwd: worktreePath });
+      const { stdout } = await execWithShellPath(['git', 'show', `:${stage}:${filePath}`], { cwd: worktreePath });
       return stdout;
     } catch {
       return null;
@@ -3563,7 +3558,7 @@ export class GitManager {
 
   async stageResolvedFile(worktreePath: string, filePath: string, content: string): Promise<void> {
     await fs.writeFile(`${worktreePath}/${filePath}`, content, 'utf8');
-    await execWithShellPath(`git add -- "${filePath}"`, { cwd: worktreePath });
+    await execWithShellPath(['git', 'add', '--', filePath], { cwd: worktreePath });
   }
 
   async listConflictedFiles(worktreePath: string): Promise<string[]> {
