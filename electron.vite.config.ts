@@ -54,6 +54,15 @@ export default defineConfig({
     server: {
       host: '0.0.0.0',
       hmr: process.env.NO_HMR === 'true' ? false : undefined,
+      proxy: {
+        '/api': {
+          target: `http://127.0.0.1:${process.env.AIDER_DESK_PORT || '24337'}`,
+        },
+        '/socket.io': {
+          target: `http://127.0.0.1:${process.env.AIDER_DESK_PORT || '24337'}`,
+          ws: true,
+        },
+      },
     },
   },
 });
