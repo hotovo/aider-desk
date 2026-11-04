@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 115
+      "installCount": 116
     },
     {
       "id": "verifier",
@@ -607,7 +607,7 @@
         "tools",
         "search"
       ],
-      "installCount": 73
+      "installCount": 74
     },
     {
       "id": "destructive-command-guard",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 144
+      "installCount": 146
     },
     {
       "id": "dbx",
