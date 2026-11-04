@@ -11,6 +11,14 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { MessageBar } from '@/components/message/MessageBar';
 
+const parseSubagentResult = (content: string): unknown => {
+  try {
+    return content && JSON.parse(content);
+  } catch {
+    return content;
+  }
+};
+
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
@@ -23,11 +31,11 @@ export const SubagentToolMessage = ({ message, onRemove, compact = false, onRemo
   const { t } = useTranslation();
 
   const isExecuting = message.content === '';
-  const content = message.content && JSON.parse(message.content);
+  const content = parseSubagentResult(message.content);
   const truncatedResult = getTruncatedToolResult(content);
-  const error = content && typeof content === 'string' && content.startsWith('Error') ? content : null;
+  const error = typeof content === 'string' && content.startsWith('Error') ? content : null;
   const promptText = (message.args.prompt as string) || '';
-  const copyContent = JSON.stringify({ args: message.args, result: message.content && JSON.parse(message.content) }, null, 2);
+  const copyContent = JSON.stringify({ args: message.args, result: content }, null, 2);
 
   const getToolName = (): string => {
     if (error) {
