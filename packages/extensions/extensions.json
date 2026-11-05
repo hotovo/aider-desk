@@ -35,7 +35,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 43
+      "installCount": 45
     },
     {
       "id": "wakatime",
@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 120
+      "installCount": 121
     },
     {
       "id": "protected-paths",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 77
+      "installCount": 78
     },
     {
       "id": "learn",
@@ -307,7 +307,7 @@
         "tools",
         "code-intelligence"
       ],
-      "installCount": 94
+      "installCount": 95
     },
     {
       "id": "plannotator",
@@ -557,7 +557,7 @@
         "tools",
         "search"
       ],
-      "installCount": 87
+      "installCount": 88
     },
     {
       "id": "kanban",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 168
+      "installCount": 169
     },
     {
       "id": "task-scheduler",
