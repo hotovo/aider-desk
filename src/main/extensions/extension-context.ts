@@ -14,7 +14,7 @@ import type { Task } from '@/task';
 
 import logger from '@/logger';
 import { truncateToolResult } from '@/agent/utils';
-import { openUrl as openUrlUtil } from '@/utils/open-url';
+import { openUrl as openUrlUtil, redactUrlToken } from '@/utils/open-url';
 
 export class ExtensionContextImpl implements ExtensionContext {
   private readonly taskContext: TaskContext | null;
@@ -179,19 +179,26 @@ export class ExtensionContextImpl implements ExtensionContext {
   }
 
   async openUrl(url: string, target: 'external' | 'window' | 'modal-overlay' = 'window'): Promise<void> {
-    this.log(`Opening URL: ${url} (target: ${target})`);
+    // Log only the sanitized URL — extension URLs can carry secrets (e.g. an
+    // out-of-band `#token=...` fragment in a review URL) that must not be
+    // persisted in logs. The ORIGINAL url is still used for navigation below.
+    this.log(`Opening URL: ${redactUrlToken(url)} (target: ${target})`);
     try {
       if (target === 'modal-overlay') {
         if (!this.eventManager) {
-          this.log('EventManager not available, cannot open URL in modal overlay', 'warn');
-          return;
+          // Reject instead of silently resolving: callers (e.g. the browser
+          // plan-review flow) rely on the awaited openUrl to run cleanup/error
+          // paths when the overlay cannot actually be shown.
+          throw new Error('EventManager not available, cannot open URL in modal overlay');
         }
         this.eventManager.sendModalOverlayUrl(url);
       } else {
         await openUrlUtil(url, target);
       }
     } catch (error) {
-      this.log(`Failed to open URL: ${error}`, 'error');
+      // Error messages can embed the full open command — including the raw
+      // token-bearing URL — so the message must be redacted before logging.
+      this.log(`Failed to open URL: ${redactUrlToken(error instanceof Error ? error.message : String(error))}`, 'error');
       throw error;
     }
   }
