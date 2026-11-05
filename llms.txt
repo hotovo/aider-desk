@@ -624,6 +624,7 @@ src/
           TaskSettings.tsx
           VoiceSettings.tsx
         terminal/
+          terminal-emulator.ts
           Terminal.scss
           Terminal.tsx
           TerminalView.tsx
@@ -6620,9 +6621,9 @@ async commitChanges(worktreePath: string, message: string, amend: boolean, skipG
 // deletion): there is nothing to stage, the commit picks up the staged
 // deletion from the index, so skip instead of aborting the commit
 ⋮----
-// Escape the commit message for shell
-⋮----
-// If amending and message is empty, use --no-edit to keep previous message
+// Build the commit as an argv array so arguments are passed literally (no shell),
+// preventing command injection via the commit message or file paths.
+// If amending and message is empty, use --no-edit to keep previous message.
 ⋮----
 // When a file selection is provided, commit only those paths (--only pathspec form).
 // Plain `git commit` would also include any other files already staged in the index,
@@ -12887,6 +12888,7 @@ export const fetchWithTimeout = async (url: string, timeoutMs: number = DEFAULT_
 File: src/main/utils/i18n.ts
 ================
 import en from '@common/locales/en.json';
+import it from '@common/locales/it.json';
 import ko from '@common/locales/ko.json';
 import ru from '@common/locales/ru.json';
 import zh from '@common/locales/zh.json';
@@ -19627,6 +19629,8 @@ import { Tooltip } from '@/components/ui/Tooltip';
 import { CopyMessageButton } from '@/components/message/CopyMessageButton';
 import { MessageBar } from '@/components/message/MessageBar';
 ⋮----
+const parseSubagentResult = (content: string): unknown =>
+⋮----
 type Props = {
   message: ToolMessage;
   onRemove?: () => void;
@@ -26232,6 +26236,26 @@ label=
 <span>
 
 ================
+File: src/renderer/src/components/terminal/terminal-emulator.ts
+================
+import { FitAddon, Ghostty, Terminal } from 'ghostty-web';
+⋮----
+import type { ITerminalOptions } from 'ghostty-web';
+⋮----
+export type TerminalEmulator = {
+  terminal: Terminal;
+  fitAddon: FitAddon;
+};
+⋮----
+const loadGhostty = (): Promise<Ghostty> =>
+⋮----
+export const createTerminalEmulator = async (
+  parent: HTMLElement,
+  options: Omit<ITerminalOptions, 'ghostty'>,
+  signal: AbortSignal,
+): Promise<TerminalEmulator | null> =>
+
+================
 File: src/renderer/src/components/terminal/Terminal.scss
 ================
 .ghostty-terminal-container {
@@ -26263,10 +26287,12 @@ File: src/renderer/src/components/terminal/Terminal.scss
 File: src/renderer/src/components/terminal/Terminal.tsx
 ================
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, useCallback, ChangeEvent } from 'react';
-import { Ghostty, Terminal as GhosttyTerminal, FitAddon } from 'ghostty-web';
+import { FitAddon, Terminal as GhosttyTerminal } from 'ghostty-web';
 import { TerminalData, TerminalExitData } from '@common/types';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+⋮----
+import { createTerminalEmulator, TerminalEmulator } from './terminal-emulator';
 ⋮----
 import { useApi } from '@/contexts/ApiContext';
 import { setTabPtyId } from '@/stores/terminalStore';
@@ -26293,23 +26319,17 @@ const useIsTouchDevice = (): boolean =>
 ⋮----
 const listener = (e: MediaQueryListEvent) =>
 ⋮----
-// Load the ghostty WASM module once per app, not once per terminal instance
-⋮----
-const loadGhostty = (): Promise<InstanceType<typeof Ghostty>> =>
-⋮----
-// Initialize ghostty-web WASM once
-⋮----
-// eslint-disable-next-line no-console
-⋮----
 // Initialize terminal emulator once - its lifetime is independent of the PTY session
 ⋮----
-// Handle terminal input
+const disposeEmulator = () =>
 ⋮----
-// Handle terminal resize
+// eslint-disable-next-line no-console
 ⋮----
 // Create the PTY process when visible and no session is attached
 ⋮----
 const createTerminal = async () =>
+⋮----
+// A hidden mount can only be measured when this creation attempt becomes visible.
 ⋮----
 // eslint-disable-next-line no-console
 ⋮----
@@ -29475,6 +29495,7 @@ import de from '@common/locales/de.json';
 import zh from '@common/locales/zh.json';
 import ru from '@common/locales/ru.json';
 import ko from '@common/locales/ko.json';
+import it from '@common/locales/it.json';
 ⋮----
 // eslint-disable-next-line import/no-named-as-default-member
 
@@ -34415,20 +34436,20 @@ File: package.json
     "validate": "npm-run-all --parallel lint typecheck test:web test:node validate:locales"
   },
   "dependencies": {
-    "@ai-sdk/alibaba": "2.0.78",
-    "@ai-sdk/amazon-bedrock": "5.0.127",
-    "@ai-sdk/anthropic": "4.0.91",
-    "@ai-sdk/azure": "4.0.112",
-    "@ai-sdk/cerebras": "3.0.80",
-    "@ai-sdk/deepseek": "3.0.75",
-    "@ai-sdk/google": "4.0.107",
-    "@ai-sdk/google-vertex": "5.0.126",
-    "@ai-sdk/groq": "4.0.72",
-    "@ai-sdk/mcp": "2.0.86",
-    "@ai-sdk/mistral": "4.0.74",
-    "@ai-sdk/openai": "4.0.104",
-    "@ai-sdk/openai-compatible": "3.0.80",
-    "@ai-sdk/otel": "1.0.156",
+    "@ai-sdk/alibaba": "2.0.79",
+    "@ai-sdk/amazon-bedrock": "5.0.128",
+    "@ai-sdk/anthropic": "4.0.92",
+    "@ai-sdk/azure": "4.0.113",
+    "@ai-sdk/cerebras": "3.0.81",
+    "@ai-sdk/deepseek": "3.0.76",
+    "@ai-sdk/google": "4.0.108",
+    "@ai-sdk/google-vertex": "5.0.127",
+    "@ai-sdk/groq": "4.0.73",
+    "@ai-sdk/mcp": "2.0.87",
+    "@ai-sdk/mistral": "4.0.75",
+    "@ai-sdk/openai": "4.0.105",
+    "@ai-sdk/openai-compatible": "3.0.81",
+    "@ai-sdk/otel": "1.0.157",
     "@ai-sdk/provider": "4.0.34",
     "@aiderdesk/extensions": "workspace:*",
     "@aws-crypto/sha256-js": "5.2.0",
@@ -34479,7 +34500,7 @@ File: package.json
     "@uiw/codemirror-theme-github": "4.25.4",
     "@uiw/react-codemirror": "4.25.1",
     "@uiw/react-color-sketch": "2.9.5",
-    "ai": "7.0.156",
+    "ai": "7.0.157",
     "apache-arrow": "18.1.0",
     "axios": "1.20.0",
     "babel-plugin-react-compiler": "1.0.0",
