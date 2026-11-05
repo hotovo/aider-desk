@@ -30,6 +30,7 @@ import { loadBrowserBootstrap } from '@/api/readonly-browser-api';
 import { CommandPalette } from '@/components/common/CommandPalette';
 import { useCommandPaletteHotkeys } from '@/hooks/useCommandPaletteHotkeys';
 import { usePaletteCommands } from '@/hooks/usePaletteCommands';
+import { finishStartup } from '@/utils/startup';
 
 const Onboarding = lazy(() => import('@/pages/Onboarding').then((module) => ({ default: module.Onboarding })));
 
@@ -207,6 +208,12 @@ const App = () => {
       .catch(() => setBootstrap(null))
       .finally(() => setBootstrapLoaded(true));
   }, []);
+
+  useEffect(() => {
+    if (bootstrapLoaded) {
+      finishStartup();
+    }
+  }, [bootstrapLoaded]);
 
   if (!bootstrapLoaded) {
     return null;

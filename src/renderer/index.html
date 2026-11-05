@@ -1,10 +1,10 @@
 <!doctype html>
 <html>
   <head>
-<!--    <script-->
-<!--      crossOrigin="anonymous"-->
-<!--      src="https://unpkg.com/react-scan/dist/auto.global.js"-->
-<!--    ></script>-->
+    <!--    <script-->
+    <!--      crossOrigin="anonymous"-->
+    <!--      src="https://unpkg.com/react-scan/dist/auto.global.js"-->
+    <!--    ></script>-->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AiderDesk</title>
@@ -13,17 +13,206 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self' blob: 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: file: https:; font-src 'self' https://fonts.gstatic.com; connect-src 'self' data: http: https: ws: wss:; frame-src http: https:;"
     />
-    <link rel="stylesheet" href="/src/fonts.css">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#3b82f6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="AiderDesk">
-    <link rel="apple-touch-icon" href="/icon-192.png">
+    <link rel="stylesheet" href="/src/fonts.css" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AiderDesk" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
   </head>
 
   <body>
+    <style>
+      #startup {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        padding: 24px;
+        background:
+          radial-gradient(1200px 600px at 50% 38%, rgba(59, 130, 246, 0.12), transparent 60%),
+          radial-gradient(900px 500px at 50% 120%, rgba(37, 99, 235, 0.1), transparent 55%),
+          #0b1120;
+        color: #e5e7eb;
+        font:
+          16px system-ui,
+          sans-serif;
+        text-align: center;
+        color-scheme: dark;
+        animation: startup-fade-in 0.4s ease-out both;
+      }
+      #startup[hidden] {
+        display: none;
+      }
+      #startup-logo {
+        display: block;
+        width: 104px;
+        height: 104px;
+        border-radius: 22px;
+        filter: drop-shadow(0 12px 32px rgba(37, 99, 235, 0.35));
+        animation: startup-float 4s ease-in-out infinite;
+      }
+      #startup-brand {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        margin-top: -4px;
+      }
+      #startup-title {
+        font-size: 24px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: #f3f4f6;
+      }
+      #startup-title span {
+        color: inherit;
+      }
+      #startup-tagline {
+        font-size: 13px;
+        color: #94a3b8;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #startup-status {
+        font-size: 14px;
+        color: #cbd5e1;
+      }
+      #startup-progress-row {
+        width: min(300px, 80vw);
+      }
+      #startup-progress-row:not([hidden]) {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      #startup-progress {
+        flex: 1 1 0;
+        min-width: 0;
+        width: 100%;
+        height: 8px;
+        border: 0;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(148, 163, 184, 0.18);
+        appearance: none;
+        -webkit-appearance: none;
+      }
+      #startup-progress::-webkit-progress-bar {
+        background: rgba(148, 163, 184, 0.18);
+        border-radius: 999px;
+      }
+      #startup-progress::-webkit-progress-value {
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 999px;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+        transition: width 0.25s ease;
+      }
+      #startup-progress::-moz-progress-bar {
+        background: linear-gradient(90deg, #3b82f6, #60a5fa);
+        border-radius: 999px;
+        box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+      }
+      /* Indeterminate state (value attribute removed by the loader). */
+      #startup-progress:not([value]) {
+        background:
+          linear-gradient(90deg, transparent, #60a5fa, transparent) no-repeat,
+          rgba(148, 163, 184, 0.18);
+        background-size:
+          40% 100%,
+          100% 100%;
+        animation: startup-indeterminate 1.3s ease-in-out infinite;
+      }
+      #startup-percentage {
+        flex: 0 0 4ch;
+        text-align: right;
+        font-size: 14px;
+        font-weight: 500;
+        color: #cbd5e1;
+        font-variant-numeric: tabular-nums;
+      }
+      #startup-percentage:empty {
+        display: none;
+      }
+      #startup-retry {
+        padding: 10px 28px;
+        border: 0;
+        border-radius: 8px;
+        background: linear-gradient(180deg, #3b82f6, #2563eb);
+        color: white;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+        box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35);
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease,
+          filter 0.12s ease;
+      }
+      #startup-retry:hover {
+        filter: brightness(1.08);
+        box-shadow: 0 8px 22px rgba(37, 99, 235, 0.45);
+      }
+      #startup-retry:active {
+        transform: translateY(1px);
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+      }
+      @keyframes startup-fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes startup-float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-8px);
+        }
+      }
+      @keyframes startup-indeterminate {
+        0% {
+          background-position:
+            -40% 0,
+            0 0;
+        }
+        100% {
+          background-position:
+            140% 0,
+            0 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #startup,
+        #startup-logo,
+        #startup-progress:not([value]) {
+          animation: none;
+        }
+      }
+    </style>
+    <div id="startup" role="status" aria-live="polite" aria-atomic="true" hidden>
+      <img id="startup-logo" src="./startup-icon.webp" width="104" height="104" alt="AiderDesk" fetchpriority="high" />
+      <div id="startup-brand">
+        <div id="startup-title">Aider<span>Desk</span></div>
+        <div id="startup-tagline">AI Coding Assistant</div>
+      </div>
+      <span id="startup-status" hidden></span>
+      <div id="startup-progress-row">
+        <progress id="startup-progress" max="100" value="0" aria-label="AiderDesk"></progress>
+        <span id="startup-percentage">0%</span>
+      </div>
+      <button id="startup-retry" type="button" hidden></button>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,6 +1,7 @@
 import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { AppCrashFallback } from '@/components/common/AppCrashFallback';
+import { finishStartup } from '@/utils/startup';
 
 type Props = {
   children: ReactNode;
@@ -22,6 +23,7 @@ export class AppErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    finishStartup();
     // eslint-disable-next-line no-console
     console.error('[App Error]', error, errorInfo);
   }

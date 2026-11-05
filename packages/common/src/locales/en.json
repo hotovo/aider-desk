@@ -1,4 +1,10 @@
 {
+  "startup": {
+    "downloading": "Downloading application…",
+    "starting": "Starting application…",
+    "error": "Unable to load AiderDesk. Check your connection and try again.",
+    "retry": "Try again"
+  },
   "projectTrust": {
     "title": "Trust this project?",
     "warning": "This project contains agents, MCP servers, or extensions. They may run malicious code with your user permissions, access your files and credentials, or send data to external services.",

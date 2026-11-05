@@ -1,4 +1,10 @@
 {
+  "startup": {
+    "downloading": "正在下载应用…",
+    "starting": "正在启动应用…",
+    "error": "无法加载 AiderDesk。请检查网络连接后重试。",
+    "retry": "重试"
+  },
   "projectTrust": {
     "title": "信任此项目？",
     "warning": "此项目包含代理、MCP 服务器或扩展。它们可能以您的用户权限运行恶意代码、访问文件和凭据，或将数据发送到外部服务。",

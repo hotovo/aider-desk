@@ -73,6 +73,7 @@ ADRs are grouped into context directories. **Numbering is global and sequential*
 | [0041](extensions/0041-mirror-surface-sync-for-shared-contracts.md) | Mirror-Surface Sync for Shared Contract Changes | Proposed | 2026-09-27 |
 | [0042](extensions/0042-extension-isolation.md) | Extension Isolation | Accepted | 2026-10-14 |
 | [0042](data-and-state/0042-durable-agent-execution-journals.md) | Application-Local Durable Agent Execution Journals | Accepted | 2026-10-14 |
+| [0043](frontend-ui/0043-pre-react-browser-startup-progress.md) | Pre-React Browser Startup Progress | Accepted | 2026-11-05 |
 
 ## Extension Test Boundary
 

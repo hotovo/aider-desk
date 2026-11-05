@@ -6,6 +6,7 @@
 - fixed terminal startup cleanup and retries, cancelling abandoned initialization and waiting for the fitted emulator before creating its shell session
 - added Italian locale
 - safely render non-JSON subagent tool results
+- added browser loading progress with retry support and improved startup downloads with bundle minification, compression, and caching
 
 ## [0.90.0]
 

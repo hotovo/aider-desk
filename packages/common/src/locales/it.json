@@ -1,4 +1,10 @@
 {
+  "startup": {
+    "downloading": "Download dell’applicazione…",
+    "starting": "Avvio dell’applicazione…",
+    "error": "Impossibile caricare AiderDesk. Controlla la connessione e riprova.",
+    "retry": "Riprova"
+  },
   "projectTrust": {
     "title": "Ti fidi di questo progetto?",
     "warning": "Questo progetto contiene agenti, server MCP o estensioni. Potrebbero eseguire codice dannoso con i permessi del tuo utente, accedere ai tuoi file e alle tue credenziali, o inviare dati a servizi esterni.",
