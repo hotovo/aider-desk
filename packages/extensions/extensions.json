@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 6
+      "installCount": 7
     },
     {
       "id": "jev",
@@ -22,7 +22,7 @@
       "capabilities": [
         "tools"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "binary-files",
@@ -35,7 +35,7 @@
         "tools",
         "ui"
       ],
-      "installCount": 45
+      "installCount": 46
     },
     {
       "id": "wakatime",
@@ -83,7 +83,7 @@
         "commands",
         "ui"
       ],
-      "installCount": 52
+      "installCount": 53
     },
     {
       "id": "theme",
@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 121
+      "installCount": 122
     },
     {
       "id": "protected-paths",
@@ -163,7 +163,7 @@
       "capabilities": [
         "context"
       ],
-      "installCount": 78
+      "installCount": 79
     },
     {
       "id": "learn",
@@ -400,7 +400,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 41
+      "installCount": 44
     },
     {
       "id": "searxng-search",
@@ -442,7 +442,7 @@
       "capabilities": [
         "metrics"
       ],
-      "installCount": 116
+      "installCount": 117
     },
     {
       "id": "verifier",
@@ -455,7 +455,7 @@
         "workflows",
         "ui"
       ],
-      "installCount": 63
+      "installCount": 64
     },
     {
       "id": "bmad",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 146
+      "installCount": 148
     },
     {
       "id": "dbx",
