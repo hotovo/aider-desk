@@ -10,7 +10,7 @@
       "capabilities": [
         "providers"
       ],
-      "installCount": 7
+      "installCount": 8
     },
     {
       "id": "jev",
@@ -105,7 +105,7 @@
       "capabilities": [
         "modes"
       ],
-      "installCount": 122
+      "installCount": 124
     },
     {
       "id": "protected-paths",
@@ -117,7 +117,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 55
+      "installCount": 56
     },
     {
       "id": "permission-gate",
@@ -139,7 +139,7 @@
       "capabilities": [
         "optimization"
       ],
-      "installCount": 55
+      "installCount": 56
     },
     {
       "id": "external-rules",
@@ -233,7 +233,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "redact-secrets",
@@ -245,7 +245,7 @@
       "capabilities": [
         "security"
       ],
-      "installCount": 31
+      "installCount": 32
     },
     {
       "id": "chunkhound-search",
@@ -257,7 +257,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "chunkhound-on-semantic-search-tool",
@@ -269,7 +269,7 @@
       "capabilities": [
         "search"
       ],
-      "installCount": 17
+      "installCount": 18
     },
     {
       "id": "tree-sitter-repo-map",
@@ -282,7 +282,7 @@
         "context",
         "commands"
       ],
-      "installCount": 86
+      "installCount": 87
     },
     {
       "id": "context-autocompletion-words",
@@ -371,7 +371,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 9
+      "installCount": 10
     },
     {
       "id": "openai-codex",
@@ -413,7 +413,7 @@
         "tools",
         "search"
       ],
-      "installCount": 34
+      "installCount": 35
     },
     {
       "id": "seek",
@@ -430,7 +430,7 @@
         "linux",
         "macos"
       ],
-      "installCount": 19
+      "installCount": 20
     },
     {
       "id": "tps-counter",
@@ -557,7 +557,7 @@
         "tools",
         "search"
       ],
-      "installCount": 88
+      "installCount": 89
     },
     {
       "id": "kanban",
@@ -581,7 +581,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 11
+      "installCount": 12
     },
     {
       "id": "my-minions",
@@ -594,7 +594,7 @@
         "agents",
         "example"
       ],
-      "installCount": 72
+      "installCount": 73
     },
     {
       "id": "wigolo",
@@ -620,7 +620,7 @@
         "security",
         "commands"
       ],
-      "installCount": 53
+      "installCount": 54
     },
     {
       "id": "git-log",
@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 169
+      "installCount": 171
     },
     {
       "id": "task-scheduler",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 148
+      "installCount": 150
     },
     {
       "id": "dbx",
@@ -695,7 +695,7 @@
         "ui",
         "commands"
       ],
-      "installCount": 18
+      "installCount": 19
     }
   ]
 }
