@@ -2,15 +2,15 @@
   "name": "@aiderdesk/mcp-server",
   "version": "0.2.0",
   "description": "MCP server that exposes AiderDesk functionality to external MCP-compatible clients",
-  "author": "Hotovo",
-  "homepage": "https://aiderdesk.hotovo.com",
+  "author": "Magiksoft s.r.o.",
+  "homepage": "https://aiderdesk.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hotovo/aider-desk.git",
+    "url": "https://github.com/magiksoft/aider-desk.git",
     "directory": "packages/mcp-server"
   },
   "bugs": {
-    "url": "https://github.com/hotovo/aider-desk/issues"
+    "url": "https://github.com/magiksoft/aider-desk/issues"
   },
   "license": "MIT",
   "main": "./dist/index.js",

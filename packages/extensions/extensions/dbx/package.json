@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "DBX database client UI running in a local testcontainers-backed container, embedded in a modal",
   "main": "index.ts",
-  "author": "AiderDesk",
+  "author": "wladimiiir",
   "license": "MIT",
   "type": "module",
   "dependencies": {

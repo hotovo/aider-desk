@@ -41,8 +41,8 @@ export default class DbxExtension implements Extension {
     name: 'DBX',
     version: '1.0.0',
     description: 'DBX database client UI running in a local testcontainers-backed container, embedded in a modal',
-    author: 'AiderDesk',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/dbx/icon.png',
+    author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/dbx/icon.png',
     capabilities: ['ui'],
   };
 

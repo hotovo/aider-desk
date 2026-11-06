@@ -463,7 +463,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Find both repository sections
-      const defaultRepoSection = screen.getByText('hotovo/aider-desk');
+      const defaultRepoSection = screen.getByText('magiksoft/aider-desk');
       const customRepoSection = screen.getByText('custom/extensions');
 
       const defaultRepoHeader = defaultRepoSection.closest('div[class*="cursor-pointer"]');
@@ -589,7 +589,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {
@@ -630,7 +630,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {
@@ -668,7 +668,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {
@@ -708,7 +708,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {
@@ -751,7 +751,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Expand the repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {
@@ -1454,7 +1454,7 @@ describe('ExtensionsSettings', () => {
       });
 
       // Find repository section
-      const repoSection = screen.getByText('hotovo/aider-desk');
+      const repoSection = screen.getByText('magiksoft/aider-desk');
       const repoHeader = repoSection.closest('div[class*="cursor-pointer"]');
 
       if (!repoHeader) {

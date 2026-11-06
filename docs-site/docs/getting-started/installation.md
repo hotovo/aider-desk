@@ -7,13 +7,23 @@ sidebar_label: "Installation"
 
 ## Option 1: Desktop Application
 
-Download the latest version for your operating system from our [Releases page](https://github.com/hotovo/aider-desk/releases):
+Download the latest version for your operating system from our [Releases page](https://github.com/magiksoft/aider-desk/releases):
 
 - **Windows**: Run the `.exe` installer
 - **macOS**: Open the `.dmg` and drag AiderDesk to Applications
 - **Linux**: Extract the `.AppImage` and make it executable (`chmod +x`)
 
 ![GitHub Releases page with AiderDesk installers for each OS](../images/gs-installation-releases-page.png)
+
+### Migrating from Hotovo releases (macOS)
+
+AiderDesk has moved to Magiksoft s.r.o., with a new macOS bundle identifier and signing certificate. Existing macOS installations require a one-time manual update:
+
+1. Quit AiderDesk.
+2. Download the latest macOS `.dmg` from the [Releases page](https://github.com/magiksoft/aider-desk/releases).
+3. Open the `.dmg` and replace the existing application in Applications.
+
+Do not delete your AiderDesk data or use `brew uninstall --zap` during this migration. Once the new version is installed, subsequent updates use the new signing identity.
 
 ### Homebrew (macOS)
 

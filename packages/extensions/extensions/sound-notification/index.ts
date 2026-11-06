@@ -47,7 +47,7 @@ export default class SoundNotificationExtension implements Extension {
     name: 'Sound Notification',
     version: '2.3.0',
     description: 'Plays sound notifications using og-packs or custom audio files',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/sound-notification/icon.png',
     capabilities: ['notifications'],
   };
 

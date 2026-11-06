@@ -135,9 +135,9 @@ This package runs only the AiderDesk backend service. It does **not** include th
 
 ## Links
 
-- [Documentation](https://aiderdesk.hotovo.com/docs)
-- [GitHub](https://github.com/hotovo/aider-desk)
-- [Docker Guide](https://aiderdesk.hotovo.com/docs/advanced/docker)
+- [Documentation](https://aiderdesk.dev/docs)
+- [GitHub](https://github.com/magiksoft/aider-desk)
+- [Docker Guide](https://aiderdesk.dev/docs/advanced/docker)
 - [Discord](https://discord.com/invite/dyM3G9nTe4)
 
 ## License

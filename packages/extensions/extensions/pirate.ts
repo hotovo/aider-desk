@@ -81,7 +81,7 @@ export default class PirateExtension implements Extension {
     version: '1.0.0',
     description: 'Adds a Pirate agent that speaks like a swashbuckling sea dog',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/pirate.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/pirate.png',
     capabilities: ['agents', 'example'],
   };
 

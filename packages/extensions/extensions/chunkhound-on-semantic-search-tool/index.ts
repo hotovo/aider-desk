@@ -327,7 +327,7 @@ export default class ChunkhoundExtension implements Extension {
     version: '1.7.0',
     description: 'Utilizes onToolCalled to override power---semantic_search tool with ChunkHound semantic search',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-on-semantic-search-tool/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-on-semantic-search-tool/icon.png',
     capabilities: ['search'],
   };
 

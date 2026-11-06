@@ -1,6 +1,6 @@
 # @aiderdesk/mcp-server
 
-MCP server that exposes [AiderDesk](https://aiderdesk.hotovo.com)'s functionality to external MCP-compatible clients (like Claude Desktop, Cursor, etc.).
+MCP server that exposes [AiderDesk](https://aiderdesk.dev)'s functionality to external MCP-compatible clients (like Claude Desktop, Cursor, etc.).
 
 ## Installation
 

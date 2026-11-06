@@ -205,7 +205,7 @@ export default class BmadExtension implements Extension {
     version: '2.1.0',
     description: 'Lean backend for a standard bmad-method installation: discovers its menu, starts original workflows, tracks progress',
     author: '777marvin',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/bmad/icon.png',
     capabilities: ['modes', 'ui'],
   };
 

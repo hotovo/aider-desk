@@ -134,7 +134,7 @@ export default class SearXngSearchExtension implements Extension {
     name: 'SearXNG Search',
     version: '1.1.0',
     description: 'Web search tool using SearXNG with auto-starting Docker container support',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/searxng-search/icon.png',
     author: 'wladimiiir',
     capabilities: ['tools', 'search'],
   };

@@ -1262,7 +1262,7 @@
     "appCrash": {
       "title": "Что-то пошло не так",
       "message": "Произошла непредвиденная ошибка, и приложение не может продолжить работу.",
-      "reportIssue": "Пожалуйста, сообщите о проблеме на <a>https://github.com/hotovo/aider-desk/issues</a>. Спасибо.",
+      "reportIssue": "Пожалуйста, сообщите о проблеме на <a>https://github.com/magiksoft/aider-desk/issues</a>. Спасибо.",
       "reload": "Перезагрузить",
       "details": "Подробности ошибки",
       "copy": "Копировать",
@@ -1779,7 +1779,7 @@
     "oldValue": "Старое значение",
     "newValue": "Новое значение",
     "error": "Ошибка: {{message}}",
-    "reportIssue": "Пожалуйста, сообщите о проблеме на https://github.com/hotovo/aider-desk/issues.",
+    "reportIssue": "Пожалуйста, сообщите о проблеме на https://github.com/magiksoft/aider-desk/issues.",
     "sideBySide": "Бок о бок",
     "unified": "Унифицированный",
     "compact": "Компактный",

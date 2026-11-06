@@ -15,7 +15,7 @@ export default class PermissionGateExtension implements Extension {
     version: '1.1.0',
     description: 'Prompts for confirmation before running potentially dangerous bash commands (rm -rf, sudo, chmod/chown 777)',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/permission-gate.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/permission-gate.png',
     capabilities: ['security'],
   };
 

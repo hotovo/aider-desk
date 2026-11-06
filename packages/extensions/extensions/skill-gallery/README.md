@@ -2,7 +2,7 @@
 
 Browse, install, and uninstall AI agent skills from popular GitHub repositories directly in AiderDesk. Skills are Claude Skills-compatible directories containing a `SKILL.md` file, and become available to agents in Aider mode once installed.
 
-![Skill Gallery](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/screenshot.png)
+![Skill Gallery](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/screenshot.png)
 
 ## How It Works
 

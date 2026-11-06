@@ -1,4 +1,4 @@
-appId: com.hotovo.aider-desk
+appId: eu.magiksoft.aiderdesk
 productName: aider-desk
 directories:
   buildResources: build
@@ -42,6 +42,7 @@ win:
       filter:
         - '**/*'
 nsis:
+  guid: 248d54d3-da7f-5bcb-829a-a91319f53cf3
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
@@ -71,7 +72,7 @@ linux:
     - target: AppImage
     - target: deb
     - target: rpm
-  maintainer: Hotovo
+  maintainer: Magiksoft s.r.o.
   category: Utility
   extraResources:
     - from: ./resources/linux
@@ -85,6 +86,8 @@ deb:
 npmRebuild: true
 publish:
   provider: github
+  owner: magiksoft
+  repo: aider-desk
   releaseType: draft
   vPrefixedTagName: true
   publishAutoUpdate: true

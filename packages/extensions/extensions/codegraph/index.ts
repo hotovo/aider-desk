@@ -58,7 +58,7 @@ export const metadata = {
   name: 'CodeGraph',
   version: '1.0.0',
   description: 'Code intelligence using CodeGraph — symbol search, call graph tracing, impact analysis, and context building',
-  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/codegraph/icon.png',
+  iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/codegraph/icon.png',
   author: 'wladimiiir',
   capabilities: ['tools', 'search'],
 };

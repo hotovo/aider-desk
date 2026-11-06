@@ -166,7 +166,7 @@ export default class DestructiveCommandGuardExtension implements Extension {
     description:
       'Blocks dangerous git and shell commands from being executed by agents using dcg',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/destructive-command-guard/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/destructive-command-guard/icon.png',
     capabilities: ['security', 'commands'],
   };
 

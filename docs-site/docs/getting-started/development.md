@@ -9,7 +9,7 @@ sidebar_label: "Development"
 
 ```bash
 # Clone the repository
-git clone https://github.com/hotovo/aider-desk.git
+git clone https://github.com/magiksoft/aider-desk.git
 cd aider-desk
 
 # Install dependencies
@@ -34,7 +34,7 @@ npm run build:linux  # Linux
 | `npm run test:watch` | Tests in watch mode |
 | `eslint --fix <file>` | Lint and format a file |
 
-The project is an Electron app with a multi-process architecture — see [AGENTS.md](https://github.com/hotovo/aider-desk/blob/main/AGENTS.md) for a detailed map of the codebase before diving in.
+The project is an Electron app with a multi-process architecture — see [AGENTS.md](https://github.com/magiksoft/aider-desk/blob/main/AGENTS.md) for a detailed map of the codebase before diving in.
 
 ## Contributing
 

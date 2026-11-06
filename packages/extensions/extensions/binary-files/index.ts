@@ -42,8 +42,8 @@ const metadata = {
   name: 'Binary Files',
   version: '1.2.0',
   description: 'Adds a tool that attaches local binary files to multimodal model requests',
-  author: 'AiderDesk',
-  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/binary-files/icon.png',
+  author: 'wladimiiir',
+  iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/binary-files/icon.png',
   capabilities: ['tools', 'multimodal', 'ui'],
 };
 

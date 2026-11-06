@@ -42,9 +42,16 @@ export const AppCrashFallback = ({ error }: Props) => {
       <p className="text-sm text-text-muted text-center max-w-md">
         <Trans
           i18nKey="errors.appCrash.reportIssue"
-          defaults="Please, consider reporting an issue at <a>https://github.com/hotovo/aider-desk/issues</a>. Thank you."
+          defaults="Please, consider reporting an issue at <a>https://github.com/magiksoft/aider-desk/issues</a>. Thank you."
           components={{
-            a: <a href="https://github.com/hotovo/aider-desk/issues" target="_blank" rel="noopener noreferrer" className="text-info-lighter hover:underline" />,
+            a: (
+              <a
+                href="https://github.com/magiksoft/aider-desk/issues"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-info-lighter hover:underline"
+              />
+            ),
           }}
         />
       </p>

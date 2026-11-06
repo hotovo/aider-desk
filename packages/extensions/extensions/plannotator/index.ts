@@ -141,7 +141,7 @@ export default class PlannotatorExtension implements Extension {
     version: '1.2.1',
     description: 'Plan-based development workflow with planning mode and plan review utilizing plannotator.ai',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/plannotator/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/plannotator/icon.png',
     capabilities: ['modes', 'tools', 'commands', 'workflows'],
   };
 

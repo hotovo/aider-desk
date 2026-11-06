@@ -6,6 +6,9 @@ on:
 
 jobs:
   tag-latest:
+    permissions:
+      contents: read
+      packages: write
     name: Tag Docker image as latest
     runs-on: ubuntu-latest
     if: github.event.release.prerelease == false

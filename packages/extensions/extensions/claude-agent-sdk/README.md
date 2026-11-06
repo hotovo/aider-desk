@@ -22,7 +22,7 @@
 
 > ⚠️ **Educational Purposes Only**
 >
-> This extension is provided primarily for **educational and experimental purposes**. For production use, it is **strongly recommended to use the [Anthropic provider](https://aiderdesk.hotovo.com/docs/configuration/providers/anthropic) with API keys** directly in AiderDesk instead. The Anthropic API provider offers:
+> This extension is provided primarily for **educational and experimental purposes**. For production use, it is **strongly recommended to use the [Anthropic provider](https://aiderdesk.dev/docs/configuration/providers/anthropic) with API keys** directly in AiderDesk instead. The Anthropic API provider offers:
 >
 > - **Direct API access** with no intermediary CLI
 > - **Better cost control** with transparent per-token pricing

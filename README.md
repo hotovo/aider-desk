@@ -7,10 +7,10 @@
 </p>
 
 <p align="center">
-  <a href="https://aiderdesk.hotovo.com/docs"><img src="https://img.shields.io/badge/Docs-blue?logo=ReadTheDocs&logoColor=white" alt="Documentation" /></a>
+  <a href="https://aiderdesk.dev/docs"><img src="https://img.shields.io/badge/Docs-blue?logo=ReadTheDocs&logoColor=white" alt="Documentation" /></a>
   <a href="https://discord.com/invite/dyM3G9nTe4"><img src="https://img.shields.io/badge/Discord-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-  <a href="https://deepwiki.com/hotovo/aider-desk"><img src="https://deepwiki.com/badge.svg" alt="DeepWiki" /></a>
-  <a href="https://gitmcp.io/hotovo/aider-desk"><img src="https://img.shields.io/endpoint?url=https://gitmcp.io/badge/hotovo/aider-desk" alt="GitMCP" /></a>
+  <a href="https://deepwiki.com/magiksoft/aider-desk"><img src="https://deepwiki.com/badge.svg" alt="DeepWiki" /></a>
+  <a href="https://gitmcp.io/magiksoft/aider-desk"><img src="https://img.shields.io/endpoint?url=https://gitmcp.io/badge/magiksoft/aider-desk" alt="GitMCP" /></a>
 </p>
 
 <blockquote>
@@ -40,10 +40,10 @@ Originally created as a graphical user interface for the powerful [Aider CLI](ht
 
 ## 📥 Installation
 
-1. Download the latest release for your OS from [Releases](https://github.com/hotovo/aider-desk/releases).
+1. Download the latest release for your OS from [Releases](https://github.com/magiksoft/aider-desk/releases).
 2. Run the executable.
 
-For additional installation options (npm, Docker, Homebrew, Scoop), see the [installation guide](https://aiderdesk.hotovo.com/docs).
+For additional installation options (npm, Docker, Homebrew, Scoop), see the [installation guide](https://aiderdesk.dev/docs).
 
 ---
 
@@ -70,7 +70,7 @@ AiderDesk extensions go far beyond simple prompt tweaks. You can:
 - **Provide Custom Tools:** Write TypeScript functions (e.g., triggering an internal CI/CD pipeline) and expose them directly to the AI as callable tools.
 - **Inject React Components:** Build custom UI widgets, sidebar panels, or inline live-preview renderers directly into the chat interface.
 
-Browse [extension gallery](https://aiderdesk.hotovo.com/docs/extensions/extensions-gallery) or install via CLI:
+Browse [extension gallery](https://aiderdesk.dev/docs/extensions/extensions-gallery) or install via CLI:
 
 ```bash
 npx @aiderdesk/extensions install
@@ -78,11 +78,11 @@ npx @aiderdesk/extensions install
 
 ### Model Context Protocol (MCP)
 
-Bring your own data. Connect AiderDesk to any standard MCP server to give your AI assistants secure, scoped access to external databases, enterprise APIs (Jira, Linear), or internal wikis. AiderDesk can also [expose itself as an MCP server](https://aiderdesk.hotovo.com/docs/integrations/aider-mcp-server) to other MCP-compatible clients like Claude Desktop or Cursor.
+Bring your own data. Connect AiderDesk to any standard MCP server to give your AI assistants secure, scoped access to external databases, enterprise APIs (Jira, Linear), or internal wikis. AiderDesk can also [expose itself as an MCP server](https://aiderdesk.dev/docs/integrations/aider-mcp-server) to other MCP-compatible clients like Claude Desktop or Cursor.
 
 ### Custom Commands & Skills
 
-Inject your project-specific shell commands, linters, and test suites directly into the AI's toolkit, allowing it to autonomously verify its own work. Package reusable expertise into [Skills](https://aiderdesk.hotovo.com/docs/agent-mode/skills) that load on-demand with progressive disclosure — keeping token usage lean while giving the AI domain-specific knowledge when needed.
+Inject your project-specific shell commands, linters, and test suites directly into the AI's toolkit, allowing it to autonomously verify its own work. Package reusable expertise into [Skills](https://aiderdesk.dev/docs/agent-mode/skills) that load on-demand with progressive disclosure — keeping token usage lean while giving the AI domain-specific knowledge when needed.
 
 ---
 
@@ -96,7 +96,7 @@ Inject your project-specific shell commands, linters, and test suites directly i
 - **REST API:** Integrate AiderDesk with external tools and workflows via a comprehensive REST API.
 - **IDE Connector Plugins:** Sync context files automatically from [IntelliJ IDEA](https://plugins.jetbrains.com/plugin/26313-aiderdesk-connector) or [VS Code](https://marketplace.visualstudio.com/items?itemName=hotovo-sk.aider-desk-connector).
 
-> For the full list of capabilities, visit our [Documentation](https://aiderdesk.hotovo.com/docs).
+> For the full list of capabilities, visit our [Documentation](https://aiderdesk.dev/docs).
 
 ---
 

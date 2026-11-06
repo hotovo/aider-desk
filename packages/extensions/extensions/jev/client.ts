@@ -202,7 +202,7 @@ export class JevClient {
       'Content-Type': 'application/json',
     };
     if (this.provider === 'openrouter') {
-      headers['HTTP-Referer'] = 'https://aiderdesk.hotovo.com';
+      headers['HTTP-Referer'] = 'https://aiderdesk.dev';
       headers['X-Title'] = 'AiderDesk';
     }
     return headers;

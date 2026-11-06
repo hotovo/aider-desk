@@ -27,7 +27,7 @@ export const AgentRules = ({ profile, handleProfileSettingChange }: AgentRulesPr
             file: <CodeInline />,
             a: (
               <a
-                href="https://github.com/hotovo/aider-desk/tree/main/.aider-desk/rules"
+                href="https://github.com/magiksoft/aider-desk/tree/main/.aider-desk/rules"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-info-lighter hover:underline"

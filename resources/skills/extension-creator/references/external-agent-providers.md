@@ -2,7 +2,7 @@
 
 Use this guide when `getProviders()` wraps a coding-agent SDK or server rather than a plain model endpoint.
 
-Authoritative contracts: [extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts). The complete local signatures are in [extension-interface.md](extension-interface.md#extensionproviderstrategy); website documentation is in [the provider API reference](https://aiderdesk.hotovo.com/docs/extensions/api-reference#extensionproviderstrategy).
+Authoritative contracts: [extensions.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/extensions.ts). The complete local signatures are in [extension-interface.md](extension-interface.md#extensionproviderstrategy); website documentation is in [the provider API reference](https://aiderdesk.dev/docs/extensions/api-reference#extensionproviderstrategy).
 
 ## Provider construction and host compatibility
 
@@ -87,4 +87,4 @@ A native session ID is not enough if its database is deleted at the end of each 
 - Confirm the UI receives original tool-result shapes, not MCP text-block arrays where strings or structured Power results are expected.
 - Verify cleanup of owned resources and document any dependency on core changes in both the README and the handoff to the user.
 
-Examples: [OpenCode Free](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/opencode-free/) for native/MCP integration and [Cursor SDK](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) for extension-owned orchestration.
+Examples: [OpenCode Free](https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/opencode-free/) for native/MCP integration and [Cursor SDK](https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) for extension-owned orchestration.

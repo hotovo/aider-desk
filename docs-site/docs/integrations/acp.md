@@ -45,7 +45,7 @@ docker run -d \
   -v ~/aiderdesk-data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
   -v ~/projects:/projects \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 ### 3. npm CLI

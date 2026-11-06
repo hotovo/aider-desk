@@ -99,7 +99,7 @@ const Home = () => {
           <div className={styles.heroVisual}>
             <div className={styles.heroCTA}>
               <a
-                href="https://github.com/hotovo/aider-desk/releases"
+                href="https://github.com/magiksoft/aider-desk/releases"
                 className={`button button--primary button--lg ${styles.primaryButton}`}
                 onClick={(e) => {
                   e.currentTarget.style.transform = 'scale(0.95)';
@@ -149,7 +149,7 @@ const Home = () => {
           <h2 className={styles.sectionTitle}>Get Started in Seconds</h2>
           <div className={styles.downloadButtons}>
             <a
-              href="https://github.com/hotovo/aider-desk/releases"
+              href="https://github.com/magiksoft/aider-desk/releases"
               className={`button button--primary button--lg ${styles.primaryButton}`}
               onClick={(e) => {
                 e.currentTarget.style.transform = 'scale(0.95)';
@@ -258,7 +258,7 @@ const Home = () => {
             <a href="https://discord.com/invite/dyM3G9nTe4" className={styles.communityLink}>
               Discord Server
             </a>
-            <a href="https://github.com/hotovo/aider-desk/discussions" className={styles.communityLink}>
+            <a href="https://github.com/magiksoft/aider-desk/discussions" className={styles.communityLink}>
               GitHub Discussions
             </a>
           </div>

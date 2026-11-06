@@ -46,7 +46,7 @@ export default class QuestionsExtension implements Extension {
     version: '1.1.0',
     description: 'Extract questions from messages and display as interactive questionnaire',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/questions/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/questions/icon.png',
     capabilities: ['commands', 'ui-elements'],
   };
 

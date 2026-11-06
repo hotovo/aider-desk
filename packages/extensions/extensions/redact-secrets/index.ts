@@ -157,7 +157,7 @@ export default class RedactSecretsExtension implements Extension {
     version: '2.0.0',
     description: 'Redacts secrets from file read results using regex patterns and .env* file values',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/redact-secrets/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/redact-secrets/icon.png',
     capabilities: ['security'],
   };
 

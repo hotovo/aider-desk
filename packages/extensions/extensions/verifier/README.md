@@ -23,11 +23,11 @@ Adds a **"Proceed & Verify"** button to task state actions when a task reaches *
 
 **Proceed & Verify Button**
 
-![Proceed & Verify Button](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/proceed-and-verify.png)
+![Proceed & Verify Button](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/proceed-and-verify.png)
 
 **Verification Task in Action**
 
-![Verification Task Example](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/verifier-example.png)
+![Verification Task Example](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/verifier-example.png)
 
 ## When to Use
 

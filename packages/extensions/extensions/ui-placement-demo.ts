@@ -234,7 +234,7 @@ export default class UIPlacementDemoExtension implements Extension {
     version: '1.5.0',
     description: 'Demonstrates all available UI component placement locations in AiderDesk for extension development',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/ui-placement-demo.png',
     capabilities: ['ui', 'example'],
   };
 

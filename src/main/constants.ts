@@ -4,7 +4,7 @@ import { homedir } from 'os';
 import { getDataDir, getResourceDir } from './paths';
 
 export const AIDER_DESK_TITLE = 'AiderDesk';
-export const AIDER_DESK_WEBSITE = 'https://aiderdesk.hotovo.com';
+export const AIDER_DESK_WEBSITE = 'https://aiderdesk.dev';
 export const AIDER_DESK_DATA_DIR = getDataDir();
 export const AIDER_DESK_CACHE_DIR = path.join(AIDER_DESK_DATA_DIR, 'cache');
 export const RESOURCES_DIR = getResourceDir();

@@ -23,7 +23,7 @@ export default class ExternalRulesExtension implements Extension {
     version: '1.1.0',
     description: 'Includes rule files from Cursor, Claude Code, and Roo Code configurations',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/external-rules/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/external-rules/icon.png',
     capabilities: ['context'],
   };
 

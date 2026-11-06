@@ -68,7 +68,7 @@ When telemetry is enabled, AiderDesk captures the following events:
 
 ## Source Code Transparency
 
-We believe in transparency. You can review the exact telemetry collection code in our open-source repository. The relevant file is [src/main/telemetry-manager.ts](https://github.com/hotovo/aider-desk/blob/main/src/main/telemetry-manager.ts).
+We believe in transparency. You can review the exact telemetry collection code in our open-source repository. The relevant file is [src/main/telemetry-manager.ts](https://github.com/magiksoft/aider-desk/blob/main/src/main/telemetry-manager.ts).
 
 ## Agent and Aider Message Telemetry
 

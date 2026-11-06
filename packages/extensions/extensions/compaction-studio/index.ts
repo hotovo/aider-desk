@@ -79,7 +79,7 @@ export default class CompactionStudioExtension implements Extension {
     version: '1.0.0',
     description: 'Manually compact the current context with full control over what gets compacted, the safe window and the compaction level',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/compaction-studio/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/compaction-studio/icon.png',
     capabilities: ['ui', 'commands'],
   };
 

@@ -38,7 +38,7 @@ export default class ExternalSkillsExtension implements Extension {
     version: '1.0.0',
     description: 'Includes skill files from Cursor, Claude Code, and other external AI coding assistants',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/external-skills/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/external-skills/icon.png',
     capabilities: ['context'],
   };
 

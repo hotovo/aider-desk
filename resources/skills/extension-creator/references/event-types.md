@@ -2,7 +2,7 @@
 
 All event types and their payloads for extension event handlers.
 
-> **IMPORTANT:** For the authoritative event type definitions, see [extensions.ts on GitHub](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) (event interfaces start at line ~360).
+> **IMPORTANT:** For the authoritative event type definitions, see [extensions.ts on GitHub](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/extensions.ts) (event interfaces start at line ~360).
 
 ---
 

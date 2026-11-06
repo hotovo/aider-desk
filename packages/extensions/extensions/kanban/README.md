@@ -2,9 +2,9 @@
 
 A Kanban board for AiderDesk project tasks, grouped by task state.
 
-![Button](https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/kanban/button.png)
+![Button](https://raw.githubusercontent.com/magiksoft/aider-desk/main/packages/extensions/extensions/kanban/button.png)
 
-![Kanban Board](https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/kanban/screenshot.png)
+![Kanban Board](https://raw.githubusercontent.com/magiksoft/aider-desk/main/packages/extensions/extensions/kanban/screenshot.png)
 
 ## Features
 

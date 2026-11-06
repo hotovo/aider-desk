@@ -122,7 +122,7 @@ export default class JevExtension implements Extension {
     name: 'Jev',
     version: '1.0.0',
     description: 'Jev decision-model tools: typed yes/no, choice, and score questions about files, command output, or free-form state',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/jev/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/jev/icon.png',
     author: 'wladimiiir',
     capabilities: ['tools', 'ui-elements'],
   };

@@ -217,7 +217,7 @@ export default class ProtectedPathsExtension implements Extension {
     version: '2.0.0',
     description: 'Blocks file operations on sensitive files and protected directories (.env*, *.pem, .ssh/, .aws/, .git/, system dirs, etc.)',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/protected-paths/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/protected-paths/icon.png',
     capabilities: ['security'],
   };
 

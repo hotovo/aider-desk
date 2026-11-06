@@ -1259,7 +1259,7 @@
     "appCrash": {
       "title": "Etwas ist schiefgelaufen",
       "message": "Ein unerwarteter Fehler ist aufgetreten und die Anwendung konnte nicht fortfahren.",
-      "reportIssue": "Bitte erwägen Sie, ein Problem unter <a>https://github.com/hotovo/aider-desk/issues</a> zu melden. Vielen Dank.",
+      "reportIssue": "Bitte erwägen Sie, ein Problem unter <a>https://github.com/magiksoft/aider-desk/issues</a> zu melden. Vielen Dank.",
       "reload": "Neu laden",
       "details": "Fehlerdetails",
       "copy": "Kopieren",
@@ -1762,7 +1762,7 @@
     "oldValue": "Alter Wert",
     "newValue": "Neuer Wert",
     "error": "Fehler: {{message}}",
-    "reportIssue": "Bitte melden Sie ein Problem unter https://github.com/hotovo/aider-desk/issues.",
+    "reportIssue": "Bitte melden Sie ein Problem unter https://github.com/magiksoft/aider-desk/issues.",
     "sideBySide": "Seite an Seite",
     "unified": "Vereinheitlicht",
     "compact": "Kompakt",

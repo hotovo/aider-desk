@@ -652,7 +652,7 @@ export default class CursorSdkExtension implements Extension {
     version: '4.8.1',
     description: 'Integrates the Cursor SDK as a provider with cursor-sdk/ prefix, overriding the agent loop',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/cursor-sdk/icon.png',
     capabilities: ['providers', 'agent-loop'],
   };
 

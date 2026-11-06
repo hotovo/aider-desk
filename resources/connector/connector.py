@@ -1702,7 +1702,7 @@ def setup_telemetry():
     litellm.failure_callback.append("posthog")
 
   # Set OpenRouter site and app name
-  os.environ["OR_SITE_URL"] = 'https://aiderdesk.hotovo.com'
+  os.environ["OR_SITE_URL"] = 'https://aiderdesk.dev'
   os.environ["OR_APP_NAME"] = 'AiderDesk'
   os.environ["LITELLM_LOG"] = "DEBUG"
 

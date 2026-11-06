@@ -9,7 +9,7 @@ export const metadata = {
   name: 'fff',
   version: '1.4.0',
   description: 'Fast file content search using FFF (Freakin Fast File Finder) — replaces the internal grep tool',
-  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
+  iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/fff/icon.png',
   author: 'wladimiiir',
   capabilities: ['tools', 'search'],
   supportedOS: [OS.Linux, OS.MacOS],

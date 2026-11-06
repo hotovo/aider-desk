@@ -29,7 +29,7 @@ export default class MultiModelRunExtension implements Extension {
     version: '2.0.0',
     description: 'Run the same prompt across multiple models simultaneously',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/icon.png',
     capabilities: ['ui', 'workflows'],
   };
 

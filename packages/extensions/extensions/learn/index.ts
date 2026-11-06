@@ -32,7 +32,7 @@ export const metadata = {
   name: 'Learn',
   version: '1.0.0',
   description: 'Adds a /learn command that creates reusable skills from any source — directories, URLs, conversation history, or pasted notes',
-  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/learn/icon.png',
+  iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/learn/icon.png',
   author: 'wladimiiir',
   capabilities: ['commands', 'tools'],
   supportedOS: [OS.Linux, OS.MacOS, OS.Windows],

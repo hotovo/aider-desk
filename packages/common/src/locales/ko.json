@@ -1262,7 +1262,7 @@
     "appCrash": {
       "title": "문제가 발생했습니다",
       "message": "예기치 않은 오류가 발생하여 애플리케이션을 계속 진행할 수 없습니다.",
-      "reportIssue": "<a>https://github.com/hotovo/aider-desk/issues</a>에 이슈를 등록해 주시면 감사하겠습니다.",
+      "reportIssue": "<a>https://github.com/magiksoft/aider-desk/issues</a>에 이슈를 등록해 주시면 감사하겠습니다.",
       "reload": "새로고침",
       "details": "오류 세부 정보",
       "copy": "복사",
@@ -1779,7 +1779,7 @@
     "oldValue": "이전 값",
     "newValue": "새 값",
     "error": "오류: {{message}}",
-    "reportIssue": "https://github.com/hotovo/aider-desk/issues에서 문제를 보고해 주세요.",
+    "reportIssue": "https://github.com/magiksoft/aider-desk/issues에서 문제를 보고해 주세요.",
     "sideBySide": "나란히 보기",
     "unified": "통합 보기",
     "compact": "간략히",

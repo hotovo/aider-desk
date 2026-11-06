@@ -1,6 +1,6 @@
 # @aiderdesk/extensions
 
-TypeScript type definitions, runtime utilities, and a CLI installer for [AiderDesk](https://aiderdesk.hotovo.com) extensions.
+TypeScript type definitions, runtime utilities, and a CLI installer for [AiderDesk](https://aiderdesk.dev) extensions.
 
 ---
 
@@ -24,7 +24,7 @@ npx @aiderdesk/extensions install https://raw.githubusercontent.com/username/my-
 
 By default, extensions are installed to the current project (`.aider-desk/extensions/`). Use `--global` to install them for all projects (`~/.aider-desk/extensions/`).
 
-Browse the full list of available extensions in the [Extensions Gallery](https://aiderdesk.hotovo.com/docs/extensions/extensions-gallery).
+Browse the full list of available extensions in the [Extensions Gallery](https://aiderdesk.dev/docs/extensions/extensions-gallery).
 
 ### Hot Reload
 
@@ -67,11 +67,11 @@ export default class MyExtension implements Extension {
 
 ## Documentation
 
-For comprehensive documentation on creating and using extensions, see the [Extensions documentation](https://aiderdesk.hotovo.com/docs/extensions/):
+For comprehensive documentation on creating and using extensions, see the [Extensions documentation](https://aiderdesk.dev/docs/extensions/):
 
-- [Extensions Overview](https://aiderdesk.hotovo.com/docs/extensions/) - What extensions can do
-- [Creating Extensions](https://aiderdesk.hotovo.com/docs/extensions/creating-extensions) - How to build extensions
-- [Installation Guide](https://aiderdesk.hotovo.com/docs/extensions/installation) - Install extensions globally or per-project
-- [API Reference](https://aiderdesk.hotovo.com/docs/extensions/api-reference) - Complete API documentation
-- [Events Reference](https://aiderdesk.hotovo.com/docs/extensions/events) - All available events
-- [Extensions Gallery](https://aiderdesk.hotovo.com/docs/extensions/extensions-gallery) - Browse all available extensions
+- [Extensions Overview](https://aiderdesk.dev/docs/extensions/) - What extensions can do
+- [Creating Extensions](https://aiderdesk.dev/docs/extensions/creating-extensions) - How to build extensions
+- [Installation Guide](https://aiderdesk.dev/docs/extensions/installation) - Install extensions globally or per-project
+- [API Reference](https://aiderdesk.dev/docs/extensions/api-reference) - Complete API documentation
+- [Events Reference](https://aiderdesk.dev/docs/extensions/events) - All available events
+- [Extensions Gallery](https://aiderdesk.dev/docs/extensions/extensions-gallery) - Browse all available extensions

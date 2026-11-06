@@ -13,17 +13,17 @@ AiderDesk includes the following built-in prompt templates that you can override
 
 | Template | Purpose | Default |
 |----------|---------|---------|
-| `system-prompt.hbs` | The main system prompt that defines the agent's personality, objectives, and behavior | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/system-prompt.hbs) |
-| `init-project.hbs` | Instructions for initializing a new project and creating the `AGENTS.md` file | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/init-project.hbs) |
-| `workflow.hbs` | Agent workflow guidance for task execution | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/workflow.hbs) |
-| `compact-conversation.hbs` | Instructions for summarizing conversation history | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/compact-conversation.hbs) |
-| `commit-message.hbs` | Template for generating Git commit messages | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/commit-message.hbs) |
-| `task-name.hbs` | Template for generating task names from user prompts | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/task-name.hbs) |
-| `update-task-state.hbs` | Instructions for determining the appropriate task state based on the agent's last response | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/update-task-state.hbs) |
-| `conflict-resolution-system.hbs` | System prompt for resolving Git merge conflicts | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/conflict-resolution-system.hbs) |
-| `conflict-resolution.hbs` | Instructions for handling conflict resolution tasks | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/conflict-resolution.hbs) |
-| `handoff.hbs` | Template for generating focused prompts when using the `/handoff` command | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/handoff.hbs) |
-| `code-change-requests.hbs` | Template for making focused code changes based on batch inline feedback in the diff viewer | [View on GitHub](https://github.com/hotovo/aider-desk/blob/main/resources/prompts/code-change-requests.hbs) |
+| `system-prompt.hbs` | The main system prompt that defines the agent's personality, objectives, and behavior | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/system-prompt.hbs) |
+| `init-project.hbs` | Instructions for initializing a new project and creating the `AGENTS.md` file | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/init-project.hbs) |
+| `workflow.hbs` | Agent workflow guidance for task execution | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/workflow.hbs) |
+| `compact-conversation.hbs` | Instructions for summarizing conversation history | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/compact-conversation.hbs) |
+| `commit-message.hbs` | Template for generating Git commit messages | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/commit-message.hbs) |
+| `task-name.hbs` | Template for generating task names from user prompts | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/task-name.hbs) |
+| `update-task-state.hbs` | Instructions for determining the appropriate task state based on the agent's last response | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/update-task-state.hbs) |
+| `conflict-resolution-system.hbs` | System prompt for resolving Git merge conflicts | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/conflict-resolution-system.hbs) |
+| `conflict-resolution.hbs` | Instructions for handling conflict resolution tasks | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/conflict-resolution.hbs) |
+| `handoff.hbs` | Template for generating focused prompts when using the `/handoff` command | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/handoff.hbs) |
+| `code-change-requests.hbs` | Template for making focused code changes based on batch inline feedback in the diff viewer | [View on GitHub](https://github.com/magiksoft/aider-desk/blob/main/resources/prompts/code-change-requests.hbs) |
 
 ## Template Override System
 
@@ -96,7 +96,7 @@ mkdir -p ~/.aider-desk/prompts
 
 You can start from the default templates and customize them. Create a file with the same name as the template you want to override.
 
-**Tip:** Browse the default templates on [GitHub](https://github.com/hotovo/aider-desk/tree/main/resources/prompts) to see how they're structured and use them as a reference for your customizations.
+**Tip:** Browse the default templates on [GitHub](https://github.com/magiksoft/aider-desk/tree/main/resources/prompts) to see how they're structured and use them as a reference for your customizations.
 
 Example: Customizing the system prompt for a specific project
 

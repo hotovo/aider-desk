@@ -274,14 +274,14 @@ Before using this skill, verify:
 
 **IMPORTANT:** The reference files below are comprehensive but may lag behind the latest code. For the **authoritative** and **complete** API, always refer to these source files:
 
-- **Types source:** [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) — Extension interface, all contexts (ExtensionContext, TaskContext, ProjectContext), event payloads, UI component definitions
-- **Context message types:** [packages/common/src/types/context.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/context.ts) — ContextMessage, ContextFile, message part types
-- **Task/common types:** [packages/common/src/types/common.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/common.ts) — TaskData, Model, AgentProfile, CreateTaskParams, etc.
+- **Types source:** [packages/common/src/extensions.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/extensions.ts) — Extension interface, all contexts (ExtensionContext, TaskContext, ProjectContext), event payloads, UI component definitions
+- **Context message types:** [packages/common/src/types/context.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/types/context.ts) — ContextMessage, ContextFile, message part types
+- **Task/common types:** [packages/common/src/types/common.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/types/common.ts) — TaskData, Model, AgentProfile, CreateTaskParams, etc.
 
 When you need a method or type that's not in the reference docs, **fetch the raw source first** before guessing.
 
 **Built-in extension examples** are available at:
-- [Online extensions gallery](https://github.com/hotovo/aider-desk/blob/main/docs-site/docs/extensions/extensions-gallery.md) — documented overview
+- [Online extensions gallery](https://github.com/magiksoft/aider-desk/blob/main/docs-site/docs/extensions/extensions-gallery.md) — documented overview
 - Source code for each built-in extension is in the AiderDesk repo at `packages/extensions/extensions/[extension-name]/` — browse these for real-world patterns
 
 ### Reference docs
@@ -359,7 +359,7 @@ After completing this skill, verify:
     return '';
   }
   ```
-- Reference: [context.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/context.ts) for full ContextMessage type
+- Reference: [context.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/types/context.ts) for full ContextMessage type
 
 **Situation:** Extension needs to run shell commands
 
@@ -521,7 +521,7 @@ After completing this skill, verify:
 
 ### Technical Reference (all targets)
 
-- [packages/common/src/extensions.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts) - Extension types and interfaces
+- [packages/common/src/extensions.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/extensions.ts) - Extension types and interfaces
 - [external-agent-providers.md](references/external-agent-providers.md) - Custom provider signatures, native approvals, MCP execution ownership, streaming, persistent sessions and host compatibility
 - [extension-interface.md](references/extension-interface.md) - Full Extension interface, ExtensionContext, TaskContext, ProjectContext, MemoryContext, and all supporting types
 - [extension-types.md](references/extension-types.md) - Single-file vs folder extensions, examples, extensions.json format

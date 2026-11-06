@@ -1,6 +1,6 @@
 # BMAD Extension for AiderDesk
 
-Lean backend that integrates a standard [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) installation into [AiderDesk](https://github.com/hotovo/aider-desk). The extension owns no workflow definitions of its own: everything it shows and starts comes from the installed method.
+Lean backend that integrates a standard [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) installation into [AiderDesk](https://github.com/magiksoft/aider-desk). The extension owns no workflow definitions of its own: everything it shows and starts comes from the installed method.
 
 > **Version:** 2.0.0 · **Requires:** AiderDesk ≥ 0.77.0 (verified against 0.81.0) · **BMAD:** ≥ 6.10 (6.12.0 verified) · **License:** MIT
 
@@ -112,11 +112,11 @@ Installations made manually with other tools (for example antigravity) are detec
 
 ## Credits
 
-Built on the [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) by BMad Code Org and [AiderDesk](https://github.com/hotovo/aider-desk) by hotovo. Based on the original BMAD extension for AiderDesk by wladimiiir.
+Built on the [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) by BMad Code Org and [AiderDesk](https://github.com/magiksoft/aider-desk) by Magiksoft s.r.o. Based on the original BMAD extension for AiderDesk by wladimiiir.
 
 ## Contributing
 
-This extension lives in the [AiderDesk](https://github.com/hotovo/aider-desk) repository; contributions are welcome there.
+This extension lives in the [AiderDesk](https://github.com/magiksoft/aider-desk) repository; contributions are welcome there.
 
 ## License
 

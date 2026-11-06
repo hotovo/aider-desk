@@ -37,7 +37,7 @@ docker run -d \
   -v ~/projects:/projects \
   -e AIDER_DESK_READONLY=true \
   -e AIDER_DESK_PROJECTS="/projects/public-app,/projects/public-api" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 This mode is **immutable** for the process lifetime — it cannot be toggled at runtime. All configured projects are started automatically before the readonly UI becomes available. See [Docker](../advanced/docker.md#readonly-browser-deployments) for the full environment variable reference.

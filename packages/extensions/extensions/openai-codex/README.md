@@ -48,7 +48,7 @@ Since Codex OAuth tokens cannot access the `/v1/models` API, the available model
 
 ## Requirements
 
-- [AiderDesk](https://aiderdesk.hotovo.com) with extension support
+- [AiderDesk](https://aiderdesk.dev) with extension support
 - ChatGPT Plus or Pro subscription
 - Node.js ≥ 22
 

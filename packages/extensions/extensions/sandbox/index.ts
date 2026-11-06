@@ -299,7 +299,7 @@ export default class SandboxExtension implements Extension {
     version: '1.0.1',
     description: 'OS-level sandboxing for bash commands using @anthropic-ai/sandbox-runtime (sandbox-exec on macOS, bubblewrap on Linux)',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/sandbox/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/sandbox/icon.png',
     capabilities: ['security'],
     supportedOS: [OS.Linux, OS.MacOS],
   };

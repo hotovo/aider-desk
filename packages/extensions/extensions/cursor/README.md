@@ -54,7 +54,7 @@ AiderDesk Agent Loop
 
 ## Comparison: `cursor` vs. `cursor-sdk`
 
-AiderDesk has two Cursor extensions. This one (`cursor`) is preferred if you want AiderDesk to have full control over tool execution and approval. The [cursor-sdk](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) extension is an alternative that runs Cursor agents via the official `@cursor/sdk` package, but cannot control tool approval.
+AiderDesk has two Cursor extensions. This one (`cursor`) is preferred if you want AiderDesk to have full control over tool execution and approval. The [cursor-sdk](https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) extension is an alternative that runs Cursor agents via the official `@cursor/sdk` package, but cannot control tool approval.
 
 | Aspect | `cursor` (this extension) | `cursor-sdk` |
 |--------|--------------------------|--------------|

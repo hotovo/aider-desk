@@ -2,7 +2,7 @@
 
 Allows running the same prompt across multiple models simultaneously. Adds a UI component to the task top bar where you can select up to 10 additional models. When a prompt is started, the extension duplicates the task for each selected model and runs the same prompt in parallel.
 
-![Multi-Model Run Screenshot](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/screenshot.png)
+![Multi-Model Run Screenshot](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/multi-model-run/screenshot.png)
 
 ## How It Works
 

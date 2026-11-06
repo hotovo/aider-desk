@@ -89,7 +89,7 @@ export default class SkillGalleryExtension implements Extension {
     version: '1.6.0',
     description: 'Browse and install skills from popular skill repositories, including reverse engineering and security workflows',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/skill-gallery/icon.png',
     capabilities: ['ui'],
   };
 

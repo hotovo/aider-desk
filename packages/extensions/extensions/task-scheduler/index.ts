@@ -30,7 +30,7 @@ export default class TaskSchedulerExtension implements Extension {
     version: '1.1.0',
     description: 'Schedule tasks to run automatically on a cron or periodic basis',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/task-scheduler/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/task-scheduler/icon.png',
     capabilities: ['ui', 'commands', 'events'],
   };
 

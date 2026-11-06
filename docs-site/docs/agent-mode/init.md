@@ -45,4 +45,4 @@ You can review and even edit this file to provide more specific instructions or 
 
 ## Example
 
-You can find an example of the `AGENTS.md` file used for AiderDesk's own development [here](https://github.com/hotovo/aider-desk/blob/main/AGENTS.md).
+You can find an example of the `AGENTS.md` file used for AiderDesk's own development [here](https://github.com/magiksoft/aider-desk/blob/main/AGENTS.md).

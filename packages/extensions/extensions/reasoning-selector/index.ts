@@ -25,7 +25,7 @@ export default class ReasoningSelectorExtension implements Extension {
     version: '1.1.0',
     description: 'Adds a reasoning effort selector dropdown next to the model selector in agent mode',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/reasoning-selector/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/reasoning-selector/icon.png',
     capabilities: ['ui'],
   };
 

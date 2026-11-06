@@ -765,7 +765,7 @@ Providers that wrap another coding agent have additional responsibilities:
 - **Parent/subagent isolation:** the `sessionId` argument currently carries the AiderDesk task ID; subagents may share it with their parent. Scope native sessions and resource ownership per conversation/run rather than treating that ID as a unique native session.
 - **Host compatibility:** when the extension depends on a new core callback or streaming fix, test with the matching AiderDesk core. Hot-reloading the extension or refreshing the renderer does not update an older main process; update/build and restart the application.
 
-See [OpenCode Free](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/opencode-free/) for a native-tool/MCP adapter and [Cursor SDK](https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) for extension-owned agent/message orchestration.
+See [OpenCode Free](https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/opencode-free/) for a native-tool/MCP adapter and [Cursor SDK](https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/cursor-sdk/) for extension-owned agent/message orchestration.
 
 ### Example
 

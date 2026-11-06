@@ -190,7 +190,7 @@ export default class MyMinionsExtension implements Extension {
     version: '1.0.0',
     description: 'Adds Orchestrator and Minion agent profiles — a coordinator that delegates all work to a focused execution subagent',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/my-minions/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/my-minions/icon.png',
     capabilities: ['agents'],
   };
 

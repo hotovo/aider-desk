@@ -2,7 +2,7 @@
 
 Manually compact the current task context with full control over what gets compacted, the safe window, and the compaction level.
 
-![Compaction Studio screenshot](https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/compaction-studio/screenshot.png)
+![Compaction Studio screenshot](https://raw.githubusercontent.com/magiksoft/aider-desk/main/packages/extensions/extensions/compaction-studio/screenshot.png)
 
 ## Features
 

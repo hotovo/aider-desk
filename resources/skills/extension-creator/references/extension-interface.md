@@ -2,7 +2,7 @@
 
 Full TypeScript interface reference for AiderDesk extensions. All methods are optional — implement only what you need.
 
-> **IMPORTANT:** This is a comprehensive reference, but for the absolute latest types, always refer to the authoritative source: [extensions.ts on GitHub](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/extensions.ts). See also [context.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/context.ts) for context message types and [common.ts](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/common/src/types/common.ts) for task/common types.
+> **IMPORTANT:** This is a comprehensive reference, but for the absolute latest types, always refer to the authoritative source: [extensions.ts on GitHub](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/extensions.ts). See also [context.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/types/context.ts) for context message types and [common.ts](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/common/src/types/common.ts) for task/common types.
 
 ---
 

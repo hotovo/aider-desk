@@ -1263,7 +1263,7 @@
     "appCrash": {
       "title": "Si è verificato un errore",
       "message": "Si è verificato un errore imprevisto e l'applicazione non può continuare.",
-      "reportIssue": "Ti invitiamo a segnalare il problema su <a>https://github.com/hotovo/aider-desk/issues</a>. Grazie.",
+      "reportIssue": "Ti invitiamo a segnalare il problema su <a>https://github.com/magiksoft/aider-desk/issues</a>. Grazie.",
       "reload": "Ricarica",
       "details": "Dettagli dell'errore",
       "copy": "Copia",
@@ -1783,7 +1783,7 @@
     "oldValue": "Valore precedente",
     "newValue": "Nuovo valore",
     "error": "Errore: {{message}}",
-    "reportIssue": "Segnala un problema su https://github.com/hotovo/aider-desk/issues.",
+    "reportIssue": "Segnala un problema su https://github.com/magiksoft/aider-desk/issues.",
     "sideBySide": "Accanto",
     "unified": "Unito",
     "compact": "Compatto",

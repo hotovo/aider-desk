@@ -114,7 +114,7 @@ export default class ClaudeAgentSdkExtension implements Extension {
     version: '2.0.1',
     description: 'Integrates the Claude Agent SDK as a provider using Claude Code CLI',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/claude-agent-sdk/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/claude-agent-sdk/icon.png',
     capabilities: ['providers'],
   };
 

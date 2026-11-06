@@ -41,7 +41,7 @@ export default class GitLogExtension implements Extension {
     version: '1.2.0',
     description: 'Browse the git history of open projects with an IntelliJ IDEA-style log viewer',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/git-log/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/git-log/icon.png',
     capabilities: ['ui'],
   };
 

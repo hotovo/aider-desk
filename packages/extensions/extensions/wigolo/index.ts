@@ -109,7 +109,7 @@ export default class WigoloExtension implements Extension {
     description:
       'Local-first web search, fetch, crawl & research tools powered by wigolo. No API keys required for core functionality.',
     iconUrl:
-      'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/wigolo/icon.png',
+      'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/wigolo/icon.png',
     // Icon source: wigolo brand assets (w monogram), AGPL-3.0, (c) KnockOutEZ
     author: 'wladimiiir',
     capabilities: ['tools', 'search'],

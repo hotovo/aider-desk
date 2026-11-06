@@ -19,7 +19,7 @@ const EXTENSIONS_DIR = join(__dirname, '..', 'extensions');
 const PACKAGE_VERSION = require('../package.json').version;
 const CACHE_FILE = join(homedir(), '.aider-desk', 'extension-cache.json');
 const CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
-const GITHUB_API_URL = 'https://api.github.com/repos/hotovo/aider-desk/contents/packages/extensions/extensions';
+const GITHUB_API_URL = 'https://api.github.com/repos/magiksoft/aider-desk/contents/packages/extensions/extensions';
 
 interface Extension {
   id: string;
@@ -259,8 +259,8 @@ async function installExtensionById(extId: string, extensions: Extension[], targ
   const spinner = ora(`Installing ${ext.name}...`).start();
 
   try {
-    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions';
-    const GITHUB_REPO = 'https://github.com/hotovo/aider-desk';
+    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/magiksoft/aider-desk/main/packages/extensions/extensions';
+    const GITHUB_REPO = 'https://github.com/magiksoft/aider-desk';
 
     if (ext.type === 'single' && ext.file) {
       // Try local file first (for development)

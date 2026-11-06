@@ -2,7 +2,7 @@
 
 Adds a reasoning-effort selector next to the model selector in Agent Mode.
 
-![Reasoning Selector](https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/reasoning-selector/screenshot.png)
+![Reasoning Selector](https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/reasoning-selector/screenshot.png)
 
 ## Usage
 

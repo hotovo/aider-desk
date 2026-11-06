@@ -17,7 +17,7 @@ export default class KanbanExtension implements Extension {
     description: 'Kanban board for project tasks, grouped by task state',
     author: 'wladimiiir',
     capabilities: ['ui'],
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/kanban/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/kanban/icon.png',
   };
 
   async onLoad(context: ExtensionContext): Promise<void> {

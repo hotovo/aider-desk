@@ -20,7 +20,7 @@ export default class UltrathinkExtension implements Extension {
     version: '1.1.0',
     description: 'Automatically increases reasoning effort when prompts contain thinking-related trigger phrases',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/ultrathink.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/ultrathink.png',
     capabilities: ['optimization'],
   };
 

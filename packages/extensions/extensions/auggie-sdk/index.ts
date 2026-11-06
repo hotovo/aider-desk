@@ -89,7 +89,7 @@ export default class AuggieSdkExtension implements Extension {
     description: 'Integrates the Auggie SDK as an LLM provider using the Augment platform',
     author: 'wladimiiir',
     iconUrl:
-      'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/auggie-sdk/icon.png',
+      'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/auggie-sdk/icon.png',
     capabilities: ['providers'],
   };
 

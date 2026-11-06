@@ -84,7 +84,7 @@ export default class CursorExtension implements Extension {
     version: '2.0.0',
     description: 'Integrates Cursor as a provider via a local OpenAI-compatible proxy with full tool approval control',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/cursor/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/cursor/icon.png',
     capabilities: ['providers'],
   };
 

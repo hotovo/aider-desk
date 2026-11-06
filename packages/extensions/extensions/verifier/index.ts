@@ -58,7 +58,7 @@ export default class VerifierExtension implements Extension {
     description:
       'Adds "Proceed & Verify" button to start implementation with automatic review against the plan. Configurable max retries.',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/verifier/icon.png',
     capabilities: ['workflows', 'ui'],
   };
 

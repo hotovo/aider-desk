@@ -687,7 +687,7 @@ export default class GithubCopilotExtension implements Extension {
     description: 'Integrates GitHub Copilot as an LLM provider using the official Copilot CLI via the Copilot SDK',
     author: 'wladimiiir',
     iconUrl:
-      'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/github-copilot/icon.png',
+      'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/github-copilot/icon.png',
     capabilities: ['providers'],
   };
 

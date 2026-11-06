@@ -8,13 +8,13 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hotovo/aider-desk.git",
+    "url": "git+https://github.com/magiksoft/aider-desk.git",
     "directory": "packages/extensions/extensions/bmad"
   },
   "bugs": {
-    "url": "https://github.com/hotovo/aider-desk/issues"
+    "url": "https://github.com/magiksoft/aider-desk/issues"
   },
-  "homepage": "https://github.com/hotovo/aider-desk/tree/main/packages/extensions/extensions/bmad",
+  "homepage": "https://github.com/magiksoft/aider-desk/tree/main/packages/extensions/extensions/bmad",
   "type": "module",
   "dependencies": {
     "glob": "^11.0.0",

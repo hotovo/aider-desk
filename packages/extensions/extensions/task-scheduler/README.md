@@ -2,7 +2,7 @@
 
 Schedule tasks to run automatically on a cron or periodic basis.
 
-![Task Scheduler screenshot](https://raw.githubusercontent.com/hotovo/aider-desk/main/packages/extensions/extensions/task-scheduler/screenshot.png)
+![Task Scheduler screenshot](https://raw.githubusercontent.com/magiksoft/aider-desk/main/packages/extensions/extensions/task-scheduler/screenshot.png)
 
 ## Features
 

@@ -512,7 +512,7 @@ export default class ProvidersQuotaExtension implements Extension {
     version: '1.6.0',
     description: 'Displays API quota information for Synthetic, Z.AI, Neuralwatt, DeepSeek, and OpenCode Go providers in the task status bar',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/providers-quota-extension/icon.png',
     capabilities: ['ui'],
   };
 

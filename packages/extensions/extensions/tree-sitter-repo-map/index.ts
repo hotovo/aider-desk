@@ -112,7 +112,7 @@ export default class TreeSitterRepoMapExtension implements Extension {
     version: '1.1.0',
     description: 'Provides enhanced repository map using tree-sitter parsing with PageRank-based symbol ranking',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/tree-sitter-repo-map/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/tree-sitter-repo-map/icon.png',
     capabilities: ['context', 'commands'],
   };
 

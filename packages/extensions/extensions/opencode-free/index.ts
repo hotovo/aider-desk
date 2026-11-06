@@ -37,7 +37,7 @@ export default class OpenCodeFreeExtension implements Extension {
     version: '1.0.0',
     description: 'Free OpenCode models with native shell/read and AiderDesk MCP tools',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/opencode-free/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/opencode-free/icon.png',
     capabilities: ['providers'],
   };
 

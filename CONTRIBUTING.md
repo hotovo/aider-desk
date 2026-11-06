@@ -103,7 +103,7 @@ CI will run the same checks on your PR: lint, typecheck, and tests. All must pas
 ## Extensions
 
 - **Fixing an existing extension:** Open a PR against this repository as usual.
-- **New extensions:** Please create your own repository. Extensions can be installed by users via the [extension gallery](https://aiderdesk.hotovo.com/docs/extensions/extensions-gallery) or CLI (`npx @aiderdesk/extensions install`). See the [extension documentation](https://aiderdesk.hotovo.com/docs/extensions) for how to build and publish extensions.
+- **New extensions:** Please create your own repository. Extensions can be installed by users via the [extension gallery](https://aiderdesk.dev/docs/extensions/extensions-gallery) or CLI (`npx @aiderdesk/extensions install`). See the [extension documentation](https://aiderdesk.dev/docs/extensions) for how to build and publish extensions.
 
 ## License
 

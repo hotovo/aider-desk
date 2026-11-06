@@ -59,7 +59,7 @@ export default class GenerateTestsExtension implements Extension {
     version: '1.0.0',
     description: 'Adds a /generate-tests command that generates unit tests for a specified file',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/generate-tests.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/generate-tests.png',
     capabilities: ['commands'],
   };
 

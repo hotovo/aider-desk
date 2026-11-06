@@ -336,7 +336,7 @@ export default class ChunkhoundSearchExtension implements Extension {
     version: '1.1.0',
     description: 'Replaces power semantic_search tool with ChunkHound for semantic code search',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-search/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/chunkhound-search/icon.png',
     capabilities: ['search'],
   };
 

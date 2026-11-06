@@ -263,6 +263,9 @@ jobs:
           path: dist/latest-mac.yml
 
   release-docker:
+    permissions:
+      contents: read
+      packages: write
     name: Release Docker image
     runs-on: ubuntu-latest
     env:

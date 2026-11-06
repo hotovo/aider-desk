@@ -57,7 +57,7 @@ export default class TPSCounterExtension implements Extension {
     version: '1.2.0',
     description: 'Displays real-time and completed-response tokens per second',
     author: 'wladimiiir',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/tps-counter/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/tps-counter/icon.png',
     capabilities: ['metrics'],
   };
 

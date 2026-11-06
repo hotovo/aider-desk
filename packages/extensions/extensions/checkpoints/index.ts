@@ -38,8 +38,8 @@ export default class CheckpointsExtension implements Extension {
     name: 'Checkpoints',
     version: '1.0.0',
     description: 'Git-based checkpoints for file edits — revert to the state before any edit',
-    author: 'AiderDesk',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/checkpoints/icon.png',
+    author: 'wladimiiir',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/checkpoints/icon.png',
     capabilities: ['events', 'ui'],
   };
 

@@ -16,7 +16,7 @@ const metadata = {
   version: '1.5.0',
   description: 'Execute JavaScript code in a sandbox with access to all tools as async functions. Provides the PTC mode where tools are only accessible through code execution.',
   author: 'wladimiiir',
-  iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
+  iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/programmatic-tool-calls/icon.png',
   capabilities: ['tools', 'ui'],
 };
 

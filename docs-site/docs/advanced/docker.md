@@ -18,7 +18,7 @@ AiderDesk provides a Docker image that allows you to run the application in head
 The Docker image is published to the GitHub Container Registry (ghcr.io):
 
 ```bash
-docker pull ghcr.io/hotovo/aider-desk:latest
+docker pull ghcr.io/magiksoft/aider-desk:latest
 ```
 
 Run the container with persistent data and configuration volumes:
@@ -29,7 +29,7 @@ docker run -d \
   -p 24337:24337 \
   -v /path/to/your/data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 After starting the container, access AiderDesk in your browser at:
@@ -50,7 +50,7 @@ docker run -d \
   --name aiderdesk \
   -p 24337:24337 \
   -v ~/aiderdesk-data:/app/data \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 This will:
@@ -79,7 +79,7 @@ docker run -d \
   -p 24337:24337 \
   -v ~/aiderdesk-data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 This will:
@@ -99,7 +99,7 @@ docker run -d \
   -v ~/projects:/projects \
   -e AIDER_DESK_READONLY=true \
   -e AIDER_DESK_PROJECTS="/projects/public-app,/projects/public-api" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 The setting is immutable for the process lifetime. Readonly mode requires at least one configured project, rejects the normal REST API and direct Socket.IO mutations, and automatically redirects browser routes to `/#/readonly`. Optional `AIDER_DESK_USERNAME` and `AIDER_DESK_PASSWORD` credentials continue to protect the deployment. Installed extension UI actions remain enabled and trusted; they can modify state by design. Set `AIDER_DESK_READONLY_EXTENSION_UI=false` to disable extension UI components and block their readonly API endpoints entirely.
@@ -126,7 +126,7 @@ docker run -d \
   -v ~/.aider-desk:/root/.aider-desk \
   -v ~/projects:/projects \
   -e AIDER_DESK_PROJECTS="/projects/my-app,/projects/other-app" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 **Important:** The project paths specified in `AIDER_DESK_PROJECTS` must be accessible from within the container. This means each project directory must be mounted as a volume.
@@ -161,7 +161,7 @@ docker run -d \
   -v ~/projects/my-app:/projects/my-app \
   -v ~/projects/other-app:/projects/other-app \
   -e AIDER_DESK_PROJECTS="/projects/my-app,/projects/other-app" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 **Directory structure:**
@@ -184,7 +184,7 @@ docker run -d \
   --name aiderdesk \
   -p 8080:24337 \
   -v ~/aiderdesk-data:/app/data \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 Now access AiderDesk at `http://localhost:8080`.
@@ -202,7 +202,7 @@ docker run -d \
   -v ~/aiderdesk-data:/app/data \
   -e AIDER_DESK_USERNAME=admin \
   -e AIDER_DESK_PASSWORD=your-secure-password \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 When you access `http://localhost:24337`, you'll be prompted for username and password.
@@ -219,7 +219,7 @@ docker run -d \
   -v ~/.aider-desk:/root/.aider-desk \
   -v ~/my-project:/workspace/project \
   -e AIDER_DESK_PROJECTS="/workspace/project" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 ### Example 2: Multiple Projects with Authentication
@@ -234,7 +234,7 @@ docker run -d \
   -e AIDER_DESK_PROJECTS="/projects/frontend,/projects/backend,/projects/api" \
   -e AIDER_DESK_USERNAME=myuser \
   -e AIDER_DESK_PASSWORD=mypassword \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 ### Example 3: Manual Project Opening (No Environment Variable)
@@ -246,7 +246,7 @@ docker run -d \
   -v ~/aiderdesk-data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
   -v ~/projects:/projects \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 Then:
@@ -264,7 +264,7 @@ version: '3.8'
 
 services:
   aiderdesk:
-    image: ghcr.io/hotovo/aider-desk:latest
+    image: ghcr.io/magiksoft/aider-desk:latest
     container_name: aiderdesk
     ports:
       - "24337:24337"
@@ -305,7 +305,7 @@ docker run -d \
   -v ~/aiderdesk-data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
   -v ~/projects:/projects \
-  ghcr.io/hotovo/aider-desk:1.0.0
+  ghcr.io/magiksoft/aider-desk:1.0.0
 ```
 
 ## Accessing AiderDesk
@@ -457,7 +457,7 @@ If you encounter permission errors accessing mounted volumes:
      -p 24337:24337 \
      -v ~/aiderdesk-data:/app/data \
      -u $(id -u):$(id -g) \
-     ghcr.io/hotovo/aider-desk:latest
+     ghcr.io/magiksoft/aider-desk:latest
    ```
 
 ### Health Check Failing
@@ -481,7 +481,7 @@ docker run -d \
   -v ~/aiderdesk-data:/app/data \
   -v ~/.aider-desk:/root/.aider-desk \
   -e AIDER_DESK_AIDER_VERSION="0.36.1" \
-  ghcr.io/hotovo/aider-desk:latest
+  ghcr.io/magiksoft/aider-desk:latest
 ```
 
 ### Extra Python Packages
@@ -511,6 +511,6 @@ curl -X POST http://localhost:24337/api/get-context-files \
 ## Support
 
 For issues, questions, or contributions:
-- GitHub Repository: https://github.com/hotovo/aider-desk
-- Documentation: https://aiderdesk.hotovo.com
-- Issues: https://github.com/hotovo/aider-desk/issues
+- GitHub Repository: https://github.com/magiksoft/aider-desk
+- Documentation: https://aiderdesk.dev
+- Issues: https://github.com/magiksoft/aider-desk/issues

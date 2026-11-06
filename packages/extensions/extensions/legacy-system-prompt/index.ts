@@ -34,7 +34,7 @@ export default class LegacySystemPromptExtension implements Extension {
     name: 'Legacy System Prompt',
     version: '1.0.0',
     description: 'Restores the verbose pre-optimization system prompt and workflow — ideal for less capable models',
-    iconUrl: 'https://raw.githubusercontent.com/hotovo/aider-desk/refs/heads/main/packages/extensions/extensions/legacy-system-prompt/icon.png',
+    iconUrl: 'https://raw.githubusercontent.com/magiksoft/aider-desk/refs/heads/main/packages/extensions/extensions/legacy-system-prompt/icon.png',
     author: 'wladimiiir',
     capabilities: ['context'],
   };

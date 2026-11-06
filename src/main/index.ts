@@ -340,7 +340,7 @@ export const getCreateNewWindow = () => createNewWindow;
 
 app.whenReady().then(async () => {
   try {
-    electronApp.setAppUserModelId('com.hotovo.aider-desk');
+    electronApp.setAppUserModelId('eu.magiksoft.aiderdesk');
 
     if (!HEADLESS_MODE) {
       if (DISABLE_MENU) {
