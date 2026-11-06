@@ -1,0 +1,109 @@
+.section {
+  padding: 6rem 1.5rem;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3.5rem;
+}
+
+.sectionBadge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--ad-accent, #2563eb);
+  margin-bottom: 1rem;
+}
+
+.heading {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--ad-text-primary, #0f172a);
+  margin: 0 0 1rem 0;
+  text-decoration: none !important;
+}
+
+.subheading {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--ad-text-secondary, #64748b);
+  margin: 0;
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.faqItem {
+  background: var(--ad-bg-card, #ffffff);
+  border: 1px solid var(--ad-border, rgba(148, 163, 184, 0.2));
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.faqItemOpen {
+  border-color: var(--ad-border-hover, #94a3b8);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.questionButton {
+  width: 100%;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ad-text-primary, #0f172a);
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.questionButton:hover {
+  color: var(--ad-accent, #2563eb);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--ad-text-secondary, #64748b);
+  transition: transform 0.25s ease;
+}
+
+.chevronRotated {
+  transform: rotate(180deg);
+  color: var(--ad-accent, #2563eb);
+}
+
+.answerWrapper {
+  padding: 0 1.5rem 1.25rem;
+}
+
+.answerText {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--ad-text-secondary, #475569);
+}
+
+@media (max-width: 640px) {
+  .heading {
+    font-size: 2rem;
+  }
+}

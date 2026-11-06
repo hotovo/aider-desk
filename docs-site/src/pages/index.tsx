@@ -1,274 +1,78 @@
-import React, { useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import { clsx } from 'clsx';
 import Layout from '@theme/Layout';
-
+import { HeroSection } from '../components/HeroSection';
+import { ShowcaseTabs } from '../components/ShowcaseTabs';
+import { PrimitivesSection } from '../components/PrimitivesSection';
+import { CodeShowcaseSection } from '../components/CodeShowcaseSection';
+import { ComparisonSection } from '../components/ComparisonSection';
+import { ProvidersSection } from '../components/ProvidersSection';
+import { DownloadSection } from '../components/DownloadSection';
+import { FaqSection } from '../components/FaqSection';
+import { CtaSection } from '../components/CtaSection';
 import styles from './index.module.css';
 
 const Home = () => {
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
   useEffect(() => {
-    // Add intersection observer for scroll animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px',
+    const handleScroll = () => {
+      if (window.scrollY > 400) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          const target = entry.target as HTMLElement;
-          target.style.opacity = '1';
-          target.style.transform = 'translateY(0)';
-        }
-      });
-    }, observerOptions);
-
-    // Observe all sections
-    const sections = document.querySelectorAll('section');
-    sections.forEach((section) => {
-      const htmlSection = section as HTMLElement;
-      htmlSection.style.opacity = '0';
-      htmlSection.style.transform = 'translateY(30px)';
-      htmlSection.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
-      observer.observe(section);
-    });
-
-    // Scroll to top button visibility
-    const scrollToTopButton = document.querySelector(`.${styles.scrollToTop}`);
-    if (scrollToTopButton) {
-      const toggleScrollToTopButton = () => {
-        if (window.scrollY > 300) {
-          scrollToTopButton.classList.add('visible');
-        } else {
-          scrollToTopButton.classList.remove('visible');
-        }
-      };
-
-      window.addEventListener('scroll', toggleScrollToTopButton);
-      toggleScrollToTopButton(); // Initial check
-
-      return () => {
-        window.removeEventListener('scroll', toggleScrollToTopButton);
-        sections.forEach((section) => observer.unobserve(section));
-      };
-    }
-
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
-      sections.forEach((section) => observer.unobserve(section));
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
 
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <Layout>
-      <div className={styles.heroBanner}>
-        <div className={styles.heroContent}>
-          <div className={styles.heroMain}>
-            <div className={styles.heroContentCentered}>
-              <div className={styles.brandSection}>
-                <img src="img/icon.png" alt="AiderDesk Logo" className={styles.heroIcon} />
-                <h1 className={styles.brandTitle}>AiderDesk</h1>
-              </div>
-              <div className={styles.heroText}>
-                <h2 className={styles.heroTagline}>
-                  <span className={styles.gradientText}>Platform for AI-powered</span>
-                  <br />
-                  <span className={styles.gradientText}>software engineers</span>
-                </h2>
-                <p className={styles.heroSubtitle}>The smart way to integrate AI into your development workflow</p>
-                <div className={styles.floatingCard}>
-                  <div className={styles.cardContent}>
-                    <div className={styles.codeBlock}>
-                      <div className={styles.codeHeader}>
-                        <div className={styles.codeDots}>
-                          <span></span>
-                          <span></span>
-                          <span></span>
-                        </div>
-                      </div>
-                      <div className={styles.codeBody}>
-                        {/* eslint-disable-next-line react/jsx-no-comment-textnodes */}
-                        <span className={styles.codeComment}>// AI-powered coding</span>
-                        <br />
-                        <span className={styles.codeKeyword}>const</span> <span className={styles.codeVariable}>result</span> ={' '}
-                        <span className={styles.codeFunction}>generateCode</span>();
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className={styles.heroVisual}>
-            <div className={styles.heroCTA}>
-              <a
-                href="https://github.com/magiksoft/aider-desk/releases"
-                className={`button button--primary button--lg ${styles.primaryButton}`}
-                onClick={(e) => {
-                  e.currentTarget.style.transform = 'scale(0.95)';
-                  setTimeout(() => {
-                    e.currentTarget.style.transform = '';
-                  }, 150);
-                }}
-              >
-                Download Now
-              </a>
-              <a
-                href="docs"
-                className={`button button--lg ${styles.secondaryButton}`}
-                onClick={(e) => {
-                  e.currentTarget.style.transform = 'scale(0.95)';
-                  setTimeout(() => {
-                    e.currentTarget.style.transform = '';
-                  }, 150);
-                }}
-              >
-                Documentation
-              </a>
-            </div>
-          </div>
+      <div className={styles.pageWrapper}>
+        <HeroSection />
+
+        <div className={styles.showcaseContainer}>
+          <ShowcaseTabs />
         </div>
+
+        <div className={styles.sectionDivider} />
+        <PrimitivesSection />
+
+        <div className={styles.sectionDivider} />
+        <CodeShowcaseSection />
+
+        <div className={styles.sectionDivider} />
+        <ComparisonSection />
+
+        <div className={styles.sectionDivider} />
+        <ProvidersSection />
+
+        <div className={styles.sectionDivider} />
+        <DownloadSection />
+
+        <div className={styles.sectionDivider} />
+        <FaqSection />
+
+        <div className={styles.sectionDivider} />
+        <CtaSection />
+
+        <button
+          type="button"
+          className={clsx(styles.scrollToTop, showScrollTop && styles.scrollToTopVisible)}
+          onClick={handleScrollToTop}
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
       </div>
-
-      <section className={styles.transformSection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Transform How You Code</h2>
-          <p className={styles.sectionSubtitle}>
-            AiderDesk brings the power of AI directly into your development environment, making coding faster, smarter, and more enjoyable.
-          </p>
-        </div>
-      </section>
-
-      <section className={styles.screenshotSection}>
-        <div className={styles.container}>
-          <div className={styles.screenshotWrapper}>
-            <img src="img/screenshot.png" alt="AiderDesk Interface" className={styles.screenshot} />
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.downloadSection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Get Started in Seconds</h2>
-          <div className={styles.downloadButtons}>
-            <a
-              href="https://github.com/magiksoft/aider-desk/releases"
-              className={`button button--primary button--lg ${styles.primaryButton}`}
-              onClick={(e) => {
-                e.currentTarget.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                  e.currentTarget.style.transform = '';
-                }, 150);
-              }}
-            >
-              Download Now
-            </a>
-            <a
-              href="docs"
-              className={`button button--lg ${styles.secondaryButton}`}
-              onClick={(e) => {
-                e.currentTarget.style.transform = 'scale(0.95)';
-                setTimeout(() => {
-                  e.currentTarget.style.transform = '';
-                }, 150);
-              }}
-            >
-              Documentation
-            </a>
-          </div>
-          <p className={styles.platformNote}>Available for Windows, macOS and Linux</p>
-        </div>
-      </section>
-
-      <section className={styles.featuresSection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Why Developers Love AiderDesk</h2>
-          <div className={styles.featuresGrid}>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🤖</div>
-              <h3>AI-Powered Assistance</h3>
-              <p>Generate, modify, and explain code with natural language prompts</p>
-            </div>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>🧠</div>
-              <h3>Context-Aware</h3>
-              <p>Understands your entire project for more relevant suggestions</p>
-            </div>
-            <div className={styles.featureCard}>
-              <div className={styles.featureIcon}>⚡</div>
-              <h3>Lightning Fast</h3>
-              <p>Get AI assistance without leaving your development flow</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.audienceSection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Perfect For</h2>
-          <div className={styles.audienceGrid}>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>👨‍💻</div>
-              <div className={styles.audienceContent}>
-                <strong>Full-stack developers</strong>
-                <span>looking to accelerate their workflow</span>
-              </div>
-            </div>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>👥</div>
-              <div className={styles.audienceContent}>
-                <strong>Teams</strong>
-                <span>wanting consistent, high-quality code</span>
-              </div>
-            </div>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>🔧</div>
-              <div className={styles.audienceContent}>
-                <strong>Open source maintainers</strong>
-                <span>handling complex projects</span>
-              </div>
-            </div>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>📚</div>
-              <div className={styles.audienceContent}>
-                <strong>Learners</strong>
-                <span>who want to understand code better</span>
-              </div>
-            </div>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>🧠</div>
-              <div className={styles.audienceContent}>
-                <strong>LLM Experts</strong>
-                <span>experimenting with different AI models</span>
-              </div>
-            </div>
-            <div className={styles.audienceCard}>
-              <div className={styles.audienceIcon}>💼</div>
-              <div className={styles.audienceContent}>
-                <strong>Freelancers</strong>
-                <span>staying competitive with AI assistance</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className={styles.communitySection}>
-        <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>Connect With Us</h2>
-          <p className={styles.sectionSubtitle}>Have questions or feedback? Join our growing community!</p>
-          <div className={styles.communityLinks}>
-            <a href="https://discord.com/invite/dyM3G9nTe4" className={styles.communityLink}>
-              Discord Server
-            </a>
-            <a href="https://github.com/magiksoft/aider-desk/discussions" className={styles.communityLink}>
-              GitHub Discussions
-            </a>
-          </div>
-        </div>
-      </section>
-
-      {/* Scroll to top button */}
-      <button className={styles.scrollToTop} onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Scroll to top">
-        ↑
-      </button>
     </Layout>
   );
 };

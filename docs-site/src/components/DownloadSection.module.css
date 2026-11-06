@@ -1,0 +1,282 @@
+.section {
+  padding: 6rem 1.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 3.5rem;
+}
+
+.sectionBadge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--ad-accent, #2563eb);
+  margin-bottom: 1rem;
+}
+
+.heading {
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--ad-text-primary, #0f172a);
+  margin: 0 0 1rem 0;
+  text-decoration: none !important;
+}
+
+.subheading {
+  font-size: 1.15rem;
+  line-height: 1.6;
+  color: var(--ad-text-secondary, #64748b);
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.5rem;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+.downloadCard {
+  background: var(--ad-bg-card, #ffffff);
+  border: 1px solid var(--ad-border, rgba(148, 163, 184, 0.2));
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+  transition: all 0.2s ease;
+  height: 100%;
+  grid-column: span 2;
+}
+
+.downloadCardHeadlessFirst {
+  grid-column: 2 / span 2;
+}
+
+@media (max-width: 996px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+  }
+
+  .downloadCard {
+    grid-column: span 1;
+  }
+
+  .downloadCardHeadlessFirst {
+    grid-column: span 1;
+  }
+
+  .downloadCard:last-child {
+    grid-column: 1 / -1;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .downloadCard,
+  .downloadCardHeadlessFirst,
+  .downloadCard:last-child {
+    grid-column: span 1;
+    max-width: 100%;
+    margin: 0;
+  }
+}
+
+.downloadCard:hover {
+  transform: translateY(-4px);
+  border-color: var(--ad-border-hover, #94a3b8);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.osIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--ad-text-primary, #0f172a);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.osInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.osName {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ad-text-primary, #0f172a);
+  margin: 0;
+  text-decoration: none !important;
+}
+
+.osVersion {
+  font-size: 0.75rem;
+  color: var(--ad-text-secondary, #64748b);
+}
+
+.downloadButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.downloadBtnPrimary, .downloadBtnSecondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: all 0.15s ease;
+}
+
+.downloadBtnPrimary {
+  background: #2563eb;
+  color: #ffffff !important;
+}
+
+.downloadBtnPrimary:hover {
+  background: #1d4ed8;
+}
+
+.downloadBtnSecondary {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--ad-text-primary, #0f172a) !important;
+  border: 1px solid var(--ad-border, rgba(148, 163, 184, 0.2));
+}
+
+.downloadBtnSecondary:hover {
+  background: rgba(148, 163, 184, 0.16);
+}
+
+.cliBox {
+  background: var(--ad-code-bg, #090d16);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-family: 'Ubuntu Sans Mono', monospace;
+  font-size: 0.75rem;
+  color: #e2e8f0;
+}
+
+.cliSnippet {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cliPrompt {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.brewHint {
+  margin-top: auto;
+  font-size: 0.75rem;
+  color: var(--ad-text-secondary, #64748b);
+  text-align: center;
+  font-family: 'Ubuntu Sans Mono', monospace;
+}
+
+.brewHint code {
+  background: rgba(148, 163, 184, 0.1) !important;
+  border: none !important;
+  padding: 0.2rem 0.4rem !important;
+  color: var(--ad-text-secondary, #475569) !important;
+  border-radius: 4px;
+}
+
+.cardFooterLink {
+  margin-top: auto;
+  text-align: center;
+}
+
+.linkText {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ad-accent, #2563eb);
+  text-decoration: none !important;
+  transition: gap 0.15s ease;
+}
+
+.linkText:hover {
+  gap: 0.55rem;
+  color: var(--ad-accent-hover, #1d4ed8);
+}
+
+.footerRow {
+  margin-top: 2.5rem;
+  text-align: center;
+}
+
+.releaseLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--ad-accent, #2563eb);
+  text-decoration: none !important;
+}
+
+.releaseLink:hover {
+  text-decoration: underline !important;
+}
+
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .heading {
+    font-size: 2rem;
+  }
+}

@@ -128,7 +128,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} AiderDesk contributors. Happy coding!`,
+      copyright: `Copyright © ${new Date().getFullYear()} Magiksoft s.r.o.`,
     },
     prism: {
       theme: prismThemes.github,

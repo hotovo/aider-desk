@@ -23,6 +23,20 @@
   --ifm-font-size-base: 90%;
   --ifm-font-family-base: 'Ubuntu Sans Mono', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --ifm-font-family-monospace: 'Ubuntu Sans Mono', 'Sono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+
+  /* Modern AiderDesk Landing Page Tokens */
+  --ad-bg: #f8fafc;
+  --ad-bg-card: rgba(255, 255, 255, 0.95);
+  --ad-bg-card-hover: rgba(255, 255, 255, 1);
+  --ad-border: rgba(226, 232, 240, 0.9);
+  --ad-border-hover: rgba(148, 163, 184, 0.6);
+  --ad-text-primary: #0f172a;
+  --ad-text-secondary: #475569;
+  --ad-text-muted: #64748b;
+  --ad-accent: #2563eb;
+  --ad-accent-glow: rgba(37, 99, 235, 0.15);
+  --ad-code-bg: #090d16;
+  --ad-code-text: #e2e8f0;
 }
 
 /* Remove external link icon from navbar items */
@@ -45,6 +59,20 @@
   --ifm-navbar-background-color: #171923; /* slate-900 */
   --ifm-navbar-background-color-black-to-grey: a0aec0;
   --docusaurus-highlighted-code-line-bg: rgba(255, 255, 255, 0.1);
+
+  /* Modern AiderDesk Landing Page Tokens (Dark) */
+  --ad-bg: #0b0f17;
+  --ad-bg-card: rgba(17, 24, 39, 0.75);
+  --ad-bg-card-hover: rgba(26, 36, 56, 0.9);
+  --ad-border: rgba(255, 255, 255, 0.1);
+  --ad-border-hover: rgba(255, 255, 255, 0.22);
+  --ad-text-primary: #f8fafc;
+  --ad-text-secondary: #cbd5e1;
+  --ad-text-muted: #94a3b8;
+  --ad-accent: #60a5fa;
+  --ad-accent-glow: rgba(96, 165, 250, 0.2);
+  --ad-code-bg: #060911;
+  --ad-code-text: #e2e8f0;
 }
 
 /* Search bar: themed with the slate palette, wider, centered in the navbar */
@@ -112,8 +140,10 @@
   }
 }
 
-/* Reduce header font sizes */
-h1 {
+/* Reduce header font sizes for docs content */
+article h1,
+.theme-doc-markdown h1,
+h1:not([class]) {
   font-size: 1.8rem; /* Reduced from default 2.5rem */
   text-decoration: underline;
 }

@@ -1,0 +1,199 @@
+.section {
+  padding: 5rem 1.5rem;
+  background: rgba(148, 163, 184, 0.05);
+  border-top: 1px solid var(--ad-border, rgba(148, 163, 184, 0.15));
+  border-bottom: 1px solid var(--ad-border, rgba(148, 163, 184, 0.15));
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.textColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.sectionBadge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--ad-accent, #2563eb);
+  margin-bottom: 1rem;
+  width: fit-content;
+}
+
+.heading {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  color: var(--ad-text-primary, #0f172a);
+  margin: 0 0 1rem 0;
+  text-decoration: none !important;
+}
+
+.subheading {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  color: var(--ad-text-secondary, #64748b);
+  margin: 0 0 2rem 0;
+}
+
+.tabButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--ad-bg-card, #ffffff);
+  border: 1px solid var(--ad-border, rgba(148, 163, 184, 0.2));
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ad-text-secondary, #64748b);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+}
+
+.tabBtn:hover {
+  background: var(--ad-bg-card-hover, #f8fafc);
+  color: var(--ad-text-primary, #0f172a);
+}
+
+.tabBtnActive {
+  background: rgba(37, 99, 235, 0.1) !important;
+  color: var(--ad-accent, #2563eb) !important;
+  border-color: rgba(37, 99, 235, 0.35) !important;
+}
+
+[data-theme='dark'] .tabBtnActive {
+  background: rgba(96, 165, 250, 0.15) !important;
+  color: #60a5fa !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+
+.activeInfo {
+  border-left: 2px solid var(--ad-accent, #2563eb);
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.infoTitle {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ad-text-primary, #0f172a);
+  margin: 0;
+  text-decoration: none !important;
+}
+
+.infoText {
+  font-size: 0.92rem;
+  color: var(--ad-text-secondary, #475569);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.docLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ad-accent, #2563eb);
+  text-decoration: none !important;
+  margin-top: 0.35rem;
+}
+
+.docLink:hover {
+  text-decoration: underline !important;
+}
+
+/* Editor box */
+.editorBox {
+  background: var(--ad-code-bg, #090d16);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.75rem;
+}
+
+.trafficLights {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.trafficLights span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.lightRed { background: #ef4444; }
+.lightYellow { background: #f59e0b; }
+.lightGreen { background: #10b981; }
+
+.editorFile {
+  font-family: 'Ubuntu Sans Mono', monospace;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  flex: 1;
+}
+
+.langPill {
+  font-family: 'Ubuntu Sans Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.editorPre {
+  margin: 0;
+  padding: 1.25rem;
+  background: transparent !important;
+  border: none !important;
+  font-family: 'Ubuntu Sans Mono', monospace;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: #e2e8f0;
+  overflow-x: auto;
+}
+
+@media (max-width: 996px) {
+  .container {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
