@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { MdUndo } from 'react-icons/md';
+import { LogAction } from '@common/types';
 
 import { Button } from '../common/Button';
 
@@ -8,21 +9,21 @@ import { useApi, useIsReadonlyView } from '@/contexts/ApiContext';
 import { useTaskStore } from '@/stores/taskStore';
 
 type Props = {
-  actionIds: string[];
+  actions: LogAction[];
   baseDir: string;
   taskId: string;
   onInterrupt?: () => void;
   removeActionId?: (actionId: string) => void;
 };
 
-export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt, removeActionId }: Props) => {
+export const MessageActions = ({ actions, baseDir, taskId, onInterrupt, removeActionId }: Props) => {
   const { t } = useTranslation();
   const [isExecuted, setIsExecuted] = useState(false);
   const api = useApi();
   const isReadonlyView = useIsReadonlyView();
   const canUndoContextChange = useTaskStore((state) => state.taskStateMap.get(taskId)?.canUndoContextChange ?? false);
 
-  if (isReadonlyView || !actionIds || actionIds.length === 0 || isExecuted) {
+  if (isReadonlyView || !actions || actions.length === 0 || isExecuted) {
     return null;
   }
 
@@ -62,47 +63,59 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt, remove
     void api.undoContextChange(baseDir, taskId);
   };
 
-  const renderAction = (id: string) => {
+  const handlers: Record<string, (action: LogAction) => void> = {
+    interrupt: () => onInterrupt?.(),
+    'abort-rebase': handleAbortRebase,
+    'continue-rebase': handleContinueRebase,
+    'resolve-conflicts-with-agent': handleResolveConflictsWithAgent,
+    'resolve-git-error-with-agent': handleResolveGitErrorWithAgent,
+    'rebase-worktree': handleRebaseWorktree,
+    undoContextChange: handleUndoContextChange,
+  };
+
+  const renderAction = (action: LogAction) => {
+    const { id } = action;
+    const handleClick = () => handlers[id]?.(action);
     switch (id) {
       case 'interrupt':
         return (
-          <Button key={id} size="xs" variant="outline" color="danger" onClick={() => onInterrupt?.()}>
+          <Button key={id} size="xs" variant="outline" color="danger" onClick={handleClick}>
             {t('common.cancel')}
           </Button>
         );
       case 'abort-rebase':
         return (
-          <Button key={id} size="xs" variant="outline" color="danger" onClick={handleAbortRebase}>
+          <Button key={id} size="xs" variant="outline" color="danger" onClick={handleClick}>
             {t('worktree.abortRebase')}
           </Button>
         );
       case 'continue-rebase':
         return (
-          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleContinueRebase}>
+          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleClick}>
             {t('worktree.continueRebase')}
           </Button>
         );
       case 'resolve-conflicts-with-agent':
         return (
-          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleResolveConflictsWithAgent}>
+          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleClick}>
             {t('worktree.resolveConflictsWithAgent')}
           </Button>
         );
       case 'resolve-git-error-with-agent':
         return (
-          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleResolveGitErrorWithAgent}>
+          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleClick}>
             {t('git.resolveWithAI')}
           </Button>
         );
       case 'rebase-worktree':
         return (
-          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleRebaseWorktree}>
+          <Button key={id} size="xs" variant="contained" color="primary" onClick={handleClick}>
             {t('worktree.rebaseFromBranch')}
           </Button>
         );
       case 'undoContextChange':
         return canUndoContextChange ? (
-          <Button key={id} size="xs" variant="text" color="primary" onClick={handleUndoContextChange} tooltip={t('promptField.undoContextChange')}>
+          <Button key={id} size="xs" variant="text" color="primary" onClick={handleClick} tooltip={t('promptField.undoContextChange')}>
             <MdUndo className="w-4 h-4 mr-1" />
             {t('common.undo')}
           </Button>
@@ -112,5 +125,5 @@ export const MessageActions = ({ actionIds, baseDir, taskId, onInterrupt, remove
     }
   };
 
-  return <div className="flex flex-wrap gap-2">{actionIds.map(renderAction)}</div>;
+  return <div className="flex flex-wrap gap-2">{actions.map(renderAction)}</div>;
 };

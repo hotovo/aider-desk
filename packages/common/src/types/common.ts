@@ -19,7 +19,7 @@ import {
 } from '@common/agent';
 import { z } from 'zod';
 
-import { ContextFile, ContextMemoryMode, ContextMessage, PromptContext, UsageReportData } from './context';
+import { JSONValue, ContextFile, ContextMemoryMode, ContextMessage, PromptContext, UsageReportData } from './context';
 
 // Worktree schema definition
 export const WorktreeSchema = z.object({
@@ -275,6 +275,11 @@ export interface CommandOutputData {
 
 export type LogLevel = 'info' | 'warning' | 'error' | 'loading';
 
+export interface LogAction {
+  id: string;
+  data?: JSONValue;
+}
+
 export interface LogData {
   baseDir: string;
   taskId: string;
@@ -282,7 +287,7 @@ export interface LogData {
   message?: string;
   finished?: boolean;
   promptContext?: PromptContext;
-  actionIds?: string[];
+  actions?: LogAction[];
   timestamp?: number;
 }
 

@@ -9,6 +9,7 @@
 - added browser loading progress with retry support and improved startup downloads with bundle minification, compression, and caching
 - fixed timeouts for long-running browser prompts and task operations while preserving CLI streaming
 - fixed database errors during app shutdown by waiting for project and task cleanup to finish
+- added support for payload data in log message actions while preserving existing action behavior
 
 ## [0.90.0]
 

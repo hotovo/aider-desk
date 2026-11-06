@@ -35,7 +35,7 @@ describe('LogMessageBlock', () => {
     type: 'log',
     level: 'error',
     content: 'git error occurred',
-    actionIds: ['resolve-git-error-with-agent'],
+    actions: [{ id: 'resolve-git-error-with-agent' }],
     timestamp: Date.now(),
     ...overrides,
   });
@@ -65,7 +65,7 @@ describe('LogMessageBlock', () => {
         .getState()
         .taskMessagesMap.get('task-123')
         ?.find((message) => message.id === 'log-1') as LogMessage | undefined;
-      expect(storedMessage?.actionIds ?? []).not.toContain('resolve-git-error-with-agent');
+      expect(storedMessage?.actions ?? []).not.toContainEqual({ id: 'resolve-git-error-with-agent' });
     });
   });
 

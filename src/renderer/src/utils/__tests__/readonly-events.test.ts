@@ -115,3 +115,36 @@ describe('applyReadonlyLogEvent', () => {
     expect(result.map((m: Message) => m.content)).toEqual(['First log', 'Second log']);
   });
 });
+
+describe('readonly log actions', () => {
+  it.each(['info', 'loading'])('preserves payloads on %s events', (level) => {
+    const actions = [{ id: 'interrupt' }, { id: 'custom', data: { nested: [null, false, 1] } }];
+    const event = createEvent('log', { taskId: 'task-1', level, actions });
+
+    expect(applyReadonlyLogEvent([], event, 'task-1', 'Thinking...')[0]).toMatchObject({ actions });
+  });
+
+  it.each(['info', 'loading'])('normalizes legacy IDs on %s events', (level) => {
+    const event = createEvent('log', { taskId: 'task-1', level, actionIds: ['interrupt'] });
+
+    expect(applyReadonlyLogEvent([], event, 'task-1', 'Thinking...')[0]).toMatchObject({ actions: [{ id: 'interrupt' }] });
+  });
+
+  it('updates loading payloads while keeping the message ID', () => {
+    const initial = applyReadonlyLogEvent(
+      [],
+      createEvent('log', { taskId: 'task-1', level: 'loading', actions: [{ id: 'interrupt', data: 1 }] }),
+      'task-1',
+      'Thinking...',
+    );
+    const updated = applyReadonlyLogEvent(
+      initial,
+      createEvent('log', { taskId: 'task-1', level: 'loading', actions: [{ id: 'interrupt', data: 2 }] }),
+      'task-1',
+      'Thinking...',
+    );
+
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toMatchObject({ id: initial[0].id, actions: [{ id: 'interrupt', data: 2 }] });
+  });
+});

@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import { getLogActions } from '@common/log-actions';
 import {
   LoadingMessage,
   LogData,
@@ -114,7 +115,9 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
     return messages;
   }
 
-  const { level, message: text, finished, promptContext, actionIds, timestamp } = event.data as LogData;
+  const data = event.data as LogData;
+  const { level, message: text, finished, promptContext, timestamp } = data;
+  const actions = getLogActions(data);
 
   if (level === 'loading') {
     if (finished) {
@@ -125,13 +128,13 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
       type: 'loading',
       content: text || defaultLoadingText,
       promptContext,
-      actionIds,
+      actions,
       timestamp,
     };
     const existingIndex = messages.findIndex((msg) => msg.type === 'loading');
     if (existingIndex !== -1) {
       const updated = [...messages];
-      updated[existingIndex] = { ...updated[existingIndex], content: loadingMessage.content, promptContext };
+      updated[existingIndex] = { ...loadingMessage, id: updated[existingIndex].id };
       return updated;
     }
     return [...messages, loadingMessage];
@@ -143,7 +146,7 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
     level,
     content: text ?? '',
     promptContext,
-    actionIds,
+    actions,
     timestamp,
   };
   return [...messages.filter((msg) => msg.type !== 'loading'), logMessage];

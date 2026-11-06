@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { useTaskLogHandlers } from '../useTaskLogHandlers';
 
-import type { LogData } from '@common/types';
+import type { LogAction, LogData } from '@common/types';
 
 import { render } from '@/__tests__/render';
 import { createMockApi } from '@/__tests__/mocks/api';
@@ -44,6 +44,7 @@ describe('useTaskLogHandlers', () => {
       logHandler = handler;
       return () => {};
     });
+    useTaskStore.getState().unloadTask('task-123');
     setMessages('task-123', () => []);
   });
 
@@ -66,7 +67,7 @@ describe('useTaskLogHandlers', () => {
     render(<TestComponent />);
 
     act(() => {
-      logHandler?.(createLogData({ message: 'first error', actionIds: ['resolve-git-error-with-agent'], timestamp: 1 }));
+      logHandler?.(createLogData({ message: 'first error', actions: [{ id: 'resolve-git-error-with-agent' }], timestamp: 1 }));
     });
 
     await waitFor(() => {
@@ -75,16 +76,16 @@ describe('useTaskLogHandlers', () => {
     });
 
     act(() => {
-      logHandler?.(createLogData({ message: 'second error', actionIds: ['resolve-git-error-with-agent'], timestamp: 2 }));
+      logHandler?.(createLogData({ message: 'second error', actions: [{ id: 'resolve-git-error-with-agent' }], timestamp: 2 }));
     });
 
     await waitFor(() => {
-      const messages = useTaskStore.getState().taskMessagesMap.get('task-123') as Array<{ content: string; actionIds?: string[] }>;
+      const messages = useTaskStore.getState().taskMessagesMap.get('task-123') as Array<{ content: string; actions?: LogAction[] }>;
       expect(messages).toHaveLength(2);
       expect(messages[0].content).toBe('first error');
-      expect(messages[0].actionIds ?? []).not.toContain('resolve-git-error-with-agent');
+      expect(messages[0].actions ?? []).not.toContainEqual({ id: 'resolve-git-error-with-agent' });
       expect(messages[1].content).toBe('second error');
-      expect(messages[1].actionIds).toContain('resolve-git-error-with-agent');
+      expect(messages[1].actions).toContainEqual({ id: 'resolve-git-error-with-agent' });
     });
   });
 
@@ -92,17 +93,55 @@ describe('useTaskLogHandlers', () => {
     render(<TestComponent />);
 
     act(() => {
-      logHandler?.(createLogData({ message: 'rebase failed', actionIds: ['continue-rebase', 'resolve-git-error-with-agent'], timestamp: 1 }));
+      logHandler?.(
+        createLogData({
+          message: 'rebase failed',
+          actions: [{ id: 'continue-rebase', data: { branch: 'main' } }, { id: 'resolve-git-error-with-agent' }],
+          timestamp: 1,
+        }),
+      );
     });
 
     act(() => {
-      logHandler?.(createLogData({ message: 'merge failed', actionIds: ['resolve-git-error-with-agent'], timestamp: 2 }));
+      logHandler?.(createLogData({ message: 'merge failed', actions: [{ id: 'resolve-git-error-with-agent' }], timestamp: 2 }));
     });
 
     await waitFor(() => {
-      const messages = useTaskStore.getState().taskMessagesMap.get('task-123') as Array<{ content: string; actionIds?: string[] }>;
-      expect(messages[0].actionIds).toEqual(['continue-rebase']);
-      expect(messages[1].actionIds).toEqual(['resolve-git-error-with-agent']);
+      const messages = useTaskStore.getState().taskMessagesMap.get('task-123') as Array<{ content: string; actions?: LogAction[] }>;
+      expect(messages[0].actions).toEqual([{ id: 'continue-rebase', data: { branch: 'main' } }]);
+      expect(messages[1].actions).toEqual([{ id: 'resolve-git-error-with-agent' }]);
     });
+  });
+  it.each(['info', 'loading'] as const)('preserves action data in %s messages', async (level) => {
+    render(<TestComponent />);
+    const actions = [{ id: 'interrupt' }, { id: 'custom', data: { nested: [true, null, 'value'] } }];
+
+    act(() => logHandler?.(createLogData({ level, actions })));
+
+    await waitFor(() => expect(useTaskStore.getState().taskMessagesMap.get('task-123')?.[0]).toMatchObject({ actions }));
+  });
+
+  it.each(['info', 'loading'] as const)('normalizes legacy IDs in %s events', async (level) => {
+    render(<TestComponent />);
+    const legacyEvent = { ...createLogData({ level }), actionIds: ['interrupt'] };
+
+    act(() => logHandler?.(legacyEvent));
+
+    await waitFor(() => expect(useTaskStore.getState().taskMessagesMap.get('task-123')?.[0]).toMatchObject({ actions: [{ id: 'interrupt' }] }));
+  });
+
+  it('replaces loading action payloads when updating a loading message', async () => {
+    render(<TestComponent />);
+    act(() => logHandler?.(createLogData({ level: 'loading', actions: [{ id: 'interrupt', data: 'first' }] })));
+    await waitFor(() => expect(useTaskStore.getState().taskMessagesMap.get('task-123')).toHaveLength(1));
+    const id = useTaskStore.getState().taskMessagesMap.get('task-123')?.[0].id;
+
+    act(() => logHandler?.(createLogData({ level: 'loading', actions: [{ id: 'interrupt', data: 'second' }] })));
+
+    await waitFor(() =>
+      expect(useTaskStore.getState().taskMessagesMap.get('task-123')).toEqual([
+        expect.objectContaining({ id, actions: [{ id: 'interrupt', data: 'second' }] }),
+      ]),
+    );
   });
 });

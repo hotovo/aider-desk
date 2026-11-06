@@ -22,6 +22,7 @@ import {
   GitSyncCommits,
   LogData,
   LogLevel,
+  LogAction,
   MergeState,
   MessageRole,
   Mode,
@@ -2718,7 +2719,7 @@ export class Task {
     this.aiderManager.closeCommandOutput(addToContext);
   }
 
-  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actionIds?: string[]) {
+  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actions?: LogAction[]) {
     const data: LogData = {
       baseDir: this.project.baseDir,
       taskId: this.taskId,
@@ -2726,7 +2727,7 @@ export class Task {
       message,
       finished,
       promptContext,
-      actionIds,
+      actions,
       timestamp: Date.now(),
     };
 
@@ -3609,7 +3610,7 @@ export class Task {
 
     await this.contextManager.loadMessages(compactedMessages, false, executionId, true);
     await this.updateContextInfo();
-    this.addLogMessage('info', infoMessage, false, undefined, ['undoContextChange']);
+    this.addLogMessage('info', infoMessage, false, undefined, [{ id: 'undoContextChange' }]);
 
     return compactedMessages;
   }
@@ -3729,7 +3730,7 @@ export class Task {
       }
 
       await this.updateContextInfo();
-      this.addLogMessage('info', 'Conversation compacted.', false, undefined, ['undoContextChange']);
+      this.addLogMessage('info', 'Conversation compacted.', false, undefined, [{ id: 'undoContextChange' }]);
     } catch (error) {
       logger.error('Failed to compact conversation', {
         baseDir: this.project.baseDir,
@@ -3772,7 +3773,7 @@ export class Task {
       }
     }
 
-    this.addLogMessage('loading', loadingMessage, false, undefined, ['interrupt']);
+    this.addLogMessage('loading', loadingMessage, false, undefined, [{ id: 'interrupt' }]);
 
     // Get context files to transfer
     const contextFiles = await this.getContextFiles();
@@ -4629,7 +4630,7 @@ ${error.stderr}`,
             : `Failed to merge worktree: ${error instanceof Error ? error.message : String(error)}`,
         true,
         undefined,
-        isConflict ? ['rebase-worktree'] : undefined,
+        isConflict ? [{ id: 'rebase-worktree' }] : undefined,
       );
     }
 
@@ -4727,7 +4728,7 @@ ${error.stderr}`,
               : `Failed to merge worktree: ${error instanceof Error ? error.message : String(error)}`,
           true,
           undefined,
-          isConflict ? ['rebase-worktree'] : undefined,
+          isConflict ? [{ id: 'rebase-worktree' }] : undefined,
         );
 
         await this.sendUpdatedFilesUpdated();
@@ -4763,7 +4764,7 @@ ${error.stderr}`,
                 : `Failed to apply worktree uncommitted changes: ${error instanceof Error ? error.message : String(error)}`,
             true,
             undefined,
-            isConflict ? ['rebase-worktree'] : undefined,
+            isConflict ? [{ id: 'rebase-worktree' }] : undefined,
           );
 
           // Abort the switch so the worktree is preserved together with its uncommitted changes
@@ -4923,7 +4924,7 @@ ${error.stderr}`,
             : `Failed to apply uncommitted changes: ${error instanceof Error ? error.message : String(error)}`,
         true,
         undefined,
-        isConflict ? ['rebase-worktree'] : undefined,
+        isConflict ? [{ id: 'rebase-worktree' }] : undefined,
       );
     }
 
@@ -5580,7 +5581,7 @@ ${error.stderr}`,
   public reportGitActionError(action: string, error: unknown): void {
     const message = error instanceof GitError ? error.getErrorDetails() : error instanceof Error ? error.message : String(error);
     this.lastGitError = { action, message };
-    this.addLogMessage('error', message, true, undefined, ['resolve-git-error-with-agent']);
+    this.addLogMessage('error', message, true, undefined, [{ id: 'resolve-git-error-with-agent' }]);
   }
 
   public async resolveGitErrorWithAgent(): Promise<void> {

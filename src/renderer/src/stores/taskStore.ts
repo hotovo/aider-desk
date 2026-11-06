@@ -192,8 +192,8 @@ export const setMessages = (taskId: string, updateMessages: (prev: Message[]) =>
 export const removeMessageActionId = (taskId: string, messageId: string, actionId: string) =>
   setMessages(taskId, (prevMessages) =>
     prevMessages.map((message) =>
-      message.id === messageId && (isLogMessage(message) || isLoadingMessage(message)) && message.actionIds
-        ? { ...message, actionIds: message.actionIds.filter((id) => id !== actionId) }
+      message.id === messageId && (isLogMessage(message) || isLoadingMessage(message)) && message.actions
+        ? { ...message, actions: message.actions.filter((action) => action.id !== actionId) }
         : message,
     ),
   );

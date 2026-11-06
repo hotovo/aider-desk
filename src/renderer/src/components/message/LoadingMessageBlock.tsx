@@ -18,9 +18,9 @@ export const LoadingMessageBlock = ({ message, baseDir, taskId, onInterrupt }: P
   return (
     <div className={`${baseClasses} text-text-secondary relative group flex items-center`}>
       <span className="flex-grow">{displayedText || ' '}</span>
-      {message.actionIds && (
+      {message.actions && (
         <div className="flex flex-wrap justify-end">
-          <MessageActions actionIds={message.actionIds} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
+          <MessageActions actions={message.actions} baseDir={baseDir} taskId={taskId} onInterrupt={onInterrupt} />
         </div>
       )}
     </div>

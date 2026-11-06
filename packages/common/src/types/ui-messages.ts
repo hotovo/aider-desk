@@ -1,4 +1,4 @@
-import { TaskData, TokensInfoData } from './common';
+import { LogAction, TaskData, TokensInfoData } from './common';
 import { PromptContext, UsageReportData, Group } from './context';
 
 export interface Message {
@@ -30,12 +30,12 @@ export interface ReflectedMessage extends Message {
 export interface LogMessage extends Message {
   type: 'log';
   level: 'info' | 'warning' | 'error';
-  actionIds?: string[];
+  actions?: LogAction[];
 }
 
 export interface LoadingMessage extends Message {
   type: 'loading';
-  actionIds?: string[];
+  actions?: LogAction[];
 }
 
 export interface CommandOutputMessage extends Message {
