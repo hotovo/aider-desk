@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CreateTaskParams, ProjectSettingsSchema, TaskDataSchema, ModeDefinition, QueuedPromptData } from '@common/types';
 
 import { BaseApi } from './base-api';
+import { TaskOperationSchema, TaskOperations } from './task-operations';
 
 import { EventsHandler } from '@/events-handler';
 
@@ -197,9 +198,7 @@ const RunCommandSchema = z.object({
   command: z.string().min(1, 'Command is required'),
 });
 
-const InitProjectRulesFileSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
+const InitProjectRulesFileSchema = TaskOperationSchema.extend({
   args: z.string().optional(),
 });
 
@@ -269,16 +268,12 @@ const RemoveMessagesUpToSchema = z.object({
   messageId: z.string().min(1, 'Message id is required'),
 });
 
-const CompactConversationSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
+const CompactConversationSchema = TaskOperationSchema.extend({
   mode: z.string().min(1, 'Mode is required'),
   customInstructions: z.string().optional(),
 });
 
-const HandoffConversationSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
+const HandoffConversationSchema = TaskOperationSchema.extend({
   focus: z.string().optional(),
 });
 
@@ -472,10 +467,7 @@ const GitPushSchema = z.object({
   pushToBase: z.boolean().optional(),
 });
 
-const ResolveGitErrorSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
-});
+const ResolveGitErrorSchema = TaskOperationSchema.extend({});
 
 const WorktreeStatusSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
@@ -515,8 +507,11 @@ const RenameGitBranchSchema = z.object({
 const RenameWorktreeBranchSchema = RenameGitBranchSchema;
 
 export class ProjectApi extends BaseApi {
+  private readonly taskOperations: TaskOperations;
+
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
+    this.taskOperations = new TaskOperations(eventsHandler);
   }
 
   registerRoutes(router: Router): void {
@@ -705,8 +700,12 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, args } = parsed;
-        await this.eventsHandler.initProjectRulesFile(projectDir, taskId, args);
-        res.status(200).json({ message: 'Project rules file initialized' });
+        await this.taskOperations.execute(
+          res,
+          parsed,
+          () => this.eventsHandler.initProjectRulesFile(projectDir, taskId, args),
+          'Project rules file initialized',
+        );
       }),
     );
 
@@ -958,8 +957,12 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, mode, customInstructions } = parsed;
-        await this.eventsHandler.compactConversation(projectDir, taskId, mode, customInstructions);
-        res.status(200).json({ message: 'Conversation compacted' });
+        await this.taskOperations.execute(
+          res,
+          parsed,
+          () => this.eventsHandler.compactConversation(projectDir, taskId, mode, customInstructions),
+          'Conversation compacted',
+        );
       }),
     );
 
@@ -1003,8 +1006,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId, focus } = parsed;
-        await this.eventsHandler.handoffConversation(projectDir, taskId, focus);
-        res.status(200).json({ message: 'Conversation handed off' });
+        await this.taskOperations.execute(res, parsed, () => this.eventsHandler.handoffConversation(projectDir, taskId, focus), 'Conversation handed off');
       }),
     );
 
@@ -1592,8 +1594,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId } = parsed;
-        await this.eventsHandler.resolveGitErrorWithAgent(projectDir, taskId);
-        res.status(200).json({ message: 'Git error resolution started' });
+        await this.taskOperations.execute(res, parsed, () => this.eventsHandler.resolveGitErrorWithAgent(projectDir, taskId), 'Git error resolution started');
       }),
     );
 

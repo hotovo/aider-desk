@@ -7,6 +7,7 @@
 - added Italian locale
 - safely render non-JSON subagent tool results
 - added browser loading progress with retry support and improved startup downloads with bundle minification, compression, and caching
+- fixed timeouts for long-running browser prompts and task operations while preserving CLI streaming
 
 ## [0.90.0]
 

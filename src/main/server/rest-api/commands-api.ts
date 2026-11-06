@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import { BaseApi } from './base-api';
+import { TaskOperationSchema, TaskOperations } from './task-operations';
 
 import { EventsHandler } from '@/events-handler';
 
@@ -9,9 +10,7 @@ const GetCommandsSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
 });
 
-const RunCustomCommandSchema = z.object({
-  projectDir: z.string().min(1, 'Project directory is required'),
-  taskId: z.string().min(1, 'Task id is required'),
+const RunCustomCommandSchema = TaskOperationSchema.extend({
   commandName: z.string().min(1, 'Command name is required'),
   args: z.array(z.string()),
   mode: z.string().min(1, 'Mode is required'),
@@ -19,8 +18,11 @@ const RunCustomCommandSchema = z.object({
 });
 
 export class CommandsApi extends BaseApi {
+  private readonly taskOperations: TaskOperations;
+
   constructor(private readonly eventsHandler: EventsHandler) {
     super();
+    this.taskOperations = new TaskOperations(eventsHandler);
   }
 
   registerRoutes(router: Router): void {
@@ -52,8 +54,12 @@ export class CommandsApi extends BaseApi {
         }
 
         const { projectDir, taskId, commandName, args, mode, images } = parsed;
-        await this.eventsHandler.runCustomCommand(projectDir, taskId, commandName, args, mode, images);
-        res.status(200).json({ message: 'Custom command executed' });
+        await this.taskOperations.execute(
+          res,
+          parsed,
+          () => this.eventsHandler.runCustomCommand(projectDir, taskId, commandName, args, mode, images),
+          'Custom command executed',
+        );
       }),
     );
   }

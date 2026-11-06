@@ -44,6 +44,7 @@ import {
   ResponseCompletedData,
   SettingsData,
   TaskData,
+  TaskExecutionMode,
   CreateTaskParams,
   TaskStateData,
   TerminalData,
@@ -411,8 +412,33 @@ export class BrowserApi implements ApplicationAPI {
   restartAiderConnector(baseDir: string, taskId: string): void {
     this.post('/project/tasks/restart-aider-connector', { projectDir: baseDir, taskId });
   }
+  private async submitTaskOperation(endpoint: string, baseDir: string, taskId: string, body: Record<string, unknown> = {}): Promise<void> {
+    try {
+      await this.post(endpoint, {
+        ...body,
+        projectDir: baseDir,
+        taskId,
+        requestId: uuidv4(),
+        executionMode: TaskExecutionMode.RunInBackground,
+      });
+    } catch (error) {
+      const data: LogData = {
+        baseDir,
+        taskId,
+        level: 'error',
+        message: error instanceof Error ? error.message : String(error),
+        finished: true,
+      };
+      this.listeners.log.forEach((entry) => {
+        if ((!entry.baseDir || compareBaseDirs(entry.baseDir, baseDir, this.appOS || undefined)) && (!entry.taskId || entry.taskId === taskId)) {
+          entry.callback(data);
+        }
+      });
+    }
+  }
+
   runPrompt(baseDir: string, taskId: string, prompt: string, mode?: Mode, images?: string[]): void {
-    this.post('/run-prompt', { projectDir: baseDir, taskId, prompt, mode, images, requestId: uuidv4() });
+    void this.submitTaskOperation('/run-prompt', baseDir, taskId, { prompt, mode, images });
   }
   savePrompt(baseDir: string, taskId: string, prompt: string): Promise<void> {
     return this.post('/save-prompt', { projectDir: baseDir, taskId, prompt });
@@ -681,7 +707,7 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
   initProjectRulesFile(baseDir: string, taskId: string, args?: string): Promise<void> {
-    return this.post('/project/init-rules', { projectDir: baseDir, taskId, args });
+    return this.submitTaskOperation('/project/init-rules', baseDir, taskId, { args });
   }
   getSkills(baseDir: string, taskId: string): Promise<SkillDefinition[]> {
     return this.get('/skills', { projectDir: baseDir, taskId });
@@ -855,12 +881,7 @@ export class BrowserApi implements ApplicationAPI {
     await this.deleteWithBody('/project/remove-messages-up-to', { projectDir: baseDir, taskId, messageId });
   }
   compactConversation(baseDir: string, taskId: string, mode: Mode, customInstructions?: string): void {
-    this.post('/project/compact-conversation', {
-      projectDir: baseDir,
-      taskId,
-      mode,
-      customInstructions,
-    });
+    void this.submitTaskOperation('/project/compact-conversation', baseDir, taskId, { mode, customInstructions });
   }
 
   async smartCompactConversation(baseDir: string, taskId: string): Promise<void> {
@@ -879,11 +900,7 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   async handoffConversation(baseDir: string, taskId: string, focus?: string): Promise<void> {
-    await this.post('/project/handoff-conversation', {
-      projectDir: baseDir,
-      taskId,
-      focus,
-    });
+    await this.submitTaskOperation('/project/handoff-conversation', baseDir, taskId, { focus });
   }
 
   runCodeChangeRequests(baseDir: string, taskId: string, requests: ChangeRequestItem[], createNewTask?: boolean): void {
@@ -1114,14 +1131,7 @@ export class BrowserApi implements ApplicationAPI {
     return this.get<ModeDefinition[]>('/project/custom-modes', baseDir ? { projectDir: baseDir } : {});
   }
   runCustomCommand(baseDir: string, taskId: string, commandName: string, args: string[], mode: Mode, images?: string[]): Promise<void> {
-    return this.post('/project/custom-commands', {
-      projectDir: baseDir,
-      taskId,
-      commandName,
-      args,
-      mode,
-      images,
-    });
+    return this.submitTaskOperation('/project/custom-commands', baseDir, taskId, { commandName, args, mode, images });
   }
   isTerminalSupported(): boolean {
     return true;
@@ -1426,10 +1436,7 @@ export class BrowserApi implements ApplicationAPI {
   }
 
   resolveGitErrorWithAgent(baseDir: string, taskId: string): Promise<void> {
-    return this.post('/project/git/resolve-error-with-agent', {
-      projectDir: baseDir,
-      taskId,
-    });
+    return this.submitTaskOperation('/project/git/resolve-error-with-agent', baseDir, taskId);
   }
 
   getTaskGitStatus(baseDir: string, taskId: string, targetBranch?: string): Promise<TaskGitStatus> {

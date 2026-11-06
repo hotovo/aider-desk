@@ -32,8 +32,7 @@ import { isDev, isElectron } from '@/app';
 import { PythonDependenciesInstaller } from '@/python-dependencies-installer';
 import { createCorsOriginValidator } from '@/server/cors';
 import { serveRendererAssets } from '@/server/renderer-assets';
-
-const REQUEST_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+import { requestTimeoutMiddleware } from '@/server/request-timeout';
 
 export class ServerController {
   private readonly app = express();
@@ -68,22 +67,6 @@ export class ServerController {
         error: 'Server is not started. Enable the server in your AiderDesk -> Settings -> Server.',
       });
     }
-  }
-
-  private timeoutMiddleware(req: Request, res: Response, next: NextFunction): void {
-    // Skip timeout for SSE responses (Accept: text/event-stream)
-    if (req.accepts('text/event-stream')) {
-      next();
-      return;
-    }
-
-    req.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      res.status(504).json({ error: 'Request timeout' });
-    });
-    res.setTimeout(REQUEST_TIMEOUT_MS, () => {
-      res.status(504).json({ error: 'Response timeout' });
-    });
-    next();
   }
 
   private basicAuthMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -181,7 +164,7 @@ export class ServerController {
     this.app.use(this.serverGuardMiddleware.bind(this));
 
     // Set timeout for all requests
-    this.app.use(this.timeoutMiddleware.bind(this));
+    this.app.use(requestTimeoutMiddleware);
 
     // Add Basic Auth
     this.app.use(this.basicAuthMiddleware.bind(this));

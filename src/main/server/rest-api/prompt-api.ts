@@ -1,7 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
-import { AutonomyMode, CreateTaskParams } from '@common/types';
+import { AutonomyMode, CreateTaskParams, TaskExecutionMode } from '@common/types';
 
 import { BaseApi } from './base-api';
 
@@ -13,6 +13,7 @@ const RunPromptSchema = z.object({
   taskId: z.string().optional(),
   prompt: z.string().min(1, 'Prompt is required'),
   requestId: z.string().uuid().optional(),
+  executionMode: z.enum([TaskExecutionMode.WaitForFinish, TaskExecutionMode.RunInBackground]).optional(),
   mode: z.string().optional(),
   images: z.array(z.string()).optional(),
   model: z.string().optional(),
@@ -97,8 +98,12 @@ export class PromptApi extends BaseApi {
           return;
         }
 
-        const { projectDir, taskId, prompt, mode, images, model, agentProfileId, autonomyMode, requestId } = parsed.data;
+        const { projectDir, taskId, prompt, mode, images, model, agentProfileId, autonomyMode, requestId, executionMode } = parsed.data;
         const isSSE = acceptsSSE && !acceptsJSON;
+        if (isSSE && executionMode === TaskExecutionMode.RunInBackground) {
+          res.status(400).json({ error: 'Background execution requires a JSON response' });
+          return;
+        }
         const receivedAt = Date.now();
         const requestLogContext = {
           requestId: requestId ?? null,
@@ -147,7 +152,14 @@ export class PromptApi extends BaseApi {
         }
 
         try {
-          if (isSSE) {
+          if (executionMode === TaskExecutionMode.RunInBackground) {
+            const task = taskId
+              ? { projectDir, taskId }
+              : await this.eventsHandler.ensureProjectAndCreateTask(projectDir, parseTaskParams(model, agentProfileId, autonomyMode));
+            res.setHeader('X-Task-Id', task.taskId);
+            res.status(202).json({ taskId: task.taskId, requestId });
+            await this.runPromptInBackground(task.projectDir, task.taskId, prompt, mode, images, requestId);
+          } else if (isSSE) {
             await this.handleRunPromptSSE(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
           } else {
             await this.handleRunPromptJSON(res, projectDir, prompt, taskId, mode, images, model, agentProfileId, autonomyMode);
@@ -191,6 +203,21 @@ export class PromptApi extends BaseApi {
         res.status(200).json({ message: 'Edited prompt saved successfully' });
       }),
     );
+  }
+
+  private async runPromptInBackground(projectDir: string, taskId: string, prompt: string, mode?: string, images?: string[], requestId?: string): Promise<void> {
+    try {
+      await this.eventsHandler.runPrompt(projectDir, taskId, prompt, mode, images);
+    } catch (error) {
+      logger.error('Background run-prompt failed', { projectDir, taskId, requestId, error });
+      this.eventsHandler.getEventManager().sendLog({
+        baseDir: projectDir,
+        taskId,
+        level: 'error',
+        message: error instanceof Error ? error.message : String(error),
+        finished: true,
+      });
+    }
   }
 
   private async handleRunPromptJSON(
