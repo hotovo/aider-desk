@@ -8,6 +8,7 @@
 - safely render non-JSON subagent tool results
 - added browser loading progress with retry support and improved startup downloads with bundle minification, compression, and caching
 - fixed timeouts for long-running browser prompts and task operations while preserving CLI streaming
+- fixed database errors during app shutdown by waiting for project and task cleanup to finish
 
 ## [0.90.0]
 

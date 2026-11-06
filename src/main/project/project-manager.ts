@@ -108,7 +108,23 @@ export class ProjectManager {
 
   public async close(): Promise<void> {
     logger.info('Closing all projects');
-    await Promise.all(this.projects.map((project) => project.close()));
+    const projects = [...this.projects];
+    const results = await Promise.allSettled(projects.map((project) => Promise.resolve().then(() => project.close())));
+    const errors: unknown[] = [];
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const error: unknown = result.reason;
+        errors.push(error);
+        logger.error('Failed to close project', {
+          baseDir: projects[index].baseDir,
+          error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        });
+      }
+    });
+    if (errors.length) {
+      throw new AggregateError(errors, 'Failed to close projects');
+    }
     this.projects = [];
   }
 

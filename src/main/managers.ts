@@ -169,37 +169,49 @@ export const initManagers = async (store: Store, windowManager?: WindowManager):
   httpServer.listen(SERVER_PORT);
   logger.info(`AiderDesk headless server listening on http://localhost:${SERVER_PORT}`);
 
-  let cleanedUp = false;
-  const cleanup = async (): Promise<void> => {
-    if (cleanedUp) {
-      return;
-    }
-
+  let cleanupPromise: Promise<void> | undefined;
+  const performCleanup = async (): Promise<void> => {
     try {
-      cloudflareTunnelManager.stop();
-      terminalManager.close();
-      versionsManager.destroy();
-      dataManager.close();
+      const cleanupActions = [
+        { manager: 'cloudflareTunnelManager', run: () => cloudflareTunnelManager.stop() },
+        { manager: 'terminalManager', run: () => terminalManager.close() },
+        { manager: 'versionsManager', run: () => versionsManager.destroy() },
+        { manager: 'connectorManager', run: () => connectorManager.close() },
+        { manager: 'serverController', run: () => serverController.close() },
+        { manager: 'projectManager', run: () => projectManager.close() },
+        { manager: 'mcpManager', run: () => mcpManager.close() },
+        { manager: 'mcpConfigManager', run: () => mcpConfigManager.dispose() },
+        { manager: 'telemetryManager', run: () => telemetryManager.destroy() },
+        { manager: 'agentProfileManager', run: () => agentProfileManager.dispose() },
+        { manager: 'promptsManager', run: () => promptsManager.dispose() },
+        { manager: 'extensionManager', run: () => extensionManager.dispose() },
+        { manager: 'gitAskpassManager', run: () => gitAskpassManager.close() },
+      ];
+      const results = await Promise.allSettled(cleanupActions.map((action) => Promise.resolve().then(action.run)));
 
-      await Promise.all([
-        connectorManager.close(),
-        serverController.close(),
-        projectManager.close(),
-        mcpManager.close(),
-        mcpConfigManager.dispose(),
-        telemetryManager.destroy(),
-        agentProfileManager.dispose(),
-        promptsManager.dispose(),
-        extensionManager.dispose(),
-        gitAskpassManager.close(),
-      ]);
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          const error: unknown = result.reason;
+          logger.error('Error during cleanup:', {
+            manager: cleanupActions[index].manager,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
+          });
+        }
+      });
+
+      dataManager.close();
     } catch (error) {
       logger.error('Error during cleanup:', {
         error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
+  };
 
-    cleanedUp = true;
+  const cleanup = (): Promise<void> => {
+    cleanupPromise ??= Promise.resolve().then(performCleanup);
+    return cleanupPromise;
   };
 
   // Handle process signals
