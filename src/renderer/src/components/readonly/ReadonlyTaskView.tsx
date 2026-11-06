@@ -4,7 +4,7 @@ import { MdMenu } from 'react-icons/md';
 
 import { Messages } from '@/components/message/Messages';
 import { ExtensionComponentWrapper } from '@/components/extensions/ExtensionComponentWrapper';
-import { convertTaskStateMessages } from '@/utils/task-messages';
+import { convertTaskStateMessages, mergeTaskMessages } from '@/utils/task-messages';
 import { useSettingsStore } from '@/stores/settingsStore';
 
 type Props = {
@@ -21,7 +21,7 @@ export const ReadonlyTaskView = ({ projectDir, task, state, logMessages, onToggl
   const allFiles = state.files.map((file) => file.path);
   const convertedMessages = convertTaskStateMessages(state.messages);
   const inProgress = task.state === DefaultTaskState.InProgress;
-  const messages = logMessages?.length ? [...convertedMessages, ...logMessages] : convertedMessages;
+  const messages = mergeTaskMessages(convertedMessages, logMessages ?? []);
 
   return (
     <main className="min-w-0 flex-1 flex flex-col bg-gradient-to-b from-bg-primary to-bg-primary-light">

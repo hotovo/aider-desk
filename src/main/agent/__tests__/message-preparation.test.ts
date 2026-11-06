@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { AIDER_TOOL_GROUP_NAME, AIDER_TOOL_RUN_PROMPT, SUBAGENTS_TOOL_GROUP_NAME, SUBAGENTS_TOOL_RUN_TASK, TOOL_GROUP_NAME_SEPARATOR } from '@common/tools';
 import { ModelModality } from '@common/types';
+import { DEFAULT_AGENT_PROFILE } from '@common/agent';
 
 import { prepareMessagesForModel } from '../message-preparation';
 import { transformMessages } from '../message-preparation/transformations';
@@ -247,6 +248,46 @@ describe('attachment filtering', () => {
   });
 });
 
+describe('persistent log message filtering', () => {
+  it('filters out log messages from the prepared result', async () => {
+    const messages = [
+      { role: 'user', content: 'Hello' },
+      { role: 'log', content: 'Conversation compacted.', level: 'info', id: 'log-1', timestamp: 1 },
+      { role: 'assistant', content: [{ type: 'text', text: 'Hi there' }] },
+    ] as unknown as ModelMessage[];
+
+    const result = await prepareMessagesForModel(messages);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('user');
+    expect(result[1].role).toBe('assistant');
+  });
+
+  it('filters out multiple log messages while preserving regular messages', async () => {
+    const messages = [
+      { role: 'log', content: 'First log', level: 'info', id: 'log-1', timestamp: 1 },
+      { role: 'user', content: 'Hello' },
+      { role: 'log', content: 'Second log', level: 'warning', id: 'log-2', timestamp: 2 },
+      { role: 'assistant', content: [{ type: 'text', text: 'Hi' }] },
+      { role: 'log', content: 'Third log', level: 'error', id: 'log-3', timestamp: 3 },
+    ] as unknown as ModelMessage[];
+
+    const result = await prepareMessagesForModel(messages);
+
+    expect(result).toHaveLength(2);
+    expect(result[0].role).toBe('user');
+    expect(result[1].role).toBe('assistant');
+  });
+
+  it('returns empty array when all messages are log messages', async () => {
+    const messages = [{ role: 'log', content: 'Only log', level: 'info', id: 'log-1', timestamp: 1 }] as unknown as ModelMessage[];
+
+    const result = await prepareMessagesForModel(messages);
+
+    expect(result).toHaveLength(0);
+  });
+});
+
 describe('cache annotation', () => {
   it('handles empty messages', () => {
     expect(applyCacheControl([], cacheControl)).toEqual([]);
@@ -259,5 +300,52 @@ describe('cache annotation', () => {
       { role: 'user', content: [{ type: 'text', text: 'hello', providerOptions: { custom: { key: true }, ...cacheControl.providerOptions } }] },
     ]);
     expect(messages[0].providerOptions).toBeUndefined();
+  });
+});
+
+describe('persistent log reminder and hook boundaries', () => {
+  const reminderTask = {
+    project: {},
+    task: {},
+    getTaskDir: () => '/project/worktree',
+    getProjectDir: () => '/project',
+  } as unknown as Task;
+  const profile = { ...DEFAULT_AGENT_PROFILE, useMemoryTools: false, useSubagents: false, useTodoTools: false };
+
+  it('remaps the selected user index without mutating source messages', async () => {
+    const messages = [
+      { role: 'log', content: 'Initialized', level: 'info' },
+      { role: 'user', content: 'Earlier request' },
+      { role: 'log', content: 'Compacted', level: 'info' },
+      { role: 'assistant', content: 'Earlier response' },
+      { role: 'user', content: 'Current request' },
+    ] as unknown as ModelMessage[];
+    const result = await prepareMessagesForModel(messages, undefined, reminderTask, profile, [], 4);
+    expect(result).toHaveLength(3);
+    expect(result[0].content).toBe('Earlier request');
+    expect(result[2].content).toContain('<ThisIsImportant>');
+    expect(result[2].content).toContain('/project/worktree');
+    expect(messages[4].content).toBe('Current request');
+  });
+
+  it.each([
+    ['onTransformMessages', 'transformedMessages'],
+    ['onOptimizeMessages', 'optimizedMessages'],
+    ['onApplyCacheControl', 'messages'],
+  ])('filters stored log context returned from %s', async (hook, field) => {
+    const dispatch = vi.fn(async (name: string, payload: Record<string, unknown>) =>
+      name === hook
+        ? {
+            ...payload,
+            [field]: [
+              { role: 'user', content: 'Request' },
+              { role: 'log', level: 'info', content: 'UI only' },
+            ],
+          }
+        : payload,
+    );
+    const result = await prepareMessagesForModel([{ role: 'user', content: 'Request' }], undefined, reminderTask, null, [], -1, extensionManager(dispatch));
+    expect(result).toEqual([{ role: 'user', content: 'Request' }]);
+    expect(dispatch).toHaveBeenCalledWith(hook, expect.any(Object), reminderTask.project, reminderTask);
   });
 });

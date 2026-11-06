@@ -73,6 +73,7 @@
     "gitBranches": "显示 Git 分支"
   },
   "common": {
+    "restoreContextFailed": "无法恢复此压缩点。备份可能丢失或无法读取。",
     "autonomyManual": "手动",
     "autonomyGuided": "引导",
     "autonomyAutonomous": "自动",

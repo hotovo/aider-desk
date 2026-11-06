@@ -923,7 +923,7 @@ export class Agent {
     const providerParameters = this.modelManager.getProviderParameters(provider, modelName, modelCallSettings.reasoning);
     const providerOptions = this.modelManager.getProviderOptions(provider, modelName, modelCallSettings?.reasoning);
 
-    const firstUserMessage = contextMessages.length > 0 ? contextMessages[0] : null;
+    const firstUserMessage = contextMessages.find((message) => message.role === 'user');
     let messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
     const initialUserRequestMessageIndex = firstUserMessage
       ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
@@ -1904,13 +1904,13 @@ export class Agent {
     if (profile.includeContextFiles) {
       const contextFilesMessages = await this.getContextFilesAsToolCallMessages(task, profile, contextFiles);
       // Add message history before context files
-      messages.push(...(contextMessages as ModelMessage[]));
+      messages.push(...(contextMessages.filter((message) => message.role !== 'log') as ModelMessage[]));
       messages.push(...contextFilesMessages);
     } else {
       const workingFilesMessages = await this.getWorkingFilesMessages(task, contextFiles);
       messages.push(...workingFilesMessages);
       // Add message history after working files
-      messages.push(...(contextMessages as ModelMessage[]));
+      messages.push(...(contextMessages.filter((message) => message.role !== 'log') as ModelMessage[]));
     }
 
     return messages;
@@ -1946,7 +1946,7 @@ export class Agent {
     const contextFiles = cloneDeep(await task.getContextFiles());
     const systemPrompt = await this.promptsManager.getSystemPrompt(settings, task, profile);
     const messages = await this.prepareMessages(task, profile, contextMessages, contextFiles);
-    const firstUserMessage = contextMessages[0];
+    const firstUserMessage = contextMessages.find((message) => message.role === 'user');
     const userIndex = firstUserMessage
       ? messages.findIndex((message) => message.role === 'user' && message.content === firstUserMessage.content)
       : messages.length;
@@ -2545,7 +2545,7 @@ export class Agent {
 
           task.sendTaskMessageRemoved(oldResultIds);
           task.reloadGroupMessages(getReloadableMessages(compactedMessages));
-          task.addLogMessage('info', 'Subagent conversation smart-compacted.', false, promptContext);
+          task.addLogMessage('info', 'Subagent conversation smart-compacted.', false, promptContext, undefined, true);
         } else {
           const oldResultIds = getSubagentOldResultIds(resultMessages, userRequestMessage.id);
 
@@ -2572,7 +2572,7 @@ export class Agent {
 
           task.sendTaskMessageRemoved(oldResultIds);
           task.reloadGroupMessages(getReloadableMessages(finalMessages));
-          task.addLogMessage('info', 'Subagent conversation compacted.', false, promptContext);
+          task.addLogMessage('info', 'Subagent conversation compacted.', false, promptContext, undefined, true);
         }
       } else if (contextCompactionType === ContextCompactionType.Compact) {
         await task.compactConversation(

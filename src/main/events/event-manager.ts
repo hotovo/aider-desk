@@ -1,4 +1,5 @@
 import { Socket } from 'socket.io';
+import { v4 as uuidv4 } from 'uuid';
 import {
   ContextFile,
   InputHistoryData,
@@ -216,8 +217,9 @@ export class EventManager {
 
   // Log events
   sendLog(data: LogData): void {
-    this.sendToWindows('log', data);
-    this.broadcastToEventConnectors('log', data);
+    const logData: LogData = { ...data, id: data.id ?? uuidv4() };
+    this.sendToWindows('log', logData);
+    this.broadcastToEventConnectors('log', logData);
   }
 
   // System log events (application-wide logs)

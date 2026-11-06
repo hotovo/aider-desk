@@ -43,6 +43,10 @@ const ClearContextSchema = z.object({
 const UndoContextChangeSchema = z.object({
   projectDir: z.string().min(1, 'Project directory is required'),
   taskId: z.string().min(1, 'Task id is required'),
+  checkpointId: z
+    .string()
+    .regex(/^context\.pre-compaction\.\d+\.json$/)
+    .optional(),
 });
 
 const AnswerQuestionSchema = z.object({
@@ -991,7 +995,7 @@ export class ProjectApi extends BaseApi {
         }
 
         const { projectDir, taskId } = parsed;
-        const undone = await this.eventsHandler.undoContextChange(projectDir, taskId);
+        const undone = await this.eventsHandler.undoContextChange(projectDir, taskId, parsed.checkpointId);
         res.status(200).json({ undone });
       }),
     );

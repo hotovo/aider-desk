@@ -31,6 +31,7 @@ const createFixture = (overrides: Partial<TaskSettings> = {}) => {
       getContextMessages: vi.fn(async () => messages),
       backupContext: vi.fn(async () => undefined),
       loadMessages: vi.fn(async () => undefined),
+      save: vi.fn(async () => undefined),
       setContextMessages: vi.fn(),
     },
     agent: {

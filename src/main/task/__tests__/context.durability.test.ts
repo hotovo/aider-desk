@@ -75,7 +75,13 @@ describe('summary execution identity', () => {
       addLogMessage: vi.fn(),
       agent: { runAgent },
       promptsManager: { getCompactConversationPrompt: vi.fn(async () => 'Summarize') },
-      contextManager: { setContextMessages: vi.fn(), loadMessages, backupContext: vi.fn(async () => undefined) },
+      contextManager: {
+        setContextMessages: vi.fn(),
+        loadMessages,
+        getContextMessages: vi.fn(async () => [user]),
+        save: vi.fn(),
+        backupContext: vi.fn(async () => 'context.pre-compaction.001.json'),
+      },
       runNextQueuedPrompt: vi.fn(async () => undefined),
     };
     Object.setPrototypeOf(fake, Task.prototype);
@@ -133,7 +139,7 @@ it.each(['smart', 'summary'])('keeps manual %s compaction durable and undoable w
   task.contextManager = context;
   vi.spyOn(context, 'getContextMessages').mockImplementation(async () => context['messages']);
   vi.spyOn(context, 'save').mockResolvedValue(undefined);
-  vi.spyOn(context, 'backupContext').mockResolvedValue(undefined);
+  vi.spyOn(context, 'backupContext').mockResolvedValue('context.pre-compaction.001.json');
   vi.spyOn(context, 'getContextMessagesData').mockReturnValue([]);
   vi.spyOn(context, 'toConnectorMessages').mockReturnValue([]);
   const compact = vi.spyOn(compaction, 'smartCompactMessages').mockResolvedValue([{ id: 'smart-summary', role: 'assistant', content: 'NEW_SUMMARY' }]);

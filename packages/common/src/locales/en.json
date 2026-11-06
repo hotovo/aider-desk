@@ -73,6 +73,7 @@
     "gitBranches": "Show Git Branches"
   },
   "common": {
+    "restoreContextFailed": "Unable to restore this compaction point. Its backup may be missing or unreadable.",
     "autonomyManual": "Manual",
     "autonomyGuided": "Guided",
     "autonomyAutonomous": "Auto",

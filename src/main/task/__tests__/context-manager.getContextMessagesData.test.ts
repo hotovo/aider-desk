@@ -1261,4 +1261,91 @@ describe('ContextManager - getContextMessagesData', () => {
       expect(toolMsg.promptContext).toEqual(toolResultPromptContext);
     });
   });
+
+  describe('Log messages', () => {
+    it('should convert a log message to LogData', () => {
+      const logMessage: ContextMessage = {
+        id: 'log-1',
+        role: 'log',
+        level: 'info',
+        content: 'Conversation compacted.',
+        timestamp: 12345,
+      };
+
+      const manager = new ContextManager(mockTask, 'test-task', [logMessage]);
+      const result = manager.getContextMessagesData();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual({
+        baseDir: '/test/project',
+        taskId: 'test-task',
+        level: 'info',
+        id: 'log-1',
+        message: 'Conversation compacted.',
+        finished: undefined,
+        promptContext: undefined,
+        actions: undefined,
+        timestamp: 12345,
+      });
+    });
+
+    it('should include actions and promptContext in LogData', () => {
+      const promptContext: PromptContext = { id: 'prompt-1' };
+      const logMessage: ContextMessage = {
+        id: 'log-2',
+        role: 'log',
+        level: 'warning',
+        content: 'Something went wrong.',
+        promptContext,
+        actions: [{ id: 'undoContextChange', data: { checkpointId: 'context.pre-compaction.001.json' } }],
+        timestamp: 99999,
+      };
+
+      const manager = new ContextManager(mockTask, 'test-task', [logMessage]);
+      const result = manager.getContextMessagesData();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        level: 'warning',
+        message: 'Something went wrong.',
+        promptContext,
+        actions: [{ id: 'undoContextChange', data: { checkpointId: 'context.pre-compaction.001.json' } }],
+        timestamp: 99999,
+      });
+    });
+
+    it('should interleave log messages with regular messages in order', () => {
+      const messages: ContextMessage[] = [
+        { id: 'user-1', role: 'user', content: 'Hello' },
+        { id: 'log-1', role: 'log', level: 'info', content: 'Compacted.', timestamp: 100 },
+        { id: 'asst-1', role: 'assistant', content: 'Hi' },
+      ];
+
+      const manager = new ContextManager(mockTask, 'test-task', messages);
+      const result = manager.getContextMessagesData();
+
+      expect(result).toHaveLength(3);
+      expect(result[0].type).toBe('user');
+      expect('level' in result[1] && result[1].level).toBe('info');
+      expect(result[1].type).toBeUndefined();
+      expect(result[2].type).toBe('response-completed');
+    });
+
+    it('should handle finished flag on log messages', () => {
+      const logMessage: ContextMessage = {
+        id: 'log-3',
+        role: 'log',
+        level: 'info',
+        content: 'Done.',
+        finished: true,
+        timestamp: 500,
+      };
+
+      const manager = new ContextManager(mockTask, 'test-task', [logMessage]);
+      const result = manager.getContextMessagesData();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({ finished: true });
+    });
+  });
 });

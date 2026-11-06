@@ -156,6 +156,9 @@ const cloneMessages = (messages: ContextMessage[]): ContextMessage[] => {
         content: msg.content.map((part) => ({ ...part })),
       };
     }
+    if (msg.role === 'log') {
+      return { ...msg };
+    }
     return {
       ...msg,
       content: Array.isArray(msg.content) ? msg.content.map((part) => ({ ...part })) : msg.content,

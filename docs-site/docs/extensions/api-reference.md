@@ -212,7 +212,7 @@ interface TaskContext {
 
   // User Interaction
   askQuestion(text: string, options?: QuestionOptions): Promise<string>;
-  addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void;
+  addLogMessage(level: 'info' | 'error' | 'warning', message?: string, persistent?: boolean): void;
   addLoadingMessage(message?: string, finished?: boolean): void;
 
   // Todos

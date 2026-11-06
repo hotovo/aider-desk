@@ -202,3 +202,17 @@ describe('context side generation', () => {
     expect(fixture.model.doGenerateCalls).toHaveLength(0);
   });
 });
+
+it('keeps log-only history out of the model request and targets reminders at the new user request', async () => {
+  const fixture = createFixture();
+  fixture.history.splice(0, fixture.history.length, { id: 'initial-log', role: 'log', level: 'info', content: 'Initialized' });
+  fixture.profile.includeRepoMap = false;
+  fixture.profile.includeContextFiles = false;
+  fixture.taskMock.getTaskDir.mockReturnValue('/project/worktree');
+  fixture.agent['prepareMessages'] = Agent.prototype['prepareMessages'];
+  await fixture.agent.generateTextFromContext(fixture.task, 'New request');
+  const prompt = fixture.model.doGenerateCalls[0].prompt;
+  expect(prompt.some((message) => JSON.stringify(message).includes('Initialized'))).toBe(false);
+  expect(JSON.stringify(prompt.at(-1))).toContain('/project/worktree');
+  expect(fixture.extensionManager.dispatchEvent).toHaveBeenCalledWith('onImportantReminders', expect.anything(), fixture.task.project, fixture.task);
+});

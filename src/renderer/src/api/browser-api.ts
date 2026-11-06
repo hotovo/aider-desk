@@ -891,10 +891,11 @@ export class BrowserApi implements ApplicationAPI {
     });
   }
 
-  async undoContextChange(baseDir: string, taskId: string): Promise<boolean> {
-    const result = await this.post<{ projectDir: string; taskId: string }, { undone: boolean }>('/project/undo-context-change', {
+  async undoContextChange(baseDir: string, taskId: string, checkpointId?: string): Promise<boolean> {
+    const result = await this.post<{ projectDir: string; taskId: string; checkpointId?: string }, { undone: boolean }>('/project/undo-context-change', {
       projectDir: baseDir,
       taskId,
+      checkpointId,
     });
     return result?.undone ?? false;
   }

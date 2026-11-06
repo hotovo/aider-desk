@@ -262,8 +262,8 @@ export class TaskContextImpl implements TaskContext {
     return this.task.answerQuestion(answer, userInput);
   }
 
-  addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void {
-    this.task.addLogMessage(level, message);
+  addLogMessage(level: 'info' | 'error' | 'warning', message?: string, persistent = false): void {
+    this.task.addLogMessage(level, message, false, undefined, undefined, persistent);
   }
 
   addLoadingMessage(message?: string, finished?: boolean): void {

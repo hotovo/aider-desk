@@ -317,10 +317,10 @@ export class EventsHandler {
     }
   }
 
-  async undoContextChange(baseDir: string, taskId: string): Promise<boolean> {
+  async undoContextChange(baseDir: string, taskId: string, checkpointId?: string): Promise<boolean> {
     const task = this.projectManager.getProject(baseDir).getTask(taskId);
     if (task) {
-      return task.undoContextChange();
+      return task.undoContextChange(checkpointId);
     }
     return false;
   }

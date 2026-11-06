@@ -1222,10 +1222,12 @@ export interface TaskContext {
   /**
    * Send a log message to the UI via the event manager.
    * Log messages appear in the task's message stream as informational, error, or warning entries.
+   * Persistent log messages are also saved to the task context and survive page reloads, compaction, or restart.
    * @param level - Severity level: 'info', 'error', or 'warning'
    * @param message - The log message text
+   * @param persistent - If true, the message is persisted in the task context (not sent to the AI)
    */
-  addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void;
+  addLogMessage(level: 'info' | 'error' | 'warning', message?: string, persistent?: boolean): void;
 
   /**
    * Show or update a loading indicator in the task's UI.

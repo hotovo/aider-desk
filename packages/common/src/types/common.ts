@@ -281,6 +281,7 @@ export interface LogAction {
 }
 
 export interface LogData {
+  id?: string;
   baseDir: string;
   taskId: string;
   level: LogLevel;
@@ -1049,7 +1050,7 @@ export interface TaskContext {
 }
 
 export interface TaskStateData {
-  messages: (ResponseCompletedData | UserMessageData | ToolData)[];
+  messages: (ResponseCompletedData | UserMessageData | ToolData | LogData)[];
   files: ContextFile[];
   todoItems: TodoItem[];
   question: QuestionData | null;

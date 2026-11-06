@@ -36,9 +36,14 @@ export const prepareMessagesForModel = async (
   extensionManager?: ExtensionManager,
   options?: PreparedMessagesOptions,
 ): Promise<ModelMessage[]> => {
-  let preparedMessages = cloneDeep(messages);
+  const isModelMessage = (message: ModelMessage) => (message as { role: unknown }).role !== 'log';
+  const reminderIndex =
+    userRequestMessageIndex < 0 || !messages[userRequestMessageIndex] || !isModelMessage(messages[userRequestMessageIndex])
+      ? -1
+      : messages.slice(0, userRequestMessageIndex).filter(isModelMessage).length;
+  let preparedMessages = cloneDeep(messages.filter(isModelMessage));
   if (task && profile && preparedMessages.length > 0) {
-    preparedMessages = await addImportantReminders(task, profile, projectProfiles, userRequestMessageIndex, preparedMessages, extensionManager);
+    preparedMessages = await addImportantReminders(task, profile, projectProfiles, reminderIndex, preparedMessages, extensionManager);
   }
 
   const transformationInput = cloneDeep(preparedMessages);
@@ -81,6 +86,7 @@ export const prepareMessagesForModel = async (
     );
     preparedMessages = (result.messages as ModelMessage[]) ?? preparedMessages;
   }
+  preparedMessages = preparedMessages.filter(isModelMessage);
   if (options) {
     const modelLabel = `${options.providerId}/${options.modelName}`;
     const filterResult = filterAttachmentsForModel(preparedMessages, {

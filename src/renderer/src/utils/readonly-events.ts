@@ -19,7 +19,7 @@ import type { ReadonlyEvent } from '@/api/readonly-browser-api';
 const taskListEventTypes = new Set(['task-created', 'task-updated', 'task-started', 'task-completed', 'task-cancelled', 'task-deleted']);
 
 const upsertMessage = (state: TaskStateData, id: string, message: TaskStateData['messages'][number]): TaskStateData => {
-  const index = state.messages.findIndex((item) => ('id' in item ? item.id === id : item.messageId === id));
+  const index = state.messages.findIndex((item) => ('id' in item ? item.id === id : 'messageId' in item && item.messageId === id));
   if (index === -1) {
     return { ...state, messages: [...state.messages, message] };
   }
@@ -76,7 +76,7 @@ export const applyReadonlyEvent = (state: TaskStateData, event: ReadonlyEvent, t
   if (event.type === 'response-chunk') {
     const chunk = event.data as ResponseChunkData;
     const existing = state.messages.find(
-      (message): message is ResponseCompletedData => message.type === 'response-completed' && message.messageId === chunk.messageId,
+      (message): message is ResponseCompletedData => 'type' in message && message.type === 'response-completed' && message.messageId === chunk.messageId,
     );
     const message: ResponseCompletedData = {
       type: 'response-completed',
@@ -93,7 +93,10 @@ export const applyReadonlyEvent = (state: TaskStateData, event: ReadonlyEvent, t
   if (event.type === 'message-removed') {
     const data = event.data as { messageIds?: string[] };
     const ids = new Set(data.messageIds ?? []);
-    return { ...state, messages: state.messages.filter((message) => !ids.has('id' in message ? message.id : message.messageId)) };
+    return {
+      ...state,
+      messages: state.messages.filter((message) => !ids.has(('id' in message ? message.id : 'messageId' in message ? message.messageId : '') ?? '')),
+    };
   }
   if (event.type === 'clear-task') {
     const data = event.data as { clearMessages?: boolean };
@@ -124,7 +127,7 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
       return messages.filter((msg) => msg.type !== 'loading');
     }
     const loadingMessage: LoadingMessage = {
-      id: uuidv4(),
+      id: data.id ?? uuidv4(),
       type: 'loading',
       content: text || defaultLoadingText,
       promptContext,
@@ -141,7 +144,7 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
   }
 
   const logMessage: LogMessage = {
-    id: uuidv4(),
+    id: data.id ?? uuidv4(),
     type: 'log',
     level,
     content: text ?? '',
@@ -149,5 +152,5 @@ export const applyReadonlyLogEvent = (messages: Message[], event: ReadonlyEvent,
     actions,
     timestamp,
   };
-  return [...messages.filter((msg) => msg.type !== 'loading'), logMessage];
+  return [...messages.filter((msg) => msg.type !== 'loading' && msg.id !== logMessage.id), logMessage];
 };

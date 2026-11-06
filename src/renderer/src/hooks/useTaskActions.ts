@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { updateTaskState, clearSession, setMessages } from '@/stores/taskStore';
-import { convertTaskStateMessages } from '@/utils/task-messages';
+import { convertTaskStateMessages, mergeTaskMessages } from '@/utils/task-messages';
 import { setTaskAllFiles } from '@/stores/taskFilesStore';
 import { useProjectStore } from '@/stores/projectStore';
 import { getTaskDir } from '@/utils/task-utils';
@@ -23,10 +23,7 @@ export const useTaskActions = ({ baseDir }: UseTaskActionsParams) => {
 
         const messages = convertTaskStateMessages(stateMessages);
 
-        setMessages(taskId, (existingMessages) => [
-          ...messages,
-          ...existingMessages.filter((existingMessage) => !messages.some((message) => message.id === existingMessage.id)),
-        ]);
+        setMessages(taskId, (existingMessages) => mergeTaskMessages(messages, existingMessages));
         updateTaskState(taskId, {
           loading: false,
           loaded: true,

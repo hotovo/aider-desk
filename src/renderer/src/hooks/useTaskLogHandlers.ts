@@ -50,7 +50,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
           setMessages(taskId, (prevMessages) => prevMessages.filter((message) => message.type !== 'loading'));
         } else {
           const loadingMessage: LoadingMessage = {
-            id: uuidv4(),
+            id: data.id ?? uuidv4(),
             type: 'loading',
             content: message || t('messages.thinking'),
             promptContext,
@@ -75,7 +75,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
         }
       } else {
         const logMessage: LogMessage = {
-          id: uuidv4(),
+          id: data.id ?? uuidv4(),
           type: 'log',
           level,
           content: message || '',
@@ -90,7 +90,7 @@ export const useTaskLogHandlers = (baseDir: string, taskId: string) => {
                 ? { ...msg, actions: msg.actions.filter((action) => action.id !== RESOLVE_GIT_ERROR_WITH_AGENT_ACTION_ID) }
                 : msg,
             )
-            .filter((message) => !isLoadingMessage(message)),
+            .filter((message) => !isLoadingMessage(message) && message.id !== logMessage.id),
           logMessage,
         ]);
       }

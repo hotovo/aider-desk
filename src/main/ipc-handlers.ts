@@ -281,8 +281,8 @@ export const setupIpcHandlers = (eventsHandler: EventsHandler, serverController:
     return await eventsHandler.smartCompactConversation(baseDir, taskId);
   });
 
-  ipcMain.handle('undo-context-change', async (_event, baseDir: string, taskId: string) => {
-    return await eventsHandler.undoContextChange(baseDir, taskId);
+  ipcMain.handle('undo-context-change', async (_event, baseDir: string, taskId: string, checkpointId?: string) => {
+    return await eventsHandler.undoContextChange(baseDir, taskId, checkpointId);
   });
 
   ipcMain.handle('handoff-conversation', async (_event, baseDir: string, taskId: string, focus?: string) => {

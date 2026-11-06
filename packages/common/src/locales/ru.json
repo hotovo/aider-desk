@@ -73,6 +73,7 @@
     "gitBranches": "Показать ветки Git"
   },
   "common": {
+    "restoreContextFailed": "Не удалось восстановить эту точку сжатия. Резервная копия отсутствует или недоступна для чтения.",
     "autonomyManual": "Ручной",
     "autonomyGuided": "Управляемый",
     "autonomyAutonomous": "Авто",

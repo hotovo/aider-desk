@@ -9,6 +9,10 @@ import logger from '@/logger';
  * This function is reusable and can handle recursive migration for subagent messages.
  */
 const migrateContextMessage = (message: ContextMessage): ContextMessage => {
+  // Log messages have string content, no migration needed
+  if (message.role === 'log') {
+    return message;
+  }
   // If content is already an array, it might be V1 format that needs migration or already V2 format
   if (Array.isArray(message.content)) {
     let needsMigration = false;

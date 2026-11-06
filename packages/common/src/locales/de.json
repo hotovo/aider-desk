@@ -73,6 +73,7 @@
     "gitBranches": "Git-Zweige anzeigen"
   },
   "common": {
+    "restoreContextFailed": "Dieser Komprimierungspunkt konnte nicht wiederhergestellt werden. Die Sicherung fehlt möglicherweise oder ist nicht lesbar.",
     "autonomyManual": "Manuell",
     "autonomyGuided": "Geführt",
     "autonomyAutonomous": "Automatisch",

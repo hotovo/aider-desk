@@ -1,3 +1,5 @@
+import type { LogAction, LogLevel } from './common';
+
 // JSON types
 export type JSONValue = null | string | number | boolean | JSONObject | JSONArray;
 export type JSONObject = { [key: string]: JSONValue };
@@ -196,8 +198,17 @@ export interface ContextToolMessage extends BaseContextMessage {
   content: ToolContent;
 }
 
+// Persistent log message stored in context (not sent to AI SDK)
+export interface ContextLogMessage extends BaseContextMessage {
+  role: 'log';
+  level: LogLevel;
+  content: string;
+  finished?: boolean;
+  actions?: LogAction[];
+}
+
 // Union type for enhanced context messages
-export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage;
+export type ContextMessage = ContextUserMessage | ContextAssistantMessage | ContextToolMessage | ContextLogMessage;
 
 export interface ConnectorMessage {
   role: MessageRole;

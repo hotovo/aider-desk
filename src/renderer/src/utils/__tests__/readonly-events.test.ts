@@ -148,3 +148,11 @@ describe('readonly log actions', () => {
     expect(updated[0]).toMatchObject({ id: initial[0].id, actions: [{ id: 'interrupt', data: 2 }] });
   });
 });
+
+it('reuses backend log IDs and deduplicates repeated readonly events', () => {
+  const event = createEvent('log', { id: 'persisted-log', taskId: 'task-1', level: 'info', message: 'Compacted' });
+  const first = applyReadonlyLogEvent([], event, 'task-1', 'Thinking...');
+  const second = applyReadonlyLogEvent(first, event, 'task-1', 'Thinking...');
+  expect(second).toHaveLength(1);
+  expect(second[0].id).toBe('persisted-log');
+});

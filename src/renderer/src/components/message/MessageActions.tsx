@@ -19,9 +19,11 @@ type Props = {
 export const MessageActions = ({ actions, baseDir, taskId, onInterrupt, removeActionId }: Props) => {
   const { t } = useTranslation();
   const [isExecuted, setIsExecuted] = useState(false);
+  const [restoreFailed, setRestoreFailed] = useState(false);
   const api = useApi();
   const isReadonlyView = useIsReadonlyView();
   const canUndoContextChange = useTaskStore((state) => state.taskStateMap.get(taskId)?.canUndoContextChange ?? false);
+  const isLoading = useTaskStore((state) => state.taskStateMap.get(taskId)?.loading ?? false);
 
   if (isReadonlyView || !actions || actions.length === 0 || isExecuted) {
     return null;
@@ -57,10 +59,22 @@ export const MessageActions = ({ actions, baseDir, taskId, onInterrupt, removeAc
     void api.rebaseWorktreeFromBranch(baseDir, taskId);
   };
 
-  const handleUndoContextChange = () => {
+  const handleUndoContextChange = async ({ data }: LogAction) => {
+    const checkpointId = data && typeof data === 'object' && !Array.isArray(data) && typeof data.checkpointId === 'string' ? data.checkpointId : undefined;
+    setRestoreFailed(false);
     setIsExecuted(true);
-    removeActionId?.('undoContextChange');
-    void api.undoContextChange(baseDir, taskId);
+    try {
+      const restored = await api.undoContextChange(baseDir, taskId, checkpointId);
+      if (restored) {
+        removeActionId?.('undoContextChange');
+      } else {
+        setRestoreFailed(true);
+        setIsExecuted(false);
+      }
+    } catch {
+      setRestoreFailed(true);
+      setIsExecuted(false);
+    }
   };
 
   const handlers: Record<string, (action: LogAction) => void> = {
@@ -114,8 +128,9 @@ export const MessageActions = ({ actions, baseDir, taskId, onInterrupt, removeAc
           </Button>
         );
       case 'undoContextChange':
-        return canUndoContextChange ? (
-          <Button key={id} size="xs" variant="text" color="primary" onClick={handleClick} tooltip={t('promptField.undoContextChange')}>
+        return canUndoContextChange ||
+          (action.data && typeof action.data === 'object' && !Array.isArray(action.data) && typeof action.data.checkpointId === 'string') ? (
+          <Button key={id} size="xs" variant="text" color="primary" disabled={isLoading} onClick={handleClick} tooltip={t('promptField.undoContextChange')}>
             <MdUndo className="w-4 h-4 mr-1" />
             {t('common.undo')}
           </Button>
@@ -125,5 +140,14 @@ export const MessageActions = ({ actions, baseDir, taskId, onInterrupt, removeAc
     }
   };
 
-  return <div className="flex flex-wrap gap-2">{actions.map(renderAction)}</div>;
+  return (
+    <div className="flex flex-wrap gap-2">
+      {actions.map(renderAction)}
+      {restoreFailed && (
+        <span role="alert" className="text-text-muted">
+          {t('common.restoreContextFailed')}
+        </span>
+      )}
+    </div>
+  );
 };

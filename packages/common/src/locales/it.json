@@ -73,6 +73,7 @@
     "gitBranches": "Mostra rami Git"
   },
   "common": {
+    "restoreContextFailed": "Impossibile ripristinare questo punto di compattazione. Il backup potrebbe essere mancante o illeggibile.",
     "autonomyManual": "Manuale",
     "autonomyGuided": "Guidato",
     "autonomyAutonomous": "Automatico",

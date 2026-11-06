@@ -1,6 +1,8 @@
 import { v4 as uuidv4 } from 'uuid';
 import { TODO_TOOL_GROUP_NAME } from '@common/tools';
 import {
+  LogData,
+  LogMessage,
   Message,
   ReflectedMessage,
   ResponseCompletedData,
@@ -49,6 +51,16 @@ const convertResponse = (data: ResponseCompletedData): Message[] => {
   return messages;
 };
 
+const convertLog = (data: LogData): LogMessage => ({
+  id: data.id ?? uuidv4(),
+  type: 'log',
+  level: data.level as 'info' | 'warning' | 'error',
+  content: data.message ?? '',
+  promptContext: data.promptContext,
+  actions: data.actions,
+  timestamp: data.timestamp,
+});
+
 const convertTool = (data: ToolData): ToolMessage => ({
   id: data.id,
   type: 'tool',
@@ -64,6 +76,9 @@ const convertTool = (data: ToolData): ToolMessage => ({
 
 export const convertTaskStateMessages = (messages: TaskStateData['messages']): Message[] => {
   return messages.flatMap((message) => {
+    if ('level' in message) {
+      return [convertLog(message)];
+    }
     if (message.type === 'user') {
       return [convertUserMessage(message)];
     }
@@ -75,4 +90,9 @@ export const convertTaskStateMessages = (messages: TaskStateData['messages']): M
     }
     return [convertTool(message)];
   });
+};
+
+export const mergeTaskMessages = (snapshot: Message[], live: Message[]): Message[] => {
+  const snapshotIds = new Set(snapshot.map((message) => message.id));
+  return [...snapshot, ...live.filter((message) => !snapshotIds.has(message.id))];
 };

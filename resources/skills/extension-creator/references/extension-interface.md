@@ -618,7 +618,7 @@ interface TaskContext {
   askQuestion(text: string, options?: QuestionOptions): Promise<string>;
 
   /** Send a log message to the UI (appears in the task's message stream). */
-  addLogMessage(level: 'info' | 'error' | 'warning', message?: string): void;
+  addLogMessage(level: 'info' | 'error' | 'warning', message?: string, persistent?: boolean): void;
 
   /** Show or update a loading indicator in the task's UI. Pass `finished: true` to dismiss. */
   addLoadingMessage(message?: string, finished?: boolean): void;

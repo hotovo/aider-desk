@@ -145,3 +145,28 @@ describe('useTaskLogHandlers', () => {
     );
   });
 });
+
+it('deduplicates live and replayed logs by backend identity', async () => {
+  const api = createMockApi();
+  let listener: ((data: LogData) => void) | undefined;
+  vi.mocked(useApi).mockReturnValue(api);
+  vi.mocked(api.addLogListener).mockImplementation((_baseDir, _taskId, handler) => {
+    listener = handler;
+    return () => {};
+  });
+  setMessages('task-123', () => []);
+  render(<TestComponent />);
+  const log: LogData = { id: 'backend-log', baseDir: '/project', taskId: 'task-123', level: 'info', message: 'Compacted' };
+  act(() => {
+    listener?.(log);
+    listener?.(log);
+  });
+  await waitFor(() =>
+    expect(
+      useTaskStore
+        .getState()
+        .taskMessagesMap.get('task-123')
+        ?.map((message) => message.id),
+    ).toEqual(['backend-log']),
+  );
+});

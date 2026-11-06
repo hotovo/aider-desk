@@ -83,3 +83,16 @@ describe('EventManager - sendTaskMessageRemoved', () => {
     expect(true).toBe(true);
   });
 });
+
+describe('EventManager log identity', () => {
+  it.each([undefined, 'persisted-log'])('generates a backend ID only when missing (%s)', (id) => {
+    const send = vi.fn();
+    const windowManager = {
+      getAllWindows: () => [{ isDestroyed: () => false, webContents: { isDestroyed: () => false, isCrashed: () => false, send } }],
+    } as unknown as WindowManager;
+    const manager = new EventManager(windowManager);
+    const input = { id, baseDir: '/project', taskId: 'task', level: 'info' as const, message: 'Log' };
+    manager.sendLog(input);
+    expect(send).toHaveBeenCalledWith('log', { ...input, id: id ?? expect.any(String) });
+  });
+});

@@ -21,6 +21,7 @@ describe('Task log actions', () => {
     Task.prototype.addLogMessage.call(task as unknown as Task, 'info', 'Message', false, undefined, actions);
 
     expect(sendLog).toHaveBeenCalledExactlyOnceWith({
+      id: expect.any(String),
       baseDir: '/project',
       taskId: 'task-1',
       level: 'info',

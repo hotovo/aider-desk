@@ -2719,8 +2719,11 @@ export class Task {
     this.aiderManager.closeCommandOutput(addToContext);
   }
 
-  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actions?: LogAction[]) {
+  public addLogMessage(level: LogLevel, message?: string, finished = false, promptContext?: PromptContext, actions?: LogAction[], persistent = false) {
+    const timestamp = Date.now();
+    const id = uuidv4();
     const data: LogData = {
+      id,
       baseDir: this.project.baseDir,
       taskId: this.taskId,
       level,
@@ -2728,9 +2731,17 @@ export class Task {
       finished,
       promptContext,
       actions,
-      timestamp: Date.now(),
+      timestamp,
     };
 
+    if (persistent && level !== 'loading' && message) {
+      this.contextManager.addPersistentLogMessage(level, message, promptContext, actions, timestamp, id);
+    }
+
+    this.eventManager.sendLog(data);
+  }
+
+  public sendLog(data: LogData) {
     this.eventManager.sendLog(data);
   }
 
@@ -2939,7 +2950,9 @@ export class Task {
   }
 
   public async restoreDurableConversation(messages: ContextMessage[]): Promise<void> {
-    await this.contextManager.loadMessages(messages, false);
+    const restoredIds = new Set(messages.map((message) => message.id));
+    const logs = (await this.contextManager.getContextMessages()).filter((message) => message.role === 'log' && !restoredIds.has(message.id));
+    await this.contextManager.loadMessages([...messages, ...logs], false);
   }
 
   public async addContextMessage(message: ContextMessage, updateContextInfo = false) {
@@ -3028,8 +3041,11 @@ export class Task {
     });
   }
 
-  async undoContextChange(): Promise<boolean> {
-    const snapshot = this.contextManager.undoContextChange();
+  async undoContextChange(checkpointId?: string): Promise<boolean> {
+    if (checkpointId !== undefined && this.isPromptRunning()) {
+      return false;
+    }
+    const snapshot = checkpointId !== undefined ? await this.contextManager.readCompactionCheckpoint(checkpointId) : this.contextManager.undoContextChange();
     if (!snapshot) {
       logger.debug('No undo snapshot available', { taskId: this.taskId });
       return false;
@@ -3041,6 +3057,9 @@ export class Task {
       messagesCount: snapshot.length,
     });
 
+    if (checkpointId !== undefined) {
+      this.contextManager.undoContextChange();
+    }
     await this.contextManager.loadMessages(snapshot);
     await this.updateContextInfo();
     this.sendContextInfoUpdated();
@@ -3349,7 +3368,9 @@ export class Task {
   public reloadGroupMessages(messages: ContextMessage[]) {
     const messagesData = this.contextManager.getContextMessagesData(messages);
     for (const messageData of messagesData) {
-      if (messageData.type === 'user') {
+      if ('level' in messageData) {
+        this.sendLog(messageData);
+      } else if (messageData.type === 'user') {
         this.sendUserMessage(messageData);
       } else if (messageData.type === 'response-completed') {
         this.sendResponseCompleted(messageData);
@@ -3576,8 +3597,12 @@ export class Task {
       return [];
     }
 
+    const contextIds = new Set(contextMessages.map((message) => message.id));
+    const retainedLogs = (await this.contextManager.getContextMessages()).filter((message) => message.role === 'log' && !contextIds.has(message.id));
+    contextMessages = [...contextMessages, ...retainedLogs];
+
     // backing up the current context before compacting so the pre-compaction history stays available
-    await this.contextManager.backupContext();
+    const checkpointId = await this.contextManager.backupContext();
 
     if (options?.compactionLevel !== undefined) {
       this.smartCompactionLevel = Math.min(Math.max(Math.round(options.compactionLevel), 1), CompactionLevel.Max) as CompactionLevel;
@@ -3605,12 +3630,16 @@ export class Task {
     const protectedMessageCount = options?.protectedMessageCount ?? 10;
     const passes: SmartCompactionPassSelection | undefined = options?.passes;
     const compactedMessages = await smartCompactMessages(contextMessages, protectedMessageCount, this.smartCompactionLevel, passes);
+    const compactedIds = new Set(compactedMessages.map((message) => message.id));
+    const currentLogs = (await this.contextManager.getContextMessages()).filter((message) => message.role === 'log' && !compactedIds.has(message.id));
+    compactedMessages.push(...currentLogs);
 
     this.lastSmartCompactionMessageCount = compactedMessages.length;
 
     await this.contextManager.loadMessages(compactedMessages, false, executionId, true);
     await this.updateContextInfo();
-    this.addLogMessage('info', infoMessage, false, undefined, [{ id: 'undoContextChange' }]);
+    this.addLogMessage('info', infoMessage, false, undefined, [{ id: 'undoContextChange', data: { checkpointId } }], true);
+    await this.contextManager.save();
 
     return compactedMessages;
   }
@@ -3641,7 +3670,7 @@ export class Task {
     }
 
     // backing up the full context before compacting so the pre-compaction history stays available
-    await this.contextManager.backupContext();
+    const checkpointId = await this.contextManager.backupContext();
 
     const currentTaskState = this.task.state;
     await this.saveTask({
@@ -3693,7 +3722,8 @@ export class Task {
           const summaryMessage = agentMessages[agentMessages.length - 1];
           summaryMessage.content = extractSummary(extractTextContent(summaryMessage.content));
 
-          const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, summaryMessage];
+          const logMessages = (await this.contextManager.getContextMessages()).filter((message) => message.role === 'log');
+          const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, ...logMessages, summaryMessage];
 
           await this.contextManager.loadMessages(finalMessages, true, promptContext?.id, true);
         }
@@ -3721,7 +3751,8 @@ export class Task {
         }
 
         // Create final messages array with skill activations inserted between user message and rest
-        const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, ...newMessages.slice(1)];
+        const logMessages = (await this.contextManager.getContextMessages()).filter((message) => message.role === 'log');
+        const finalMessages: ContextMessage[] = [userMessage, ...skillMessages, ...logMessages, ...newMessages.slice(1)];
 
         // Set all messages at once
         this.contextManager.setContextMessages(finalMessages);
@@ -3730,7 +3761,8 @@ export class Task {
       }
 
       await this.updateContextInfo();
-      this.addLogMessage('info', 'Conversation compacted.', false, undefined, [{ id: 'undoContextChange' }]);
+      this.addLogMessage('info', 'Conversation compacted.', false, undefined, [{ id: 'undoContextChange', data: { checkpointId } }], true);
+      await this.contextManager.save();
     } catch (error) {
       logger.error('Failed to compact conversation', {
         baseDir: this.project.baseDir,

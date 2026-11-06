@@ -168,3 +168,12 @@ it('keeps conflict resolution and code-change requests on their existing contrac
     }),
   );
 });
+
+describe('BrowserApi compaction checkpoints', () => {
+  it.each([undefined, 'context.pre-compaction.001.json'])('forwards the checkpoint %s when restoring context', async (checkpointId) => {
+    mocks.post.mockReset().mockResolvedValue({ data: { undone: true } });
+    const api = new BrowserApi();
+    expect(await api.undoContextChange('/project', 'task-1', checkpointId)).toBe(true);
+    expect(mocks.post).toHaveBeenCalledWith('/project/undo-context-change', { projectDir: '/project', taskId: 'task-1', checkpointId });
+  });
+});
