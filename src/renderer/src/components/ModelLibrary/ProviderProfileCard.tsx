@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import {
   AnthropicIcon,
   AnthropicCompatibleIcon,
+  AtlasCloudIcon,
   AzureIcon,
   BedrockIcon,
   CerebrasIcon,
@@ -44,6 +45,7 @@ import { KimiPlanIcon } from '@/icons/KimiPlanIcon';
 const PROVIDER_ICON_MAP: Record<LlmProviderName, ComponentType<{ width?: number; height?: number; className?: string }>> = {
   anthropic: AnthropicIcon,
   'anthropic-compatible': AnthropicCompatibleIcon,
+  atlascloud: AtlasCloudIcon,
   azure: AzureIcon,
   bedrock: BedrockIcon,
   cerebras: CerebrasIcon,

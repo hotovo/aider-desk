@@ -34,6 +34,7 @@ vi.mock('@/components/ModelLibrary/providers', () => ({
   AlibabaPlanParameters: () => <div>Alibaba Plan Parameters</div>,
   AnthropicParameters: () => <div>Anthropic Parameters</div>,
   AnthropicCompatibleParameters: () => <div>Anthropic Compatible Parameters</div>,
+  AtlasCloudParameters: () => <div>AtlasCloud Parameters</div>,
   AzureParameters: () => <div>Azure Parameters</div>,
   BedrockParameters: () => <div>Bedrock Parameters</div>,
   ClinePassParameters: () => <div>ClinePass Parameters</div>,

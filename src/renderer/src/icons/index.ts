@@ -1,5 +1,6 @@
 export { AnthropicIcon } from './AnthropicIcon';
 export { AnthropicCompatibleIcon } from './AnthropicCompatibleIcon';
+export { AtlasCloudIcon } from './AtlasCloudIcon';
 export { AzureIcon } from './AzureIcon';
 export { BedrockIcon } from './BedrockIcon';
 export { ClinePassIcon } from './ClinePassIcon';
