@@ -644,7 +644,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 172
+      "installCount": 173
     },
     {
       "id": "task-scheduler",
@@ -670,7 +670,7 @@
       "capabilities": [
         "ui"
       ],
-      "installCount": 150
+      "installCount": 151
     },
     {
       "id": "dbx",
